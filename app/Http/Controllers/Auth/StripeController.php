@@ -496,6 +496,13 @@ class StripeController extends Controller
                     $this->applyContentDescriptorToAccount($user);
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
 
+                    // charges_enabled but payouts blocked = money comes in, none
+                    // goes out. Surface that instead of a flat "connected".
+                    if (! ($account->payouts_enabled ?? false)) {
+                        return redirect(route('user.show', $user->username))
+                            ->with('warning', 'Payments are active. Payouts are still pending a Stripe requirement — check the action-required panel on your dashboard to finish.');
+                    }
+
                     return redirect(route('user.show', $user->username))->with('success', 'Stripe already connected!');
                 }
             } catch (Exception $e) {
@@ -833,6 +840,11 @@ class StripeController extends Controller
                 $this->applyContentDescriptorToAccount($user);
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
 
+                if (! ($account->payouts_enabled ?? false)) {
+                    return redirect(route('user.show', ['username' => $user->username]))
+                        ->with('warning', 'Payments are active. Payouts are still pending a Stripe requirement — check the action-required panel on your dashboard to finish.');
+                }
+
                 return redirect(route('user.show', ['username' => $user->username]))->with('success', 'Stripe already connected.');
             }
             $link = StripeControl::createAccountLink([
@@ -857,28 +869,7 @@ class StripeController extends Controller
      */
     private function applyContentDescriptorToAccount(User $user): void
     {
-        if (empty($user->account_id) || empty($user->username)) {
-            return;
-        }
-
-        try {
-            StripeControl::updateAccount($user->account_id, [
-                'settings' => [
-                    'payments' => [
-                        'statement_descriptor' => StripeControl::buildContentDescriptor($user->username),
-                    ],
-                ],
-                'business_profile' => [
-                    'name' => $user->name ?: $user->username,
-                ],
-            ]);
-        } catch (Exception $e) {
-            Log::warning('Failed to set content statement descriptor on connected account', [
-                'user_id' => $user->id,
-                'account_id' => $user->account_id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        StripeControl::applyContentDescriptorToConnectedAccount($user->account_id, $user->username, $user->name);
     }
 
     /**
@@ -1337,6 +1328,28 @@ class StripeController extends Controller
             if (! $account->charges_enabled) {
                 return redirect(route('user.show', ['username' => $user->username]))
                     ->with('success', 'Stripe details submitted. Verification is in progress — payments will activate once Stripe finishes reviewing your information.');
+            }
+
+            // Persist the connected state here too, not only in the webhook. If
+            // the account.updated webhook is delayed, fails signature check, or
+            // the queue is behind, a genuinely charges_enabled creator would sit
+            // with stripe_connected_at = null — which never starts their Founder
+            // Bonus 30-day window (documented as keyed off stripe_connected_at).
+            if (! $user->stripe_connected_at) {
+                $user->stripe_connected_at = now();
+                $user->stripe_details_submitted = 1;
+                $user->save();
+                $this->applyContentDescriptorToAccount($user);
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
+            }
+
+            // charges_enabled can be true while payouts_enabled is still false
+            // (a requirement that only blocks payouts is outstanding). Tell the
+            // creator payments work but payouts are pending rather than a flat
+            // "connected" that hides money they can't withdraw yet.
+            if (! ($account->payouts_enabled ?? false)) {
+                return redirect(route('user.show', ['username' => $user->username]))
+                    ->with('warning', 'Payments are active. Payouts are still pending a Stripe requirement — check the action-required panel on your dashboard to finish.');
             }
 
             return redirect(route('user.show', ['username' => $user->username]))->with('success', 'Stripe connected.');

@@ -16,17 +16,83 @@ import { BsStopwatch } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
 import { MdOutlinePayment, MdInfoOutline } from "react-icons/md";
 
-const CustomProgressBar = ({ now, max }) => {
-    const percentage = Math.round((now / max) * 100);
+// One status vocabulary for the whole checklist, so a step never says "Approved"
+// in one shape and "Verified" in another. Mint = done, amber = in review,
+// red = needs a fix, gray = not started.
+const CHIP = {
+    done: "bg-mint text-black",
+    pending: "bg-amber-100 text-amber-800",
+    rejected: "bg-red-100 text-red-700",
+    todo: "bg-gray-100 text-gray-500",
+};
+function StatusChip({ state, children }) {
     return (
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 overflow-hidden">
-            <div
-                className="bg-pink-600 h-2.5 rounded-full transition-all duration-500"
-                style={{ width: `${percentage}%` }}
-            ></div>
+        <span
+            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${
+                CHIP[state] || CHIP.todo
+            }`}
+        >
+            {children}
+        </span>
+    );
+}
+
+// A read-only map of the six milestones so a creator always sees the whole
+// journey and where they are — the same numbered-node language as the Stripe
+// connect page, for one consistent onboarding system. Completed segments fill
+// mint (the piggy filling up).
+function MilestoneRail({ milestones, activeIndex }) {
+    return (
+        <div className="flex items-start mb-5 overflow-x-auto pb-1" aria-label="Onboarding progress">
+            {milestones.map((m, i) => {
+                const done = m.state === "done";
+                const rejected = m.state === "rejected";
+                const pending = m.state === "pending";
+                const current = i === activeIndex;
+                const last = i === milestones.length - 1;
+                let node = "bg-white text-gray-400 border-black";
+                let mark = i + 1;
+                if (done) {
+                    node = "bg-mint text-black border-black";
+                    mark = "✓";
+                } else if (rejected) {
+                    node = "bg-red-500 text-white border-black";
+                    mark = "!";
+                } else if (pending) {
+                    node = "bg-amber-400 text-black border-black";
+                } else if (current) {
+                    node = "bg-[#FF007F] text-white border-black ring-4 ring-pink-100";
+                }
+                return (
+                    <div key={m.key} className="flex items-start shrink-0">
+                        <div className="flex flex-col items-center w-12">
+                            <span
+                                className={`grid place-items-center w-9 h-9 rounded-full border-2 font-bold text-sm ${node}`}
+                            >
+                                {mark}
+                            </span>
+                            <span
+                                className={`mt-1.5 text-[10px] font-bold text-center leading-tight ${
+                                    current ? "text-[#FF007F]" : done ? "text-gray-600" : "text-gray-400"
+                                }`}
+                            >
+                                {m.label}
+                            </span>
+                        </div>
+                        {!last && (
+                            <span
+                                aria-hidden
+                                className={`h-0.5 w-6 sm:w-10 mt-4 shrink-0 ${
+                                    done ? "bg-mint" : "bg-gray-200"
+                                }`}
+                            />
+                        )}
+                    </div>
+                );
+            })}
         </div>
     );
-};
+}
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const {
@@ -73,10 +139,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const isProfileFullyApproved = isSocialApproved && avatarStatus == 1 && bioStatus == 1 && hasSubscription;
 
     const canSubmitForReview = profileStatusLock != 1 && profileStatusLock != 2 && isProfileFullyApproved;
+    // A full page reload after every avatar/bio save was jarring and lost scroll
+    // position. The component already refreshes auth/user/slinks via a partial
+    // Inertia fetch for its poller — reuse that so a save updates the steps in
+    // place instead of reloading the whole dashboard.
     const updateProfileSteps = () => {
-        if (typeof window !== "undefined") {
-            window.location.reload(false);
-        }
+        refreshSteps();
     };
 
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -163,6 +231,63 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             return null;
         }
     })();
+
+    // The six countable milestones, in order, each resolved to one status.
+    const milestones = [
+        {
+            key: "social",
+            label: "Socials",
+            state: isSocialApproved
+                ? "done"
+                : isSocialRejected
+                  ? "rejected"
+                  : hasAnySocialMedia && socialStatus == 0
+                    ? "pending"
+                    : "todo",
+        },
+        {
+            key: "avatar",
+            label: "Photo",
+            state:
+                avatarStatus == 1
+                    ? "done"
+                    : avatarStatus == 2
+                      ? "rejected"
+                      : creatorUser?.avatar && avatarStatus == 0
+                        ? "pending"
+                        : "todo",
+        },
+        {
+            key: "bio",
+            label: "Bio",
+            state:
+                bioStatus == 1
+                    ? "done"
+                    : bioStatus == 2
+                      ? "rejected"
+                      : creatorUser?.bio && bioStatus == 0
+                        ? "pending"
+                        : "todo",
+        },
+        { key: "trial", label: "Free trial", state: hasSubscription ? "done" : "todo" },
+        {
+            key: "identity",
+            label: "Verify ID",
+            state:
+                creatorUser?.identity_status == 1
+                    ? "done"
+                    : creatorUser?.identity_status == 2
+                      ? "rejected"
+                      : "todo",
+        },
+        {
+            key: "stripe",
+            label: "Get paid",
+            state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
+        },
+    ];
+    const activeMilestone = milestones.findIndex((m) => m.state === "todo");
+    const doneCount = milestones.filter((m) => m.state === "done").length;
 
     const nextStep = (() => {
         if (profileStatusLock == 2) {
@@ -338,29 +463,43 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]    mb-4 p-4 lg:!p-8">
-                <div className="flex gap-3 items-center mb-3">
-                    <h2 className="text-[20px] uppercase font-bold">
-                        Profile Verification
-                    </h2>
+            <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box mb-4 p-4 lg:!p-8">
+                <div className="flex gap-3 items-center justify-between mb-1">
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF007F]">
+                            Get set up to earn
+                        </p>
+                        <h2 className="text-[22px] uppercase font-bold leading-none">
+                            Set up your creator account
+                        </h2>
+                    </div>
                     <button
                         onClick={refreshSteps}
                         disabled={isRefreshing}
-                        className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50"
+                        className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1.5 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1 disabled:opacity-50 shrink-0"
                     >
-                        {isRefreshing ? "Refreshing..." : "Refresh"}
+                        {isRefreshing ? "Refreshing…" : "Refresh"}
                     </button>
                 </div>
-                <p className="text-gray-500 mb-3">
-                    Complete these steps and start selling your content to supporters.
+                <p className="text-gray-500 mb-4 text-sm">
+                    {doneCount} of {milestones.length} done — finish these and
+                    supporters can start paying you for your content.
                 </p>
-                <CustomProgressBar now={filledSteps} max={6} />
 
-                <div className="bg-gray-50 border border-gray-200 rounded-[20px] p-3">
+                <MilestoneRail
+                    milestones={milestones}
+                    activeIndex={activeMilestone}
+                />
+
+                {/* Do this next — one clear pointer, not "any order" which fought
+                    the numbered list above it. */}
+                <div className="bg-[#FDF3F8] border-2 border-black rounded-box-sm p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-[#FF007F] mb-0.5">
+                                Do this next
+                            </p>
                             <p className="text-gray-900 font-bold">
-                                Recommended next step (any order):{" "}
                                 {nextStep.title}
                             </p>
                             <p className="text-gray-600 text-sm mt-1">
@@ -376,7 +515,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 </div>
 
                 {profileStatusLock == 0 && profileRejectReason ? (
-                    <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-[20px]   mt-3">
+                    <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-box-sm mt-3">
                         <strong className="text-red-800">
                             Profile Verification Rejected
                         </strong>
@@ -398,7 +537,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {creatorUser?.bio &&
                 creatorUser?.avatar &&
                 profileStatusLock == 1 ? (
-                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px]  mt-3">
+                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-box-sm mt-3">
                         <>
                             <strong className="text-yellow-800">
                                 Profile Under Review
@@ -454,7 +593,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 )}
 
                 {/* Step 1: Social Handles */}
-                <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px] p-4 mt-3">
+                <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box p-4 mt-3">
                     <div className="md:flex items-center justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
@@ -490,25 +629,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                         <div className="flex items-center gap-2 w-full md:w-auto md:ms-[30px]">
                             {isSocialApproved ? (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-green-600">
-                                    Approved
-                                </span>
+                                <StatusChip state="done">Approved</StatusChip>
                             ) : isSocialPending ? (
-                                ""
+                                <StatusChip state="pending">In review</StatusChip>
                             ) : isSocialRejected ? (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-red-600">
-                                    Rejected
-                                </span>
+                                <StatusChip state="rejected">Rejected</StatusChip>
                             ) : (
-                                <span className="text-xs text-white inline-block px-2 rounded-[30px]  p-1 bg-gray-600">
-                                    Required
-                                </span>
+                                <StatusChip state="todo">Required</StatusChip>
                             )}
 
                             {slinks?.status !== 1 && (
                                 <Social
                                     buttontext="Add"
-                                    classes="bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm"
+                                    classes="bg-gray-200 my-2 rounded-box-sm px-2 py-2 w-full text-sm"
                                     links={slinks}
                                 />
                             )}
@@ -517,7 +650,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     {/* 🟡 UNDER REVIEW */}
                     {hasAnySocialMedia && slinks?.status == 0 && (
-                        <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+                        <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-box-sm">
                             <p className="text-yellow-600 text-sm">
                                 <strong>Verification Pending:</strong> Your
                                 social media handle is under review.
@@ -526,7 +659,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     )}
 
                     {slinks?.status == 2 && (
-                        <div className="mt-3 px-3 py-3 bg-red-50 border border-red-200 rounded-[18px]">
+                        <div className="mt-3 px-3 py-3 bg-red-50 border border-red-200 rounded-box-sm">
                             <p className="text-red-700 font-semibold text-sm">
                                 Social Media Edit Request Rejected
                             </p>
@@ -547,7 +680,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 </div>
                 {/* Step 2: Avatar */}
                 {avatarStatus == 2 ? (
-                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px] flex items-center p-4 mt-3 justify-between">
+                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div className="check-icon mr-2 pt-1">
                                 <div
@@ -576,7 +709,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 ) : creatorUser?.avatar ? (
                     avatarStatus == 0 ? (
-                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1`}>
                                     <div
@@ -598,7 +731,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             <BsStopwatch color="#dd9100" size={"28px"} />
                         </div>
                     ) : (
-                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon checked mr-2 pt-1`}>
                                     <div
@@ -619,7 +752,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     )
                 ) : (
-                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
                                 className={`check-icon mr-2 pt-1 ${
@@ -655,7 +788,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {creatorUser?.bio ? (
                     bioStatus === 0 ? (
                         /* 🔄 UNDER REVIEW */
-                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className="check-icon mr-2 pt-1">
                                     <div
@@ -678,7 +811,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     ) : bioStatus === 1 ? (
                         /* ✅ APPROVED */
-                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className="check-icon checked mr-2 pt-1">
                                     <div
@@ -699,7 +832,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     ) : (
                         /* ❌ REJECTED */
-                        <div className="profile-steps  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px] flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className="check-icon mr-2 pt-1">
                                     <div
@@ -728,7 +861,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     )
                 ) : (
-                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div className="check-icon mr-2 pt-1">
                                 <div
@@ -760,7 +893,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 auth?.user?.bio &&
                 auth?.user?.avatar &&
                 auth?.user?.profile_status_lock == 1 ? (
-                    <div className="text-green-600 bg-green-50 border !border-green-500 p-4 rounded-[25px] mt-4">
+                    <div className="text-green-600 bg-green-50 border !border-green-500 p-4 rounded-box mt-4">
                         <>
                             <strong className="text-green-800">
                                 Final Setup : Payment Subscription
@@ -788,7 +921,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {/* Step 4: Subscription */}
                 <div
                     className={
-                        "profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between"
+                        "profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between"
                     }
                 >
                     <div className="step-title flex max-w-[390px] pr-3">
@@ -820,19 +953,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     {!hasSubscription ? (
                         <Link
-                            className="bg-[#FF007F] my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
+                            className="bg-[#FF007F] my-2 text-center max-w-[130px] rounded-box-sm px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
                             href="/activate-subscription"
                         >
                             Start for Free
                         </Link>
                     ) : (
-                        <span className="text-green-600 font-semibold md:ms-[30px]">
-                            Active
+                        <span className="md:ms-[30px]">
+                            <StatusChip state="done">Active</StatusChip>
                         </span>
                     )}
                 </div>
 
-                <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[25px] flex items-center p-4 mt-3 justify-between">
+                <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box flex items-center p-4 mt-3 justify-between">
                     <div className="step-title flex max-w-[390px] pr-3">
                         <div
                             className={`check-icon mr-2 pt-1 ${
@@ -856,17 +989,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
 
                     {profileStatusLock == 2 ? (
-                        <span className="text-green-600 font-semibold">
-                            Approved
-                        </span>
+                        <StatusChip state="done">Approved</StatusChip>
                     ) : isSubmittedForReview ? (
-                        <span className="text-yellow-600 font-semibold">
-                            Under Review
-                        </span>
+                        <StatusChip state="pending">Under review</StatusChip>
                     ) : profileRejectReason ? (
-                        <span className="text-red-600 font-semibold">
-                            Rejected
-                        </span>
+                        <StatusChip state="rejected">Rejected</StatusChip>
                     ) : canSubmitForReview ? (
                         <Link
                             className="text-pink font-semibold"
@@ -876,12 +1003,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             Submit
                         </Link>
                     ) : (
-                        <span className="text-gray-400">Locked</span>
+                        <StatusChip state="todo">Locked</StatusChip>
                     )}
                 </div>
 
                 {auth?.user?.profile_status_lock == 2 ? (
-                    <div className="text-green-700 bg-green-50 border !border-green-700 p-3 rounded-[20px]   mt-3">
+                    <div className="text-green-700 bg-green-50 border !border-green-700 p-3 rounded-box-sm mt-3">
                         <strong className="text-green-700">
                             Profile Verification Completed
                         </strong>
@@ -905,7 +1032,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 )}
                 <div>
-                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  p-4 mt-3 ">
+                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box p-4 mt-3 ">
                         <div className=" flex items-center justify-between ">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div
@@ -934,9 +1061,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             
                             <>
                                 {auth?.user?.identity_status == 1 ? (
-                                    <span className="text-green-600">
-                                        Verified
-                                    </span>
+                                    <StatusChip state="done">Verified</StatusChip>
                                 ) : auth?.user?.identity_status == 2 ? (
                                     <Link
                                         className={"text-pink"}
@@ -973,7 +1098,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )} */}
 
                         {auth?.user?.identity_verification_error && (
-                            <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-[20px]   border border-red-200 text-start">
+                            <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-box-sm border border-red-200 text-start">
                                 <p className="font-semibold mb-2">
                                     Why are you seeing this error?
                                 </p>
@@ -986,7 +1111,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )}
 
                         {auth?.user?.identity_verification_error && (
-                            <div className="text-red-700 bg-red-100 p-3 rounded-[20px]   border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
+                            <div className="text-red-700 bg-red-100 p-3 rounded-box-sm border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
                                 <p>
                                     Error:{" "}
                                     {error?.code?.replaceAll("_", " ") ||
@@ -1009,7 +1134,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )} */}
                     </div>
 
-                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
+                    <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-box flex items-center p-4 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
                                 className={`check-icon mr-2 pt-1 ${
@@ -1055,12 +1180,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )}
 
                         {auth?.user?.stripe_details_submitted == 1 ? (
-                            <div>
-                                {" "}
-                                <span className="text-green-600">
-                                    Connected
-                                </span>{" "}
-                            </div>
+                            <StatusChip state="done">Connected</StatusChip>
                         ) : (
                             ""
                         )}

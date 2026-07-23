@@ -127,7 +127,7 @@ function BillItem(props) {
                         )}
                     </div>
                 ) : IsloggedIn && itm && itm.approved === 0 ? (
-                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-[20px]  p-3 py-2 mb-2 !text-white">
+                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-box-sm  p-3 py-2 mb-2 !text-white">
                         Bill item waiting for approval. Currently only you can see
                         this bill.
                     </div>
@@ -137,7 +137,7 @@ function BillItem(props) {
 
                 <div className="cursor-pointer relative !overflow-hidden !bg-white p-3 !pb-0">
                     <LazyLoadImage
-                        alt="image"
+                        alt={itm?.name || ""}
                         effect="blur"
                         height={193}
                         src={imageSrc}
@@ -152,7 +152,7 @@ function BillItem(props) {
                     {IsloggedIn && (
                         <Menu as="div" className="absolute top-8 right-8 z-10 inline-block text-left">
                             <div>
-                                <Menu.Button className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
+                                <Menu.Button aria-label="Bill options" className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
                                     <div className="dots">
                                         <span className="bg-white"></span>
                                         <span className="bg-white"></span>
@@ -193,6 +193,15 @@ function BillItem(props) {
 
                 <div
                     onClick={openAddtocart}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={itm?.name ? `View ${itm.name}` : "View bill"}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openAddtocart();
+                        }
+                    }}
                     className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-4 flex-grow"
                 >
                     <div>

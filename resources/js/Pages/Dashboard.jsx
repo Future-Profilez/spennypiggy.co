@@ -370,6 +370,14 @@ export default function Dashboard(props) {
     const Toggle = () => {
         const [showAdd, setShowAdd] = useState(false);
         useEffect(() => {
+            if (!showAdd) return;
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = prev;
+            };
+        }, [showAdd]);
+        useEffect(() => {
             const handleToggleEvent = () => {
                 setShowAdd(true);
             };
@@ -424,23 +432,24 @@ export default function Dashboard(props) {
                             ? createPortal(
                                   <div
                                       onClick={() => setShowAdd(false)}
-                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex justify-center items-center top-0 left-0 w-full h-full"
+                                      data-lenis-prevent
+                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex justify-center items-start top-0 left-0 w-full h-full overflow-y-auto overscroll-contain py-6"
                                   >
                                       <div
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-full md:max-w-[520px] lg:max-w-[560px] px-6 py-4"
+                                          className=" w-full md:max-w-[520px] lg:max-w-[660px]  px-6 py-4"
                                       >
                                           <Suspense fallback={"Loading.."}>
                                               <div
                                                   className="
                                                     relative
-                                                    bg-[#FFF6EC]
+                                                    bg-[#FFF6EC] 
                                                     border-[3px]
                                                     border-black
                                                     shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
                                                     w-full
                                                     rounded-[30px]
-                                                    p-6 md:p-8
+                                                    p-6 md:p-8 
                                                 "
                                               >
                                                   <button
@@ -455,7 +464,7 @@ export default function Dashboard(props) {
                                                   </button>
                                                   <div className="text-center mb-5 max-w-[480px] mx-auto">
                                                       <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] rounded-[22px] px-6 py-3 mb-3 -rotate-1">
-                                                          <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-[2.1rem] !leading-none m-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
+                                                          <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,0.35)]">
                                                               🐷 Turn Content
                                                               Into Cash 💰
                                                           </h2>
@@ -477,7 +486,7 @@ export default function Dashboard(props) {
                                                   ) : (
                                                       ""
                                                   )}
-                                                  <div className="max-h-[50vh] overflow-y-auto px-3 md:px-4 pt-2">
+                                                  <div className="!max-h-[50vh] !overflow-y-auto px-3 md:px-4 pt-2">
                                                       {wishOptions ? (
                                                           <div>
                                                               <Wishlist
@@ -741,7 +750,7 @@ export default function Dashboard(props) {
 
     return (
         <>
-            <Guest auth={auth.user} user={user} className="bg-fixed bg-gradient-to-b from-[#0a0f20] via-[#0d1430] to-[#0a0f20]">
+            <Guest auth={auth.user} user={user} className="bg-fixed bg-[#A2E4B8]">
                 <Head
                     title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
                 />
@@ -767,7 +776,7 @@ export default function Dashboard(props) {
                         {IsloggedIn && <ReferralBanner />}
 
                         <div className="wishbanner relative ">
-                            <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden">
+                            <div className="relative w-full overflow-hidden rounded-box">
                                 {user?.is_founder ? (
                                     <div className="absolute top-5 left-5 md:left-7 flex justify-center lg:justify-start z-10 bg-white/10 backdrop-blur-md rounded-full shadow-[0_8px_24px_-8px_rgba(34,211,238,0.5)] ring-1 ring-cyan-300/40 p-1.5">
                                         <FounderBadge size="md" />

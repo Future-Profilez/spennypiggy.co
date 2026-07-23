@@ -6,6 +6,9 @@ import { useEffect, useState, useRef } from "react";
 import LoadingScreen from "@/includes/LoadingScreen";
 import Avatar from "../../Components/Avatar";
 import CreatorDashboardTabs from "@/Components/CreatorDashboardTabs";
+import DashboardHero from "@/Components/Dashboard/DashboardHero";
+import { exportCsv, csvDateStamp } from "@/utils/exportCsv";
+import { FiRefreshCw, FiFileText, FiDollarSign, FiTrendingUp, FiZap, FiDownload } from "react-icons/fi";
 import {
     ResponsiveContainer,
     AreaChart,
@@ -77,6 +80,12 @@ export default function Billing_dashboard(props) {
                     estimated_next_month:
                         res.data?.stats?.estimated_next_month || 0,
 
+                    mrr: res.data?.stats?.mrr || 0,
+                    active_recurring: res.data?.stats?.active_recurring || 0,
+                    churn_rate: res.data?.stats?.churn_rate || 0,
+                    cancelled_this_month:
+                        res.data?.stats?.cancelled_this_month || 0,
+
                     recent_bills: bills.slice(0, 5),
 
                     recent_payments: [],
@@ -145,6 +154,30 @@ export default function Billing_dashboard(props) {
 
     const chartData = getChartData();
 
+    const handleExport = () => {
+        const rows = (data.all_bills || []).map((bill) => [
+            bill.name,
+            bill.period,
+            `${displayCurrency}${Number(bill.price || 0)}`,
+            bill.buyers_count || 0,
+            `${displayCurrency}${Number(bill.total_revenue || 0)}`,
+            `${displayCurrency}${Number(bill.next_month_estimate || 0)}`,
+            bill.status === 1 ? "Active" : "Inactive",
+        ]);
+        exportCsv(
+            `bills-${csvDateStamp()}.csv`,
+            ["Bill", "Period", "Price", "Supporters", "Total revenue", "Next month", "Status"],
+            rows,
+        );
+    };
+
+    // The API always returns the last N months, even when every amount is 0.
+    // Rendering the chart then draws a flat line pinned to the axis, which reads
+    // as a broken widget — only show the chart once there is real revenue to plot.
+    const hasChartRevenue = (data.monthly_data || []).some(
+        (d) => Number(d?.amount || 0) > 0,
+    );
+
     const currentRevenue =
         chartData?.length > 0
             ? Number(chartData[chartData.length - 1]?.amount || 0)
@@ -206,13 +239,13 @@ export default function Billing_dashboard(props) {
                             >
                                 <stop
                                     offset="0%"
-                                    stopColor="#06b6d4"
+                                    stopColor="#FF007F"
                                     stopOpacity={0.45}
                                 />
 
                                 <stop
                                     offset="100%"
-                                    stopColor="#06b6d4"
+                                    stopColor="#FF007F"
                                     stopOpacity={0}
                                 />
                             </linearGradient>
@@ -247,10 +280,10 @@ export default function Billing_dashboard(props) {
                         <Tooltip
                             contentStyle={{
                                 background: "#fff",
-                                border: "2px solid #000",
-                                borderRadius: "16px",
-                                color: "#000",
-                                backdropFilter: "blur(12px)",
+                                border: "1px solid rgba(0,0,0,0.06)",
+                                borderRadius: "20px",
+                                color: "#111",
+                                boxShadow: "0 12px 34px -14px rgba(0,0,0,0.25)",
                             }}
                             formatter={(value) => [
                                 `${currency}${Number(value).toLocaleString()}`,
@@ -261,18 +294,18 @@ export default function Billing_dashboard(props) {
                         <Area
                             type="monotone"
                             dataKey="amount"
-                            stroke="#06b6d4"
+                            stroke="#FF007F"
                             strokeWidth={4}
                             fill="url(#revenueGradient)"
                             dot={{
                                 r: 5,
                                 strokeWidth: 3,
                                 fill: "#0f172a",
-                                stroke: "#06b6d4",
+                                stroke: "#FF007F",
                             }}
                             activeDot={{
                                 r: 8,
-                                fill: "#06b6d4",
+                                fill: "#FF007F",
                                 stroke: "#fff",
                                 strokeWidth: 3,
                             }}
@@ -289,45 +322,58 @@ export default function Billing_dashboard(props) {
             {loading ? (
                 <LoadingScreen />
             ) : (
-                <div className="min-h-dvh bg-gray-200">
+                <div className="min-h-dvh bg-gray-50">
                     <div className="containerbox m-auto">
                         <div className="py-6 md:py-10 w-full m-auto">
                             {/* Header Section */}
                             <CreatorDashboardTabs />
-                            <div className="mb-8">
-                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                                    <div>
-                                        <div className="flex items-center gap-4 mb-3">
-                                            <div className="w-14 h-14 bg-yellow-300 flex items-center justify-center text-2xl  border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                💳
-                                            </div>
 
-                                            <div>
-                                                <h1 className="text-2xl md:text-3xl font-GillSans uppercase text-black tracking-tight">
-                                                    Bill Dashboard
-                                                </h1>
-
-                                                <p className="text-gray-600 mt-1 text-sm">
-                                                    Track all creator bill
-                                                    revenue, payments and
-                                                    supporter analytics
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <DashboardHero
+                                accent="ink"
+                                Icon={FiRefreshCw}
+                                sticker="Recurring content"
+                                label="Total revenue"
+                                amount={Number(data.total_revenue || 0)}
+                                prefix={displayCurrency}
+                                trend={
+                                    Number(growthPercentage) !== 0
+                                        ? {
+                                              value: Number(growthPercentage),
+                                              positive: isGrowthPositive,
+                                          }
+                                        : null
+                                }
+                                stats={[
+                                    {
+                                        label: "Active bills",
+                                        value: data.active_bills || 0,
+                                        Icon: FiFileText,
+                                    },
+                                    {
+                                        label: "This month",
+                                        value: `${displayCurrency}${Number(
+                                            data.monthly_revenue || 0,
+                                        ).toLocaleString()}`,
+                                        Icon: FiTrendingUp,
+                                    },
+                                    {
+                                        label: "Payments",
+                                        value: data.total_payments || 0,
+                                        Icon: FiDollarSign,
+                                    },
+                                ]}
+                            />
 
                             {/* Stats Grid - Main Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
                                 {/* TOTAL BILLS */}
-                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <div className="w-12 h-12 bg-blue-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                            📄
+                                        <div className="w-12 h-12 bg-pink-100 flex items-center justify-center border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
+                                            <FiFileText className="text-[#FF007F]" size="1.4rem" />
                                         </div>
 
-                                        <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
+                                        <span className="text-xs bg-white text-black border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] px-3 py-1 font-black uppercase">
                                             Total
                                         </span>
                                     </div>
@@ -353,13 +399,13 @@ export default function Billing_dashboard(props) {
                                 </div>
 
                                 {/* TOTAL REVENUE */}
-                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <div className="w-12 h-12 bg-emerald-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                            💰
+                                        <div className="w-12 h-12 bg-pink-100 flex items-center justify-center border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
+                                            <FiDollarSign className="text-[#FF007F]" size="1.4rem" />
                                         </div>
 
-                                        <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
+                                        <span className="text-xs bg-white text-black border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] px-3 py-1 font-black uppercase">
                                             Lifetime
                                         </span>
                                     </div>
@@ -386,9 +432,9 @@ export default function Billing_dashboard(props) {
                                             </span>
                                         </div>
 
-                                        <div className="h-2 rounded-full bg-gray-200 border-2 border-black overflow-hidden">
+                                        <div className="h-2 rounded-full bg-gray-200 border border-gray-100 overflow-hidden">
                                             <div
-                                                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
+                                                className="h-full rounded-full bg-emerald-500"
                                                 style={{
                                                     width: `${recurringRate}%`,
                                                 }}
@@ -398,13 +444,13 @@ export default function Billing_dashboard(props) {
                                 </div>
 
                                 {/* MONTHLY REVENUE */}
-                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <div className="w-12 h-12 bg-amber-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                            📈
+                                        <div className="w-12 h-12 bg-pink-100 flex items-center justify-center border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
+                                            <FiTrendingUp className="text-[#FF007F]" size="1.4rem" />
                                         </div>
 
-                                        <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
+                                        <span className="text-xs bg-white text-black border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] px-3 py-1 font-black uppercase">
                                             This Month
                                         </span>
                                     </div>
@@ -427,20 +473,20 @@ export default function Billing_dashboard(props) {
                                             {data.total_payments || 0} payments
                                         </span>
 
-                                        <span className="text-xs text-amber-700">
+                                        <span className="text-xs text-gray-600">
                                             Live tracking
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* NEXT MONTH */}
-                                <div className="bg-white border-[1px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 min-h-[170px] flex flex-col justify-between">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
                                     <div className="flex items-center justify-between">
-                                        <div className="w-12 h-12 bg-cyan-200 flex items-center justify-center text-2xl border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                            🚀
+                                        <div className="w-12 h-12 bg-pink-100 flex items-center justify-center border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
+                                            <FiZap className="text-[#FF007F]" size="1.4rem" />
                                         </div>
 
-                                        <span className="text-xs bg-white text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1 font-black uppercase">
+                                        <span className="text-xs bg-white text-black border border-gray-100 rounded-box-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] px-3 py-1 font-black uppercase">
                                             Forecast
                                         </span>
                                     </div>
@@ -459,21 +505,78 @@ export default function Billing_dashboard(props) {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                                        <div className="w-2 h-2 rounded-full bg-[#FF007F]"></div>
 
-                                        <span className="text-xs text-cyan-700">
+                                        <span className="text-xs text-gray-600">
                                             Based on active subscriptions
                                         </span>
                                     </div>
+                                </div>
+
+                                {/* MRR */}
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-12 h-12 bg-pink-50 flex items-center justify-center rounded-box-sm">
+                                            <FiRefreshCw className="text-[#FF007F]" size="1.4rem" />
+                                        </div>
+                                        <span className="text-xs bg-white text-gray-700 border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] rounded-box-sm px-3 py-1 font-semibold uppercase">
+                                            Recurring
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-3xl md:text-4xl font-black text-black">
+                                            {displayCurrency}
+                                            {Number(
+                                                data.mrr || 0,
+                                            ).toLocaleString()}
+                                        </h2>
+                                        <p className="text-gray-600 text-sm mt-2">
+                                            Monthly recurring revenue
+                                        </p>
+                                    </div>
+                                    <span className="text-xs text-emerald-700">
+                                        {data.active_recurring || 0} active
+                                        subscriptions
+                                    </span>
+                                </div>
+
+                                {/* CHURN */}
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-5 min-h-[170px] flex flex-col justify-between">
+                                    <div className="flex items-center justify-between">
+                                        <div className="w-12 h-12 bg-pink-50 flex items-center justify-center rounded-box-sm">
+                                            <FiTrendingUp className="text-[#FF007F] rotate-180" size="1.4rem" />
+                                        </div>
+                                        <span className="text-xs bg-white text-gray-700 border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] rounded-box-sm px-3 py-1 font-semibold uppercase">
+                                            This month
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-3xl md:text-4xl font-black text-black">
+                                            {Number(data.churn_rate || 0)}%
+                                        </h2>
+                                        <p className="text-gray-600 text-sm mt-2">
+                                            Churn rate
+                                        </p>
+                                    </div>
+                                    <span
+                                        className={`text-xs ${
+                                            (data.cancelled_this_month || 0) > 0
+                                                ? "text-red-600"
+                                                : "text-emerald-700"
+                                        }`}
+                                    >
+                                        {data.cancelled_this_month || 0} cancelled
+                                        this month
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Top Performing Bills & Chart Section */}
                             <div className="flex flex-col gap-6 md:gap-8 mb-10">
                                 {/* Top Performing Bills */}
-                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-4">
                                     <div className="mb-4">
-                                        <h2 className="text-xl font-GillSans uppercase font-black text-black">
+                                        <h2 className="text-lg font-bold tracking-tight text-gray-900">
                                             Top Performing Bills
                                         </h2>
                                         <p className="text-gray-600 text-xs">
@@ -484,15 +587,13 @@ export default function Billing_dashboard(props) {
                                         {data.top_bills?.length > 0 ? (
                                             data.top_bills.map(
                                                 (bill, index) => (
-                                                    <div
+                                                    <Link
                                                         key={index}
-                                                        className="flex items-center justify-between p-3 rounded-box-sm bg-gray-100 border-2 border-black rounded-[20px] mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-pointer"
-                                                        onClick={() =>
-                                                            (window.location.href = `/billing/bill/${bill.uuid}`)
-                                                        }
+                                                        href={`/billing/bill/${bill.uuid}`}
+                                                        className="flex items-center justify-between p-3 rounded-box-sm bg-gray-100 border border-gray-100 mb-2 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] cursor-pointer hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
                                                     >
                                                         <div className="flex items-center gap-3 flex-1">
-                                                            <div className="w-8 h-8 rounded-box-sm bg-blue-200 flex items-center justify-center text-sm font-bold text-black border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                            <div className="w-8 h-8 rounded-box-sm bg-pink-100 flex items-center justify-center text-sm font-bold text-black border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
                                                                 #{index + 1}
                                                             </div>
                                                             <div className="flex-1">
@@ -503,7 +604,7 @@ export default function Billing_dashboard(props) {
                                                                         }
                                                                     </p>
                                                                     <span
-                                                                        className={`text-xs px-2 py-0.5 rounded-full ${bill.status === 1 ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}
+                                                                        className={`text-xs px-2 py-0.5 rounded-full font-bold ${bill.status === 1 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}
                                                                     >
                                                                         {bill.status ===
                                                                         1
@@ -547,7 +648,7 @@ export default function Billing_dashboard(props) {
                                                                 total revenue
                                                             </p>
                                                         </div>
-                                                    </div>
+                                                    </Link>
                                                 ),
                                             )
                                         ) : (
@@ -568,7 +669,7 @@ export default function Billing_dashboard(props) {
 
                                 {/* REVENUE ANALYTICS */}
 
-                                <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] overflow-hidden">
                                     {/* HEADER */}
 
                                     <div className="p-6 ">
@@ -576,7 +677,7 @@ export default function Billing_dashboard(props) {
                                             <div>
                                                 <div className="flex items-center gap-4">
                                                     <div>
-                                                        <h2 className="text-2xl md:text-3xl font-GillSans uppercase text-black">
+                                                        <h2 className="text-lg md:text-xl font-bold tracking-tight text-gray-900">
                                                             Revenue Performance
                                                         </h2>
 
@@ -589,13 +690,13 @@ export default function Billing_dashboard(props) {
 
                                                     <div
                                                         className={`
-                                                        px-4 py-2 rounded-box-sm 
+                                                        px-4 py-2 rounded-box-sm
                                                         flex items-center gap-2
-                                                        border
+                                                        border-2
                                                         ${
                                                             isGrowthPositive
-                                                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                                                                : "bg-red-500/10 border-red-500/20 text-red-400"
+                                                                ? "bg-emerald-100 border-emerald-700 text-emerald-700"
+                                                                : "bg-red-100 border-red-600 text-red-600"
                                                         }
                                                     `}
                                                     >
@@ -620,11 +721,12 @@ export default function Billing_dashboard(props) {
                                                             e.target.value,
                                                         )
                                                     }
+                                                    aria-label="Revenue chart period"
                                                     className="
-                                                    bg-white border-2 border-black
+                                                    bg-white border border-gray-100
                                                     rounded-box-sm min-h-[44px] px-5 py-3 text-sm
                                                     text-black focus:outline-none
-                                                    focus:ring-2 focus:ring-cyan-500
+                                                    focus:ring-2 focus:ring-pink-500
                                                 "
                                                 >
                                                     <option value="3months">
@@ -648,7 +750,7 @@ export default function Billing_dashboard(props) {
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b-[2px] ">
                                         {/* GROWTH */}
 
-                                        <div className="rounded-box bg-white border-2 border-black p-5">
+                                        <div className="rounded-box bg-white border border-gray-100 p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Monthly Growth
                                             </p>
@@ -657,8 +759,8 @@ export default function Billing_dashboard(props) {
                                                 <h3
                                                     className={`text-3xl font-black ${
                                                         isGrowthPositive
-                                                            ? "text-emerald-400"
-                                                            : "text-red-400"
+                                                            ? "text-emerald-700"
+                                                            : "text-red-600"
                                                     }`}
                                                 >
                                                     {isGrowthPositive
@@ -670,8 +772,8 @@ export default function Billing_dashboard(props) {
                                                 <div
                                                     className={`text-2xl ${
                                                         isGrowthPositive
-                                                            ? "text-emerald-400"
-                                                            : "text-red-400"
+                                                            ? "text-emerald-700"
+                                                            : "text-red-600"
                                                     }`}
                                                 >
                                                     {isGrowthPositive
@@ -687,12 +789,12 @@ export default function Billing_dashboard(props) {
 
                                         {/* BEST MONTH */}
 
-                                        <div className="rounded-box bg-white border-2 border-black p-5">
+                                        <div className="rounded-box bg-white border border-gray-100 p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Best Performing Month
                                             </p>
 
-                                            <h3 className="text-3xl font-black text-cyan-400 mt-3">
+                                            <h3 className="text-3xl font-black text-[#FF007F] mt-3">
                                                 {displayCurrency}
                                                 {Number(
                                                     peakMonth?.amount || 0,
@@ -706,12 +808,12 @@ export default function Billing_dashboard(props) {
 
                                         {/* AVG */}
 
-                                        <div className="rounded-box bg-white border-2 border-black p-5">
+                                        <div className="rounded-box bg-white border border-gray-100 p-5">
                                             <p className="text-gray-600 text-xs uppercase tracking-wider">
                                                 Average Revenue
                                             </p>
 
-                                            <h3 className="text-3xl font-black text-amber-400 mt-3">
+                                            <h3 className="text-3xl font-black text-black mt-3">
                                                 {displayCurrency}
                                                 {Number(
                                                     averageRevenue || 0,
@@ -727,26 +829,26 @@ export default function Billing_dashboard(props) {
                                     {/* CHART */}
 
                                     <div className="p-6">
-                                        <div className="rounded-box bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 p-5">
-                                            {data.monthly_data?.length > 0 ? (
+                                        <div className="rounded-box bg-white border border-gray-100 p-5">
+                                            {hasChartRevenue ? (
                                                 <RevenueChart
                                                     data={chartData}
                                                     currency={displayCurrency}
                                                 />
                                             ) : (
-                                                <div className="h-[350px] flex flex-col items-center justify-center">
-                                                    <div className="text-5xl mb-4">
-                                                        📊
+                                                <div className="h-[350px] flex flex-col items-center justify-center text-center px-6">
+                                                    <div className="w-16 h-16 bg-pink-100 border border-gray-100 rounded-box-sm shadow-[0_8px_20px_-10px_rgba(0,0,0,0.15)] flex items-center justify-center mb-4">
+                                                        <FiTrendingUp className="text-[#FF007F]" size="1.9rem" />
                                                     </div>
 
-                                                    <h3 className="text-2xl font-bold text-black">
-                                                        No Analytics Yet
+                                                    <h3 className="text-xl font-black uppercase text-black">
+                                                        No revenue yet
                                                     </h3>
 
-                                                    <p className="text-gray-600 mt-2">
-                                                        Revenue data will appear
-                                                        once payments start
-                                                        coming in.
+                                                    <p className="text-gray-600 mt-2 text-sm max-w-sm">
+                                                        Your monthly earnings trend
+                                                        appears here once supporters
+                                                        start paying.
                                                     </p>
                                                 </div>
                                             )}
@@ -756,10 +858,10 @@ export default function Billing_dashboard(props) {
                             </div>
 
                             {/* All Bills Section with Filters */}
-                            <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden mb-6">
+                            <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] overflow-hidden mb-6">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4  gap-4">
                                     <div>
-                                        <h2 className="text-xl font-GillSans uppercase font-black text-black">
+                                        <h2 className="text-lg font-bold tracking-tight text-gray-900">
                                             All Bills
                                         </h2>
                                         <p className="text-gray-600 text-xs">
@@ -771,13 +873,14 @@ export default function Billing_dashboard(props) {
                                             <input
                                                 type="text"
                                                 placeholder="Search bills..."
+                                                aria-label="Search bills"
                                                 value={searchTerm}
                                                 onChange={(e) =>
                                                     setSearchTerm(
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="bg-white border-2 border-black rounded-box-sm px-4 py-2 text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                className="bg-white border border-gray-100 rounded-box-sm min-h-[44px] px-4 py-2 text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-pink-500"
                                             />
                                         </div>
                                         <div className="flex gap-2">
@@ -785,7 +888,7 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("all")
                                                 }
-                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "all" ? "bg-blue-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm font-bold border border-gray-100 transition-colors ${filterStatus === "all" ? "bg-[#FF007F] text-white" : "bg-white text-black hover:bg-gray-100"}`}
                                             >
                                                 All
                                             </button>
@@ -793,7 +896,7 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("active")
                                                 }
-                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "active" ? "bg-green-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm font-bold border border-gray-100 transition-colors ${filterStatus === "active" ? "bg-emerald-600 text-white" : "bg-white text-black hover:bg-gray-100"}`}
                                             >
                                                 Active
                                             </button>
@@ -801,16 +904,110 @@ export default function Billing_dashboard(props) {
                                                 onClick={() =>
                                                     setFilterStatus("inactive")
                                                 }
-                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm transition-colors ${filterStatus === "inactive" ? "bg-red-500 text-black" : "bg-white/10 text-gray-700 hover:bg-white/20"}`}
+                                                className={`px-3 py-2 min-h-[44px] rounded-box-sm text-sm font-bold border border-gray-100 transition-colors ${filterStatus === "inactive" ? "bg-red-600 text-white" : "bg-white text-black hover:bg-gray-100"}`}
                                             >
                                                 Inactive
                                             </button>
                                         </div>
+                                        <button
+                                            onClick={handleExport}
+                                            disabled={!(data.all_bills || []).length}
+                                            aria-label="Export bills to CSV"
+                                            className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-box-sm text-sm font-semibold bg-gray-900 text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                                        >
+                                            <FiDownload size="0.95rem" /> Export
+                                        </button>
                                     </div>
                                 </div>
 
                                 {filteredBills?.length > 0 ? (
-                                    <div className="overflow-x-auto">
+                                    <>
+                                    {/* MOBILE CARD LIST */}
+                                    <div className="block lg:hidden divide-y divide-gray-100 border-t border-gray-100">
+                                        {filteredBills.map((bill, index) => (
+                                            <div key={index} className="p-4">
+                                                <div className="flex items-center justify-between gap-3 mb-3">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        {bill.thumbnail ? (
+                                                            <img
+                                                                src={bill.thumbnail}
+                                                                alt={bill.name}
+                                                                className="w-9 h-9 rounded-box-sm object-cover border border-gray-100"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-9 h-9 rounded-box-sm bg-pink-100 border border-gray-100 flex items-center justify-center">
+                                                                <FiFileText className="text-[#FF007F]" size="1.1rem" />
+                                                            </div>
+                                                        )}
+                                                        <span className="text-sm font-black text-black truncate">
+                                                            {bill.name}
+                                                        </span>
+                                                    </div>
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${bill.status === 1 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}
+                                                    >
+                                                        <span
+                                                            className={`w-1.5 h-1.5 rounded-full ${bill.status === 1 ? "bg-emerald-500" : "bg-red-500"}`}
+                                                        ></span>
+                                                        {bill.status === 1
+                                                            ? "Active"
+                                                            : "Inactive"}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                                    <div>
+                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                            Price
+                                                        </p>
+                                                        <p className="text-sm font-bold text-black">
+                                                            {displayCurrency}
+                                                            {Number(
+                                                                bill.price,
+                                                            ).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                            Period
+                                                        </p>
+                                                        <span className="inline-block mt-0.5 px-2 py-0.5 rounded-box-sm bg-pink-100 border border-gray-100 text-black text-xs font-bold uppercase">
+                                                            {bill.period}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                            Buyers
+                                                        </p>
+                                                        <p className="text-sm font-bold text-black">
+                                                            {bill.buyers_count ||
+                                                                0}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                            Revenue
+                                                        </p>
+                                                        <p className="text-sm font-bold text-black">
+                                                            {displayCurrency}
+                                                            {Number(
+                                                                bill.total_revenue ||
+                                                                    0,
+                                                            ).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Link
+                                                    href={`/billing/bill/${bill.uuid}`}
+                                                    className="min-h-[44px] w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-box-sm bg-[#FF007F] text-white text-sm font-black uppercase border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]"
+                                                >
+                                                    View Details <span>→</span>
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* DESKTOP TABLE */}
+                                    <div className="hidden lg:block overflow-x-auto">
                                         <table className="w-full">
                                             <thead className="bg-gray-100 ">
                                                 <tr>
@@ -851,11 +1048,11 @@ export default function Billing_dashboard(props) {
                                                                             alt={
                                                                                 bill.name
                                                                             }
-                                                                            className="w-8 h-8 rounded-lg object-cover"
+                                                                            className="w-8 h-8 rounded-box-sm object-cover"
                                                                         />
                                                                     ) : (
-                                                                        <div className="w-8 h-8 rounded-box-sm bg-blue-500/20 flex items-center justify-center text-lg">
-                                                                            📄
+                                                                        <div className="w-8 h-8 rounded-box-sm bg-pink-100 border border-gray-100 flex items-center justify-center">
+                                                                            <FiFileText className="text-[#FF007F]" size="1rem" />
                                                                         </div>
                                                                     )}
                                                                     <span className="text-sm text-black font-medium">
@@ -876,7 +1073,7 @@ export default function Billing_dashboard(props) {
                                                                 </p>
                                                             </td>
                                                             <td className="px-4 py-3">
-                                                                <span className="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 capitalize">
+                                                                <span className="text-xs px-2 py-1 rounded-box-sm bg-pink-100 text-black border border-gray-100 font-bold capitalize">
                                                                     {
                                                                         bill.period
                                                                     }
@@ -887,10 +1084,10 @@ export default function Billing_dashboard(props) {
                                                                     {bill.buyers_count ||
                                                                         0}
                                                                 </p>
-                                                                <div className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/10">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                                                                <div className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded-full bg-gray-100 border border-gray-100">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF007F]"></div>
 
-                                                                    <span className="text-[10px] uppercase tracking-wide text-cyan-700">
+                                                                    <span className="text-[10px] uppercase tracking-wide text-gray-700">
                                                                         supporters
                                                                     </span>
                                                                 </div>
@@ -908,7 +1105,7 @@ export default function Billing_dashboard(props) {
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <span
-                                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${bill.status === 1 ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}
+                                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${bill.status === 1 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}
                                                                 >
                                                                     <span
                                                                         className={`w-1.5 h-1.5 rounded-full ${bill.status === 1 ? "bg-emerald-500" : "bg-red-500"}`}
@@ -925,7 +1122,7 @@ export default function Billing_dashboard(props) {
                                                                     className="
                                                                 inline-flex items-center gap-2
                                                                 px-4 py-2 rounded-box-sm
-                                                                bg-blue-300 text-black text-sm font-black uppercase border-2 border-black rounded-[20px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
+                                                                bg-[#FF007F] text-white text-sm font-black uppercase border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all
                                                             "
                                                                 >
                                                                     View Details
@@ -940,10 +1137,11 @@ export default function Billing_dashboard(props) {
                                             </tbody>
                                         </table>
                                     </div>
+                                    </>
                                 ) : (
                                     <div className="py-12 flex flex-col items-center justify-center text-center">
-                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl mb-3">
-                                            📄
+                                        <div className="w-14 h-14 rounded-box-sm bg-pink-100 border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] flex items-center justify-center mb-4">
+                                            <FiFileText className="text-[#FF007F]" size="1.6rem" />
                                         </div>
                                         <h3 className="text-base font-bold text-black mb-1">
                                             No Bills Found
@@ -957,7 +1155,7 @@ export default function Billing_dashboard(props) {
                                             filterStatus === "all" && (
                                                 <Link
                                                     href={route("user.show", { username: auth?.user?.username, page: "bills" })}
-                                                    className="min-h-[44px] inline-flex items-center px-4 py-2 bg-[#FF007F] text-white font-bold border-2 border-black rounded-box-sm text-sm"
+                                                    className="min-h-[44px] inline-flex items-center px-4 py-2 bg-[#FF007F] text-white font-bold border border-gray-100 rounded-box-sm text-sm"
                                                 >
                                                     Create subscription →
                                                 </Link>

@@ -415,7 +415,7 @@ export default function AddItem(props) {
                             </div>
 
                             {item && item.is_suspended == 1 && (
-                                <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                                <div className="mb-4 bg-red-50 border-2 border-red-500 p-4 rounded-box-sm">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
                                             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -455,7 +455,7 @@ export default function AddItem(props) {
                             {step === 1 && (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="space-y-4">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">1. Select Product Type</h3>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">1. Select Product Type</h3>
                                         <div className="flex gap-4">
                                             <button 
                                                 type="button"
@@ -485,7 +485,7 @@ export default function AddItem(props) {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">2. Visuals & Details</h3>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">2. Visuals & Details</h3>
                                         
                                         <div className="space-y-2">
                                             <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Thumbnail Image*</label>
@@ -530,7 +530,7 @@ export default function AddItem(props) {
                                                     type="text"
                                                     placeholder="What are you selling?"
                                                 />
-                                                <p className="text-[10px] text-gray-400 text-right">{(shopItem.name || "").length}/80</p>
+                                                <p className="text-[10px] text-gray-500 text-right">{(shopItem.name || "").length}/80</p>
                                             </div>
 
                                             <div className="space-y-1.5">
@@ -544,7 +544,7 @@ export default function AddItem(props) {
                                                     className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white transition-all placeholder:text-gray-400"
                                                     placeholder="Tell fans why they need this..."
                                                 />
-                                                <p className="text-[10px] text-gray-400 text-right">{(shopItem.description || "").length}/500</p>
+                                                <p className="text-[10px] text-gray-500 text-right">{(shopItem.description || "").length}/500</p>
                                             </div>
 
                                             <div className="space-y-1.5">
@@ -571,7 +571,7 @@ export default function AddItem(props) {
                                                                 </p>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Fans Pay</p>
+                                                                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Fans Pay</p>
                                                                 <p className="text-lg font-bold text-gray-600">
                                                                     {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency).total_supporter_pays)}
                                                                 </p>
@@ -594,7 +594,7 @@ export default function AddItem(props) {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {physical === 'physical' ? (
                                         <div className="space-y-6">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">1. Shipping Configuration</h3>
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">1. Shipping Configuration</h3>
                                             
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                 <div className="space-y-1.5">
@@ -638,7 +638,7 @@ export default function AddItem(props) {
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">1. Fulfillment Method</h3>
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">1. Fulfillment Method</h3>
                                             
                                             <div className="flex gap-4">
                                                 <button 
@@ -711,7 +711,7 @@ export default function AddItem(props) {
                                     )}
 
                                     <div className="space-y-4 pt-6">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">2. Categories</h3>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">2. Categories</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {categories?.map((c, i) => (
                                                 <label 
@@ -741,7 +741,7 @@ export default function AddItem(props) {
                                             <button
                                                 onClick={addCategory}
                                                 disabled={adding}
-                                                className="px-6 py-3 bg-black text-white rounded-box-sm font-black uppercase text-[10px] tracking-widest active:scale-95 disabled:opacity-50"
+                                                className="px-6 py-3 min-h-[44px] bg-black text-white rounded-box-sm font-black uppercase text-[10px] tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
                                             >
                                                 {adding ? '...' : '+ Add'}
                                             </button>
@@ -753,7 +753,7 @@ export default function AddItem(props) {
                             {/* STEP 3: OPTIONS & TERMS */}
                             {step === 3 && (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Final Settings</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">Final Settings</h3>
                                     
                                     <div className="space-y-6">
                                         {/* Toggle: Question */}
@@ -861,7 +861,7 @@ export default function AddItem(props) {
                             {step > 1 && (
                                 <button 
                                     onClick={prevStep}
-                                    className="flex-1 py-4 border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 transition-all bg-white"
+                                    className="flex-1 py-4 min-h-[44px] border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all bg-white"
                                 >
                                     Back
                                 </button>
@@ -870,7 +870,7 @@ export default function AddItem(props) {
                             {step < 3 ? (
                                 <button 
                                     onClick={nextStep}
-                                    className="flex-[2] py-4 bg-black text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                    className="flex-[2] py-4 min-h-[44px] bg-black text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                                 >
                                     Next Step
                                 </button>
@@ -878,7 +878,7 @@ export default function AddItem(props) {
                                 <button 
                                     onClick={isEdit ? updateItem : addShopItem}
                                     disabled={loading || !isChecked}
-                                    className={`flex-[2] py-4 bg-[#FF007F] text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                                    className={`flex-[2] py-4 min-h-[44px] bg-[#FF007F] text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
                                         (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed shadow-none translate-y-[2px] translate-x-[2px]' : ''
                                     }`}
                                 >

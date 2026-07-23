@@ -187,7 +187,7 @@ export default function OrdersLists({ type = 'sales' }) {
                                 item={item}
                                 type={type}
                                 text={'View Info'} 
-                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 text-black text-sm sm:text-base uppercase text-center block" 
+                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase text-center block" 
                                 onSuccess={fetchorders} 
                             />
                         </div>

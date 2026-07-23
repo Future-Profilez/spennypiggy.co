@@ -237,7 +237,7 @@ export default function ShopDetailItem(props) {
                                     </div>
                                 )}
                                 {shop?.is_suspended == 1 && (
-                                    <div className="mb-4 bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-r-box-sm font-medium text-sm">
+                                    <div className="mb-4 bg-red-50 border-2 border-red-500 text-red-800 px-4 py-3 rounded-box-sm font-medium text-sm">
                                         <strong className="uppercase">Suspended</strong>
                                         <div className="mt-1">
                                             {shop?.suspend_reason
@@ -345,7 +345,7 @@ export default function ShopDetailItem(props) {
                                             <a
                                                 href={`https://twitter.com/intent/tweet?url=${url}`}
                                                 target="_blank"
-                                                className=" break-words text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/twitter"
+                                                className=" break-words text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/twitter"
                                                 aria-label="Twitter"
                                                 onMouseEnter={() => twitterRef.current?.startAnimation()}
                                             >
@@ -361,7 +361,7 @@ export default function ShopDetailItem(props) {
                                             <button
                                                 type="button"
                                                 onClick={instashare}
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/insta"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/insta"
                                                 aria-label="Instagram"
                                                 onMouseEnter={() => instaRef.current?.startAnimation()}
                                             >
@@ -376,7 +376,7 @@ export default function ShopDetailItem(props) {
                                         <li>
                                             <button
                                                 type="button"
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200 group/fb"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/fb"
                                                 aria-label="Facebook"
                                                 onClick={fbShare}
                                                 onMouseEnter={() => fbRef.current?.startAnimation()}
@@ -392,7 +392,7 @@ export default function ShopDetailItem(props) {
                                         <li>
                                             <button
                                                 type="button"
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]"
                                                 aria-label="RSS"
                                                 onClick={rssShare}
                                             >
@@ -503,13 +503,13 @@ export default function ShopDetailItem(props) {
                                         <div className="flex flex-col sm:flex-row gap-3">
                                             <Link
                                                 href="/shop?type=products"
-                                                className="w-full sm:w-auto text-center font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                             >
                                                 Manage in my shop
                                             </Link>
                                             <Link
                                                 href="/shop?type=orders"
-                                                className="w-full sm:w-auto text-center font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                             >
                                                 View orders
                                             </Link>

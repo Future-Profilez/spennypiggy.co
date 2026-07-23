@@ -1307,12 +1307,39 @@ class BillsController extends Controller
         $estimatedNextMonth = 0;
         $uniqueCustomers = [];
 
+        // Recurring health: MRR (monthly-normalised recurring revenue) + churn.
+        $mrr = 0;
+        $activeRecurringCount = 0;
+        $cancelledThisMonth = 0;
+        $monthStart = now()->startOfMonth();
+
+        // Normalise any billing period down to a monthly figure.
+        $toMonthly = function ($payment) {
+            $amount = (float) $payment->amount;
+            switch ($payment->recurring_type) {
+                case 'yearly':
+                case 'annual':
+                    return $amount / 12;
+                case 'weekly':
+                    return $amount * 52 / 12;
+                default: // monthly
+                    return $amount;
+            }
+        };
+
         foreach ($bills as $bill) {
 
             $paidPayments = $bill->payments
                 ->where('status', 'paid');
 
             $billRevenue = $paidPayments->sum('amount');
+
+            // Cancelled this month (for churn): rows whose access-end falls in this month.
+            $cancelledThisMonth += $bill->payments->filter(function ($payment) use ($monthStart) {
+                $endsAt = $payment->endsAt();
+
+                return $endsAt !== null && $endsAt->greaterThanOrEqualTo($monthStart);
+            })->count();
 
             /*
             |--------------------------------------------------------------------------
@@ -1387,6 +1414,9 @@ class BillsController extends Controller
             $nextMonthEstimate =
                 $activeRecurringPayments->sum('amount');
 
+            $activeRecurringCount += $activeRecurringPayments->count();
+            $mrr += $activeRecurringPayments->sum($toMonthly);
+
             $bill->total_revenue = round($billRevenue, 2);
 
             $bill->buyers_count =
@@ -1421,7 +1451,8 @@ class BillsController extends Controller
 
         $chartData = [];
 
-        for ($i = 5; $i >= 0; $i--) {
+        // 12 months so the dashboard's "Last 12 months" period filter has real data.
+        for ($i = 11; $i >= 0; $i--) {
 
             $month = now()->subMonths($i);
 
@@ -1459,6 +1490,14 @@ class BillsController extends Controller
                 'monthly_revenue' => round($monthlyRevenue, 2),
                 'estimated_next_month' => round($estimatedNextMonth, 2),
                 'unique_customers' => count(array_unique($uniqueCustomers)),
+                'mrr' => round($mrr, 2),
+                'active_recurring' => $activeRecurringCount,
+                'cancelled_this_month' => $cancelledThisMonth,
+                // Churn = cancellations this month over the base that was active at the
+                // month's start (still-active + those that cancelled this month).
+                'churn_rate' => ($activeRecurringCount + $cancelledThisMonth) > 0
+                    ? round(($cancelledThisMonth / ($activeRecurringCount + $cancelledThisMonth)) * 100, 1)
+                    : 0,
             ],
 
             'top_bill' => $topBill,
@@ -1585,6 +1624,37 @@ class BillsController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | UPCOMING RENEWALS (next 30 days)
+        |--------------------------------------------------------------------------
+        |
+        | Give the supporter a heads-up on what is about to be charged, so a renewal
+        | is never a surprise. Only live subscriptions with a future charge date count.
+        */
+
+        $now = now();
+        $in30 = now()->copy()->addDays(30);
+
+        $upcoming = $billSubscriptions
+            ->filter($isActive)
+            ->merge($membershipSubscriptions->filter($isActive))
+            ->filter(function ($sub) use ($now, $in30) {
+                if (empty($sub->upcoming_payment)) {
+                    return false;
+                }
+                $due = Carbon::parse($sub->upcoming_payment);
+
+                return $due->betweenIncluded($now, $in30);
+            });
+
+        $nextRenewal = $billSubscriptions
+            ->filter($isActive)
+            ->merge($membershipSubscriptions->filter($isActive))
+            ->filter(fn ($s) => ! empty($s->upcoming_payment) && Carbon::parse($s->upcoming_payment)->greaterThanOrEqualTo($now))
+            ->sortBy(fn ($s) => Carbon::parse($s->upcoming_payment)->timestamp)
+            ->first();
+
+        /*
+        |--------------------------------------------------------------------------
         | RESPONSE
         |--------------------------------------------------------------------------
         */
@@ -1605,6 +1675,12 @@ class BillsController extends Controller
                 'monthly_spend' => round($monthlySpend, 2),
 
                 'yearly_spend' => round($yearlySpend, 2),
+
+                'upcoming_30d_count' => $upcoming->count(),
+
+                'upcoming_30d_total' => round($upcoming->sum('amount'), 2),
+
+                'next_renewal_at' => $nextRenewal?->upcoming_payment,
             ],
 
             'bill_subscriptions' => $billSubscriptions,

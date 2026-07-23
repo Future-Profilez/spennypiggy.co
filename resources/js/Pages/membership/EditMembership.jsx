@@ -254,14 +254,14 @@ export default function EditMembership({ item }) {
                                                 checked={isSelected}
                                             />
                                             <label
-                                                className={`cursor-pointer flex items-center p-3 rounded-[30px]  border-[3px] border-black transition-all duration-200 bg-white ${
+                                                className={`cursor-pointer flex items-center p-3 rounded-box  border-[3px] border-black transition-all duration-200 bg-white ${
                                                     isSelected
                                                         ? "shadow-[2px_2px_0px_0px_#ff4fa0] border-[#ff4fa0] translate-y-[2px]"
                                                         : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                 }`}
                                                 htmlFor={m.value}
                                             >
-                                                <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-[30px]  flex items-center justify-center text-2xl mr-4 ${isSelected ? 'bg-pink-100' : 'bg-[#ffe8f2]'}`}>
+                                                <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-box-sm  flex items-center justify-center text-2xl mr-4 ${isSelected ? 'bg-pink-100' : 'bg-[#ffe8f2]'}`}>
                                                     {getTierIcon(m.value)}
                                                 </div>
                                                 <div className="flex flex-col text-left">
@@ -288,7 +288,7 @@ export default function EditMembership({ item }) {
                         <div className="relative currency-wrapper">
                             <span className="currency-tag absolute">{defaultCurrency}</span>
                             <input
-                                className="border border-gray-300 rounded-[30px]  px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
+                                className="border border-gray-300 rounded-box-sm  px-5 py-3 w-full min-h-[58px] focus:outline-none focus:border-[#FF007F] focus:ring-2 focus:ring-pink-300 bg-white text-black"
                                 onChange={handleInput}
                                 value={data.month_price || ""}
                                 type="number"
@@ -299,7 +299,7 @@ export default function EditMembership({ item }) {
                             />
                         </div>
                         {data.month_price > 0 && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-[30px]  border border-gray-200 shadow-sm w-full">
+                            <div className="mt-4 p-4 bg-gray-50 rounded-box  border border-gray-200 shadow-sm w-full">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-600">
                                         Fans pay:
@@ -332,7 +332,7 @@ export default function EditMembership({ item }) {
                                     conversion
                                 </p>
                                 <p className="mt-1 text-xs text-gray-500 font-medium">
-                                    Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.
+                                    All fees are included in the fan price. You always receive 100% of your listed price, or slightly more.
                                 </p>
                             </div>
                         )}
@@ -398,12 +398,12 @@ export default function EditMembership({ item }) {
                                                 }
                                             />
                                             <label
-                                                className={`cursor-pointer capitalize px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                                className={`cursor-pointer capitalize px-4 py-2 rounded-full text-sm font-bold border-[2px] border-black transition-all duration-200 block ${
                                                     rewardItems.includes(
                                                         m.value,
                                                     )
-                                                        ? "bg-purple-500 text-white"
-                                                        : "bg-gray-200 text-black hover:bg-gray-300"
+                                                        ? "bg-[#A7F3D0] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-y-[2px]"
+                                                        : "bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                 }`}
                                                 htmlFor={m.value}
                                             >

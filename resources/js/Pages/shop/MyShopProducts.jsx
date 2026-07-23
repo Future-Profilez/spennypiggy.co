@@ -296,7 +296,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                     <div className="flex-grow" ref={(el) => editButtonRefs.current[s.uuid] = el}>
                                        <AddItem
                                              update={update}
-                                             classes="w-full font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 text-black text-sm sm:text-base uppercase text-center block"
+                                             classes="w-full font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase text-center block"
                                              pre_title={s.name} title="Edit Item"
                                              pre_description={s.description}
                                              pre_price={s.price}

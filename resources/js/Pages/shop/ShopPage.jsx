@@ -87,22 +87,22 @@ export default function AddShopItem(props) {
 
                   {isCreator && (
                   <div className=" font-medium text-center text-gray-500 mt-3 mb-4 md:my-4"> 
-                     <ul className="md:flex flex-wrap-mb-px gap-2 !py-3 ">
+                     <ul role="tablist" aria-label="Shop sections" className="md:flex flex-wrap-mb-px gap-2 !py-3 ">
 
                         <li className="me-2">
-                           <button onClick={()=>changeTab(1)} className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black ${tab == 1 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}>Products</button>
+                           <button role="tab" aria-selected={tab == 1} onClick={()=>changeTab(1)} className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${tab == 1 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}>Products</button>
                         </li>
 
                         <li className="me-2">
-                           <button onClick={()=>changeTab(2)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black ${tab == 2 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Orders</button>
+                           <button role="tab" aria-selected={tab == 2} onClick={()=>changeTab(2)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${tab == 2 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Orders</button>
                         </li>
 
                         <li className="me-2">
-                           <button onClick={()=>changeTab(3)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black ${tab == 3 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >My Purchases</button>
+                           <button role="tab" aria-selected={tab == 3} onClick={()=>changeTab(3)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${tab == 3 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >My Purchases</button>
                         </li>
 
                         <li className="me-2">
-                           <button onClick={()=>changeTab(4)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black ${tab == 4 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Shop Guide</button>
+                           <button role="tab" aria-selected={tab == 4} onClick={()=>changeTab(4)}  className={`text-lg w-full md:w-auto mb-2 md:mb-0 md:text-lg inline-block px-4 py-3 min-h-[44px] border border-black rounded-box-sm !text-black transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${tab == 4 ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_#000]' : "bg-white !border-gray-400"} `}  >Shop Guide</button>
                         </li>
 
                      </ul>
@@ -127,7 +127,7 @@ export default function AddShopItem(props) {
                                <div className='text-center mt-4'>
                                   <button
                                      onClick={fetchItems}
-                                     className='font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]'
+                                     className='font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black'
                                   >
                                      Try again
                                   </button>

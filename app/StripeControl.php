@@ -517,17 +517,88 @@ class StripeControl
                             ];
                             break;
 
-                        case 'rejected.other':
+                        case 'rejected.terms_of_service':
                             $requirements[] = [
-                                'type' => 'rejected_other',
+                                'type' => 'rejected_tos',
                                 'severity' => 'critical',
-                                'title' => 'Account Rejected',
-                                'message' => 'Your account was rejected. Please contact support for more information.',
-                                'action' => 'Contact Stripe support for account review.',
+                                'title' => 'Account Rejected - Terms of Service',
+                                'message' => 'Your account was rejected for a terms-of-service reason. Please contact support.',
+                                'action' => 'Contact support for account review.',
                                 'action_url' => null,
                             ];
                             break;
+
+                        case 'rejected.incomplete_verification':
+                            $requirements[] = [
+                                'type' => 'rejected_incomplete_verification',
+                                'severity' => 'critical',
+                                'title' => 'Account Rejected - Incomplete Verification',
+                                'message' => 'Your account was rejected because verification could not be completed.',
+                                'action' => 'Contact support to restart verification.',
+                                'action_url' => null,
+                            ];
+                            break;
+
+                        case 'listed':
+                            $requirements[] = [
+                                'type' => 'listed',
+                                'severity' => 'critical',
+                                'title' => 'Account Under Restriction',
+                                'message' => 'Your account matched an entry on a restricted list and is under review.',
+                                'action' => 'Contact support for clarification.',
+                                'action_url' => null,
+                            ];
+                            break;
+
+                        case 'under_review':
+                            $requirements[] = [
+                                'type' => 'under_review',
+                                'severity' => 'warning',
+                                'title' => 'Account Under Review',
+                                'message' => 'Stripe is reviewing your account. This usually resolves within a few business days.',
+                                'action' => 'Please wait for the review to complete.',
+                                'action_url' => null,
+                            ];
+                            break;
+
+                        case 'platform_paused':
+                            $requirements[] = [
+                                'type' => 'platform_paused',
+                                'severity' => 'critical',
+                                'title' => 'Account Paused',
+                                'message' => 'Your payment account has been paused. Please contact support for details.',
+                                'action' => 'Contact support.',
+                                'action_url' => null,
+                            ];
+                            break;
+
+                        default:
+                            // Any disabled_reason we don't map explicitly (Stripe
+                            // adds new ones) must still produce a visible card —
+                            // otherwise has_requirements is true but requirements[]
+                            // is empty and the dashboard shows a dead account with
+                            // no explanation at all.
+                            $requirements[] = [
+                                'type' => 'account_disabled',
+                                'severity' => 'critical',
+                                'title' => 'Payments Disabled',
+                                'message' => 'Your payment account is currently disabled ('.$account->requirements->disabled_reason.'). Please complete any outstanding steps or contact support.',
+                                'action' => 'Complete outstanding requirements or contact support.',
+                                'action_url' => '/stripe/enable_card_payments',
+                            ];
+                            break;
                     }
+                } elseif (! $account->charges_enabled) {
+                    // charges disabled with no disabled_reason at all — still not a
+                    // silent state. Point the creator at the resume-onboarding flow.
+                    $requirements[] = [
+                        'type' => 'charges_disabled',
+                        'severity' => 'high',
+                        'title' => 'Payments Not Active Yet',
+                        'message' => 'Your account cannot accept payments yet. Finish your Stripe setup to activate them.',
+                        'action' => 'Complete your Stripe onboarding.',
+                        'action_url' => '/stripe/enable_card_payments',
+                    ];
                 }
 
                 // Check currently due requirements
@@ -850,6 +921,38 @@ class StripeControl
         }
 
         return substr($clean.$marker, 0, 22);
+    }
+
+    /**
+     * Set a connected account's default statement descriptor to "<USERNAME> CONTENT"
+     * and its public business name to the creator. Covers recurring (subscription)
+     * charges whose descriptor can't be set per-charge. Best-effort, single source
+     * of truth for both the on-page connect flow and the account.updated webhook
+     * (async approvals never touch the connect flow). Never throws.
+     */
+    public static function applyContentDescriptorToConnectedAccount(?string $accountId, ?string $username, ?string $displayName = null): void
+    {
+        if (empty($accountId) || empty($username)) {
+            return;
+        }
+
+        try {
+            self::updateAccount($accountId, [
+                'settings' => [
+                    'payments' => [
+                        'statement_descriptor' => self::buildContentDescriptor($username),
+                    ],
+                ],
+                'business_profile' => [
+                    'name' => $displayName ?: $username,
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::warning('Failed to set content statement descriptor on connected account', [
+                'account_id' => $accountId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

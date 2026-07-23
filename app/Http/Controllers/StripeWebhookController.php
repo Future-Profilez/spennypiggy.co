@@ -4748,6 +4748,47 @@ class StripeWebhookController extends Controller
                     $creator->stripe_details_submitted = 1;
                     $creator->save();
                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+
+                    // Most accounts are approved asynchronously while the creator
+                    // is off the Stripe pages, so this webhook is the only place
+                    // the mandatory content-only statement descriptor gets set for
+                    // them. Without it they keep Stripe's default descriptor
+                    // (breaks the content-first compliance rule) and hear nothing.
+                    StripeControl::applyContentDescriptorToConnectedAccount($creator->account_id, $creator->username, $creator->name);
+
+                    try {
+                        Helpers::sendNotification(
+                            'Payments are live 🎉',
+                            'Your Stripe account is connected — supporters can now pay you.'
+                                .(($account->payouts_enabled ?? false) ? '' : ' Payouts are pending one more Stripe requirement; check the action-required panel on your dashboard.'),
+                            $creator->email
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning('account.updated connected notification failed: '.$e->getMessage());
+                    }
+                }
+            }
+
+            // If a previously-live account gets restricted (charges disabled),
+            // the creator would otherwise find out only when a sale silently
+            // fails. Tell them once, when it flips.
+            if (($account->charges_enabled ?? true) === false && ! empty($account->requirements->disabled_reason)) {
+                $creator = $creator ?? User::where('account_id', $account->id)->first();
+                if ($creator) {
+                    $reason = $account->requirements->disabled_reason;
+                    $cacheKey = "stripe_disabled_notified_{$account->id}_{$reason}";
+                    // Fire once per distinct reason — account.updated repeats.
+                    if (Cache::add($cacheKey, 1, now()->addDays(7))) {
+                        try {
+                            Helpers::sendNotification(
+                                'Action needed on your payment account ⚠️',
+                                'Stripe has restricted your account and payments are paused. Open the action-required panel on your dashboard to see what to fix.',
+                                $creator->email
+                            );
+                        } catch (\Exception $e) {
+                            Log::warning('account.updated restricted notification failed: '.$e->getMessage());
+                        }
+                    }
                 }
             }
 

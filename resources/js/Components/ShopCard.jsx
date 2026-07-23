@@ -64,7 +64,7 @@ export default function ShopCard({ item, IsloggedIn = false, showCreator = false
                 }
             }}
             onClick={() => router.visit(url)}
-            className="cursor-pointer max-w-sm w-full h-full bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
+            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 max-w-sm w-full h-full bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
         >
             <div className="p-3 md:p-4 h-full flex flex-col">
                 <div className="relative ">
@@ -180,7 +180,7 @@ export default function ShopCard({ item, IsloggedIn = false, showCreator = false
                         }}
                     >
                         <AddItem
-                            classes="font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 text-black text-sm sm:text-base uppercase"
+                            classes="font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase"
                             pre_title={item?.name}
                             title="Edit Item"
                             pre_description={item?.description}
@@ -199,7 +199,7 @@ export default function ShopCard({ item, IsloggedIn = false, showCreator = false
                             if (isSoldOut) return;
                             router.visit(url);
                         }}
-                        className={`font-black border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black text-sm sm:text-base uppercase ${isSoldOut ? "bg-gray-200 cursor-not-allowed opacity-70" : "bg-yellow-300 hover:bg-yellow-400 cursor-pointer"}`}
+                        className={`font-black border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black text-sm sm:text-base uppercase ${isSoldOut ? "bg-gray-200 cursor-not-allowed opacity-70" : "bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"} focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all`}
                     >
                         {isSoldOut ? "Sold out" : "Buy Now"}
                     </button>

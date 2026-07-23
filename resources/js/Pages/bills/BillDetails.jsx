@@ -82,7 +82,41 @@ export default function BillDetails(props) {
             <Head title="Bill Details" />
 
             {loading ? (
-                <LoadingScreen />
+                <div className="min-h-dvh bg-gray-200">
+                    <div className="max-w-[1500px] mx-auto px-4 py-8">
+                        {/* HEADER SKELETON */}
+                        <div className="mb-8 flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-box-sm bg-gray-300 animate-pulse" />
+                            <div className="space-y-3">
+                                <div className="h-8 w-64 bg-gray-300 rounded-box-sm animate-pulse" />
+                                <div className="h-4 w-48 bg-gray-300 rounded-box-sm animate-pulse" />
+                            </div>
+                        </div>
+                        {/* STAT CARDS SKELETON */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                            {[...Array(4)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                >
+                                    <div className="h-3 w-24 bg-gray-200 rounded-box-sm animate-pulse" />
+                                    <div className="h-9 w-32 bg-gray-200 rounded-box-sm animate-pulse mt-4" />
+                                    <div className="h-3 w-20 bg-gray-200 rounded-box-sm animate-pulse mt-3" />
+                                </div>
+                            ))}
+                        </div>
+                        {/* TABLE SKELETON */}
+                        <div className="rounded-box bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 space-y-4">
+                            <div className="h-6 w-40 bg-gray-200 rounded-box-sm animate-pulse" />
+                            {[...Array(5)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="h-14 w-full bg-gray-100 rounded-box-sm animate-pulse"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
             ) : (
                 <div className="min-h-dvh bg-gray-200">
                     <div className="max-w-[1500px] mx-auto px-4 py-8">
@@ -90,7 +124,7 @@ export default function BillDetails(props) {
                         <div className="mb-8">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-16 h-16 rounded-[20px] bg-cyan-400 border-2 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="w-16 h-16 rounded-box-sm bg-[#FF007F] border-2 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         💳
                                     </div>
 
@@ -109,7 +143,7 @@ export default function BillDetails(props) {
                                                 href="/billing-dashboard"
                                                 className="
                                                 inline-flex items-center gap-2
-                                                px-5 py-2 rounded-[30px]
+                                                px-5 py-2 rounded-box-sm
                                                 bg-white border-2 border-black
                                                 text-black font-bold
                                                 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
@@ -119,11 +153,11 @@ export default function BillDetails(props) {
                                             >
                                                 ← Back to Dashboard
                                             </Link>
-                                            <span className="px-3 py-2 rounded-[15px] bg-cyan-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                            <span className="px-3 py-2 rounded-box-sm bg-pink-100 border-2 border-black text-black text-xs font-bold uppercase">
                                                 {bill?.period}
                                             </span>
 
-                                            <span className="px-3 py-2 rounded-[15px] bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                            <span className="px-3 py-2 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
                                                 Active Bill
                                             </span>
                                         </div>
@@ -134,7 +168,7 @@ export default function BillDetails(props) {
 
                         {/* ANALYTICS CARDS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Buyers
                                 </p>
@@ -148,7 +182,7 @@ export default function BillDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Revenue
                                 </p>
@@ -165,7 +199,7 @@ export default function BillDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Monthly Revenue
                                 </p>
@@ -177,12 +211,12 @@ export default function BillDetails(props) {
                                     ).toLocaleString()}
                                 </h2>
 
-                                <p className="text-cyan-600 mt-3 text-xs font-bold uppercase">
+                                <p className="text-[#FF007F] mt-3 text-xs font-bold uppercase">
                                     Current Month
                                 </p>
                             </div>
 
-                            <div className="rounded-[30px] bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Estimated Next Month
                                 </p>
@@ -201,7 +235,7 @@ export default function BillDetails(props) {
                         </div>
 
                         {/* SUPPORTERS TABLE */}
-                        <div className="rounded-[30px] bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="rounded-box bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 p-6 ">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-black text-black">
@@ -218,12 +252,76 @@ export default function BillDetails(props) {
                                     <input
                                         type="text"
                                         placeholder="Search supporter..."
-                                        className="h-[48px] rounded-[30px] bg-white border-2 border-black px-5 text-black min-w-[280px] focus:outline-none font-semibold placeholder-gray-400"
+                                        aria-label="Search supporters"
+                                        className="h-[48px] rounded-box-sm bg-white border-2 border-black px-5 text-black min-w-[280px] focus:outline-none font-semibold placeholder-gray-400"
                                     />
                                 </div>
                             </div>
 
-                            <div className="overflow-x-auto">
+                            {/* MOBILE CARD LIST */}
+                            <div className="block lg:hidden divide-y-2 divide-black border-t-2 border-black">
+                                {supporters.length > 0 ? (
+                                    supporters.map((supporter, index) => (
+                                        <div key={index} className="p-4">
+                                            <div className="flex items-center justify-between gap-3 mb-3">
+                                                <Avatar user={supporter.user} />
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-[11px] font-bold uppercase">
+                                                    <span className="w-2 h-2 rounded-full bg-black"></span>
+                                                    Paid
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        Amount
+                                                    </p>
+                                                    <p className="text-lg font-black text-emerald-700">
+                                                        {displayCurrency}
+                                                        {Number(
+                                                            supporter.amount,
+                                                        ).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        Type
+                                                    </p>
+                                                    <span className="inline-block mt-1 px-3 py-1 rounded-box-sm bg-pink-100 border-2 border-black text-black text-xs font-bold uppercase">
+                                                        {supporter.recurring_type ||
+                                                            "one-time"}
+                                                    </span>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        Date
+                                                    </p>
+                                                    <p className="text-black font-semibold text-sm">
+                                                        {new Date(
+                                                            supporter.created_at,
+                                                        ).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-6 py-16 text-center flex flex-col items-center">
+                                        <div className="w-16 h-16 rounded-box-sm bg-gray-200 border-2 border-black flex items-center justify-center text-3xl mb-4">
+                                            💳
+                                        </div>
+                                        <h3 className="text-xl font-black text-black">
+                                            No Supporters Yet
+                                        </h3>
+                                        <p className="text-gray-600 mt-2 text-sm">
+                                            This bill has not received any
+                                            payments yet.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* DESKTOP TABLE */}
+                            <div className="hidden lg:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-gray-100 ">
                                         <tr>
@@ -266,7 +364,7 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <h3 className="text-lg font-black text-emerald-500">
+                                                            <h3 className="text-lg font-black text-emerald-700">
                                                                 {displayCurrency}
                                                                 {Number(
                                                                     supporter.amount,
@@ -275,7 +373,7 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <span className="px-3 py-2 rounded-[15px] bg-cyan-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                                            <span className="px-3 py-2 rounded-box-sm bg-pink-100 border-2 border-black text-black text-xs font-bold uppercase">
                                                                 {supporter.recurring_type ||
                                                                     "one-time"}
                                                             </span>
@@ -290,7 +388,7 @@ export default function BillDetails(props) {
                                                         </td>
 
                                                         <td className="px-6 py-5">
-                                                            <span className="inline-flex items-center gap-2 px-3 py-2 rounded-[15px] bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                                            <span className="inline-flex items-center gap-2 px-3 py-2 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
                                                                 <span className="w-2 h-2 rounded-full bg-black"></span>
                                                                 Paid
                                                             </span>
@@ -305,7 +403,7 @@ export default function BillDetails(props) {
                                                     className="px-6 py-16 text-center"
                                                 >
                                                     <div className="flex flex-col items-center">
-                                                        <div className="w-16 h-16 rounded-[20px] bg-gray-200 border-2 border-black flex items-center justify-center text-3xl mb-4">
+                                                        <div className="w-16 h-16 rounded-box-sm bg-gray-200 border-2 border-black flex items-center justify-center text-3xl mb-4">
                                                             💳
                                                         </div>
 

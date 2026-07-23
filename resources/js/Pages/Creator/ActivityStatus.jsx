@@ -48,6 +48,17 @@ const BREAKDOWN_ROWS = [
     ["tasks", "📋", "Paid Tasks"],
 ];
 
+const formatDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+    });
+};
+
 const Card = ({ children, className = "" }) => (
     <div
         className={`bg-white rounded-box border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] p-5 md:p-6 ${className}`}
@@ -479,6 +490,55 @@ const ActivityStatus = ({
                                     every {postingCadence.window_days} days.
                                 </Note>
                             )}
+
+                            {/* Concrete deadline + who is affected — the old copy said "will pause"
+                                but never when, or how many subscribers were at stake. */}
+                            {!postingCadence.paused &&
+                                postingCadence.pause_at &&
+                                postingCadence.subscriber_count > 0 && (
+                                    <div className="mt-4 flex items-center gap-3 border-2 border-black rounded-box-sm bg-white px-4 py-3">
+                                        <span
+                                            className="text-2xl"
+                                            aria-hidden="true"
+                                        >
+                                            ⏳
+                                        </span>
+                                        <p className="text-sm">
+                                            {postingCadence.pause_in_days <= 1
+                                                ? "Pauses within 24 hours"
+                                                : `Pauses in about ${postingCadence.pause_in_days} days`}{" "}
+                                            <span className="text-gray-500">
+                                                (
+                                                {formatDate(
+                                                    postingCadence.pause_at,
+                                                )}
+                                                )
+                                            </span>
+                                            <span className="block text-gray-600 mt-0.5">
+                                                {
+                                                    postingCadence.subscriber_count
+                                                }{" "}
+                                                paying{" "}
+                                                {postingCadence.subscriber_count ===
+                                                1
+                                                    ? "subscriber"
+                                                    : "subscribers"}{" "}
+                                                affected
+                                            </span>
+                                        </p>
+                                    </div>
+                                )}
+
+                            {postingCadence.paused &&
+                                postingCadence.subscriber_count > 0 && (
+                                    <p className="mt-3 text-sm text-red-700">
+                                        {postingCadence.subscriber_count} paying{" "}
+                                        {postingCadence.subscriber_count === 1
+                                            ? "subscriber is"
+                                            : "subscribers are"}{" "}
+                                        not being charged while paused.
+                                    </p>
+                                )}
 
                             {user?.username && (
                                 <Link

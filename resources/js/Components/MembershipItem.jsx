@@ -207,7 +207,10 @@ export default function MembershipItem({
                     {IsloggedIn && (
                         <div className="absolute top-4 right-4">
                             <Menu as="div" className="relative">
-                                <Menu.Button className="p-1.5 min-h-[44px] px-4 rounded-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-colors">
+                                <Menu.Button
+                                    aria-label="Membership options"
+                                    className="p-1.5 min-h-[44px] px-4 rounded-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-colors"
+                                >
                                     <div className="flex gap-[3px]">
                                         <span className="bg-black w-1 h-1 rounded-full"></span>
                                         <span className="bg-black w-1 h-1 rounded-full"></span>

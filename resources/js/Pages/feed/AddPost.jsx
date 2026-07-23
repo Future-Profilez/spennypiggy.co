@@ -12,6 +12,27 @@ import { router, usePage } from "@inertiajs/react";
 
 const TITLE_MAX = 150;
 const CONTENT_MAX = 5000;
+const DRAFT_KEY = "spenny_post_draft_v1";
+
+const AUDIENCE_BADGE = {
+    membership: "Members Only",
+    subscription: "Subscribers Only",
+    support: "Supporters Only",
+    public: "Shoutout",
+};
+
+// Best-effort preview URL from whatever the creator has chosen so far.
+const previewImageUrl = (rewardImage, isAiImage, item) => {
+    if (isAiImage) return isAiImage; // AI path stores a ready URL
+    if (rewardImage) {
+        // A freshly uploaded file is a bare Uploadcare UUID; an edited post may already
+        // carry a transformed path — only prefix the bare UUID form.
+        return /^[0-9a-f-]{36}$/i.test(rewardImage)
+            ? `https://ucarecdn.com/${rewardImage}/-/format/jpeg/`
+            : `https://ucarecdn.com/${rewardImage}`;
+    }
+    return item?.image_url || "";
+};
 
 const AUDIENCES = [
     {
@@ -66,6 +87,8 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
         title: item?.title || "",
         content: item?.content || "",
     });
+    const [showPreview, setShowPreview] = useState(false);
+    const [draftRestored, setDraftRestored] = useState(false);
 
     useEffect(() => {
         if (item) {
@@ -77,6 +100,46 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
             setRewardImage(item?.image || "");
         }
     }, [item]);
+
+    // Draft autosave — new posts only. A stray tap outside the modal used to wipe
+    // everything the creator had typed; now it comes back on reopen.
+    useEffect(() => {
+        if (isEdit) return;
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            if (draft?.title || draft?.content) {
+                setData((d) => ({ ...d, ...draft }));
+                setDraftRestored(true);
+            }
+        } catch {
+            /* ignore malformed draft */
+        }
+    }, [isEdit]);
+
+    useEffect(() => {
+        if (isEdit) return;
+        const hasContent = data.title.trim() || data.content.trim();
+        try {
+            if (hasContent) {
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            } else {
+                localStorage.removeItem(DRAFT_KEY);
+            }
+        } catch {
+            /* storage unavailable — preview/submit still work */
+        }
+    }, [data, isEdit]);
+
+    const clearDraft = () => {
+        try {
+            localStorage.removeItem(DRAFT_KEY);
+        } catch {
+            /* ignore */
+        }
+        setDraftRestored(false);
+    };
 
     const handleInput = (e) =>
         setData({ ...data, [e.target.name]: e.target.value });
@@ -117,6 +180,8 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
                         title: "",
                         content: "",
                     });
+                    setShowPreview(false);
+                    clearDraft();
                     resetUploader();
 
                     toast.success(resp.data.msg);
@@ -178,13 +243,99 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
             classes={`w-full addop bg-white rounded-box py-2 px-3 ${classes}`}
             text={text ? text : <AddItem />}
         >
-            <div className="flex items-center">
+            <div className="flex items-center justify-between gap-2">
                 <h2 className="text-xl font-bold text-dark-500">
                     {title ? title : "Say Something"}
                 </h2>
+                {canSubmit && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPreview((v) => !v)}
+                        className="text-sm font-bold underline text-[#FF007F] min-h-[44px] px-2"
+                    >
+                        {showPreview ? "Edit" : "Preview"}
+                    </button>
+                )}
             </div>
 
-            <div className="mt-1">
+            {draftRestored && !isEdit && (
+                <div className="mt-3 flex items-center justify-between gap-2 bg-blue-50 border border-blue-200 rounded-box-sm px-3 py-2 text-sm text-blue-800">
+                    <span>📝 Draft restored from last time.</span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setData({
+                                for_module: data.for_module,
+                                title: "",
+                                content: "",
+                            });
+                            clearDraft();
+                        }}
+                        className="font-bold underline min-h-[44px] px-1"
+                    >
+                        Discard
+                    </button>
+                </div>
+            )}
+
+            {/* Live preview — see the card before it goes to the review queue. */}
+            {showPreview ? (
+                <div className="mt-4 post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="flex items-center gap-2 mb-3">
+                        <img
+                            src={
+                                auth?.user?.avatar_url || "/assets/siteicon.png"
+                            }
+                            alt=""
+                            className="w-10 h-10 rounded-full border-[3px] border-black object-cover"
+                        />
+                        <div>
+                            <p className="font-black capitalize tracking-wide leading-tight">
+                                {auth?.user?.name || "You"}
+                            </p>
+                            <p className="text-xs text-gray-600 font-bold">
+                                Just now
+                            </p>
+                        </div>
+                    </div>
+                    {previewImageUrl(rewardImage, isAiImage, item) ? (
+                        <div className="relative border-[3px] border-black rounded-box-sm overflow-hidden mb-3">
+                            <span className="bg-[#A2E4B8] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black absolute z-10 py-1.5 px-3 top-2 right-2 uppercase text-xs text-black rounded-box-sm">
+                                {AUDIENCE_BADGE[data.for_module]}
+                            </span>
+                            <img
+                                src={previewImageUrl(
+                                    rewardImage,
+                                    isAiImage,
+                                    item,
+                                )}
+                                alt="Preview"
+                                className="w-full max-h-[320px] object-cover"
+                            />
+                        </div>
+                    ) : (
+                        <span className="inline-block bg-[#A2E4B8] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm mb-3">
+                            {AUDIENCE_BADGE[data.for_module]}
+                        </span>
+                    )}
+                    {data.title.trim() ? (
+                        <p className="font-black text-lg uppercase tracking-wide">
+                            {data.title.trim()}
+                        </p>
+                    ) : null}
+                    {data.content.trim() ? (
+                        <p className="text-gray-800 font-bold whitespace-pre-line mt-1">
+                            {data.content.trim()}
+                        </p>
+                    ) : null}
+                    <p className="text-xs text-gray-500 mt-3">
+                        This is a preview — your post is checked before your
+                        audience sees it.
+                    </p>
+                </div>
+            ) : null}
+
+            <div className={`mt-1 ${showPreview ? "hidden" : ""}`}>
                 <div className="mt-4">
                     <input
                         onChange={handleInput}

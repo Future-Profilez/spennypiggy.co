@@ -1284,6 +1284,39 @@ class MembershipController extends Controller
             ->sum('amount');
         $all_time = $payments->sum('amount');
 
+        // Recurring health: MRR + churn (mirrors BillsController::getDashboardData).
+        $monthStart = now()->startOfMonth();
+        $toMonthly = function ($payment) {
+            $amount = (float) $payment->amount;
+
+            return in_array($payment->recurring_type, ['yearly', 'annual'])
+                ? $amount / 12
+                : $amount;
+        };
+
+        $activeRecurring = $payments->filter(function ($payment) {
+            if ($payment->recurring_type === 'lifetime' || $payment->recurring_type === 'onetime') {
+                return false;
+            }
+            if (! empty($payment->stripe_status) && ! in_array($payment->stripe_status, ['active', 'trialing'])) {
+                return false;
+            }
+
+            return ! $payment->isCancelled();
+        });
+
+        $cancelledThisMonth = $payments->filter(function ($payment) use ($monthStart) {
+            $endsAt = $payment->endsAt();
+
+            return $endsAt !== null && $endsAt->greaterThanOrEqualTo($monthStart);
+        })->count();
+
+        $activeRecurringCount = $activeRecurring->count();
+        $mrr = $activeRecurring->sum($toMonthly);
+        $churnRate = ($activeRecurringCount + $cancelledThisMonth) > 0
+            ? round(($cancelledThisMonth / ($activeRecurringCount + $cancelledThisMonth)) * 100, 1)
+            : 0;
+
         $membershipStats = $payments
             ->groupBy('membership_id')
             ->map(function ($membershipPayments) {
@@ -1344,6 +1377,10 @@ class MembershipController extends Controller
                 'members' => $count,
                 'per_month' => round($per_month, 2),
                 'all_time' => round($all_time, 2),
+                'mrr' => round($mrr, 2),
+                'active_recurring' => $activeRecurringCount,
+                'cancelled_this_month' => $cancelledThisMonth,
+                'churn_rate' => $churnRate,
                 'membership_stats' => $membershipStats,
                 'payments' => $recentPayments,
             ],

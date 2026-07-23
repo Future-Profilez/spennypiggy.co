@@ -7,6 +7,8 @@ use App\Models\MembershipPayment;
 use App\Models\Post;
 use App\Models\User;
 use App\StripeControl;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 class PostingCadenceService
 {
     public const WINDOW_DAYS = 30;
+
     public const MIN_POSTS = 3;
 
     /** Post.for_module values that count as paid member content. */
@@ -65,7 +68,15 @@ class PostingCadenceService
         $count = $this->recentPostCount($creator);
         $meets = $count >= self::MIN_POSTS;
         $paused = $creator->isContentPostingPaused();
-        $pastGrace = $this->isPastGracePeriod($creator);
+        $oldestSub = $this->oldestActiveSubscriptionDate($creator);
+        $pastGrace = $oldestSub !== null && $oldestSub <= now()->subDays(self::WINDOW_DAYS);
+        $subscriberCount = $this->activeSubscriberCount($creator);
+
+        // When the memberships would actually pause, in plain terms:
+        //  - in grace  → the day the onboarding window closes (oldest sub + WINDOW_DAYS)
+        //  - at risk    → the next daily enforcement run (11:00), i.e. within ~24h
+        //  - otherwise  → no pending pause
+        $graceEndsAt = $oldestSub ? $oldestSub->copy()->addDays(self::WINDOW_DAYS) : null;
 
         /*
         |--------------------------------------------------------------------------
@@ -96,6 +107,18 @@ class PostingCadenceService
             $status = 'at_risk';
         }
 
+        // A concrete deadline the creator can act on. Null once already paused.
+        $pauseAt = null;
+        if (! $paused && ! $meets) {
+            if ($status === 'grace' && $graceEndsAt) {
+                $pauseAt = $graceEndsAt;
+            } elseif ($status === 'at_risk') {
+                // Next 11:00 enforcement run.
+                $next = now()->setTime(11, 0, 0);
+                $pauseAt = $next->isPast() ? $next->addDay() : $next;
+            }
+        }
+
         return [
             'member_posts' => $count,
             'required' => self::MIN_POSTS,
@@ -106,19 +129,21 @@ class PostingCadenceService
             'paused_at' => $creator->content_posting_paused_at?->toIso8601String(),
             'past_grace' => $pastGrace,
             'status' => $status,
+            // Countdown fields for the UI.
+            'subscriber_count' => $subscriberCount,
+            'grace_ends_at' => $graceEndsAt?->toIso8601String(),
+            'pause_at' => $pauseAt?->toIso8601String(),
+            'pause_in_days' => $pauseAt ? max(0, (int) ceil(now()->floatDiffInDays($pauseAt, false))) : null,
         ];
     }
 
     /**
-     * Grace period: a creator is only enforced once they've had an active subscription
-     * for a full window. A brand-new creator (or a sub that just started) gets the first
-     * WINDOW_DAYS to post before any pause — otherwise we'd pause a day-old subscription
-     * for a creator who simply hasn't had time to post yet.
+     * Earliest created_at across the creator's active recurring subscriptions (Bill + Membership),
+     * or null when they have none. Shared by the grace-period check and the pause countdown so
+     * both read the same date.
      */
-    public function isPastGracePeriod(User $creator): bool
+    private function oldestActiveSubscriptionDate(User $creator): ?Carbon
     {
-        $cutoff = now()->subDays(self::WINDOW_DAYS);
-
         $oldestBill = BillPayment::query()
             ->join('bills', 'bills.id', '=', 'bill_payments.bills_id')
             ->where('bills.user_id', $creator->id)
@@ -137,7 +162,45 @@ class PostingCadenceService
 
         $oldest = collect([$oldestBill, $oldestMembership])->filter()->min();
 
-        return $oldest !== null && $oldest <= $cutoff;
+        return $oldest ? Carbon::parse($oldest) : null;
+    }
+
+    /**
+     * Number of active recurring subscribers (Bill + Membership) whose charges pause when
+     * the creator falls below the posting requirement.
+     */
+    public function activeSubscriberCount(User $creator): int
+    {
+        $bills = BillPayment::query()
+            ->join('bills', 'bills.id', '=', 'bill_payments.bills_id')
+            ->where('bills.user_id', $creator->id)
+            ->where('bill_payments.status', 'paid')
+            ->where('bill_payments.recurring_for', 'continue')
+            ->whereNotNull('bill_payments.stripe_id')
+            ->count();
+
+        $memberships = MembershipPayment::query()
+            ->join('memberships', 'memberships.id', '=', 'membership_payments.membership_id')
+            ->where('memberships.user_id', $creator->id)
+            ->where('membership_payments.status', 'paid')
+            ->where('membership_payments.recurring_for', 'continue')
+            ->whereNotNull('membership_payments.stripe_id')
+            ->count();
+
+        return $bills + $memberships;
+    }
+
+    /**
+     * Grace period: a creator is only enforced once they've had an active subscription
+     * for a full window. A brand-new creator (or a sub that just started) gets the first
+     * WINDOW_DAYS to post before any pause — otherwise we'd pause a day-old subscription
+     * for a creator who simply hasn't had time to post yet.
+     */
+    public function isPastGracePeriod(User $creator): bool
+    {
+        $oldest = $this->oldestActiveSubscriptionDate($creator);
+
+        return $oldest !== null && $oldest <= now()->subDays(self::WINDOW_DAYS);
     }
 
     /**
@@ -169,7 +232,7 @@ class PostingCadenceService
         // Stripe subscription IDs start with "sub_"; ignore one-off payment-intent ids.
         return array_values(array_unique(array_filter(
             array_merge($bill, $membership),
-            fn($id) => is_string($id) && str_starts_with($id, 'sub_')
+            fn ($id) => is_string($id) && str_starts_with($id, 'sub_')
         )));
     }
 
@@ -177,7 +240,7 @@ class PostingCadenceService
      * Creators who currently have at least one active recurring subscriber
      * (only these need cadence enforcement).
      *
-     * @return \Illuminate\Support\Collection<int,int> creator user ids
+     * @return Collection<int,int> creator user ids
      */
     public function creatorsWithActiveSubscribers()
     {

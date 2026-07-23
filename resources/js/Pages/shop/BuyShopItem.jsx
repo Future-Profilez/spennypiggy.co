@@ -534,7 +534,7 @@ export default function BuyShopItem({
                                             <button
                                                 onClick={sendReply}
                                                 disabled={posting}
-                                                className="pinkbg text-center text-white px-4 py-3 min-h-[44px] mt-3 mx-auto block rounded-full disabled:opacity-50"
+                                                className="pinkbg text-center text-white px-4 py-3 min-h-[44px] mt-3 mx-auto block rounded-full active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -815,7 +815,7 @@ export default function BuyShopItem({
                                 onClick={executeCaptcha}
                                 className={`${
                                     checking || !card_capabilities || !digitalWaiver ? "opacity-[0.5] disabled" : ""
-                                }  w-full sm:w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-3 min-h-[44px]`}
+                                }  w-full sm:w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all font-semibold text-white px-6 py-3 min-h-[44px]`}
                             >
                                 {checking ? "Buying.." : "Pay"}
                             </button>

@@ -538,7 +538,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess, type
                                     disabled={
                                         answerLoading || !answerText.trim()
                                     }
-                                    className="bg-black text-white px-4 py-3 min-h-[44px] rounded-full text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                                    className="bg-black text-white px-4 py-3 min-h-[44px] rounded-full text-sm font-medium hover:bg-gray-800 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 transition-all disabled:opacity-50"
                                 >
                                     {answerLoading
                                         ? "Submitting..."

@@ -193,9 +193,14 @@ export default function Post({ item }) {
                 </div>
 
                 {IsloggedIn && item && item.approved == 0 ? (
-                    <div className="bg-yellow-50 text-yellow-700 p-3 text-sm rounded-box-sm mb-3 border !border-yellow-500">
-                        Post waiting for approval. Currently only you can see
-                        this post.
+                    <div className="bg-yellow-50 text-yellow-800 p-3 text-sm rounded-box-sm mb-3 border !border-yellow-500 flex items-start gap-2">
+                        <span aria-hidden="true">⏳</span>
+                        <span>
+                            <strong>Waiting for approval.</strong> Only you can
+                            see this post for now — it usually goes live within
+                            24 hours, and it counts towards your activity once
+                            approved.
+                        </span>
                     </div>
                 ) : (
                     ""
