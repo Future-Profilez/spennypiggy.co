@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Models\Deliverable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,7 +15,9 @@ class MembershipMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $mem;
+
     public $amountWithcurrency;
+
     /**
      * Create a new job instance.
      */
@@ -29,13 +32,11 @@ class MembershipMailToUser implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->mem->user) && $this->mem->user->notification_send == 1) || (empty($this->mem->user))){
-            // Fetch deliverable for tracking
-            $deliverable = \App\Models\Deliverable::where('session_id', $this->mem->session_id)
-                ->where('product_type', 'membership')
-                ->first();
+        // Transactional receipt — no opt-out (see BillPayToUser).
+        $deliverable = Deliverable::where('session_id', $this->mem->session_id)
+            ->where('product_type', 'membership')
+            ->first();
 
-            EmailService::sendMembershipMailToUser($this->mem, $this->amountWithcurrency, $deliverable);
-        }
+        EmailService::sendMembershipMailToUser($this->mem, $this->amountWithcurrency, $deliverable);
     }
 }

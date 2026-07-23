@@ -48,7 +48,7 @@ class FinancialTransaction extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
@@ -67,6 +67,21 @@ class FinancialTransaction extends Model
             ) {
                 $model->reserve_status = 'released';
                 $model->reserve_released_at = $model->getOriginal('reserve_released_at');
+                // Without this, a resync that nulls reserve_payout_id leaves the row 'released'
+                // with no link to its Stripe payout — and the payout.failed revert, which matches
+                // on reserve_payout_id, can then never re-hold it.
+                $model->reserve_payout_id = $model->getOriginal('reserve_payout_id');
+            }
+
+            // Reserve MONEY is equally immutable once the row has been paid out or released.
+            // determineReserve() in SyncFinancialTransactions recomputes reserve_amount from the
+            // creator's CURRENT risk percent, so raising a creator to 20% today would otherwise
+            // rewrite historical rows and hand reserve:release a reserve that was never withheld.
+            $isSettled = $model->getOriginal('reserve_status') === 'released'
+                || ! empty($model->getOriginal('payout_run_id'));
+
+            if ($isSettled && $model->isDirty('reserve_amount')) {
+                $model->reserve_amount = $model->getOriginal('reserve_amount');
             }
         });
     }

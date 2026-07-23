@@ -2,21 +2,31 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\FinancialTransaction;
-use App\Models\User;
-use App\Models\MembershipPayment;
-use App\Models\TaskPurchase;
+use App\Helpers;
 use App\Models\BillPayment;
-use App\Models\ShopPayment;
-use App\Models\StripePaymentItems;
-use App\Models\TipGoalsPayment;
-use App\Models\UserCart;
+use App\Models\CreatorMetric;
+use App\Models\Currency;
+use App\Models\FinancialTransaction;
+use App\Models\MembershipPayment;
 use App\Models\Payment;
+use App\Models\PiggyPotContribution;
+use App\Models\ProductOrderDetail;
+use App\Models\RyeProductPayment;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use App\Services\Risk\ReservePolicy;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 class SyncFinancialTransactions extends Command
 {
     protected $signature = 'finance:sync-transactions {--force : Force sync all transactions} {--user_id= : Only sync transactions for this creator user_id}';
+
     protected $description = 'Sync all payment records to the financial_transactions table';
 
     public function handle()
@@ -27,6 +37,31 @@ class SyncFinancialTransactions extends Command
         $userId = $this->option('user_id');
 
         if ($this->option('force')) {
+            // --force wipes rows and re-creates them from scratch. Payout/reserve state
+            // (payout_run_id, reserve_status, reserve_released_at, reserve_payout_id) exists
+            // ONLY on these rows — destroying it re-creates every historical reserve as
+            // 'held' with a transaction_date long past the 30-day window, so the next
+            // reserve:release pays every already-released reserve out a second time.
+            $protectedQuery = FinancialTransaction::query()
+                ->where(function ($q) {
+                    $q->whereNotNull('payout_run_id')
+                        ->orWhere('reserve_status', 'released')
+                        ->orWhereNotNull('reserve_payout_id');
+                });
+
+            if ($userId) {
+                $protectedQuery->where('user_id', $userId);
+            }
+
+            $protectedCount = (clone $protectedQuery)->count();
+
+            if ($protectedCount > 0) {
+                $this->error("Refusing to --force: {$protectedCount} transaction(s) carry payout/reserve state that cannot be rebuilt.");
+                $this->line('Re-running them would re-hold reserves that were already paid out. Sync without --force, or scope it with --user_id.');
+
+                return self::FAILURE;
+            }
+
             if ($userId) {
                 FinancialTransaction::where('user_id', $userId)->delete();
                 $this->info("Cleared existing transactions for user_id={$userId}.");
@@ -70,47 +105,49 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Rye Products...');
 
-        $query = \App\Models\RyeProductPayment::query();
+        $query = RyeProductPayment::query();
         // Since RyeProductPayment doesn't have creator_id directly, we need to join with ProductOrderDetail
         // or rely on metadata if available. For now, let's assume we can find it via ProductOrderDetail.
-        
+
         $query->where('status', 'succeeded');
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
                 // Try to find the creator from ProductOrderDetail
-                $orderDetail = \App\Models\ProductOrderDetail::where('order_id', $payment->id)->first();
-                if (!$orderDetail || !$orderDetail->creater_id) {
+                $orderDetail = ProductOrderDetail::where('order_id', $payment->id)->first();
+                if (! $orderDetail || ! $orderDetail->creater_id) {
                     // Fallback to searching by session if order_id link is broken
                     if ($payment->stripe_session_id) {
-                        $orderDetail = \App\Models\ProductOrderDetail::where('session_id', $payment->stripe_session_id)->first();
+                        $orderDetail = ProductOrderDetail::where('session_id', $payment->stripe_session_id)->first();
                     }
                 }
 
-                if (!$orderDetail || !$orderDetail->creater_id) continue;
+                if (! $orderDetail || ! $orderDetail->creater_id) {
+                    continue;
+                }
 
                 $creatorId = $orderDetail->creater_id;
                 $creator = User::find($creatorId);
-                
+
                 $amount = (float) $payment->amount;
                 $vat = (float) ($payment->vat_amount ?? 0);
                 $platformFee = (float) ($payment->tax ?? 0);
                 $stripeFee = 0;
-                $gross = $payment->total_paid && $payment->total_paid > 0 
-                    ? (float) $payment->total_paid 
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
                     : ($amount + $vat + $platformFee + $stripeFee);
-                $creatorAmount = $amount; // For Rye, amount stored is usually what supporter paid? 
+                $creatorAmount = $amount; // For Rye, amount stored is usually what supporter paid?
                 // Wait, in WishitemController: $ryeProductPayment->amount = $finalTotalAmount;
-                // So for Rye, amount IS the gross amount. 
+                // So for Rye, amount IS the gross amount.
                 // Let's refine this if needed, but for now follow the pattern.
 
                 $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'pending', $payment->stripe_payment_intent_id);
                 $status = $riskData['status'];
-                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, \App\Models\RyeProductPayment::class, $payment->id);
+                $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, RyeProductPayment::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
-                        'source_type' => \App\Models\RyeProductPayment::class,
+                        'source_type' => RyeProductPayment::class,
                         'source_id' => $payment->id,
                     ],
                     [
@@ -138,8 +175,8 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing orphan checkouts...');
 
-        $query = \App\Models\StripePaymentDetail::where('payment_status', 'paid')
-            ->whereDoesntHave('items'); 
+        $query = StripePaymentDetail::where('payment_status', 'paid')
+            ->whereDoesntHave('items');
 
         if ($userId) {
             $query->where('owner_id', $userId);
@@ -149,7 +186,9 @@ class SyncFinancialTransactions extends Command
         $count = 0;
 
         foreach ($orphans as $payment) {
-            if (!$payment->metadata) continue;
+            if (! $payment->metadata) {
+                continue;
+            }
 
             $metadata = json_decode($payment->metadata, true);
             $wishItems = [];
@@ -157,14 +196,14 @@ class SyncFinancialTransactions extends Command
             // Try to find items in flattened metadata (item_1_wish_id, item_2_wish_id, etc.)
             for ($i = 1; $i <= 10; $i++) { // Check up to 10 items
                 $prefix = "item_{$i}_";
-                if (isset($metadata[$prefix . 'wish_id'])) {
+                if (isset($metadata[$prefix.'wish_id'])) {
                     $wishItems[] = [
-                        'wish_id' => $metadata[$prefix . 'wish_id'],
-                        'wish_name' => $metadata[$prefix . 'wish_name'] ?? 'Item',
-                        'amount' => (float) ($metadata[$prefix . 'amount'] ?? 0),
-                        'quantity' => (int) ($metadata[$prefix . 'quantity'] ?? 1),
-                        'tax' => (float) ($metadata[$prefix . 'tax'] ?? 0),
-                        'vat_amount' => (float) ($metadata[$prefix . 'vat_amount'] ?? 0),
+                        'wish_id' => $metadata[$prefix.'wish_id'],
+                        'wish_name' => $metadata[$prefix.'wish_name'] ?? 'Item',
+                        'amount' => (float) ($metadata[$prefix.'amount'] ?? 0),
+                        'quantity' => (int) ($metadata[$prefix.'quantity'] ?? 1),
+                        'tax' => (float) ($metadata[$prefix.'tax'] ?? 0),
+                        'vat_amount' => (float) ($metadata[$prefix.'vat_amount'] ?? 0),
                     ];
                 } else {
                     break; // No more items
@@ -173,8 +212,8 @@ class SyncFinancialTransactions extends Command
 
             // Fallback to wish_items JSON if flattened items not found
             if (empty($wishItems) && isset($metadata['wish_items'])) {
-                $wishItems = is_string($metadata['wish_items']) 
-                    ? (json_decode($metadata['wish_items'], true) ?: []) 
+                $wishItems = is_string($metadata['wish_items'])
+                    ? (json_decode($metadata['wish_items'], true) ?: [])
                     : $metadata['wish_items'];
             }
 
@@ -210,7 +249,7 @@ class SyncFinancialTransactions extends Command
                 // Create FinancialTransaction
                 $riskData = $this->getPaymentRiskData($payment->session_id, 'completed', $payment->stripe_payment_intent_id);
                 $creator = User::find($payment->owner_id);
-                
+
                 $amount = (float) $item['amount'];
                 $vat = (float) ($item['vat_amount'] ?? 0);
                 $platformFee = (float) ($item['tax'] ?? 0);
@@ -238,7 +277,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $riskData['status'],
-                        'description' => 'Wish Content: ' . ($item['wish_name'] ?? 'Item'),
+                        'description' => 'Wish Content: '.($item['wish_name'] ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
                 );
@@ -257,14 +296,16 @@ class SyncFinancialTransactions extends Command
             'reserve_status' => 'none',
         ];
 
-        if (!$sessionId && !$paymentIntentId) return $data;
+        if (! $sessionId && ! $paymentIntentId) {
+            return $data;
+        }
 
         // Search by both session ID and payment intent ID
-        $query = \App\Models\Payment::query();
+        $query = Payment::query();
         if ($sessionId && $paymentIntentId) {
-            $query->where(function($q) use ($sessionId, $paymentIntentId) {
+            $query->where(function ($q) use ($sessionId, $paymentIntentId) {
                 $q->where('stripe_session_id', $sessionId)
-                  ->orWhere('stripe_payment_intent_id', $paymentIntentId);
+                    ->orWhere('stripe_payment_intent_id', $paymentIntentId);
             });
         } elseif ($sessionId) {
             $query->where('stripe_session_id', $sessionId);
@@ -275,7 +316,7 @@ class SyncFinancialTransactions extends Command
         $paymentLog = $query->orderByRaw("CASE WHEN status = 'disputed' THEN 1 WHEN status = 'refunded' THEN 2 WHEN status = 'review_hold' THEN 3 WHEN status = 'succeeded' THEN 4 ELSE 5 END")->first();
 
         if ($paymentLog) {
-            $data['status'] = match($paymentLog->status) {
+            $data['status'] = match ($paymentLog->status) {
                 'succeeded' => 'completed',
                 'review_hold' => 'review_hold',
                 'disputed' => 'disputed',
@@ -284,7 +325,7 @@ class SyncFinancialTransactions extends Command
                 'initiated' => 'pending',
                 default => 'pending'
             };
-            
+
             if ($paymentLog->reserve_amount_minor > 0) {
                 $data['reserve_amount'] = $paymentLog->reserve_amount_minor / 100;
                 // The currency the recorded reserve is expressed in. Some checkout paths store this
@@ -309,10 +350,10 @@ class SyncFinancialTransactions extends Command
         ?string $sessionId,
         ?string $paymentIntentId,
         string $financialStatus,
-        \Carbon\Carbon $createdAt,
+        Carbon $createdAt,
         float $reserveAmountMajor = 0.0
     ): void {
-        if ((!$sessionId && !$paymentIntentId) || $netAmountMajor <= 0) {
+        if ((! $sessionId && ! $paymentIntentId) || $netAmountMajor <= 0) {
             return;
         }
 
@@ -323,7 +364,7 @@ class SyncFinancialTransactions extends Command
             'refunded' => 'refunded',
             default => null,
         };
-        if (!$status) {
+        if (! $status) {
             return;
         }
 
@@ -343,8 +384,8 @@ class SyncFinancialTransactions extends Command
         }
 
         $payment = $query->first();
-        if (!$payment) {
-            $payment = new Payment();
+        if (! $payment) {
+            $payment = new Payment;
         }
 
         $currentStatus = (string) ($payment->status ?? '');
@@ -362,7 +403,7 @@ class SyncFinancialTransactions extends Command
         }
         $payment->status = $finalStatus;
 
-        if (!$payment->exists) {
+        if (! $payment->exists) {
             $payment->created_at = $createdAt;
             $payment->updated_at = $createdAt;
             $payment->save();
@@ -383,18 +424,18 @@ class SyncFinancialTransactions extends Command
      *   3. Otherwise → no reserve.
      * Reserve is always calculated from creator net amount, never from gross/total.
      */
-    private function determineReserve(float $netAmount, array $riskData, $creator, \Carbon\Carbon $paymentDate, ?string $sourceType = null, $sourceId = null): array
+    private function determineReserve(float $netAmount, array $riskData, $creator, Carbon $paymentDate, ?string $sourceType = null, $sourceId = null): array
     {
         if ($netAmount <= 0) {
             return ['amount' => 0, 'status' => 'none'];
         }
 
         $reserveStatus = $riskData['reserve_status'] !== 'none' ? $riskData['reserve_status'] : 'held';
-        $metric = $creator ? \App\Models\CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
+        $metric = $creator ? CreatorMetric::where('creator_id', $creator->uuid)->first() : null;
         $effectivePercent = 0;
 
         if ($creator) {
-            $effectivePercent = app(\App\Services\Risk\ReservePolicy::class)
+            $effectivePercent = app(ReservePolicy::class)
                 ->getEffectiveReservePercent($creator, $metric, $paymentDate);
         } else {
             $effectivePercent = (int) ($metric?->reserve_percent ?? 0);
@@ -411,6 +452,7 @@ class SyncFinancialTransactions extends Command
         // magnitudes and a "random" reserve % when divided by the native net_amount.
         if ($effectivePercent > 0) {
             $calculatedAmount = round($netAmount * $effectivePercent / 100, 2);
+
             return [
                 'amount' => $calculatedAmount,
                 'status' => $reserveStatus,
@@ -443,6 +485,7 @@ class SyncFinancialTransactions extends Command
             $recordedCurrency = strtoupper((string) ($riskData['reserve_currency'] ?? 'GBP'));
             $targetCurrency = strtoupper((string) ($creator?->default_currency ?? 'GBP'));
             $converted = $this->convertCurrency($recordedAmount, $recordedCurrency, $targetCurrency);
+
             return [
                 'amount' => round($converted, 2),
                 'status' => $reserveStatus,
@@ -463,13 +506,14 @@ class SyncFinancialTransactions extends Command
         if ($from === $to) {
             return $amount;
         }
-        $rates = \App\Models\Currency::rates();
-        if ($rates instanceof \Illuminate\Support\Collection) {
+        $rates = Currency::rates();
+        if ($rates instanceof Collection) {
             $rates = $rates->toArray();
         }
-        if (!isset($rates[$from]) || !isset($rates[$to])) {
+        if (! isset($rates[$from]) || ! isset($rates[$to])) {
             return $amount;
         }
+
         return ($amount / $rates[$from]) * $rates[$to];
     }
 
@@ -478,6 +522,7 @@ class SyncFinancialTransactions extends Command
         if (($currentVat === null || $currentVat <= 0) && $creator && $creator->vat_amount_percentage > 0) {
             return round(((float) $amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
         }
+
         return $currentVat ?? 0;
     }
 
@@ -494,11 +539,15 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
-                if (!$payment->membership) continue;
-                
+                if (! $payment->membership) {
+                    continue;
+                }
+
                 $creator = $payment->membership->user;
-                if (!$creator) continue;
-                
+                if (! $creator) {
+                    continue;
+                }
+
                 if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
                     continue;
                 }
@@ -506,16 +555,16 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
-                
+
                 $currency = strtoupper($payment->currency ?? 'GBP');
-                
+
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
-                $gross = $payment->total_paid && $payment->total_paid > 0 
-                    ? (float) $payment->total_paid 
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
                     : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
@@ -575,19 +624,19 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($purchases) {
             foreach ($purchases as $purchase) {
-                if (!in_array($purchase->status, ['paid', 'completed', 'completed_accepted', 'paid_out', 'disputed', 'refunded'], true) && (float) ($purchase->total_paid ?? 0) <= 0) {
+                if (! in_array($purchase->status, ['paid', 'completed', 'completed_accepted', 'paid_out', 'disputed', 'refunded'], true) && (float) ($purchase->total_paid ?? 0) <= 0) {
                     continue;
                 }
 
                 $amount = $purchase->amount;
                 $vat = $this->calculateVatIfMissing($amount, $purchase->vat_amount, $purchase->creator);
-                
+
                 $currency = strtoupper($purchase->currency ?? ($purchase->task?->currency ?? 'GBP'));
-                $adminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
+                $adminFee = (float) Helpers::administrationFeeInCurrency($currency);
                 $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
                 $stripeFee = 0;
-                $gross = $purchase->total_paid && $purchase->total_paid > 0 
-                    ? (float) $purchase->total_paid 
+                $gross = $purchase->total_paid && $purchase->total_paid > 0
+                    ? (float) $purchase->total_paid
                     : ($amount + $vat + $platformFee + $stripeFee);
                 $creatorAmount = $amount;
 
@@ -652,11 +701,15 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
-                if (!$payment->bill) continue;
+                if (! $payment->bill) {
+                    continue;
+                }
 
                 $creator = $payment->bill->user;
-                if (!$creator) continue;
-                
+                if (! $creator) {
+                    continue;
+                }
+
                 if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
                     continue;
                 }
@@ -664,16 +717,16 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_tax_amount, $creator);
-                
+
                 $currency = strtoupper($payment->currency ?? 'GBP');
-                
+
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
-                $gross = $payment->total_paid && $payment->total_paid > 0 
-                    ? (float) $payment->total_paid 
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
                     : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
@@ -739,31 +792,37 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($items) {
             foreach ($items as $item) {
-                if (!$item->payment) continue;
-                if (($item->payment->payment_status ?? null) !== 'paid') continue;
+                if (! $item->payment) {
+                    continue;
+                }
+                if (($item->payment->payment_status ?? null) !== 'paid') {
+                    continue;
+                }
 
                 $creator = $item->payment->owner;
                 $creatorId = $creator?->id;
-                if (!$creatorId && $item->wish) {
+                if (! $creatorId && $item->wish) {
                     $creatorId = $item->wish->user_id;
                     $creator = User::find($creatorId);
                 }
-                
-                if (!$creatorId) continue;
+
+                if (! $creatorId) {
+                    continue;
+                }
 
                 $amount = $item->amount;
                 $vat = $this->calculateVatIfMissing($amount, $item->vat_amount, $creator);
-                
+
                 $currency = strtoupper($item->payment->currency ?? 'GBP');
-                
+
                 // Use actual fee breakdown for consistent display (honour the
                 // fee profile the payment was actually priced with).
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $item->payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $item->payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
-                $gross = $item->total_paid && $item->total_paid > 0 
-                    ? (float) $item->total_paid 
+                $gross = $item->total_paid && $item->total_paid > 0
+                    ? (float) $item->total_paid
                     : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount;
 
@@ -793,7 +852,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
                         'status' => $status,
-                        'description' => 'Wish Content: ' . ($item->wish->name ?? 'Item'),
+                        'description' => 'Wish Content: '.($item->wish->name ?? 'Item'),
                         'transaction_date' => $item->created_at,
                     ]
                 );
@@ -827,26 +886,32 @@ class SyncFinancialTransactions extends Command
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
-                if (!$payment->shop) continue;
+                if (! $payment->shop) {
+                    continue;
+                }
 
                 $creator = $payment->shop->user;
-                if (!$creator) continue;
-                if (($payment->payment_status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) continue;
+                if (! $creator) {
+                    continue;
+                }
+                if (($payment->payment_status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
+                    continue;
+                }
 
                 $creatorId = $creator->id;
                 $amount = $payment->amount;
                 $shippingAmount = $payment->shipping_amount ?? 0;
                 $vat = $this->calculateVatIfMissing($amount + $shippingAmount, $payment->vat_tax_amount, $creator);
-                
+
                 $currency = strtoupper($payment->currency ?? 'GBP');
-                
+
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
-                
-                $gross = $payment->total_paid && $payment->total_paid > 0 
-                    ? (float) $payment->total_paid 
+
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
                     : $breakdown['total_supporter_pays'];
                 $creatorAmount = $amount + $shippingAmount;
 
@@ -876,7 +941,7 @@ class SyncFinancialTransactions extends Command
                         'reserve_status' => $reserve['status'],
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $status,
-                        'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
+                        'description' => 'Shop Purchase: '.($payment->shop->name ?? 'Item'),
                         'transaction_date' => $payment->created_at,
                     ]
                 );
@@ -908,16 +973,20 @@ class SyncFinancialTransactions extends Command
             foreach ($payments as $payment) {
                 $creator = $payment->creator;
                 $creatorId = $payment->creator_id;
-                if (!$creatorId) continue;
-                if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) continue;
+                if (! $creatorId) {
+                    continue;
+                }
+                if (($payment->status ?? null) !== 'paid' && (float) ($payment->total_paid ?? 0) <= 0) {
+                    continue;
+                }
 
                 $amount = $payment->amount;
                 $vat = $this->calculateVatIfMissing($amount, $payment->vat_amount, $creator);
-                
+
                 $currency = strtoupper($payment->currency ?? 'GBP');
-                
+
                 // Use actual fee breakdown for consistent display
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -977,14 +1046,14 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Piggy Pots...');
 
-        $query = \App\Models\PiggyPotContribution::query();
+        $query = PiggyPotContribution::query();
         if ($userId) {
             $query->where('creator_id', $userId);
         }
 
         $query->chunkById(100, function ($payments) {
             foreach ($payments as $payment) {
-                if (!in_array($payment->status, ['paid', 'succeeded', 'disputed', 'refunded', 'review_hold'], true) && (float) ($payment->total_paid ?? 0) <= 0) {
+                if (! in_array($payment->status, ['paid', 'succeeded', 'disputed', 'refunded', 'review_hold'], true) && (float) ($payment->total_paid ?? 0) <= 0) {
                     continue;
                 }
 
@@ -994,7 +1063,7 @@ class SyncFinancialTransactions extends Command
                 $amount = (float) ($payment->amount ?? 0);
                 $vat = (float) ($payment->vat_amount ?? 0);
 
-                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
                 $platformFee = (float) ($breakdown['application_fee'] ?? 0);
                 $stripeFee = (float) ($breakdown['stripe_fee'] ?? 0);
                 $gross = $payment->total_paid && $payment->total_paid > 0
@@ -1002,7 +1071,7 @@ class SyncFinancialTransactions extends Command
                     : (float) ($breakdown['total_supporter_pays'] ?? 0);
 
                 // Determine status mapping
-                $defaultStatus = match($payment->status) {
+                $defaultStatus = match ($payment->status) {
                     'paid', 'succeeded' => 'completed',
                     'disputed' => 'disputed',
                     'refunded' => 'refunded',
@@ -1013,11 +1082,11 @@ class SyncFinancialTransactions extends Command
 
                 $riskData = $this->getPaymentRiskData($payment->session_id, $defaultStatus, $payment->payment_intent_id);
                 $status = (string) ($riskData['status'] ?? $defaultStatus);
-                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, \App\Models\PiggyPotContribution::class, $payment->id);
+                $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, PiggyPotContribution::class, $payment->id);
 
                 FinancialTransaction::updateOrCreate(
                     [
-                        'source_type' => \App\Models\PiggyPotContribution::class,
+                        'source_type' => PiggyPotContribution::class,
                         'source_id' => $payment->id,
                     ],
                     [

@@ -4,7 +4,7 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import { usePage } from "@inertiajs/react";
 
-export default function OrderDetail({ classes, text, item, date, onSuccess }) {
+export default function OrderDetail({ classes, text, item, date, onSuccess, type = "sales" }) {
     const [close, setClose] = useState(false);
     const [status, setStatus] = useState(item.status || "pending");
     const [tracking, setTracking] = useState(item.tracking_id || "");
@@ -35,7 +35,13 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
         setSubmittedAnswer(item.answer || "");
     }, [item]);
 
-    const isCreator = auth?.user?.role == 1;
+    // Ownership of THIS order, not the account's role. A creator who buys another
+    // creator's product opened it from My Purchases and was handed the seller's
+    // fulfilment controls for an order they don't own.
+    const isCreator =
+        type === "sales" ||
+        (item?.shop?.user_id != null &&
+            Number(auth?.user?.id) === Number(item.shop.user_id));
     const isPhysical = item?.shop?.type === "physical";
 
     // Helper function to parse shipping information
@@ -67,7 +73,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
 
         if (!shippingData) {
             return (
-                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4">
+                <div className="bg-red-50 border-2 border-red-200 rounded-box-sm p-4 mt-4">
                     <h3 className="font-black text-red-800 uppercase text-sm mb-1">
                         📍 Shipping Address
                     </h3>
@@ -83,7 +89,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
         // If it's raw text (not JSON)
         if (address?.raw) {
             return (
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-3 p-4 mt-4">
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-3 p-4 mt-4">
                     <h3 className="font-black text-blue-800 uppercase text-sm mb-2 flex items-center gap-2">
                         <span className="text-lg">📍</span> Buyer's Shipping
                         Address
@@ -98,7 +104,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
         // If it's structured JSON data
         if (address && typeof address === "object") {
             return (
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-3 p-4 mt-4">
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-3 p-4 mt-4">
                     <h3 className="font-black text-blue-800 uppercase text-sm mb-3 flex items-center gap-2">
                         <span className="text-lg">📍</span> Buyer's Shipping
                         Address
@@ -183,7 +189,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
 
         // Fallback: show as string
         return (
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-3 p-4 mt-4">
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-3 p-4 mt-4">
                 <h3 className="font-black text-blue-800 uppercase text-sm mb-2">
                     📍 Buyer's Shipping Address
                 </h3>
@@ -198,8 +204,9 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
     const renderCreatorShippingInfo = () => {
         if (!isPhysical) return null;
 
-        // Get shipping information from the shop (creator's shipping info)
-        const shopShippingInfo = item?.shop?.description;
+        // The creator's shipping notes live in `shipping_information` — this used to
+        // read `description`, i.e. it printed the product blurb under a 📦 heading.
+        const shopShippingInfo = item?.shop?.shipping_information;
 
         if (!shopShippingInfo) {
             return null; // Don't show anything if no shipping info provided by creator
@@ -210,7 +217,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
         // If it's raw text
         if (shippingData?.raw) {
             return (
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-[20px] p-4 mt-4">
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-box-sm p-4 mt-4">
                     <h3 className="font-black text-purple-800 uppercase text-sm mb-2 flex items-center gap-2">
                         <span className="text-lg">📦</span> Shipping Information
                     </h3>
@@ -224,7 +231,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
         // If it's structured JSON data
         if (shippingData && typeof shippingData === "object") {
             return (
-                <div className="bg-purple-50 border-2 border-purple-200 rounded-[20px] p-4 mt-4">
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-box-sm p-4 mt-4">
                     <h3 className="font-black text-purple-800 uppercase text-sm mb-3 flex items-center gap-2">
                         <span className="text-lg">📦</span> Shipping Information
                     </h3>
@@ -305,7 +312,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
 
         // Fallback: show as string
         return (
-            <div className="bg-purple-50 border-2 border-purple-200 rounded-[20px] p-4 mt-4">
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-box-sm p-4 mt-4">
                 <h3 className="font-black text-purple-800 uppercase text-sm mb-2">
                     📦 Shipping Information
                 </h3>
@@ -317,6 +324,16 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
     };
 
     const updateFulfillment = async () => {
+        // A buyer sees these only after the creator fills them in, so requiring
+        // them here is what stops the "shipped, but no tracking" dead end.
+        if ((status === "shipped" || status === "delivered") && (!tracking.trim() || !courier.trim())) {
+            errorAlert("Add the courier and tracking number before marking this shipped.");
+            return;
+        }
+        if (status === "delivered" && !window.confirm("Mark this order delivered? This confirms the buyer received it and cannot be undone.")) {
+            return;
+        }
+
         setLoading(true);
         try {
             const res = await axios.post(`/shop/fulfillment/${item.uuid}`, {
@@ -333,6 +350,9 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                     setClose(false);
                     if (onSuccess) onSuccess();
                 }, 100);
+            } else {
+                // Without this the modal just sat there after a rejected update.
+                errorAlert(res.data.message || "Failed to update");
             }
         } catch (err) {
             errorAlert(err?.response?.data?.message || "Failed to update");
@@ -349,7 +369,10 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
             });
             if (res.data.status) {
                 successAlert(res.data.message);
-                setSubmittedAnswer(res.data.answer);
+                // Fall back to what was typed — the endpoint doesn't always echo it,
+                // which rendered a blank answer.
+                setSubmittedAnswer(res.data.answer ?? answerText);
+                if (onSuccess) onSuccess();
             } else {
                 errorAlert(res.data.message);
             }
@@ -373,11 +396,12 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
             <div className="p-0">
                 <div className="flex items-center justify-between gap-2 mb-2">
                     <h2 className="font-bold text-xl capitalize">
-                        {item?.name || "User"} claimed{" "}
-                        {item?.shop?.name || "an item"}.
+                        {isCreator
+                            ? `${item?.name || "A supporter"} purchased ${item?.shop?.name || "an item"}.`
+                            : `Your purchase: ${item?.shop?.name || "an item"}`}
                     </h2>
                     <span
-                        className={`px-3 py-1 rounded-lg border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${item?.shop?.type === "physical" ? "bg-blue-300" : "bg-green-300"}`}
+                        className={`px-3 py-1 rounded-box-sm border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${item?.shop?.type === "physical" ? "bg-blue-300" : "bg-green-300"}`}
                     >
                         {item?.shop?.type === "physical"
                             ? "Physical"
@@ -387,7 +411,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                 <p className="mb-2">{date}</p>
 
                 {(item.creator_note || item.metadata?.creator_note) && (
-                    <div className="mt-3 p-3 bg-pink-50 border border-pink-100 rounded-[20px]">
+                    <div className="mt-3 p-3 bg-pink-50 border border-pink-100 rounded-box-sm">
                         <p className="text-xs font-black uppercase text-[#FF007F] mb-1">
                             Note from Creator
                         </p>
@@ -492,7 +516,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                 {item?.shop?.ask_question ? (
                     <div className=" border-t pt-2 mt-3">
                         <strong>Question</strong>
-                        <p>{item.shop.ask_question || ""} ?</p>
+                        <p>{item.shop.ask_question || ""}</p>
 
                         {submittedAnswer ? (
                             <p className="text-sm mt-2">
@@ -506,7 +530,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                         setAnswerText(e.target.value)
                                     }
                                     placeholder="Write your reply here..."
-                                    className="w-full rounded-[15px] border-gray-300 text-sm mb-2"
+                                    className="w-full rounded-box-sm border-gray-300 text-sm mb-2"
                                     rows="3"
                                 />
                                 <button
@@ -514,7 +538,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                     disabled={
                                         answerLoading || !answerText.trim()
                                     }
-                                    className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                                    className="bg-black text-white px-4 py-3 min-h-[44px] rounded-full text-sm font-medium hover:bg-gray-800 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 transition-all disabled:opacity-50"
                                 >
                                     {answerLoading
                                         ? "Submitting..."
@@ -554,7 +578,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                         onChange={(e) =>
                                             setStatus(e.target.value)
                                         }
-                                        className="w-full rounded-[15px] border-gray-300"
+                                        className="w-full rounded-box-sm border-gray-300"
                                     >
                                         <option value="pending">Pending</option>
                                         <option value="processing">
@@ -576,7 +600,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                         onChange={(e) =>
                                             setTracking(e.target.value)
                                         }
-                                        className="w-full rounded-[15px] border-gray-300"
+                                        className="w-full rounded-box-sm border-gray-300"
                                         placeholder="e.g. 1Z9999999999999999"
                                     />
                                 </div>
@@ -590,7 +614,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                         onChange={(e) =>
                                             setCourier(e.target.value)
                                         }
-                                        className="w-full rounded-[15px] border-gray-300"
+                                        className="w-full rounded-box-sm border-gray-300"
                                         placeholder="e.g. UPS, FedEx, Royal Mail"
                                     />
                                 </div>
@@ -600,11 +624,12 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                     </label>
                                     <input
                                         type="date"
+                                        min={new Date().toISOString().split("T")[0]}
                                         value={expectedDelivery}
                                         onChange={(e) =>
                                             setExpectedDelivery(e.target.value)
                                         }
-                                        className="w-full rounded-[15px] border-gray-300"
+                                        className="w-full rounded-box-sm border-gray-300"
                                     />
                                 </div>
                                 <div>
@@ -616,7 +641,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                         onChange={(e) =>
                                             setCreatorNote(e.target.value)
                                         }
-                                        className="w-full rounded-[15px] border-gray-300 text-sm"
+                                        className="w-full rounded-box-sm border-gray-300 text-sm"
                                         placeholder="Add a note or update about the order..."
                                         rows="3"
                                     />
@@ -643,7 +668,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                         <h3 className="font-bold mb-2 text-[#FF007F]">
                             Tracking Information
                         </h3>
-                        <div className="bg-gray-50 p-4 rounded-[20px] border border-gray-100">
+                        <div className="bg-gray-50 p-4 rounded-box border border-gray-100">
                             <p className="mb-2">
                                 <strong>Status:</strong>{" "}
                                 <span className="capitalize font-medium text-gray-700">
@@ -670,7 +695,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess }) {
                                 <p className="mb-0">
                                     <strong>Expected Delivery:</strong>{" "}
                                     <span className="font-medium text-gray-700">
-                                        {item.expected_delivery_date}
+                                        {String(item.expected_delivery_date).split("T")[0]}
                                     </span>
                                 </p>
                             )}

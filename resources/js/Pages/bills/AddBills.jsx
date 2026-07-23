@@ -83,9 +83,14 @@ export default function AddBills(props) {
     }, [thumbnail]);
 
     const [loading, setLoading] = useState(false);
+    // The form posts via axios, not useForm.post, so Inertia's `errors` never fills.
+    // Keep server-side field errors locally so they can render inline.
+    const [fieldErrors, setFieldErrors] = useState({});
     const createBills = async (e) => {
         e.preventDefault();
+        if (loading) return;
         setLoading(true);
+        setFieldErrors({});
         axios
             .post(isEdit ? `/bill/edit/${item.uuid}` : `/bill/save`, data)
             .then((resp) => {
@@ -110,12 +115,13 @@ export default function AddBills(props) {
                     reset();
                     resetUploader();
                 } else {
+                    setFieldErrors(resp.data.errors || {});
                     errorAlert(resp.data.msg);
                 }
                 setLoading(false);
             })
             .catch((err) => {
-                console.error("err", err);
+                setFieldErrors(err?.response?.data?.errors || {});
                 setLoading(false);
                 errorsHandling(err);
             });
@@ -124,13 +130,13 @@ export default function AddBills(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
+                <div className="p-1 rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="pl-3 text-left">
                     <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Recurring content</h2>
                     <p className="text-sm font-poppins">
-                        Pesky bill? Fans unlock exclusive content to help cover it.
+                        Sell content your supporters unlock every week or month.
                     </p>
                 </div>
             </div>
@@ -138,12 +144,16 @@ export default function AddBills(props) {
     };
 
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
+    const fieldError = (field) => {
+        const err = fieldErrors[field] || errors[field];
+        return Array.isArray(err) ? err[0] : err;
+    };
     return (
         <Popup
             modalclass="pinkmodal full"
             size="md"
             action={close}
-            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-[30px]   p-3 mb-2 text-center"}`}
+            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-box   p-3 mb-2 text-center"}`}
             text={text ? text : <AddItem />} >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
@@ -152,7 +162,7 @@ export default function AddBills(props) {
                     </h2>
                     <div className="wishinfo  p-4  ">
                         {item && item.is_suspended == 1 && (
-                            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-box-sm">
                                 <div className="flex">
                                     <div className="flex-shrink-0">
                                         <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -184,7 +194,7 @@ export default function AddBills(props) {
                                         maxLength={60}
                                         placeholder="Eg. Studio upgrade"
                                         value={data.goal_label}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                                         onChange={(e) =>
                                             setData("goal_label", e.target.value)
                                         }
@@ -194,9 +204,9 @@ export default function AddBills(props) {
                                         only, never what the supporter buys. Don't name a
                                         bill, debt or expense (e.g. rent, phone bill).
                                     </p>
-                                    {errors.goal_label && (
+                                    {fieldError("goal_label") && (
                                         <p className="mt-1 text-xs text-red-500 text-left">
-                                            {errors.goal_label}
+                                            {fieldError("goal_label")}
                                         </p>
                                     )}
                                 </li>
@@ -211,16 +221,16 @@ export default function AddBills(props) {
                                         type="text"
                                         placeholder="Eg. Weekly behind-the-scenes"
                                         value={data.name}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("name", e.target.value)
                                         }
                                         required
                                     />
-                                    {errors.name && (
+                                    {fieldError("name") && (
                                         <p className="mt-1 text-xs text-red-500 text-left">
-                                            {errors.name}
+                                            {fieldError("name")}
                                         </p>
                                     )}
                                 </li>
@@ -237,19 +247,28 @@ export default function AddBills(props) {
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
-                                            defaultValue={
-                                                (item && item.price) ||
-                                                data.price
-                                            }
-                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            value={data.price}
+                                            min="4.99"
+                                            max="100"
+                                            step="0.01"
+                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
                                             }
+                                            required
                                         />
                                     </div>
+                                    <p className="mt-1 text-xs text-gray-500 text-left">
+                                        Between {defaultCurrency} 4.99 and {defaultCurrency} 100 per period.
+                                    </p>
+                                    {fieldError("price") && (
+                                        <p className="mt-1 text-xs text-red-500 text-left">
+                                            {fieldError("price")}
+                                        </p>
+                                    )}
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-box  border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">
@@ -269,7 +288,7 @@ export default function AddBills(props) {
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                            <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+                                            <p className="mt-1 text-xs text-gray-500 font-medium">All platform and payment processing fees are included in the fan price, so you always receive 100% of your listed amount (or slightly more).</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency && data.price > 0 && (
@@ -354,6 +373,7 @@ export default function AddBills(props) {
                                                     (item && item.perma_link) ||
                                                     uploadedimg
                                                 }
+                                                alt={item?.name || "Bill image"}
                                                 className="w-full h-auto"
                                             />
                                         </div>
@@ -375,6 +395,7 @@ export default function AddBills(props) {
                                                             <div className="default-wish-img mb-1">
                                                                 <img
                                                                     src={`https://ucarecdn.com/${image}/`}
+                                                                    alt=""
                                                                     className="w-full h-auto"
                                                                 />
                                                             </div>
@@ -414,7 +435,7 @@ export default function AddBills(props) {
                                 </li>
                             </ul>
 
-                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px]    bg-yellow-50" role="alert">
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-box-sm    bg-yellow-50" role="alert">
                                 Describe the recurring content supporters receive
                                 (e.g. "Weekly behind-the-scenes"). Do not list bills,
                                 personal expenses, or brand/third-party service names —

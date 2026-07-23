@@ -2,7 +2,48 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\CheckGifterCardVerification;
+use App\Http\Middleware\CheckStripeIdentityVerification;
+use App\Http\Middleware\CheckSuspendedUser;
+use App\Http\Middleware\CheckUserBlock;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\EnforceEmulationTimeBox;
+use App\Http\Middleware\EnsureCsrfCookie;
+use App\Http\Middleware\EnsureRyeEnabled;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\HandleCorsForAssets;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\IpTracker;
+use App\Http\Middleware\LocalOnly;
+use App\Http\Middleware\PreventBackHistory;
+use App\Http\Middleware\PreventRequestsDuringMaintenance;
+use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\RequireActiveMembership;
+use App\Http\Middleware\StaticPageSeoMiddleware;
+use App\Http\Middleware\TrackSiteVisit;
+use App\Http\Middleware\TrimStrings;
+use App\Http\Middleware\TrustProxies;
+use App\Http\Middleware\UserEmailVerify;
+use App\Http\Middleware\ValidateSignature;
+use App\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
+use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
+use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Middleware\SetCacheHeaders;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class Kernel extends HttpKernel
 {
@@ -15,13 +56,13 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
-        \App\Http\Middleware\TrustProxies::class,
-        \Illuminate\Http\Middleware\HandleCors::class,
-        \App\Http\Middleware\HandleCorsForAssets::class,
-        \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
-        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
-        \App\Http\Middleware\TrimStrings::class,
-        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        TrustProxies::class,
+        HandleCors::class,
+        HandleCorsForAssets::class,
+        PreventRequestsDuringMaintenance::class,
+        ValidatePostSize::class,
+        TrimStrings::class,
+        ConvertEmptyStringsToNull::class,
     ];
 
     /**
@@ -31,31 +72,31 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
-            \App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \App\Http\Middleware\EnsureCsrfCookie::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\StaticPageSeoMiddleware::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            StartSession::class,
+            EnsureCsrfCookie::class,
+            ShareErrorsFromSession::class,
+            VerifyCsrfToken::class,
+            SubstituteBindings::class,
+            StaticPageSeoMiddleware::class,
+            HandleInertiaRequests::class,
             // \App\Http\Middleware\PreventBackHistory::class, // Force no-cache headers for all web routes
             // \App\Http\Middleware\CacheInertiaResponse::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            AddLinkHeadersForPreloadedAssets::class,
             // \App\Http\Middleware\BlockWordsAndEmojis::class,
-            \App\Http\Middleware\IpTracker::class,
-            \App\Http\Middleware\CheckSuspendedUser::class,
-            \App\Http\Middleware\EnforceEmulationTimeBox::class,
+            IpTracker::class,
+            CheckSuspendedUser::class,
+            EnforceEmulationTimeBox::class,
             // Last in the group: it runs after the response exists, counts an
             // anonymous page view, and can never block a page from rendering.
-            \App\Http\Middleware\TrackSiteVisit::class,
+            TrackSiteVisit::class,
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ThrottleRequests::class.':api',
+            SubstituteBindings::class,
         ],
     ];
 
@@ -67,25 +108,27 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $middlewareAliases = [
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
-        'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
-        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'can' => \Illuminate\Auth\Middleware\Authorize::class,
-        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-        'precognitive' => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
-        'signed' => \App\Http\Middleware\ValidateSignature::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'mustHaveToVerify' => \App\Http\Middleware\UserEmailVerify::class,
-        'mustCompletedStripeIdentity' => \App\Http\Middleware\CheckStripeIdentityVerification::class,
-        'mustCompletedCardVerification' => \App\Http\Middleware\CheckGifterCardVerification::class,
-        'membership' => \App\Http\Middleware\RequireActiveMembership::class,
-        'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
-        'check.block' => \App\Http\Middleware\CheckUserBlock::class,
-        'check.suspended' => \App\Http\Middleware\CheckSuspendedUser::class,
+        'auth' => Authenticate::class,
+        'auth.basic' => AuthenticateWithBasicAuth::class,
+        'auth.session' => AuthenticateSession::class,
+        'admin' => EnsureUserIsAdmin::class,
+        'localonly' => LocalOnly::class,
+        'cache.headers' => SetCacheHeaders::class,
+        'can' => Authorize::class,
+        'guest' => RedirectIfAuthenticated::class,
+        'password.confirm' => RequirePassword::class,
+        'precognitive' => HandlePrecognitiveRequests::class,
+        'signed' => ValidateSignature::class,
+        'throttle' => ThrottleRequests::class,
+        'verified' => EnsureEmailIsVerified::class,
+        'mustHaveToVerify' => UserEmailVerify::class,
+        'mustCompletedStripeIdentity' => CheckStripeIdentityVerification::class,
+        'mustCompletedCardVerification' => CheckGifterCardVerification::class,
+        'rye.enabled' => EnsureRyeEnabled::class,
+        'membership' => RequireActiveMembership::class,
+        'prevent-back-history' => PreventBackHistory::class,
+        'check.block' => CheckUserBlock::class,
+        'check.suspended' => CheckSuspendedUser::class,
     ];
 
     protected $except = [

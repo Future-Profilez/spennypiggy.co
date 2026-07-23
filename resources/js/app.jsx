@@ -256,6 +256,19 @@ createInertiaApp({
         
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
+
+        // Lenis smooth-scroll runs as a SINGLE instance mounted via
+        // <SmoothScroll/> (resources/js/Components/SmoothScroll.jsx). Do NOT
+        // create a second Lenis here — two instances both drive window.scrollY
+        // and fight, snapping the page up when a gesture stops. Only inject the
+        // shared helper CSS (guarded so it runs once).
+        if (typeof window !== "undefined" && !window.__lenisStyle) {
+            window.__lenisStyle = true;
+            const style = document.createElement("style");
+            style.textContent =
+                "html.lenis,html.lenis body{height:auto}.lenis.lenis-smooth{scroll-behavior:auto!important}.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}.lenis.lenis-stopped{overflow:hidden}";
+            document.head.appendChild(style);
+        }
     },
     progress: {
         color: "var(--pink)",

@@ -61,7 +61,7 @@ class DiscoveryService
                         'clicks_24h' => 0,
                         'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
                         'intro' => $u->intro ? [
-                            'poster_url' => $u->intro->poster_url,
+                            'poster_url' => $u->intro->posterUrlNonBlocking(),
                             'perma_link' => $u->intro->perma_link,
                             'approved' => (int) $u->intro->approved,
                         ] : null,
@@ -99,7 +99,7 @@ class DiscoveryService
                         'role' => $u->role,
                         'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
                         'intro' => $u->intro ? [
-                            'poster_url' => $u->intro->poster_url,
+                            'poster_url' => $u->intro->posterUrlNonBlocking(),
                             'perma_link' => $u->intro->perma_link,
                             'approved' => (int) $u->intro->approved,
                         ] : null,
@@ -189,7 +189,7 @@ class DiscoveryService
                     'role' => $u->role,
                     'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
                     'intro' => $u->intro ? [
-                        'poster_url' => $u->intro->poster_url,
+                        'poster_url' => $u->intro->posterUrlNonBlocking(),
                         'perma_link' => $u->intro->perma_link,
                         'approved' => (int) $u->intro->approved,
                     ] : null,

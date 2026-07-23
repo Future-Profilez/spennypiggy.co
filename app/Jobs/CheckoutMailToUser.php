@@ -4,16 +4,19 @@ namespace App\Jobs;
 
 use App\EmailService;
 use App\Helpers;
+use App\Models\Deliverable;
+use App\Models\User;
+use App\Models\WishItem;
+use App\Services\CertificateService;
+use App\Services\StripeMetadataService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use App\Services\StripeMetadataService;
 use Stripe\StripeClient;
 
 class CheckoutMailToUser implements ShouldQueue
@@ -21,17 +24,17 @@ class CheckoutMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $payment;
-    public $curr;
 
+    public $curr;
 
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
-    public function __construct($payment,$curr)
+    public function __construct($payment, $curr)
     {
         $this->payment = $payment;
         $this->curr = $curr;
@@ -44,7 +47,7 @@ class CheckoutMailToUser implements ShouldQueue
     {
         // Create email deliverable for both authenticated users and guests
         try {
-            $deliverable = \App\Models\Deliverable::create([
+            $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
                 'product_id' => 'email_notification',
                 'price_id' => null,
@@ -61,24 +64,24 @@ class CheckoutMailToUser implements ShouldQueue
                 'metadata' => json_encode([
                     'email_type' => 'checkout_notification',
                     'currency' => $this->curr,
-                    'payment_id' => $this->payment->id
+                    'payment_id' => $this->payment->id,
                 ]),
                 'status' => 'delivered',
-                'delivered_at' => now()
+                'delivered_at' => now(),
             ]);
-            
+
             Log::info('CheckoutMailToUser: Email deliverable created', [
                 'deliverable_id' => $deliverable->id,
-                'payment_id' => $this->payment->id
+                'payment_id' => $this->payment->id,
             ]);
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create email deliverable', [
                 'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
-    
+
     /**
      * Create content deliverables for purchased items
      */
@@ -87,24 +90,24 @@ class CheckoutMailToUser implements ShouldQueue
         try {
             // Get payment items with their wish data
             $paymentItems = $this->payment->stripePaymentItems()->with('wish')->get();
-            
+
             Log::info('CheckoutMailToUser: Processing content deliverables', [
                 'payment_id' => $this->payment->id,
-                'items_count' => $paymentItems->count()
+                'items_count' => $paymentItems->count(),
             ]);
-            
+
             foreach ($paymentItems as $item) {
                 $this->createItemDeliverable($item);
             }
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create content deliverables', [
                 'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
-    
+
     /**
      * Create deliverable for individual purchased item
      */
@@ -112,14 +115,15 @@ class CheckoutMailToUser implements ShouldQueue
     {
         try {
             $wish = $paymentItem->wish;
-            
-            if (!$wish) {
+
+            if (! $wish) {
                 Log::warning('CheckoutMailToUser: No wish found for payment item', [
-                    'payment_item_id' => $paymentItem->id
+                    'payment_item_id' => $paymentItem->id,
                 ]);
+
                 return;
             }
-            
+
             // Determine deliverable type and URL based on available content
             $deliverableType = 'digital_file';
             $deliverableUrl = null;
@@ -127,18 +131,18 @@ class CheckoutMailToUser implements ShouldQueue
             $deliveredAt = null;
             $contentFileName = null;
             $contentFileType = null;
-            
+
             Log::info('CheckoutMailToUser: Analyzing content sources', [
                 'wish_id' => $wish->id,
-                'has_message_media' => !empty($paymentItem->message_media),
-                'has_content_file' => !empty($wish->content_file),
-                'has_reward' => !empty($wish->reward),
+                'has_message_media' => ! empty($paymentItem->message_media),
+                'has_content_file' => ! empty($wish->content_file),
+                'has_reward' => ! empty($wish->reward),
                 'content_file' => $wish->content_file ?? 'null',
-                'content_file_type' => $wish->content_file_type ?? 'null'
+                'content_file_type' => $wish->content_file_type ?? 'null',
             ]);
-            
+
             // Priority order: message_media → content_file → reward → fallback
-            if (!empty($paymentItem->message_media)) {
+            if (! empty($paymentItem->message_media)) {
                 // Creator thank you media (highest priority)
                 $deliverableType = $paymentItem->media_type == 'video' ? 'media_bundle' : 'digital_file';
                 $deliverableUrl = $this->generateContentUrl($paymentItem->message_media, $paymentItem->media_type);
@@ -146,7 +150,7 @@ class CheckoutMailToUser implements ShouldQueue
                 $deliveredAt = $paymentItem->thank_you_approved ? now() : null;
                 $contentFileType = $paymentItem->media_type;
                 Log::info('CheckoutMailToUser: Using message_media content');
-            } elseif (!empty($wish->content_file)) {
+            } elseif (! empty($wish->content_file)) {
                 // Primary wish content file (main content source)
                 $deliverableUrl = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
                 $deliverableType = $this->determineDeliverableType($wish->content_file_type);
@@ -157,9 +161,9 @@ class CheckoutMailToUser implements ShouldQueue
                 Log::info('CheckoutMailToUser: Using content_file', [
                     'content_file' => $wish->content_file,
                     'type' => $wish->content_file_type,
-                    'filename' => $wish->content_file_name
+                    'filename' => $wish->content_file_name,
                 ]);
-            } elseif (!empty($wish->reward)) {
+            } elseif (! empty($wish->reward)) {
                 // Legacy reward system
                 $deliverableUrl = $this->generateContentUrl($wish->reward, 'image');
                 $status = 'delivered';
@@ -169,20 +173,22 @@ class CheckoutMailToUser implements ShouldQueue
             } else {
                 // No specific content, skip deliverable creation
                 Log::info('CheckoutMailToUser: No content available for delivery', [
-                    'wish_id' => $wish->id
+                    'wish_id' => $wish->id,
                 ]);
+
                 return;
             }
-            
+
             // Only create deliverable for authenticated users
-            if (!$this->payment->user_id) {
+            if (! $this->payment->user_id) {
                 Log::info('CheckoutMailToUser: Skipping content deliverable for guest', [
                     'wish_id' => $wish->id,
-                    'wish_name' => $wish->wishname
+                    'wish_name' => $wish->wishname,
                 ]);
+
                 return;
             }
-            
+
             // Get payment intent ID from Stripe session if available
             $paymentIntentId = null;
             if ($this->payment->session_id) {
@@ -192,17 +198,31 @@ class CheckoutMailToUser implements ShouldQueue
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session', [
                         'session_id' => $this->payment->session_id,
-                        'payment_intent_id' => $paymentIntentId
+                        'payment_intent_id' => $paymentIntentId,
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('CheckoutMailToUser: Failed to retrieve payment intent from session', [
                         'session_id' => $this->payment->session_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
-            
-            $deliverable = \App\Models\Deliverable::create([
+
+            // Dedup: the Stripe webhook (processWishItemDeliverable) often lands before
+            // the browser returns to the success URL and already created this row. Keyed
+            // on session_id + item_id because a cart session can carry several wish items.
+            if (Deliverable::where('session_id', $this->payment->session_id)
+                ->where('item_id', $wish->id)
+                ->exists()) {
+                Log::info('CheckoutMailToUser: Deliverable already exists for this session+item, skipping', [
+                    'session_id' => $this->payment->session_id,
+                    'wish_id' => $wish->id,
+                ]);
+
+                return;
+            }
+
+            $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
                 'product_id' => (string) $wish->id, // Use actual wish_id from database, not Stripe product_id
                 'item_id' => $wish->id, // NEW: Database wish item ID for easy querying
@@ -215,7 +235,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => $this->getProductTypeFromWish($wish),
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
-                'is_deliverable' => !empty($deliverableUrl), // Mark as deliverable if has content
+                'is_deliverable' => ! empty($deliverableUrl), // Mark as deliverable if has content
                 'anonymous' => $this->payment->anonymous ?? false,
                 'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([
@@ -227,45 +247,45 @@ class CheckoutMailToUser implements ShouldQueue
                     'media_type' => $paymentItem->media_type ?? $contentFileType,
                     'content_file_name' => $contentFileName,
                     'content_file_type' => $contentFileType,
-                    'has_content' => !empty($deliverableUrl),
-                    'content_source' => !empty($paymentItem->message_media) ? 'message_media' : (!empty($wish->content_file) ? 'content_file' : 'reward'),
+                    'has_content' => ! empty($deliverableUrl),
+                    'content_source' => ! empty($paymentItem->message_media) ? 'message_media' : (! empty($wish->content_file) ? 'content_file' : 'reward'),
                     'payment_item_id' => $paymentItem->id,
-                    'cart_item_id' => $paymentItem->user_cart_id // Reference to cart item for full traceability
+                    'cart_item_id' => $paymentItem->user_cart_id, // Reference to cart item for full traceability
                 ]),
                 'status' => $status,
-                'delivered_at' => $deliveredAt
+                'delivered_at' => $deliveredAt,
             ]);
-            
+
             Log::info('CheckoutMailToUser: Content deliverable created', [
                 'deliverable_id' => $deliverable->id,
                 'wish_name' => $wish->wishname,
                 'type' => $deliverableType,
                 'status' => $status,
-                'has_url' => !empty($deliverableUrl)
+                'has_url' => ! empty($deliverableUrl),
             ]);
-            
+
             // Dispatch certificate generation job for the deliverable using default connection
             try {
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                ProcessWishItemDeliverable::dispatch($deliverable);
                 Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
                     'deliverable_id' => $deliverable->id,
-                    'wish_id' => $wish->id
+                    'wish_id' => $wish->id,
                 ]);
             } catch (\Exception $e) {
                 Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [
                     'deliverable_id' => $deliverable->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create item deliverable', [
                 'payment_item_id' => $paymentItem->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
-    
+
     /**
      * Determine deliverable type based on MIME type
      */
@@ -274,9 +294,9 @@ class CheckoutMailToUser implements ShouldQueue
         if (empty($mimeType)) {
             return 'digital_file';
         }
-        
+
         $mimeType = strtolower($mimeType);
-        
+
         if (strpos($mimeType, 'video/') === 0) {
             return 'media_bundle';
         } elseif (strpos($mimeType, 'image/') === 0) {
@@ -287,7 +307,7 @@ class CheckoutMailToUser implements ShouldQueue
             return 'digital_file';
         }
     }
-    
+
     /**
      * Generate secure content URL for delivery
      */
@@ -296,18 +316,18 @@ class CheckoutMailToUser implements ShouldQueue
         if (empty($mediaId)) {
             return null;
         }
-        
+
         Log::info('CheckoutMailToUser: Generating content URL', [
             'media_id' => $mediaId,
-            'media_type' => $mediaType ?? 'unknown'
+            'media_type' => $mediaType ?? 'unknown',
         ]);
-        
+
         // Generate Uploadcare URL with basic processing
         // For security and tracking, we could add processing parameters here
-        $baseUrl = 'https://ucarecdn.com/' . $mediaId . '/';
-        
+        $baseUrl = 'https://ucarecdn.com/'.$mediaId.'/';
+
         // Add processing parameters based on media type if needed
-        if (!empty($mediaType)) {
+        if (! empty($mediaType)) {
             if (strpos($mediaType, 'image/') === 0) {
                 // For images, we can add quality optimization
                 // $baseUrl .= '-/quality/smart/-/format/auto/';
@@ -315,41 +335,41 @@ class CheckoutMailToUser implements ShouldQueue
                 // For videos, basic URL is sufficient
             }
         }
-        
+
         return $baseUrl;
     }
-    
+
     /**
      * Determine product type based on wish item properties
      */
     private function getProductTypeFromWish($wish)
     {
-        if (!$wish) {
+        if (! $wish) {
             return 'wish';
         }
-        
+
         // Check if wish name or description indicates membership
         $wishName = strtolower($wish->wishname ?? '');
         $description = strtolower($wish->description ?? '');
-        
+
         if (strpos($wishName, 'membership') !== false || strpos($description, 'membership') !== false) {
             return 'membership';
         }
-        
+
         // Check if Stripe product ID indicates membership
         $productId = strtolower($wish->stripe_product_id ?? '');
         if (strpos($productId, 'membership') !== false || strpos($productId, 'member') !== false) {
             return 'membership';
         }
-        
+
         // Default to wish
         return 'wish';
     }
-    
+
     /**
      * REMOVED: Old individual deliverables method - replaced with consolidated approach
      */
-    
+
     /**
      * Get comprehensive payment metadata from database or Stripe
      */
@@ -357,62 +377,67 @@ class CheckoutMailToUser implements ShouldQueue
     {
         try {
             // First try to get from database metadata field
-            if (!empty($this->payment->metadata)) {
+            if (! empty($this->payment->metadata)) {
                 $metadata = json_decode($this->payment->metadata, true);
                 if ($metadata && isset($metadata['content_urls'])) {
                     Log::info('CheckoutMailToUser: Using database metadata', [
                         'payment_id' => $this->payment->id,
-                        'content_items' => count($metadata['content_urls'])
+                        'content_items' => count($metadata['content_urls']),
                     ]);
+
                     return $metadata;
                 }
             }
-            
+
             // Fallback: try to get from Stripe session metadata
-            if (!empty($this->payment->session_id)) {
+            if (! empty($this->payment->session_id)) {
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
-                
+
                 // Try new flattened format first
                 if (isset($session->metadata['has_content']) && $session->metadata['has_content'] === 'true') {
                     $stripeMetadata = $this->parseFlattenedStripeMetadata($session->metadata);
-                    
+
                     Log::info('CheckoutMailToUser: Using flattened Stripe metadata', [
                         'payment_id' => $this->payment->id,
                         'session_id' => $this->payment->session_id,
-                        'content_items' => count($stripeMetadata['content_urls'] ?? [])
+                        'content_items' => count($stripeMetadata['content_urls'] ?? []),
                     ]);
+
                     return $stripeMetadata;
                 }
                 // Fallback to legacy JSON format
                 elseif (isset($session->metadata['content_urls'])) {
                     $stripeMetadata = [
                         'content_urls' => json_decode($session->metadata['content_urls'], true),
-                        'wish_items' => json_decode($session->metadata['wish_items'] ?? '[]', true)
+                        'wish_items' => json_decode($session->metadata['wish_items'] ?? '[]', true),
                     ];
-                    
+
                     Log::info('CheckoutMailToUser: Using legacy Stripe metadata', [
                         'payment_id' => $this->payment->id,
-                        'session_id' => $this->payment->session_id
+                        'session_id' => $this->payment->session_id,
                     ]);
+
                     return $stripeMetadata;
                 }
             }
-            
+
             Log::info('CheckoutMailToUser: No comprehensive metadata found, using fallback', [
-                'payment_id' => $this->payment->id
+                'payment_id' => $this->payment->id,
             ]);
+
             return null;
-            
+
         } catch (\Exception $e) {
             Log::warning('CheckoutMailToUser: Failed to retrieve metadata', [
                 'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
-    
+
     /**
      * Parse flattened Stripe metadata into structured format
      */
@@ -420,69 +445,70 @@ class CheckoutMailToUser implements ShouldQueue
     {
         $contentUrls = [];
         $contentItemsCount = intval($metadata['content_items_count'] ?? 0);
-        
+
         // Parse individual content items from flattened keys
         for ($i = 1; $i <= $contentItemsCount; $i++) {
             $itemKey = "item_{$i}";
-            
+
             if (isset($metadata["{$itemKey}_wish_id"])) {
                 $contentUrls[] = [
                     'wish_id' => intval($metadata["{$itemKey}_wish_id"]),
                     'wish_name' => $metadata["{$itemKey}_wish_name"] ?? '',
-                    'has_content' => !empty($metadata["{$itemKey}_content_url"]),
+                    'has_content' => ! empty($metadata["{$itemKey}_content_url"]),
                     'content_url' => $metadata["{$itemKey}_content_url"] ?? null,
                     'content_type' => $metadata["{$itemKey}_content_type"] ?? null,
                     'delivery_status' => $metadata['content_delivery_status'] ?? 'delivered',
-                    'source' => $metadata["{$itemKey}_content_source"] ?? 'unknown'
+                    'source' => $metadata["{$itemKey}_content_source"] ?? 'unknown',
                 ];
             }
         }
-        
+
         // Also include legacy content_urls if present
         if (isset($metadata['content_urls'])) {
             $legacyUrls = json_decode($metadata['content_urls'], true) ?? [];
             // Merge or replace as needed
-            if (empty($contentUrls) && !empty($legacyUrls)) {
+            if (empty($contentUrls) && ! empty($legacyUrls)) {
                 $contentUrls = $legacyUrls;
             }
         }
-        
+
         return [
             'content_urls' => $contentUrls,
             'content_delivery_status' => $metadata['content_delivery_status'] ?? 'delivered',
             'has_content' => $metadata['has_content'] === 'true',
-            'content_items_count' => $contentItemsCount
+            'content_items_count' => $contentItemsCount,
         ];
     }
-    
+
     /**
      * REMOVED: Old individual item deliverable method - replaced with consolidated approach
      */
-    
+
     /**
      * Extract content info for specific wish from comprehensive metadata
      */
     private function getContentInfoFromMetadata($wishId, $paymentMetadata)
     {
-        if (!$paymentMetadata || !isset($paymentMetadata['content_urls'])) {
+        if (! $paymentMetadata || ! isset($paymentMetadata['content_urls'])) {
             return null;
         }
-        
+
         foreach ($paymentMetadata['content_urls'] as $contentData) {
             if ($contentData['wish_id'] == $wishId) {
                 Log::info('CheckoutMailToUser: Found content info in metadata', [
                     'wish_id' => $wishId,
                     'has_content' => $contentData['has_content'],
                     'content_type' => $contentData['content_type'] ?? 'unknown',
-                    'delivery_status' => $contentData['delivery_status'] ?? 'unknown'
+                    'delivery_status' => $contentData['delivery_status'] ?? 'unknown',
                 ]);
+
                 return $contentData;
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * Create deliverable record for individual item
      */
@@ -496,7 +522,7 @@ class CheckoutMailToUser implements ShouldQueue
             $deliveredAt = null;
             $contentFileName = null;
             $contentFileType = null;
-            
+
             // First priority: Use enhanced metadata if available
             if ($contentInfo && $contentInfo['has_content']) {
                 $deliverableUrl = $contentInfo['content_url'];
@@ -504,29 +530,29 @@ class CheckoutMailToUser implements ShouldQueue
                 $deliverableType = $this->determineDeliverableType($contentFileType);
                 $status = ($contentInfo['delivery_status'] === 'ready') ? 'delivered' : 'pending';
                 $deliveredAt = ($status === 'delivered') ? now() : null;
-                
+
                 Log::info('CheckoutMailToUser: Using metadata content info', [
                     'wish_id' => $wish->id,
                     'content_url' => $deliverableUrl,
                     'content_type' => $contentFileType,
-                    'source' => $contentInfo['source'] ?? 'metadata'
+                    'source' => $contentInfo['source'] ?? 'metadata',
                 ]);
             }
             // Fallback: Traditional priority checks
-            elseif (!empty($paymentItem->message_media)) {
+            elseif (! empty($paymentItem->message_media)) {
                 $deliverableType = $paymentItem->media_type == 'video' ? 'media_bundle' : 'digital_file';
                 $deliverableUrl = $this->generateContentUrl($paymentItem->message_media, $paymentItem->media_type);
                 $status = $paymentItem->thank_you_approved ? 'delivered' : 'pending';
                 $deliveredAt = $paymentItem->thank_you_approved ? now() : null;
                 $contentFileType = $paymentItem->media_type;
-            } elseif (!empty($wish->content_file)) {
+            } elseif (! empty($wish->content_file)) {
                 $deliverableUrl = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
                 $deliverableType = $this->determineDeliverableType($wish->content_file_type);
                 $status = 'delivered';
                 $deliveredAt = now();
                 $contentFileName = $wish->content_file_name;
                 $contentFileType = $wish->content_file_type;
-            } elseif (!empty($wish->reward)) {
+            } elseif (! empty($wish->reward)) {
                 $deliverableUrl = $this->generateContentUrl($wish->reward, 'image');
                 $status = 'delivered';
                 $deliveredAt = now();
@@ -536,11 +562,11 @@ class CheckoutMailToUser implements ShouldQueue
                 $status = 'delivered';
                 $deliveredAt = now();
             }
-            
+
             // Determine customer email and name
             $customerEmail = null;
             $customerName = null;
-            
+
             if ($this->payment->user) {
                 $customerEmail = $this->payment->user->email;
                 $customerName = $this->payment->user->name;
@@ -548,7 +574,7 @@ class CheckoutMailToUser implements ShouldQueue
                 $customerEmail = $this->payment->guest_email;
                 $customerName = $this->payment->name ?? 'Guest';
             }
-            
+
             // Get payment intent ID from Stripe session if available
             $paymentIntentId = null;
             if ($this->payment->session_id) {
@@ -558,17 +584,31 @@ class CheckoutMailToUser implements ShouldQueue
                     $paymentIntentId = $session->payment_intent ?? null;
                     Log::info('CheckoutMailToUser: Retrieved payment intent from session (item deliverable)', [
                         'session_id' => $this->payment->session_id,
-                        'payment_intent_id' => $paymentIntentId
+                        'payment_intent_id' => $paymentIntentId,
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('CheckoutMailToUser: Failed to retrieve payment intent from session (item deliverable)', [
                         'session_id' => $this->payment->session_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
-            
-            $deliverable = \App\Models\Deliverable::create([
+
+            // Dedup: the Stripe webhook (processWishItemDeliverable) often lands before
+            // the browser returns to the success URL and already created this row. Keyed
+            // on session_id + item_id because a cart session can carry several wish items.
+            if (Deliverable::where('session_id', $this->payment->session_id)
+                ->where('item_id', $wish->id)
+                ->exists()) {
+                Log::info('CheckoutMailToUser: Deliverable already exists for this session+item, skipping', [
+                    'session_id' => $this->payment->session_id,
+                    'wish_id' => $wish->id,
+                ]);
+
+                return;
+            }
+
+            $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
                 'product_id' => (string) $wish->id, // Use actual wish_id from database, not Stripe product_id
                 'item_id' => $wish->id, // NEW: Database wish item ID for easy querying
@@ -595,83 +635,85 @@ class CheckoutMailToUser implements ShouldQueue
                     'quantity' => $paymentItem->quantity,
                     'content_file_name' => $contentFileName,
                     'content_file_type' => $contentFileType,
-                    'has_content' => !empty($deliverableUrl),
+                    'has_content' => ! empty($deliverableUrl),
                     'payment_item_id' => $paymentItem->id,
                     'individual_delivery' => true,
-                    'cart_item_id' => $paymentItem->user_cart_id // Reference to cart item for full traceability
+                    'cart_item_id' => $paymentItem->user_cart_id, // Reference to cart item for full traceability
                 ]),
                 'status' => $status,
-                'delivered_at' => $deliveredAt
+                'delivered_at' => $deliveredAt,
             ]);
-            
+
             Log::info('CheckoutMailToUser: Individual deliverable created', [
                 'deliverable_id' => $deliverable->id,
                 'wish_name' => $wish->wishname,
                 'status' => $status,
-                'has_content' => !empty($deliverableUrl)
+                'has_content' => ! empty($deliverableUrl),
             ]);
-            
+
             // Dispatch certificate generation job for the deliverable using SQS
             try {
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
                 Log::info('CheckoutMailToUser: Certificate generation job dispatched to SQS', [
                     'deliverable_id' => $deliverable->id,
                     'wish_id' => $wish->id,
-                    'queue_connection' => 'sqs_certificates'
+                    'queue_connection' => 'sqs_certificates',
                 ]);
             } catch (\Exception $e) {
                 Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [
                     'deliverable_id' => $deliverable->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
-            
+
             // Update Stripe payment intent metadata immediately for deliverables with payment intents
             if ($deliverable->payment_intent_id && $status === 'delivered') {
                 try {
                     $stripeMetadataService = app(StripeMetadataService::class);
                     $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                         'checkout_processed_at' => now()->toISOString(),
-                        'immediate_delivery' => 'true'
+                        'immediate_delivery' => 'true',
                     ]);
                 } catch (\Exception $e) {
                     Log::error('CheckoutMailToUser: Failed to update Stripe metadata', [
                         'deliverable_id' => $deliverable->id,
                         'payment_intent_id' => $deliverable->payment_intent_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
-            
+
             return $deliverable;
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create deliverable record', [
                 'wish_id' => $wish->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
-    
+
     /**
      * REMOVED: Old individual email sender - replaced with consolidated approach
      */
-    
+
     /**
      * Create deliverable notification record
      */
     private function createDeliverableNotification($deliverable)
     {
         try {
-            if (!$this->payment->user_id) {
+            if (! $this->payment->user_id) {
                 Log::info('CheckoutMailToUser: Skipping notification for guest checkout');
+
                 return;
             }
-            
+
             $metadata = json_decode($deliverable->metadata, true);
             $wishName = $metadata['wish_name'] ?? 'Digital Content';
-            
+
             $notification = DB::table('deliverable_notifications')->insert([
                 'uuid' => Str::uuid(),
                 'deliverable_id' => $deliverable->id,
@@ -679,8 +721,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'notification_type' => $deliverable->status === 'delivered' ? 'deliverable_delivered' : 'deliverable_pending',
                 'channel' => 'email',
                 'subject' => "Content Delivered: {$wishName}",
-                'message' => $deliverable->status === 'delivered' 
-                    ? "Your content for '{$wishName}' has been delivered and is ready for access." 
+                'message' => $deliverable->status === 'delivered'
+                    ? "Your content for '{$wishName}' has been delivered and is ready for access."
                     : "Your content for '{$wishName}' is being prepared and will be delivered soon.",
                 'status' => 'sent',
                 'sent_at' => now(),
@@ -688,26 +730,26 @@ class CheckoutMailToUser implements ShouldQueue
                     'deliverable_id' => $deliverable->id,
                     'payment_id' => $this->payment->id,
                     'wish_name' => $wishName,
-                    'has_content' => !empty($deliverable->deliverable_url)
+                    'has_content' => ! empty($deliverable->deliverable_url),
                 ]),
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
-            
+
             Log::info('CheckoutMailToUser: Deliverable notification created', [
                 'deliverable_id' => $deliverable->id,
                 'wish_name' => $wishName,
-                'notification_type' => $deliverable->status === 'delivered' ? 'deliverable_delivered' : 'deliverable_pending'
+                'notification_type' => $deliverable->status === 'delivered' ? 'deliverable_delivered' : 'deliverable_pending',
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create deliverable notification', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
-    
+
     /**
      * Legacy method - kept for backward compatibility
      */
@@ -717,7 +759,7 @@ class CheckoutMailToUser implements ShouldQueue
             // Get wish item from payment metadata or relationships
             $wishItemId = null;
             $wishItem = null;
-            
+
             // Try multiple ways to get wish item
             if (isset($this->payment->metadata) && is_array($this->payment->metadata) && isset($this->payment->metadata['wish_item_id'])) {
                 $wishItemId = $this->payment->metadata['wish_item_id'];
@@ -727,14 +769,14 @@ class CheckoutMailToUser implements ShouldQueue
                 $wishItem = $this->payment->wishItem;
                 $wishItemId = $wishItem->id;
             }
-            
-            if ($wishItemId && !$wishItem) {
-                $wishItem = \App\Models\WishItem::find($wishItemId);
+
+            if ($wishItemId && ! $wishItem) {
+                $wishItem = WishItem::find($wishItemId);
             }
-            
+
             // Determine product type with better logic
             $productType = 'checkout'; // Default for checkout emails
-            
+
             if ($wishItem) {
                 $productType = 'wish';
             } elseif (isset($this->payment->metadata) && is_array($this->payment->metadata) && isset($this->payment->metadata['product_type'])) {
@@ -756,10 +798,10 @@ class CheckoutMailToUser implements ShouldQueue
                     $productType = 'membership';
                 }
             }
-            
+
             // Get transaction amount from multiple possible sources
             $amount = 0;
-            
+
             if (isset($this->payment->amount) && is_numeric($this->payment->amount)) {
                 $amount = $this->payment->amount;
             } elseif (isset($this->payment->amount_total) && is_numeric($this->payment->amount_total)) {
@@ -769,20 +811,20 @@ class CheckoutMailToUser implements ShouldQueue
             } elseif ($wishItem && isset($wishItem->amount) && is_numeric($wishItem->amount)) {
                 $amount = $wishItem->amount;
             }
-            
+
             // Ensure amount is positive
             $amount = max(0, $amount);
-            
+
             Log::info('CheckoutMailToUser: Creating deliverable record with data', [
                 'product_type' => $productType,
                 'amount' => $amount,
                 'amount_divided' => $amount / 100,
                 'payment_id' => $this->payment->id,
                 'user_id' => $this->payment->user_id ?? null,
-                'wish_item_id' => $wishItemId
+                'wish_item_id' => $wishItemId,
             ]);
-            
-            $deliverable = \App\Models\Deliverable::create([
+
+            $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
                 'product_id' => $this->payment->stripe_product_id ?? ($wishItem ? $wishItem->stripe_product_id : 'email_notification'),
                 'price_id' => $this->payment->stripe_price_id ?? ($wishItem ? $wishItem->price_id : null),
@@ -801,10 +843,10 @@ class CheckoutMailToUser implements ShouldQueue
                     'wish_item_id' => $wishItemId,
                     'currency' => $this->curr,
                     'payment_id' => $this->payment->id,
-                    'guest_email' => $this->payment->guest_email ?? null // Include guest email for tracking
+                    'guest_email' => $this->payment->guest_email ?? null, // Include guest email for tracking
                 ]),
                 'status' => 'delivered',
-                'delivered_at' => now()
+                'delivered_at' => now(),
             ]);
 
             Log::info('CheckoutMailToUser: Deliverable record created', [
@@ -812,7 +854,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'payment_id' => $this->payment->id,
                 'type' => 'email',
                 'product_type' => $productType,
-                'amount' => $amount / 100
+                'amount' => $amount / 100,
             ]);
 
         } catch (\Exception $e) {
@@ -822,8 +864,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'payment_data' => [
                     'stripe_product_id' => $this->payment->stripe_product_id ?? 'null',
                     'stripe_price_id' => $this->payment->stripe_price_id ?? 'null',
-                    'session_id' => $this->payment->session_id ?? 'null'
-                ]
+                    'session_id' => $this->payment->session_id ?? 'null',
+                ],
             ]);
         }
     }
@@ -835,76 +877,76 @@ class CheckoutMailToUser implements ShouldQueue
      */
     public function handle()
     {
-            Log::info('CheckoutMailToUser job started', [
+        Log::info('CheckoutMailToUser job started', [
             'payment_id' => $this->payment->id ?? 'null',
             'session_id' => $this->payment->session_id ?? 'null',
             'currency' => $this->curr,
             'guest_email' => $this->payment->guest_email ?? 'null',
             'user_id' => $this->payment->user_id ?? 'null',
             'owner_id' => $this->payment->owner_id ?? 'null',
-            'amount_subtotal' => $this->payment->amount_subtotal ?? 'null'
+            'amount_subtotal' => $this->payment->amount_subtotal ?? 'null',
         ]);
 
         // Check if payment has user relationship
-        if (!isset($this->payment->user)) {
+        if (! isset($this->payment->user)) {
             Log::warning('CheckoutMailToUser: payment->user is not set', [
                 'payment_id' => $this->payment->id ?? 'null',
-                'user_id' => $this->payment->user_id ?? 'null'
+                'user_id' => $this->payment->user_id ?? 'null',
             ]);
         } else {
             Log::info('CheckoutMailToUser: payment->user found', [
                 'payment_id' => $this->payment->id,
                 'user_id' => $this->payment->user->id ?? 'null',
                 'user_email' => $this->payment->user->email ?? 'null',
-                'notification_send' => $this->payment->user->notification_send ?? 'null'
+                'notification_send' => $this->payment->user->notification_send ?? 'null',
             ]);
         }
 
         // Send email if user notifications are enabled OR if no user (guest checkout) but has guest_email
         $shouldSendEmail = false;
-        
+
         if (isset($this->payment->user) && $this->payment->user->notification_send == 1) {
             Log::info('CheckoutMailToUser: Sending email - user notifications enabled');
             $shouldSendEmail = true;
-        } elseif (empty($this->payment->user) && !empty($this->payment->guest_email)) {
+        } elseif (empty($this->payment->user) && ! empty($this->payment->guest_email)) {
             Log::info('CheckoutMailToUser: Sending email - guest checkout with email');
             $shouldSendEmail = true;
         } elseif (empty($this->payment->user)) {
             Log::warning('CheckoutMailToUser: Guest checkout but no guest email provided', [
                 'payment_id' => $this->payment->id,
-                'guest_email' => $this->payment->guest_email ?? 'null'
+                'guest_email' => $this->payment->guest_email ?? 'null',
             ]);
         }
-        
+
         if ($shouldSendEmail) {
             Log::info('CheckoutMailToUser: Sending consolidated email with all wish items', [
                 'payment_id' => $this->payment->id,
-                'currency' => $this->curr
+                'currency' => $this->curr,
             ]);
-            
+
             // Create individual deliverables first (for tracking)
             $deliverables = $this->createConsolidatedDeliverables();
-            
+
             // Send single consolidated email with all wish items to USER (Gifter)
             $this->sendConsolidatedEmail($deliverables);
-            
+
             // Send email to CREATOR (Owner)
             $this->sendCreatorEmail($deliverables);
-            
+
             Log::info('CheckoutMailToUser: Consolidated email sent', [
                 'payment_id' => $this->payment->id,
-                'deliverables_count' => count($deliverables)
+                'deliverables_count' => count($deliverables),
             ]);
         } else {
             Log::info('CheckoutMailToUser: Email not sent', [
                 'payment_id' => $this->payment->id,
                 'has_user' => isset($this->payment->user) ? 'yes' : 'no',
                 'user_notification_send' => $this->payment->user->notification_send ?? 'null',
-                'guest_email' => $this->payment->guest_email ?? 'null'
+                'guest_email' => $this->payment->guest_email ?? 'null',
             ]);
         }
     }
-    
+
     /**
      * Create all deliverables and return them for consolidated email
      */
@@ -912,36 +954,37 @@ class CheckoutMailToUser implements ShouldQueue
     {
         try {
             $deliverables = [];
-            
+
             // Get payment items with their wish data
             $paymentItems = $this->payment->stripePaymentItems()->with('wish')->get();
-            
+
             Log::info('CheckoutMailToUser: Creating consolidated deliverables', [
                 'payment_id' => $this->payment->id,
-                'items_count' => $paymentItems->count()
+                'items_count' => $paymentItems->count(),
             ]);
-            
+
             // Try to use comprehensive metadata if available
             $paymentMetadata = $this->getPaymentMetadata();
-            
+
             foreach ($paymentItems as $item) {
                 $deliverable = $this->processItemDeliverableForConsolidation($item, $paymentMetadata);
                 if ($deliverable) {
                     $deliverables[] = $deliverable;
                 }
             }
-            
+
             return $deliverables;
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to create consolidated deliverables', [
                 'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
-    
+
     /**
      * Process item deliverable for consolidation (creates deliverable record but no individual email)
      */
@@ -949,67 +992,69 @@ class CheckoutMailToUser implements ShouldQueue
     {
         try {
             $wish = $paymentItem->wish;
-            
-            if (!$wish) {
+
+            if (! $wish) {
                 Log::warning('CheckoutMailToUser: No wish found for payment item', [
-                    'payment_item_id' => $paymentItem->id
+                    'payment_item_id' => $paymentItem->id,
                 ]);
+
                 return null;
             }
-            
+
             Log::info('CheckoutMailToUser: Processing item for consolidation', [
                 'wish_id' => $wish->id,
                 'wish_name' => $wish->wishname,
-                'payment_item_id' => $paymentItem->id
+                'payment_item_id' => $paymentItem->id,
             ]);
-            
+
             // Get content info from metadata if available
             $contentInfo = $this->getContentInfoFromMetadata($wish->id, $paymentMetadata);
-            
+
             // Create deliverable record
             $deliverable = $this->createItemDeliverableRecord($paymentItem, $wish, $contentInfo);
-            
+
             if ($deliverable) {
                 // Generate certificate if not already generated
                 if (empty($deliverable->certificate_url)) {
                     try {
-                        $certificateService = app(\App\Services\CertificateService::class);
+                        $certificateService = app(CertificateService::class);
                         $certificateUrl = $certificateService->generateAndUploadCertificate($deliverable, $wish);
                         if ($certificateUrl) {
                             $deliverable->update(['certificate_url' => $certificateUrl]);
                             Log::info('CheckoutMailToUser: Certificate generated for deliverable', [
                                 'deliverable_id' => $deliverable->id,
-                                'certificate_url' => $certificateUrl
+                                'certificate_url' => $certificateUrl,
                             ]);
                         }
                     } catch (\Exception $e) {
                         Log::error('CheckoutMailToUser: Failed to generate certificate', [
                             'deliverable_id' => $deliverable->id,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 }
-                
+
                 // Create deliverable notification (but no individual email)
                 $this->createDeliverableNotification($deliverable);
-                
+
                 // Add wish and content info to deliverable for email template
                 $deliverable->wish_item = $wish;
                 $deliverable->payment_item = $paymentItem;
                 $deliverable->content_info = $contentInfo;
             }
-            
+
             return $deliverable;
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to process item for consolidation', [
                 'payment_item_id' => $paymentItem->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
-    
+
     /**
      * Send single consolidated email with all wish items
      */
@@ -1018,9 +1063,9 @@ class CheckoutMailToUser implements ShouldQueue
         try {
             Log::info('CheckoutMailToUser: Sending consolidated email', [
                 'payment_id' => $this->payment->id,
-                'deliverables_count' => count($deliverables)
+                'deliverables_count' => count($deliverables),
             ]);
-            
+
             // Create consolidated email data
             $consolidatedEmailData = (object) [
                 'id' => $this->payment->id,
@@ -1038,23 +1083,27 @@ class CheckoutMailToUser implements ShouldQueue
                 'guest_email' => $this->payment->guest_email,
                 'deliverables' => $deliverables, // All deliverables for consolidated display
                 'total_items' => count($deliverables),
-                'has_content' => count(array_filter($deliverables, function($d) { return !empty($d->deliverable_url); })) > 0,
-                'consolidated_email' => true // Flag to identify this as consolidated email
+                'has_content' => count(array_filter($deliverables, function ($d) {
+                    return ! empty($d->deliverable_url);
+                })) > 0,
+                'consolidated_email' => true, // Flag to identify this as consolidated email
             ];
-            
+
             // Send email using existing service
             EmailService::checkOutToUser($consolidatedEmailData, $this->curr);
-            
+
             Log::info('CheckoutMailToUser: Consolidated email sent successfully', [
                 'payment_id' => $this->payment->id,
                 'total_amount' => $this->payment->amount_total,
-                'items_with_content' => count(array_filter($deliverables, function($d) { return !empty($d->deliverable_url); }))
+                'items_with_content' => count(array_filter($deliverables, function ($d) {
+                    return ! empty($d->deliverable_url);
+                })),
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to send consolidated email', [
                 'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -1065,16 +1114,17 @@ class CheckoutMailToUser implements ShouldQueue
     private function sendCreatorEmail($deliverables)
     {
         try {
-            if (!$this->payment->owner) {
+            if (! $this->payment->owner) {
                 Log::warning('CheckoutMailToUser: Skipping creator email - owner not set', [
-                    'payment_id' => $this->payment->id
+                    'payment_id' => $this->payment->id,
                 ]);
+
                 return;
             }
 
             Log::info('CheckoutMailToUser: Sending email to creator', [
                 'payment_id' => $this->payment->id,
-                'creator_email' => $this->payment->owner->email
+                'creator_email' => $this->payment->owner->email,
             ]);
 
             // Calculate creator net amount (total of all items)
@@ -1100,31 +1150,31 @@ class CheckoutMailToUser implements ShouldQueue
             ];
 
             $anon = $this->payment->anonymous ?? false;
-            $surprise = !empty($this->payment->message);
+            $surprise = ! empty($this->payment->message);
             $message = $this->payment->message ?? '';
             $anonname = $this->payment->name ?? 'A Fan';
             $vat_amount = $this->payment->vat_tax_amount ?? 0;
 
             EmailService::checkOutUser(
-                $creatorEmailData, 
-                $anon, 
-                $surprise, 
-                $message, 
-                $anonname, 
-                $this->curr, 
+                $creatorEmailData,
+                $anon,
+                $surprise,
+                $message,
+                $anonname,
+                $this->curr,
                 $vat_amount
             );
 
             Log::info('CheckoutMailToUser: Creator email sent successfully', [
                 'payment_id' => $this->payment->id,
-                'net_amount' => $totalCreatorNet
+                'net_amount' => $totalCreatorNet,
             ]);
 
         } catch (\Exception $e) {
             Log::error('CheckoutMailToUser: Failed to send creator email', [
                 'payment_id' => $this->payment->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

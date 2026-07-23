@@ -1,7 +1,5 @@
 <?php
 
-use App\Services\DiscoveryService;
-use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\BillsController;
 use App\Http\Controllers\Auth\CheckoutController;
@@ -24,35 +22,41 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
-use App\Http\Controllers\ReferAndEarnController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\CreatorExpenseController;
+use App\Http\Controllers\CreatorFinancialController;
+use App\Http\Controllers\DeliveriesController;
+use App\Http\Controllers\EvidencePackController;
+use App\Http\Controllers\FounderBonusController;
+use App\Http\Controllers\GifterHubController;
 use App\Http\Controllers\PiggyPotController;
 use App\Http\Controllers\PiggyPotPaymentController;
-use App\Http\Controllers\DeliveriesController;
-use App\Http\Controllers\FounderBonusController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReferAndEarnController;
+use App\Http\Controllers\SavedItemController;
+use App\Http\Controllers\StaticPageController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\WebAuthn\WebAuthnCheckController;
+use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
+use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Jobs\SendRenewMail;
 use App\Models\Bills;
 use App\Models\BulkPwaNotification;
-use App\Models\Logs;
-use App\Models\Membership;
 use App\Models\MonthlyCharge;
-use App\Models\MorConsent;
-use App\Models\SocialLinks;
-use App\Models\TipGoalsPayment;
-use App\Http\Controllers\WebAuthn\WebAuthnCheckController;
-use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
-use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
-use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
+use App\Models\User;
+use App\Models\WishItem;
+use App\SeoMeta;
+use App\Services\DiscoveryService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use App\Models\WishItem;
-use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Carbon\Carbon;
+use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -62,20 +66,20 @@ Route::middleware('guest')->group(function () {
             'token' => $token,
         ]);
     })->name('invite');
-    Route::get('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
+    Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
-    Route::post('register', [App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
-    Route::get('login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])
+    Route::post('register', [RegisteredUserController::class, 'store']);
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
-    Route::match(['get', 'post'], 'verify/login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])->name('login-user');
-    Route::post('verify-2fa', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'verify2FA'])->middleware('throttle:5,1')->name('verify2FA');
-    Route::post('/verify-user', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
-    Route::post('forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])->name('password.email');
-    Route::get('forgot-password/{uuid}', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'forgotPasswordPage']);
-    Route::post('change-password/{uuid}', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
-    Route::get('reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])->name('password.reset');
-    Route::post('reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])->name('password.store');
-    Route::get('verify-token/{token}', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'authRedirects']);
+    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
+    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->middleware('throttle:5,1')->name('verify2FA');
+    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
+    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+    Route::get('verify-token/{token}', [AuthenticatedSessionController::class, 'authRedirects']);
 });
 
 /*
@@ -86,7 +90,7 @@ Route::middleware('guest')->group(function () {
 // debug route
 Route::get('/debug/webauthn-credentials', function () {
 
-    return \App\Models\User::with('webAuthnCredentials')->get()
+    return User::with('webAuthnCredentials')->get()
         ->map(function ($user) {
 
             return [
@@ -98,14 +102,13 @@ Route::get('/debug/webauthn-credentials', function () {
                         'device' => $cred->device_name,
                         'browser' => $cred->browser,
                         'platform' => $cred->platform,
-                        'last_used' => $cred->last_used_at
+                        'last_used' => $cred->last_used_at,
                     ];
-                })
+                }),
 
             ];
         });
 })->middleware('auth');
-
 
 // delete single device
 // Route::delete('/webauthn/device/{id}', function ($id) {
@@ -122,18 +125,16 @@ Route::get('/debug/webauthn-credentials', function () {
 //     ]);
 // });
 
-
-
 // ========== WEBAUTHN ROUTES ==========
 Route::get('/debug-webauthn-credential', function () {
-    if (!auth()->check()) {
+    if (! auth()->check()) {
         return response()->json(['error' => 'Not authenticated'], 401);
     }
 
     $user = auth()->user();
     $credential = $user->webAuthnCredentials()->first();
 
-    if (!$credential) {
+    if (! $credential) {
         return response()->json(['error' => 'No passkey found for user'], 404);
     }
 
@@ -145,7 +146,7 @@ Route::get('/debug-webauthn-credential', function () {
         'rp_id' => $credential->rp_id,
         'origin' => $credential->origin,
         'counter' => $credential->counter,
-        'last_used' => $credential->last_used_at
+        'last_used' => $credential->last_used_at,
     ]);
 })->middleware('auth');
 
@@ -172,9 +173,7 @@ Route::prefix('webauthn')->group(function () {
     });
 });
 
-
-
-Route::withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+Route::withoutMiddleware([VerifyCsrfToken::class])
     ->group(function () {
 
         WebAuthnRoutes::register();
@@ -189,7 +188,7 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 
 // Discover route
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
-    $getData = function () use ($request, $discoveryService, $type, $category) {
+    $getData = function () use ($request, $discoveryService, $type) {
         $filters = $request->only(['search', 'contentType', 'page', 'sortBy', 'type', 'minPrice', 'maxPrice', 'categories']);
         // Normalize type and apply shortcut filters
         if ($type) {
@@ -205,7 +204,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             }
         } else {
             // If searching by keyword and no explicit content type, search across all
-            if (!$request->has('contentType') && $request->has('search')) {
+            if (! $request->has('contentType') && $request->has('search')) {
                 $filters['contentType'] = 'All';
             }
         }
@@ -224,7 +223,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         // Grid view when searching or selecting a specific content type
         $isSearch = $hasSearchParam || $hasTypeParam || $hasContentTypeParam;
         // Root discover shows sections
-        if (!$type && empty($queryParams)) {
+        if (! $type && empty($queryParams)) {
             $isSearch = false;
         }
 
@@ -241,7 +240,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             // Fetch all types unless specific contentType is set
             $ctype = $filters['contentType'] ?? 'All';
 
-            if ($type && in_array(strtolower($type), ['trending', 'new']) && !$request->has('contentType')) {
+            if ($type && in_array(strtolower($type), ['trending', 'new']) && ! $request->has('contentType')) {
                 $ctype = 'All';
             }
 
@@ -293,17 +292,18 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             'featuredMemberships' => $featuredMemberships,
             'featuredTasks' => $featuredTasks,
             'filters' => $filters,
-            'searchResults' => $searchResults
+            'searchResults' => $searchResults,
         ];
     };
 
     $page = max(1, (int) $request->query('page', 1));
     $nonPageQuery = $request->query();
     unset($nonPageQuery['page']);
-    $hasNonPageQuery = !empty(array_filter($nonPageQuery, function ($v) {
+    $hasNonPageQuery = ! empty(array_filter($nonPageQuery, function ($v) {
         if (is_array($v)) {
-            return count(array_filter($v, fn($x) => $x !== null && $x !== '')) > 0;
+            return count(array_filter($v, fn ($x) => $x !== null && $x !== '')) > 0;
         }
+
         return $v !== null && $v !== '';
     }));
 
@@ -311,34 +311,34 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         ['name' => 'Home', 'url' => url('/')],
         ['name' => 'Discover', 'url' => url('/discover')],
     ];
-    if (!empty($type) && $type !== 'trending') {
+    if (! empty($type) && $type !== 'trending') {
         $breadcrumbs[] = ['name' => ucwords(str_replace('-', ' ', (string) $type)), 'url' => $request->url()];
     }
-    \App\SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
+    SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
 
     if ($hasNonPageQuery) {
-        \App\SeoMeta::setRobots('noindex,follow');
+        SeoMeta::setRobots('noindex,follow');
     }
 
     $canonicalBase = $request->url();
-    $canonicalUrl = ($page > 1 && !$hasNonPageQuery) ? ($canonicalBase . '?page=' . $page) : $canonicalBase;
-    \App\SeoMeta::setCanonical($canonicalUrl);
+    $canonicalUrl = ($page > 1 && ! $hasNonPageQuery) ? ($canonicalBase.'?page='.$page) : $canonicalBase;
+    SeoMeta::setCanonical($canonicalUrl);
 
     // Use cache for everyone, but shorter TTL for auth users if needed
     // However, discovery data is mostly global, so we can use a shared cache key
     // that depends on the request parameters.
-    $cacheKey = 'discover_v2_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
+    $cacheKey = 'discover_v2_'.($type ?? 'root').'_'.($category ?? 'none').'_'.md5(json_encode($request->all()));
     $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
 
-    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
+    $data = Cache::remember($cacheKey, $ttl, $getData);
 
     if ($page > 1) {
-        \App\SeoMeta::setPaginationLinks($request->fullUrlWithQuery(['page' => $page - 1]), null);
+        SeoMeta::setPaginationLinks($request->fullUrlWithQuery(['page' => $page - 1]), null);
     }
 
     $limit = 24;
     $hasNext = false;
-    if (!empty($data['searchResults']) && is_array($data['searchResults'])) {
+    if (! empty($data['searchResults']) && is_array($data['searchResults'])) {
         foreach ($data['searchResults'] as $group) {
             if (is_iterable($group) && count($group) >= $limit) {
                 $hasNext = true;
@@ -348,7 +348,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     }
 
     if ($hasNext) {
-        \App\SeoMeta::setPaginationLinks(null, $request->fullUrlWithQuery(['page' => $page + 1]));
+        SeoMeta::setPaginationLinks(null, $request->fullUrlWithQuery(['page' => $page + 1]));
     }
 
     return Inertia::render('discover/Discover', [
@@ -362,9 +362,9 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'filters' => $data['filters'],
         'searchResults' => $data['searchResults'],
     ]);
-})->name("discover");
+})->name('discover');
 
-Route::get('forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
 
 // Route::withoutMiddleware([VerifyCsrfToken::class])->group(function () {
 
@@ -376,7 +376,7 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
-    /*send surprise amount*/
+    /* send surprise amount */
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
@@ -389,7 +389,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
 
         // Bills - accessible without subscription
-        Route::prefix("bill")->name("bill.")->group(function () {
+        Route::prefix('bill')->name('bill.')->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
@@ -398,7 +398,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Memberships - accessible without subscription
-        Route::prefix("membership")->name("membership.")->group(function () {
+        Route::prefix('membership')->name('membership.')->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
             Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
@@ -427,16 +427,21 @@ Route::middleware('auth')->group(function () {
             Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
             Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
             Route::post('/add/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
-            Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
-            Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
+            // POST, not GET: a GET carries no CSRF token, so `<img src=".../shop/delete/{uuid}">`
+            // on any page was enough to delete or deactivate a logged-in creator's listing.
+            Route::post('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
+            Route::post('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
         });
 
         // Posts - accessible without subscription
-        Route::prefix("post")->name("post.")->group(function () {
+        Route::prefix('post')->name('post.')->group(function () {
             Route::post('save', [PostsController::class, 'savePost'])->name('save');
             Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
-            Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
-            Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
+            // POST, not GET — same reason as the shop routes above: a GET carries no CSRF
+            // token, so an <img src=".../post/delete/{uuid}"> was enough to delete a
+            // logged-in creator's post, and a link prefetch was enough to "like" one.
+            Route::post('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+            Route::post('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
             Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
             Route::post('comment-approve/{uuid}', [PostsController::class, 'approveComment'])->name('comment-approve');
@@ -457,16 +462,16 @@ Route::middleware('auth')->group(function () {
 
     // Stripe routes - accessible without full identity verification to allow onboarding
     Route::middleware('mustHaveToVerify')->group(function () {
-        Route::prefix("stripe")->name("stripe.")->group(function () {
-            Route::get("/authorize", [StripeController::class, "index"])->name("index");
-            Route::match(["get", "post"], "/connect-init/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
+        Route::prefix('stripe')->name('stripe.')->group(function () {
+            Route::get('/authorize', [StripeController::class, 'index'])->name('index');
+            Route::match(['get', 'post'], '/connect-init/{country?}/{currency?}', [StripeController::class, 'initConnect'])->name('connect');
             // Merchant of Record Consent Routes
             Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
 
-            Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
-            Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
-            Route::get("/enable_card_payments", [StripeController::class, "enableCardPayments"])->name("enable.card.payments");
-            Route::get("/upgrade-express-account", [StripeController::class, "upgradeStripeAccount"])->name("upgrade.account");
+            Route::get('/response', [StripeController::class, 'connectReturn'])->name('return');
+            Route::post('/login', [StripeController::class, 'loginToStripe'])->name('login');
+            Route::get('/enable_card_payments', [StripeController::class, 'enableCardPayments'])->name('enable.card.payments');
+            Route::get('/upgrade-express-account', [StripeController::class, 'upgradeStripeAccount'])->name('upgrade.account');
         });
     });
 
@@ -491,7 +496,7 @@ Route::middleware('auth')->group(function () {
             Route::get('account', function () {
                 try {
                     $user = Auth::user();
-                    if (!$user) {
+                    if (! $user) {
                         return redirect()->route('login');
                     }
 
@@ -499,8 +504,7 @@ Route::middleware('auth')->group(function () {
                     // I need to copy the whole closure or just insert before it.
                     // To avoid copying the massive closure, I will use a different anchor.
 
-
-                    $auto_tweet = (int)($user->auto_tweet ?? 0) === 1;
+                    $auto_tweet = (int) ($user->auto_tweet ?? 0) === 1;
                     $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
                     // Find the currently active subscription period
@@ -522,7 +526,7 @@ Route::middleware('auth')->group(function () {
                         ->first();
 
                     // If no active period found, get the most recent one
-                    if (!$subscription) {
+                    if (! $subscription) {
                         $subscription = MonthlyCharge::where('user_id', $user->id)
                             ->newestFirst()
                             ->first();
@@ -535,16 +539,17 @@ Route::middleware('auth')->group(function () {
                     $subscription_history = $historyCollection->map(function ($charge) {
                         $fmt = function ($date) {
                             try {
-                                return $date ? \Carbon\Carbon::parse($date)->format('d F Y') : null;
-                            } catch (\Throwable $e) {
+                                return $date ? Carbon::parse($date)->format('d F Y') : null;
+                            } catch (Throwable $e) {
                                 return null;
                             }
                         };
+
                         return [
                             'id' => $charge->id,
                             'uuid' => $charge->uuid,
                             'stripe_id' => $charge->stripe_id,
-                            'amount' => (float)($charge->amount ?? 0),
+                            'amount' => (float) ($charge->amount ?? 0),
                             'currency' => $charge->currency ?? 'GBP',
                             'status' => $charge->status ?? 'pending',
                             'current_start_trial_date' => $fmt($charge->current_start_trial_date),
@@ -599,7 +604,7 @@ Route::middleware('auth')->group(function () {
                         $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
                         $site_subscription['subscription_status_code'] = $user->subscription_status;
                         $site_subscription['status'] = $user->display_subscription_status;
-                        $site_subscription['is_cancelled'] = $subscription->status === 'canceled' || !empty($subscription->cancelled_at);
+                        $site_subscription['is_cancelled'] = $subscription->status === 'canceled' || ! empty($subscription->cancelled_at);
                     } else {
                         $site_subscription['status'] = 'Not Subscribed';
                         $site_subscription['subscription_status_code'] = 3;
@@ -614,21 +619,22 @@ Route::middleware('auth')->group(function () {
                             'uuid' => $subscription->uuid,
                             'user_id' => $subscription->user_id,
                             'status' => $subscription->status,
-                            'amount' => (float)($subscription->amount ?? 0),
+                            'amount' => (float) ($subscription->amount ?? 0),
                             'currency' => $subscription->currency ?? 'GBP',
-                            'current_start_trial_date' => $subscription->current_start_trial_date ? \Carbon\Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
-                            'current_end_trial_date' => $subscription->current_end_trial_date ? \Carbon\Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
-                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? \Carbon\Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
-                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? \Carbon\Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
-                            'upcoming_payment' => $subscription->upcoming_payment ? \Carbon\Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                            'created_at' => $subscription->created_at ? \Carbon\Carbon::parse($subscription->created_at)->format('d F Y') : null,
+                            'current_start_trial_date' => $subscription->current_start_trial_date ? Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
+                            'current_end_trial_date' => $subscription->current_end_trial_date ? Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
+                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
+                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
+                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
+                            'created_at' => $subscription->created_at ? Carbon::parse($subscription->created_at)->format('d F Y') : null,
                         ] : null,
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
                     ]);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+                } catch (Throwable $e) {
+                    Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+
                     return Inertia::render('ErrorPage', [
                         'status' => 500,
                         'message' => 'Something went wrong',
@@ -663,36 +669,19 @@ Route::middleware('auth')->group(function () {
 
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
 
-            Route::get('/stripe', function (Request $request) {
-                $auth = Auth::user();
-                $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
-                $membership = Membership::where('user_id', $auth->id)->where('approved', 1)->count();
-                // Check if MoR consent exists in the database
-                $morConsentDetails = null;
-                $morConsentGiven = MorConsent::userHasGivenConsent($auth->id);
-                if ($morConsentGiven) {
-                    $latestConsent = MorConsent::getLatestConsent($auth->id);
-                    if ($latestConsent) {
-                        $morConsentDetails = [
-                            'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
-                            'ip_address' => $latestConsent->ip_address,
-                            'device' => $latestConsent->device_type,
-                            'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
-                        ];
-                    }
-                }
-                return Inertia::render('stripe/Stripe', [
-                    'bills_count' => $bills,
-                    'membership_count' => $membership,
-                    'mor_consent_given' => $morConsentGiven,
-                    'mor_consent_details' => $morConsentDetails,
-                ]);
-            })->middleware(['auth', 'verified'])->name('stripe');
+            // This used to render stripe/Stripe itself, bypassing every guard in
+            // StripeController::index (profile approval, identity verification,
+            // already-connected). It was also the target of the only two "Connect
+            // Stripe" links in the app. Kept as a redirect so old links/bookmarks
+            // land on the guarded page instead of the unguarded copy.
+            Route::get('/stripe', fn () => redirect()->route('stripe.index'))
+                ->middleware(['auth', 'verified'])
+                ->name('stripe');
 
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
             // Twitter
-            Route::prefix("twitter")->name("x.")->group(function () {
+            Route::prefix('twitter')->name('x.')->group(function () {
                 Route::get('init', [TwitterController::class, 'authInit'])->name('init');
                 Route::get('authorize', [TwitterController::class, 'handleAuth'])->name('handle');
                 Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
@@ -708,14 +697,14 @@ Route::middleware('auth')->group(function () {
             // Intro video
             Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
 
-            Route::prefix("intro")->name("intro.")->group(function () {
+            Route::prefix('intro')->name('intro.')->group(function () {
                 Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
                 Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
                 Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
                 // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
             });
 
-            Route::prefix("deliveries")->name("deliveries.")->group(function () {
+            Route::prefix('deliveries')->name('deliveries.')->group(function () {
                 Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
                 Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
@@ -724,7 +713,7 @@ Route::middleware('auth')->group(function () {
 
             Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout.auth');
 
-            Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
+            Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name('mandatory.checkout');
 
             Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
 
@@ -745,7 +734,7 @@ Route::middleware('auth')->group(function () {
                         $fmt = function ($date) {
                             try {
                                 return $date ? Carbon::parse($date)->format('d F Y') : null;
-                            } catch (\Throwable $e) {
+                            } catch (Throwable $e) {
                                 return null;
                             }
                         };
@@ -778,6 +767,7 @@ Route::middleware('auth')->group(function () {
         // stripe identity verification routes
         Route::get('/stripe/identity-verification', function () {
             $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+
             // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
             //     $user = Auth::user();
             //     $user->identity_admin_status = 0;
@@ -798,36 +788,40 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
 
-        Route::post('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
+        Route::post('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name('piggy-bank-setting');
 
-        Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
-        Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
-        Route::get('delete-all-notifications/', [ProfileController::class, 'deleteAllNotifications'])->name("delete-all-notifications");
+        Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name('get-notification');
+        Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name('mark-as-read');
+        Route::get('delete-all-notifications/', [ProfileController::class, 'deleteAllNotifications'])->name('delete-all-notifications');
 
         // Creator Financial Tools
         Route::prefix('financial')->name('financial.')->group(function () {
-            Route::get('/dashboard/{tab?}', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('dashboard');
-            Route::post('/refresh', [\App\Http\Controllers\CreatorFinancialController::class, 'refresh'])->name('refresh');
-            Route::get('/history', [\App\Http\Controllers\CreatorFinancialController::class, 'history'])->name('history');
-            Route::post('/profile', [\App\Http\Controllers\CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
-            Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
-            Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
-            Route::get('/statement/download', [\App\Http\Controllers\CreatorFinancialController::class, 'downloadStatement'])->name('statement.download');
-            Route::get('/opportunities', [\App\Http\Controllers\CreatorFinancialController::class, 'opportunities'])->name('opportunities');
+            Route::get('/dashboard/{tab?}', [CreatorFinancialController::class, 'index'])->name('dashboard');
+            Route::post('/refresh', [CreatorFinancialController::class, 'refresh'])->name('refresh');
+            Route::get('/history', [CreatorFinancialController::class, 'history'])->name('history');
+            Route::post('/profile', [CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
+            Route::get('/export/csv', [CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
+            Route::get('/statement', [CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
+            // Throttled: each call runs getSummary + three ledger queries + a
+            // dompdf render of up to 500 rows. Unthrottled, one creator looping it
+            // is a cheap way to exhaust Lambda concurrency. (opportunities.remind is
+            // already throttled; this sibling was the gap.)
+            Route::get('/statement/download', [CreatorFinancialController::class, 'downloadStatement'])->name('statement.download')->middleware('throttle:20,1');
+            Route::get('/opportunities', [CreatorFinancialController::class, 'opportunities'])->name('opportunities');
             // Creator-triggered platform reminder to one of THEIR quiet
             // supporters. Throttled: it sends real email/push on each hit.
-            Route::post('/opportunities/remind/{supporterId}', [\App\Http\Controllers\CreatorFinancialController::class, 'remindSupporter'])
+            Route::post('/opportunities/remind/{supporterId}', [CreatorFinancialController::class, 'remindSupporter'])
                 ->whereNumber('supporterId')
                 ->middleware('throttle:10,1')
                 ->name('opportunities.remind');
-            Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
-            Route::get('/fast-start-bonus', [\App\Http\Controllers\CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
+            Route::get('/certificate', [CreatorFinancialController::class, 'certificate'])->name('certificate');
+            Route::get('/fast-start-bonus', [CreatorFinancialController::class, 'fastStartBonus'])->name('fast-start-bonus');
 
             // Expenses
-            Route::get('/expenses', [\App\Http\Controllers\CreatorExpenseController::class, 'index'])->name('expenses.index');
-            Route::post('/expenses', [\App\Http\Controllers\CreatorExpenseController::class, 'store'])->name('expenses.store');
-            Route::put('/expenses/{expense}', [\App\Http\Controllers\CreatorExpenseController::class, 'update'])->name('expenses.update');
-            Route::delete('/expenses/{expense}', [\App\Http\Controllers\CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
+            Route::get('/expenses', [CreatorExpenseController::class, 'index'])->name('expenses.index');
+            Route::post('/expenses', [CreatorExpenseController::class, 'store'])->name('expenses.store');
+            Route::put('/expenses/{expense}', [CreatorExpenseController::class, 'update'])->name('expenses.update');
+            Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
         });
 
         Route::prefix('earnings')->group(function () {
@@ -856,67 +850,66 @@ Route::middleware('auth')->group(function () {
         Route::post('switch-2fa', [ProfileController::class, 'update2faStatus']);
         Route::post('verification-2fa', [ProfileController::class, 'verification2FA']);
 
-
         Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
 
-        Route::post('support/tickets', [\App\Http\Controllers\SupportTicketController::class, 'store'])->name('support.tickets.store');
-        Route::get('support/transaction-details', [\App\Http\Controllers\SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
-        Route::get('support/tickets/{uuid}', [\App\Http\Controllers\SupportTicketController::class, 'show'])->name('support.tickets.show');
-        Route::post('support/tickets/{uuid}/message', [\App\Http\Controllers\SupportTicketController::class, 'message'])->name('support.tickets.message');
-        Route::post('support/tickets/{uuid}/resolve', [\App\Http\Controllers\SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
-        Route::post('support/tickets/{uuid}/creator/approve-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
-        Route::post('support/tickets/{uuid}/creator/reject-refund', [\App\Http\Controllers\SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
+        Route::post('support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
+        Route::get('support/transaction-details', [SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
+        Route::get('support/tickets/{uuid}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
+        Route::post('support/tickets/{uuid}/message', [SupportTicketController::class, 'message'])->name('support.tickets.message');
+        Route::post('support/tickets/{uuid}/resolve', [SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
+        Route::post('support/tickets/{uuid}/creator/approve-refund', [SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
+        Route::post('support/tickets/{uuid}/creator/reject-refund', [SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
 
         Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
             return Inertia::render('gifter/SupportStory', [
                 'creator' => $creator,
-                'gifter' => $gifter
+                'gifter' => $gifter,
             ]);
         })->middleware('check.block')->name('support.story.page');
         Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->middleware('check.block')->name('support.story');
         Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
         Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
         Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
-        
+
         Route::get('/history/blocked-users', [ProfileController::class, 'historyBlockedUsers'])->name('blocked.users');
         // Route::delete('/history/blocked-users/{id}', [ProfileController::class, 'blockedUsers'])->name('blocked.users.destroy');
-
 
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
         // Buyer/supporter self-service hub ("My Purchases")
-        Route::get('my-purchases', [\App\Http\Controllers\GifterHubController::class, 'index'])->name('gifter.hub');
-        Route::get('my-purchases-feed', [\App\Http\Controllers\GifterHubController::class, 'feed'])->name('gifter.hub.feed');
-        Route::get('my-purchases-data', [\App\Http\Controllers\GifterHubController::class, 'data'])->name('gifter.hub.data');
+        Route::get('my-purchases', [GifterHubController::class, 'index'])->name('gifter.hub');
+        Route::get('my-purchases-feed', [GifterHubController::class, 'feed'])->name('gifter.hub.feed');
+        Route::get('my-purchases-data', [GifterHubController::class, 'data'])->name('gifter.hub.data');
 
         // Save-for-later (wishlist of items to buy)
-        Route::post('saved/toggle', [\App\Http\Controllers\SavedItemController::class, 'toggle'])->name('saved.toggle');
-        Route::get('saved/mine', [\App\Http\Controllers\SavedItemController::class, 'mine'])->name('saved.mine');
-
+        Route::post('saved/toggle', [SavedItemController::class, 'toggle'])->name('saved.toggle');
+        Route::get('saved/mine', [SavedItemController::class, 'mine'])->name('saved.mine');
 
         // Intro video
         Route::get('/redirecting', function () {
             return Inertia::render('Redirecting');
-        })->name("redirecting");
+        })->name('redirecting');
 
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
         Route::prefix('financial')->name('financial.')->group(function () {
-            Route::get('/evidence-pack/{uuid}', [\App\Http\Controllers\EvidencePackController::class, 'generate'])->name('evidence-pack');
+            Route::get('/evidence-pack/{uuid}', [EvidencePackController::class, 'generate'])->name('evidence-pack');
         });
 
-        // rye product routes start
-        Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
-        Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
-        Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
-        Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
-        Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
-        Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
-        Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
-        Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
-        Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
-        Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
-        Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+        // rye product routes start — gated behind the RYE kill-switch (RYE_ENABLED)
+        Route::middleware('rye.enabled')->group(function () {
+            Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
+            Route::get('get-creator-address', [WishitemController::class, 'getCreatorStoreAddress'])->name('get.creator.address');
+            Route::post('create-creator-product', [WishitemController::class, 'createRyeProduct'])->name('create.creator.product');
+            Route::get('delete-creator-products/{uuid}', [WishitemController::class, 'deleteAndRestoredRyeProduct'])->name('delete.creator.products');
+            Route::post('create-cart', [WishitemController::class, 'createCart'])->name('create.cart');
+            Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
+            Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
+            Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
+            Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
+            Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
+            Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
+        });
         // rye product routes end
 
         Route::get('/get_category_data/{category}/{user_id}', [WishitemController::class, 'categoryItems'])->name('get_category_data');
@@ -931,7 +924,6 @@ Route::middleware('auth')->group(function () {
         Route::post('send-pwa-to-follower', [PwaNotification::class, 'sendPwaToFollower'])->name('send.pwa.to.follower');
     });
 });
-Route::get('send-automatically-follow-request-to-all', [PwaNotification::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
 
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
@@ -971,13 +963,13 @@ Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class,
 
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
-Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
+Route::prefix('tip-jar')->name('tip-jar.')->group(function () {
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay');
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
-Route::prefix("piggy-pot")->name("piggy-pot.")->group(function () {
-    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name("pay");
+Route::prefix('piggy-pot')->name('piggy-pot.')->group(function () {
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay');
     Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
@@ -990,31 +982,32 @@ Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
 // Legacy /how-it-works → canonical /how-spenny-piggy-works (preserve old URL + SEO)
 Route::get('/how-it-works', function () {
     return redirect()->route('how-spenny-piggy-works', [], 301);
-})->name("how-it-works");
+})->name('how-it-works');
 
-Route::controller(\App\Http\Controllers\StaticPageController::class)->group(function () {
-    Route::get('/terms-and-conditions', 'terms')->name("terms-and-conditions");
-    Route::get('/creator-agreement', 'creatorAgreement')->name("creator-agreement");
-    Route::get('/supporter-terms', 'supporterTerms')->name("supporter-terms");
-    Route::get('/creator-supporter-contract', 'creatorSupporterContract')->name("creator-supporter-contract");
-    Route::get('/mor-agreement', 'morAgreement')->name("mor-agreement");
-    Route::get('/reserves-and-payments-policy', 'paymentsPolicy')->name("reserves-and-payments-policy");
-    Route::get('/paid-tasks-terms', 'paidTasksTerms')->name("paid-tasks-terms");
-    Route::get('/return-policy', 'returnPolicy')->name("return-policy");
-    Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
-    Route::get('/copyright-policy', 'copyrightPolicy')->name("copyright-policy");
-    Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name("fast-start-bonus-terms");
-    Route::get('/content-payment-policy', 'contentPaymentFramework')->name("content-payment-policy");
-    Route::get('/how-spenny-piggy-works', 'howSpennyPiggyWorks')->name("how-spenny-piggy-works");
-    Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
+Route::controller(StaticPageController::class)->group(function () {
+    Route::get('/terms-and-conditions', 'terms')->name('terms-and-conditions');
+    Route::get('/creator-agreement', 'creatorAgreement')->name('creator-agreement');
+    Route::get('/supporter-terms', 'supporterTerms')->name('supporter-terms');
+    Route::get('/creator-supporter-contract', 'creatorSupporterContract')->name('creator-supporter-contract');
+    Route::get('/mor-agreement', 'morAgreement')->name('mor-agreement');
+    Route::get('/reserves-and-payments-policy', 'paymentsPolicy')->name('reserves-and-payments-policy');
+    Route::get('/paid-tasks-terms', 'paidTasksTerms')->name('paid-tasks-terms');
+    Route::get('/return-policy', 'returnPolicy')->name('return-policy');
+    Route::get('/us-addendum', 'usAddendum')->name('us-addendum');
+    Route::get('/copyright-policy', 'copyrightPolicy')->name('copyright-policy');
+    Route::get('/fast-start-bonus-terms', 'fastStartBonusTerms')->name('fast-start-bonus-terms');
+    Route::get('/content-payment-policy', 'contentPaymentFramework')->name('content-payment-policy');
+    Route::get('/how-spenny-piggy-works', 'howSpennyPiggyWorks')->name('how-spenny-piggy-works');
+    Route::post('/accept-terms', 'acceptTerms')->name('accept-terms')->middleware('auth');
 });
 
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
-})->name("promotion-terms");
+})->name('promotion-terms');
 
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
+
     return Storage::response($fullPath);
 });
 
@@ -1030,7 +1023,7 @@ Route::get('leaderboard/vip-supporters', [LeaderBoardController::class, 'vipSupp
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');
 Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'firstThreeWisher'])->name('first-three-wishes');
-/*check username exist*/
+/* check username exist */
 // Route::get('/data-check', function () {
 //     $ret = StripeControl::getSubscription("sub_1OND8tG7xsNScLmXLFzAhobA");
 //     return $ret;
@@ -1039,12 +1032,12 @@ Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'fi
 if (app()->environment('local')) {
     Route::get('/test/test', function () {
         return Inertia::render('Test');
-    })->name("test");
+    })->name('test');
 }
 
 Route::get('/test-intercom-diagnostic', function () {
     return view('intercom-test');
-})->name("intercom.diagnostic");
+})->name('intercom.diagnostic');
 
 Route::get('/problem-solving', function () {
     $nums = [3, 4, 2, 5];
@@ -1058,8 +1051,9 @@ Route::get('/problem-solving', function () {
         }
         array_push($a, $multiple);
     }
+
     return $a;
-})->name("problem-solving");
+})->name('problem-solving');
 
 Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('username.check');
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
@@ -1086,24 +1080,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Paid Tasks Routes (Phase 1) - Prefixed to avoid username collisions
 Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\TaskController::class, 'index'])->name('dashboard');
-    Route::get('/create', [\App\Http\Controllers\TaskController::class, 'create'])->name('create');
-    Route::post('/', [\App\Http\Controllers\TaskController::class, 'store'])->name('store');
-    Route::post('/{uuid}/purchase', [\App\Http\Controllers\TaskController::class, 'purchase'])->name('purchase');
-    Route::get('/{uuid}/success', [\App\Http\Controllers\TaskController::class, 'success'])->name('success');
-    Route::get('/{uuid}/download', [\App\Http\Controllers\TaskController::class, 'download'])->name('download');
-    Route::get('/order/{uuid}', [\App\Http\Controllers\TaskController::class, 'order'])->name('order');
-    Route::post('/purchase/{uuid}/upload', [\App\Http\Controllers\TaskController::class, 'uploadProof'])->name('upload-proof');
-    Route::post('/purchase/{uuid}/review', [\App\Http\Controllers\TaskController::class, 'reviewProof'])->name('review-proof');
-    Route::get('/{uuid}/edit', [\App\Http\Controllers\TaskController::class, 'edit'])->name('edit');
-    Route::post('/{uuid}/update', [\App\Http\Controllers\TaskController::class, 'update'])->name('update');
+    Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
+    Route::get('/create', [TaskController::class, 'create'])->name('create');
+    Route::post('/', [TaskController::class, 'store'])->name('store');
+    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
+    Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
+    Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');
+    Route::get('/order/{uuid}', [TaskController::class, 'order'])->name('order');
+    Route::post('/purchase/{uuid}/upload', [TaskController::class, 'uploadProof'])->name('upload-proof');
+    Route::post('/purchase/{uuid}/review', [TaskController::class, 'reviewProof'])->name('review-proof');
+    Route::get('/{uuid}/edit', [TaskController::class, 'edit'])->name('edit');
+    Route::post('/{uuid}/update', [TaskController::class, 'update'])->name('update');
 });
 
 Route::get('/task/{uuid}/purchase', function ($uuid) {
     return redirect()->route('task.show', $uuid);
 })->name('task.purchase.redirect');
 
-Route::get('/task/{uuid}', [\App\Http\Controllers\TaskController::class, 'show'])->name('task.show');
+Route::get('/task/{uuid}', [TaskController::class, 'show'])->name('task.show');
 
 // Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 // Place specific data routes BEFORE the catch-all username route to avoid interception
@@ -1115,6 +1109,7 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
     $wish = WishItem::find($id);
     $uuid = $wish?->uuid ?? $id;
     request()->merge(['item' => $uuid]);
+
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
 })->middleware('check.block')->name('wish.show');
 
@@ -1122,13 +1117,14 @@ Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUs
     ->middleware('check.block')
     ->name('user.show');
 
-Route::prefix("wish")->name("wish.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout")->middleware('mustCompletedCardVerification');
+Route::prefix('wish')->name('wish.')->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('subscribe.checkout')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
 Route::get('payment/thankyou/{username}', function (Illuminate\Http\Request $request, $username) {
     $owner = User::where('username', $username)->first();
+
     return Inertia::render('Profile/Thankyou', [
         'owner' => $owner,
         'type' => $request->query('type'),
@@ -1146,27 +1142,31 @@ Route::get('payment/thankyou/{username}', function (Illuminate\Http\Request $req
         'source' => $request->query('source'),
         'source_id' => $request->query('source_id'),
     ]);
-})->name("thank-you");
+})->name('thank-you');
 
-Route::prefix("membership")->name("membership.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name("checkout")->middleware('mustCompletedCardVerification');
+Route::prefix('membership')->name('membership.')->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
 });
 
-Route::prefix("bill")->name("bill.")->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name("checkout")->middleware('mustCompletedCardVerification');
+Route::prefix('bill')->name('bill.')->group(function () {
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
-
-Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
-
 Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
+// REMOVED: GET /stripe/manual/payout.
+//
+// Unauthenticated, and it read the platform's Stripe balance and immediately
+// created a payout of the whole available amount. Anyone who found the URL could
+// move the platform's money out, over a GET, with no CSRF token and no
+// confirmation. It was leftover scratch code, never an admin feature.
+// Payouts run through PayoutService (weekly run + reserve release), which is
+// idempotent, audited and gated.
 
-// ADD IN ADMIN PANEL
-Route::get('/stripe/manual/payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
-Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
+// REMOVED: GET /delete-connected-account/{accountId} — unauthenticated, and it
+// deleted an arbitrary creator's Stripe Connect account by ID.
 
 // Stripe Service Agreement Migration Routes — require auth (was fully public; an
 // arbitrary {userId} could be migrated by anyone). The handler must still restrict
@@ -1177,9 +1177,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/force-error/error/file', function () {
-    throw new \Exception("Testing Handler.php");
+    throw new Exception('Testing Handler.php');
 });
-
 
 // Route::get('/test/subscription/email', function () {
 //     $array = [

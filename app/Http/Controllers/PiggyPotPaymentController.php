@@ -33,6 +33,33 @@ use Stripe\PaymentIntent;
 
 class PiggyPotPaymentController extends Controller
 {
+    /**
+     * Minutes an unpaid ('pending') contribution reserves goal headroom.
+     * A Stripe Checkout session the supporter is still filling in must not be
+     * ignored by a concurrent buyer (two £500 buys against a £500 goal both
+     * passed the old check), but an abandoned one must free up again.
+     */
+    private const PENDING_HOLD_MINUTES = 30;
+
+    /**
+     * Amount counted against a pot's goal: settled + in-flight bank payments +
+     * recently-created pending checkouts. Single definition — the unlocked
+     * pre-check and the locked insert must agree or the "max you can add"
+     * message contradicts the error the insert throws.
+     */
+    private static function raisedAmountFor(int $piggyPotId): float
+    {
+        return (float) PiggyPotContribution::where('piggy_pot_id', $piggyPotId)
+            ->where(function ($q) {
+                $q->whereIn('status', ['paid', 'succeeded', 'processing'])
+                    ->orWhere(function ($q2) {
+                        $q2->where('status', 'pending')
+                            ->where('created_at', '>=', now()->subMinutes(self::PENDING_HOLD_MINUTES));
+                    });
+            })
+            ->sum('amount');
+    }
+
     public function contributeToPiggyPot(Request $request, $piggy_pot_uuid)
     {
         $rules = [
@@ -66,6 +93,16 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
+        // A passed deadline closes the listing. Nothing flips `status` to
+        // `expired` on a schedule, so without this check a pot stays
+        // purchasable forever via a direct POST even once the UI hides it.
+        if ($piggyPot->deadline && $piggyPot->deadline->copy()->endOfDay()->isPast()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'This content is no longer available — the creator\'s deadline has passed.',
+            ]);
+        }
+
         // Stripe compliance: content unlock pricing £4.99–£500 (GBP equivalent)
         $priceError = Helpers::priceWithinLimits($request->amount, $piggyPot->currency ?? 'gbp', 4.99, 500);
         if ($priceError) {
@@ -75,7 +112,15 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        if ($user && $user->id === $piggyPot->user_id) {
+        // Self-purchase is blocked for guests too — Piggy Pot allows guest
+        // checkout, so an authenticated-only check let a creator log out and
+        // inflate their own pot's progress bar.
+        $creatorAccount = User::find($piggyPot->user_id);
+        $buyerEmail = $user ? $user->email : $request->email;
+        $isSelfPurchase = ($user && $user->id === $piggyPot->user_id)
+            || ($creatorAccount && $buyerEmail && strcasecmp(trim($buyerEmail), trim($creatorAccount->email)) === 0);
+
+        if ($isSelfPurchase) {
             return response()->json([
                 'status' => false,
                 'msg' => 'You cannot purchase your own content.',
@@ -90,27 +135,9 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();
-        if (! $piggyPot) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Piggy Pot not found.',
-            ]);
-        }
-
-        // Stripe compliance: content unlock priced £4.99–£500 (GBP equivalent)
-        $priceErr = Helpers::priceWithinLimits($request->amount, $piggyPot->currency ?? 'gbp', 4.99, 500);
-        if ($priceErr) {
-            return response()->json([
-                'status' => false,
-                'msg' => $priceErr,
-            ]);
-        }
-
-        // Same status set as the locked re-check below, so the "max you can add"
-        // figure shown here matches what the insert will actually allow
-        // (bank payments sitting in 'processing' already consume headroom).
-        $raised = (float) $piggyPot->contributions()->whereIn('status', ['paid', 'succeeded', 'processing'])->sum('amount');
+        // Same rule as the locked re-check below, so the "max you can add"
+        // figure shown here matches what the insert will actually allow.
+        $raised = self::raisedAmountFor($piggyPot->id);
         $target = (float) $piggyPot->target_amount;
         $remaining = max(0, round($target - $raised, 2));
         if ($remaining <= 0) {
@@ -120,7 +147,7 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $creator = User::where('id', $piggyPot->user_id)->first();
+        $creator = $creatorAccount;
         if (! $creator) {
             return response()->json([
                 'status' => false,
@@ -205,11 +232,8 @@ class PiggyPotPaymentController extends Controller
         $creatorNet = $breakdown['net_to_creator'];
         $vatAmount = 0; // VAT logic is typically handled per-creator if applicable or inside calculateStripeDirectChargeFlow
 
-        // Actually, $basePrice should be stored as minor units in PiggyPotContribution amount?
-        // In other tables, amount is stored as major units or minor units?
-        // PiggyPotContribution amount is expected to be minor units (e.g. 2500 for 25.00).
-        $amountMinor = (int) round($basePrice * $multiplier);
-
+        // PiggyPotContribution.amount holds the LISTED (base) major-unit price —
+        // total_paid holds the grossed-up amount. Reserve maths depends on this.
         $unitAmount = (int) round($finalTotalAmount * $multiplier);
         $creatorNetMinor = (int) round($creatorNet * $multiplier);
 
@@ -250,9 +274,7 @@ class PiggyPotPaymentController extends Controller
                     throw new \RuntimeException('This content is no longer available.');
                 }
 
-                $raisedNow = (float) PiggyPotContribution::where('piggy_pot_id', $piggyPot->id)
-                    ->whereIn('status', ['paid', 'succeeded', 'processing'])
-                    ->sum('amount');
+                $raisedNow = self::raisedAmountFor($piggyPot->id);
                 $remainingNow = max(0, round((float) $locked->target_amount - $raisedNow, 2));
 
                 if ($remainingNow <= 0 || $basePrice > $remainingNow) {
@@ -388,7 +410,10 @@ class PiggyPotPaymentController extends Controller
             return to_route('home')->with('error', 'Insufficient data!');
         }
 
-        $pay->load(['creator', 'piggyPot', 'user']);
+        // withTrashed: a creator deleting the pot while the supporter is mid-checkout
+        // must not leave a paid purchase with no resolvable content (the deliverable
+        // would be written url-less and nothing ever revisits it).
+        $pay->load(['creator', 'user', 'piggyPot' => fn ($q) => $q->withTrashed()]);
 
         $redirectUrl = $request->query('redirect');
 
@@ -547,25 +572,39 @@ class PiggyPotPaymentController extends Controller
 
                 $symbol = Helpers::getCurrency($pay->currency ?? 'GBP');
                 $supporterName = $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?: ($pay->guest_name ?: 'A supporter'));
-                $sendCreator = empty($pay->creator_notified_at);
-                $sendSupporter = empty($pay->supporter_notified_at);
+                // Atomic claim, matching the webhook's guard. This redirect handler
+                // and checkout.session.completed can land concurrently; reading
+                // *_notified_at off an in-memory copy let both pass and send the
+                // purchase emails twice.
+                $supporterEmail = $pay->user?->email ?: $pay->guest_email;
 
-                if ($sendCreator && $pay->creator?->email) {
+                $sendCreator = $pay->creator?->email
+                    ? PiggyPotContribution::where('id', $pay->id)
+                        ->whereNull('creator_notified_at')
+                        ->update(['creator_notified_at' => now()]) > 0
+                    : false;
+
+                $sendSupporter = $supporterEmail
+                    ? PiggyPotContribution::where('id', $pay->id)
+                        ->whereNull('supporter_notified_at')
+                        ->update(['supporter_notified_at' => now()]) > 0
+                    : false;
+
+                if ($sendCreator) {
+                    $pay->creator_notified_at = now();
                     $title = '🐷 New content purchase!';
                     $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}".number_format((float) $pay->amount, 2).'.';
                     Helpers::sendNotification($title, $content, $pay->creator->email);
-                    $pay->creator_notified_at = now();
                 }
 
-                $supporterEmail = $pay->user?->email ?: $pay->guest_email;
-                if ($sendSupporter && $supporterEmail) {
+                if ($sendSupporter) {
+                    $pay->supporter_notified_at = now();
                     $title = '✅ Payment Successful!';
                     $content = "Your purchase of {$symbol}".number_format((float) $pay->total_paid, 2)." from {$pay->creator?->name} is complete.";
                     if (! empty($pay->piggyPot?->content_file)) {
                         $content .= ' Exclusive content unlocked.';
                     }
                     Helpers::sendNotification($title, $content, $supporterEmail);
-                    $pay->supporter_notified_at = now();
                 }
 
                 if ($sendCreator || $sendSupporter) {

@@ -42,6 +42,39 @@ class UserIntro extends Model
         return $url;
     }
 
+    /**
+     * Non-blocking poster URL for list rendering (discovery, search, homepage).
+     *
+     * The full `poster_url` accessor makes a synchronous Uploadcare HTTP call (up to 3s)
+     * per row, which is fine for a single profile but catastrophic in a list of creators.
+     * When a poster already exists, `{poster}/nth/0/` is the exact thumbnail URL the slow
+     * accessor produces anyway — the HTTP round trip only swaps the stored uuid without
+     * changing the rendered image. When no poster exists yet, we warm it on the queue and
+     * return null this render; the frontend already falls back to the creator avatar when
+     * poster_url is null/false.
+     */
+    public function posterUrlNonBlocking(): ?string
+    {
+        $cdn = config('services.uploadcare.cdn', 'https://ucarecdn.com/');
+
+        if (! empty($this->poster)) {
+            return $cdn.$this->poster.'/nth/0/';
+        }
+
+        if (! empty($this->uuid)) {
+            // Generate off the web request; harmless no-op if already warmed.
+            $id = $this->id;
+            dispatch(function () use ($id) {
+                $intro = static::find($id);
+                if ($intro && empty($intro->poster)) {
+                    $intro->poster_url; // triggers generation + save inside the worker
+                }
+            })->afterResponse();
+        }
+
+        return null;
+    }
+
     public function getPosterUrlAttribute()
     {
         $url = null;

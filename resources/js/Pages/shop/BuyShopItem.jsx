@@ -22,6 +22,7 @@ export default function BuyShopItem({
     open,
     isPaid,
     country,
+    onCountryChange,
     shippingPrice,
     card_capabilities,
 }) {
@@ -58,13 +59,12 @@ export default function BuyShopItem({
             ...shipping_info,
             [e.target.name]: e.target.value,
         });
+        // Re-quote shipping for the destination the buyer actually picked — it used
+        // to be priced off their IP country and only the IP country was sent.
+        if (e.target.name === "country") {
+            onCountryChange?.(e.target.value);
+        }
     };
-
-    const [fairPrice, setfaiPrice] = useState(actualPrice());
-
-    useEffect(() => {
-        setfaiPrice(actualPrice());
-    }, [s]);
 
     const slug = (inputString) => {
         return inputString
@@ -82,6 +82,20 @@ export default function BuyShopItem({
     const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("card");
     const [previewPrices, setPreviewPrices] = useState(null);
+
+    // One place for the checkout maths the receipt above and the pay button share.
+    const isPhysicalItem = (s?.type ?? shop?.type) === "physical";
+    const itemCurrency = (s?.currency || "GBP").toUpperCase();
+    const qty = Math.max(1, parseInt(quantity, 10) || 1);
+    const itemSubtotal = (parseFloat(actualPrice() || s.price) || 0) * qty;
+    const vatAmount = itemSubtotal * ((s?.user?.vat_amount_percentage || 0) / 100);
+    const shippingTotal = isPhysicalItem ? (parseFloat(shippingPrice) || 0) * qty : 0;
+    const baseBeforeFees = itemSubtotal + vatAmount + shippingTotal;
+    const totalSupporterPays =
+        paymentMethod === "bank" && previewPrices?.bank != null
+            ? previewPrices.bank
+            : calculateTotalSupporterPays(baseBeforeFees, itemCurrency).total_supporter_pays;
+
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
@@ -262,7 +276,6 @@ export default function BuyShopItem({
             if (response.data.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
                 setShowStepUp(false);
-                setCaptchaToken("verified");
                 buyItem("verified");
             } else {
                 toast.error("Verification failed.");
@@ -284,8 +297,17 @@ export default function BuyShopItem({
              errorAlert("This creator cannot accept payments at the moment.");
              return false;
         }
-        if (email === "" || name === "") {
+        if (email.trim() === "" || name.trim() === "") {
             errorAlert("Please enter your name and email");
+            return false;
+        }
+        // The email input is not inside a <form>, so native validation never runs.
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            errorAlert("Please enter a valid email address");
+            return false;
+        }
+        if (turnstileSiteKey && !captchaToken && typeof token !== "string") {
+            errorAlert("Please wait a moment for the security check to finish, then try again.");
             return false;
         }
 
@@ -303,18 +325,29 @@ export default function BuyShopItem({
         // If token is passed directly (e.g. from verify), use it, otherwise use state
         const currentToken = typeof token === "string" ? token : captchaToken;
 
-        const captchaQuery = currentToken
-            ? `&cf_turnstile_response=${encodeURIComponent(
-                  currentToken
-              )}&digital_waiver=1`
-            : "&digital_waiver=1";
+        // URLSearchParams, not string interpolation — a name containing "&", "+",
+        // "#" or a space silently corrupted every one of these parameters.
+        const params = new URLSearchParams({
+            from: name,
+            email,
+            quantity: String(quantity),
+            amount: String(actualPrice()),
+            digital_waiver: "1",
+        });
+        if (shop.type === "physical") {
+            params.set("country", shipping_info.country || country || "");
+        }
+        if (currentToken) {
+            params.set("cf_turnstile_response", currentToken);
+        }
+        const query = params.toString();
         
         setLoading(true);
         setChecking(true);
         if (shop.type === "physical") {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
+                    `/shop/buy/${s.uuid}?${query}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
                         payment_method: paymentMethod,
@@ -355,7 +388,7 @@ export default function BuyShopItem({
         } else {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`,
+                    `/shop/buy/${s.uuid}?${query}`,
                     { payment_method: paymentMethod }
                 )
                 .then((res) => {
@@ -464,7 +497,7 @@ export default function BuyShopItem({
                             <h2 className="text-center font-bold text-xl py-2">
                                 Thank you for your purchase!
                             </h2>
-                            <div className="border border-gray-200 p-3 rounded-[30px]   mt-4">
+                            <div className="border border-gray-200 p-3 rounded-box mt-4">
 
                                 {shop.type === "physical" ? (
                                     <div className="text-center py-2">
@@ -486,21 +519,22 @@ export default function BuyShopItem({
                                 {s.ask_question && !replySent ? (
                                     <>
                                         <p className="text-start mt-3">
-                                            {s.ask_question} ?
+                                            {s.ask_question}
                                         </p>
                                         <input
                                             ref={inputref}
                                             onChange={(e) =>
                                                 setReply(e.target.value)
                                             }
-                                            className="text-black bg-gray-100 rounded-[30px]    w-full mt-2 px-3 py-2 border border-gray-200"
+                                            className="text-black bg-gray-100 rounded-box-sm w-full mt-2 px-3 py-3 min-h-[44px] border border-gray-200"
                                             type="text"
-                                            placeholder="Ask your question ??"
+                                            placeholder="Type your answer…"
                                         />
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[30px]  "
+                                                disabled={posting}
+                                                className="pinkbg text-center text-white px-4 py-3 min-h-[44px] mt-3 mx-auto block rounded-full active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -523,7 +557,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px]   px-4 py-2 mx-auto block mt-3 text-sm"
+                                    className="bg-gray-200 rounded-box-sm px-4 py-3 min-h-[44px] mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -531,41 +565,49 @@ export default function BuyShopItem({
                         </>
                     ) : (
                         <>
-                            <div className="text-center mt-2">
-                                {fairPrice ? (
-                                    <p className="text-gray-500 my-2 ">
-                                        You will be charged{" "}
-                                        <strong className="text-black">
-                                            {formatMultiPrice(
-                                            paymentMethod === "bank" && previewPrices?.bank != null
-                                                ? previewPrices.bank
-                                                : calculateTotalSupporterPays(
-                                                    ((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity,
-                                                    s?.currency || "GBP"
-                                                ).total_supporter_pays,
-                                            s?.currency || "GBP"
+                            {/* Itemised, so the buyer can see what the total is made of
+                                rather than one grossed-up number. */}
+                            <div className="mt-3 border-[2px] border-black rounded-box bg-white p-4">
+                                {actualPrice() ? (
+                                    <>
+                                        <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                            <span>Item{qty > 1 ? ` × ${qty}` : ""}</span>
+                                            <span>{formatMultiPrice(itemSubtotal, itemCurrency)}</span>
+                                        </div>
+                                        {vatAmount > 0 && (
+                                            <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                                <span>VAT ({s?.user?.vat_amount_percentage}%)</span>
+                                                <span>{formatMultiPrice(vatAmount, itemCurrency)}</span>
+                                            </div>
                                         )}
-                                        </strong>
-                                        <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                            *Includes platform and payment processing fees and shipping. You will be charged in {s?.currency || "GBP"}.
-                                        </span>
-                                        <button className="tooltipbtn flex justify-center items-center !font-normal">
-                                            ?
-                                            <p className="!text-left">
-                                                {window.platformFeePercentage || 20}% Card Fees and £1
-                                                administrative fee applies to
-                                                all transactions.
-                                            </p>
-                                        </button>
-                                    </p>
+                                        {isPhysicalItem && (
+                                            <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                                <span>Shipping{shipping_info.country ? ` to ${shipping_info.country}` : ""}</span>
+                                                <span>{shippingTotal > 0 ? formatMultiPrice(shippingTotal, itemCurrency) : "Free"}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                            <span>Platform &amp; processing fees</span>
+                                            <span>{formatMultiPrice(Math.max(0, totalSupporterPays - baseBeforeFees), itemCurrency)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-baseline border-t-2 border-black mt-2 pt-2">
+                                            <span className="font-black uppercase tracking-wide">Total</span>
+                                            <strong className="text-2xl font-black">
+                                                {formatMultiPrice(totalSupporterPays, itemCurrency)}
+                                            </strong>
+                                        </div>
+                                        <p className="text-[11px] text-gray-500 font-normal mt-2 leading-tight">
+                                            You will be charged in {itemCurrency}.
+                                        </p>
+                                    </>
                                 ) : (
-                                    <p className="text-gray-500 my-2 ">
+                                    <p className="text-gray-500 my-2 text-center">
                                         You will get it for free.
                                     </p>
                                 )}
                             </div>
-                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[30px]  ">
-                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[30px]   items-center">
+                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-box">
+                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-box items-center">
                                     <Link
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
@@ -573,9 +615,15 @@ export default function BuyShopItem({
                                         className="shop-img w-12 h-12 min-w-12"
                                     >
                                         <img
-                                            className="w-full h-full object-cover rounded-[30px]   "
+                                            className="w-full h-full object-cover rounded-box-sm"
                                             src={s.perma_link}
-                                            alt=""
+                                            alt={s.name || "Product"}
+                                            onError={(e) => {
+                                                if (e.target.dataset.fallback) return;
+                                                e.target.dataset.fallback = "1";
+                                                e.target.style.backgroundColor = "#f3f4f6";
+                                                e.target.innerHTML = "🛍️";
+                                            }}
                                         />
                                     </Link>
                                     <Link
@@ -593,9 +641,6 @@ export default function BuyShopItem({
                                     </Link>
                                 </div>
                             </div>
-                            {/* <p className='mb-1' >Enter a fair price (optional)</p>
-               <input required onChange={enterFairPrice} min={s.price}
-               className="w-full border-gray-300 border px-4 py-2 rounded-[30px]   focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -604,7 +649,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded"
+                                    className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -618,7 +663,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                    className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
@@ -637,7 +682,7 @@ export default function BuyShopItem({
                                         required
                                         min="1"
                                         max={s.slot_limitation !== null ? s.slot_limitation : undefined}
-                                        className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                        className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                         value={quantity}
                                         onChange={(e) => {
                                             if (e.target.value === '') {
@@ -670,7 +715,7 @@ export default function BuyShopItem({
                                         </p>
                                         <select
                                             required
-                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -691,7 +736,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
+                                            className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
@@ -701,18 +746,18 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
+                                            className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
                                             placeholder="City *"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
+                                                className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
@@ -722,7 +767,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  bg-white"
+                                                className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="text"
@@ -753,7 +798,7 @@ export default function BuyShopItem({
 
                             {(s?.payment_methods_accepted ?? "both") !== "card" && (
                                 <PaymentMethodSelector
-                                    amount={((parseFloat(fairPrice || s.price) || 0) * (1 + (s?.user?.vat_amount_percentage || 0) / 100) + (parseFloat(shippingPrice) || 0)) * quantity}
+                                    amount={baseBeforeFees}
                                     currency={s?.currency || "GBP"}
                                     email={email}
                                     value={paymentMethod}
@@ -770,7 +815,7 @@ export default function BuyShopItem({
                                 onClick={executeCaptcha}
                                 className={`${
                                     checking || !card_capabilities || !digitalWaiver ? "opacity-[0.5] disabled" : ""
-                                }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
+                                }  w-full sm:w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all font-semibold text-white px-6 py-3 min-h-[44px]`}
                             >
                                 {checking ? "Buying.." : "Pay"}
                             </button>
@@ -786,7 +831,7 @@ export default function BuyShopItem({
             <Popup
                 size="md"
                 action={showStepUp}
-                space="p-0"
+                space="0"
                 modalclass="pinkmodal"
                 classes="hidden"
             >
@@ -800,7 +845,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -811,7 +856,7 @@ export default function BuyShopItem({
                             <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}

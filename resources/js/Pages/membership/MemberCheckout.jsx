@@ -1,4 +1,5 @@
 import React from 'react';
+import uploadedimg from "../../../assets/img/uploadedimg.png";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import toast, { Toaster } from "react-hot-toast";
@@ -391,10 +392,10 @@ export default function SubCheckout(props) {
                                         <SectionLabel>Message for the creator</SectionLabel>
                                         <textarea
                                             rows={3}
-                                            className="w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
-                                            onKeyUp={(e) => setData("message",e.target.value)}
+                                            className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                            onChange={(e) => setData("message", e.target.value)}
                                             placeholder="Write message in under 800 Words..."
-                                            defaultValue={data.message}
+                                            value={data.message}
                                         ></textarea> 
                                         <span className="text-xs text-red-600"> {errors.message}</span>
                                     </li>
@@ -407,7 +408,7 @@ export default function SubCheckout(props) {
                                                     Email <span className="text-black/40 font-bold"> — stays private </span>
                                                 </label>
                                                 <input
-                                                    className={`${auth && auth?.user && auth?.user?.email ? "opacity-60 cursor-not-allowed" : ""} w-full border-[3px] border-black rounded-[16px] px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "opacity-60 cursor-not-allowed" : ""} w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -438,7 +439,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="w-full border-[3px] border-black !rounded-[16px] px-4 py-2 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                    className="w-full border-[3px] border-black !rounded-box-sm px-4 py-2 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -503,6 +504,7 @@ export default function SubCheckout(props) {
 
                             <div className="lg:sticky lg:top-24">
                                 <SummaryReceipt
+                                    image={membership?.perma_link || uploadedimg}
                                     itemTitle={`${membership?.level || ""} membership`}
                                     itemSub={
                                         membership?.level == "lifetime"
@@ -586,7 +588,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -597,7 +599,7 @@ export default function SubCheckout(props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) => setTypedConfirmation(e.target.value)}

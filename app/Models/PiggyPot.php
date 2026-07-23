@@ -39,7 +39,9 @@ class PiggyPot extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($model) => $model->uuid = Uuid::uuid4());
+        // Cast to string — a Ramsey UUID object breaks same-request array
+        // lookups keyed by uuid (same bug already fixed on User).
+        static::creating(fn ($model) => $model->uuid = (string) Uuid::uuid4());
     }
 
     public function user()

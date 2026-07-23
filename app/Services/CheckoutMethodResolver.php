@@ -27,8 +27,15 @@ class CheckoutMethodResolver
         string $currency,
         ?User $buyer,
         ?string $guestEmail,
-        string $connectedAccountId
+        ?string $connectedAccountId
     ): array {
+        // Nullable + fail closed: listings created before creators were gated on
+        // account_id still exist, and a TypeError here surfaced to the supporter
+        // as a 500 rather than a readable refusal.
+        if (empty($connectedAccountId)) {
+            return self::refuse('creator_not_connected', 'This creator has not finished setting up payments yet. Please try again later.');
+        }
+
         $requestedMethod = $requestedMethod === 'bank' ? 'bank' : 'card';
         $listingPreference = in_array($listingPreference, ['card', 'bank', 'both'], true) ? $listingPreference : 'both';
 

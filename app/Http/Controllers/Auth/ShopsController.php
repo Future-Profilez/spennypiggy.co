@@ -63,19 +63,55 @@ class ShopsController extends Controller
             ]);
         }
 
+        $isOwner = Auth::check() && Auth::id() === $user->id;
+
         $query = Shop::where('user_id', $user->id);
 
         // If not the owner, only show approved and active items
-        if (! Auth::check() || Auth::id() !== $user->id) {
+        if (! $isOwner) {
             $query->where('approved', 1)->where('status', 1);
         }
 
-        $shops = $query->orderBy('id', 'desc')->with(['shop_shipping_info'])->get();
+        // category + withCount keep `real_category` / `total_sold` from firing
+        // one query per row on a creator with a large shop.
+        $shops = $query->orderBy('id', 'desc')
+            ->with(['shop_shipping_info', 'category'])
+            ->withCount('paidPayments')
+            ->get();
+
+        // The deliverable is only ever serialised for the owner here; buyers get
+        // theirs through the order screens.
+        if ($isOwner) {
+            $shops->each->withDeliverable();
+        }
 
         return response()->json([
             'status' => true,
             'shops' => $shops,
         ]);
+    }
+
+    /**
+     * Run the SFW gate over a listing's paid deliverable. Only Uploadcare-hosted
+     * images/videos can be scanned — an external URL is left alone.
+     */
+    private function moderateRewardFile(Shop $shop): void
+    {
+        if (empty($shop->reward_file) || Str::startsWith($shop->reward_file, ['http://', 'https://'])) {
+            return;
+        }
+
+        $type = strtolower((string) $shop->reward_file_type);
+        if ($type !== '' && ! Str::contains($type, ['image', 'video'])) {
+            return;
+        }
+
+        CheckMediaModeration::dispatch(
+            Shop::class,
+            $shop->id,
+            $shop->reward_file,
+            ['approved' => 0]
+        );
     }
 
     public function addShopItems(Request $request)
@@ -92,8 +128,10 @@ class ShopsController extends Controller
                 'description' => [
                     'required',
                 ],
+                // `required`, not `sometimes` — an omitted price used to skip the
+                // £4.99–£10,000 rule entirely and create a £0 listing.
                 'price' => [
-                    'sometimes',
+                    'required',
                     'numeric',
                     function ($attribute, $value, $fail) {
                         // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
@@ -113,12 +151,14 @@ class ShopsController extends Controller
                 ],
                 'slot_limitation' => [
                     'nullable',
-                    'numeric',
+                    'integer',
+                    'min:1',
                 ],
                 'special_member_price' => [
                     'sometimes',
                     'nullable',
                     'numeric',
+                    'lt:price',
                 ],
                 'quantity_allow' => [
                     'required',
@@ -155,10 +195,29 @@ class ShopsController extends Controller
 
         $user = User::find(Auth::id());
 
+        // A listing cannot exist without a payment destination. createProduct()
+        // takes a non-nullable string, so an unconnected creator would 500 on a
+        // TypeError (an Error, not an Exception — the catch below never sees it).
+        if (empty($user->account_id)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Please connect your Stripe account before creating items.',
+            ]);
+        }
+
         if (Helpers::checkBlockData($request) == 1) {
             return response()->json([
                 'status' => false,
                 'msg' => 'Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦',
+            ]);
+        }
+
+        // A shipping profile may only ever be one of the creator's own.
+        if ($request->filled('shipping_profile_id')
+            && ! ShippingProfile::where('id', $request->shipping_profile_id)->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Invalid shipping profile.',
             ]);
         }
 
@@ -235,6 +294,10 @@ class ShopsController extends Controller
                 ['approved' => 0]
             );
         }
+
+        // The reward file is the thing actually sold — scanning only the shop-front
+        // thumbnail let unscanned media ship to buyers.
+        $this->moderateRewardFile($shop);
 
         // Stripe compliance: high-value listings (>£2,500 GBP-equiv) get an enhanced review
         // before going live (held un-approved until an admin clears them).
@@ -330,12 +393,35 @@ class ShopsController extends Controller
         }
 
         $old_price = $shop->price;
+        $oldImage = $shop->image;
+        $oldRewardFile = $shop->reward_file;
 
-        if ($request->filled('price')) {
-            // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
-            $priceError = Helpers::priceWithinLimits($request->price, $shop->currency ?? ($user->default_currency ?? 'gbp'), 4.99, 10000);
-            if ($priceError) {
-                return response()->json(['status' => false, 'msg' => $priceError]);
+        // The update below writes `$request->x` with no fallback for these, so an
+        // omitted field used to blank the listing (a missing price also skipped
+        // the £4.99–£10,000 rule and left a £0 item on sale).
+        $request->validate([
+            'type' => ['required', 'string'],
+            'name' => ['required', 'string'],
+            'description' => ['required'],
+            'price' => ['required', 'numeric'],
+            'slot_limitation' => ['nullable', 'integer', 'min:0'],
+            'special_member_price' => ['nullable', 'numeric', 'lt:price'],
+        ]);
+
+        // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
+        $priceError = Helpers::priceWithinLimits($request->price, $shop->currency ?? ($user->default_currency ?? 'gbp'), 4.99, 10000);
+        if ($priceError) {
+            return response()->json(['status' => false, 'msg' => $priceError]);
+        }
+
+        // A shipping profile may only ever be one of the creator's own — otherwise
+        // checkout would price shipping off another creator's zones.
+        if ($request->filled('shipping_profile_id')) {
+            $ownsProfile = ShippingProfile::where('id', $request->shipping_profile_id)
+                ->where('user_id', $user->id)
+                ->exists();
+            if (! $ownsProfile) {
+                return response()->json(['status' => false, 'msg' => 'Invalid shipping profile.']);
             }
         }
 
@@ -411,6 +497,15 @@ class ShopsController extends Controller
             }
 
             $shop->refresh();
+
+            // An edit could swap in new media, so re-run the SFW gate — previously
+            // only creation was scanned, making edit a way around moderation.
+            if (! empty($request->image) && $request->image !== $oldImage) {
+                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ['approved' => 0]);
+            }
+            if ($shop->reward_file && $shop->reward_file !== $oldRewardFile) {
+                $this->moderateRewardFile($shop);
+            }
 
             if (! empty($request->category)) {
                 ShopCategory::where('shop_id', $shop->id)->delete();
@@ -557,15 +652,44 @@ class ShopsController extends Controller
 
     public function singleShopList($_slug, $uuid, $session_id = null)
     {
-        $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_shipping_info'])->first();
+        $shop = Shop::where('uuid', $uuid)
+            ->with(['user', 'shop_shipping_info', 'category'])
+            ->first();
 
         if (! $shop) {
             abort(404);
         }
 
+        $isShopOwner = Auth::check() && Auth::id() === (int) $shop->user_id;
+
+        // Someone who already paid keeps access to their own item/receipt even
+        // if the listing is later moderated, deactivated or suspended. Scope to
+        // the viewer (never a bare session_id) so this can't unlock for others.
+        $hasPaid = false;
+        if (Auth::check()) {
+            $hasPaid = ShopPayment::where('shop_id', $shop->id)
+                ->where('payment_status', 'paid')
+                ->where('user_id', Auth::id())
+                ->exists();
+        } elseif (! empty($session_id)) {
+            $hasPaid = ShopPayment::where('shop_id', $shop->id)
+                ->where('payment_status', 'paid')
+                ->where('session_id', $session_id)
+                ->exists();
+        }
+
+        // A listing held by moderation, deactivated or suspended must not be
+        // reachable (or buyable) by direct link — only its owner or a prior
+        // buyer may open it.
+        if (! $isShopOwner && ! $hasPaid && (! $shop->approved || ! $shop->status || $shop->is_suspended)) {
+            abort(404);
+        }
+
         $opened = null;
         if (! empty($session_id)) {
-            $payments = ShopPayment::where('session_id', $session_id)->first();
+            $payments = ShopPayment::where('session_id', $session_id)
+                ->where('shop_id', $shop->id)
+                ->first();
             if ($payments) {
                 $opened = $payments->opened;
                 $payments->opened = 1;
@@ -612,6 +736,20 @@ class ShopsController extends Controller
                 ->with('deliverable')
                 ->orderBy('created_at', 'desc')
                 ->get();
+        }
+
+        // Reveal the digital deliverable only to the owner or someone who has
+        // actually paid for it (including the checkout we just came back from).
+        $shop->entitledFor(Auth::id(), $session_id);
+
+        // The creator model is serialised to a public page — expose only what
+        // the item page renders. Without this the whole users row (email, DOB,
+        // 2fa_key, ip_address, identity notes) ships to every visitor.
+        if ($shop->relationLoaded('user') && $shop->user) {
+            $shop->user->setVisible([
+                'uuid', 'name', 'username', 'avatar_url',
+                'default_currency', 'vat_amount_percentage', 'suspended_account',
+            ]);
         }
 
         return Inertia::render('shop/Item', [
@@ -742,7 +880,11 @@ class ShopsController extends Controller
 
             // Only approved + active items can be purchased — blocks buying items still on
             // moderation hold or held for >£2,500 enhanced review (approved=0).
-            $shop = Shop::where('uuid', $shop_id)->where('approved', 1)->where('status', 1)->first();
+            $shop = Shop::where('uuid', $shop_id)
+                ->where('approved', 1)
+                ->where('status', 1)
+                ->where('is_suspended', 0)
+                ->first();
 
             if (! $shop) {
                 return response()->json([
@@ -751,8 +893,17 @@ class ShopsController extends Controller
                 ]);
             }
 
-            // Check stock if slot_limitation is set
+            // Quantity is buyer-supplied: `?quantity=0` used to make the order free
+            // and a negative value defeated the stock guard entirely.
             $requestedQuantity = (int) request()->query('quantity', 1);
+            if ($requestedQuantity < 1) {
+                $requestedQuantity = 1;
+            }
+            if (! $shop->quantity_allow) {
+                $requestedQuantity = 1;
+            }
+
+            // `slot_limitation` is REMAINING stock (successPayment decrements it).
             if ($shop->slot_limitation !== null) {
                 if ($shop->slot_limitation <= 0) {
                     return response()->json([
@@ -985,7 +1136,9 @@ class ShopsController extends Controller
                 'message' => $message ?? null,
                 'ask_question' => $shop->ask_question,
                 'anonymous' => request()->query('anonymous') ?? 0,
-                'quantity' => request()->query('quantity'),
+                // The validated quantity, not the raw query value the price was
+                // never calculated from.
+                'quantity' => $requestedQuantity,
                 'shipping_info' => $shipping_info ?? null,
             ]);
 
@@ -1092,8 +1245,10 @@ class ShopsController extends Controller
 
     public function successPayment($id)
     {
-        return DB::transaction(function () use ($id) {
-            try {
+        $stripeid = null;
+
+        try {
+            return DB::transaction(function () use ($id, &$stripeid) {
                 $stripeid = ShopPayment::with(['shop', 'user'])->where('uuid', $id)->lockForUpdate()->first();
 
                 if (! $stripeid) {
@@ -1188,11 +1343,28 @@ class ShopsController extends Controller
                 $shop = $stripeid->shop;
                 if ($shop->slot_limitation !== null) {
                     $purchasedQuantity = $stripeid->quantity > 0 ? $stripeid->quantity : 1;
-                    if ($shop->slot_limitation > 0) {
-                        $shop->decrement('slot_limitation', $purchasedQuantity);
+                    // Conditional UPDATE, so two buyers racing the last unit can
+                    // never take stock below zero — the loser simply gets 0 rows.
+                    $claimed = Shop::where('id', $shop->id)
+                        ->where('slot_limitation', '>=', $purchasedQuantity)
+                        ->decrement('slot_limitation', $purchasedQuantity);
+
+                    if ($claimed === 0) {
+                        // Money is already taken, so fulfilment still proceeds —
+                        // but the creator is told they oversold and must resolve it.
+                        Log::warning('Shop item oversold during payment success', [
+                            'shop_id' => $shop->id,
+                            'shop_payment_id' => $stripeid->id,
+                            'quantity' => $purchasedQuantity,
+                        ]);
+                        NotificationSave::dispatch(
+                            'An order came in for "'.$shop->name.'" after it sold out. Please fulfil or refund it from your orders.',
+                            $shop->user,
+                            $stripeid->user,
+                            'Shop'
+                        );
                     } else {
-                        Log::warning('Shop item sold out during payment success', ['shop_id' => $shop->id]);
-                        // We still allow the payment to succeed as money is already taken
+                        $shop->refresh();
                     }
                 }
 
@@ -1217,6 +1389,11 @@ class ShopsController extends Controller
                 $message = $stripeid->message;
                 // Calculate creator net amount using the SAME logic as buyShopItem
                 $listedPriceToGrossUp = $stripeid->amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
+
+                // >£2,500 enhanced-review threshold is measured on the FULL charged amount
+                // (base + VAT + shipping), not the base alone — a £2,400 item with VAT/
+                // shipping over the line must still be held for admin review.
+                $needsHighValueReview = Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $listedPriceToGrossUp, 'GBP') > 2500;
 
                 $currencyModel = Currency::where('ISO', strtoupper($stripeid->currency))->first();
                 $digits = $currencyModel && $currencyModel->ISOdigits == 0 ? 0 : 2;
@@ -1251,9 +1428,9 @@ class ShopsController extends Controller
                             'message' => $stripeid->message,
                             // Stripe compliance: high-value orders (>£2,500) are held for an
                             // enhanced review (admin confirms delivery before payout clears).
-                            'needs_admin_review' => Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500,
-                            'status' => ($stripeid->shop->type == 'physical' || Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500) ? 'pending' : 'delivered',
-                            'delivered_at' => ($stripeid->shop->type == 'physical' || Helpers::priceFormat(strtoupper($stripeid->currency ?? 'GBP'), (float) $stripeid->amount, 'GBP') > 2500) ? null : now(),
+                            'needs_admin_review' => $needsHighValueReview,
+                            'status' => ($stripeid->shop->type == 'physical' || $needsHighValueReview) ? 'pending' : 'delivered',
+                            'delivered_at' => ($stripeid->shop->type == 'physical' || $needsHighValueReview) ? null : now(),
                             'metadata' => json_encode([
                                 'shop_item_id' => $stripeid->shop->id,
                                 'shop_item_name' => $stripeid->shop->name,
@@ -1366,22 +1543,47 @@ class ShopsController extends Controller
                 }
 
                 return redirect()->route('thank-you', $thankYouParams)->with('success', 'Payment Successful.');
-            } catch (Exception $e) {
-                Log::error('Error in successPayment: '.$e->getMessage());
+            });
+        } catch (Exception $e) {
+            // The catch sits OUTSIDE the transaction on purpose: inside it, a
+            // failure part-way through still committed (stock taken, status paid)
+            // while the buyer was told the payment had failed.
+            Log::error('Error in successPayment: '.$e->getMessage(), ['shop_payment_uuid' => $id]);
 
-                return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', 'Something went wrong during payment processing.');
-            }
-        });
+            $username = $stripeid?->shop?->user?->username;
+
+            return $username
+                ? redirect(route('user.show', [$username]))->with('error', 'Something went wrong during payment processing.')
+                : redirect('/')->with('error', 'Something went wrong during payment processing.');
+        }
     }
 
     public function cancelPayment($id)
     {
-        $payment = ShopPayment::where('uuid', $id)->first();
+        $payment = ShopPayment::with('shop.user')->where('uuid', $id)->first();
 
-        $payment->payment_status = 'unpaid';
-        $payment->save();
+        if (! $payment) {
+            return redirect('/')->with('error', 'Payment not found.');
+        }
 
-        return redirect(route('user.show', [$payment->shop->user->username]))->with('error', 'Payment Cancelled.');
+        // Only the buyer may cancel their own checkout. Without this the cancel
+        // URL is a public write — anyone holding it could flip an order.
+        $isBuyer = (Auth::check() && (int) $payment->user_id === Auth::id())
+            || (Auth::check() && $payment->email && $payment->email === Auth::user()->email);
+
+        // A paid/processing order is never rolled back here: Stripe has already
+        // taken (or is clearing) the money, so 'unpaid' would hide a real order
+        // from ordersList while the creator still owes delivery.
+        if ($isBuyer && in_array($payment->payment_status, [null, '', 'pending', 'unpaid'], true)) {
+            $payment->payment_status = 'unpaid';
+            $payment->save();
+        }
+
+        $username = $payment->shop?->user?->username;
+
+        return $username
+            ? redirect(route('user.show', [$username]))->with('error', 'Payment Cancelled.')
+            : redirect('/')->with('error', 'Payment Cancelled.');
     }
 
     public function deactivateShop($uuid)
@@ -1414,7 +1616,16 @@ class ShopsController extends Controller
             'creator_note' => 'nullable|string',
         ]);
 
-        $shopPayment = ShopPayment::where('uuid', $uuid)->firstOrFail();
+        $shopPayment = ShopPayment::with('shop')->where('uuid', $uuid)->firstOrFail();
+
+        // Only the creator who OWNS the listing may fulfil its orders — this endpoint
+        // had no ownership check, so any signed-in user could update anyone's order.
+        if (! $shopPayment->shop || (int) $shopPayment->shop->user_id !== Auth::id()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You do not have permission to update this order.',
+            ], 403);
+        }
 
         $deliverable = Deliverable::where('session_id', $shopPayment->session_id)
             ->where('creator_id', Auth::id())
@@ -1535,6 +1746,16 @@ class ShopsController extends Controller
             'zones.*.shipping_price' => 'required|numeric|min:0',
         ]);
 
+        // An id belonging to another creator used to fall through to an INSERT
+        // reusing their primary key — a duplicate-key 500 instead of a rejection.
+        if ($request->filled('id')
+            && ! ShippingProfile::where('id', $request->id)->where('user_id', Auth::id())->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Shipping profile not found.',
+            ], 404);
+        }
+
         return DB::transaction(function () use ($request) {
             $profile = ShippingProfile::updateOrCreate(
                 ['id' => $request->id, 'user_id' => Auth::id()],
@@ -1586,9 +1807,18 @@ class ShopsController extends Controller
                 ->orderBy('id', 'desc')
                 ->get();
 
+            // One lookup for the whole page instead of one per order.
+            $deliverables = Deliverable::whereIn('session_id', $orders->pluck('session_id')->filter()->all())
+                ->get()
+                ->keyBy('session_id');
+
             // Map orders to format expected by frontend
-            $formattedOrders = $orders->map(function ($order) {
-                $deliverable = Deliverable::where('session_id', $order->session_id)->first();
+            $formattedOrders = $orders->map(function ($order) use ($deliverables) {
+                $deliverable = $deliverables->get($order->session_id);
+                // The buyer paid for this listing, so they may see its deliverable.
+                $order->shop?->withDeliverable();
+                // …but not the creator's whole users row.
+                $order->shop?->user?->setVisible(['uuid', 'name', 'username', 'avatar_url']);
                 // Determine delay status
                 $isDelayed = false;
                 if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
@@ -1609,7 +1839,6 @@ class ShopsController extends Controller
                     'created_at' => $order->created_at,
                     'name' => $order->shop->user->name ?? 'Unknown',
                     'username' => $order->shop->user->username ?? '',
-                    'email' => $order->shop->user->email ?? '',
                     'avatar_url' => $order->shop->user->avatar_url ?? null,
                     'shop' => $order->shop,
                     'quantity' => $order->quantity,
@@ -1648,10 +1877,20 @@ class ShopsController extends Controller
         $allTime = $orders->sum('amount');
         $thirtyDays = $orders->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
 
+        // Batch the per-row lookups — these were one query each, per order.
+        $deliverables = Deliverable::whereIn('session_id', $orders->pluck('session_id')->filter()->all())
+            ->get()
+            ->keyBy('session_id');
+        $buyers = User::whereIn('id', $orders->pluck('user_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
+
         // Map orders to format expected by frontend
-        $formattedOrders = $orders->map(function ($order) {
-            $buyer = User::find($order->user_id);
-            $deliverable = Deliverable::where('session_id', $order->session_id)->first();
+        $formattedOrders = $orders->map(function ($order) use ($deliverables, $buyers) {
+            $buyer = $buyers->get($order->user_id);
+            $deliverable = $deliverables->get($order->session_id);
+            // Seller owns the listing, so the deliverable is theirs to see.
+            $order->shop?->withDeliverable();
 
             // Determine delay status
             $isDelayed = false;

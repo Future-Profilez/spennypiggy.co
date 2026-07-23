@@ -2,14 +2,13 @@
 
 namespace App\Jobs;
 
-use App\EmailService;
 use App\Mail\BillMailToUser;
+use App\Models\Deliverable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class BillPayToUser implements ShouldQueue
@@ -17,7 +16,9 @@ class BillPayToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $bill_pay;
+
     public $amountWithCurr;
+
     public $user_name;
 
     /**
@@ -35,13 +36,13 @@ class BillPayToUser implements ShouldQueue
      */
     public function handle()
     {
-        if ((isset($this->bill_pay->user) && $this->bill_pay->user->notification_send == 1) || (empty($this->bill_pay->user))) {
-            // Fetch deliverable for tracking
-            $deliverable = \App\Models\Deliverable::where('session_id', $this->bill_pay->session_id)
-                ->where('product_type', 'bill')
-                ->first();
+        // Transactional receipt for money the supporter has already been charged —
+        // it has no opt-out. It used to be gated on notification_send, so a supporter
+        // with notifications off got no confirmation of a real payment.
+        $deliverable = Deliverable::where('session_id', $this->bill_pay->session_id)
+            ->where('product_type', 'bill')
+            ->first();
 
-            Mail::to($this->bill_pay->guest_email)->send(new BillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name, $deliverable));
-        }
+        Mail::to($this->bill_pay->guest_email)->send(new BillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name, $deliverable));
     }
 }

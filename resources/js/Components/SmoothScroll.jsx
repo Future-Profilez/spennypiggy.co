@@ -18,6 +18,10 @@ export default function SmoothScroll() {
     useEffect(() => {
         if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
+        // Per-element overflow decision cache — avoids getComputedStyle on
+        // every wheel/touch event (a style flush → scroll jank).
+        const scrollCache = new WeakMap();
+
         const lenis = new Lenis({
             lerp: 0.14,
             wheelMultiplier: 1.25,
@@ -29,15 +33,35 @@ export default function SmoothScroll() {
                         '#headlessui-portal-root, [role="dialog"], [aria-modal="true"], [data-lenis-prevent], .lightbox-overlay, .ReactModalPortal'
                     )
                 ) return true;
-                // Any inner vertically-scrollable element scrolls natively
-                // (lists, customScrollbar, dropdowns) instead of moving the page.
+                // Yield to native scroll for genuine INNER scrollers only —
+                // positioned overlays (modals/dropdowns) or bounded panels
+                // shorter than the viewport. A tall in-flow element that merely
+                // overflows IS the page scroll; yielding there desyncs Lenis and
+                // snaps the page up when the gesture stops. Also skip page-level
+                // `overflow-x-hidden` wrappers, whose overflow-y computes to
+                // `auto` per the CSS spec.
                 let el = node;
-                while (el && el !== document.body && el !== document.documentElement) {
-                    if (el.nodeType === 1) {
-                        const oy = getComputedStyle(el).overflowY;
-                        if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1) {
-                            return true;
-                        }
+                while (el && el.nodeType === 1 && el !== document.body && el !== document.documentElement) {
+                    if (el.hasAttribute("data-lenis-prevent")) return true;
+                    let info = scrollCache.get(el);
+                    if (info === undefined) {
+                        const cs = getComputedStyle(el);
+                        const oy = cs.overflowY;
+                        const inFlowClip =
+                            cs.overflowX === "hidden" &&
+                            (cs.position === "static" || cs.position === "relative");
+                        info = {
+                            scroller: (oy === "auto" || oy === "scroll") && !inFlowClip,
+                            positioned: cs.position === "fixed" || cs.position === "absolute",
+                        };
+                        scrollCache.set(el, info);
+                    }
+                    if (
+                        info.scroller &&
+                        el.scrollHeight > el.clientHeight + 1 &&
+                        (info.positioned || el.clientHeight < window.innerHeight)
+                    ) {
+                        return true;
                     }
                     el = el.parentElement;
                 }

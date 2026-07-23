@@ -3,8 +3,8 @@ import { Head, Link } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import LoadingScreen from "@/includes/LoadingScreen";
 import Avatar from "../../Components/Avatar";
+import { FiUsers, FiDollarSign, FiBarChart2, FiInbox } from "react-icons/fi";
 
 export default function AllMembershipPayments({ auth }) {
     const [loading, setLoading] = useState(true);
@@ -57,15 +57,32 @@ export default function AllMembershipPayments({ auth }) {
         <Authenticated auth={auth?.user || ""}>
             <Head title="All Membership Payments" />
             {loading ? (
-                <LoadingScreen />
+                <div className="min-h-dvh bg-gray-200">
+                    <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 animate-pulse">
+                        <div className="mb-6 sm:mb-8 space-y-3">
+                            <div className="h-4 w-40 rounded-box-sm bg-gray-300" />
+                            <div className="h-9 w-72 rounded-box-sm bg-gray-300" />
+                            <div className="h-4 w-80 rounded-box-sm bg-gray-300" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                            {[0, 1, 2].map((i) => (
+                                <div
+                                    key={i}
+                                    className="h-24 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                />
+                            ))}
+                        </div>
+                        <div className="h-96 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                    </div>
+                </div>
             ) : (
-                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                <div className="min-h-dvh bg-gray-200">
                     <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
                         {/* Header with Back Button */}
                         <div className="mb-6 sm:mb-8">
                             <Link
                                 href="/membership/dashboard"
-                                className="inline-flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-pink-400 transition-colors mb-3 sm:mb-4 group text-xs sm:text-sm"
+                                className="inline-flex items-center gap-1 sm:gap-2 text-black hover:text-[#FF007F] font-bold transition-colors mb-3 sm:mb-4 group text-xs sm:text-sm"
                             >
                                 <svg
                                     className="w-3 h-3 sm:w-4 sm:h-4 group-hover:-translate-x-0.5 transition-transform"
@@ -82,56 +99,56 @@ export default function AllMembershipPayments({ auth }) {
                                 </svg>
                                 Back to Dashboard
                             </Link>
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-pink-100 to-white bg-clip-text text-transparent">
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-black tracking-tight">
                                 All Membership Payments
                             </h1>
-                            <p className="text-slate-400 mt-1 sm:mt-2 text-sm sm:text-base lg:text-lg">
+                            <p className="text-gray-700 mt-1 sm:mt-2 text-sm sm:text-base lg:text-lg">
                                 Complete history of all supporter transactions
                             </p>
                         </div>
 
                         {/* Stats Overview - Responsive Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-pink-500/10 flex items-center justify-center text-base sm:text-lg">
-                                        👥
+                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+                                        <FiUsers size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-slate-400">
+                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Total Supporters
                                         </p>
-                                        <p className="text-xl sm:text-2xl font-bold text-white">
+                                        <p className="text-xl sm:text-2xl font-black text-black">
                                             {stats.total_members}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-base sm:text-lg">
-                                        💰
+                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+                                        <FiDollarSign size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-slate-400">
+                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Total Earnings
                                         </p>
-                                        <p className="text-xl sm:text-2xl font-bold text-white">
+                                        <p className="text-xl sm:text-2xl font-black text-black">
                                             £{stats.total_earnings}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 sm:col-span-2 lg:col-span-1">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-base sm:text-lg">
-                                        📊
+                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5 sm:col-span-2 lg:col-span-1">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+                                        <FiBarChart2 size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-slate-400">
+                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Average Payment
                                         </p>
-                                        <p className="text-xl sm:text-2xl font-bold text-white">
+                                        <p className="text-xl sm:text-2xl font-black text-black">
                                             £{stats.average_amount}
                                         </p>
                                     </div>
@@ -140,35 +157,35 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Filters and Search - Responsive */}
-                        <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-3 sm:p-4 mb-4 sm:mb-6">
+                        <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-3 sm:p-4 mb-4 sm:mb-6">
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <button
                                         onClick={() => setFilter("all")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "all"
-                                                ? "bg-pink-500 text-white"
-                                                : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
                                         All
                                     </button>
                                     <button
                                         onClick={() => setFilter("monthly")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "monthly"
-                                                ? "bg-pink-500 text-white"
-                                                : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
                                         Monthly
                                     </button>
                                     <button
                                         onClick={() => setFilter("yearly")}
-                                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                                        className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "yearly"
-                                                ? "bg-pink-500 text-white"
-                                                : "bg-white/5 text-slate-400 hover:bg-white/10"
+                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
                                         Yearly
@@ -182,10 +199,10 @@ export default function AllMembershipPayments({ auth }) {
                                         onChange={(e) =>
                                             setSearchTerm(e.target.value)
                                         }
-                                        className="w-full sm:w-64 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-pink-500 text-xs sm:text-sm"
+                                        className="w-full sm:w-64 min-h-[44px] px-4 py-2 rounded-box-sm bg-white border-2 border-black text-black placeholder-gray-400 font-semibold focus:outline-none text-xs sm:text-sm"
                                     />
                                     <svg
-                                        className="absolute right-2 sm:right-3 top-2 sm:top-2.5 w-3 h-3 sm:w-4 sm:h-4 text-slate-400"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -202,13 +219,13 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Payments Cards View for Mobile, Table for Desktop */}
-                        <div className="rounded-lg sm:rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden">
+                        <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                             {/* Mobile Card View */}
                             <div className="block lg:hidden">
                                 {filteredPayments.map((payment, index) => (
                                     <div
                                         key={index}
-                                        className="p-4 border-b border-white/10 last:border-b-0"
+                                        className="p-4 border-b-2 border-black/10 last:border-b-0"
                                     >
                                         <div className="flex items-center gap-3 mb-3">
                                             <img
@@ -216,16 +233,16 @@ export default function AllMembershipPayments({ auth }) {
                                                     payment.user.avatar ||
                                                     "/images/user-avatar.png"
                                                 }
-                                                className="w-10 h-10 rounded-lg object-cover"
-                                                alt={payment.user.name}
+                                                className="w-10 h-10 rounded-box-sm border-2 border-black object-cover"
+                                                alt={`${payment.user.name} avatar`}
                                             />
                                             <div className="flex-1">
                                                 <div className="flex items-center justify-between">
-                                                    <p className="text-sm font-medium text-white">
+                                                    <p className="text-sm font-black text-black">
                                                         {payment.user.name}
                                                     </p>
                                                     <span
-                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${payment.membership.type === "monthly" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}
+                                                        className={`px-2 py-0.5 rounded-box-sm text-[10px] font-bold uppercase capitalize border-2 border-black ${payment.membership.type === "monthly" ? "bg-emerald-200 text-black" : "bg-pink-200 text-black"}`}
                                                     >
                                                         {
                                                             payment.membership
@@ -233,43 +250,43 @@ export default function AllMembershipPayments({ auth }) {
                                                         }
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-gray-700">
                                                     @{payment.user.username}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-2 text-xs">
                                             <div>
-                                                <p className="text-slate-400">
+                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
                                                     Plan
                                                 </p>
-                                                <p className="text-white font-medium">
+                                                <p className="text-black font-bold">
                                                     {payment.membership.title}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-slate-400">
+                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
                                                     Amount
                                                 </p>
-                                                <p className="text-white font-bold">
+                                                <p className="text-black font-black">
                                                     {payment.currency}
                                                     {payment.amount}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-slate-400">
+                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
                                                     Date
                                                 </p>
-                                                <p className="text-slate-300 text-xs">
+                                                <p className="text-black font-semibold text-xs">
                                                     {payment.created_at}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-slate-400">
+                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
                                                     Status
                                                 </p>
-                                                <span className="inline-flex items-center gap-1 text-green-400 text-xs">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                <span className="inline-flex items-center gap-1 text-green-700 font-bold text-xs">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                                                     Paid
                                                 </span>
                                             </div>
@@ -281,35 +298,32 @@ export default function AllMembershipPayments({ auth }) {
                             {/* Desktop Table View */}
                             <div className="hidden lg:block overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-white/5 border-b border-white/10">
+                                    <thead className="bg-gray-100 border-b-[3px] border-black">
                                         <tr>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Supporter
                                             </th>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Membership Plan
                                             </th>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Type
                                             </th>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Amount
                                             </th>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Date
                                             </th>
-                                            <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                            <th className="text-left px-4 py-3 text-xs font-bold text-black uppercase tracking-wider">
                                                 Status
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/10">
+                                    <tbody className="divide-y-2 divide-black/10">
                                         {filteredPayments.map(
                                             (payment, index) => (
-                                                <tr
-                                                    key={index}
-                                                    className="hover:bg-white/5 transition-colors"
-                                                >
+                                                <tr key={index}>
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-3">
                                                             <Avatar
@@ -320,7 +334,7 @@ export default function AllMembershipPayments({ auth }) {
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <span className="text-sm text-white">
+                                                        <span className="text-sm text-black font-semibold">
                                                             {
                                                                 payment
                                                                     .membership
@@ -330,13 +344,13 @@ export default function AllMembershipPayments({ auth }) {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <span
-                                                            className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                                                            className={`px-3 py-1.5 rounded-box-sm text-xs font-bold uppercase capitalize border-2 border-black ${
                                                                 payment
                                                                     .membership
                                                                     .type ===
                                                                 "monthly"
-                                                                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                                                    ? "bg-emerald-200 text-black"
+                                                                    : "bg-pink-200 text-black"
                                                             }`}
                                                         >
                                                             {
@@ -347,19 +361,19 @@ export default function AllMembershipPayments({ auth }) {
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <p className="text-sm font-bold text-white">
+                                                        <p className="text-sm font-black text-black">
                                                             {payment.currency}
                                                             {payment.amount}
                                                         </p>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <p className="text-sm text-slate-300">
+                                                        <p className="text-sm text-black font-semibold">
                                                             {payment.created_at}
                                                         </p>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-xs font-bold uppercase">
+                                                            <span className="w-2 h-2 rounded-full bg-black"></span>
                                                             Paid
                                                         </span>
                                                     </td>
@@ -372,13 +386,13 @@ export default function AllMembershipPayments({ auth }) {
 
                             {filteredPayments.length === 0 && (
                                 <div className="py-12 sm:py-16 flex flex-col items-center justify-center text-center">
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center text-2xl sm:text-3xl mb-3 sm:mb-4 border border-white/10">
-                                        📭
+                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-box bg-gray-200 flex items-center justify-center text-black mb-3 sm:mb-4 border-2 border-black">
+                                        <FiInbox size="1.75rem" />
                                     </div>
-                                    <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+                                    <h3 className="text-base sm:text-lg font-black text-black mb-1">
                                         No payments found
                                     </h3>
-                                    <p className="text-slate-400 text-xs sm:text-sm">
+                                    <p className="text-gray-700 text-xs sm:text-sm">
                                         Try adjusting your filters or search
                                         term
                                     </p>

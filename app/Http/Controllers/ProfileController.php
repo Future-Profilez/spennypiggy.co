@@ -1336,7 +1336,12 @@ class ProfileController extends Controller
                     return false;
                 }
 
-                return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out', 'delivered']);
+                // Canonical earned-status list — must match FinancialService::getSummary,
+                // PayoutService and ReleaseReserves. 'delivered' used to be included
+                // here and nowhere else, so this total counted tasks still sitting in
+                // escrow: the creator was shown more received income than the dashboard
+                // reported or the payout run would ever pay.
+                return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
             }
 
             return true;
@@ -1601,7 +1606,84 @@ class ProfileController extends Controller
                 ->groupBy('user_id');
         }
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts) {
+        // Reactions and replies were three queries per row (reactions, this-user's reaction,
+        // replies), i.e. 60-80 round trips on a full page. Derive each row's composite key
+        // once, then bulk-load all three in three queries and match in PHP below.
+        $deriveEventKey = function ($tx) {
+            $base = class_basename($tx->source_type);
+            $type = match ($base) {
+                'StripePaymentItems' => 'gift_wish',
+                'MembershipPayment' => 'gift_membership',
+                'BillPayment' => 'gift_bill',
+                'TipGoalsPayment' => 'gift_tip',
+                'PiggyPotContribution' => 'piggy_pot',
+                'ShopPayment' => 'gift_shop',
+                'TaskPurchase' => 'gift_task',
+                default => 'transaction',
+            };
+            $source = match ($base) {
+                'StripePaymentItems' => 'stripe_payment_items',
+                'MembershipPayment' => 'membership_payments',
+                'BillPayment' => 'bill_payments',
+                'TipGoalsPayment' => 'tip_goals_payments',
+                'PiggyPotContribution' => 'piggy_pot_contributions',
+                'ShopPayment' => 'shop_payments',
+                'TaskPurchase' => 'task_purchases',
+                default => 'financial_transactions',
+            };
+            $sourceId = $source === 'financial_transactions' ? $tx->id : $tx->source_id;
+
+            return [$type, $source, $sourceId];
+        };
+
+        // Full composite so a source_id shared across two source tables can't cross-match.
+        $composite = fn ($creatorId, $gifterId, $type, $source, $sourceId) => implode('|', [$creatorId, $gifterId, $type, $source, $sourceId]);
+
+        $sourceIdSet = collect();
+        foreach ($rows as $tx) {
+            [, , $sourceId] = $deriveEventKey($tx);
+            if ($sourceId !== null) {
+                $sourceIdSet->push($sourceId);
+            }
+        }
+        $sourceIdSet = $sourceIdSet->unique()->values();
+
+        $reactionsByKey = [];
+        $userReactedByKey = [];
+        $repliesByKey = [];
+        $authId = Auth::id();
+
+        if ($sourceIdSet->isNotEmpty()) {
+            foreach (SupportStoryReaction::whereIn('source_id', $sourceIdSet)->get(['creator_id', 'gifter_id', 'event_type', 'source', 'source_id', 'emoji', 'user_id']) as $r) {
+                $k = $composite($r->creator_id, $r->gifter_id, $r->event_type, $r->source, $r->source_id);
+                $reactionsByKey[$k][$r->emoji] = ($reactionsByKey[$k][$r->emoji] ?? 0) + 1;
+                if ($authId && (int) $r->user_id === (int) $authId) {
+                    $userReactedByKey[$k][] = $r->emoji;
+                }
+            }
+
+            $repliesRaw = SupportStoryReply::whereIn('source_id', $sourceIdSet)
+                ->with('user:id,username,avatar,avatar_approved,avatar_cdn_modifier')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            foreach ($repliesRaw as $r) {
+                $k = $composite($r->creator_id, $r->gifter_id, $r->event_type, $r->source, $r->source_id);
+                // Preserve the previous per-event limit of 5, newest first.
+                if (count($repliesByKey[$k] ?? []) >= 5) {
+                    continue;
+                }
+                $repliesByKey[$k][] = [
+                    'id' => $r->id,
+                    'user_id' => $r->user_id,
+                    'username' => optional($r->user)->username,
+                    'avatar' => optional($r->user)->avatar_url,
+                    'message' => $r->message,
+                    'created_at' => $r->created_at->format('Y-m-d H:i:s'),
+                ];
+            }
+        }
+
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey) {
             $from = strtoupper($tx->currency ?? 'GBP');
             $baseAmount = $tab === 'sent' ? (float) ($tx->gross_amount ?? 0) : (float) ($tx->net_amount ?? 0);
             $displayAmount = $from === $displayCurrency ? $baseAmount : ($convert($from, $baseAmount, $displayCurrency) ?? $baseAmount);
@@ -1869,45 +1951,13 @@ class ProfileController extends Controller
                 'payment_method' => (($tx->fee_profile ?? 'card') === 'bank') ? 'bank' : 'card',
             ];
 
-            // Load reactions and replies
+            // Reactions and replies, read from the pre-loaded lookups keyed on the same
+            // composite the bulk queries above grouped by.
             try {
-                $event['reactions'] = SupportStoryReaction::where([
-                    'creator_id' => $tx->user_id,
-                    'gifter_id' => $tx->supporter_id,
-                    'event_type' => $type,
-                    'source' => $source,
-                    'source_id' => $sourceId,
-                ])->selectRaw('emoji, COUNT(*) as c')->groupBy('emoji')->pluck('c', 'emoji')->toArray();
-
-                if (Auth::check()) {
-                    $event['user_reacted'] = SupportStoryReaction::where([
-                        'creator_id' => $tx->user_id,
-                        'gifter_id' => $tx->supporter_id,
-                        'event_type' => $type,
-                        'source' => $source,
-                        'source_id' => $sourceId,
-                        'user_id' => Auth::id(),
-                    ])->pluck('emoji')->toArray();
-                } else {
-                    $event['user_reacted'] = [];
-                }
-
-                $event['replies'] = SupportStoryReply::where([
-                    'creator_id' => $tx->user_id,
-                    'gifter_id' => $tx->supporter_id,
-                    'event_type' => $type,
-                    'source' => $source,
-                    'source_id' => $sourceId,
-                ])->with('user:id,username,avatar,avatar_approved,avatar_cdn_modifier')->orderBy('created_at', 'desc')->limit(5)->get()->map(function ($r) {
-                    return [
-                        'id' => $r->id,
-                        'user_id' => $r->user_id,
-                        'username' => optional($r->user)->username,
-                        'avatar' => optional($r->user)->avatar_url,
-                        'message' => $r->message,
-                        'created_at' => $r->created_at->format('Y-m-d H:i:s'),
-                    ];
-                })->toArray();
+                $eventKey = $composite($tx->user_id, $tx->supporter_id, $type, $source, $sourceId);
+                $event['reactions'] = $reactionsByKey[$eventKey] ?? [];
+                $event['user_reacted'] = Auth::check() ? ($userReactedByKey[$eventKey] ?? []) : [];
+                $event['replies'] = $repliesByKey[$eventKey] ?? [];
             } catch (\Throwable $e) {
                 $event['reactions'] = [];
                 $event['user_reacted'] = [];

@@ -1,64 +1,86 @@
 import { Link, usePage } from "@inertiajs/react";
+import { FaCrown } from "react-icons/fa6";
+import { FiRefreshCw, FiShoppingBag } from "react-icons/fi";
 
 export default function CreatorDashboardTabs() {
     const { url } = usePage();
 
     const tabs = [
         {
-            title: "Membership Dashboard",
+            title: "Memberships",
+            subtitle: "Your tiers & members",
             route: "/membership-dashboard",
-            icon: "👑",
-            color: "from-pink-500 to-purple-500",
+            Icon: FaCrown,
         },
         {
-            title: "Bill Dashboard",
+            title: "Recurring content",
+            subtitle: "Your bills & revenue",
             route: "/billing-dashboard",
-            icon: "💳",
-            color: "from-cyan-500 to-blue-500",
+            Icon: FiRefreshCw,
         },
         {
-            title: "My Subscriptions",
+            title: "My subscriptions",
+            subtitle: "What you support",
             route: "/billing/my-subscriptions",
-            icon: "📦",
-            color: "from-emerald-500 to-green-500",
+            Icon: FiShoppingBag,
         },
     ];
 
     return (
         <div className="mb-8">
-            <div className="flex flex-wrap gap-4">
-                {tabs.map((tab, index) => {
+            <div
+                className="flex flex-wrap gap-3"
+                role="tablist"
+                aria-label="Creator finance dashboards"
+            >
+                {tabs.map((tab) => {
                     const active = url.startsWith(tab.route);
+                    const { Icon } = tab;
 
                     return (
                         <Link
-                            key={index}
+                            key={tab.route}
                             href={tab.route}
-                            className={`relative overflow-hidden rounded-[30px]  px-5 py-4 border transition-all duration-300 min-w-[210px] group ${active ? `bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]` : "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"}`}
+                            role="tab"
+                            aria-selected={active}
+                            aria-current={active ? "page" : undefined}
+                            className={`group rounded-box px-4 py-3 min-h-[44px] flex-1 min-w-[190px] transition-all duration-200 ${
+                                active
+                                    ? "bg-[#FF007F] shadow-[0_14px_30px_-12px_rgba(255,0,127,0.55)]"
+                                    : "bg-white ring-1 ring-gray-200/80 shadow-[0_6px_18px_-10px_rgba(0,0,0,0.15)] hover:ring-gray-300 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-12px_rgba(0,0,0,0.2)]"
+                            }`}
                         >
-                            <div className="flex items-center gap-3 relative z-10">
+                            <div className="flex items-center gap-3">
                                 <div
-                                    className={`w-12 h-12 rounded-[14px] flex items-center justify-center text-xl bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}
+                                    className={`w-11 h-11 shrink-0 rounded-box-sm flex items-center justify-center transition-colors ${
+                                        active
+                                            ? "bg-white/20"
+                                            : "bg-pink-50 group-hover:bg-pink-100"
+                                    }`}
                                 >
-                                    {tab.icon}
+                                    <Icon
+                                        className={active ? "text-white" : "text-[#FF007F]"}
+                                        size="1.2rem"
+                                    />
                                 </div>
 
-                                <div>
+                                <div className="text-left">
                                     <p
-                                        className={`text-sm font-bold text-black`}
+                                        className={`text-sm font-semibold leading-tight ${
+                                            active ? "text-white" : "text-gray-900"
+                                        }`}
                                     >
                                         {tab.title}
                                     </p>
-
                                     <p
-                                        className={`text-xs mt-1 text-gray-600 font-bold`}
+                                        className={`text-xs mt-0.5 leading-tight ${
+                                            active ? "text-white/75" : "text-gray-500"
+                                        }`}
                                     >
-                                        Open Dashboard
+                                        {tab.subtitle}
                                     </p>
                                 </div>
                             </div>
-
-                            
                         </Link>
                     );
                 })}

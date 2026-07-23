@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
-use App\Models\PostCommentReplies;
 use Ramsey\Uuid\Uuid;
 
 class Post extends Model
@@ -44,13 +43,13 @@ class Post extends Model
         'likes_count',
         'liked',
         'comments_count',
-        'pending_items_count'
+        'pending_items_count',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function user()
@@ -61,18 +60,19 @@ class Post extends Model
     public function getImageUrlAttribute()
     {
         $url = false;
-        if (!empty($this->image)) {
+        if (! empty($this->image)) {
             // Check if this is a thank you image with existing transformations (contains /-/text/ or /-/font/)
             if (str_contains($this->image, '/-/text/') || str_contains($this->image, '/-/font/')) {
                 // This is a dynamic thank you image - use as-is with domain
-                $url = "https://ucarecdn.com/" . $this->image  . '/-/preview/';
+                $url = 'https://ucarecdn.com/'.$this->image.'/-/preview/';
                 // replace + with %20 for spaces
                 $url = str_replace('+', '%20', $url);
             } else {
                 // Regular image - add format transformation
-                $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+                $url = 'https://ucarecdn.com/'.$this->image.'/-/format/jpeg/';
             }
         }
+
         return $url;
     }
 
@@ -85,7 +85,7 @@ class Post extends Model
             return '';
         }
 
-        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $baseUrl = 'https://ucarecdn.com/'.$this->image;
         $transformations = [];
 
         // Add format transformation
@@ -108,7 +108,7 @@ class Post extends Model
             $transformations[] = 'progressive/yes';
         }
 
-        return $baseUrl . '/-/' . implode('/-/', $transformations) . '/';
+        return $baseUrl.'/-/'.implode('/-/', $transformations).'/';
     }
 
     /**
@@ -120,17 +120,17 @@ class Post extends Model
             return [];
         }
 
-        $baseUrl = "https://ucarecdn.com/" . $this->image;
+        $baseUrl = 'https://ucarecdn.com/'.$this->image;
         $sizes = [320, 640, 768, 1024, 1280, 1920];
         $formats = ['original', 'webp', 'avif'];
-        
+
         $data = [
-            'original' => $baseUrl . '/-/format/jpeg/-/quality/85/',
+            'original' => $baseUrl.'/-/format/jpeg/-/quality/85/',
             'formats' => [
-                'webp' => $baseUrl . '/-/format/webp/-/quality/85/',
-                'avif' => $baseUrl . '/-/format/avif/-/quality/85/'
+                'webp' => $baseUrl.'/-/format/webp/-/quality/85/',
+                'avif' => $baseUrl.'/-/format/avif/-/quality/85/',
             ],
-            'responsive' => []
+            'responsive' => [],
         ];
 
         foreach ($formats as $format) {
@@ -155,6 +155,7 @@ class Post extends Model
         if (array_key_exists('likes_count', $this->attributes)) {
             return $this->attributes['likes_count'];
         }
+
         return $this->likes()->where('status', 1)->count();
     }
 
@@ -168,31 +169,38 @@ class Post extends Model
         if (array_key_exists('comments_count', $this->attributes)) {
             return $this->attributes['comments_count'];
         }
-        
+
         $userId = Auth::id();
-        $isCreator = $this->user_id === $userId;
+        $isCreator = (int) $this->user_id === (int) $userId;
 
-        $commentsQuery = $this->comments();
-        if (!$isCreator) {
-            $commentsQuery->where(function($q) use ($userId) {
-                $q->where('is_approved', 1)->orWhere('user_id', $userId);
-            });
-        }
-        
-        $comments = $commentsQuery->get();
-        $count = $comments->count();
-
-        foreach ($comments as $comment) {
-            $repliesQuery = $comment->replies();
-            if (!$isCreator) {
-                $repliesQuery->where(function($q) use ($userId) {
-                    $q->where('is_approved', 1)->orWhere('user_id', $userId);
-                });
+        // The creator sees everything on their own post; everyone else sees approved
+        // comments plus their own pending ones.
+        $applyVisibility = function ($query) use ($userId, $isCreator) {
+            if ($isCreator) {
+                return $query;
             }
-            $count += $repliesQuery->count();
-        }
 
-        return $count;
+            return $query->where(function ($q) use ($userId) {
+                $q->where('is_approved', 1);
+                // A guest has no id — `orWhere('user_id', null)` would match every row
+                // whose author column is null rather than none of them.
+                if ($userId) {
+                    $q->orWhere('user_id', $userId);
+                }
+            });
+        };
+
+        // Two counts, not one-per-comment. This used to load every comment and run a
+        // replies count for each of them, so a feed of 20 posts issued hundreds of queries.
+        $comments = $applyVisibility($this->comments())->count();
+
+        $replies = $applyVisibility(
+            PostCommentReplies::whereHas('post_comment', function ($q) {
+                $q->where('post_id', $this->id);
+            })
+        )->count();
+
+        return $comments + $replies;
     }
 
     public function getLikedAttribute()
@@ -200,13 +208,13 @@ class Post extends Model
         if (array_key_exists('liked_exists', $this->attributes)) {
             return (bool) $this->attributes['liked_exists'];
         }
-        
+
         $like = null;
         if (Auth::check()) {
             $like = PostLike::where('post_id', $this->id)->where('user_id', Auth::id())->where('status', 1)->first();
         }
 
-        if (!empty($like)) {
+        if (! empty($like)) {
             return true;
         }
 
@@ -215,7 +223,7 @@ class Post extends Model
 
     public function getPendingItemsCountAttribute()
     {
-        if (!Auth::check() || Auth::id() !== $this->user_id) {
+        if (! Auth::check() || Auth::id() !== $this->user_id) {
             return 0;
         }
 
@@ -235,7 +243,7 @@ class Post extends Model
         if ($module === 'all') {
             return $query;
         }
-        
+
         // Map filter names to for_module values
         $moduleMap = [
             'supporters' => 'support',
@@ -243,9 +251,9 @@ class Post extends Model
             'subscribers' => 'subscription',
             'shoutouts' => 'public',
         ];
-        
+
         $moduleValue = $moduleMap[$module] ?? $module;
-        
+
         return $query->where('for_module', $moduleValue);
     }
 }

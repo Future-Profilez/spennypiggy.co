@@ -116,18 +116,18 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all `}
         >
-            <div className="bg-white relative !rounded-[25px] md:!rounded-[30px]  !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
+            <div className="bg-white relative !rounded-box !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                 {itm && itm.is_suspended == 1 ? (
                     <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help w-full z-[20]">
                         Suspended
                         {itm.suspend_reason && (
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none z-30">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-box-sm pointer-events-none z-30">
                                 Reason: {itm.suspend_reason}
                             </div>
                         )}
                     </div>
                 ) : IsloggedIn && itm && itm.approved === 0 ? (
-                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-[20px]  p-3 py-2 mb-2 !text-white">
+                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-box-sm  p-3 py-2 mb-2 !text-white">
                         Bill item waiting for approval. Currently only you can see
                         this bill.
                     </div>
@@ -137,7 +137,7 @@ function BillItem(props) {
 
                 <div className="cursor-pointer relative !overflow-hidden !bg-white p-3 !pb-0">
                     <LazyLoadImage
-                        alt="image"
+                        alt={itm?.name || ""}
                         effect="blur"
                         height={193}
                         src={imageSrc}
@@ -145,14 +145,14 @@ function BillItem(props) {
                         width={220}
                     />
 
-                    <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1.5 rounded-xl capitalize shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black whitespace-nowrap z-10">
+                    <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1.5 rounded-box-sm capitalize shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black whitespace-nowrap z-10">
                         {periodDisplay} Subscribable
                     </div>
 
                     {IsloggedIn && (
                         <Menu as="div" className="absolute top-8 right-8 z-10 inline-block text-left">
                             <div>
-                                <Menu.Button className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
+                                <Menu.Button aria-label="Bill options" className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
                                     <div className="dots">
                                         <span className="bg-white"></span>
                                         <span className="bg-white"></span>
@@ -169,12 +169,12 @@ function BillItem(props) {
                                 leaveFrom="transform opacity-100 scale-100"
                                 leaveTo="transform opacity-0 scale-95"
                             >
-                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-[30px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-box bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <div
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[30px]  px-2 py-2 text-sm`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm`}
                                                 >
                                                     <RemoveBill
                                                         classes="w-full text-left"
@@ -193,6 +193,15 @@ function BillItem(props) {
 
                 <div
                     onClick={openAddtocart}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={itm?.name ? `View ${itm.name}` : "View bill"}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openAddtocart();
+                        }
+                    }}
                     className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-4 flex-grow"
                 >
                     <div>
@@ -230,7 +239,7 @@ function BillItem(props) {
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 text="Manage subscription"
                                 item={itm}
                                 isEdit={true}
@@ -240,7 +249,7 @@ function BillItem(props) {
                                 method="get"
                                 as="button"
                                 href={route("bill.checkout", { uuid: itm.uuid })}
-                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                             >
                                 Subscribe
                             </Link>

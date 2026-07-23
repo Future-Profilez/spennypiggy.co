@@ -49,7 +49,7 @@ const membershipBenifits = [
   },
   {
     'title':' ⁠X Community ',
-    'value':'x_community '
+    'value':'x_community'
   },
   {
     'title':'⁠Monthly Content Bundle',
@@ -175,7 +175,7 @@ export default function AddMembership({updateState, item, text, classes}) {
     };
     const AddItem = () => {
       return <div className="flex items-center !w-full">
-          <div className="p-1 rounded-2xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]" >
+          <div className="p-1 rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="pl-3 text-left">
@@ -190,9 +190,9 @@ export default function AddMembership({updateState, item, text, classes}) {
             modalclass="full sendSurprize-modal pl-0"
             space="4" size="md"
             bt
-            action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-[30px]   p-3 mb-2 text-center`}
+            action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-box   p-3 mb-2 text-center`}
             text={text ? text : <AddItem  />} >
-              <div className="addgoal bg-white rounded-[30px]  border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 overflow-hidden relative" >
+              <div className="addgoal bg-white rounded-box  border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 overflow-hidden relative" >
                 <h2 className="uppercase font-black text-2xl pb-4 font-large text-center border-b-2 border-gray-100 mb-4">Add Membership</h2>
 
                     <div className="flex flex-wrap" >
@@ -251,10 +251,10 @@ export default function AddMembership({updateState, item, text, classes}) {
                                       type="radio" id={m.value} value={m.value} name="level"
                                       onChange={handleInput} checked={isSelected} />
                                       <label 
-                                        className={`cursor-pointer flex items-center p-3 rounded-[30px]  border-[3px] border-black transition-all duration-200 ${isSelected ? "shadow-[2px_2px_0px_0px_#ff4fa0] border-[#ff4fa0] translate-y-[2px] " + getTierBg(m.value) : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white"}`} 
+                                        className={`cursor-pointer flex items-center p-3 rounded-box  border-[3px] border-black transition-all duration-200 ${isSelected ? "shadow-[2px_2px_0px_0px_#ff4fa0] border-[#ff4fa0] translate-y-[2px] " + getTierBg(m.value) : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white"}`} 
                                         htmlFor={m.value}
                                       >
-                                          <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-[30px]  flex items-center justify-center text-2xl mr-4 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isSelected ? 'bg-white' : getTierBg(m.value)}`}>
+                                          <div className={`w-[50px] h-[50px] flex-shrink-0 rounded-box-sm  flex items-center justify-center text-2xl mr-4 border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isSelected ? 'bg-white' : getTierBg(m.value)}`}>
                                               {getTierIcon(m.value)}
                                           </div>
                                           <div className="flex flex-col text-left">
@@ -286,13 +286,13 @@ export default function AddMembership({updateState, item, text, classes}) {
                                   <label className="block text-left mb-2 text-lg font-semibold text-gray-800">{(data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price') + ` (${defaultCurrency})`}</label>
                                   <div className="relative  currency-wrapper dollar-simbols" >
                                     <span className="currency-tag">{defaultCurrency}</span>
-                                    <input className="border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] transition-all font-bold"
+                                    <input className="border-[3px] border-black rounded-box-sm  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-4 py-3 w-full focus:outline-none focus:border-[#FF007F] transition-all font-bold"
                                         onChange={handleInput} defaultValue={item && item.price || ''}
                                         type="number" name="month_price"
                                         placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
                                   </div>
                                   {data.month_price > 0 && (
-                                    <div className="mt-4 p-4 bg-[#BAE6FD] rounded-[20px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="mt-4 p-4 bg-[#BAE6FD] rounded-box-sm border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <div className="flex justify-between items-center mb-1">
                                             <span className="text-sm text-gray-600">Fans pay:</span>
                                             <span className="font-bold text-gray-900">
@@ -312,7 +312,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                                             </span>
                                         </div>
                                         <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                        <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+                                        <p className="mt-1 text-xs text-gray-500 font-medium">All fees are included in the fan price. You always receive 100% of your listed price, or slightly more.</p>
                                     </div>
                                   )}
                                   {defaultCurrency !== global_currency && data.month_price > 0 && (

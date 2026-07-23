@@ -4,62 +4,71 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\BillPayMail;
 use App\Jobs\BillPayToUser;
-use App\Jobs\BillContentDeliveryMail;
-use App\Jobs\ProcessWishItemDeliverable;
 use App\Jobs\NotificationSave;
+use App\Jobs\ProcessWishItemDeliverable;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\ConnectedAccountCustomer;
+use App\Models\CreatorMetric;
 use App\Models\Currency;
-use App\Models\FinancialTransaction;
 use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserPayment;
-use App\StripeControl;
-use App\Services\StripeMetadataService;
-use Carbon\Carbon;
-use App\Services\UserProfileService;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoExpenseOrBrandName;
+use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Risk\MoneyNormalizer;
+use App\Services\Risk\ReservePolicy;
+use App\Services\Risk\RiskService;
+use App\Services\StripeMetadataService;
+use App\Services\UserProfileService;
+use App\StripeControl;
+use App\Traits\RiskEnforcement;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Stripe\StripeClient;
-use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
-use App\Traits\RiskEnforcement;
 use Stripe\Stripe;
+use Stripe\StripeClient;
 use Stripe\Subscription;
+use Stripe\Webhook;
 
 class BillsController extends Controller
 {
     use RiskEnforcement;
+
     public function billSave(Request $request)
     {
         // 🔴 DEBUGGING: Log that method was called
         Log::info('🎯 billSave method called', [
             'user_id' => Auth::id(),
-            'request_data' => $request->all()
+            'request_data' => $request->all(),
         ]);
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string", new \App\Rules\NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
-            "goal_label" => ["nullable", "string", "max:60", new \App\Rules\NoExpenseOrBrandName],
-            "price" => [
-                "required",
-                "numeric",
+            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
+            'price' => [
+                'required',
+                'numeric',
                 function ($attribute, $value, $fail) {
                     // Stripe compliance: content membership £4.99–£100/mo (GBP equivalent)
                     $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
@@ -68,14 +77,14 @@ class BillsController extends Controller
                     }
                 },
             ],
-            'period' => ['required', 'string']
+            'period' => ['required', 'string'],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                "status" => false,
-                "msg" => $validator->errors()->first(),
-                "errors" => $validator->errors(),
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
             ]);
         }
 
@@ -83,6 +92,16 @@ class BillsController extends Controller
 
         // 🔴 DEBUGGING: Log user found
         Log::info('👤 User found', ['user_id' => $user->id ?? null]);
+
+        // A listing cannot exist without a payment destination. createProduct()
+        // takes a non-nullable string, so an unconnected creator would 500 on a
+        // TypeError (an Error, not an Exception — the catch below never sees it).
+        if (empty($user->account_id)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Please connect your Stripe account before creating items.',
+            ]);
+        }
 
         $media = $request->thumbnail;
         $price = $request->price;
@@ -93,7 +112,7 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
+        $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
@@ -102,14 +121,14 @@ class BillsController extends Controller
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['total_fees'];
 
-        $bill = new Bills();
+        $bill = new Bills;
         $bill->user_id = Auth::id();
         $bill->name = $request->name;
         $bill->goal_label = $request->goal_label ?: null;
         $bill->currency = $currency;
         $bill->price = $price;
         $bill->tax_amount = $taxAmount;
-        $bill->thumbnail = !empty($media) ? $media : null;
+        $bill->thumbnail = ! empty($media) ? $media : null;
         $bill->period = $request->period;
         $bill->status = 1;
 
@@ -120,23 +139,23 @@ class BillsController extends Controller
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $productPayload = [
-            "name"  => "Content membership (incl. all fees)",
-            "images" => [$bill->perma_link],
-            "default_price_data"    => [
-                "currency"  => $currency,
-                "unit_amount_decimal"   => round($createPriceId * $multiplier, 2, PHP_ROUND_HALF_UP),
+            'name' => 'Content membership (incl. all fees)',
+            'images' => [$bill->perma_link],
+            'default_price_data' => [
+                'currency' => $currency,
+                'unit_amount_decimal' => round($createPriceId * $multiplier, 2, PHP_ROUND_HALF_UP),
                 'recurring' => [
-                    'interval'  =>  StripeControl::$periods[$bill->period],
-                    'interval_count'    =>  1
-                ]
+                    'interval' => StripeControl::$periods[$bill->period],
+                    'interval_count' => 1,
+                ],
             ],
-            "url"   =>  env('APP_URL') . '/' . $user->username . '/bill',
+            'url' => env('APP_URL').'/'.$user->username.'/bill',
             'metadata' => [
                 'bill_name' => $bill->name,
                 'creator_id' => $user->id,
-                'creator_net_amount' => (string)($breakdown['net_to_creator'] * $multiplier),
-                'total_charge_amount' => (string)($createPriceId * $multiplier),
-            ]
+                'creator_net_amount' => (string) ($breakdown['net_to_creator'] * $multiplier),
+                'total_charge_amount' => (string) ($createPriceId * $multiplier),
+            ],
         ];
 
         try {
@@ -150,8 +169,8 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => "Bill added successfully, your upload will be approved shortly.",
-                'bill_id' => $bill->id  // Added for debugging
+                'msg' => 'Bill added successfully, your upload will be approved shortly.',
+                'bill_id' => $bill->id,  // Added for debugging
             ]);
         } catch (Exception $e) {
 
@@ -159,7 +178,7 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => false,
-                'msg' => "Stripe Error: " . $e->getMessage()
+                'msg' => 'Stripe Error: '.$e->getMessage(),
             ]);
         }
     }
@@ -169,12 +188,12 @@ class BillsController extends Controller
         Log::info("from start request->period: $request->period");
 
         $validator = Validator::make($request->all(), [
-            "name" => ["required", "string", new \App\Rules\NoExpenseOrBrandName],
+            'name' => ['required', 'string', new NoExpenseOrBrandName],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
-            "goal_label" => ["nullable", "string", "max:60", new \App\Rules\NoExpenseOrBrandName],
-            "price" => [
-                "required",
-                "numeric",
+            'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
+            'price' => [
+                'required',
+                'numeric',
                 function ($attribute, $value, $fail) {
                     $err = Helpers::priceWithinLimits($value, Auth::user()->default_currency ?? 'gbp', 4.99, 100);
                     if ($err) {
@@ -182,23 +201,26 @@ class BillsController extends Controller
                     }
                 },
             ],
+            // Required on save, so it must be required on edit too — a null period
+            // produced a Stripe price with interval: null and killed the checkout.
+            'period' => ['required', 'string', Rule::in(array_keys(StripeControl::$periods))],
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                "status" => false,
-                "msg" => $validator->errors()->first(),
-                "errors" => $validator->errors(),
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
             ]);
         }
 
         $user = User::where('id', Auth::id())->first();
         $bill = Bills::where('uuid', $id)->where('user_id', Auth::id())->first();
 
-        if (!$user || !$bill) {
+        if (! $user || ! $bill) {
             return response()->json([
                 'status' => false,
-                'msg' => 'User or Bill not found'
+                'msg' => 'User or Bill not found',
             ]);
         }
 
@@ -216,7 +238,7 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
+        $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
@@ -232,17 +254,19 @@ class BillsController extends Controller
             'currency' => $currency,
             'price' => $price,
             'tax_amount' => $taxamount,
-            'thumbnail' => $media ?? null,
+            // Keep the existing image when the edit form does not re-upload one —
+            // `$media ?? null` wiped the thumbnail on every price/name-only edit.
+            'thumbnail' => ! empty($media) ? $media : $bill->thumbnail,
             'period' => $request->period,
         ])->save();
 
         try {
             Log::info("starting from try request->period: $request->period");
 
-            if (!$bill->product_id) {
+            if (! $bill->product_id) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "Missing product ID on bill."
+                    'msg' => 'Missing product ID on bill.',
                 ]);
             }
 
@@ -255,33 +279,33 @@ class BillsController extends Controller
             try {
                 $stripeProduct = $stripe->products->retrieve($bill->product_id, [], ['stripe_account' => $user->account_id]);
             } catch (Exception $e) {
-                Log::warning("Stripe Product not found for bill {$bill->uuid}, will attempt to recreate. Error: " . $e->getMessage());
+                Log::warning("Stripe Product not found for bill {$bill->uuid}, will attempt to recreate. Error: ".$e->getMessage());
             }
 
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-            if (!$stripeProduct) {
+            if (! $stripeProduct) {
                 // Recreate the product if it's missing from Stripe
                 $productPayload = [
-                    "name"  => "Content membership (incl. all fees)",
-                    "images" => [$bill->perma_link],
-                    "default_price_data"    => [
-                        "currency"  => $currency,
-                        "unit_amount_decimal"   => round($totalAmount * $multiplier, 2, PHP_ROUND_HALF_UP),
+                    'name' => 'Content membership (incl. all fees)',
+                    'images' => [$bill->perma_link],
+                    'default_price_data' => [
+                        'currency' => $currency,
+                        'unit_amount_decimal' => round($totalAmount * $multiplier, 2, PHP_ROUND_HALF_UP),
                         'recurring' => [
-                            'interval'  =>  StripeControl::$periods[$request->period],
-                            'interval_count'    =>  1
-                        ]
+                            'interval' => StripeControl::$periods[$request->period],
+                            'interval_count' => 1,
+                        ],
                     ],
-                    "url"   =>  env('APP_URL') . '/' . $user->username,
+                    'url' => env('APP_URL').'/'.$user->username,
                     'metadata' => [
                         'bill_name' => $bill->name,
                         'creator_id' => $user->id,
-                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                        'total_charge_amount' => (string)($totalAmount * 100),
-                    ]
+                        'creator_net_amount' => (string) ($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string) ($totalAmount * 100),
+                    ],
                 ];
 
                 $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
@@ -292,8 +316,8 @@ class BillsController extends Controller
                     'approved' => 0,
                 ]);
 
-                Log::info("Recreated Stripe Product for bill {$bill->uuid}: " . $stripeProduct->id);
-            } else if ($old_price != $price || $old_periods != $request->period) {
+                Log::info("Recreated Stripe Product for bill {$bill->uuid}: ".$stripeProduct->id);
+            } elseif ($old_price != $price || $old_periods != $request->period) {
                 Log::info("request->period: $request->period");
 
                 $newPrice = $stripe->prices->create([
@@ -302,32 +326,32 @@ class BillsController extends Controller
                     'product' => $bill->product_id,
                     'recurring' => [
                         'interval' => StripeControl::$periods[$request->period],
-                        'interval_count' => 1
-                    ]
+                        'interval_count' => 1,
+                    ],
                 ], [
-                    'stripe_account' => $user->account_id
+                    'stripe_account' => $user->account_id,
                 ]);
                 Log::info(json_encode($newPrice));
 
                 $product = $stripe->products->update($bill->product_id, [
-                    'name' => "Content membership (incl. all fees)",
+                    'name' => 'Content membership (incl. all fees)',
                     'images' => [$bill->perma_link],
                     'default_price' => $newPrice->id,
-                    'url' => env('APP_URL') . '/' . $user->username,
+                    'url' => env('APP_URL').'/'.$user->username,
                     'metadata' => [
                         'bill_name' => $bill->name,
                         'creator_id' => $user->id,
-                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                        'total_charge_amount' => (string)($totalAmount * 100),
-                    ]
+                        'creator_net_amount' => (string) ($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string) ($totalAmount * 100),
+                    ],
                 ], [
-                    'stripe_account' => $user->account_id
+                    'stripe_account' => $user->account_id,
                 ]);
 
                 $stripe->prices->update($old_price_id, [
-                    'active' => false
+                    'active' => false,
                 ], [
-                    'stripe_account' => $user->account_id
+                    'stripe_account' => $user->account_id,
                 ]);
 
                 $bill->update([
@@ -338,16 +362,16 @@ class BillsController extends Controller
             } else {
                 // Only name or metadata might have changed
                 $stripe->products->update($bill->product_id, [
-                    'name' => "Content membership (incl. all fees)",
+                    'name' => 'Content membership (incl. all fees)',
                     'images' => [$bill->perma_link],
                     'metadata' => [
                         'bill_name' => $bill->name,
                         'creator_id' => $user->id,
-                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                        'total_charge_amount' => (string)($totalAmount * 100),
-                    ]
+                        'creator_net_amount' => (string) ($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string) ($totalAmount * 100),
+                    ],
                 ], [
-                    'stripe_account' => $user->account_id
+                    'stripe_account' => $user->account_id,
                 ]);
             }
 
@@ -358,20 +382,19 @@ class BillsController extends Controller
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
-            Log::error("Stripe Error during bill edit: " . $e->getMessage());
+            Log::error('Stripe Error during bill edit: '.$e->getMessage());
 
             return response()->json([
                 'status' => false,
-                'msg' => "Stripe Error: " . $e->getMessage()
+                'msg' => 'Stripe Error: '.$e->getMessage(),
             ]);
         }
 
         Log::info("to end request->period: $request->period");
 
-
         return response()->json([
             'status' => true,
-            'msg' => "Bill edited successfully."
+            'msg' => 'Bill edited successfully.',
         ]);
     }
 
@@ -379,23 +402,57 @@ class BillsController extends Controller
     {
         $bill = Bills::whereUuid($uuid)->where('user_id', Auth::id())->first();
 
-        if (!empty($bill)) {
-            BillPayment::where('bills_id', $bill->id)->delete();
+        if (! empty($bill)) {
             $account_id = $bill->user->account_id;
 
+            /*
+            |--------------------------------------------------------------------------
+            | CANCEL LIVE SUBSCRIPTIONS FIRST
+            |--------------------------------------------------------------------------
+            |
+            | Checkout builds inline price_data, so the live subscriptions are NOT
+            | attached to $bill->product_id — deleting the product left every existing
+            | supporter being charged monthly with their local record gone. Cancel by
+            | the subscription id we stored, on the creator's connected account.
+            */
+
+            $liveSubscriptions = BillPayment::where('bills_id', $bill->id)
+                ->whereNotNull('stripe_id')
+                ->whereRaw('LOWER(status) = ?', ['paid'])
+                ->get();
+
+            foreach ($liveSubscriptions as $subscription) {
+                if (! $subscription->isSubscriptionActive()) {
+                    continue;
+                }
+
+                try {
+                    StripeControl::cancelSubscription($subscription->stripe_id, false, $account_id);
+                    $subscription->markCancelledAt(now());
+                } catch (Exception $e) {
+                    Log::error('Failed to cancel bill subscription during bill removal: '.$e->getMessage(), [
+                        'bill_uuid' => $uuid,
+                        'bill_payment_id' => $subscription->id,
+                        'stripe_id' => $subscription->stripe_id,
+                    ]);
+                }
+            }
+
+            BillPayment::where('bills_id', $bill->id)->delete();
+
             // Only attempt to delete Stripe product if product_id exists
-            if (!empty($bill->product_id)) {
+            if (! empty($bill->product_id)) {
                 try {
                     $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
                     if ($stripeProduct) {
                         // Delete the product and prices from Stripe
                         StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Log the error but continue with bill deletion
-                    Log::error('Failed to delete Stripe product: ' . $e->getMessage(), [
+                    Log::error('Failed to delete Stripe product: '.$e->getMessage(), [
                         'bill_uuid' => $uuid,
-                        'product_id' => $bill->product_id
+                        'product_id' => $bill->product_id,
                     ]);
                 }
             }
@@ -408,40 +465,41 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => "Bill removed successfully."
+                'msg' => 'Bill removed successfully.',
             ]);
         }
+
         return response()->json([
             'status' => false,
-            'msg' => "Bill not found."
+            'msg' => 'Bill not found.',
         ]);
     }
 
     /**
      * Buy creator's membership
      *
-     * @param Request $request
-     * @param string $uuid Membership UUID
-     * @param string $reccure Subscription Reccuring - onetime or continue
+     * @param  string  $uuid  Membership UUID
+     * @param  string  $reccure  Subscription Reccuring - onetime or continue
      * @return mixed
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
         // Stripe compliance: content memberships require an account (tracked, renewed, cancelled).
         // Guest checkout is only allowed for Piggy Pot and Wishes.
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please log in or create an account to subscribe — memberships need an account so they can be tracked, renewed and cancelled.');
         }
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
             $user = Auth::user();
+
             return to_route('user.show', ['username' => $user->username])
-                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+                ->with('error', '⚠️ Please complete your card verification payment and wait for admin approval before making further payments.');
         }
 
         $bill = Bills::with('user')->whereUuid($uuid)->first();
-        if (!$bill) {
+        if (! $bill) {
             return redirect()->back()->with('error', 'Bill not found!');
         }
 
@@ -449,20 +507,27 @@ class BillsController extends Controller
             return redirect()->back()->with('error', 'This bill is currently suspended and cannot accept payments.');
         }
 
-        if (!$bill->user) {
+        // The profile only *displays* approved items, but the checkout URL is public and
+        // guessable — an item awaiting review (or pulled by an admin) could still be sold.
+        if (! $bill->approved || ! $bill->status) {
+            return redirect()->back()->with('error', 'This item is not available right now. It is awaiting review.');
+        }
+
+        if (! $bill->user) {
             return redirect()->back()->with('error', 'Creator account not found or deactivated.');
         }
 
         // Check if creator has card_payments capability
-        if (!StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
+        if (! StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+
+            return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
 
-        if (!$subscriptionCheck['eligible']) {
+        if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
 
@@ -473,13 +538,13 @@ class BillsController extends Controller
                 'bill_id' => $bill->id,
                 'bill_price' => $bill->price,
                 'subscription_status' => $subscriptionCheck['status'],
-                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown',
             ]);
 
             // Return user-friendly error to fan
             return redirect()->back()->with(
                 'error',
-                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+                app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             );
         }
 
@@ -495,13 +560,13 @@ class BillsController extends Controller
         // Client Requirement: Always charge in Creator's Currency
         $chargeCurrency = $bill->currency;
         // Supporter's display currency for estimation
-        $displayCurrency = strtolower($request->cookie("currency", "GBP"));
+        $displayCurrency = strtolower($request->cookie('currency', 'GBP'));
 
         // Calculate VAT in Creator's Currency
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
 
-        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
+        $metrics = app(RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
@@ -523,11 +588,11 @@ class BillsController extends Controller
             return redirect()->back()->with('error', "You can't buy your own bill!");
         }
 
-        if ($request->isMethod("POST")) {
+        if ($request->isMethod('POST')) {
             // Stripe compliance: content memberships require an account so the supporter
             // can track, renew and cancel the subscription (guest checkout is only allowed
             // for one-off Piggy Pot and Wishes purchases).
-            if (!Auth::check()) {
+            if (! Auth::check()) {
                 return redirect()->guest(route('login'))
                     ->with('error', 'Please create an account or log in to subscribe — content memberships need an account so you can manage, renew or cancel them.');
             }
@@ -542,7 +607,7 @@ class BillsController extends Controller
                 false // redirect response
             );
 
-            if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+            if ($riskData instanceof RedirectResponse) {
                 return $riskData;
             }
 
@@ -562,19 +627,19 @@ class BillsController extends Controller
             DB::beginTransaction();
 
             $sub = BillPayment::create([
-                'bills_id'       => $bill->id,
-                'user_id'        => $user->id ?? null,
-                'guest_name'     => $request->name,
-                'guest_email'    => $request->email,
-                'currency'       => $chargeCurrency, // Force Creator's Currency
-                'amount'         => $bill->price,
-                'total_paid'     => $finalTotalAmount,
-                'tax'            => $breakdown['total_fees'],
+                'bills_id' => $bill->id,
+                'user_id' => $user->id ?? null,
+                'guest_name' => $request->name,
+                'guest_email' => $request->email,
+                'currency' => $chargeCurrency, // Force Creator's Currency
+                'amount' => $bill->price,
+                'total_paid' => $finalTotalAmount,
+                'tax' => $breakdown['total_fees'],
                 'vat_tax_amount' => $bill->price * $vatPercent / 100, // Store actual VAT
-                'recurring_for'  => $reccure ?? null,
+                'recurring_for' => $reccure ?? null,
                 'recurring_type' => $bill->period,
-                'message'        => $request->message ?? null,
-                'anonymous'      => $request->anonymous ?? 0,
+                'message' => $request->message ?? null,
+                'anonymous' => $request->anonymous ?? 0,
                 'creator_currency' => $bill->currency,
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
@@ -633,7 +698,7 @@ class BillsController extends Controller
                     ]);
                 }
 
-                if (!$customer_id) {
+                if (! $customer_id) {
                     $newCustomer = StripeControl::createCustomer([
                         'email' => $user->email ?? $request->email,
                         'name' => $user->name ?? $request->name,
@@ -648,7 +713,7 @@ class BillsController extends Controller
                 $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-                if (!$priceId) {
+                if (! $priceId) {
 
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
@@ -662,13 +727,13 @@ class BillsController extends Controller
 
                     $stripePrice = StripeControl::createPrice($priceData, $connectedAccountId);
                     if (empty($stripePrice->id)) {
-                        throw new Exception("Failed to create Stripe price.");
+                        throw new Exception('Failed to create Stripe price.');
                     }
 
                     $priceId = $stripePrice->id;
                 }
 
-                if (!$storeCustomer) {
+                if (! $storeCustomer) {
                     ConnectedAccountCustomer::create([
                         'user_id' => $user->id ?? null,
                         'creator_id' => $bill->user->id,
@@ -688,7 +753,7 @@ class BillsController extends Controller
                         'price_data' => [
                             'currency' => $chargeCurrency,
                             'product_data' => [
-                                'name' => "Content membership",
+                                'name' => 'Content membership',
                                 'description' => "Content membership · @{$bill->user->username}",
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
@@ -696,8 +761,8 @@ class BillsController extends Controller
                                 'interval' => StripeControl::$periods[$bill->period],
                                 'interval_count' => 1,
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ];
 
                 $payload = [
@@ -722,8 +787,8 @@ class BillsController extends Controller
                         'application_fee_percent' => round(($applicationFeeAmount / $finalTotalAmount) * 100, 2),
                     ],
                     'customer' => $customer_id,
-                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                 ];
 
                 // Note: For mode: subscription, Stripe uses the customer_email or the email of the customer object for receipts.
@@ -753,14 +818,14 @@ class BillsController extends Controller
                         [
                             'creator_id' => $bill->user->uuid,
                             'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
-                            'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
+                            'amount' => app(MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
                             'currency' => 'gbp',
                             'stripe_payment_intent_id' => $session->payment_intent ?? null,
                             'status' => 'initiated',
                             'reason_codes' => $riskData['reason_codes'] ?? [],
                         ]
                     );
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     Log::warning('Risk Ledger: Failed to record bill payment', [
                         'session_id' => $session->id,
                         'error' => $e->getMessage(),
@@ -770,7 +835,8 @@ class BillsController extends Controller
                 return Inertia::location($session->url);
             } catch (Exception $e) {
                 DB::rollBack();
-                Log::error("Stripe checkout session failed: " . $e->getMessage());
+                Log::error('Stripe checkout session failed: '.$e->getMessage());
+
                 return back()->with('error', $e->getMessage());
             }
         }
@@ -790,22 +856,38 @@ class BillsController extends Controller
     /**
      * Handle Checkout Session
      *
-     * @param string $uuid Subscription UUID
-     * @param string $status Status of Subscription
+     * @param  string  $uuid  Subscription UUID
+     * @param  string  $status  Status of Subscription
      * @return mixed
      */
     public function handlePayment($uuid)
     {
         $bill_pay = BillPayment::with('bill')->whereUuid($uuid)->first();
 
-
-        if (!$bill_pay) {
-            return to_route('home')->with("error", 'Insufficient data!');
+        if (! $bill_pay) {
+            return to_route('home')->with('error', 'Insufficient data!');
         }
 
-        if ($bill_pay->status !== 'initiated') {
-            return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with("success", 'Subscription already processed!');
+        /*
+        |--------------------------------------------------------------------------
+        | ATOMIC CLAIM
+        |--------------------------------------------------------------------------
+        |
+        | The Stripe success redirect can arrive twice (double-tap, prefetch, back
+        | button). A plain read-then-write guard let both requests through, creating
+        | duplicate UserPayment rows, double GMV, duplicate deliverables and receipts.
+        | A conditional UPDATE is the claim — only one request can win it.
+        */
+
+        $claimed = BillPayment::where('id', $bill_pay->id)
+            ->where('status', 'initiated')
+            ->update(['status' => 'processing']);
+
+        if (! $claimed) {
+            return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('success', 'Subscription already processed!');
         }
+
+        $bill_pay->status = 'processing';
 
         try {
 
@@ -836,16 +918,16 @@ class BillsController extends Controller
                 $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
 
                 $vatAmount = $bill_pay->vat_tax_amount ?? 0;
-                $amountWithVat = ($symbol->symbol ?? '£') . number_format($bill_pay->amount + $vatAmount, 2);
+                $amountWithVat = ($symbol->symbol ?? '£').number_format($bill_pay->amount + $vatAmount, 2);
 
                 $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                 $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
-                $amountWithCurr = ($symbol->symbol ?? '£') . number_format($totalPaidAmount, 2);
+                $amountWithCurr = ($symbol->symbol ?? '£').number_format($totalPaidAmount, 2);
 
                 /**************************BILL**PWA**START****************************************************/
                 // below is BILL pwa for fans
                 $CreatorName = ucfirst($bill_pay->bill->user->name) ?? 'A Creator';
-                $title = "🧾 Bill Paid!";
+                $title = '🧾 Bill Paid!';
                 $content = "You’ve successfully paid your bill to $CreatorName for {$amountWithCurr}.";
                 $email = $bill_pay->guest_email;
 
@@ -853,7 +935,7 @@ class BillsController extends Controller
 
                 // below is BILL pwa for creator
                 $FanName = ucfirst($bill_pay->user->name ?? $bill_pay->guest_name) ?? 'A Fan';
-                $title = "💰 Bill Payment Received!";
+                $title = '💰 Bill Payment Received!';
                 $content = "$FanName has paid their bill. Check your earnings!.";
                 $email = $bill_pay->bill->user->email;
 
@@ -865,37 +947,37 @@ class BillsController extends Controller
 
                 // Calculate creator net amount
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency);
-                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($breakdown['net_to_creator'], 2);
+                $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
 
                 // Dispatch mail jobs
                 BillPayMail::dispatch($bill_pay, $creatorNetAmount);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
 
                 // Dispatch content delivery email if bill has content file
-                if (!empty($bill_pay->bill->content_file)) {
+                if (! empty($bill_pay->bill->content_file)) {
                     BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
                     Log::info('BillsController: Content delivery email dispatched for bill payment', [
                         'bill_payment_id' => $bill_pay->id,
                         'bill_id' => $bill_pay->bill->id,
-                        'has_content_file' => !empty($bill_pay->bill->content_file)
+                        'has_content_file' => ! empty($bill_pay->bill->content_file),
                     ]);
                 }
 
                 // Notification setup
-                $username = $bill_pay->anonymous ? "Anonymous user" : ($bill_pay->guest_name ?? "Anonymous user");
+                $username = $bill_pay->anonymous ? 'Anonymous user' : ($bill_pay->guest_name ?? 'Anonymous user');
                 $message = "$username just subscribed to your bill {$bill_pay->bill->name}";
                 NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user ?? null, 'Bill');
 
                 $bill_pay->save();
 
-                $userPayment = new UserPayment();
+                $userPayment = new UserPayment;
                 $userPayment->from_user_id = $bill_pay->user_id ?? null;
                 $userPayment->to_user_id = $bill_pay->bill->user_id;
                 $userPayment->product_type = 'bill';
                 $userPayment->amount = $bill_pay->amount;
 
                 // Ensure total_paid is updated in BillPayment if missing
-                if (!$bill_pay->total_paid || $bill_pay->total_paid <= 0) {
+                if (! $bill_pay->total_paid || $bill_pay->total_paid <= 0) {
                     $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
                     $bill_pay->total_paid = (float) ($session->amount_total / $multiplier);
                     $bill_pay->save();
@@ -918,7 +1000,7 @@ class BillsController extends Controller
                         $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
                     }
                     // Use actual fee breakdown from the gross-up formula
-                    $billBreakdown = \App\Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
+                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
                     $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
                     $stripeFee = $billBreakdown['stripe_fee'];
                     $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
@@ -926,9 +1008,19 @@ class BillsController extends Controller
                         : $billBreakdown['total_supporter_pays'];
                     $creatorAmount = $amount;
 
+                    // Reserve is taken from the creator's NET amount (never the gross).
+                    // Without this the bill earning was unreserved until the nightly
+                    // sync ran, and a payout in that window paid the full net.
+                    $reservePercent = (int) app(ReservePolicy::class)->getEffectiveReservePercent(
+                        $creator,
+                        CreatorMetric::where('creator_id', $creator->uuid)->first(),
+                        now()
+                    );
+                    $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
+
                     FinancialTransaction::updateOrCreate(
                         [
-                            'source_type' => \App\Models\BillPayment::class,
+                            'source_type' => BillPayment::class,
                             'source_id' => $bill_pay->id,
                         ],
                         [
@@ -940,14 +1032,16 @@ class BillsController extends Controller
                             'stripe_fee' => $stripeFee,
                             'vat_amount' => $vat,
                             'net_amount' => $creatorAmount,
+                            'reserve_amount' => $reserveAmount,
+                            'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
                             'currency' => strtoupper($bill_pay->currency ?? 'GBP'),
                             'status' => 'completed',
-                            'description' => 'Recurring content: ' . ($bill_pay->bill->name ?? 'Subscription'),
+                            'description' => 'Recurring content: '.($bill_pay->bill->name ?? 'Subscription'),
                             'transaction_date' => $bill_pay->created_at,
                         ]
                     );
                 } catch (\Throwable $e) {
-                    Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: ' . $e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
+                    Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: '.$e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
                 }
                 $totalAmount = 0;
                 if ($bill_pay->user->role == 0) {
@@ -955,7 +1049,6 @@ class BillsController extends Controller
                 } else {
                     $totalAmount = $bill_pay->amount;
                 }
-
 
                 return to_route('thank-you', [
                     'username' => $bill_pay->bill->user->username,
@@ -966,13 +1059,23 @@ class BillsController extends Controller
                     'item_id' => $bill_pay->bill->uuid,
                     'source' => 'bill_payments',
                     'source_id' => $bill_pay->id,
-                ])->with('success', "Payment for subscription of bill is successful.");
+                ])->with('success', 'Payment for subscription of bill is successful.');
             }
 
             $bill_pay->save();
 
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('warning', "Bill is in {$session->payment_status} status.");
         } catch (Exception $e) {
+            // Release the claim so a genuine retry is still possible.
+            BillPayment::where('id', $bill_pay->id)
+                ->where('status', 'processing')
+                ->update(['status' => 'initiated']);
+
+            Log::error('BillsController: handlePayment failed', [
+                'bill_payment_id' => $bill_pay->id,
+                'error' => $e->getMessage(),
+            ]);
+
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('error', $e->getMessage());
         }
     }
@@ -985,7 +1088,7 @@ class BillsController extends Controller
         try {
             $bill = $billPayment->bill;
 
-            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
+            $metrics = app(RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use consistent fee calculation for creator net amount
@@ -1001,12 +1104,12 @@ class BillsController extends Controller
                     $paymentIntentId = $retrievedSession->payment_intent ?? null;
                     Log::info('BillsController: Retrieved payment intent from session', [
                         'session_id' => $session->id,
-                        'payment_intent_id' => $paymentIntentId
+                        'payment_intent_id' => $paymentIntentId,
                     ]);
                 } catch (Exception $e) {
                     Log::warning('BillsController: Failed to retrieve payment intent from session', [
                         'session_id' => $session->id ?? 'unknown',
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -1014,17 +1117,17 @@ class BillsController extends Controller
             // Create deliverable entry for tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => (string) Str::uuid(),
-                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
+                'product_id' => $bill->product_id ?? 'bill_'.$bill->id,
                 'price_id' => $bill->price_id,
                 'item_id' => $bill->id, // Add item_id for bill lookup
                 'creator_id' => $bill->user_id,
                 'gifter_id' => $billPayment->user_id,
                 'payment_intent_id' => $paymentIntentId,
                 'session_id' => $session->id,
-                'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'deliverable_type' => ! empty($bill->content_file) ? 'digital_file' : 'access',
                 'product_type' => 'bill',
                 'transaction_amount' => $billPayment->amount, // Add transaction amount
-                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'deliverable_url' => ! empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
                 'customer_email' => $billPayment->guest_email ?? $billPayment->user->email ?? null,
                 'customer_name' => $billPayment->guest_name ?? $billPayment->user->name ?? null,
                 'payment_status' => $billPayment->status,
@@ -1044,10 +1147,10 @@ class BillsController extends Controller
                     'message' => $billPayment->message,
                     'guest_email' => $billPayment->guest_email,
                     'guest_name' => $billPayment->guest_name,
-                    'has_content_file' => !empty($bill->content_file)
+                    'has_content_file' => ! empty($bill->content_file),
                 ]),
                 'status' => 'delivered',
-                'delivered_at' => now()
+                'delivered_at' => now(),
             ]);
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
@@ -1059,13 +1162,13 @@ class BillsController extends Controller
                     $stripeMetadataService = app(StripeMetadataService::class);
                     $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                         'bill_processed_at' => now()->toISOString(),
-                        'immediate_delivery' => 'true'
+                        'immediate_delivery' => 'true',
                     ]);
                 } catch (Exception $e) {
                     Log::error('BillsController: Failed to update Stripe metadata', [
                         'deliverable_id' => $deliverable->id,
                         'payment_intent_id' => $paymentIntentId,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -1074,7 +1177,7 @@ class BillsController extends Controller
                 'deliverable_id' => $deliverable->id,
                 'bill_payment_id' => $billPayment->id,
                 'bill_id' => $bill->id,
-                'has_content_file' => !empty($bill->content_file)
+                'has_content_file' => ! empty($bill->content_file),
             ]);
 
             return $deliverable;
@@ -1082,15 +1185,16 @@ class BillsController extends Controller
             Log::error('Failed to create bill deliverable', [
                 'error' => $e->getMessage(),
                 'bill_payment_id' => $billPayment->id ?? 'unknown',
-                'bill_id' => $billPayment->bill->id ?? 'unknown'
+                'bill_id' => $billPayment->bill->id ?? 'unknown',
             ]);
+
             return null;
         }
     }
 
     public function billStatus(Request $request)
     {
-        Log::info("Bill status request received");
+        Log::info('Bill status request received');
 
         $endpoint_secret = config('services.stripe.webhook_secret');
 
@@ -1106,26 +1210,28 @@ class BillsController extends Controller
                 $endpoint_secret
             );
         } catch (SignatureVerificationException $e) {
-            Log::error("BillsController: Webhook signature verification failed: " . $e->getMessage());
+            Log::error('BillsController: Webhook signature verification failed: '.$e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid signature'
+                'message' => 'Invalid signature',
             ], 400);
         } catch (Exception $e) {
-            Log::error("BillsController: Webhook processing error: " . $e->getMessage());
+            Log::error('BillsController: Webhook processing error: '.$e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400);
         }
 
         $array = [];
-        if (!empty($event)) {
+        if (! empty($event)) {
             $subs = BillPayment::where('stripe_id', $event->data->object->subscription)->latest()->first();
 
             $ret = StripeControl::getSubscription($event->data->object->subscription);
 
-            if ($event->type == "invoice.updated" && !empty($subs)) {
+            if ($event->type == 'invoice.updated' && ! empty($subs)) {
 
                 $array = [
                     'email' => $event->data->object->customer_email,
@@ -1138,10 +1244,10 @@ class BillsController extends Controller
                     'currency' => $subs->currency ?? 'GBP',
                 ];
 
-                $subs->status = "ended";
+                $subs->status = 'ended';
                 $subs->save();
 
-                $newSubs = new BillPayment();
+                $newSubs = new BillPayment;
                 $newSubs->stripe_id = $subs->stripe_id;
                 $newSubs->session_id = $subs->session_id;
                 $newSubs->bills_id = $subs->bills_id;
@@ -1156,18 +1262,18 @@ class BillsController extends Controller
                 $newSubs->message = $subs->message;
                 $newSubs->anonymous = $subs->anonymous;
                 $newSubs->upcoming_payment = Carbon::createFromTimestamp($ret->current_period_end)->format('Y-m-d H:i:s');
-                $newSubs->status = "paid";
+                $newSubs->status = 'paid';
                 $newSubs->created_at = $subs->created_at;
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
 
                 SendRenewMail::dispatch($array, 'renew', 'bill');
-            } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
+            } elseif ($event->type == 'customer.subscription.deleted' && ! empty($subs)) {
                 $subs->status = 'cancelled';
                 $subs->save();
 
                 SendRenewMail::dispatch($array, 'cancelled', 'bill');
-            } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
+            } elseif ($event->type == 'invoice.payment_failed' && ! empty($subs)) {
                 $subs->status = 'failed';
                 $subs->save();
 
@@ -1201,12 +1307,39 @@ class BillsController extends Controller
         $estimatedNextMonth = 0;
         $uniqueCustomers = [];
 
+        // Recurring health: MRR (monthly-normalised recurring revenue) + churn.
+        $mrr = 0;
+        $activeRecurringCount = 0;
+        $cancelledThisMonth = 0;
+        $monthStart = now()->startOfMonth();
+
+        // Normalise any billing period down to a monthly figure.
+        $toMonthly = function ($payment) {
+            $amount = (float) $payment->amount;
+            switch ($payment->recurring_type) {
+                case 'yearly':
+                case 'annual':
+                    return $amount / 12;
+                case 'weekly':
+                    return $amount * 52 / 12;
+                default: // monthly
+                    return $amount;
+            }
+        };
+
         foreach ($bills as $bill) {
 
             $paidPayments = $bill->payments
                 ->where('status', 'paid');
 
             $billRevenue = $paidPayments->sum('amount');
+
+            // Cancelled this month (for churn): rows whose access-end falls in this month.
+            $cancelledThisMonth += $bill->payments->filter(function ($payment) use ($monthStart) {
+                $endsAt = $payment->endsAt();
+
+                return $endsAt !== null && $endsAt->greaterThanOrEqualTo($monthStart);
+            })->count();
 
             /*
             |--------------------------------------------------------------------------
@@ -1251,19 +1384,21 @@ class BillsController extends Controller
                     |--------------------------------------------------------------------------
                     */
 
-                    if (isset($payment->subscription_status) && $payment->subscription_status) {
-                        if (!in_array($payment->subscription_status, ['active', 'trialing'])) {
-                            return false;
-                        }
+                    if (! empty($payment->stripe_status) && ! in_array($payment->stripe_status, ['active', 'trialing'])) {
+                        return false;
                     }
 
                     /*
                     |--------------------------------------------------------------------------
                     | CANCELED SUBSCRIPTIONS
                     |--------------------------------------------------------------------------
+                    |
+                    | This used to read `subscription_status`/`cancel_at_period_end`, neither
+                    | of which existed on bill_payments — so cancelled supporters were still
+                    | counted in "estimated next month".
                     */
 
-                    if (isset($payment->cancel_at_period_end) && $payment->cancel_at_period_end) {
+                    if ($payment->cancel_at_period_end || $payment->isCancelled()) {
                         return false;
                     }
 
@@ -1279,13 +1414,16 @@ class BillsController extends Controller
             $nextMonthEstimate =
                 $activeRecurringPayments->sum('amount');
 
+            $activeRecurringCount += $activeRecurringPayments->count();
+            $mrr += $activeRecurringPayments->sum($toMonthly);
+
             $bill->total_revenue = round($billRevenue, 2);
 
             $bill->buyers_count =
                 $paidPayments
-                ->pluck('user_id')
-                ->unique()
-                ->count();
+                    ->pluck('user_id')
+                    ->unique()
+                    ->count();
 
             $bill->next_month_estimate =
                 round($nextMonthEstimate, 2);
@@ -1313,7 +1451,8 @@ class BillsController extends Controller
 
         $chartData = [];
 
-        for ($i = 5; $i >= 0; $i--) {
+        // 12 months so the dashboard's "Last 12 months" period filter has real data.
+        for ($i = 11; $i >= 0; $i--) {
 
             $month = now()->subMonths($i);
 
@@ -1334,10 +1473,9 @@ class BillsController extends Controller
 
             $chartData[] = [
                 'month' => $month->format('M Y'),
-                'amount' => round($amount, 2)
+                'amount' => round($amount, 2),
             ];
         }
-
 
         // TOP BILL
 
@@ -1352,6 +1490,14 @@ class BillsController extends Controller
                 'monthly_revenue' => round($monthlyRevenue, 2),
                 'estimated_next_month' => round($estimatedNextMonth, 2),
                 'unique_customers' => count(array_unique($uniqueCustomers)),
+                'mrr' => round($mrr, 2),
+                'active_recurring' => $activeRecurringCount,
+                'cancelled_this_month' => $cancelledThisMonth,
+                // Churn = cancellations this month over the base that was active at the
+                // month's start (still-active + those that cancelled this month).
+                'churn_rate' => ($activeRecurringCount + $cancelledThisMonth) > 0
+                    ? round(($cancelledThisMonth / ($activeRecurringCount + $cancelledThisMonth)) * 100, 1)
+                    : 0,
             ],
 
             'top_bill' => $topBill,
@@ -1377,12 +1523,7 @@ class BillsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $activeCondition = function ($query) {
-
-            $query
-                ->whereNull('end')
-                ->orWhere('end', 0);
-        };
+        $isActive = fn ($subscription) => $subscription->isSubscriptionActive();
 
         /*
         |--------------------------------------------------------------------------
@@ -1391,7 +1532,7 @@ class BillsController extends Controller
         */
 
         $billSubscriptions = BillPayment::with([
-            'bill.user'
+            'bill.user',
         ])
             ->where('user_id', $user->id)
 
@@ -1400,7 +1541,7 @@ class BillsController extends Controller
             ->whereIn('recurring_type', [
                 'monthly',
                 'yearly',
-                'annual'
+                'annual',
             ])
 
             ->latest()
@@ -1414,7 +1555,7 @@ class BillsController extends Controller
         */
 
         $membershipSubscriptions = MembershipPayment::with([
-            'membership.user'
+            'membership.user',
         ])
             ->where('user_id', $user->id)
 
@@ -1423,7 +1564,7 @@ class BillsController extends Controller
             ->whereIn('recurring_type', [
                 'monthly',
                 'yearly',
-                'annual'
+                'annual',
             ])
 
             ->latest()
@@ -1437,22 +1578,10 @@ class BillsController extends Controller
         */
 
         $activeBillSubscriptions =
-            $billSubscriptions
-            ->filter(function ($subscription) {
-
-                return
-                    $subscription->end != 1;
-            })
-            ->count();
+            $billSubscriptions->filter($isActive)->count();
 
         $activeMembershipSubscriptions =
-            $membershipSubscriptions
-            ->filter(function ($subscription) {
-
-                return
-                    $subscription->end != 1;
-            })
-            ->count();
+            $membershipSubscriptions->filter($isActive)->count();
 
         /*
         |--------------------------------------------------------------------------
@@ -1463,22 +1592,16 @@ class BillsController extends Controller
         $monthlySpend =
 
             $billSubscriptions
-
-            ->where('recurring_type', 'monthly')
-
-            ->where('end', '!=', 1)
-
-            ->sum('amount')
+                ->where('recurring_type', 'monthly')
+                ->filter($isActive)
+                ->sum('amount')
 
             +
 
             $membershipSubscriptions
-
-            ->where('recurring_type', 'monthly')
-
-            ->where('end', '!=', 1)
-
-            ->sum('amount');
+                ->where('recurring_type', 'monthly')
+                ->filter($isActive)
+                ->sum('amount');
 
         /*
         |--------------------------------------------------------------------------
@@ -1486,41 +1609,49 @@ class BillsController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        $yearlyFilter = fn ($subscription) => in_array(
+            $subscription->recurring_type,
+            ['yearly', 'annual']
+        ) && $subscription->isSubscriptionActive();
+
         $yearlySpend =
 
-            $billSubscriptions
-
-            ->filter(function ($subscription) {
-
-                return
-                    in_array(
-                        $subscription->recurring_type,
-                        ['yearly', 'annual']
-                    )
-                    &&
-
-                    $subscription->end != 1;
-            })
-
-            ->sum('amount')
+            $billSubscriptions->filter($yearlyFilter)->sum('amount')
 
             +
 
-            $membershipSubscriptions
+            $membershipSubscriptions->filter($yearlyFilter)->sum('amount');
 
-            ->filter(function ($subscription) {
+        /*
+        |--------------------------------------------------------------------------
+        | UPCOMING RENEWALS (next 30 days)
+        |--------------------------------------------------------------------------
+        |
+        | Give the supporter a heads-up on what is about to be charged, so a renewal
+        | is never a surprise. Only live subscriptions with a future charge date count.
+        */
 
-                return
-                    in_array(
-                        $subscription->recurring_type,
-                        ['yearly', 'annual']
-                    )
-                    &&
+        $now = now();
+        $in30 = now()->copy()->addDays(30);
 
-                    $subscription->end != 1;
-            })
+        $upcoming = $billSubscriptions
+            ->filter($isActive)
+            ->merge($membershipSubscriptions->filter($isActive))
+            ->filter(function ($sub) use ($now, $in30) {
+                if (empty($sub->upcoming_payment)) {
+                    return false;
+                }
+                $due = Carbon::parse($sub->upcoming_payment);
 
-            ->sum('amount');
+                return $due->betweenIncluded($now, $in30);
+            });
+
+        $nextRenewal = $billSubscriptions
+            ->filter($isActive)
+            ->merge($membershipSubscriptions->filter($isActive))
+            ->filter(fn ($s) => ! empty($s->upcoming_payment) && Carbon::parse($s->upcoming_payment)->greaterThanOrEqualTo($now))
+            ->sortBy(fn ($s) => Carbon::parse($s->upcoming_payment)->timestamp)
+            ->first();
 
         /*
         |--------------------------------------------------------------------------
@@ -1534,29 +1665,27 @@ class BillsController extends Controller
 
             'stats' => [
 
-                'active_bill_subscriptions' =>
-                $activeBillSubscriptions,
+                'active_bill_subscriptions' => $activeBillSubscriptions,
 
-                'active_membership_subscriptions' =>
-                $activeMembershipSubscriptions,
+                'active_membership_subscriptions' => $activeMembershipSubscriptions,
 
-                'total_active_subscriptions' =>
-
-                $activeBillSubscriptions +
+                'total_active_subscriptions' => $activeBillSubscriptions +
                     $activeMembershipSubscriptions,
 
-                'monthly_spend' =>
-                round($monthlySpend, 2),
+                'monthly_spend' => round($monthlySpend, 2),
 
-                'yearly_spend' =>
-                round($yearlySpend, 2),
+                'yearly_spend' => round($yearlySpend, 2),
+
+                'upcoming_30d_count' => $upcoming->count(),
+
+                'upcoming_30d_total' => round($upcoming->sum('amount'), 2),
+
+                'next_renewal_at' => $nextRenewal?->upcoming_payment,
             ],
 
-            'bill_subscriptions' =>
-            $billSubscriptions,
+            'bill_subscriptions' => $billSubscriptions,
 
-            'membership_subscriptions' =>
-            $membershipSubscriptions,
+            'membership_subscriptions' => $membershipSubscriptions,
         ]);
     }
 
@@ -1592,7 +1721,7 @@ class BillsController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized access'
+                'message' => 'Unauthorized access',
             ], 403);
         }
 
@@ -1602,11 +1731,11 @@ class BillsController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if ($payment->end == 1) {
+        if ($payment->isCancelled()) {
 
             return response()->json([
                 'status' => false,
-                'message' => 'Subscription already canceled'
+                'message' => 'Subscription already canceled',
             ]);
         }
 
@@ -1616,22 +1745,33 @@ class BillsController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        $endsAt = null;
+
         try {
 
-            if (!empty($payment->stripe_id)) {
+            if (! empty($payment->stripe_id)) {
                 // Bills use Direct Charges on the creator's connected account, so the
                 // subscription lives there — retrieving/updating it on the platform
                 // account fails. Use the region-correct client + stripe_account option.
                 $connectedAccountId = $payment->bill->user->account_id ?? null;
                 $opts = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
                 $client = StripeControl::getClientForCurrency($payment->currency ?? 'gbp');
-                $client->subscriptions->update(
+                $subscription = $client->subscriptions->update(
                     $payment->stripe_id,
                     ['cancel_at_period_end' => true],
                     $opts
                 );
+
+                if (! empty($subscription->current_period_end)) {
+                    $endsAt = Carbon::createFromTimestamp($subscription->current_period_end);
+                }
+
+                $payment->forceFill([
+                    'stripe_status' => $subscription->status,
+                    'current_period_end' => $endsAt,
+                ]);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
 
             return response()->json([
 
@@ -1646,20 +1786,12 @@ class BillsController extends Controller
         |--------------------------------------------------------------------------
         | UPDATE DATABASE
         |--------------------------------------------------------------------------
+        |
+        | `end` is a timestamp column meaning "access ends at" — the supporter keeps
+        | what they already paid for until the current period runs out.
         */
 
-        $payment->update([
-
-            'end' => 1,
-
-            /*
-            |--------------------------------------------------------------------------
-            | OPTIONAL
-            |--------------------------------------------------------------------------
-            */
-
-            'upcoming_payment' => null,
-        ]);
+        $payment->markCancelledAt($endsAt ?: Carbon::parse($payment->upcoming_payment ?: now()));
 
         /*
         |--------------------------------------------------------------------------
@@ -1671,8 +1803,7 @@ class BillsController extends Controller
 
             'status' => true,
 
-            'message' =>
-            'Subscription scheduled for cancellation successfully.'
+            'message' => 'Subscription scheduled for cancellation successfully.',
         ]);
     }
 
@@ -1712,12 +1843,12 @@ class BillsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $payments
+                'data' => $payments,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -1727,23 +1858,23 @@ class BillsController extends Controller
         $user = Auth::user();
 
         $bill = Bills::with([
-            'payments.user'
+            'payments.user',
         ])
             ->where('uuid', $uuid)
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$bill) {
+        if (! $bill) {
 
             return response()->json([
                 'status' => false,
-                'message' => 'Bill not found'
+                'message' => 'Bill not found',
             ], 404);
         }
 
         return response()->json([
             'status' => true,
-            'bill' => $bill
+            'bill' => $bill,
         ]);
     }
 
