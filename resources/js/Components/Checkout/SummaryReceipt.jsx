@@ -38,7 +38,7 @@ export default function SummaryReceipt({
                         <img
                             src={image}
                             alt=""
-                            className="w-14 h-14 rounded-xl border-[3px] border-black object-cover shrink-0"
+                            className="w-14 h-14 rounded-box-sm border-[3px] border-black object-cover shrink-0"
                         />
                     )}
                     <div className="min-w-0">

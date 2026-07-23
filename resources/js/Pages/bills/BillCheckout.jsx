@@ -372,7 +372,28 @@ export default function BillCheckout(props) {
         setData("cf_turnstile_response", captchaToken || "");
     }, [captchaToken, setData]);
 
+    // Server redirect-back-with-error must actually reach the buyer. The old code
+    // only read props.flash inside onSuccess — a STALE closure that never saw the
+    // fresh flash, so a refused checkout rendered with no message at all.
+    useEffect(() => {
+        if (flash?.error) {
+            errorAlert(flash.error);
+        }
+        if (flash?.success) {
+            successAlert(flash.success);
+        }
+        if (flash?.warning) {
+            warningAlert(flash.warning);
+        }
+        if (flash?.info) {
+            infoAlert(flash.info);
+        }
+    }, [flash]);
+
     const handleSubmit = () => {
+        // Re-entrancy guard: a second tap before the disabled re-render must not
+        // fire a second checkout session.
+        if (checking) return;
         if (turnstileSiteKey && !data.cf_turnstile_response) {
             errorAlert("Please verify the captcha");
             return;
@@ -384,26 +405,15 @@ export default function BillCheckout(props) {
             }),
             {
                 preserveScroll: true,
-                onSuccess: (data) => {
-                    if (props?.flash?.error) {
-                        errorAlert(props?.flash?.error || "Checkout failed.");
-                    }
-                    if (props?.flash?.success) {
-                        successAlert(
-                            props?.flash?.success ||
-                                "Checkout successful! Your payment is being processed.",
-                        );
-                    }
-                    // optionally redirect or show success alert
-                },
                 onError: (errorBag) => {
-                    errorAlert(errorBag);
-                    console.error("Checkout failed", errorBag);
+                    // errorBag is an object — passing it whole rendered "[object Object]".
+                    const first =
+                        errorBag && Object.values(errorBag).flat()[0];
+                    errorAlert(first ? String(first) : "Checkout failed.");
                     setCaptchaToken("");
                     if (turnstileRef.current) {
                         turnstileRef.current.reset();
                     }
-                    // show error toasts, alerts, or update error state
                 },
                 onFinish: () => {
                     // cleanup, stop loader, etc.
@@ -626,7 +636,7 @@ export default function BillCheckout(props) {
                                     />
                                     {(!data.agree || !data.digital_waiver) && (
                                         <p className="text-[10px] font-bold text-black/50 text-center mt-2">
-                                            Accept the terms on the left to
+                                            Accept the terms above to
                                             continue.
                                         </p>
                                     )}

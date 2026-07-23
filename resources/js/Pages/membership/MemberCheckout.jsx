@@ -550,7 +550,7 @@ export default function SubCheckout(props) {
                                     />
                                     {(!data.agree || !data.digital_waiver) && (
                                         <p className="text-[10px] font-bold text-black/50 text-center mt-2">
-                                            Accept the terms on the left to
+                                            Accept the terms above to
                                             continue.
                                         </p>
                                     )}

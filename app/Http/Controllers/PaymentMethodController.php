@@ -48,6 +48,8 @@ class PaymentMethodController extends Controller
             'status' => true,
             'bank_enabled' => (bool) config('payments.enabled'),
             'charge_currency' => $chargeCurrency,
+            // SEPA/ACH settle async (days) — the UI must warn before pay, not after.
+            'delayed_settlement' => PaymentMethodPricingService::hasDelayedSettlement($chargeCurrency),
             'prices' => [
                 'card' => $prices['card']['total_supporter_pays'],
                 'bank' => $prices['bank']['total_supporter_pays'] ?? null,

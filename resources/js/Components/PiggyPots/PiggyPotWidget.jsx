@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, usePage, Link } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import axios from 'axios';
 import CheckoutLegalTerms from '@/Components/CheckoutLegalTerms';
 import PaymentMethodSelector from '@/Components/PaymentMethodSelector';
+import Turnstile from '@/Components/Turnstile';
 import confetti from 'canvas-confetti';
 
 // Server-side limits (Helpers::priceWithinLimits, GBP-equivalent) — mirrored here
@@ -23,8 +24,10 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
     const [fieldErrors, setFieldErrors] = useState({});
     const [prices, setPrices] = useState(null);
 
-    const { auth } = usePage().props;
+    const { auth, turnstileSiteKey } = usePage().props;
     const { errorAlert } = useAlerts();
+    const turnstileRef = useRef(null);
+    const [verified, setVerified] = useState(false);
 
     const { data, setData } = useForm({
         amount: '',
@@ -36,7 +39,18 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
         digital_waiver: false,
         agree: false,
         payment_method: 'card',
+        cf_turnstile_response: '',
     });
+
+    // Stable identity — the pot widget re-renders on every price-preview poll, and an
+    // inline onVerify re-triggered Turnstile's render effect (deps include the callback),
+    // remounting the Cloudflare widget dozens of times per session.
+    // Declared AFTER useForm: the deps array reads `setData`, which hits a TDZ error
+    // if this useCallback sits above the useForm that defines it.
+    const onTurnstileVerify = useCallback((token) => {
+        setData('cf_turnstile_response', token || '');
+        setVerified(!!token);
+    }, [setData]);
 
     // Everything the supporter sees is priced in the POT's currency, because
     // that is the currency the amount is charged in. Converting for display
@@ -163,6 +177,11 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
             return;
         }
 
+        if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
+            errorAlert('Please complete the security check.');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -182,7 +201,14 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
             }
             setLoading(false);
         } catch (error) {
-            errorAlert(error?.response?.data?.message || 'Something went wrong. Your card has not been charged.');
+            const bag = error?.response?.data?.errors;
+            const first = bag && Object.values(bag).flat()[0];
+            errorAlert(first || error?.response?.data?.message || 'Something went wrong. Your card has not been charged.');
+            setVerified(false);
+            setData('cf_turnstile_response', '');
+            if (turnstileRef.current) {
+                turnstileRef.current.reset();
+            }
             setLoading(false);
         }
     };
@@ -521,14 +547,27 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
 
                                 <FieldError name="waiver" />
 
+                                {turnstileSiteKey ? (
+                                    <div className="flex justify-center my-3">
+                                        <Turnstile
+                                            ref={turnstileRef}
+                                            size="normal"
+                                            theme="light"
+                                            onVerify={onTurnstileVerify}
+                                        />
+                                    </div>
+                                ) : null}
+
                                 <button
                                     type="button"
                                     onClick={handleContribute}
-                                    disabled={loading || !data.digital_waiver}
+                                    // totalCharged == null means the price preview failed or is still
+                                    // loading — never let the buyer pay without seeing the amount.
+                                    disabled={loading || !data.digital_waiver || totalCharged == null || (turnstileSiteKey && !verified)}
                                     aria-busy={loading}
-                                    className={`${primaryBtn} ${(!data.digital_waiver || loading) ? primaryOff : primaryOn}`}
+                                    className={`${primaryBtn} ${(!data.digital_waiver || loading || totalCharged == null || (turnstileSiteKey && !verified)) ? primaryOff : primaryOn}`}
                                 >
-                                    {loading ? 'Processing…' : 'Unlock content'}
+                                    {loading ? 'Processing…' : totalCharged == null ? 'Calculating…' : 'Unlock content'}
                                 </button>
                                 <div className="mt-2 text-center text-xs font-bold text-gray-500">
                                     🔒 Secured via Stripe

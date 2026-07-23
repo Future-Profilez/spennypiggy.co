@@ -13,6 +13,7 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -48,16 +49,12 @@ export default function TipInner({classes, idd}) {
   }
 
   const customAmount = (e) => {
-    if(e.target.value > 99){
-      toast.error("Maximum amount is 99");
-      return false;
-    }
     setAmount(e.target.value);
     setdefaultAmount(e.target.value);
-    // When using custom input, amount is in display currency (global_currency)
-    // We set currency here, but useEffect below also syncs amount. 
-    // We need to ensure currency is set correctly when typing.
-    setData("currency", global_currency || 'GBP');
+    // Same currency as the preset chips (the CREATOR's currency) — previously the
+    // custom input charged in global_currency, so the charge currency depended on
+    // which input path the buyer used. Range (£4.99–£500 equiv) is validated in send().
+    setData("currency", user?.default_currency || 'GBP');
   }
 
   useEffect(()=>{
@@ -65,6 +62,7 @@ export default function TipInner({classes, idd}) {
   },[amount, setData]);
 
   const [loading, setLoading] = useState(false);
+  const [previewPrices, setPreviewPrices] = useState(null);
   const [showStepUp, setShowStepUp] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [stepUpUi, setStepUpUi] = useState(null);
@@ -119,8 +117,22 @@ export default function TipInner({classes, idd}) {
   
   const send = (e, bypassCaptcha = false) => {
     e?.preventDefault?.();
+    // Re-entrancy guard: a second tap before the disabled re-render must not
+    // fire a second checkout session.
+    if (loading) return false;
     if(data.email === "" || data.name === "" ){
         errorAlert("Please enter all the required details.");
+        return false;
+    }
+    // Client-side mirror of the server's £4.99–£500 GBP-equivalent rule — the
+    // old flow let any positive amount through and failed only after submit.
+    const amountGbp = usdToGbp(parseFloat(data.amount || 0), data.currency);
+    if (!data.amount || isNaN(amountGbp) || amountGbp < 4.99) {
+        errorAlert("The minimum amount is £4.99 (or equivalent).");
+        return false;
+    }
+    if (amountGbp > 500) {
+        errorAlert("The maximum amount is £500 (or equivalent).");
         return false;
     }
     if (card_capabilities === false) {
@@ -382,23 +394,23 @@ export default function TipInner({classes, idd}) {
                     <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                   {defaultAmount} &nbsp;Each</p>
                   <div className='incresecounter flex items-center' >
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-[30px]   ' onClick={decresevalue} >-</button>
-                        <div className='border px-3 py-2 rounded-[30px]    mx-1' >{tipQuantity}</div>
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-[30px]   ' onClick={incresevalue} >+</button>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-box-sm   ' onClick={decresevalue} >-</button>
+                        <div className='border px-3 py-2 rounded-box-sm    mx-1' >{tipQuantity}</div>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-box-sm   ' onClick={incresevalue} >+</button>
                   </div>
               </div> */}
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 mt-2">
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, user?.default_currency || "GBP")}</button>
-                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, user?.default_currency || "GBP")}</button>
-                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]   p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, user?.default_currency || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, user?.default_currency || "GBP")}</button>
+                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm   p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
               <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
@@ -409,7 +421,7 @@ export default function TipInner({classes, idd}) {
                 {selectegTag === 'custom' ? <div className="mb-4 ">
                     <div className="relative currency-wrapper " >
                         <span className="currency-tag">{global_currency || 'GBP'}</span>
-                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  " value={amount}
+                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  " value={amount}
                         onChange={customAmount}
                         type="number" placeholder="Enter amount.. " />
                     </div>
@@ -417,7 +429,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Access to my supporter-only posts 💖'}
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm " defaultValue={'Access to my supporter-only posts 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
@@ -426,7 +438,7 @@ export default function TipInner({classes, idd}) {
                   <>
                     <div className="mb-4">
                       <input required
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                         defaultValue={auth && auth.user?.name}
                         onChange={(e) => setData('name', e.target.value)}
                         type="text" placeholder="Enter nickname.. "
@@ -435,7 +447,7 @@ export default function TipInner({classes, idd}) {
 
                     <div className="mb-4">
                       <input required  disabled={auth && auth.user?.email ? true : false}
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                         defaultValue={auth && auth.user?.email}
                         onChange={(e) => setData('email', e.target.value)}
                         type="email" placeholder="Enter email.. " />
@@ -462,8 +474,27 @@ export default function TipInner({classes, idd}) {
                   email={data.email || auth?.user?.email}
                   value={data.payment_method}
                   onChange={(m) => setData('payment_method', m)}
+                  onPrices={setPreviewPrices}
                   className="mb-4"
               />
+
+              {/* The grossed-up figure the buyer is actually charged — before this
+                  the first time they saw the real amount was on Stripe. */}
+              {parseFloat(data.amount) > 0 && (
+                <div className="flex items-center justify-between border-gray-300 border rounded-box-sm px-4 py-3 mb-4">
+                  <span className="text-sm font-bold text-gray-700">You pay</span>
+                  <span className="font-black text-lg">
+                    {previewPrices
+                      ? formatMultiPrice(
+                          data.payment_method === 'bank' && previewPrices.bank != null
+                            ? previewPrices.bank
+                            : previewPrices.card,
+                          user?.default_currency || 'GBP',
+                        )
+                      : 'Calculating…'}
+                  </span>
+                </div>
+              )}
 
               <CheckoutLegalTerms onAgreeChange={(checked) => {
                   setData('agree', checked);
@@ -483,17 +514,18 @@ export default function TipInner({classes, idd}) {
               </> : ''}
 
               {user?.role === 1 && card_capabilities === false && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-[20px] relative mb-4"  >
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-box-sm relative mb-4"  >
                     <h2 className="font-bold w-full text-normal uppercase">Payments Disabled : </h2>
                     <span className="block sm:inline">This creator cannot accept payments at the moment.</span>
                 </div>
               )}
 
-              <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={() => setShowConfirm(true)} className={`items-center px-4  shadow-[4px_4px_0px_0px_#FF007F]lack
-                rounded-[30px]   btn-pink md justify-center btn-shadow !font-normal
-                ease-in-out duration-150 flex button text-center w-full
-                  mx-auto  ${(amount > 0 && data.agree && data.digital_waiver && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
-                > {loading ? "Processing..." : 'Become a Supporter'} </button>
+              <PayButton
+                label="Become a Supporter"
+                processing={loading}
+                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)}
+                onClick={() => setShowConfirm(true)}
+              />
 
               <div className='securestripe text-center mt-3' >
                 🔒 Secured via <b>Stripe</b>
@@ -609,7 +641,7 @@ export default function TipInner({classes, idd}) {
               disabled={loading}
               onClick={(e) => { setShowConfirm(false); send(e); }}
               className={`w-full main-button p ${loading ? 'disabled' : ''}`}
-            > {loading ? 'Processing...' : 'Become a Supporter'}
+            > {loading ? 'Processing…' : 'Become a Supporter'}
             </button>
           </div>
         </div>

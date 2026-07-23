@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
@@ -9,14 +9,23 @@ import axios from "axios";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import Turnstile from "@/Components/Turnstile";
+import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 
 export default function SubCheckout(props) {
-    const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
+    const turnstileRef = useRef(null);
+    const [verified, setVerified] = useState(false);
+    // Stable identity so Turnstile's render effect doesn't remount the widget on re-render.
+    const onTurnstileVerify = useCallback((token) => {
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
+    }, [setData]);
     const {data, setData, post, processing, errors} = useForm({
         name: name,
         email: email,
@@ -25,6 +34,7 @@ export default function SubCheckout(props) {
         digital_waiver: false,
         anonymous: 0,
         payment_method: 'card',
+        cf_turnstile_response: '',
     });
     const [previewPrices, setPreviewPrices] = useState(null);
 
@@ -75,6 +85,13 @@ export default function SubCheckout(props) {
     }
 
     const submitCheckout = () => {
+        // Re-entrancy guard: a second tap before the disabled re-render must not
+        // fire a second checkout session.
+        if (processing) return;
+        if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
+            errorAlert("Please complete the security check.");
+            return;
+        }
         if (!auth?.user) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is disabled. Please log in.";
@@ -97,7 +114,16 @@ export default function SubCheckout(props) {
             reccure:reccure
         }),
         {
-            preserveScroll:true
+            preserveScroll:true,
+            onError: (errorBag) => {
+                const first = errorBag && Object.values(errorBag).flat()[0];
+                if (first) errorAlert(String(first));
+                setVerified(false);
+                setData("cf_turnstile_response", "");
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
+            },
         });
     }
 
@@ -361,7 +387,7 @@ export default function SubCheckout(props) {
                             wishes.
                         </p>
                         <div className="CartItemBox">
-                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-[30px]   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
+                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-box   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
                                 <div className='prodcartbox items-center'>
                                     <div className='productimg'>
                                         <img src={wish.perma_link || cartproductimg} alt='img' />
@@ -423,7 +449,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label>Add Message </label>
                                         <textarea
-                                            className="w-full border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            className="w-full border-gray-300 border rounded-box-sm   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
                                             onKeyUp={(e) =>
                                                 setData('message',e.target.value)
                                             }
@@ -439,7 +465,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                                    className="border-gray-300 border rounded-box-sm   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                                     onChange={(e) =>
                                                         setData('name',e.target.value)
                                                     } value={data.name}
@@ -451,7 +477,7 @@ export default function SubCheckout(props) {
                                             <div className="w-full mb-4">
                                                 <label className="block !text-start w-full">Email </label>
                                                 <p className="text-sm text-gray-500 mb-1">Your e-mail remains private.</p>
-                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
+                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-box-sm   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={auth && auth.user && auth.user.email ? true : false}
                                                     onChange={(e) => setData('email',e.target.value)}
@@ -491,14 +517,26 @@ export default function SubCheckout(props) {
                                         setData('agree', checked);
                                         setData('digital_waiver', checked);
                                     }} />
+
+                                    {turnstileSiteKey ? (
+                                        <div className="flex justify-center my-3">
+                                            <Turnstile
+                                                ref={turnstileRef}
+                                                size="normal"
+                                                theme="light"
+                                                onVerify={onTurnstileVerify}
+                                            />
+                                        </div>
+                                    ) : null}
                                     </li>
                                 </ul>
-                                <div className="mt-4 flex items-center justify-center" >
-                                    <button type="submit"
-                                        className={`${!data.agree || !data.digital_waiver || processing ? "disabled" : ""} main-button p`}
-                                        disabled={!data.agree || !data.digital_waiver || processing}>
-                                        {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
-                                    </button>
+                                <div className="mt-4" >
+                                    <PayButton
+                                        label={reccure == 'onetime' ? 'Subscribe Once' : `Subscribe ${wish.subscription_period}`}
+                                        processing={processing}
+                                        disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified)}
+                                        onClick={submitCheckout}
+                                    />
                                 </div>
                             </form>
                         </div>

@@ -10,6 +10,7 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -117,6 +118,10 @@ export default function UserCarts(props) {
     );
     const [subtotal, setsubtotal] = useState(0);
     const [fee, setFee] = useState(0);
+    // Base the price-preview / bank total on the SAME amount the charge grosses up
+    // (price + VAT + shipping) — the bare subtotal under-quoted physical/VAT carts.
+    const [chargeBase, setChargeBase] = useState(0);
+    const [previewPrices, setPreviewPrices] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("card");
 
     const [checking, setChecking] = useState(false);
@@ -481,18 +486,6 @@ export default function UserCarts(props) {
                     (isZeroDecimalCurrency(chargeCurrency) ? 1 : 100),
             );
 
-            // Debug Log
-            console.log("STEP UP VERIFY PAYLOAD", {
-                otp: otpCode?.trim(),
-                typed_confirmation: typedConfirmation?.toUpperCase()?.trim(),
-                amount: amountInCents,
-                currency: chargeCurrency,
-                creator_id: datas?.user?.uuid || datas?.user?.id,
-                email: email || auth?.user?.email,
-                device_id: deviceid,
-                risk_identity_id: stepUpContext?.risk_identity_id,
-            });
-
             const response = await axios.post("/api/risk/step-up/verify", {
                 otp: otpCode?.trim(),
                 typed_confirmation: typedConfirmation?.toUpperCase()?.trim(),
@@ -511,8 +504,6 @@ export default function UserCarts(props) {
                 risk_identity_id: stepUpContext?.risk_identity_id || null,
             });
 
-            console.log("STEP UP VERIFY RESPONSE", response?.data);
-
             if (response?.data?.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
 
@@ -526,11 +517,6 @@ export default function UserCarts(props) {
                 toast.error(response?.data?.error || "Verification failed.");
             }
         } catch (error) {
-            console.log(
-                "OTP verification FULL error:",
-                error?.response?.data || error,
-            );
-
             toast.error(
                 error?.response?.data?.error ||
                     error?.response?.data?.message ||
@@ -552,6 +538,9 @@ export default function UserCarts(props) {
     );
 
     const handleSubmit = () => {
+        // Re-entrancy guard: a second tap landing before the disabled re-render
+        // must not fire a second checkout session.
+        if (checking) return;
         pushDebug("checkout_clicked", {
             isChecked,
             checking,
@@ -571,9 +560,8 @@ export default function UserCarts(props) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is currently disabled. Please log in to continue.";
                 pushDebug("blocked_guest_disabled", { msg });
-                if (window.confirm("Login Required\n\n" + msg)) {
-                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
-                }
+                toast.error(msg);
+                router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
                 return;
             }
             const upCurrency = (chargeCurrency || "GBP").toUpperCase();
@@ -581,14 +569,15 @@ export default function UserCarts(props) {
             const totalGbp = rate ? (fee + subtotal) / rate : fee + subtotal;
             if (totalGbp > 50) {
                 pushDebug("blocked_guest_high_value", { totalGbp });
-                if (window.confirm("Login required\n\nLarger payments more than £50 need to login.",)
-                ) {
-                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
-                }
+                const msg = "Payments over £50 need an account — please log in to continue.";
+                toast.error(msg);
+                router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
                 return;
             }
         }
-        if (!captchaToken && !skipCaptcha) {
+        // Only demand a captcha token when Turnstile is actually configured —
+        // without the key no token can ever exist and checkout would hard-block.
+        if (turnstileSiteKey && !captchaToken && !skipCaptcha) {
             toast.error("Please complete the CAPTCHA verification.");
             pushDebug("blocked_missing_captcha", { turnstileSiteKey });
             if (debugEnabled) {
@@ -664,20 +653,23 @@ export default function UserCarts(props) {
     const [cartCleared, setCartCleared] = useState(false);
     const clearcart = (ownerid, index) => {
         setLoading(true);
-        router.get(`/clear-cart/${deviceid}/${ownerid}`, {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                setCartCleared(true);
-                setLoading(false);
-                if (index == 0) {
-                    window.location.reload = false;
-                }
+        // router.get(url, data, options) — the options were previously passed as
+        // the DATA argument, so the callbacks never fired and the loading state hung.
+        router.get(
+            `/clear-cart/${deviceid}/${ownerid}`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setCartCleared(true);
+                    setLoading(false);
+                },
+                onError: () => {
+                    toast.error("Could not clear the basket. Please try again.");
+                    setLoading(false);
+                },
             },
-            onError: (_err) => {
-                console.error("error", _err);
-                setLoading(false);
-            },
-        });
+        );
     };
 
     const [items, setItems] = useState(datas?.items);
@@ -723,6 +715,7 @@ export default function UserCarts(props) {
         if (!items || items.length === 0) {
             setsubtotal(0);
             setFee(0);
+            setChargeBase(0);
             return;
         }
 
@@ -765,6 +758,7 @@ export default function UserCarts(props) {
 
         setsubtotal(totalBaseNet);
         setFee(totalGross - totalBaseNet);
+        setChargeBase(totalNetWithVatAndShipping);
     }
 
     const quantityUpdate = (type, amount, tax) => {
@@ -799,9 +793,8 @@ export default function UserCarts(props) {
                             </Link>
                         </h2>
                         <p className="md:pb-4 text-lg mt-2 mb-4">
-                            You are about to send a payout to{" "}
-                            <strong> {datas?.user?.name || ""} </strong> to fund
-                            their lifestyle.
+                            You are about to purchase content from{" "}
+                            <strong>{datas?.user?.name || ""}</strong>.
                         </p>
                         {debugEnabled ? (
                             <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-3 mb-4 rounded">
@@ -921,7 +914,13 @@ export default function UserCarts(props) {
                                 <strong className="!text-black">Total :</strong>
                                 <strong className="!text-right !text-black">
                                     {formatMultiPrice(
-                                        fee + subtotal || "",
+                                        // Bank pricing is cheaper — show the figure the
+                                        // buyer will actually be charged for the
+                                        // selected method, not always the card gross.
+                                        (paymentMethod === "bank" &&
+                                        previewPrices?.bank != null
+                                            ? previewPrices.bank
+                                            : fee + subtotal) || "",
                                         chargeCurrency,
                                     )}
                                 </strong>
@@ -939,6 +938,7 @@ export default function UserCarts(props) {
                                         <label>Add Message </label>
                                         <textarea
                                             rows={2}
+                                            className="border-gray-300 border rounded-box-sm p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                             onChange={(e) =>
                                                 setMessage(e.target.value)
                                             }
@@ -956,7 +956,7 @@ export default function UserCarts(props) {
                                                 </p>
                                                 <input
                                                     required
-                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 md:rounded-[12px] `}
+                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-box-sm p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 `}
                                                     value={email}
                                                     disabled={
                                                         !!auth?.user?.email
@@ -973,7 +973,7 @@ export default function UserCarts(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
+                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 !rounded-box-sm "
                                                     onChange={(e) =>
                                                         setName(e.target.value)
                                                     }
@@ -1011,11 +1011,12 @@ export default function UserCarts(props) {
                                         </p>
 
                                         <PaymentMethodSelector
-                                            amount={subtotal}
+                                            amount={chargeBase}
                                             currency={chargeCurrency}
                                             email={email || auth?.user?.email}
                                             value={paymentMethod}
                                             onChange={setPaymentMethod}
+                                            onPrices={setPreviewPrices}
                                             className="mb-4"
                                         />
 
@@ -1046,36 +1047,21 @@ export default function UserCarts(props) {
                                         }
                                         className={`  w-full main-button b mb-3 md:!mb-0`}
                                     >
-                                        {loading ? "Wait.." : "Clear"}{" "}
+                                        {loading ? "Clearing…" : "Clear"}{" "}
                                     </button>
-                                    <button
-                                        type="button"
+                                    <PayButton
+                                        label="Checkout"
+                                        processing={checking}
                                         disabled={
                                             !isChecked ||
                                             !digitalWaiver ||
-                                            checking ||
                                             (turnstileSiteKey &&
                                                 !captchaToken &&
                                                 !skipCaptcha) ||
                                             !card_capabilities
                                         }
                                         onClick={handleSubmit}
-                                        className={`${
-                                            isChecked &&
-                                            digitalWaiver &&
-                                            !(
-                                                turnstileSiteKey &&
-                                                !captchaToken &&
-                                                !skipCaptcha
-                                            ) &&
-                                            !checking &&
-                                            card_capabilities
-                                                ? ""
-                                                : "disabled"
-                                        } main-button p w-full`}
-                                    >
-                                        {checking ? "Wait.." : "Checkout"}{" "}
-                                    </button>
+                                    />
                                 </div>
                             </form>
                         </div>

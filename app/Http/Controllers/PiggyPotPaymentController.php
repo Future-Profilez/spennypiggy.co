@@ -74,6 +74,10 @@ class PiggyPotPaymentController extends Controller
 
         $request->validate($rules);
 
+        // Bot gate — pots allow guest checkout, so this was the easiest fraud
+        // path with no captcha at all. Self-gating: no-op when no secret is set.
+        $this->ensureTurnstileVerified($request);
+
         $user = Auth::user();
 
         $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();

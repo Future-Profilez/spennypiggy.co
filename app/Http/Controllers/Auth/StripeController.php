@@ -2032,6 +2032,9 @@ class StripeController extends Controller
             ]);
         }
 
+        // Bot gate — wishes allow guest checkout. Self-gating: no-op with no secret.
+        $this->ensureTurnstileVerified($request);
+
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($wish->user);
 

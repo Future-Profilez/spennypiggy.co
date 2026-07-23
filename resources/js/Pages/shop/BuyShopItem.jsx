@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { useRef } from "react";
 import AllContries from "../../includes/AllCountries";
 import Turnstile from "@/Components/Turnstile";
+import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 
 export default function BuyShopItem({
     opened,
@@ -293,6 +294,9 @@ export default function BuyShopItem({
     };
 
     const buyItem = (token) => {
+        // Re-entrancy guard: a second tap before the disabled re-render must not
+        // fire a second checkout session.
+        if (loading || checking) return false;
         if (!card_capabilities) {
              errorAlert("This creator cannot accept payments at the moment.");
              return false;
@@ -516,6 +520,26 @@ export default function BuyShopItem({
                                     </a>
                                 )}
 
+                                {/* The actual delivered file — the success screen used to
+                                    describe the purchase but never link the content. */}
+                                {shop.type !== "physical" && s?.reward_file_url && (
+                                    <a
+                                        href={s.reward_file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#FF007F] text-white font-black uppercase text-sm px-4 py-3 min-h-[44px] rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
+                                    >
+                                        ⬇ Download your content
+                                    </a>
+                                )}
+
+                                <Link
+                                    href="/shop?type=purchases"
+                                    className="mt-3 block text-center text-sm font-bold text-gray-700 underline underline-offset-2 hover:text-black"
+                                >
+                                    View all my purchases
+                                </Link>
+
                                 {s.ask_question && !replySent ? (
                                     <>
                                         <p className="text-start mt-3">
@@ -621,8 +645,9 @@ export default function BuyShopItem({
                                             onError={(e) => {
                                                 if (e.target.dataset.fallback) return;
                                                 e.target.dataset.fallback = "1";
+                                                // innerHTML on an <img> does nothing — hide the broken image instead.
                                                 e.target.style.backgroundColor = "#f3f4f6";
-                                                e.target.innerHTML = "🛍️";
+                                                e.target.style.visibility = "hidden";
                                             }}
                                         />
                                     </Link>
@@ -643,8 +668,9 @@ export default function BuyShopItem({
                             </div>
 
                             <div className="form-field mb-3">
-                                <p className="mb-1">Name</p>
+                                <label htmlFor="buy-shop-name" className="mb-1 block">Name</label>
                                 <input
+                                    id="buy-shop-name"
                                     required
                                     disabled={
                                         auth && auth.user?.name ? true : false
@@ -657,8 +683,9 @@ export default function BuyShopItem({
                                 />
                             </div>
                             <div className="form-field mb-3 ">
-                                <p className="mb-1">Email</p>
+                                <label htmlFor="buy-shop-email" className="mb-1 block">Email</label>
                                 <input
+                                    id="buy-shop-email"
                                     required
                                     disabled={
                                         auth && auth.user?.email ? true : false
@@ -810,15 +837,14 @@ export default function BuyShopItem({
 
                             <CheckoutLegalTerms onAgreeChange={(checked) => setDigitalWaiver(checked)} />
 
-                            <button
-                                disabled={checking || !card_capabilities || !digitalWaiver}
-                                onClick={executeCaptcha}
-                                className={`${
-                                    checking || !card_capabilities || !digitalWaiver ? "opacity-[0.5] disabled" : ""
-                                }  w-full sm:w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all font-semibold text-white px-6 py-3 min-h-[44px]`}
-                            >
-                                {checking ? "Buying.." : "Pay"}
-                            </button>
+                            <div className="mt-4">
+                                <PayButton
+                                    label="Pay"
+                                    processing={checking}
+                                    disabled={!card_capabilities || !digitalWaiver}
+                                    onClick={executeCaptcha}
+                                />
+                            </div>
                             <div className='securestripe text-center mt-3' >
                                 🔒 Secured via <b>Stripe</b>
                             </div>
