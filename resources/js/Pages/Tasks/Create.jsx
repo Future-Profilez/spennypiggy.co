@@ -149,7 +149,7 @@ export default function Create({ auth, currencySymbol }) {
                         </div>
 
                         {showSummary ? (
-                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="text-green-600" /> Confirm Task Details
                                 </h3>
@@ -359,7 +359,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                                 className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
                                                     data.type === "timed"
-                                                        ? "bg-blue-500 text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                                                        ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                                                         : "bg-white hover:bg-gray-50"
                                                 }`}
                                             >
@@ -380,7 +380,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                                 className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
                                                     data.type === "instant"
-                                                        ? "bg-[#FF007F] text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                                                        ? "bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                                                         : "bg-white hover:bg-gray-50"
                                                 }`}
                                             >
@@ -429,7 +429,7 @@ export default function Create({ auth, currencySymbol }) {
                                     )}
 
                                     {/* What the buyer receives — one editor for every module. */}
-                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
                                             <FileUp className="text-[#FF007F]" /> What the buyer receives
                                         </p>

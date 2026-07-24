@@ -36,7 +36,7 @@ export default function PiggyPotsGrid({
     const content = useMemo(() => {
         if (piggyPots && piggyPots.length > 0) {
             return (
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {piggyPots.map((pot) => {
                         const target = Number(pot?.target_amount) || 0;
                         const raised = Number(pot?.total_raised) || 0;
@@ -61,7 +61,7 @@ export default function PiggyPotsGrid({
                                 type="button"
                                 onClick={() => setActivePiggyPot(pot)}
                                 aria-label={`Open ${pot.title}`}
-                                className={`text-left cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-box "} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
+                                className={`text-left cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-box "} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
                             >
                                 <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
@@ -135,7 +135,7 @@ export default function PiggyPotsGrid({
                         onClick={() =>
                             window.dispatchEvent(new Event("toggleAddOptions"))
                         }
-                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
                     >
                         Create Piggy Pot
                     </button>

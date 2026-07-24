@@ -111,7 +111,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         return (
                         <article
                            key={s.uuid}
-                           className={`relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
+                           className={`relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
                         >
                            <div className="p-3 md:p-4">
                                  <div className="relative">

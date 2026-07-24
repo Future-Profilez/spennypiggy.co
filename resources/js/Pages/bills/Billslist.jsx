@@ -25,7 +25,7 @@ function Billslist({ IsloggedIn, suppressEmptyState = false }) {
     return (
         <>
             {bills && bills.length ? 
-                <div className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-3 sm:!gap-3 md:!gap-4`}>
+                <div className={`grid grid-cols-2 lg:grid-cols-3 !gap-3 sm:!gap-3 md:!gap-4`}>
                     {memoizedBills}
                     {showAddMore && (
                         <AddMoreTile

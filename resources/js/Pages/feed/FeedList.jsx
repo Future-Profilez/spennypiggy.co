@@ -121,7 +121,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
           <p className="text-red-600 mb-4 font-black">Error: {error}</p>
           <button 
             onClick={() => fetchPosts(filter, 1, false)}
-            className="bg-yellow-300 text-black border-2 border-black font-black uppercase tracking-wider px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+            className="bg-yellow-300 text-black border-2 border-black font-black uppercase tracking-wider px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             Try Again
           </button>
@@ -151,7 +151,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] duration-200"
+                  className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts

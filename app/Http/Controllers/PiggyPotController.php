@@ -98,6 +98,12 @@ class PiggyPotController extends Controller
             return redirect()->back()->with('error', 'Please connect your Stripe account before creating a Piggy Pot.');
         }
 
+        // Default the reward headline from the pot title so a missing field
+        // never blocks creation (the pot's content IS the deliverable).
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->title]);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -165,6 +171,12 @@ class PiggyPotController extends Controller
     public function update(Request $request, $id)
     {
         $piggyPot = PiggyPot::where('user_id', Auth::id())->findOrFail($id);
+
+        // Default the reward headline from the pot title so a missing field
+        // never blocks creation (the pot's content IS the deliverable).
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->title]);
+        }
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',

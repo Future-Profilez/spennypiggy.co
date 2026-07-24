@@ -87,6 +87,12 @@ class BillsController extends Controller
             'request_data' => $request->all(),
         ]);
 
+        // Default the reward headline from the listing name so a missing field
+        // never blocks the save — the reward contract still gets a title.
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->name]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', new NoExpenseOrBrandName],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
@@ -217,6 +223,12 @@ class BillsController extends Controller
     public function billEdit(Request $request, $id)
     {
         Log::info("from start request->period: $request->period");
+
+        // Default the reward headline from the listing name so a missing field
+        // never blocks the save — the reward contract still gets a title.
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->name]);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', new NoExpenseOrBrandName],
@@ -790,7 +802,10 @@ class BillsController extends Controller
                             'currency' => $chargeCurrency,
                             'product_data' => [
                                 'name' => 'Content membership',
-                                'description' => "Content membership · @{$bill->user->username}",
+                                'description' => Helpers::rewardLineDescription(
+                                    $bill,
+                                    "Content membership · @{$bill->user->username}"
+                                ),
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
                             'recurring' => [

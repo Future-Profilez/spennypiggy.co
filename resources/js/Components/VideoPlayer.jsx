@@ -21,7 +21,7 @@ const VideoPlayer = ({ src, poster, controls = true, autoPlay = false, className
                     Your browser does not support the video tag.
                 </video>
             ) : (
-                <div className="relative aspect-video bg-gray-100 rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden group cursor-pointer">
+                <div className="relative aspect-video bg-gray-100 rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden group cursor-pointer">
                     <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
                         Intro video
                     </div>

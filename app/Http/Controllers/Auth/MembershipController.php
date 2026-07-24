@@ -90,8 +90,34 @@ class MembershipController extends Controller
         return count(array_intersect($normalized, self::ON_PLATFORM_CONTENT_REWARDS)) > 0;
     }
 
+    /**
+     * If the creator picked no on-platform benefit, default the Monthly Content
+     * Bundle in rather than rejecting the save — the compliance rule stays
+     * satisfied and the creator isn't blocked by a checkbox they didn't notice.
+     * Returns the rewards as an array with the default applied when needed.
+     */
+    private static function withDefaultOnPlatformContent($rewards): array
+    {
+        if (is_string($rewards)) {
+            $decoded = json_decode($rewards, true);
+            $rewards = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $rewards)));
+        }
+        if (! is_array($rewards)) {
+            $rewards = [];
+        }
+        if (! self::hasOnPlatformContent($rewards)) {
+            $rewards[] = 'monthly_content_bundle';
+        }
+
+        return array_values($rewards);
+    }
+
     public function membershipLevelSave(Request $request)
     {
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->level]);
+        }
+
         $validator = Validator::make($request->all(), [
             'level' => [
                 'required',
@@ -124,13 +150,8 @@ class MembershipController extends Controller
         }
 
         // Stripe compliance: a tier must include at least one on-platform content
-        // deliverable so every membership has a verifiable content benefit.
-        if (! self::hasOnPlatformContent($request->rewards)) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).',
-            ]);
-        }
+        // deliverable — default the Monthly Content Bundle in when none was picked.
+        $request->merge(['rewards' => self::withDefaultOnPlatformContent($request->rewards)]);
 
         if ($linkError = RewardService::submittedLinkError($request->all())) {
             return response()->json(['status' => false, 'msg' => $linkError]);
@@ -236,6 +257,10 @@ class MembershipController extends Controller
 
     public function updateLevel(Request $request, $uuid)
     {
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->level]);
+        }
+
         $request->validate(
             [
                 'level' => [
@@ -259,10 +284,9 @@ class MembershipController extends Controller
             ] + RewardService::validationRules()
         );
 
-        // Stripe compliance: a tier must include at least one on-platform content benefit.
-        if (! self::hasOnPlatformContent($request->rewards)) {
-            return redirect()->back()->with('error', 'Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).');
-        }
+        // Stripe compliance: a tier must include at least one on-platform content
+        // benefit — default the Monthly Content Bundle in when none was picked.
+        $request->merge(['rewards' => self::withDefaultOnPlatformContent($request->rewards)]);
 
         if ($linkError = RewardService::submittedLinkError($request->all())) {
             return redirect()->back()->with('error', $linkError);
@@ -863,7 +887,10 @@ class MembershipController extends Controller
                             'currency' => $chargeCurrency,
                             'product_data' => [
                                 'name' => 'Content membership',
-                                'description' => "Content membership ({$membership->level}) · @{$membership->user->username}",
+                                'description' => Helpers::rewardLineDescription(
+                                    $membership,
+                                    "Content membership ({$membership->level}) · @{$membership->user->username}"
+                                ),
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
                         ],

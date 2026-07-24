@@ -1,8 +1,19 @@
 import { lazy, useState, useRef, Suspense, useEffect } from "react";
 import userphoto from "../../assets/siteicon.png";
+import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 import { usePage, router } from "@inertiajs/react";
 import { route } from "ziggy-js";
 import { UserXIcon, InfoIcon, CopyIcon } from "@animateicons/react/lucide";
+import {
+    FaInstagram,
+    FaXTwitter,
+    FaYoutube,
+    FaTwitch,
+    FaDiscord,
+    FaRedditAlien,
+    FaFacebookF,
+    FaTumblr,
+} from "react-icons/fa6";
 import {
     ShieldAlert,
     Ban,
@@ -23,12 +34,6 @@ const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
 const FollowButton = lazy(() => import("@/Pages/Profile/FollowButton"));
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
 const Popup = lazy(() => import("@/Components/Popup"));
-const FeatureSuggestionBanner = lazy(
-    () => import("@/Components/FeatureSuggestionBanner"),
-);
-const FeatureSuggestionModal = lazy(
-    () => import("@/Components/FeatureSuggestionModal"),
-);
 const ReportContentModal = lazy(
     () => import("@/Components/ReportContentModal"),
 );
@@ -47,13 +52,14 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
         card_capabilities,
         is_blocked: initialIsBlocked,
         blockedByMe,
+        slinks,
+        profile_overview,
     } = usePage().props;
     const { successAlert, errorAlert } = useAlerts();
     const opponantUser = auth?.opposite_user;
     const [showBlockConfirm, setShowBlockConfirm] = useState(false);
     const [blockState, setBlockState] = useState(initialIsBlocked);
     const [isBlocking, setIsBlocking] = useState(false);
-    const [showSuggestionModal, setShowSuggestionModal] = useState(false);
     const [blockReason, setBlockReason] = useState("Spam or unwanted messages");
     const [isBlocked, setIsBlocked] = useState(blockedByMe || false);
 
@@ -130,8 +136,8 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
     // Purely informational — rendered only for creators who can actually take payment.
     const paymentStrip =
         user?.role == 1 && user?.stripe_details_submitted == 1 ? (
-            <div className="ms-auto flex items-center gap-2">
-                <span className="hidden items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400 sm:flex">
+            <div className="flex w-full flex-col items-center gap-1.5 pt-1">
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">
                     <Lock size={11} strokeWidth={2.5} />
                     Secure checkout
                 </span>
@@ -162,18 +168,76 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
             </div>
         ) : null;
 
+    // Compact social row — colored brand squares, only links the creator actually set.
+    const SOCIALS = [
+        { key: "instagram", Icon: FaInstagram, base: "https://instagram.com/", classes: "bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF]" },
+        { key: "twitter", Icon: FaXTwitter, base: "https://twitter.com/", classes: "bg-black" },
+        { key: "youtube", Icon: FaYoutube, base: "", classes: "bg-[#FF0000]" },
+        { key: "twitch", Icon: FaTwitch, base: "", classes: "bg-[#9146FF]" },
+        { key: "discord", Icon: FaDiscord, base: "", classes: "bg-[#5865F2]" },
+        { key: "reddit", Icon: FaRedditAlien, base: "", classes: "bg-[#FF4500]" },
+        { key: "facebook", Icon: FaFacebookF, base: "", classes: "bg-[#1877F2]" },
+        { key: "tumblr", Icon: FaTumblr, base: "https://www.tumblr.com/", classes: "bg-[#36465D]" },
+    ];
+    const socialItems = SOCIALS.map(({ key, Icon, base, classes }) => {
+        const value = slinks?.[key];
+        if (!value) return null;
+        const isHttp = String(value).trim().toLowerCase().startsWith("http");
+        if (!isHttp && !base) return null;
+        return (
+            <a
+                key={key}
+                href={isHttp ? value : `${base}${value}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={key}
+                className={`${classes} flex h-8 w-8 items-center justify-center rounded-[10px] text-white border border-black/10 transition-transform hover:-translate-y-0.5`}
+            >
+                <Icon size={15} />
+            </a>
+        );
+    }).filter(Boolean);
+
+    const showBio = user?.bio && (IsloggedIn || user?.bio_approved == 1);
+
     return (
-        <div className="userprofilesec mb-6 relative">
-            <div className="userPr max-w-[1200px] mx-auto px-4 md:px-6 relative">
-                {/* One identity card, overlapping the cover: who this is, their numbers, and every action */}
-                <div className="relative z-10 -mt-12 sm:-mt-16 overflow-hidden rounded-box border-2 border-black bg-white bg-[radial-gradient(circle,rgba(0,0,0,0.05)_1px,transparent_1px)] [background-size:16px_16px] p-5 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-6 md:p-7">
+        <div className="userprofilesec mb-0 lg:mb-6 relative">
+            <div className="userPr relative -mx-5 lg:mx-0">
+                {/* Vertical identity card — the profile's left rail */}
+                {/* Mobile: full-bleed borderless section flowing from the cover; desktop: bordered card */}
+                <div className="relative z-10 overflow-hidden rounded-none lg:rounded-box bg-white bg-[radial-gradient(circle,rgba(0,0,0,0.045)_1px,transparent_1px)] [background-size:16px_16px] p-5 sm:p-6 border-0 shadow-none lg:border-2 lg:border-black">
                     {/* Corner wash — ties the card to the pink cover without shouting */}
                     <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#FF007F]/10 blur-2xl" />
-                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+
+                    {/* Mobile: the cover lives inside this card (full-bleed strip); desktop keeps the big banner in the center column */}
+                    <div className="relative -mx-5 -mt-5 mb-0 sm:-mx-6 sm:-mt-6 lg:hidden">
+                        <img
+                            alt={`${user?.name} - Cover`}
+                            src={
+                                IsloggedIn
+                                    ? user?.cover_url || wishlistbannerimg
+                                    : user?.cover_url && Number(user?.cover_approved) === 1
+                                      ? user.cover_url
+                                      : wishlistbannerimg
+                            }
+                            className="!h-44 sm:!h-52 w-full object-cover !min-h-0 bg-gradient-to-r from-[#FF007F] to-[#C084FC]"
+                            loading="eager"
+                        />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 to-black/25" />
+                    </div>
+
+                    <div className="flex flex-col items-center gap-4 text-center">
                     {/* Avatar + name */}
-                    <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                    <div className="-mt-12 flex flex-col items-center gap-3 lg:mt-0">
                         <div className="fading userphoto relative group shrink-0 !mb-0 !block">
-                            <div className="relative rounded-box-sm border-2 border-black p-1 ring-2 ring-[#FF007F] ring-offset-0">
+                            {user?.is_founder ? (
+                                <div className="absolute -top-1 -right-6 z-20 rotate-6">
+                                    <Suspense fallback={null}>
+                                        <FounderBadge size="sm" />
+                                    </Suspense>
+                                </div>
+                            ) : null}
+                            <div className="relative rounded-full border-2 border-black p-1 ring-2 ring-[#FF007F] ring-offset-2">
                                 <img
                                     alt={`${user?.name || "User"} - Profile Avatar`}
                                     src={
@@ -187,7 +251,7 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                     height={150}
                                     width={150}
                                     loading="eager"
-                                    className="rounded-[15px] bg-white !border-0 !h-[84px] !w-[84px] min-w-[84px] !min-h-[84px] sm:!h-[104px] sm:!w-[104px] sm:min-w-[104px] sm:!min-h-[104px] md:!h-[116px] md:!w-[116px] md:min-w-[116px] md:!min-h-[116px] object-cover"
+                                    className="rounded-full bg-white !border-0 !h-[104px] !w-[104px] min-w-[104px] !min-h-[104px] sm:!h-[116px] sm:!w-[116px] sm:min-w-[116px] sm:!min-h-[116px] object-cover"
                                 />
                             </div>
 
@@ -240,9 +304,9 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                         </div>
 
                         {/* Name + Username text details */}
-                        <div className="flex min-w-0 flex-col items-start">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="font-gulfs uppercase flex items-center gap-2 leading-tight !text-black !text-[20px] sm:!text-[26px] md:!text-[32px]">
+                        <div className="flex min-w-0 flex-col items-center">
+                            <div className="flex items-center justify-center gap-2 flex-wrap">
+                                <h1 className="font-gulfs uppercase flex items-center gap-2 leading-tight !text-black !text-[20px] sm:!text-[24px]">
                                     <span className="line-clamp-1">{user?.name}</span>
                                     {(user?.role == 1 &&
                                         user?.profile_status_lock == 2 && (
@@ -267,7 +331,7 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                 </h1>
                             </div>
 
-                            <div className="userId mt-2 flex items-center">
+                            <div className="userId mt-2 flex items-center justify-center">
                                 <Suspense
                                     fallback={
                                         <span className="inline-flex items-center rounded-full border border-black/15 bg-gray-50 px-3 py-1 text-sm font-semibold text-gray-600">
@@ -295,36 +359,48 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                     </ShareProfile>
                                 </Suspense>
                             </div>
+
+                            {socialItems.length > 0 && (
+                                <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                                    {socialItems}
+                                </div>
+                            )}
+
+                            {showBio ? (
+                                <p className="mt-3 max-w-[260px] text-[13px] font-medium leading-relaxed text-gray-600 line-clamp-4">
+                                    {user.bio}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
 
-                    {/* Stat rail — numbers loud, labels quiet */}
+                    {/* Stat tiles */}
                     {user && user?.role == 1 ? (
-                        <div className="grid shrink-0 grid-cols-3 divide-x divide-black/10 rounded-box-sm border border-black/10 bg-[#FAFAFA] md:rounded-none md:border-0 md:bg-transparent md:divide-black/15">
-                            <div className="px-3 py-3 text-center md:px-6 md:py-1">
-                                <span className="block text-xl font-black leading-none tabular-nums text-black sm:text-2xl">
+                        <div className="grid w-full grid-cols-3 gap-2 border-t border-black/10 pt-4">
+                            <div className="rounded-box-sm border border-black/5 bg-[#A2E4B8]/25 px-2 py-3 text-center">
+                                <span className="block text-lg font-black leading-none tabular-nums text-black">
                                     {user?.followers_count ?? 0}
                                 </span>
-                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                                    <Users size={11} strokeWidth={2.5} />
+                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <Users size={10} strokeWidth={2.5} />
                                     Followers
                                 </span>
                             </div>
-                            <div className="px-3 py-3 text-center md:px-6 md:py-1">
-                                <span className="block text-xl font-black leading-none tabular-nums text-black sm:text-2xl">
+                            <div className="rounded-box-sm border border-black/5 bg-[#A2E4B8]/25 px-2 py-3 text-center">
+                                <span className="block text-lg font-black leading-none tabular-nums text-black">
                                     {user?.following_count ?? 0}
                                 </span>
-                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                                    <UserCheck size={11} strokeWidth={2.5} />
+                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <UserCheck size={10} strokeWidth={2.5} />
                                     Following
                                 </span>
                             </div>
-                            <div className="px-3 py-3 text-center md:px-6 md:py-1">
-                                <span className="block text-xl font-black leading-none tabular-nums text-[#FF007F] sm:text-2xl">
+                            <div className="rounded-box-sm border border-[#FF007F]/15 bg-[#FF007F]/5 px-2 py-3 text-center">
+                                <span className="block text-lg font-black leading-none tabular-nums text-[#FF007F]">
                                     {supporters ?? 0}
                                 </span>
-                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#FF007F]">
-                                    <PiggyBank size={12} strokeWidth={2.5} />
+                                <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#FF007F]">
+                                    <PiggyBank size={11} strokeWidth={2.5} />
                                     Supporters
                                 </span>
                             </div>
@@ -332,10 +408,34 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                     ) : (
                         ""
                     )}
-                    </div>
+
+                    {/* Earnings progress — same numbers as the Overview rail */}
+                    {user?.role == 1 && profile_overview?.earned_target > 0 ? (
+                        <div className="w-full">
+                            <div className="flex items-baseline justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">
+                                    Total earned
+                                </span>
+                                <span className="text-xs font-black tabular-nums text-black">
+                                    £{Math.round(profile_overview.earned || 0).toLocaleString()}
+                                    <span className="font-bold text-gray-400">
+                                        {" "}/ £{Math.round(profile_overview.earned_target).toLocaleString()}
+                                    </span>
+                                </span>
+                            </div>
+                            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-[#FF007F] to-[#FF7AB8]"
+                                    style={{
+                                        width: `${Math.min(100, Math.round(((profile_overview.earned || 0) / profile_overview.earned_target) * 100))}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
 
                     {/* Actions */}
-                    <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-black/10 pt-5">
+                    <div className="flex w-full flex-col items-stretch gap-2.5 border-t border-black/10 pt-4">
                             {IsloggedIn ? (
                                 <>
                                     <Suspense
@@ -349,7 +449,7 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                             profilepage={1}
                                             user={user}
                                             classes={
-                                                "rounded-box-sm border-2 border-black bg-white px-6 py-3 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100 md:text-sm"
+                                                "w-full rounded-box-sm border-2 border-black bg-white px-6 py-3 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100 md:text-sm"
                                             }
                                             global_currency={global_currency}
                                         />
@@ -359,32 +459,34 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                             ) : (
                                 <>
                                     {!IsloggedIn ? (
-                                        <div className="flex w-full flex-wrap items-center gap-2.5">
-                                            {user &&
-                                                user.stripe_details_submitted == 1 &&
-                                                user.role == 1 &&
-                                                !interactionBlocked && (
-                                                    <Suspense fallback={null}>
-                                                        <SendTip
-                                                            classes="!shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] !border-2 !px-7"
-                                                            card_capabilities={
-                                                                card_capabilities
-                                                            }
-                                                        />
-                                                    </Suspense>
-                                                )}
-                                            <Suspense fallback={null}>
-                                                <FollowButton
-                                                    targetUserId={opponantUser?.id}
-                                                    isInitiallyFollowing={follow_status}
-                                                    classes="uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-2 border-black px-5 md:px-6 py-2.5 md:py-3 transition-colors hover:bg-gray-100 disabled:opacity-60"
-                                                />
-                                            </Suspense>
-                                            {paymentStrip}
+                                        <div className="flex w-full flex-col items-stretch gap-2.5">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Suspense fallback={null}>
+                                                    <FollowButton
+                                                        targetUserId={opponantUser?.id}
+                                                        isInitiallyFollowing={follow_status}
+                                                        classes="w-full uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-2 border-black px-3 py-3 transition-colors hover:bg-gray-100 disabled:opacity-60"
+                                                    />
+                                                </Suspense>
+                                                {user &&
+                                                    user.stripe_details_submitted == 1 &&
+                                                    user.role == 1 &&
+                                                    !interactionBlocked && (
+                                                        <Suspense fallback={null}>
+                                                            <SendTip
+                                                                classes="w-full !shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] !border-2 !px-3 justify-center"
+                                                                card_capabilities={
+                                                                    card_capabilities
+                                                                }
+                                                            />
+                                                        </Suspense>
+                                                    )}
+                                            </div>
+                                            <div className="flex items-center justify-center gap-2">
                                             <Suspense fallback={null}>
                                                 <ReportContentModal
                                                     reportedUser={user}
-                                                    classes={`${paymentStrip ? "" : "ms-auto "}flex h-11 w-11 items-center justify-center rounded-box-sm border-2 border-black/15 bg-white text-gray-500 transition-colors hover:border-black hover:text-black`}
+                                                    classes="flex h-10 w-10 items-center justify-center rounded-box-sm border-2 border-black/15 bg-white text-gray-500 transition-colors hover:border-black hover:text-black"
                                                 />
                                             </Suspense>
 
@@ -725,6 +827,8 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                                     )}
                                                 </>
                                             )}
+                                            </div>
+                                            {paymentStrip}
                                         </div>
                                     ) : (
                                         ""
@@ -732,29 +836,11 @@ export default function Userprofile({ blockedByI, IsloggedIn }) {
                                 </>
                             )}
                     </div>
+                    </div>
                 </div>
             </div>
 
 
-            {IsloggedIn  && (
-                <div className="mt-8">
-                    <Suspense fallback={null}>
-                        <FeatureSuggestionBanner
-                            onSuggestClick={() => setShowSuggestionModal(true)}
-                        />
-                    </Suspense>
-                </div>
-            )}
-
-            {showSuggestionModal && (
-                <Suspense fallback={null}>
-                    <FeatureSuggestionModal
-                        show={showSuggestionModal}
-                        onClose={() => setShowSuggestionModal(false)}
-                        auth={auth}
-                    />
-                </Suspense>
-            )}
         </div>
     );
 }

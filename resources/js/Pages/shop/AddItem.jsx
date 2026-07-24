@@ -324,6 +324,11 @@ export default function AddItem(props) {
                 reward_file_type: isDigital && reward.type === "file" ? reward.file?.mime || null : null,
                 reward_body: isDigital ? rewardPayload.reward_body : "",
                 reward_type: isDigital ? reward.type : null,
+                // Physical: the parcel is the deliverable — self-fill the headline
+                // from the product name so no reward validation can block the save.
+                reward_title: isDigital
+                    ? rewardPayload.reward_title
+                    : rewardPayload.reward_title || shopItem.name,
                 category: checkboxes && checkboxes.length ? JSON.stringify(checkboxes) : "",
                 ask_question: question,
                 slot_limitation: slots || "",

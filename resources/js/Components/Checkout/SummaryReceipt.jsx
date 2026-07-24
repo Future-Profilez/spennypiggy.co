@@ -42,7 +42,7 @@ export default function SummaryReceipt({
     const itemImageSrc = imageSrc(image);
 
     return (
-        <div className="relative bg-white border-[3px] border-black rounded-box shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+        <div className="relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
             <div className="bg-[#A2E4B8] border-b-[3px] border-black px-5 py-3">
                 <p className="font-black uppercase tracking-widest text-[11px]">Order summary</p>
             </div>
@@ -261,7 +261,7 @@ export function OrderContextCard({
     const itemImageSrc = imageSrc(image);
 
     return (
-        <div className={`bg-white border-[3px] border-black rounded-box shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-4 ${className}`}>
+        <div className={`bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 ${className}`}>
             {creatorName && (
                 <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-dashed border-black/15">
                     {avatarSrc ? (

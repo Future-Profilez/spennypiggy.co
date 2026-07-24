@@ -45,7 +45,7 @@ export default function Disputes() {
                      </div>
                   </div>
 
-                  <div className="bg-[#fdfbf7] rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
+                  <div className="bg-[#fdfbf7] rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
                      
                      <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600"></div>
                      

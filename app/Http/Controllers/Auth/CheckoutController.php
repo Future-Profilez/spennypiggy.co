@@ -300,7 +300,10 @@ class CheckoutController extends Controller
                         'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => 'Total value of item including all fees',
-                            'description' => $productName.' from '.($dd->owner->name ?? 'Creator'),
+                            'description' => Helpers::rewardLineDescription(
+                                $dd->wish ?? null,
+                                $productName.' from '.($dd->owner->name ?? 'Creator')
+                            ),
                         ],
                         'unit_amount' => (int) round($finalTotalAmount * $multiplier),
                     ],

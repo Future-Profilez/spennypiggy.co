@@ -6,6 +6,7 @@ import { route } from 'ziggy-js';
 import axios from 'axios';
 import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
 import StatementDownloadCard from './StatementDownloadCard';
+import EnableBankPaymentsCard from '@/Components/EnableBankPaymentsCard';
 import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,TriangleAlertIcon,CircleCheckIcon,ChartBarIcon,UsersIcon,ChevronRightIcon,ChartPieIcon,ShieldCheckIcon, } from "@animateicons/react/lucide";
 import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
 import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
@@ -499,6 +500,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 </div>
                             </div>
                         ) : null}
+
+                        {/* Bank payments self-service — renders only when a capability is missing. */}
+                        <div className="mt-6">
+                            <EnableBankPaymentsCard />
+                        </div>
 
                         {/* "Your money" band - payday hero first, then where the rest sits. */}
                         <section className="mt-10">

@@ -274,13 +274,14 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
 
     return (
         <div className="w-full flex mb-2 relative z-10">
-            <div className={`w-full ${inPopup ? '' : 'bg-white rounded-box border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 md:p-6 lg:p-8'}`}>
-                <div>
-                    <div className="w-full relative">
+            <div className={`w-full ${inPopup ? '' : 'bg-white rounded-box border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:p-6 lg:p-8'}`}>
+                {/* Row layout: cover left, everything else right (stacks on small phones) */}
+                <div className="md:flex md:items-start md:gap-6">
+                    <div className="w-full relative md:w-[280px] lg:w-[320px] md:shrink-0">
                         <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 flex items-center gap-1 uppercase tracking-wide">
                             🎯 CONTENT GOAL
                         </div>
-                        <div className="w-full h-52 md:h-56 bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
+                        <div className="w-full h-40 sm:h-48 md:h-56 bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
                             <img
                                 src={featuredPot.cover_media || 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/'}
                                 alt={featuredPot.title ? `Cover art for ${featuredPot.title}` : 'Content cover'}
@@ -289,8 +290,8 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                         </div>
                     </div>
 
-                    <div className="w-full flex flex-col justify-center">
-                        <h2 className="font-anton text-2xl md:text-3xl mt-3 uppercase text-black tracking-wide">{featuredPot.title}</h2>
+                    <div className="w-full min-w-0 md:flex-1 flex flex-col justify-center">
+                        <h2 className="font-anton text-2xl md:text-3xl mt-3 md:mt-0 uppercase text-black tracking-wide">{featuredPot.title}</h2>
                         {featuredPot.description && (
                             <p className="text-sm md:text-base text-black/60 mb-3 line-clamp-3">{featuredPot.description}</p>
                         )}
@@ -304,7 +305,11 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                 </p>
                             </div>
                         )}
+                    </div>
+                </div>
 
+                {/* Progress + purchase area — full width under the row */}
+                <div className="w-full mt-4">
                         <div className="flex justify-between items-end mb-2">
                             <div className="font-bold text-black/60 text-xs md:text-sm uppercase tracking-widest">Target: {fmt(targetAmount)}</div>
                             <div className="font-black text-[#FF007F] text-sm md:text-lg uppercase tracking-widest">Progress: {fmt(raisedAmount)}</div>
@@ -600,7 +605,6 @@ export default function PiggyPotWidget({ piggyPots, user, global_currency, inPop
                                 </div>
                             </div>
                         )}
-                    </div>
                 </div>
             </div>
         </div>

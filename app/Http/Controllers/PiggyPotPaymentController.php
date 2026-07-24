@@ -317,7 +317,10 @@ class PiggyPotPaymentController extends Controller
                     'currency' => $sourceCurrency,
                     'product_data' => [
                         'name' => 'Exclusive content',
-                        'description' => "Exclusive content from {$creator->name}.",
+                        'description' => Helpers::rewardLineDescription(
+                            $pay->piggyPot ?? null,
+                            "Exclusive content from {$creator->name}."
+                        ),
                     ],
                     'unit_amount' => $unitAmount,
                 ],

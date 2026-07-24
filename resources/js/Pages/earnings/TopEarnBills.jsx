@@ -60,7 +60,7 @@ export default function TopEarnBills({earnType}) {
   }
 
   return (
-    <section className="bg-white rounded-[30px]  p-6 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden h-full flex flex-col hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1">
+    <section className="bg-white rounded-[30px]  p-6 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden h-full flex flex-col hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1">
       <div className="pb-4 mb-4 flex items-center justify-between">
         <h2 className="text-sm font-black uppercase tracking-widest text-black">Top Bills</h2>
         <span className="bg-orange-100 text-orange-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">

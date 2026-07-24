@@ -83,7 +83,7 @@ export default function Features() {
                  </div>
               </div>
 
-              <div className="bg-black rounded-[25px] md:rounded-[30px]  p-8 md:p-12 text-center relative overflow-hidden border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-black rounded-[25px] md:rounded-[30px]  p-8 md:p-12 text-center relative overflow-hidden border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <div className="relative z-1"> 
                   <h2 className="text-3xl md:text-4xl lg:text-5xl font-gulfs uppercase mb-4 md:mb-8 text-white">Safety</h2>
                   <div className="max-w-3xl mx-auto space-y-3">

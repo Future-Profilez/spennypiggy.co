@@ -154,7 +154,7 @@ export default function BlockedUsers({ auth }) {
                                         p-4 md:p-5
                                         transition-all
                                         duration-200
-                                        shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
+                                        shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                                         hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                                         hover:translate-x-[2px]
                                         hover:translate-y-[2px]
@@ -364,7 +364,7 @@ export default function BlockedUsers({ auth }) {
                             })}
                         </div>
                     ) : (
-                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-12 text-center">
+                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-12 text-center">
                             <div className="w-24 h-24 mx-auto bg-gray-100 border-[3px] border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
                                 <UserX size={40} className="text-gray-400" />
                             </div>
@@ -396,7 +396,7 @@ export default function BlockedUsers({ auth }) {
                     rounded-[35px]
                     p-6 md:p-8
                     text-center
-                    shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]
+                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                 "
                 >
                     <div className="mb-5">

@@ -1230,7 +1230,10 @@ class ShopsController extends Controller
                         'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => 'Total value of item including all fees',
-                            'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                            'description' => Helpers::rewardLineDescription(
+                                $shop,
+                                "From @{$shop->user->username}"
+                            ),
                         ],
                         'unit_amount' => $unitAmount,
                     ],

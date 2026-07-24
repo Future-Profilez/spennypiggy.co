@@ -41,7 +41,7 @@ export default function RewardBlock({
 
     return (
         <section
-            className={`rounded-box border-[3px] border-black bg-white p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] ${className}`}
+            className={`rounded-box border-[3px] border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${className}`}
         >
             <header className="mb-4 flex items-center gap-2">
                 <span className="grid h-8 w-8 place-items-center rounded-box-sm border-2 border-black bg-[#FF007F] text-white">

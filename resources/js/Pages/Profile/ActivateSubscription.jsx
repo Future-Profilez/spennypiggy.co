@@ -114,7 +114,7 @@ export default function ActivateSubscription(props) {
                     </p>
                 </div>
 
-                <div className="relative bg-white rounded-box border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-w-5xl mx-auto">
+                <div className="relative bg-white rounded-box border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-w-5xl mx-auto">
                     {/* Mac-style header — desktop garnish only; mobile gets the space back */}
                     <div className="hidden md:flex px-6 py-4 border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between bg-white">
                       <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function ActivateSubscription(props) {
 
                             {/* Order summary — first on mobile (the decision info), right rail on desktop */}
                             <div className="order-1 lg:order-2 lg:col-span-2">
-                                <div className="p-6 md:p-8 rounded-box bg-[#A2E4B8]/30 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] lg:sticky lg:top-6">
+                                <div className="p-6 md:p-8 rounded-box bg-[#A2E4B8]/30 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:sticky lg:top-6">
                                     <div className="mb-6">
                                         <p className="text-gray-600 text-xs font-bold uppercase tracking-widest mb-2">Order Summary</p>
                                         <div className="flex items-baseline gap-2">

@@ -347,7 +347,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                           type="button"
                           onClick={resolveTicket}
                           disabled={acting}
-                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-green-400 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-70 text-center"
+                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-green-400 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-70 text-center"
                         >
                           Mark as Resolved
                         </button>
@@ -359,7 +359,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                         <button
                           type="button"
                           onClick={() => setShowActionBox(true)}
-                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-yellow-300 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
+                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-yellow-300 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
                         >
                           Take Action
                         </button>

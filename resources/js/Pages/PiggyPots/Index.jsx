@@ -429,7 +429,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                     return (
                                         <div
                                             key={pot.id}
-                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
+                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
                                         >
                                             {pot.is_pinned && (
                                                 <div className="absolute top-4 right-4 z-20">

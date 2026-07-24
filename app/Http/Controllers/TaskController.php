@@ -576,7 +576,10 @@ class TaskController extends Controller
                     'currency' => $currency,
                     'product_data' => [
                         'name' => 'Total value of item including all fees',
-                        'description' => 'You are purchasing a digital task. Delivery method: '.ucfirst($task->type).'.',
+                        'description' => Helpers::rewardLineDescription(
+                            $task,
+                            'Delivery method: '.ucfirst($task->type).'.'
+                        ),
                         'images' => $task->media_url ? [asset($task->media_url)] : [],
                     ],
                     'unit_amount' => round($finalTotalAmount * $multiplier),

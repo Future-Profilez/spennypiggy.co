@@ -4,6 +4,7 @@ namespace App;
 
 use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\Admin;
+use App\Models\Concerns\HasRewardContract;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\Payment;
@@ -11,7 +12,9 @@ use App\Models\RiskIdentity;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserPayment;
+use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -998,6 +1001,101 @@ class Helpers
      * @param  array  $extra  Additional metadata fields
      * @return array Formatted metadata array
      */
+    /**
+     * What the supporter was promised, recorded on the Stripe payment itself.
+     *
+     * Stripe's own record of a charge previously said only who paid whom and
+     * how much — nothing about what was sold. In a dispute or a compliance
+     * review that is the difference between a defensible content purchase and
+     * an unexplained transfer, so the reward headline travels with the money.
+     *
+     * `reward_body` is deliberately NOT sent: it is the paid content itself,
+     * and Stripe is not where it belongs.
+     *
+     * @return array<string, string>
+     */
+    private static function rewardMetadataFor($paymentModel): array
+    {
+        // Relations the payment rows use to reach the thing that was bought.
+        $relations = [
+            'wish_item', 'wishItem', 'shop', 'task', 'piggyPot', 'piggy_pot',
+            'tipGoal', 'tip_goal', 'bill', 'membership',
+        ];
+
+        try {
+            $item = null;
+
+            // A payment model may BE the item (the item's own checkout builds
+            // metadata straight from it).
+            if ($paymentModel instanceof Model
+                && in_array(HasRewardContract::class, class_uses_recursive($paymentModel), true)) {
+                $item = $paymentModel;
+            }
+
+            foreach ($relations as $relation) {
+                if ($item) {
+                    break;
+                }
+
+                $candidate = $paymentModel->{$relation} ?? null;
+
+                if ($candidate instanceof Model
+                    && in_array(HasRewardContract::class, class_uses_recursive($candidate), true)) {
+                    $item = $candidate;
+                }
+            }
+
+            if (! $item) {
+                return [];
+            }
+
+            $reward = RewardService::for($item);
+
+            return array_filter([
+                'reward_title' => substr((string) $reward['title'], 0, 60),
+                'reward_type' => (string) ($reward['type'] ?? ''),
+                'reward_detail' => substr((string) ($reward['description'] ?? ''), 0, 120),
+            ], fn ($value) => $value !== '');
+        } catch (\Throwable $e) {
+            // Metadata is descriptive, never load-bearing — a failure here must
+            // not be why a payment cannot be created.
+            Log::warning('Reward metadata could not be resolved', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * The Stripe line-item description for a purchase: what the supporter is
+     * getting, in their own creator's words.
+     *
+     * This is the last screen before the money moves and the first line on the
+     * receipt, so it is where "what am I actually buying?" has to be answered.
+     * The statement descriptor is unaffected — that stays the 22-character
+     * "{USERNAME} CONTENT" form required for card statements.
+     */
+    public static function rewardLineDescription($item, string $fallback = ''): string
+    {
+        try {
+            if (! $item) {
+                return $fallback;
+            }
+
+            $reward = RewardService::for($item);
+            $parts = array_filter([
+                'You get: '.$reward['title'],
+                $reward['description'] ?: null,
+                $fallback ?: null,
+            ]);
+
+            return substr(implode(' · ', $parts), 0, 240);
+        } catch (\Throwable $e) {
+            Log::warning('Reward line description could not be resolved', ['error' => $e->getMessage()]);
+
+            return $fallback;
+        }
+    }
+
     public static function buildStripeMetadata(string $type, $paymentModel, array $extra = []): array
     {
         $baseMetadata = [];
@@ -1343,8 +1441,9 @@ class Helpers
                 break;
         }
 
-        // Merge with extra metadata and ensure all values are strings
-        $metadata = array_merge($baseMetadata, $extra);
+        // Merge with extra metadata and ensure all values are strings. The
+        // reward sits between them so an explicit $extra can still override it.
+        $metadata = array_merge($baseMetadata, self::rewardMetadataFor($paymentModel), $extra);
 
         // Convert all values to strings and sanitize
         foreach ($metadata as $key => $value) {

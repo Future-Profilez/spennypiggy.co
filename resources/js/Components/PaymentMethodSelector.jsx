@@ -125,7 +125,7 @@ export default function PaymentMethodSelector({
                     className={`relative w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         value === "bank"
                             ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     {/* Signature: tilted save sticker */}
@@ -178,7 +178,7 @@ export default function PaymentMethodSelector({
                             ? "bg-gray-100 border-black/30 cursor-not-allowed"
                             : value === "card"
                             ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     <span className={`flex items-center gap-3 ${cardDisabled ? "opacity-50" : ""}`}>
