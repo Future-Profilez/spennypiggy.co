@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class CreatorReferral extends Model
 {
@@ -13,6 +13,7 @@ class CreatorReferral extends Model
 
     protected $fillable = [
         'referrer_creator_id',
+        'payout_id',
         'referred_creator_id',
         'referral_code_id',
         'lifetime_gmv',

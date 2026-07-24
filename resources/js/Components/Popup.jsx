@@ -13,7 +13,9 @@ export default function Popup(props) {
   }, [action])
 
   const closeModal = () => {
-    props.onHide && props.onHide()
+    // An onHide that returns false vetoes the close — used by forms to confirm
+    // before discarding unsaved input. Returning undefined keeps old behaviour.
+    if (props.onHide && props.onHide() === false) return
     setOpen(false)
   }
 

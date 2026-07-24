@@ -30,6 +30,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
@@ -114,6 +115,46 @@ class ShopsController extends Controller
         );
     }
 
+    /**
+     * Reward columns for a shop listing, plus the legacy success_page_* pair
+     * kept in step with them.
+     *
+     * The order screens and the buyer's receipt still read success_page_type /
+     * success_page_value, so deriving them here — rather than asking the form
+     * for both — keeps one editor writing one truth and stops the two
+     * representations drifting apart.
+     *
+     * @return array<string, mixed>
+     */
+    private function shopRewardColumns(Request $request): array
+    {
+        $columns = RewardService::columnsFrom($request->all());
+
+        // A physical product's deliverable is the parcel and its name already
+        // describes it, so the form does not ask for a second headline — fill
+        // it from the product name rather than rejecting the listing.
+        if ($request->type === 'physical') {
+            $columns['reward_title'] = trim((string) $request->name) ?: $columns['reward_title'];
+            $columns['reward_type'] = null;
+            $columns['reward_body'] = null;
+
+            return $columns;
+        }
+
+        if (empty($columns['reward_type'])) {
+            return $columns;
+        }
+
+        return $columns + [
+            'success_page_type' => match ($columns['reward_type']) {
+                'link' => 'url',
+                'message' => 'text',
+                default => 'file',
+            },
+            'success_page_value' => $columns['reward_body'],
+        ];
+    }
+
     public function addShopItems(Request $request)
     {
         $request->validate(
@@ -169,8 +210,12 @@ class ShopsController extends Controller
                     'sometimes',
                     'nullable',
                 ],
-            ]
+            ] + RewardService::validationRules(requiredRule: 'required_unless:type,physical')
         );
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->with('error', $linkError);
+        }
 
         Log::info('Add Shop Item Request', ['request_data' => $request->all()]);
 
@@ -227,8 +272,10 @@ class ShopsController extends Controller
             // $file = json_decode($request->reward_file);
         }
 
+        $rewardColumns = $this->shopRewardColumns($request);
+
         if ($request->type != 'physical') {
-            $shop = Shop::create([
+            $shop = Shop::create(array_merge([
                 'user_id' => $user->id,
                 'type' => $request->type,
                 'name' => $request->name,
@@ -246,9 +293,9 @@ class ShopsController extends Controller
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
                 'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
-            ]);
+            ], $rewardColumns));
         } else {
-            $shop = Shop::create([
+            $shop = Shop::create(array_merge([
                 'user_id' => $user->id,
                 'type' => $request->type,
                 'name' => $request->name,
@@ -267,7 +314,7 @@ class ShopsController extends Controller
                 'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
                 'shipping_profile_id' => $request->shipping_profile_id ?? null,
                 'shipping_information' => $request->shipping_info ?? null,
-            ]);
+            ], $rewardColumns));
 
             if (empty($request->shipping_profile_id)) {
                 $shipping = json_decode($request->shipping);
@@ -406,7 +453,11 @@ class ShopsController extends Controller
             'price' => ['required', 'numeric'],
             'slot_limitation' => ['nullable', 'integer', 'min:0'],
             'special_member_price' => ['nullable', 'numeric', 'lt:price'],
-        ]);
+        ] + RewardService::validationRules(requiredRule: 'required_unless:type,physical'));
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return response()->json(['status' => false, 'msg' => $linkError]);
+        }
 
         // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
         $priceError = Helpers::priceWithinLimits($request->price, $shop->currency ?? ($user->default_currency ?? 'gbp'), 4.99, 10000);
@@ -436,10 +487,12 @@ class ShopsController extends Controller
             // $file = json_decode($request->reward_file);
         }
 
+        $rewardColumns = $this->shopRewardColumns($request);
+
         if (! empty($shop)) {
 
             if ($request->type != 'physical') {
-                Shop::where('uuid', $uuid)->update([
+                Shop::where('uuid', $uuid)->update(array_merge([
                     'type' => $request->type,
                     'name' => $request->name,
                     'description' => $request->description,
@@ -456,9 +509,9 @@ class ShopsController extends Controller
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? 0,
                     'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
-                ]);
+                ], $rewardColumns));
             } else {
-                Shop::where('uuid', $uuid)->update([
+                Shop::where('uuid', $uuid)->update(array_merge([
                     'user_id' => $user->id,
                     'type' => $request->type,
                     'name' => $request->name,
@@ -478,7 +531,7 @@ class ShopsController extends Controller
                     'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
                     'shipping_profile_id' => $request->shipping_profile_id ?? null,
                     'shipping_information' => $request->shipping_info ?? null,
-                ]);
+                ], $rewardColumns));
 
                 if (! empty($request->shipping_profile_id)) {
                     ShopShippingInfo::where('shop_id', $shop->id)->delete();
@@ -1320,19 +1373,12 @@ class ShopsController extends Controller
                     }
 
                     if ($stripeid->shop->type !== 'physical') {
-                        $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
-                        $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                         if ($stripeid->shop->reward_file) {
                             $contentUrl = $stripeid->shop->reward_file;
                             if (! Str::startsWith($contentUrl, ['http://', 'https://'])) {
                                 $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
                             }
-                            $thankYouParams['wish_content'] = [
-                                'type' => $stripeid->shop->reward_file_type,
-                                'name' => 'Digital Content',
-                                'url' => $contentUrl,
-                            ];
                         }
                     }
 
@@ -1526,19 +1572,12 @@ class ShopsController extends Controller
                 }
 
                 if ($stripeid->shop->type !== 'physical') {
-                    $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
-                    $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                     if ($stripeid->shop->reward_file) {
                         $contentUrl = $stripeid->shop->reward_file;
                         if (! Str::startsWith($contentUrl, ['http://', 'https://'])) {
                             $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
                         }
-                        $thankYouParams['wish_content'] = [
-                            'type' => $stripeid->shop->reward_file_type,
-                            'name' => 'Digital Content',
-                            'url' => $contentUrl,
-                        ];
                     }
                 }
 

@@ -7,6 +7,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import { trackSearchClick } from "@/includes/Analytics";
+import RewardSummary from "@/Components/Reward/RewardSummary";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
@@ -91,6 +92,15 @@ export default function AddCart(props) {
                             )}
                         </div>
                     </div>
+
+                    {/* A price with no answer to "what do I get?" is what made
+                        this popup feel like a donation prompt. */}
+                    <RewardSummary
+                        className="mt-4"
+                        title={item?.reward_title}
+                        type={item?.reward_type}
+                        description={item?.reward_description}
+                    />
                 </div>
 
 

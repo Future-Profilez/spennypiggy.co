@@ -13,7 +13,8 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
-import { PayButton } from "@/Components/Checkout/SummaryReceipt";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -384,10 +385,25 @@ export default function TipInner({classes, idd}) {
         <div className={`${classes} p-2 md:p-4 box-inner`}>
             <div className='legleft'  dangerouslySetInnerHTML={{ __html: leftleg }} />
             <div className='legright'  dangerouslySetInnerHTML={{ __html: rightleg }} />
-            <h2 className='p-3 text-[#FF007F] !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Become a Supporter</h2>
+            <h2 className='p-3 text-[#FF007F] font-anton uppercase text-2xl mb-1 mt-4 pr-5'>Become a Supporter</h2>
             <div className='border-t border-gray-200 p-3 pt-3' >
 
-              
+              <OrderContextCard
+                className="mb-4"
+                image={user?.avatar_url}
+                typeBadge="Piggy Bank"
+                itemTitle="Support this creator"
+                itemSub="A one-time content unlock — choose any amount"
+                payingLabel="You're supporting"
+                creatorName={user?.name}
+                creatorUsername={user?.username}
+                creatorAvatar={user?.avatar_url}
+                whatYouGet={[
+                  "Access to this creator's supporter-only content",
+                  "A supporter confirmation for your records",
+                  "A one-time payment — nothing recurring",
+                ]}
+              />
 
               {/* <div className='tip-counter flex items-center justify-between mb-3' >
                   <p className='tipheading flex items-center' >
@@ -410,10 +426,9 @@ export default function TipInner({classes, idd}) {
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, user?.default_currency || "GBP")}</button>
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, user?.default_currency || "GBP")}</button>
                   <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm min-h-[44px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, user?.default_currency || "GBP")}</button>
-                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-box-sm   p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
-              <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
+              <p className="!my-4 text-[14px]  text-black/60 font-normal mt-1 leading-tight">
                 *Includes platform and payment processing fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
               </p>
 
@@ -421,7 +436,7 @@ export default function TipInner({classes, idd}) {
                 {selectegTag === 'custom' ? <div className="mb-4 ">
                     <div className="relative currency-wrapper " >
                         <span className="currency-tag">{global_currency || 'GBP'}</span>
-                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  " value={amount}
+                        <input className={fieldClass} value={amount}
                         onChange={customAmount}
                         type="number" placeholder="Enter amount.. " />
                     </div>
@@ -429,7 +444,7 @@ export default function TipInner({classes, idd}) {
 
               {amount > 0 ? <>
                 <div className="mb-3"> 
-                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm " defaultValue={'Access to my supporter-only posts 💖'}
+                  <textarea className={fieldClass} defaultValue={'Access to my supporter-only posts 💖'}
                   onChange={(e) => setData('message', e.target.value)}
                   placeholder="Write a short note." />
                 </div>
@@ -438,7 +453,7 @@ export default function TipInner({classes, idd}) {
                   <>
                     <div className="mb-4">
                       <input required
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
+                        className={fieldClass}
                         defaultValue={auth && auth.user?.name}
                         onChange={(e) => setData('name', e.target.value)}
                         type="text" placeholder="Enter nickname.. "
@@ -447,25 +462,25 @@ export default function TipInner({classes, idd}) {
 
                     <div className="mb-4">
                       <input required  disabled={auth && auth.user?.email ? true : false}
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
+                        className={fieldClass}
                         defaultValue={auth && auth.user?.email}
                         onChange={(e) => setData('email', e.target.value)}
                         type="email" placeholder="Enter email.. " />
-                      <p className='text-sm text-gray-600 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
+                      <p className='text-sm text-black/60 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
                     </div>
                   </>
                 }
               <div className='termselect mt-3 mb-3'>
                   <label htmlFor="keepanonymous">
-                    <p className='text-[15px] text-gray-900 font-normal'>
-                      <input className='w-5 h-5 text-[#FF007F] border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer' type="checkbox"
+                    <p className='text-[15px] text-black font-normal'>
+                      <input className='w-5 h-5 accent-[#FF007F] border-2 border-black/15 rounded-[6px] cursor-pointer' type="checkbox"
                       id="keepanonymous" name="keepanonymous"
                       value="keepanonymous"
                       onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
                       ></input> Keep anonymous
                     </p>
                   </label>
-                  <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
+                  <p className="text-black/80 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
               </div>
 
               <PaymentMethodSelector
@@ -482,7 +497,7 @@ export default function TipInner({classes, idd}) {
                   the first time they saw the real amount was on Stripe. */}
               {parseFloat(data.amount) > 0 && (
                 <div className="flex items-center justify-between border-gray-300 border rounded-box-sm px-4 py-3 mb-4">
-                  <span className="text-sm font-bold text-gray-700">You pay</span>
+                  <span className="text-sm font-bold text-black/80">You pay</span>
                   <span className="font-black text-lg">
                     {previewPrices
                       ? formatMultiPrice(
@@ -542,15 +557,15 @@ export default function TipInner({classes, idd}) {
       >
         <div className="!rounded-none p-6">
           <h2 className="text-xl font-bold mb-2 text-center">{stepUpUi?.title || 'Confirm Your Payment'}</h2>
-          <p className="text-gray-600 mb-6 text-center">
+          <p className="text-black/60 mb-6 text-center">
             {stepUpUi?.body || 'For your security, please confirm this payment.'}
           </p>
           <form onSubmit={handleVerifyStepUp}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+              <label className="block text-sm font-medium text-black/80 mb-1">Enter OTP Code (Check your email)</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                className={fieldClass}
                 placeholder="e.g. 123456"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
@@ -558,10 +573,10 @@ export default function TipInner({classes, idd}) {
               />
             </div>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+              <label className="block text-sm font-medium text-black/80 mb-1">Type 'CONFIRM' to proceed</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                className={fieldClass}
                 placeholder="CONFIRM"
                 value={typedConfirmation}
                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -590,7 +605,7 @@ export default function TipInner({classes, idd}) {
                                 type="button"
                                 onClick={handlePasskeyStepUp}
                                 disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -602,7 +617,7 @@ export default function TipInner({classes, idd}) {
                                     </>
                                 ) : "Use Face ID / Fingerprint"}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a saved passkey.
                             </p>
                         </div>
@@ -620,13 +635,13 @@ export default function TipInner({classes, idd}) {
       >
         <div className="!rounded-none p-6">
           <h2 className="text-xl font-bold mb-3 text-center">You're becoming a Supporter</h2>
-          <p className="text-gray-700 mb-3">
+          <p className="text-black/80 mb-3">
             {user?.name || 'This creator'} is offering Supporter access in return for this payment. As a Supporter you'll get access to their supporter-only posts.
           </p>
-          <p className="text-gray-900 font-semibold mb-3">
+          <p className="text-black font-semibold mb-3">
             One-time payment — 30 days of Supporter access. Does not auto-renew.
           </p>
-          <p className="text-gray-600 text-sm mb-6">
+          <p className="text-black/60 text-sm mb-6">
             You're purchasing access to this creator's content, not making a gift. Platform terms apply to fulfilment and refunds.
           </p>
           <div className="flex gap-3">

@@ -1,3 +1,4 @@
+import { rewardLines } from "@/constants/rewards";
 import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
@@ -10,6 +11,7 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 import axios from "axios";
 
 export default function BillCheckout(props) {
@@ -463,7 +465,7 @@ export default function BillCheckout(props) {
                                             </SectionLabel>
                                             <textarea
                                                 rows={3}
-                                                className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                className={fieldClass}
                                                 onChange={(e) =>
                                                     setData(
                                                         "message",
@@ -487,7 +489,7 @@ export default function BillCheckout(props) {
                                                         From
                                                     </label>
                                                     <input
-                                                        className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                        className={fieldClass}
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
@@ -505,7 +507,7 @@ export default function BillCheckout(props) {
                                                 <div className="w-full mb-4">
                                                     <label className="text-xs font-bold text-black/60 block mb-1">
                                                         Email{" "}
-                                                        <span className="text-black/40 font-bold normal-case">
+                                                        <span className="text-black/60 font-bold normal-case">
                                                             — stays private
                                                         </span>
                                                     </label>
@@ -516,7 +518,7 @@ export default function BillCheckout(props) {
                                                             auth.user.email
                                                                 ? "opacity-60 cursor-not-allowed"
                                                                 : ""
-                                                        } w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
+                                                        } ${fieldClass}`}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
@@ -555,7 +557,7 @@ export default function BillCheckout(props) {
                                                 ></input>
                                                 Keep anonymous
                                             </label>
-                                            <p className="text-gray-500 text-sm mb-3">
+                                            <p className="text-black/60 text-sm mb-3">
                                                 Your personal email and name
                                                 will be private.
                                             </p>
@@ -601,10 +603,19 @@ export default function BillCheckout(props) {
                             <div className="lg:sticky lg:top-24">
                                 <SummaryReceipt
                                     image={bill.perma_link || uploadedimg}
+                                    typeBadge="Membership"
                                     itemTitle="Content membership"
                                     itemSub={bill.name}
+                                    payingLabel="You're subscribing to"
                                     creatorName={bill?.user?.name}
                                     creatorUsername={bill?.user?.username}
+                                    creatorAvatar={bill?.user?.avatar_url}
+                                    whatYouGet={[
+                                        ...rewardLines(bill),
+                                        `${periodLabel} access to this creator's members-only content`,
+                                        "New posts delivered while your membership is active",
+                                        "Cancel anytime — access stays until the period ends",
+                                    ]}
                                     rows={[
                                         {
                                             label: `${periodLabel} membership`,
@@ -619,6 +630,7 @@ export default function BillCheckout(props) {
                                         bill && bill?.currency,
                                     )}
                                     totalNote={`Includes all fees. You'll be charged in ${bill?.currency}.`}
+                                    nextStep={`Your membership starts right away and renews ${periodAdverb} until you cancel.`}
                                     renewalNote={`Renews ${periodAdverb} · cancel anytime`}
                                 >
                                     <PayButton
@@ -635,7 +647,7 @@ export default function BillCheckout(props) {
                                         onClick={handleSubmit}
                                     />
                                     {(!data.agree || !data.digital_waiver) && (
-                                        <p className="text-[10px] font-bold text-black/50 text-center mt-2">
+                                        <p className="text-[10px] font-bold text-black/60 text-center mt-2">
                                             Accept the terms above to
                                             continue.
                                         </p>
@@ -658,18 +670,18 @@ export default function BillCheckout(props) {
                         <h2 className="text-xl font-bold mb-2 text-center">
                             {stepUpData?.ui?.title || "Confirm Your Payment"}
                         </h2>
-                        <p className="text-gray-600 mb-6 text-center">
+                        <p className="text-black/60 mb-6 text-center">
                             {stepUpData?.ui?.body ||
                                 "For your security, please confirm this payment."}
                         </p>
                         <form onSubmit={handleVerifyStepUp}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-black/80 mb-1">
                                     Enter OTP Code (Check your email)
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className={fieldClass}
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -677,12 +689,12 @@ export default function BillCheckout(props) {
                                 />
                             </div>
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-black/80 mb-1">
                                     Type 'CONFIRM' to proceed
                                 </label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className={fieldClass}
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) =>
@@ -727,7 +739,7 @@ export default function BillCheckout(props) {
                                             ? verifyingOtp
                                             : false)
                                     }
-                                    className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                    className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                                 >
                                     {passkeyLoading ? (
                                         <>
@@ -757,7 +769,7 @@ export default function BillCheckout(props) {
                                         "Use Face ID / Fingerprint"
                                     )}
                                 </button>
-                                <p className="text-xs text-gray-500 text-center mt-2">
+                                <p className="text-xs text-black/60 text-center mt-2">
                                     Bypass OTP by verifying your identity with a
                                     saved passkey.
                                 </p>

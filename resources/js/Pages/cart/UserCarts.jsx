@@ -10,7 +10,8 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
-import { PayButton } from "@/Components/Checkout/SummaryReceipt";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -792,10 +793,27 @@ export default function UserCarts(props) {
                                 (@{datas?.user?.username || ""})
                             </Link>
                         </h2>
-                        <p className="md:pb-4 text-lg mt-2 mb-4">
-                            You are about to purchase content from{" "}
-                            <strong>{datas?.user?.name || ""}</strong>.
-                        </p>
+                        <OrderContextCard
+                            className="mt-2 mb-4"
+                            image={datas?.user?.avatar_url}
+                            typeBadge={`${items?.length || 0} ${(items?.length || 0) === 1 ? "item" : "items"}`}
+                            itemTitle="Your basket"
+                            itemSub="Content from this creator"
+                            payingLabel="You're supporting"
+                            creatorName={datas?.user?.name}
+                            creatorUsername={datas?.user?.username}
+                            creatorAvatar={datas?.user?.avatar_url}
+                            // Name what each item actually delivers. The old
+                            // copy ("everything in your basket") described the
+                            // basket, not the purchase — a buyer could reach
+                            // checkout without ever being told what they get.
+                            whatYouGet={[
+                                ...(items || [])
+                                    .map((item) => item?.reward_title)
+                                    .filter(Boolean),
+                                "A copy of each item sent to your email",
+                            ]}
+                        />
                         {debugEnabled ? (
                             <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-3 mb-4 rounded">
                                 <div className="flex items-center justify-between gap-3">
@@ -924,111 +942,84 @@ export default function UserCarts(props) {
                                         chargeCurrency,
                                     )}
                                 </strong>
-                                <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
+                                <div className="text-[10px] text-black/60 font-normal mt-1 leading-tight text-right">
                                     *Includes platform and payment processing
                                     fees
                                 </div>
                             </div>
                         </div>
 
-                        <div className="addMessage">
-                            <form onSubmit={(e) => e.preventDefault()}>
-                                <ul className="flex flex-wrap">
-                                    <li className="  w-full">
-                                        <label>Add Message </label>
-                                        <textarea
-                                            rows={2}
-                                            className="border-gray-300 border rounded-box-sm p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
-                                            onChange={(e) =>
-                                                setMessage(e.target.value)
-                                            }
-                                            placeholder="Send some words of support..."
-                                        ></textarea>
-                                    </li>
-                                    <li className="w-full mt-3  ">
-                                        <div className="flex flex-wrap">
-                                            <div className="w-full mb-4">
-                                                <label className=" text-start w-full">
-                                                    Email{" "}
-                                                </label>
-                                                <p className="text-sm text-gray-500 mb-1">
-                                                    Your e-mail remains private.
-                                                </p>
-                                                <input
-                                                    required
-                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-box-sm p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 `}
-                                                    value={email}
-                                                    disabled={
-                                                        !!auth?.user?.email
-                                                    }
-                                                    onChange={(e) =>
-                                                        setEmail(e.target.value)
-                                                    }
-                                                    type="email"
-                                                    placeholder="Enter Your Email..."
-                                                />
-                                            </div>
-                                            <div className="w-full mb-4">
-                                                <label className="text-start w-full">
-                                                    From
-                                                </label>
-                                                <input
-                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 !rounded-box-sm "
-                                                    onChange={(e) =>
-                                                        setName(e.target.value)
-                                                    }
-                                                    value={name}
-                                                    type="text"
-                                                    placeholder="Enter Your Name..."
-                                                />
-                                                {auth && auth.name}
-                                                {auth && auth.name}
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li className="cheklistbox  ">
-                                        <label
-                                            htmlFor="anonymous"
-                                            className="text-left"
-                                        >
-                                            <input
-                                                onChange={(e) =>
-                                                    setKeepAnonmyous(
-                                                        e.target.checked,
-                                                    )
-                                                }
-                                                type="checkbox"
-                                                id="anonymous"
-                                                name="anonymous"
-                                                className="mr-2"
-                                                value="anonymous"
-                                            ></input>
-                                            Keep anonymous
-                                        </label>
-                                        <p className="text-gray-500 text-sm mb-3">
-                                            Your personal email and name will be
-                                            private.
-                                        </p>
+                        {/* Plain divs, not the legacy `.addMessage ul li`
+                            markup — that stylesheet forces a pink textarea and a
+                            3px-radius input, which is why these three fields
+                            each looked like a different design system. */}
+                        <div>
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                                <TextAreaField
+                                    id="cart-message"
+                                    label="Add message"
+                                    rows={3}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Send some words of support..."
+                                />
 
-                                        <PaymentMethodSelector
-                                            amount={chargeBase}
-                                            currency={chargeCurrency}
-                                            email={email || auth?.user?.email}
-                                            value={paymentMethod}
-                                            onChange={setPaymentMethod}
-                                            onPrices={setPreviewPrices}
-                                            className="mb-4"
+                                <TextField
+                                    id="cart-email"
+                                    label="Email"
+                                    hint="Your e-mail remains private."
+                                    required
+                                    type="email"
+                                    value={email}
+                                    disabled={!!auth?.user?.email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your email…"
+                                />
+
+                                <TextField
+                                    id="cart-name"
+                                    label="From"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Enter your name…"
+                                />
+
+                                <div>
+                                    <label
+                                        htmlFor="anonymous"
+                                        className="flex min-h-[44px] items-center gap-2 text-left font-bold"
+                                    >
+                                        <input
+                                            onChange={(e) => setKeepAnonmyous(e.target.checked)}
+                                            type="checkbox"
+                                            id="anonymous"
+                                            name="anonymous"
+                                            value="anonymous"
+                                            className="h-5 w-5 rounded border-2 border-black/30 text-[#FF007F] focus:ring-[#FF007F]/25"
                                         />
+                                        Keep anonymous
+                                    </label>
+                                    <p className="mb-3 text-sm text-black/60">
+                                        Your personal email and name will be private.
+                                    </p>
 
-                                        <CheckoutLegalTerms
-                                            onAgreeChange={(checked) => {
-                                                setIsChecked(checked);
-                                                setDigitalWaiver(checked);
-                                            }}
-                                        />
+                                    <PaymentMethodSelector
+                                        amount={chargeBase}
+                                        currency={chargeCurrency}
+                                        email={email || auth?.user?.email}
+                                        value={paymentMethod}
+                                        onChange={setPaymentMethod}
+                                        onPrices={setPreviewPrices}
+                                        className="mb-4"
+                                    />
 
-                                    </li>
-                                </ul>
+                                    <CheckoutLegalTerms
+                                        onAgreeChange={(checked) => {
+                                            setIsChecked(checked);
+                                            setDigitalWaiver(checked);
+                                        }}
+                                    />
+                                </div>
                                 {turnstileSiteKey ? (
                                     <div className="flex justify-center my-3">
                                         <Turnstile
@@ -1081,18 +1072,18 @@ export default function UserCarts(props) {
                     <h2 className="text-xl font-bold mb-2 text-center">
                         {stepUpData?.ui?.title || "Confirm Your Payment"}
                     </h2>
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-black/60 mb-6 text-center">
                         {stepUpData?.ui?.body ||
                             "For your security, please confirm this payment."}
                     </p>
                     <form onSubmit={handleVerifyStepUp}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-black/80 mb-1">
                                 Enter OTP Code (Check your email)
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -1106,7 +1097,7 @@ export default function UserCarts(props) {
                                 disabled={resendingOtp || resendCooldown > 0}
                                 className={`text-sm font-medium transition-all ${
                                     resendingOtp || resendCooldown > 0
-                                        ? "text-gray-400 cursor-not-allowed"
+                                        ? "text-black/60 cursor-not-allowed"
                                         : "text-[#FF007F] hover:text-pink-700"
                                 }`}
                             >
@@ -1118,12 +1109,12 @@ export default function UserCarts(props) {
                             </button>
                         </div>
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-black/80 mb-1">
                                 Type 'CONFIRM' to proceed
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) =>
@@ -1171,7 +1162,7 @@ export default function UserCarts(props) {
                                         ? verifyingOtp
                                         : false)
                                 }
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -1201,7 +1192,7 @@ export default function UserCarts(props) {
                                     "Use Face ID / Fingerprint"
                                 )}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a
                                 saved passkey.
                             </p>

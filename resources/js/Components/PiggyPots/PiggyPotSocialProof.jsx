@@ -44,7 +44,9 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                     <>
                         <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                             {activeList.map((item, idx) => {
-                                const bgColors = ['bg-[#fbcfe8]', 'bg-[#bfdbfe]', 'bg-[#fef08a]', 'bg-[#bbf7d0]'];
+                                // Brand tints only — the old pink/blue/yellow/green cycle
+                                // introduced three hues the design system doesn't have.
+                                const bgColors = ['bg-[#A2E4B8]', 'bg-[#FF007F]/20', 'bg-black/10', 'bg-white'];
                                 const bgColor = bgColors[idx % bgColors.length];
                                 
                                 const username = item.username || item.user?.username || '';
@@ -58,7 +60,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                             ) : (
                                                 String(item.name || 'A').charAt(0).toUpperCase()
                                             )}
-                                            <div className="absolute -bottom-2 -right-2 bg-[#FFD700] border-[2px] border-black text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded-full z-10 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">#{idx + 1}</div>
+                                            <div className="absolute -bottom-2 -right-2 bg-[#A2E4B8] border-[2px] border-black text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded-full z-10 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">#{idx + 1}</div>
                                         </div>
                                         <div className="font-black text-black mt-3 w-full text-center truncate">{item.name}</div>
                                         {/* Supporter's VIP tier — same VipScoreService that
@@ -75,7 +77,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                                 {item.vip.level}
                                             </div>
                                         )}
-                                        <div className="font-black text-[#e85d9a] mt-1 text-xs md:text-sm uppercase tracking-widest">
+                                        <div className="font-black text-[#FF007F] mt-1 text-xs md:text-sm uppercase tracking-widest">
                                             {(item.purchases ?? 0)} {(item.purchases === 1 ? 'unlock' : 'unlocks')}
                                         </div>
                                     </>

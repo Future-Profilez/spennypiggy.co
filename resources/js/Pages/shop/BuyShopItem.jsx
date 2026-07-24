@@ -1,3 +1,4 @@
+import { rewardLines } from "@/constants/rewards";
 import React from 'react';
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
@@ -13,7 +14,8 @@ import { useEffect } from "react";
 import { useRef } from "react";
 import AllContries from "../../includes/AllCountries";
 import Turnstile from "@/Components/Turnstile";
-import { PayButton } from "@/Components/Checkout/SummaryReceipt";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 
 export default function BuyShopItem({
     opened,
@@ -505,8 +507,8 @@ export default function BuyShopItem({
 
                                 {shop.type === "physical" ? (
                                     <div className="text-center py-2">
-                                        <p className="text-gray-700 font-medium">📦 Your order has been placed!</p>
-                                        <p className="text-sm text-gray-500 mt-1">The creator will process and ship your order soon. You&apos;ll receive an email with tracking details once it&apos;s dispatched.</p>
+                                        <p className="text-black/80 font-medium">📦 Your order has been placed!</p>
+                                        <p className="text-sm text-black/60 mt-1">The creator will process and ship your order soon. You&apos;ll receive an email with tracking details once it&apos;s dispatched.</p>
                                     </div>
                                 ) : s && s.success_page_type == "text" ? (
                                     <p>{s && s.success_page_value}</p>
@@ -535,7 +537,7 @@ export default function BuyShopItem({
 
                                 <Link
                                     href="/shop?type=purchases"
-                                    className="mt-3 block text-center text-sm font-bold text-gray-700 underline underline-offset-2 hover:text-black"
+                                    className="mt-3 block text-center text-sm font-bold text-black/80 underline underline-offset-2 hover:text-black"
                                 >
                                     View all my purchases
                                 </Link>
@@ -589,28 +591,54 @@ export default function BuyShopItem({
                         </>
                     ) : (
                         <>
+                            <OrderContextCard
+                                className="mt-3"
+                                image={s?.perma_link}
+                                typeBadge={isPhysicalItem ? "Shop item · Ships to you" : "Shop item · Digital"}
+                                itemTitle={s?.name}
+                                itemSub={s?.description}
+                                creatorName={s?.user?.name}
+                                creatorUsername={s?.user?.username}
+                                creatorAvatar={s?.user?.avatar_url}
+                                whatYouGet={
+                                    isPhysicalItem
+                                        ? [
+                                              ...rewardLines(s),
+                                              "This item shipped to your address",
+                                              qty > 1 ? `${qty} units` : "1 unit",
+                                              "Order confirmation and tracking by email",
+                                          ]
+                                        : [
+                                              ...rewardLines(s),
+                                              "Instant access to the digital file after payment",
+                                              "A copy sent to your email",
+                                              "Yours to keep — lifetime access",
+                                          ]
+                                }
+                            />
+
                             {/* Itemised, so the buyer can see what the total is made of
                                 rather than one grossed-up number. */}
-                            <div className="mt-3 border-[2px] border-black rounded-box bg-white p-4">
+                            <div className="mt-3 border-2 border-black rounded-box bg-white p-4">
                                 {actualPrice() ? (
                                     <>
-                                        <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                        <div className="flex justify-between text-sm font-bold text-black/80 py-1">
                                             <span>Item{qty > 1 ? ` × ${qty}` : ""}</span>
                                             <span>{formatMultiPrice(itemSubtotal, itemCurrency)}</span>
                                         </div>
                                         {vatAmount > 0 && (
-                                            <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                            <div className="flex justify-between text-sm font-bold text-black/80 py-1">
                                                 <span>VAT ({s?.user?.vat_amount_percentage}%)</span>
                                                 <span>{formatMultiPrice(vatAmount, itemCurrency)}</span>
                                             </div>
                                         )}
                                         {isPhysicalItem && (
-                                            <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                            <div className="flex justify-between text-sm font-bold text-black/80 py-1">
                                                 <span>Shipping{shipping_info.country ? ` to ${shipping_info.country}` : ""}</span>
                                                 <span>{shippingTotal > 0 ? formatMultiPrice(shippingTotal, itemCurrency) : "Free"}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-sm font-bold text-gray-700 py-1">
+                                        <div className="flex justify-between text-sm font-bold text-black/80 py-1">
                                             <span>Platform &amp; processing fees</span>
                                             <span>{formatMultiPrice(Math.max(0, totalSupporterPays - baseBeforeFees), itemCurrency)}</span>
                                         </div>
@@ -620,12 +648,12 @@ export default function BuyShopItem({
                                                 {formatMultiPrice(totalSupporterPays, itemCurrency)}
                                             </strong>
                                         </div>
-                                        <p className="text-[11px] text-gray-500 font-normal mt-2 leading-tight">
+                                        <p className="text-[11px] text-black/60 font-normal mt-2 leading-tight">
                                             You will be charged in {itemCurrency}.
                                         </p>
                                     </>
                                 ) : (
-                                    <p className="text-gray-500 my-2 text-center">
+                                    <p className="text-black/60 my-2 text-center">
                                         You will get it for free.
                                     </p>
                                 )}
@@ -660,7 +688,7 @@ export default function BuyShopItem({
                                         <h2 className="text-md font-bold">
                                             {s.name}
                                         </h2>
-                                        <p className="text-gray-500 text-sm line-clamp-1 ">
+                                        <p className="text-black/60 text-sm line-clamp-1 ">
                                             {s.description}
                                         </p>
                                     </Link>
@@ -675,7 +703,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className={fieldClass}
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -690,13 +718,13 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
+                                    className={fieldClass}
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
                                     placeholder="Enter email.. "
                                 />
-                                <p className="text-[12px] text-gray-500 mt-1 ">
+                                <p className="text-[12px] text-black/60 mt-1 ">
                                     Your email address is kept private and will
                                     not be shown to anyone.
                                 </p>
@@ -709,7 +737,7 @@ export default function BuyShopItem({
                                         required
                                         min="1"
                                         max={s.slot_limitation !== null ? s.slot_limitation : undefined}
-                                        className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                        className={fieldClass}
                                         value={quantity}
                                         onChange={(e) => {
                                             if (e.target.value === '') {
@@ -737,12 +765,12 @@ export default function BuyShopItem({
                             {shop.type === "physical" ? (
                                 <>
                                     <div className="mb-3">
-                                        <p className="mb-2 font-bold text-gray-700">
+                                        <p className="mb-2 font-bold text-black/80">
                                             Shipping Information <span className="text-red-500">*</span>
                                         </p>
                                         <select
                                             required
-                                            className="border-gray-300 border rounded-box-sm px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 "
+                                            className={fieldClass}
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -763,7 +791,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
+                                            className={fieldClass}
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
@@ -773,7 +801,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
+                                            className={fieldClass}
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
@@ -784,7 +812,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
+                                                className={fieldClass}
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
@@ -794,7 +822,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-3 min-h-[44px] w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm bg-white"
+                                                className={fieldClass}
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="text"
@@ -863,15 +891,15 @@ export default function BuyShopItem({
             >
                 <div className="!rounded-none p-6">
                     <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-black/60 mb-6 text-center">
                         {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
                     </p>
                     <form onSubmit={handleVerifyStepUp}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -879,10 +907,10 @@ export default function BuyShopItem({
                             />
                         </div>
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -913,7 +941,7 @@ export default function BuyShopItem({
                                 type="button"
                                 onClick={handlePasskeyStepUp}
                                 disabled={passkeyLoading || verifyingOtp}
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -925,7 +953,7 @@ export default function BuyShopItem({
                                     </>
                                 ) : "Use Face ID / Fingerprint"}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a saved passkey.
                             </p>
                         </div>

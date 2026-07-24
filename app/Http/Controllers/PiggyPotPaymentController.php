@@ -632,13 +632,7 @@ class PiggyPotPaymentController extends Controller
                     if (! str_starts_with($contentUrl, 'http://') && ! str_starts_with($contentUrl, 'https://')) {
                         $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
                     }
-                    $thankYouParams['wish_content'] = [
-                        'type' => null,
-                        'name' => $pay->piggyPot?->content_description ?: 'Exclusive content',
-                        'url' => $contentUrl,
-                    ];
                 } elseif (! empty($pay->piggyPot?->content_description)) {
-                    $thankYouParams['benefits'] = $pay->piggyPot->content_description;
                 }
 
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');

@@ -178,7 +178,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#05EFB8">
+    <meta name="theme-color" content="#A2E4B8">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#A2E4B8">
     <meta name="application-name" content="Spenny Piggy">
     
     {{-- Prevent rubber-banding and zooming for native app feel --}}

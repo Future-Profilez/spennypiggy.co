@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\NotificationSave;
 use App\Models\User;
 use App\Services\PostingCadenceService;
 use Illuminate\Console\Command;
@@ -22,7 +23,7 @@ class EnforcePostingCadence extends Command
         $dryRun = (bool) $this->option('dry-run');
         $creatorIds = $service->creatorsWithActiveSubscribers();
 
-        $this->info('Creators with active subscribers: ' . $creatorIds->count() . ($dryRun ? ' [DRY RUN]' : ''));
+        $this->info('Creators with active subscribers: '.$creatorIds->count().($dryRun ? ' [DRY RUN]' : ''));
 
         $paused = 0;
         $resumed = 0;
@@ -41,25 +42,45 @@ class EnforcePostingCadence extends Command
             // had a full window to post.
             if (! $meets && ! $isPaused && ! $service->isPastGracePeriod($creator)) {
                 $this->line("GRACE  creator {$creatorId} (posts={$count}, within first 30 days)");
+
                 continue;
             }
 
             if (! $meets && ! $isPaused) {
                 $this->line("PAUSE  creator {$creatorId} (posts={$count})");
-                if (! $dryRun) {
-                    $n = $service->pauseCreator($creator);
-                    $this->notify($creator, 'paused', $count);
-                    $this->line("  paused {$n} subscription(s)");
+                if ($dryRun) {
+                    $paused++;
+
+                    continue;
                 }
-                $paused++;
+                // Notify / count only when Stripe actually paused something. pauseCreator now
+                // no-ops the flag on a total Stripe failure, so an unconditional notify would
+                // tell the creator "you're paused" while every subscription is still billing.
+                $n = $service->pauseCreator($creator);
+                $this->line("  paused {$n} subscription(s)");
+                if ($n > 0) {
+                    $this->notify($creator, 'paused', $count);
+                    $paused++;
+                } else {
+                    $this->warn("  pause did not take effect for creator {$creatorId} — will retry next run");
+                }
             } elseif ($meets && $isPaused) {
                 $this->line("RESUME creator {$creatorId} (posts={$count})");
-                if (! $dryRun) {
-                    $n = $service->resumeCreator($creator);
-                    $this->notify($creator, 'resumed', $count);
-                    $this->line("  resumed {$n} subscription(s)");
+                if ($dryRun) {
+                    $resumed++;
+
+                    continue;
                 }
-                $resumed++;
+                $n = $service->resumeCreator($creator);
+                $this->line("  resumed {$n} subscription(s)");
+                // resumeCreator keeps the paused flag if any Stripe resume failed; only
+                // report success once the creator is genuinely un-paused.
+                if (empty($creator->fresh()->content_posting_paused_at)) {
+                    $this->notify($creator, 'resumed', $count);
+                    $resumed++;
+                } else {
+                    $this->warn("  resume did not fully take effect for creator {$creatorId} — will retry next run");
+                }
             }
         }
 
@@ -72,10 +93,10 @@ class EnforcePostingCadence extends Command
     {
         try {
             $message = $state === 'paused'
-                ? "Your content memberships are paused: you've posted {$count}/" . PostingCadenceService::MIN_POSTS . " member posts in the last 30 days. Post more to resume payments."
-                : "Your content memberships are active again — thanks for posting. Payments have resumed.";
+                ? "Your content memberships are paused: you've posted {$count}/".PostingCadenceService::MIN_POSTS.' member posts in the last 30 days. Post more to resume payments.'
+                : 'Your content memberships are active again — thanks for posting. Payments have resumed.';
 
-            \App\Jobs\NotificationSave::dispatch($message, $creator, $creator, 'membership');
+            NotificationSave::dispatch($message, $creator, $creator, 'membership');
         } catch (\Throwable $e) {
             // Notification failure must not abort enforcement.
         }

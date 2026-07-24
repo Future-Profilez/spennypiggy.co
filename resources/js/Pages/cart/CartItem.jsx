@@ -3,6 +3,7 @@ import cartproductimg from '../../../assets/img/cartproductimg.png';
 import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
+import RewardSummary from "@/Components/Reward/RewardSummary";
 
 export default function CartItem({data, removeCart, quantityUpdate, currency, isLoggedIn, totalPrice}) {
 
@@ -70,6 +71,15 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                             </span>
                         </div>
                     </div>
+                    {/* Each basket row states what it buys — the totals alone
+                        never did. */}
+                    <RewardSummary
+                        className="mt-2"
+                        compact
+                        title={data?.reward_title}
+                        type={data?.reward_type}
+                        description={data?.reward_description}
+                    />
                 </div>
             </div>
 

@@ -18,8 +18,14 @@ export default function AddComment({
 
     const addCommmnt = (e) => {
         e.preventDefault();
-        if ((auth && auth.user == undefined) || null) {
+        // Was `(auth && auth.user == undefined) || null` — parsed as `(...) || null`, so the
+        // guard never fired and a logged-out user's submit fell through to the request.
+        if (!auth?.user) {
             errorAlert("You must log in first.");
+            return false;
+        }
+        // No empty comments, and no double-submit (Enter + click both call this).
+        if (!reply.trim() || loading) {
             return false;
         }
         setLoading(true);
@@ -47,7 +53,8 @@ export default function AddComment({
                     setLoading(false);
                 });
         } else {
-            axios.post(`/post/comment/${post_uuid}`, { comment: reply })
+            axios
+                .post(`/post/comment/${post_uuid}`, { comment: reply })
                 .then((resp) => {
                     if (resp.data.status) {
                         successAlert(resp.data.msg);
@@ -77,14 +84,16 @@ export default function AddComment({
                         id="user-comment"
                         onChange={(e) => setReply(e.target.value)}
                         value={reply}
-                        className="border p-4 !border-gray-200 !bg-gray-100 !text-black rounded-[20px] md:rounded-[20px]  me-3 "
+                        maxLength={1000}
+                        className="flex-1 min-h-[44px] border py-3 px-4 pr-12 !border-gray-200 !bg-gray-100 !text-black rounded-box-sm"
                         type="text"
                         placeholder="Add comment..."
                     />
-                    <div
-                        disabled={reply == ""}
-                        className="absolute top-[18px] right-2"
-                        onClick={addCommmnt}
+                    <button
+                        type="submit"
+                        aria-label="Post comment"
+                        disabled={reply.trim() === "" || loading}
+                        className="absolute top-1/2 -translate-y-1/2 right-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent border-0 disabled:opacity-40"
                     >
                         {loading ? (
                             <svg
@@ -131,7 +140,7 @@ export default function AddComment({
                                 ></polygon>
                             </svg>
                         )}
-                    </div>
+                    </button>
                 </form>
             </div>
         </>

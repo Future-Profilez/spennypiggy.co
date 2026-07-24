@@ -3,27 +3,52 @@ import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
-import { Users, TrendingUp, AlertTriangle, Sparkles, Send } from 'lucide-react';
+import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft } from 'lucide-react';
 
 /**
  * Revenue Opportunity Centre.
  *
  * The financial dashboard answers "what did I earn". This answers "what should
  * I do next" — who to thank, who is drifting, and what isn't published yet.
+ * It reads as a leaderboard of the creator's supporters on purpose: the same
+ * VIP-tier language the platform uses everywhere else.
  *
  * Every supporter suggestion is advisory: the platform never hands a creator a
  * supporter's contact details, and the copy says so.
  */
-const severityStyle = {
-    good: 'border-green-200 bg-green-50 text-green-800',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800',
-};
 
 const money = (amount, currency) =>
     `${currency === 'GBP' ? '£' : ''}${Number(amount || 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}${currency !== 'GBP' ? ` ${currency}` : ''}`;
+
+// Compact money for tight spots (e.g. "£1.2k") — keeps big numbers legible.
+const moneyShort = (amount, currency) => {
+    const n = Number(amount || 0);
+    const sym = currency === 'GBP' ? '£' : '';
+    const suffix = currency !== 'GBP' ? ` ${currency}` : '';
+    if (n >= 1000) return `${sym}${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k${suffix}`;
+    return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}${suffix}`;
+};
+
+// First-purchase date, rendered short (e.g. "3 Jun 2026"). DB gives "Y-m-d H:i:s".
+const shortDate = (value) =>
+    value
+        ? new Date(String(value).replace(' ', 'T')).toLocaleDateString(undefined, {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+          })
+        : null;
+
+// Rank badge for the leaderboard — the top three get a medal tint, the rest a number.
+const rankStyle = (i) =>
+    [
+        'bg-[#f59e0b] text-white',
+        'bg-gray-300 text-gray-800',
+        'bg-[#b45309] text-white',
+    ][i] ?? 'bg-gray-100 text-gray-500';
 
 /**
  * "Send platform reminder" on an at-risk supporter.
@@ -41,9 +66,7 @@ const RemindButton = ({ supporterId }) => {
         setState('busy');
 
         try {
-            const { data } = await axios.post(
-                route('financial.opportunities.remind', supporterId)
-            );
+            const { data } = await axios.post(route('financial.opportunities.remind', supporterId));
             setState('sent');
             setNote(data.message);
         } catch (error) {
@@ -55,7 +78,7 @@ const RemindButton = ({ supporterId }) => {
     if (state === 'sent' || state === 'blocked') {
         return (
             <span
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold ${
+                className={`inline-flex items-center gap-1 rounded-[20px] px-3 py-2 text-[12px] font-bold ${
                     state === 'sent' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                 }`}
                 title={note || ''}
@@ -70,90 +93,203 @@ const RemindButton = ({ supporterId }) => {
             onClick={send}
             disabled={state === 'busy'}
             title="The platform sends its standard reminder with your name on it — once per quiet spell, and only if the supporter allows reminders."
-            className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#FF007F] px-3 py-1 text-[11px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[20px] border-2 border-[#FF007F] px-4 py-2 text-[12px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
         >
-            <Send size={11} />
+            <Send size={13} />
             {state === 'busy' ? 'Sending…' : 'Send platform reminder'}
         </button>
     );
 };
 
-const RetentionStat = ({ label, value, hint }) => (
+const RetentionStat = ({ label, value, hint, accent }) => (
     <div className="rounded-[20px] border border-gray-200 bg-white p-4">
-        <div className="text-[13px] font-bold uppercase tracking-wide text-gray-400">{label}</div>
-        <div className="mt-1 text-2xl font-bold text-gray-900">{value}</div>
-        {hint && <div className="mt-1 text-xs text-gray-500">{hint}</div>}
+        <div className="h-1 w-8 rounded-full" style={{ backgroundColor: accent }} />
+        <div className="mt-3 font-anton text-3xl leading-none text-gray-900">{value}</div>
+        <div className="mt-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">{label}</div>
+        {hint && <div className="mt-0.5 text-xs text-gray-400">{hint}</div>}
     </div>
 );
 
 export default function Opportunities({
     currency = 'GBP',
     supporters = [],
+    tiers = [],
     retention = {},
     alerts = [],
     actions = [],
     totals = {},
 }) {
+    // A brand-new creator has no supporters yet, so the supporter/retention/alert
+    // sections would all read empty. Show them a "getting started" path instead —
+    // the page is useful from day one, not only once money is coming in.
+    const hasSupporters = (totals.supporters ?? 0) > 0;
+
+    // Tier bar segments — only tiers anyone actually sits in.
+    const tierPresent = tiers.filter((t) => t.count > 0);
+    const tierTotal = tierPresent.reduce((sum, t) => sum + t.count, 0) || 1;
+
     return (
         <AuthenticatedLayout>
             <Head title="Revenue Opportunities" />
 
-            <div className="bg-white py-6 md:py-10 min-h-screen">
-                <div className="mx-auto max-w-4xl px-5">
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900">Revenue Opportunities</h1>
-                        <p className="mt-1 text-gray-600">
-                            Who your best supporters are, who has gone quiet, and what to do next.
-                        </p>
-                        <Link
-                            href={route('financial.dashboard')}
-                            className="mt-2 inline-block text-sm font-bold text-[#FF007F]"
-                        >
-                            ← Back to financial dashboard
-                        </Link>
+            <div className="min-h-screen bg-gray-50 py-6 md:py-10">
+                <div className="mx-auto max-w-4xl px-4 md:px-6">
+                    {/* Header */}
+                    <Link
+                        href={route('financial.dashboard')}
+                        className="mb-4 inline-flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-[#FF007F]"
+                    >
+                        <ChevronLeft size={16} /> Financial dashboard
+                    </Link>
+
+                    {/* Hero — the whole point in one glance: how many supporters, worth how much. */}
+                    <div className="relative overflow-hidden rounded-[30px] bg-[#16161C] p-6 text-white md:p-8">
+                        <div
+                            className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-20 blur-2xl"
+                            style={{ background: 'radial-gradient(circle, #FF007F, transparent 70%)' }}
+                        />
+                        <div className="relative">
+                            <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.2em] text-[#FF007F]">
+                                <Users size={14} /> Your supporters
+                            </div>
+
+                            {hasSupporters ? (
+                                <>
+                                    <div className="mt-2 flex items-end gap-3">
+                                        <span className="font-anton text-6xl leading-none md:text-7xl">
+                                            {totals.supporters ?? 0}
+                                        </span>
+                                        <span className="mb-1 text-sm text-gray-400">
+                                            paying supporter{(totals.supporters ?? 0) === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-5 grid grid-cols-3 gap-3">
+                                        {[
+                                            { label: 'Lifetime', value: money(totals.lifetime_value, currency), tint: 'text-[#05EFB8]' },
+                                            { label: 'This month', value: money(totals.monthly_value, currency), tint: 'text-[#FF007F]' },
+                                            { label: 'Avg / supporter', value: money(totals.average_supporter_value, currency), tint: 'text-white' },
+                                        ].map((s) => (
+                                            <div key={s.label} className="rounded-[20px] bg-white/5 p-3 ring-1 ring-white/10">
+                                                <div className={`font-anton text-xl leading-none tabular-nums ${s.tint}`}>{s.value}</div>
+                                                <div className="mt-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">{s.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="mt-2">
+                                    <div className="font-anton text-4xl leading-tight md:text-5xl">Your growth centre</div>
+                                    <p className="mt-2 max-w-lg text-sm text-gray-300">
+                                        The steps to your first sale now — your supporter leaderboard, tiers and
+                                        win-back prompts appear here as soon as the money starts coming in.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
+
+                    {/* Tier distribution — where your supporters sit on the platform ladder. */}
+                    {hasSupporters && tierPresent.length > 0 && (
+                        <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
+                            <div className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                                Supporter tiers
+                            </div>
+                            <div className="flex h-4 w-full overflow-hidden rounded-full">
+                                {tierPresent.map((t) => (
+                                    <div
+                                        key={t.level}
+                                        style={{ width: `${(t.count / tierTotal) * 100}%`, backgroundColor: t.color }}
+                                        title={`${t.level}: ${t.count}`}
+                                    />
+                                ))}
+                            </div>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {tierPresent.map((t) => (
+                                    <span
+                                        key={t.level}
+                                        className="inline-flex items-center gap-1.5 rounded-[20px] border border-gray-200 bg-gray-50 px-3 py-1.5 text-[13px] font-bold text-gray-700"
+                                    >
+                                        <span aria-hidden>{t.icon}</span>
+                                        {t.level}
+                                        <span className="tabular-nums text-gray-900">{t.count}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Getting started — shown until the first supporter arrives. */}
+                    {!hasSupporters && (
+                        <div className="mt-4 rounded-[30px] border-2 border-[#FF007F] bg-[#FF007F]/[0.04] p-5 md:p-6">
+                            <div className="flex items-center gap-2 font-bold text-gray-900">
+                                <Sparkles size={18} className="text-[#FF007F]" /> Get your first supporters
+                            </div>
+                            <ol className="mt-3 space-y-2.5 text-sm text-gray-700">
+                                {[
+                                    'Publish content people can buy — a wishlist item or a membership is the quickest start.',
+                                    'Make sure payouts are set up so you can be paid (Stripe connected).',
+                                    'Share your profile link on your own social channels — that is where your first buyers come from.',
+                                ].map((step, i) => (
+                                    <li key={i} className="flex gap-2.5">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF007F] text-[11px] font-bold text-white">
+                                            {i + 1}
+                                        </span>
+                                        <span>{step}</span>
+                                    </li>
+                                ))}
+                            </ol>
+                            <p className="mt-3 text-xs italic text-gray-500">
+                                The steps below are tailored to what you have not published yet.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Alerts */}
                     {alerts.length > 0 && (
-                        <div className="mb-6 space-y-3">
-                            {alerts.map((a) => (
-                                <div
-                                    key={a.key}
-                                    className={`rounded-[20px] border p-4 ${severityStyle[a.severity] ?? severityStyle.warning}`}
-                                >
-                                    <div className="flex items-center gap-2 font-bold">
-                                        {a.severity === 'warning' ? (
-                                            <AlertTriangle size={16} />
-                                        ) : (
-                                            <Sparkles size={16} />
-                                        )}
-                                        {a.title}
+                        <div className="mt-6 space-y-2.5">
+                            {alerts.map((a) => {
+                                const warn = a.severity === 'warning';
+                                return (
+                                    <div
+                                        key={a.key}
+                                        className={`flex gap-3 rounded-[20px] border-l-4 bg-white p-4 shadow-sm ${
+                                            warn ? 'border-amber-400' : 'border-[#FF007F]'
+                                        }`}
+                                    >
+                                        <div className={warn ? 'text-amber-500' : 'text-[#FF007F]'}>
+                                            {warn ? <AlertTriangle size={18} /> : <Sparkles size={18} />}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-900">{a.title}</div>
+                                            <p className="mt-0.5 text-sm text-gray-600">{a.detail}</p>
+                                        </div>
                                     </div>
-                                    <p className="mt-1 text-sm opacity-90">{a.detail}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
                     {/* Suggested actions */}
-                    <section className="mb-8">
+                    <section className="mt-8">
                         <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-900">
-                            <TrendingUp size={18} className="text-[#FF007F]" /> Suggested next steps
+                            <TrendingUp size={18} className="text-[#FF007F]" /> What to do next
                         </h2>
 
                         {actions.length === 0 ? (
-                            <p className="rounded-[20px] border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                            <p className="rounded-[20px] border border-gray-200 bg-white p-4 text-sm text-gray-600">
                                 Nothing to suggest yet — this fills up once you have a few sales.
                             </p>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="grid gap-3 md:grid-cols-2">
                                 {actions.map((a) => (
-                                    <div key={a.key} className="rounded-[20px] border border-gray-200 bg-white p-4">
+                                    <div
+                                        key={a.key}
+                                        className="flex flex-col rounded-[20px] border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+                                    >
                                         <h3 className="font-bold text-gray-900">{a.title}</h3>
-                                        <p className="mt-1 text-sm text-gray-600">{a.detail}</p>
-                                        {a.hint && (
-                                            <p className="mt-2 text-xs italic text-gray-500">{a.hint}</p>
-                                        )}
+                                        <p className="mt-1 flex-1 text-sm text-gray-600">{a.detail}</p>
+                                        {a.hint && <p className="mt-2 text-xs italic text-gray-500">{a.hint}</p>}
                                     </div>
                                 ))}
                             </div>
@@ -161,52 +297,49 @@ export default function Opportunities({
                     </section>
 
                     {/* Retention */}
-                    <section className="mb-8">
-                        <h2 className="mb-3 text-lg font-bold text-gray-900">
-                            Supporter movement · last {retention.window_days ?? 30} days
-                        </h2>
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                            <RetentionStat label="New" value={retention.new ?? 0} hint="First ever purchase" />
-                            <RetentionStat label="Returning" value={retention.returning ?? 0} hint="Bought before too" />
-                            <RetentionStat
-                                label="Reactivated"
-                                value={retention.reactivated ?? 0}
-                                hint="Back after 60+ days"
-                            />
-                            <RetentionStat label="Lost" value={retention.lost ?? 0} hint="Silent 60+ days" />
-                        </div>
-                    </section>
+                    {hasSupporters && (
+                        <section className="mt-8">
+                            <h2 className="mb-3 text-lg font-bold text-gray-900">
+                                Supporter movement · last {retention.window_days ?? 30} days
+                            </h2>
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                <RetentionStat label="New" value={retention.new ?? 0} hint="First ever purchase" accent="#05EFB8" />
+                                <RetentionStat label="Returning" value={retention.returning ?? 0} hint="Bought before too" accent="#FF007F" />
+                                <RetentionStat label="Reactivated" value={retention.reactivated ?? 0} hint="Back after 60+ days" accent="#a855f7" />
+                                <RetentionStat label="Lost" value={retention.lost ?? 0} hint="Silent 60+ days" accent="#9ca3af" />
+                            </div>
+                        </section>
+                    )}
 
-                    {/* Supporters */}
-                    <section>
-                        <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
-                            <Users size={18} className="text-[#FF007F]" /> Your top supporters
-                        </h2>
-                        <p className="mb-3 text-sm text-gray-500">
-                            {totals.supporters ?? 0} supporters · {money(totals.lifetime_value, currency)} lifetime ·{' '}
-                            {money(totals.average_supporter_value, currency)} average
-                        </p>
+                    {/* Supporter leaderboard */}
+                    {hasSupporters && (
+                        <section className="mt-8">
+                            <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
+                                <Users size={18} className="text-[#FF007F]" /> Top supporters
+                            </h2>
+                            <p className="mb-3 text-sm text-gray-500">Ranked by lifetime spend with you.</p>
 
-                        {supporters.length === 0 ? (
-                            <p className="rounded-[20px] border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                                No supporters yet.
-                            </p>
-                        ) : (
-                            <div className="space-y-3">
-                                {supporters.map((s) => (
+                            <div className="space-y-2.5">
+                                {supporters.map((s, i) => (
                                     <div
                                         key={s.supporter_id}
-                                        className="rounded-[20px] border border-gray-200 bg-white p-4"
+                                        className="rounded-[20px] border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
                                     >
-                                        <div className="flex flex-wrap items-center justify-between gap-3">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-gray-900">
-                                                        {s.name || 'Supporter'}
-                                                    </span>
+                                        <div className="flex items-center gap-3">
+                                            {/* Rank */}
+                                            <span
+                                                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-anton ${rankStyle(i)}`}
+                                            >
+                                                {i + 1}
+                                            </span>
+
+                                            {/* Identity */}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="truncate font-bold text-gray-900">{s.name || 'Supporter'}</span>
                                                     {s.vip?.level && (
                                                         <span
-                                                            className="rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
+                                                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
                                                             style={{ backgroundColor: s.vip.color }}
                                                             title={`Platform VIP tier: ${s.vip.level}`}
                                                         >
@@ -219,21 +352,32 @@ export default function Opportunities({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="mt-1 text-sm text-gray-500">
+                                                <div className="mt-1 text-[13px] text-gray-500">
                                                     {s.purchases} purchase{s.purchases === 1 ? '' : 's'} ·{' '}
-                                                    {money(s.average_order_value, currency)} average
+                                                    {money(s.average_order_value, currency)} avg
                                                     {s.days_since_last_purchase !== null && (
-                                                        <> · last bought {s.days_since_last_purchase}d ago</>
+                                                        <> · {s.days_since_last_purchase}d ago</>
+                                                    )}
+                                                    {s.first_purchase && (
+                                                        <span className="hidden sm:inline"> · since {shortDate(s.first_purchase)}</span>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-lg font-bold text-gray-900">
-                                                    {money(s.lifetime_spent, currency)}
+
+                                            {/* Spend */}
+                                            <div className="shrink-0 text-right">
+                                                <div className="font-anton text-xl leading-none tabular-nums text-gray-900">
+                                                    {moneyShort(s.lifetime_spent, currency)}
                                                 </div>
-                                                <div className="text-xs text-gray-400">lifetime</div>
+                                                <div className="text-[11px] font-bold uppercase tracking-wide text-gray-400">lifetime</div>
+                                                {s.monthly_spent > 0 && (
+                                                    <div className="mt-1 text-[13px] font-bold tabular-nums text-[#FF007F]">
+                                                        +{money(s.monthly_spent, currency)} this mo.
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+
                                         {s.at_risk && (
                                             <div className="mt-3 border-t border-gray-100 pt-3">
                                                 <RemindButton supporterId={s.supporter_id} />
@@ -242,14 +386,14 @@ export default function Opportunities({
                                     </div>
                                 ))}
                             </div>
-                        )}
 
-                        <p className="mt-4 text-xs italic text-gray-500">
-                            Supporter contact details are never shared. "Send platform reminder" delivers the
-                            platform's standard message with your name on it — once per quiet spell, and only if
-                            the supporter allows reminders. For anything personal, use your own social channels.
-                        </p>
-                    </section>
+                            <p className="mt-4 text-xs italic text-gray-500">
+                                Supporter contact details are never shared. "Send platform reminder" delivers the
+                                platform's standard message with your name on it — once per quiet spell, and only if
+                                the supporter allows reminders. For anything personal, use your own social channels.
+                            </p>
+                        </section>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

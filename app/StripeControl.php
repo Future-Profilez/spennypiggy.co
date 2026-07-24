@@ -1628,6 +1628,18 @@ class StripeControl
         }
     }
 
+    /**
+     * Re-fetch a payout from the connected account to read its current live status.
+     * Used by the payout reconciler to resolve records stuck 'in_transit' when a webhook
+     * was dropped.
+     */
+    public static function retrievePayout(string $payoutId, string $connectedAccountId, string $currency = 'GBP')
+    {
+        $client = self::getClientForCurrency($currency);
+
+        return $client->payouts->retrieve($payoutId, [], ['stripe_account' => $connectedAccountId]);
+    }
+
     public static function updatePayoutMetadata(string $payoutId, string $connectedAccountId, string $currency = 'usd', array $metadata = [])
     {
         $client = self::getClientForCurrency($currency);

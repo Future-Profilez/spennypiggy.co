@@ -12,6 +12,11 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
 import { ShoppingBagIcon } from "@animateicons/react/lucide";
 import PriceFormat from "@/includes/PriceFormat";
+import RewardEditor, {
+    rewardFromItem,
+    rewardToPayload,
+    validateReward,
+} from "@/Components/Reward/RewardEditor";
 import { Link } from "@inertiajs/react";
 
 const slug = (text) => {
@@ -61,7 +66,6 @@ export default function AddItem(props) {
         );
         const [thumb, setThumb] = useState(null);
         const [thumbEditable, setIsThumbEditable] = useState(false);
-        const [rewardfile, setrewardfile] = useState(null);
         const [haveQuestion, setHaveQuestion] = useState(
             item && item.ask_question ? true : false,
         );
@@ -83,14 +87,16 @@ export default function AddItem(props) {
         const [haveQty, setHaveQty] = useState(
             item && item.quantity_allow ? true : false,
         );
-        const [pagetype, setPageType] = useState(
-            (item && item.success_page_type) || "text",
-        );
-        const [parsedContent, setParsedContent] = useState(
-            (item && item.success_page_value) || "",
-        );
-        const [pageUrl, setpageUrl] = useState(
-            (item && item.success_page_value) || "",
+        // One reward object replaces the old success_page_type / _value /
+        // reward_file trio; the controller derives the legacy pair from it so
+        // the order screens keep working.
+        const [reward, setReward] = useState(() =>
+            rewardFromItem(item, {
+                file: "reward_file",
+                mime: "reward_file_type",
+                name: "reward_file_name",
+                size: "reward_file_size",
+            }),
         );
 
         const [step, setStep] = useState(1);
@@ -106,6 +112,16 @@ export default function AddItem(props) {
             description: item?.description || pre_description || "",
             price: item?.price || pre_price || "",
         });
+
+        // Snapshot of the form's starting values — dirty-check baseline for the
+        // discard confirmation (prefills/templates count as "clean").
+        const initialSnapshotRef = useRef(
+            JSON.stringify({
+                n: item?.name || pre_title || "",
+                d: item?.description || pre_description || "",
+                p: item?.price || pre_price || "",
+            }),
+        );
 
         const [wwsShipping, setwwsShipping] = useState(() => {
             if (item && item.shop_shipping_info) {
@@ -164,16 +180,9 @@ export default function AddItem(props) {
                         return;
                     }
                 } else {
-                    if (!pagetype) {
-                        errorAlert("Please select a success page type");
-                        return;
-                    }
-                    if (pagetype === "url" && !String(pageUrl || "").trim()) {
-                        errorAlert("Please add the link buyers receive");
-                        return;
-                    }
-                    if (pagetype === "text" && !rewardfile && !String(parsedContent || "").trim() && (!item || !item.reward_file_url)) {
-                        errorAlert("Please add the item for sale (file or message)");
+                    const rewardProblem = validateReward(reward);
+                    if (rewardProblem) {
+                        errorAlert(rewardProblem);
                         return;
                     }
                 }
@@ -213,10 +222,8 @@ export default function AddItem(props) {
         }, []);
 
         const thumbUploaderRef = useRef();
-        const rewardUploaderRef = useRef();
         const resetUploader = () => {
             thumbUploaderRef.current?.reset?.();
-            rewardUploaderRef.current?.reset?.();
         };
 
         async function getFileUID(thumbs) {
@@ -229,14 +236,6 @@ export default function AddItem(props) {
             setIsThumbEditable(false);
             setThumb(url);
         };
-
-        async function getRewardFile(file) {
-            setrewardfile({
-                uuid: file?.uuid,
-                cdnUrlModifiers: file?.cdnUrlModifiers || null,
-                url: file?.cdnUrl || file?.originalUrl
-            });
-        }
 
         const handleHaveQuestion = () => {
             setHaveQuestion(!haveQuestion);
@@ -308,10 +307,23 @@ export default function AddItem(props) {
                 ships.push({ country: "all", price: wwsShipping });
             }
 
+            const isDigital = physical !== 'physical';
+            const rewardPayload = rewardToPayload(reward, {
+                file: "reward_file",
+                mime: "reward_file_type",
+                name: "reward_file_name",
+                size: "reward_file_size",
+            });
+
             return {
                 ...shopItem,
-                success_page_value: physical === 'physical' ? null : (pagetype === "url" ? pageUrl : parsedContent),
-                reward_file: physical === 'physical' ? null : rewardfile,
+                // A physical product's deliverable is the parcel — it carries a
+                // reward headline but no digital file, message or link.
+                ...rewardPayload,
+                reward_file: isDigital && reward.type === "file" ? reward.file?.uuid || null : null,
+                reward_file_type: isDigital && reward.type === "file" ? reward.file?.mime || null : null,
+                reward_body: isDigital ? rewardPayload.reward_body : "",
+                reward_type: isDigital ? reward.type : null,
                 category: checkboxes && checkboxes.length ? JSON.stringify(checkboxes) : "",
                 ask_question: question,
                 slot_limitation: slots || "",
@@ -323,7 +335,6 @@ export default function AddItem(props) {
                 image: thumb,
                 ai_generated: 0,
                 price: shopItem.price,
-                success_page_type: physical === 'physical' ? null : pagetype,
             };
         };
 
@@ -393,11 +404,29 @@ export default function AddItem(props) {
                 </div>
         );
 
+        // A half-finished 3-step product must not vanish on a stray tap of the
+        // close button — confirm when the form is dirty.
+        const isDirty = () =>
+            step > 1 ||
+            thumb !== null ||
+            !!reward.file ||
+            !!reward.title ||
+            JSON.stringify({ n: shopItem.name, d: shopItem.description, p: shopItem.price })
+                !== initialSnapshotRef.current;
+
+        const confirmDiscard = () => {
+            if (!isDirty()) return; // returning undefined lets the Popup close
+            if (!window.confirm("Discard this product? Your changes haven't been saved.")) {
+                return false; // veto the close
+            }
+        };
+
         return (
             <Popup
                 modalclass="addShopItems modals full"
                 size="xl"
                 action={open}
+                onHide={confirmDiscard}
                 text={title || trigger}
                 classes={`${classes ? classes : "px-3 py-2"}`}
             >
@@ -638,75 +667,11 @@ export default function AddItem(props) {
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">1. Fulfillment Method</h3>
-                                            
-                                            <div className="flex gap-4">
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => setPageType('text')}
-                                                    className={`flex-1 p-4 rounded-box-sm border-[3px] font-black uppercase text-xs tracking-widest transition-all ${
-                                                        pagetype === 'text' ? 'border-black bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'border-gray-200 bg-gray-50'
-                                                    }`}
-                                                >
-                                                    Message / File
-                                                </button>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => setPageType('url')}
-                                                    className={`flex-1 p-4 rounded-box-sm border-[3px] font-black uppercase text-xs tracking-widest transition-all ${
-                                                        pagetype === 'url' ? 'border-black bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'border-gray-200 bg-gray-50'
-                                                    }`}
-                                                >
-                                                    External Link
-                                                </button>
-                                            </div>
-
-                                            {pagetype === 'text' && (
-                                                <div className="space-y-4">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Confirmation Message*</label>
-                                                        <textarea
-                                                            value={parsedContent}
-                                                            rows="3"
-                                                            onChange={(e) => setParsedContent(e.target.value)}
-                                                            className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white"
-                                                            placeholder="Message to buyer after purchase..."
-                                                        />
-                                                    </div>
-                                                    
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Delivery File (PDF, Audio, Video, Image)*</label>
-                                                        <div className="uploader rounded-box border-[3px] border-dashed border-gray-300 bg-gray-50 p-4">
-                                                            <GlobalUploader
-                                                                ctxName="add-shop2-context"
-                                                                type="minimal"
-                                                                ref={rewardUploaderRef}
-                                                                sendFile={getRewardFile}
-                                                                options={st.shopreward}
-                                                            />
-                                                        </div>
-                                                        {(item?.reward_file_url || rewardfile) && (
-                                                            <div className="p-3 bg-blue-50 border-[3px] border-blue-200 rounded-box-sm flex items-center gap-2">
-                                                                <span className="text-xl">📎</span>
-                                                                <span className="text-xs font-black text-blue-700 uppercase tracking-wider">File attached successfully</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {pagetype === 'url' && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Redirect URL*</label>
-                                                    <input
-                                                        value={pageUrl}
-                                                        onChange={(e) => setpageUrl(e.target.value)}
-                                                        className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white"
-                                                        type="text"
-                                                        placeholder="https://your-content.com/..."
-                                                    />
-                                                </div>
-                                            )}
+                                            <RewardEditor
+                                                value={reward}
+                                                onChange={setReward}
+                                                ctxName="add-shop2-context"
+                                            />
                                         </div>
                                     )}
 
@@ -753,102 +718,118 @@ export default function AddItem(props) {
                             {/* STEP 3: OPTIONS & TERMS */}
                             {step === 3 && (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">Final Settings</h3>
-                                    
-                                    <div className="space-y-6">
-                                        {/* Toggle: Question */}
-                                        <div className="p-5 rounded-box border-[3px] border-black bg-gray-50 flex items-start gap-4">
-                                            <input 
-                                                type="checkbox" 
-                                                id="ask_q"
-                                                checked={haveQuestion}
-                                                onChange={handleHaveQuestion}
-                                                className="mt-1 w-6 h-6 rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
-                                            />
-                                            <div className="flex-1">
-                                                <label htmlFor="ask_q" className="font-black uppercase text-xs tracking-wider block mb-1">Ask a question</label>
-                                                <p className="text-[10px] font-bold text-gray-400 leading-tight">Require extra info from fans before purchase.</p>
-                                                {haveQuestion && (
-                                                    <input
-                                                        value={question}
-                                                        onChange={(e) => setQuestion(e.target.value)}
-                                                        className="w-full bg-white border-[3px] border-black rounded-box-sm p-3 mt-3 font-bold text-sm"
-                                                        placeholder="e.g. What name should I personalise it with?"
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">
+                                            Final settings
+                                        </h3>
+                                        <p className="mt-1 text-xs font-medium text-neutral-500">
+                                            Optional. You can change these any time after publishing.
+                                        </p>
+                                    </div>
 
-                                        {/* Toggle: Slots (Physical Only) */}
+                                    <div className="space-y-4">
+                                        {/* Each option is one card that expands
+                                            when switched on — the earlier layout
+                                            put a bare checkbox beside a label and
+                                            an input that appeared out of nowhere. */}
+                                        <OptionCard
+                                            id="ask_q"
+                                            title="Ask a question"
+                                            hint="Require extra info from fans before purchase."
+                                            checked={haveQuestion}
+                                            onChange={handleHaveQuestion}
+                                        >
+                                            <input
+                                                value={question}
+                                                onChange={(e) => setQuestion(e.target.value)}
+                                                className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+                                                placeholder="e.g. What name should I personalise it with?"
+                                            />
+                                        </OptionCard>
+
                                         {physical === 'physical' && (
-                                            <div className="p-5 rounded-box border-[3px] border-black bg-gray-50 flex items-start gap-4">
-                                                <input 
-                                                    type="checkbox" 
-                                                    id="limit_s"
-                                                    checked={haveSlots}
-                                                    onChange={handleHaveSlots}
-                                                    className="mt-1 w-6 h-6 rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
+                                            <OptionCard
+                                                id="limit_s"
+                                                title="Limit quantity"
+                                                hint="Create urgency by limiting available stock."
+                                                checked={haveSlots}
+                                                onChange={handleHaveSlots}
+                                            >
+                                                <input
+                                                    value={slots}
+                                                    type="number"
+                                                    inputMode="numeric"
+                                                    min="1"
+                                                    onChange={(e) => setSlots(e.target.value)}
+                                                    className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-black placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+                                                    placeholder="Max items available"
                                                 />
-                                                <div className="flex-1">
-                                                    <label htmlFor="limit_s" className="font-black uppercase text-xs tracking-wider block mb-1">Limit Quantity</label>
-                                                    <p className="text-[10px] font-bold text-gray-400 leading-tight">Create urgency by limiting available stock.</p>
-                                                    {haveSlots && (
-                                                        <input
-                                                            value={slots}
-                                                            type="number"
-                                                            onChange={(e) => setSlots(e.target.value)}
-                                                            className="w-full bg-white border-[3px] border-black rounded-box-sm p-3 mt-3 font-black text-sm"
-                                                            placeholder="Max items available"
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
+                                            </OptionCard>
                                         )}
 
-                                        {/* Toggle: Member Price (Digital Only) */}
                                         {physical !== 'physical' && (
-                                            <div className="hidden p-5 rounded-box border-[3px] border-black bg-gray-50 flex items-start gap-4">
-                                                <input 
-                                                    type="checkbox" 
+                                            <div className="hidden">
+                                                <OptionCard
                                                     id="member_p"
+                                                    title="Membership discount"
+                                                    hint="Reward your members with a special lower price."
                                                     checked={haveSpPrice}
                                                     onChange={handleSpPrice}
-                                                    className="mt-1 w-6 h-6 rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
-                                                />
-                                                <div className="flex-1 ">
-                                                    <label htmlFor="member_p" className="font-black uppercase text-xs tracking-wider block mb-1">Membership Discount</label>
-                                                    <p className="text-[10px] font-bold text-gray-400 leading-tight">Reward your members with a special lower price.</p>
-                                                    {haveSpPrice && (
-                                                        <div className="mt-3 relative">
-                                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400 text-xs">{defaultCurrency}</div>
-                                                            <input
-                                                                value={spPrice}
-                                                                type="number"
-                                                                onChange={(e) => setSpPrice(e.target.value)}
-                                                                className="w-full bg-white border-[3px] border-black rounded-box-sm p-3 pl-10 font-black text-sm"
-                                                                placeholder="Special price"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                >
+                                                    <div className="relative">
+                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-neutral-400">
+                                                            {defaultCurrency}
+                                                        </span>
+                                                        <input
+                                                            value={spPrice}
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            onChange={(e) => setSpPrice(e.target.value)}
+                                                            className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white py-3 pl-14 pr-4 text-sm font-black focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+                                                            placeholder="Special price"
+                                                        />
+                                                    </div>
+                                                </OptionCard>
                                             </div>
                                         )}
 
-                                        {/* Terms Checkbox */}
-                                        <div className="isCheckedRefernce p-5 rounded-box border-[3px] border-black bg-pink-50 flex items-start gap-4">
+                                        <label
+                                            htmlFor="agreeterm"
+                                            className={`isCheckedRefernce flex cursor-pointer items-start gap-3 rounded-box border-[3px] p-4 transition-colors ${
+                                                isChecked
+                                                    ? 'border-black bg-[#F2FBF5]'
+                                                    : 'border-black bg-[#FFF0F6]'
+                                            }`}
+                                        >
                                             <input
                                                 id="agreeterm"
                                                 type="checkbox"
                                                 checked={isChecked}
                                                 onChange={(e) => setIsChecked(e.target.checked)}
-                                                className="mt-1 w-6 h-6 rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0 cursor-pointer"
+                                                className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
                                             />
-                                            <label htmlFor="agreeterm" className="text-[11px] font-bold text-gray-700 leading-relaxed cursor-pointer">
-                                                I confirm I am 18+ and agree to the 
-                                                <a href={route("terms-and-conditions")} target="_blank" className="text-[#FF007F] underline ml-1">Terms</a> & 
-                                                <a href={route("terms-and-conditions")} target="_blank" className="text-[#FF007F] underline ml-1">Privacy Policy</a>.
-                                            </label>
-                                        </div>
+                                            <span className="text-xs font-bold leading-relaxed text-neutral-700">
+                                                I confirm I am 18+ and agree to the{' '}
+                                                <a
+                                                    href={route("terms-and-conditions")}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-[#FF007F] underline"
+                                                >
+                                                    Terms
+                                                </a>{' '}
+                                                &{' '}
+                                                <a
+                                                    href={route("terms-and-conditions")}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-[#FF007F] underline"
+                                                >
+                                                    Privacy Policy
+                                                </a>
+                                                .
+                                            </span>
+                                        </label>
                                     </div>
                                 </div>
                             )}
@@ -890,4 +871,36 @@ export default function AddItem(props) {
                 </div>
             </Popup>
         );
+}
+
+/**
+ * One optional setting: a switch, its explanation, and the field it controls —
+ * which only appears once the switch is on, so an empty box never sits there
+ * looking like something you forgot to fill in.
+ */
+function OptionCard({ id, title, hint, checked, onChange, children }) {
+    return (
+        <div
+            className={`rounded-box border-[3px] border-black p-4 transition-colors ${
+                checked ? "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-[#F7F7F7]"
+            }`}
+        >
+            <label htmlFor={id} className="flex min-h-[44px] cursor-pointer items-start gap-3">
+                <input
+                    type="checkbox"
+                    id={id}
+                    checked={checked}
+                    onChange={onChange}
+                    className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
+                />
+                <span className="min-w-0 flex-1 text-left">
+                    <span className="block text-xs font-black uppercase tracking-wider">{title}</span>
+                    <span className="mt-0.5 block text-xs font-medium leading-snug text-neutral-500">
+                        {hint}
+                    </span>
+                </span>
+            </label>
+            {checked && <div className="mt-3">{children}</div>}
+        </div>
+    );
 }

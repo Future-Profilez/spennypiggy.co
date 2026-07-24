@@ -2792,11 +2792,6 @@ class StripeController extends Controller
                 ];
 
                 if ($sub->wish_item->content_file) {
-                    $thankYouParams['wish_content'] = [
-                        'type' => $sub->wish_item->content_file_type,
-                        'name' => $sub->wish_item->content_file_name,
-                        'url' => $sub->wish_item->content_file_url,
-                    ];
                 }
 
                 return to_route('thank-you', $thankYouParams)->with('success', $message);

@@ -776,9 +776,9 @@ export default function Dashboard(props) {
                         {IsloggedIn && <ReferralBanner />}
 
                         <div className="wishbanner relative ">
-                            <div className="relative w-full overflow-hidden rounded-box">
+                            <div className="relative w-full overflow-hidden rounded-box border-2 border-black">
                                 {user?.is_founder ? (
-                                    <div className="absolute top-5 left-5 md:left-7 flex justify-center lg:justify-start z-10 bg-white/10 backdrop-blur-md rounded-full shadow-[0_8px_24px_-8px_rgba(34,211,238,0.5)] ring-1 ring-cyan-300/40 p-1.5">
+                                    <div className="absolute top-4 left-4 md:top-5 md:left-5 flex justify-center lg:justify-start z-10 rounded-full bg-black/45 backdrop-blur-md ring-1 ring-white/25 p-1.5">
                                         <FounderBadge size="md" />
                                     </div>
                                 ) : (
@@ -788,7 +788,7 @@ export default function Dashboard(props) {
                                     alt={`${user?.name} - Cover Image`}
                                     height={400}
                                     width={1200}
-                                    className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover"
+                                    className="w-full cover object-cover !min-h-0 !h-[160px] sm:!h-[210px] md:!h-[260px] lg:!h-[300px]"
                                     src={
                                         IsloggedIn
                                             ? user?.cover_url ||
@@ -802,14 +802,13 @@ export default function Dashboard(props) {
                                     loading="eager"
                                     fetchpriority="high"
                                 />
-                                {/* Blend the cover into the dark page + neon edge */}
-                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-b from-transparent via-[#0a0f20]/70 to-[#0a0f20]" />
-                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-cyan-400/0 via-cyan-400/60 to-lime-400/0" />
+                                {/* Light scrim: keeps the founder badge and cover notice legible on any image */}
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/20" />
                                 {IsloggedIn &&
                                 auth?.user?.cover_url &&
                                 auth?.user?.cover_approved == 0 ? (
-                                    <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
-                                        <button className="flex items-center gap-2">
+                                    <div className="absolute right-3 bottom-3 z-10 max-w-[85%] rounded-box-sm border-2 border-black bg-white px-3 py-2 text-xs font-semibold text-black md:text-sm">
+                                        <button className="flex items-center gap-2 text-left">
                                             <svg
                                                 width="20"
                                                 height="20"
@@ -866,6 +865,28 @@ export default function Dashboard(props) {
                                     )} */}
 
                                 {IsloggedIn && <CreatorRiskBanner />}
+
+                                {/* Owner-only shortcut into the Revenue Opportunity Centre —
+                                    surfaced here so a creator discovers it while looking at their
+                                    own profile. Neo-brutalist to match the surrounding profile UI. */}
+                                {IsloggedIn && (
+                                    <Link
+                                        href={route('financial.opportunities')}
+                                        className="group mt-3 flex items-center gap-4 rounded-[25px] border-[3px] border-black bg-white px-4 py-4   transition-all duration-150  hover:bg-gray-200"
+                                    >
+                                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] border-[3px] border-black bg-[#FF007F] text-2xl shadow-[2px_2px_0px_0px_#000]">
+                                            📈
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-[12px] font-black uppercase tracking-widest text-[#FF007F]">Grow your income</div>
+                                            <div className="text-[17px] py-1 font-gulfs font-black uppercase tracking-widest text-black leading-tight">See your top supporters</div>
+                                            <div className="text-[13px] font-semibold text-gray-600 mt-0.5">Who spends the most, who&apos;s gone quiet, and how to earn more.</div>
+                                        </div>
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#05EFB8] text-black text-lg font-black shadow-[2px_2px_0px_0px_#000] transition-transform group-hover:translate-x-0.5">
+                                            ›
+                                        </span>
+                                    </Link>
+                                )}
 
                                 <div className="userManageRt mt-4 mb-10">
                                     {blockedByMe ? (
@@ -1049,8 +1070,9 @@ export default function Dashboard(props) {
                                                                             )}
 
                                                                             {IsloggedIn &&
-                                                                            (user?.profile_status_lock ==
-                                                                                0 ||
+                                                                            ((user?.profile_status_lock ==
+                                                                                0 &&
+                                                                                user?.profile_reject_reason) ||
                                                                                 (user?.edit_bio_reason &&
                                                                                     user?.bio_approved ==
                                                                                         2) ||
@@ -1186,7 +1208,7 @@ export default function Dashboard(props) {
                                                                                     {IsloggedIn &&
                                                                                         user?.bio_approved ==
                                                                                             0 && (
-                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-[15px] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                                                                 <div className="flex items-center gap-2">
                                                                                                     <svg
                                                                                                         width="20"
@@ -1277,7 +1299,7 @@ export default function Dashboard(props) {
                                                                                     {IsloggedIn &&
                                                                                         slinks?.status ===
                                                                                             0 && (
-                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-xl border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                                                            <div className="mt-4 text-sm font-bold text-[#FF8E25] bg-orange-50 p-3 rounded-[20px] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                                                                 <div className="flex items-center gap-2">
                                                                                                     <svg
                                                                                                         width="20"

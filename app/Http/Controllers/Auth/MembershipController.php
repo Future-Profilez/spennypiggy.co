@@ -27,6 +27,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
@@ -110,7 +111,8 @@ class MembershipController extends Controller
             'rewards' => [
                 'required',
             ],
-        ]);
+            'content_file' => RewardService::fileRule(),
+        ] + RewardService::validationRules());
 
         if ($validator->fails()) {
 
@@ -128,6 +130,10 @@ class MembershipController extends Controller
                 'status' => false,
                 'msg' => 'Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).',
             ]);
+        }
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return response()->json(['status' => false, 'msg' => $linkError]);
         }
 
         $user = User::where('id', Auth::id())->first();
@@ -174,6 +180,7 @@ class MembershipController extends Controller
         $mem->thumbnail = $request->thumbnail ?? null;
         $mem->rewards = $rewards;
         $mem->status = 1;
+        $mem->fill(RewardService::columnsWithFile($request->all()));
         $mem->save();
 
         // Get currency metadata to handle zero-decimal currencies properly
@@ -248,12 +255,17 @@ class MembershipController extends Controller
                 'rewards' => [
                     'required',
                 ],
-            ]
+                'content_file' => RewardService::fileRule(),
+            ] + RewardService::validationRules()
         );
 
         // Stripe compliance: a tier must include at least one on-platform content benefit.
         if (! self::hasOnPlatformContent($request->rewards)) {
             return redirect()->back()->with('error', 'Select at least one on-platform content benefit (e.g. Monthly or Weekly Content Bundle).');
+        }
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->with('error', $linkError);
         }
 
         $blockedWord = Helpers::checkBlockData($request);
@@ -299,6 +311,7 @@ class MembershipController extends Controller
                 if (! empty($request->thumbnail)) {
                     $mem->thumbnail = $request->thumbnail;
                 }
+                $mem->fill(RewardService::columnsWithFile($request->all()));
                 $mem->save();
 
                 $stripe = new StripeClient(config('services.stripe.secret'));

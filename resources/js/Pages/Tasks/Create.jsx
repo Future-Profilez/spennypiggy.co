@@ -5,6 +5,12 @@ import InputError from "@/Components/InputError";
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
 import { Info, CheckCircle2, Clock, Zap, FileUp, AlertTriangle } from "lucide-react";
+import RewardEditor, {
+    emptyReward,
+    rewardFromItem,
+    rewardToPayload,
+    validateReward,
+} from "@/Components/Reward/RewardEditor";
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency } = usePage().props;
@@ -40,7 +46,18 @@ export default function Create({ auth, currencySymbol }) {
         { label: "7d", value: 168 }
     ];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, transform, processing, errors } = useForm({
+        // The buyer-facing reward. For an instant task it is also the file the
+        // platform hands over automatically; for a timed task it is the promise
+        // the creator fulfils after the order.
+        reward: task
+            ? rewardFromItem(task, {
+                  file: "deliverable_content",
+                  mime: "deliverable_content_type",
+                  name: "deliverable_content_name",
+                  size: "deliverable_content_size",
+              })
+            : emptyReward({ type: "message" }),
         title: task?.title ?? "",
         description: task?.description ?? "",
         price: task?.price ?? "",
@@ -52,18 +69,43 @@ export default function Create({ auth, currencySymbol }) {
         media_file: null,
     });
 
+    // The reward is flattened to the server's columns on submit. An instant
+    // task's file is also written to deliverable_file, which is what the
+    // fulfilment path hands to the buyer.
+    transform((payload) => {
+        const { reward, ...rest } = payload;
+        const isFile = reward.type === "file" && reward.file?.uuid;
+
+        return {
+            ...rest,
+            ...rewardToPayload(reward),
+            deliverable_file:
+                rest.type === "instant" && isFile
+                    ? {
+                          url: `https://ucarecdn.com/${reward.file.uuid}/`,
+                          mimeType: reward.file.mime,
+                          name: reward.file.name,
+                      }
+                    : null,
+            deliverable_note:
+                reward.type === "message" ? reward.body : reward.description || "",
+        };
+    });
+
     const submit = (e) => {
         e.preventDefault();
+        if (processing) return;
         if (!showSummary) {
+            const rewardProblem = validateReward(data.reward);
+            if (rewardProblem) {
+                alert(rewardProblem);
+                return;
+            }
             setShowSummary(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
         post(isEdit ? route("task.update", task.uuid) : route("task.store"));
-    };
-
-    const handleDeliverableUpload = (file) => {
-        setData("deliverable_file", file);
     };
 
     const handleMediaUpload = (file) => {
@@ -386,62 +428,23 @@ export default function Create({ auth, currencySymbol }) {
                                         </div>
                                     )}
 
-                                    {/* Deliverable File (Only for Instant) */}
-                                    {data.type === "instant" && (
-                                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                            <div className="border-2 border-black rounded-[30px]  p-6 bg-pink-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                                                <label className="block font-black text-lg mb-4 text-pink-900 uppercase flex items-center gap-2">
-                                                    <FileUp className="text-[#FF007F]" /> Upload Deliverable Content
-                                                </label>
-                                                <p className="text-sm font-bold text-pink-800 mb-4">
-                                                    Upload the final content or a private link visible only to the buyer.
-                                                </p>
-                                                <textarea
-                                                    className="bg-white w-full border-2 border-black rounded-[20px] p-4 mb-4 font-medium focus:ring-0 focus:border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                    rows="2"
-                                                    placeholder="Add a private link or note for the buyer..."
-                                                    value={data.deliverable_note}
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "deliverable_note",
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                ></textarea>
-                                                
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                                        <div className="w-full border-t border-pink-200"></div>
-                                                    </div>
-                                                    <div className="relative flex justify-center text-xs uppercase font-black">
-                                                        <span className="bg-pink-50 px-2 text-[#FF007F]">OR UPLOAD FILE</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <GlobalUploader
-                                                        ctxName="task-deliverable"
-                                                        type="minimal"
-                                                        sendFile={
-                                                            handleDeliverableUpload
-                                                        }
-                                                        accept="image/*,video/*,audio/*,application/pdf,text/plain,application/zip,application/x-zip-compressed,application/x-rar-compressed"
-                                                        imgonly={false}
-                                                    />
-                                                </div>
-                                                
-                                                {data.deliverable_file && (
-                                                    <div className="mt-4 text-sm text-green-800 font-bold bg-green-100 p-4 rounded-[20px] border-2 border-green-500 flex items-center gap-2">
-                                                        <CheckCircle2 size={18} /> File ready: {data.deliverable_file.name}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <InputError
-                                                message={errors.deliverable_file}
-                                                className="mt-2 font-bold text-red-600"
-                                            />
-                                        </div>
-                                    )}
+                                    {/* What the buyer receives — one editor for every module. */}
+                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                        <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
+                                            <FileUp className="text-[#FF007F]" /> What the buyer receives
+                                        </p>
+                                        <p className="mb-5 text-sm font-bold text-pink-800">
+                                            {data.type === "instant"
+                                                ? "Delivered automatically the moment they pay."
+                                                : "Describe exactly what you will deliver — you upload the finished work after they order."}
+                                        </p>
+                                        <RewardEditor
+                                            value={data.reward}
+                                            onChange={(next) => setData("reward", next)}
+                                            ctxName="task-deliverable"
+                                            errors={errors}
+                                        />
+                                    </div>
 
                                     {/* Terms */}
                                     <div className="p-6 bg-red-50 border-2 border-black rounded-[25px] !mt-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">

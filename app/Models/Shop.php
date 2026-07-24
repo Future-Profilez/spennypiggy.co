@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasRewardContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Ramsey\Uuid\Uuid;
 
 class Shop extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasRewardContract, SoftDeletes;
 
     protected $fillable = [
         'payment_methods_accepted',
@@ -29,6 +30,10 @@ class Shop extends Model
         'success_page_value',
         'reward_file_type',
         'reward_file',
+        'reward_title',
+        'reward_type',
+        'reward_body',
+        'reward_description',
         'ai_generated',
         'ask_question',
         'slot_limitation',
@@ -61,6 +66,7 @@ class Shop extends Model
         'stripe_product_id',
         'image',
         'reward_file',
+        'reward_body',
         'success_page_value',
         'price_id',
         'paid_payments_count',
@@ -186,7 +192,7 @@ class Shop extends Model
      */
     public function withDeliverable(): self
     {
-        return $this->makeVisible(['reward_file', 'success_page_value'])
+        return $this->makeVisible(['reward_file', 'reward_body', 'success_page_value'])
             ->append('reward_file_url');
     }
 

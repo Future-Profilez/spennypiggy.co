@@ -262,8 +262,21 @@ class PayoutService
             $taskPurchasesByIntent = $taskPurchases->whereNotNull('payment_intent_id')
                 ->groupBy('payment_intent_id')->map->first();
 
+            $creatorCurrency = strtolower((string) ($creator->default_currency ?? 'gbp'));
+
             // Filter out Physical Shop payments and Timed Tasks that are NOT yet completed
-            $payments = $payments->filter(function ($p) use (&$pendingDeliverablesMinor, $shopPaymentsBySession, $taskPurchasesBySession, $taskPurchasesByIntent) {
+            $payments = $payments->filter(function ($p) use (&$pendingDeliverablesMinor, $shopPaymentsBySession, $taskPurchasesBySession, $taskPurchasesByIntent, $convert, $creatorCurrency) {
+                // Sum pending deliverables in the creator's currency and via toMinorUnits so a
+                // mixed-currency or zero-decimal (JPY/KRW) pending figure is not wrong.
+                $pendingMinor = function ($fts) use ($convert, $creatorCurrency) {
+                    $sum = 0;
+                    foreach ($fts as $ft) {
+                        $from = strtolower((string) ($ft->currency ?? 'gbp'));
+                        $sum += Helpers::toMinorUnits($convert((float) $ft->net_amount, $from, $creatorCurrency), $creatorCurrency);
+                    }
+
+                    return $sum;
+                };
                 $sessionId = $p->stripe_session_id;
                 $intentId = $p->stripe_payment_intent_id;
 
@@ -276,7 +289,7 @@ class PayoutService
                         if (! $shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
                             $fts = $this->getAllFinancialTransactionsForPayment($p);
                             if ($fts->isNotEmpty()) {
-                                $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
+                                $pendingDeliverablesMinor += $pendingMinor($fts);
                             }
 
                             return false;
@@ -294,7 +307,7 @@ class PayoutService
                             if (! in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
                                 $fts = $this->getAllFinancialTransactionsForPayment($p);
                                 if ($fts->isNotEmpty()) {
-                                    $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
+                                    $pendingDeliverablesMinor += $pendingMinor($fts);
                                 }
 
                                 return false;
@@ -942,8 +955,9 @@ class PayoutService
                 continue;
             }
 
-            $reserveMinor = (int) round($reserveMajor * 100);
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
+            // Minor units in the FT's own currency — zero-decimal safe (JPY/KRW have no minor unit).
+            $reserveMinor = Helpers::toMinorUnits($reserveMajor, $currency);
             $convertedMajor = $convert($reserveMajor, $currency, $creatorCurrency);
             $txDate = $ft->transaction_date ? Carbon::parse($ft->transaction_date) : Carbon::now();
             $releaseAt = $txDate->copy()->addDays(self::RESERVE_RELEASE_WINDOW_DAYS);
@@ -1076,7 +1090,7 @@ class PayoutService
 
             $released[] = [
                 'source_type' => 'transaction',
-                'amount' => (int) round($reserveMajor * 100),
+                'amount' => Helpers::toMinorUnits($reserveMajor, $currency),
                 'currency' => $currency,
                 'amount_converted' => $convertedMajor,
                 'reserve_amount' => $reserveMajor,
