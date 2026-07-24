@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasRewardContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class Bills extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasRewardContract, SoftDeletes;
 
     protected $table = 'bills';
 
@@ -25,6 +26,16 @@ class Bills extends Model
         'tax_amount',
         'thumbnail',
         'content_file',
+        'content_file_type',
+        'content_file_name',
+        'content_file_size',
+        // A Bill sells ONE recurring content stream: an instant welcome reward
+        // plus the creator's subscriber-only posts. No perks list — that is a
+        // Membership, and giving Bills one made the two indistinguishable.
+        'reward_title',
+        'reward_type',
+        'reward_body',
+        'reward_description',
         'period',
         'status',
         'approved',
@@ -37,18 +48,26 @@ class Bills extends Model
         'rising_score',
         'engagement_level',
         'trending_status',
-        'is_suspended'
+        'is_suspended',
     ];
 
     protected $appends = [
         'perma_link',
-        'content_file_url'
+        'content_file_url',
+    ];
+
+    /**
+     * The paid deliverable when the reward is a message or a link — entitled
+     * surfaces opt back in with revealReward().
+     */
+    protected $hidden = [
+        'reward_body',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function user()
@@ -112,10 +131,10 @@ class Bills extends Model
     public function getPermaLinkAttribute()
     {
         $url = false;
-        if (!empty($this->thumbnail)) {
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
+        if (! empty($this->thumbnail)) {
+            $url = 'https://ucarecdn.com/'.$this->thumbnail.'/-/format/jpeg/';
         } else {
-            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
+            $url = 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/';
         }
 
         return $url;
@@ -124,13 +143,14 @@ class Bills extends Model
     public function getContentFileUrlAttribute()
     {
         $url = null;
-        if (!empty($this->content_file)) {
+        if (! empty($this->content_file)) {
             if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
                 $url = $this->content_file;
             } else {
-                $url = 'https://ucarecdn.com/' . $this->content_file . '/';
+                $url = 'https://ucarecdn.com/'.$this->content_file.'/';
             }
         }
+
         return $url;
     }
 }

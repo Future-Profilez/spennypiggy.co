@@ -949,7 +949,7 @@ export default function Register(props) {
     return (
         <GuestLayout>
             <Head title="Create Account" />
-            <div className="min-h-[92vh]  bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="min-h-dvh bg-black relative flex flex-col items-center justify-center pt-28 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float"></div>
                     <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float-delayed"></div>

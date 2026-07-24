@@ -87,7 +87,7 @@ export default function Post({ item }) {
 
     return (
         <>
-            <div className=" post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+            <div className=" post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         {/* Leading slash matters: without it the href resolved relative to the

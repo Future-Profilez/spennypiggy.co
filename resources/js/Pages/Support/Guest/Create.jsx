@@ -82,7 +82,7 @@ export default function Create({ payment, creator, email, post_url, initial_type
       <GuestLayout>
         <div className="bg-yellow-100 h-full md:h-[calc(100dvh-88px)] bg-[#fdfbf7] font-cera-medium flex flex-col overflow-hidden  md:px-6  md:py-6">
           <div className="max-w-[1200px] mx-auto w-full flex flex-col h-full gap-4 relative min-h-0">
-            <div className="flex-1 flex flex-col bg-white md:border-[1px] md:border-black md:rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden min-h-0 relative lg:h-full">
+            <div className="flex-1 flex flex-col bg-white md:border-[1px] md:border-black md:rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden min-h-0 relative lg:h-full">
               <div className="bg-yellow-300 text-white  border-b-[1px] border-black !border-t-0 !border-l-0 !border-r-0 p-4 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
                   <button

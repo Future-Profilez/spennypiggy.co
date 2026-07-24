@@ -62,7 +62,7 @@ export default function BlockedProfileNotice({
 
     return (
         <>
-            <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 {/* Icon */}
                 <div className="flex justify-center">
                     <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">

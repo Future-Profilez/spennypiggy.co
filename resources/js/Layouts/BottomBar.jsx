@@ -27,7 +27,7 @@ export default function BottomBar(){
 
    return <>
          {auth && auth.user ?
-             <div className="fixed md:hidden retro-bottom-bar flex flex-col justify-center bg-[#05EFB8] border-2 border-black rounded-[30px] shadow-xl">
+             <div className="fixed md:hidden retro-bottom-bar flex flex-col justify-center bg-[#05EFB8]">
                 <div className="flex w-full max-w-lg justify-around items-center mx-auto font-medium relative z-10 py-1 px-2">
                   {/* Home Button */}
                   <Link 

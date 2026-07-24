@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Auth\StripeController;
-use App\Services\UserProfileService;
+use App\Models\FounderBonus;
+use App\Models\MonthlyCharge;
+use App\Models\RyeProduct;
+use App\Models\User;
+use App\Models\WishCategory;
 use App\SeoMeta;
+use App\Services\UserProfileService;
 use App\StripeControl;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
-use Carbon\Carbon;
-use App\Models\MonthlyCharge;
+use Stripe\Exception\InvalidRequestException;
 
 class OptimizedProfileController extends Controller
 {
@@ -30,7 +34,7 @@ class OptimizedProfileController extends Controller
     {
         // Preload essential user data
         $profileData = $this->profileService->preloadUserProfileData($username);
-        
+
         if (empty($profileData)) {
             return Inertia::render('NotFound');
         }
@@ -44,14 +48,14 @@ class OptimizedProfileController extends Controller
 
         // Get Stripe account capabilities with caching
         [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
-        
+
         // Check if account needs migration for cross-border payments
         $migrationStatus = $this->getMigrationStatus($user);
 
         // Load ALL profile data at once for fastest loading
         $categoryId = request()->query('category');
         $allProfileData = $this->profileService->getAllProfileData($user->id, $categoryId);
-        
+
         // Extract data for current page while keeping all data available
         $pageData = $this->extractPageData($allProfileData, $page);
 
@@ -60,10 +64,10 @@ class OptimizedProfileController extends Controller
 
         // Get founder bonus data
         $founderData = $this->getFounderData($user);
-        
+
         // Also provide shouldShowFounderBanner calculation logic to React
         $shouldShowFounderBanner = false;
-        if (!$user->is_founder) {
+        if (! $user->is_founder) {
             $daysSinceCreation = $user->created_at->diffInDays(now());
             if ($daysSinceCreation <= 30) {
                 $shouldShowFounderBanner = true;
@@ -85,7 +89,7 @@ class OptimizedProfileController extends Controller
             ->newestFirst()
             ->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             $subscription = MonthlyCharge::where('user_id', $user->id)->newestFirst()->first();
         }
 
@@ -103,7 +107,7 @@ class OptimizedProfileController extends Controller
                 'id' => $subscription->id,
                 'uuid' => $subscription->uuid,
                 'status' => $subscription->status ?? 'pending',
-                'amount' => (float)($subscription->amount ?? 0),
+                'amount' => (float) ($subscription->amount ?? 0),
                 'currency' => $subscription->currency ?? 'GBP',
                 'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
                 'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
@@ -134,13 +138,15 @@ class OptimizedProfileController extends Controller
             'first30DayEarnings' => $founderData['first30DayEarnings'],
             'founderData' => $founderData,
             'shouldShowFounderBanner' => $shouldShowFounderBanner,
+            'profile_overview' => $user->role == 1 ? $this->profileService->getProfileOverview($user->id) : null,
         ]);
 
-        if (app()->environment('production') && !Auth::check()) {
+        if (app()->environment('production') && ! Auth::check()) {
             return $response->withHeaders([
                 'Cache-Control' => 'public, max-age=60, s-maxage=300, must-revalidate',
             ]);
         }
+
         return $response;
     }
 
@@ -155,16 +161,16 @@ class OptimizedProfileController extends Controller
 
         try {
             $account = StripeControl::getAccount($user->account_id);
-            
+
             // Use the proper migration check to determine if upgrade is needed
             $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
             $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-            
+
             $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-            
+
             // Get comprehensive account requirements
             $requirements = StripeControl::getAccountRequirements($user->account_id);
-            
+
             // Add migration requirement if account needs upgrade
             if ($isNeedToUpgrade) {
                 $requirements['has_requirements'] = true;
@@ -174,16 +180,17 @@ class OptimizedProfileController extends Controller
                     'title' => 'Account Upgrade Required',
                     'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
                     'action' => 'Upgrade your Stripe account now.',
-                    'action_url' => '/stripe/upgrade-express-account'
+                    'action_url' => '/stripe/upgrade-express-account',
                 ];
             }
-            
+
             return [$isNeedToUpgrade, $cardCapabilities, $requirements];
         } catch (\Exception $e) {
             // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
-            if ($e instanceof \Stripe\Exception\InvalidRequestException && $e->getHttpStatus() === 404) {
+            if ($e instanceof InvalidRequestException && $e->getHttpStatus() === 404) {
                 $user->update(['stripe_details_submitted' => 0]);
             }
+
             return [false, false, [
                 'has_requirements' => true,
                 'requirements' => [[
@@ -192,9 +199,9 @@ class OptimizedProfileController extends Controller
                     'title' => 'Account Connection Issue',
                     'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
                     'action' => 'Refresh the page or contact support.',
-                    'action_url' => null
+                    'action_url' => null,
                 ]],
-                'account_status' => []
+                'account_status' => [],
             ]];
         }
     }
@@ -205,12 +212,12 @@ class OptimizedProfileController extends Controller
     private function getMigrationStatus($user): array
     {
         // Only check for logged-in users viewing their own profile
-        if (!Auth::check() || Auth::id() !== $user->id) {
+        if (! Auth::check() || Auth::id() !== $user->id) {
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
         try {
-            $cacheKey = 'stripe_migration_status_v1_' . $user->id;
+            $cacheKey = 'stripe_migration_status_v1_'.$user->id;
 
             return Cache::remember($cacheKey, 300, function () use ($user) {
                 $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
@@ -221,29 +228,29 @@ class OptimizedProfileController extends Controller
                     'current_agreement' => $migrationCheck['current_agreement'] ?? null,
                     'required_agreement' => $migrationCheck['required_agreement'] ?? null,
                     'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available',
                 ];
             });
         } catch (\Exception $e) {
             return [
                 'needs_migration' => false,
                 'show_warning' => false,
-                'error' => 'Unable to check migration status'
+                'error' => 'Unable to check migration status',
             ];
         }
     }
-    
+
     /**
      * Get only categories that have at least one wishitem
-     * 
-     * @param \App\Models\User $user
-     * @return \Illuminate\Support\Collection
+     *
+     * @param  User  $user
+     * @return Collection
      */
     private function getCategoriesWithItems($user)
     {
-        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
-        
-        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || ! auth()->check();
+
+        $categoryIds = WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
             $q->where('user_id', $user->id);
             if ($isPublicView) {
                 $q->where('is_approved', 1);
@@ -268,7 +275,7 @@ class OptimizedProfileController extends Controller
             'tasks' => $allProfileData['tasks'] ?? [],
             // Add metadata for frontend optimization
             '_preloaded' => true,
-            '_loadTime' => microtime(true)
+            '_loadTime' => microtime(true),
         ];
     }
 
@@ -282,7 +289,7 @@ class OptimizedProfileController extends Controller
             'posts' => [],
             'memberships' => [],
             'bills' => [],
-            'shops' => []
+            'shops' => [],
         ];
 
         switch ($page) {
@@ -290,20 +297,20 @@ class OptimizedProfileController extends Controller
                 $categoryId = request()->query('category');
                 $data['items'] = $this->profileService->getUserWishItems($userId, $categoryId);
                 break;
-                
+
             case 'feed':
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
                 break;
-                
+
             case 'memberships':
                 $data['memberships'] = $this->profileService->getUserMemberships($userId);
                 break;
-                
+
             case 'bills':
                 $data['bills'] = $this->profileService->getUserBills($userId);
                 break;
-                
+
             case 'shop':
                 $data['shops'] = $this->profileService->getUserShopItems($userId);
                 break;
@@ -318,7 +325,7 @@ class OptimizedProfileController extends Controller
     private function setSeoMetaTags($user, string $username): void
     {
         $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
-        
+
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
@@ -338,23 +345,23 @@ class OptimizedProfileController extends Controller
     public function usergoal(string $username)
     {
         $user = $this->profileService->getUserWithRelations($username);
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ]);
         }
 
         $earnings = $this->profileService->getUserEarnings($user->id);
 
         return response()->json([
-            "success" => true,
-            "goal" => [
+            'success' => true,
+            'goal' => [
                 'fullfilled' => $earnings['fulfilled'],
                 'target' => $earnings['target'],
                 'currency' => $user->default_currency,
-            ]
+            ],
         ]);
     }
 
@@ -364,12 +371,12 @@ class OptimizedProfileController extends Controller
     public function userItems(string $username, ?int $categoryId = null)
     {
         $user = $this->profileService->getUserWithRelations($username);
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'items' => [],
-                'message' => 'User not found'
+                'message' => 'User not found',
             ]);
         }
 
@@ -377,7 +384,7 @@ class OptimizedProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'items' => $items
+            'items' => $items,
         ]);
     }
 
@@ -388,26 +395,26 @@ class OptimizedProfileController extends Controller
     {
         try {
             $user = $this->profileService->getUserWithRelations($username);
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
-                    "success" => false,
-                    "categories" => [],
-                    "message" => "User not found"
+                    'success' => false,
+                    'categories' => [],
+                    'message' => 'User not found',
                 ]);
             }
 
             $categories = $user->user_categories ?? [];
 
             return response()->json([
-                "success" => true,
-                "categories" => $categories,
+                'success' => true,
+                'categories' => $categories,
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                "success" => false,
-                "categories" => [],
-                "message" => "Error fetching categories"
+                'success' => false,
+                'categories' => [],
+                'message' => 'Error fetching categories',
             ]);
         }
     }
@@ -417,12 +424,12 @@ class OptimizedProfileController extends Controller
      */
     public function checkUserName(string $username)
     {
-        $exists = \App\Models\User::where('username', $username)
+        $exists = User::where('username', $username)
             ->exists();
 
         return response()->json([
             'success' => true,
-            'exists' => $exists
+            'exists' => $exists,
         ]);
     }
 
@@ -432,18 +439,18 @@ class OptimizedProfileController extends Controller
     public function sociallinks(string $username)
     {
         $user = $this->profileService->getUserWithRelations($username);
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'sociallinks' => null,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'sociallinks' => $user->social_links
+            'sociallinks' => $user->social_links,
         ]);
     }
 
@@ -453,16 +460,16 @@ class OptimizedProfileController extends Controller
     public function userGiftItems(string $username)
     {
         $user = $this->profileService->getUserWithRelations($username);
-        
+
         // Ensure user exists
-        if (!$user) {
-             return response()->json([
+        if (! $user) {
+            return response()->json([
                 'success' => true,
-                'items' => []
+                'items' => [],
             ]);
         }
 
-        $items = \App\Models\RyeProduct::where('user_id', $user->id)
+        $items = RyeProduct::where('user_id', $user->id)
             ->latest()
             ->limit(20)
             ->get()
@@ -470,7 +477,7 @@ class OptimizedProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'items' => $items
+            'items' => $items,
         ]);
     }
 
@@ -482,7 +489,7 @@ class OptimizedProfileController extends Controller
         $first30DayEarnings = 0;
         $isEligible = false;
         $daysLeft = 0;
-        $minEarnings = \App\Models\FounderBonus::getMinFirst30dEarnings();
+        $minEarnings = FounderBonus::getMinFirst30dEarnings();
         $windowStart = null;
         $windowEnd = null;
         $qualificationDays = (int) config('founder_bonus.qualification.qualification_period_days', 30);
@@ -492,11 +499,11 @@ class OptimizedProfileController extends Controller
             if ($startAt) {
                 $windowStart = $startAt->copy();
                 $windowEnd = $startAt->copy()->addDays($qualificationDays);
-            
-                if (!$user->is_founder && now()->lessThan($windowEnd)) {
+
+                if (! $user->is_founder && now()->lessThan($windowEnd)) {
                     $isEligible = true;
                     $daysLeft = max(0, now()->diffInDays($windowEnd, false));
-                } else if (!$user->is_founder) {
+                } elseif (! $user->is_founder) {
                     if ($user->founder_missed_at) {
                         // Window ended without qualifying — keep the tracker visible
                         // (as a "missed" banner) for 14 days after the outcome
@@ -512,13 +519,13 @@ class OptimizedProfileController extends Controller
                         }
                     }
                 }
-            
+
                 $first30DayEarnings = 0.0;
                 if ($isEligible) {
                     $endDate = $windowEnd->isFuture() ? now() : $windowEnd;
                     // Same net-earnings formula the qualification job uses, so the tracker
                     // shows the number that actually decides qualification
-                    $first30DayEarnings = (float) \App\Models\FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
+                    $first30DayEarnings = (float) FounderBonus::calculateCompletedNetEarnings($user, $startAt, $endDate, 'GBP');
                 }
             }
         }
@@ -531,7 +538,7 @@ class OptimizedProfileController extends Controller
             'qualificationDays' => $qualificationDays,
             'windowStart' => $windowStart ? $windowStart->toDateString() : null,
             'windowEnd' => $windowEnd ? $windowEnd->toDateString() : null,
-            'missed' => (bool) ($user && !$user->is_founder && $user->founder_missed_at),
+            'missed' => (bool) ($user && ! $user->is_founder && $user->founder_missed_at),
             'missedAt' => $user?->founder_missed_at?->toDateString(),
         ];
     }

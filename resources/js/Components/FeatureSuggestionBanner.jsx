@@ -26,7 +26,7 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
 
     return (
         <div className="mx-auto w-full mb-6">
-            <div className="relative group bg-white border-[3px] border-black rounded-[25px] p-5 md:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden transition-all hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ">
+            <div className="relative group bg-white border-[3px] border-black rounded-[25px] p-5 md:p-6  overflow-hidden transition-all ">
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#924DFF]/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-[#924DFF]/20 transition-colors duration-500"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FF007F]/5 rounded-full blur-2xl -ml-12 -mb-12 pointer-events-none group-hover:bg-[#FF007F]/10 transition-colors duration-500"></div>
@@ -51,14 +51,14 @@ export default function FeatureSuggestionBanner({ onSuggestClick }) {
                     <div className="flex items-center gap-3 flex-shrink-0 mt-2 md:mt-0">
                         <button 
                             onClick={onSuggestClick}
-                            className="bg-[#924DFF] text-white font-gulfs px-5 py-3 rounded-[15px] border-[3px] !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all uppercase text-sm tracking-widest active:scale-95"
+                            className="bg-[#924DFF] text-white font-gulfs px-5 py-3 rounded-[15px] border-[2px] !border-black  transition-all uppercase text-sm tracking-widest active:scale-95"
                         >
                             Suggest Now
                         </button>
                         
                         <button 
                             onClick={handleDismiss}
-                            className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-[15px] bg-white/5 border-[3px] border-black text-gray-400 hover:text-white hover:bg-white/10 hover:!text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95"
+                            className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-[15px] bg-white/5 border-[2px] border-black text-gray-400 hover:text-white hover:bg-white/10 hover:!text-black transition-all   hover:translate-x-[1px] hover:translate-y-[1px] active:scale-95"
                             title="Dismiss for 20 days"
                         >
                             <FaTimes size={18} />

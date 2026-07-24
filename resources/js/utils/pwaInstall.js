@@ -1,6 +1,77 @@
 const PROMPT_STORAGE_KEY = 'spenny_pwa_install_prompt_last_shown';
 const MONTHLY_INTERVAL = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
+// Versioned so a future feature refresh can re-onboard installed users without code hacks.
+const ONBOARDING_STORAGE_KEY = 'spenny_onboarding_seen_v1';
+
+/**
+ * Whether the app is running as an installed PWA (standalone display mode).
+ * Covers standards-based browsers (display-mode: standalone) and iOS Safari
+ * (navigator.standalone). SSR-safe.
+ * @returns {boolean}
+ */
+export function isStandalone() {
+  try {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      return true;
+    }
+    if (window.navigator && window.navigator.standalone) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * First-launch onboarding gate: show only in the installed PWA and only until
+ * the user finishes or skips it once.
+ * @returns {boolean}
+ */
+export function shouldShowOnboarding() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return false;
+    }
+    if (!isStandalone()) {
+      return false;
+    }
+    return !localStorage.getItem(ONBOARDING_STORAGE_KEY);
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Mark onboarding as completed/skipped so it never shows again for this install.
+ */
+export function markOnboardingSeen() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, Date.now().toString());
+    }
+  } catch (error) {
+    console.warn('Error saving onboarding state:', error);
+  }
+}
+
+/**
+ * Reset onboarding (testing / manual re-show).
+ */
+export function resetOnboarding() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn('Error resetting onboarding state:', error);
+  }
+}
+
 /**
  * Check if we should show the PWA install prompt based on monthly frequency
  * @returns {boolean} true if prompt should be shown

@@ -133,7 +133,9 @@ class PostingCadenceService
             'subscriber_count' => $subscriberCount,
             'grace_ends_at' => $graceEndsAt?->toIso8601String(),
             'pause_at' => $pauseAt?->toIso8601String(),
-            'pause_in_days' => $pauseAt ? max(0, (int) ceil(now()->floatDiffInDays($pauseAt, false))) : null,
+            // round() first: floatDiffInDays on an exact N-day gap returns N.0000000002,
+            // and a bare ceil() would bump "3 days" to "4".
+            'pause_in_days' => $pauseAt ? max(0, (int) ceil(round(now()->floatDiffInDays($pauseAt, false), 4))) : null,
         ];
     }
 
@@ -270,8 +272,9 @@ class PostingCadenceService
      */
     public function pauseCreator(User $creator): int
     {
+        $subIds = $this->activeSubscriptionIds($creator);
         $paused = 0;
-        foreach ($this->activeSubscriptionIds($creator) as $subId) {
+        foreach ($subIds as $subId) {
             try {
                 StripeControl::pauseSubscription($subId, $creator->account_id);
                 $paused++;
@@ -284,7 +287,10 @@ class PostingCadenceService
             }
         }
 
-        if (! $creator->content_posting_paused_at) {
+        // Only claim "paused" if at least one subscription actually paused in Stripe.
+        // Setting the flag after a total Stripe failure told subscribers "not being charged"
+        // while every subscription was still live and billing — the exact opposite of true.
+        if ($paused > 0 && ! $creator->content_posting_paused_at) {
             $creator->content_posting_paused_at = now();
             $creator->save();
         }
@@ -299,12 +305,15 @@ class PostingCadenceService
      */
     public function resumeCreator(User $creator): int
     {
+        $subIds = $this->activeSubscriptionIds($creator);
         $resumed = 0;
-        foreach ($this->activeSubscriptionIds($creator) as $subId) {
+        $failed = 0;
+        foreach ($subIds as $subId) {
             try {
                 StripeControl::resumeSubscription($subId, $creator->account_id);
                 $resumed++;
             } catch (\Throwable $e) {
+                $failed++;
                 Log::warning('PostingCadence: failed to resume subscription', [
                     'creator_id' => $creator->id,
                     'subscription' => $subId,
@@ -313,7 +322,11 @@ class PostingCadenceService
             }
         }
 
-        if ($creator->content_posting_paused_at) {
+        // Clear the paused flag only when nothing is still stuck paused: either something
+        // resumed, or there are no active subscriptions left to resume. If every resume
+        // call failed, keep the flag so the next run retries instead of falsely reporting
+        // "active" while Stripe still has the subscriptions paused.
+        if ($creator->content_posting_paused_at && $failed === 0) {
             $creator->content_posting_paused_at = null;
             $creator->save();
         }

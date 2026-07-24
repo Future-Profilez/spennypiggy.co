@@ -7,6 +7,7 @@ import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
 import IntercomProvider from '@/Components/IntercomProvider';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
+import OnboardingNudge from '@/Components/OnboardingNudge';
 import { Link, usePage } from '@inertiajs/react';
 const Footer = lazy(() => import('@/includes/Footer'));
 const Header = lazy(() => import('@/includes/Header'));
@@ -28,6 +29,7 @@ export default function Authenticated(props){
             </div>
         )}
         <Header auth={auth} cart_count={cart_count} />
+        <OnboardingNudge />
         <main className="pb-16 sm:pb-0">
             <NetworkStatusBanner />
             <PullToRefresh />

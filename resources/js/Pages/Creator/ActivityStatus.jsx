@@ -253,6 +253,35 @@ const ActivityStatus = ({
         Math.round((contentCount / Math.max(1, required)) * 100),
     );
 
+    // A fan/gifter who lands here directly has no creator activity to show — the page
+    // used to render a bare "Check unavailable" chip with no explanation.
+    if (activityStatus?.status === "not_creator") {
+        return (
+            <Authenticated>
+                <Head title="Activity Status" />
+                <div className="bg-[#A2E4B8] min-h-dvh flex items-center justify-center px-4">
+                    <Card className="max-w-md text-center">
+                        <p className="text-4xl mb-3">📊</p>
+                        <h1 className="font-gulfs uppercase text-2xl">
+                            For creators
+                        </h1>
+                        <p className="text-gray-700 mt-2">
+                            Activity status tracks a creator's content and
+                            payment eligibility. Your account isn't a creator
+                            account, so there's nothing to show here.
+                        </p>
+                        <Link
+                            href="/"
+                            className="mt-5 inline-flex items-center justify-center min-h-[44px] px-5 bg-black text-white font-black uppercase text-sm tracking-wide rounded-box-sm"
+                        >
+                            Back home
+                        </Link>
+                    </Card>
+                </div>
+            </Authenticated>
+        );
+    }
+
     const refresh = () => {
         setRefreshing(true);
         router.reload({
@@ -446,7 +475,18 @@ const ActivityStatus = ({
                                 last {postingCadence.window_days} days
                             </p>
 
-                            {postingCadence.paused ? (
+                            {/* No subscribers yet → the rule can't pause anything, so don't show
+                                an "onboarding window" countdown that implies it might. */}
+                            {!postingCadence.paused &&
+                            postingCadence.subscriber_count === 0 ? (
+                                <Note tone="gray">
+                                    You have no recurring subscribers yet. Once
+                                    someone subscribes, keep posting{" "}
+                                    {postingCadence.required} member posts every{" "}
+                                    {postingCadence.window_days} days to keep
+                                    their subscription active.
+                                </Note>
+                            ) : postingCadence.paused ? (
                                 <Note tone="red">
                                     ⛔{" "}
                                     <strong>

@@ -1,3 +1,4 @@
+import { rewardLines } from "@/constants/rewards";
 import React from 'react';
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import Social from "../Auth/Social";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 import axios from "axios";
 
 export default function SubCheckout(props) {
@@ -392,7 +394,7 @@ export default function SubCheckout(props) {
                                         <SectionLabel>Message for the creator</SectionLabel>
                                         <textarea
                                             rows={3}
-                                            className="w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                            className={fieldClass}
                                             onChange={(e) => setData("message", e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             value={data.message}
@@ -405,10 +407,10 @@ export default function SubCheckout(props) {
                                         <div className="">
                                             <div className=" mb-4 !text-start">
                                                 <label className="text-xs font-bold text-black/60 !mb-2">
-                                                    Email <span className="text-black/40 font-bold"> — stays private </span>
+                                                    Email <span className="text-black/60 font-bold"> — stays private </span>
                                                 </label>
                                                 <input
-                                                    className={`${auth && auth?.user && auth?.user?.email ? "opacity-60 cursor-not-allowed" : ""} w-full border-[3px] border-black rounded-box-sm px-4 py-3 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "opacity-60 cursor-not-allowed" : ""} ${fieldClass}`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -430,7 +432,7 @@ export default function SubCheckout(props) {
                                                     {errors.email}
                                                 </span>
                                             </div>
-                                            <p className="mt-2 text-sm text-gray-500 mb-1">
+                                            <p className="mt-2 text-sm text-black/60 mb-1">
                                                 Your e-mail remains
                                                 private.
                                             </p>
@@ -439,7 +441,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="w-full border-[3px] border-black !rounded-box-sm px-4 py-2 font-bold text-sm bg-white placeholder:text-black/40 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-[#FF007F]/30"
+                                                    className={fieldClass}
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -472,7 +474,7 @@ export default function SubCheckout(props) {
                                             ></input>
                                             Keep anonymous
                                         </label>
-                                        <p className="text-gray-500 text-sm mb-6">
+                                        <p className="text-black/60 text-sm mb-6">
                                             Your personal email and name
                                             will be private.
                                         </p>
@@ -505,14 +507,31 @@ export default function SubCheckout(props) {
                             <div className="lg:sticky lg:top-24">
                                 <SummaryReceipt
                                     image={membership?.perma_link || uploadedimg}
+                                    typeBadge="Membership"
                                     itemTitle={`${membership?.level || ""} membership`}
                                     itemSub={
                                         membership?.level == "lifetime"
                                             ? "One-time payment"
                                             : "Monthly membership"
                                     }
+                                    payingLabel="You're subscribing to"
                                     creatorName={membership?.user?.name}
                                     creatorUsername={membership?.user?.username}
+                                    creatorAvatar={membership?.user?.avatar_url}
+                                    whatYouGet={
+                                        membership?.level == "lifetime"
+                                            ? [
+                                                  ...rewardLines(membership),
+                                                  "Lifetime access to this creator's members-only content",
+                                                  "One payment — never renews",
+                                              ]
+                                            : [
+                                                  ...rewardLines(membership),
+                                                  "Members-only content from this creator each month",
+                                                  "New posts delivered while your membership is active",
+                                                  "Cancel anytime — access stays until the month ends",
+                                              ]
+                                    }
                                     rows={
                                         display_currency &&
                                         display_currency !== membership?.currency
@@ -529,6 +548,11 @@ export default function SubCheckout(props) {
                                         membership?.currency,
                                     )}
                                     totalNote={`Includes all fees. You'll be charged in ${membership?.currency}.`}
+                                    nextStep={
+                                        membership?.level == "lifetime"
+                                            ? "Access unlocks right after payment and never expires."
+                                            : "Access unlocks right away and renews monthly until you cancel."
+                                    }
                                     renewalNote={
                                         membership?.level == "lifetime"
                                             ? "One-time · lifetime access"
@@ -549,8 +573,8 @@ export default function SubCheckout(props) {
                                         onClick={handleSubmit}
                                     />
                                     {(!data.agree || !data.digital_waiver) && (
-                                        <p className="text-[10px] font-bold text-black/50 text-center mt-2">
-                                            Accept the terms on the left to
+                                        <p className="text-[10px] font-bold text-black/60 text-center mt-2">
+                                            Accept the terms above to
                                             continue.
                                         </p>
                                     )}
@@ -580,15 +604,15 @@ export default function SubCheckout(props) {
                 >
                     <div className="!rounded-none p-6">
                         <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
-                        <p className="text-gray-600 mb-6 text-center">
+                        <p className="text-black/60 mb-6 text-center">
                             {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
                         </p>
                         <form onSubmit={handleVerifyStepUp}>
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                                <label className="block text-sm font-medium text-black/80 mb-1">Enter OTP Code (Check your email)</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className={fieldClass}
                                     placeholder="e.g. 123456"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value)}
@@ -596,10 +620,10 @@ export default function SubCheckout(props) {
                                 />
                             </div>
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                                <label className="block text-sm font-medium text-black/80 mb-1">Type 'CONFIRM' to proceed</label>
                                 <input
                                     type="text"
-                                    className="w-full border border-gray-300 rounded-box-sm p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                    className={fieldClass}
                                     placeholder="CONFIRM"
                                     value={typedConfirmation}
                                     onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -630,7 +654,7 @@ export default function SubCheckout(props) {
                                 type="button"
                                 onClick={handlePasskeyStepUp}
                                 disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -642,7 +666,7 @@ export default function SubCheckout(props) {
                                     </>
                                 ) : "Use Face ID / Fingerprint"}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a saved passkey.
                             </p>
                         </div>

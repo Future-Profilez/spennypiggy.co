@@ -41,7 +41,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
                 <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-5">
 
                     {/* Header */}
-                    <div className="flex items-center gap-4 bg-white p-5 border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                    <div className="flex items-center gap-4 bg-white p-5 border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-pink-200 rounded-full -mr-10 -mt-10 opacity-40" />
                         <Link
                             href={route('financial.dashboard')}
@@ -64,7 +64,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
 
                     {!bonus ? (
                         /* Not connected */
-                        <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 text-center">
+                        <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 text-center">
                             <div className="text-5xl mb-4">🔗</div>
                             <h2 className="text-xl font-black uppercase tracking-tight text-black mb-2">Connect Stripe First</h2>
                             <p className="text-sm text-gray-600 font-medium">Once your Stripe account is connected, your {windowDays}-day earning window starts automatically.</p>
@@ -72,7 +72,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
                     ) : (
                         <>
                             {/* Hero bonus card */}
-                            <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                            <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                                 {/* Gradient top strip */}
                                 <div className="bg-gradient-to-r from-[#8C52FF] to-[#FF007F] p-6 md:p-8">
                                     <div className="flex items-start justify-between gap-3 mb-4">
@@ -132,7 +132,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
 
                             {/* Tiered rates */}
                             {bonus.tiered_enabled && bonus.tiers?.length > 0 && (
-                                <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6">
+                                <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                     <h3 className="text-[13px] font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                                         <span className="w-2 h-2 bg-[#FF007F] rounded-full inline-block" />
                                         Bonus Tiers
@@ -174,7 +174,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
 
                             {/* Payout details (post-window) */}
                             {bonus.status !== 'active' && (
-                                <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6">
+                                <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                     <h3 className="text-[13px] font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
                                         <span className="w-2 h-2 bg-[#FF007F] rounded-full inline-block" />
                                         Payout Details
@@ -226,7 +226,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
 
                             {/* Failed alert */}
                             {bonus.status === 'failed' && (
-                                <div className="bg-red-100 border-[3px] border-red-500 rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 flex gap-4">
+                                <div className="bg-red-100 border-[3px] border-red-500 rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex gap-4">
                                     <span className="text-2xl shrink-0">⚠️</span>
                                     <div>
                                         <p className="text-base font-black text-red-800 uppercase tracking-wide">Payout Failed</p>
@@ -243,7 +243,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
 
                             {/* Paused alert */}
                             {bonus.status === 'payout_paused' && (
-                                <div className="bg-orange-100 border-[3px] border-orange-400 rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 flex gap-4">
+                                <div className="bg-orange-100 border-[3px] border-orange-400 rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex gap-4">
                                     <span className="text-2xl shrink-0">⏸</span>
                                     <div>
                                         <p className="text-base font-black text-orange-800 uppercase tracking-wide">Payouts Paused</p>
@@ -255,7 +255,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
                             )}
 
                             {/* How it works */}
-                            <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6">
+                            <div className="bg-white border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6">
                                 <h3 className="text-[13px] font-black uppercase tracking-widest text-black mb-5 flex items-center gap-2">
                                     <span className="w-2 h-2 bg-[#FF007F] rounded-full inline-block" />
                                     How It Works

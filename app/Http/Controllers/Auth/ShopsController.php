@@ -30,6 +30,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
@@ -114,6 +115,46 @@ class ShopsController extends Controller
         );
     }
 
+    /**
+     * Reward columns for a shop listing, plus the legacy success_page_* pair
+     * kept in step with them.
+     *
+     * The order screens and the buyer's receipt still read success_page_type /
+     * success_page_value, so deriving them here — rather than asking the form
+     * for both — keeps one editor writing one truth and stops the two
+     * representations drifting apart.
+     *
+     * @return array<string, mixed>
+     */
+    private function shopRewardColumns(Request $request): array
+    {
+        $columns = RewardService::columnsFrom($request->all());
+
+        // A physical product's deliverable is the parcel and its name already
+        // describes it, so the form does not ask for a second headline — fill
+        // it from the product name rather than rejecting the listing.
+        if ($request->type === 'physical') {
+            $columns['reward_title'] = trim((string) $request->name) ?: $columns['reward_title'];
+            $columns['reward_type'] = null;
+            $columns['reward_body'] = null;
+
+            return $columns;
+        }
+
+        if (empty($columns['reward_type'])) {
+            return $columns;
+        }
+
+        return $columns + [
+            'success_page_type' => match ($columns['reward_type']) {
+                'link' => 'url',
+                'message' => 'text',
+                default => 'file',
+            },
+            'success_page_value' => $columns['reward_body'],
+        ];
+    }
+
     public function addShopItems(Request $request)
     {
         $request->validate(
@@ -169,8 +210,12 @@ class ShopsController extends Controller
                     'sometimes',
                     'nullable',
                 ],
-            ]
+            ] + RewardService::validationRules(requiredRule: 'required_unless:type,physical')
         );
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->with('error', $linkError);
+        }
 
         Log::info('Add Shop Item Request', ['request_data' => $request->all()]);
 
@@ -227,8 +272,10 @@ class ShopsController extends Controller
             // $file = json_decode($request->reward_file);
         }
 
+        $rewardColumns = $this->shopRewardColumns($request);
+
         if ($request->type != 'physical') {
-            $shop = Shop::create([
+            $shop = Shop::create(array_merge([
                 'user_id' => $user->id,
                 'type' => $request->type,
                 'name' => $request->name,
@@ -246,9 +293,9 @@ class ShopsController extends Controller
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
                 'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
-            ]);
+            ], $rewardColumns));
         } else {
-            $shop = Shop::create([
+            $shop = Shop::create(array_merge([
                 'user_id' => $user->id,
                 'type' => $request->type,
                 'name' => $request->name,
@@ -267,7 +314,7 @@ class ShopsController extends Controller
                 'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both',
                 'shipping_profile_id' => $request->shipping_profile_id ?? null,
                 'shipping_information' => $request->shipping_info ?? null,
-            ]);
+            ], $rewardColumns));
 
             if (empty($request->shipping_profile_id)) {
                 $shipping = json_decode($request->shipping);
@@ -406,7 +453,11 @@ class ShopsController extends Controller
             'price' => ['required', 'numeric'],
             'slot_limitation' => ['nullable', 'integer', 'min:0'],
             'special_member_price' => ['nullable', 'numeric', 'lt:price'],
-        ]);
+        ] + RewardService::validationRules(requiredRule: 'required_unless:type,physical'));
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return response()->json(['status' => false, 'msg' => $linkError]);
+        }
 
         // Stripe compliance: products priced £4.99–£10,000 (GBP equivalent)
         $priceError = Helpers::priceWithinLimits($request->price, $shop->currency ?? ($user->default_currency ?? 'gbp'), 4.99, 10000);
@@ -436,10 +487,12 @@ class ShopsController extends Controller
             // $file = json_decode($request->reward_file);
         }
 
+        $rewardColumns = $this->shopRewardColumns($request);
+
         if (! empty($shop)) {
 
             if ($request->type != 'physical') {
-                Shop::where('uuid', $uuid)->update([
+                Shop::where('uuid', $uuid)->update(array_merge([
                     'type' => $request->type,
                     'name' => $request->name,
                     'description' => $request->description,
@@ -456,9 +509,9 @@ class ShopsController extends Controller
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? 0,
                     'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
-                ]);
+                ], $rewardColumns));
             } else {
-                Shop::where('uuid', $uuid)->update([
+                Shop::where('uuid', $uuid)->update(array_merge([
                     'user_id' => $user->id,
                     'type' => $request->type,
                     'name' => $request->name,
@@ -478,7 +531,7 @@ class ShopsController extends Controller
                     'payment_methods_accepted' => in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : $shop->payment_methods_accepted,
                     'shipping_profile_id' => $request->shipping_profile_id ?? null,
                     'shipping_information' => $request->shipping_info ?? null,
-                ]);
+                ], $rewardColumns));
 
                 if (! empty($request->shipping_profile_id)) {
                     ShopShippingInfo::where('shop_id', $shop->id)->delete();
@@ -1177,7 +1230,10 @@ class ShopsController extends Controller
                         'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => 'Total value of item including all fees',
-                            'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                            'description' => Helpers::rewardLineDescription(
+                                $shop,
+                                "From @{$shop->user->username}"
+                            ),
                         ],
                         'unit_amount' => $unitAmount,
                     ],
@@ -1320,19 +1376,12 @@ class ShopsController extends Controller
                     }
 
                     if ($stripeid->shop->type !== 'physical') {
-                        $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
-                        $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                         if ($stripeid->shop->reward_file) {
                             $contentUrl = $stripeid->shop->reward_file;
                             if (! Str::startsWith($contentUrl, ['http://', 'https://'])) {
                                 $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
                             }
-                            $thankYouParams['wish_content'] = [
-                                'type' => $stripeid->shop->reward_file_type,
-                                'name' => 'Digital Content',
-                                'url' => $contentUrl,
-                            ];
                         }
                     }
 
@@ -1526,19 +1575,12 @@ class ShopsController extends Controller
                 }
 
                 if ($stripeid->shop->type !== 'physical') {
-                    $thankYouParams['benefits'] = $stripeid->shop->success_page_value;
-                    $thankYouParams['success_page_type'] = $stripeid->shop->success_page_type;
 
                     if ($stripeid->shop->reward_file) {
                         $contentUrl = $stripeid->shop->reward_file;
                         if (! Str::startsWith($contentUrl, ['http://', 'https://'])) {
                             $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
                         }
-                        $thankYouParams['wish_content'] = [
-                            'type' => $stripeid->shop->reward_file_type,
-                            'name' => 'Digital Content',
-                            'url' => $contentUrl,
-                        ];
                     }
                 }
 
@@ -1799,108 +1841,92 @@ class ShopsController extends Controller
     {
         $user = Auth::user();
         $type = $request->query('type', 'sales');
+        $isPurchases = $type === 'purchases';
 
-        if ($type === 'purchases') {
-            $orders = ShopPayment::with('shop.user')
-                ->where('user_id', $user->id)
-                ->where('payment_status', 'paid')
-                ->orderBy('id', 'desc')
-                ->get();
+        $search = trim((string) $request->query('search', ''));
+        $statusFilter = $request->query('status', 'all');
+        $perPage = min(30, max(6, (int) $request->query('per_page', 12)));
 
-            // One lookup for the whole page instead of one per order.
-            $deliverables = Deliverable::whereIn('session_id', $orders->pluck('session_id')->filter()->all())
-                ->get()
-                ->keyBy('session_id');
+        // Base query: buyer's purchases, or the creator's own sales. Delivery
+        // status lives on `deliverables` (keyed by session_id), so we leftJoin it
+        // to filter/sort by status without pulling every row into memory.
+        $base = ShopPayment::query()
+            ->from('shop_payments as sp')
+            ->join('shops', 'shops.id', '=', 'sp.shop_id')
+            ->leftJoin('deliverables as d', 'd.session_id', '=', 'sp.session_id')
+            ->where('sp.payment_status', 'paid')
+            ->when($isPurchases,
+                fn ($q) => $q->where('sp.user_id', $user->id),
+                fn ($q) => $q->where('shops.user_id', $user->id)
+            )
+            ->select('sp.*');
 
-            // Map orders to format expected by frontend
-            $formattedOrders = $orders->map(function ($order) use ($deliverables) {
-                $deliverable = $deliverables->get($order->session_id);
-                // The buyer paid for this listing, so they may see its deliverable.
-                $order->shop?->withDeliverable();
-                // …but not the creator's whole users row.
-                $order->shop?->user?->setVisible(['uuid', 'name', 'username', 'avatar_url']);
-                // Determine delay status
-                $isDelayed = false;
-                if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
-                    if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
-                        $isDelayed = true;
-                    }
+        // Totals are over ALL paid sales, unaffected by search/status filters.
+        $totalsQuery = (clone $base);
+        $allTime = $isPurchases ? 0 : (float) (clone $totalsQuery)->sum('sp.amount');
+        $thirtyDays = $isPurchases ? 0 : (float) (clone $totalsQuery)
+            ->where('sp.created_at', '>=', Carbon::now()->subDays(30))
+            ->sum('sp.amount');
+
+        // Search: item name, or (for sales) the buyer, (for purchases) the creator.
+        if ($search !== '') {
+            $base->where(function ($q) use ($search, $isPurchases) {
+                $q->where('shops.name', 'like', "%{$search}%");
+                if ($isPurchases) {
+                    $q->orWhereExists(function ($sub) use ($search) {
+                        $sub->from('users as cu')
+                            ->whereColumn('cu.id', 'shops.user_id')
+                            ->where(fn ($w) => $w->where('cu.name', 'like', "%{$search}%")->orWhere('cu.username', 'like', "%{$search}%"));
+                    });
+                } else {
+                    $q->orWhere('sp.name', 'like', "%{$search}%")
+                        ->orWhere('sp.email', 'like', "%{$search}%")
+                        ->orWhereExists(function ($sub) use ($search) {
+                            $sub->from('users as bu')
+                                ->whereColumn('bu.id', 'sp.user_id')
+                                ->where(fn ($w) => $w->where('bu.name', 'like', "%{$search}%")->orWhere('bu.username', 'like', "%{$search}%")->orWhere('bu.email', 'like', "%{$search}%"));
+                        });
                 }
-
-                return [
-                    'id' => $order->id,
-                    'uuid' => $order->uuid,
-                    'amount' => $order->amount,
-                    'total_paid' => $order->total_paid,
-                    'tax_amount' => $order->tax_amount ?? 0,
-                    'vat_tax_amount' => $order->vat_tax_amount ?? 0,
-                    'shipping_amount' => $order->shipping_amount ?? 0,
-                    'currency' => $order->currency,
-                    'created_at' => $order->created_at,
-                    'name' => $order->shop->user->name ?? 'Unknown',
-                    'username' => $order->shop->user->username ?? '',
-                    'avatar_url' => $order->shop->user->avatar_url ?? null,
-                    'shop' => $order->shop,
-                    'quantity' => $order->quantity,
-                    'shipping_info' => $order->shipping_info,
-                    'status' => $deliverable->status ?? 'pending',
-                    'is_delayed' => $isDelayed,
-                    'tracking_id' => $deliverable->tracking_id ?? null,
-                    'courier_name' => $deliverable->courier_name ?? null,
-                    'expected_delivery_date' => $deliverable->expected_delivery_date ?? null,
-                    'creator_note' => $order->creator_note,
-                    'metadata' => $deliverable->metadata ?? [],
-                    'ask_question' => $order->ask_question,
-                    'answer' => $order->answer,
-                    'message' => $order->message,
-                ];
             });
-
-            return response()->json([
-                'status' => true,
-                'orders' => $formattedOrders,
-                'all_time' => 0,
-                'thirtydays' => 0,
-                'total_claims' => $formattedOrders->count(),
-            ]);
         }
 
-        // Default to sales
-        $orders = ShopPayment::with('shop')
-            ->whereHas('shop', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->where('payment_status', 'paid')
-            ->orderBy('id', 'desc')
-            ->get();
+        // Status filter — an order with no deliverable row counts as 'pending'.
+        if ($statusFilter && $statusFilter !== 'all') {
+            if ($statusFilter === 'pending') {
+                $base->where(fn ($q) => $q->whereNull('d.status')->orWhere('d.status', 'pending'));
+            } else {
+                $base->where('d.status', $statusFilter);
+            }
+        }
 
-        $allTime = $orders->sum('amount');
-        $thirtyDays = $orders->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
+        $paginator = $base->orderBy('sp.id', 'desc')->paginate($perPage);
+        $orders = $paginator->getCollection()->load($isPurchases ? 'shop.user' : 'shop');
 
-        // Batch the per-row lookups — these were one query each, per order.
+        // Batch the per-row lookups for just this page.
         $deliverables = Deliverable::whereIn('session_id', $orders->pluck('session_id')->filter()->all())
             ->get()
             ->keyBy('session_id');
-        $buyers = User::whereIn('id', $orders->pluck('user_id')->filter()->unique()->all())
-            ->get()
-            ->keyBy('id');
+        $buyers = $isPurchases
+            ? collect()
+            : User::whereIn('id', $orders->pluck('user_id')->filter()->unique()->all())->get()->keyBy('id');
 
-        // Map orders to format expected by frontend
-        $formattedOrders = $orders->map(function ($order) use ($deliverables, $buyers) {
-            $buyer = $buyers->get($order->user_id);
+        $formattedOrders = $orders->map(function ($order) use ($deliverables, $buyers, $isPurchases) {
             $deliverable = $deliverables->get($order->session_id);
-            // Seller owns the listing, so the deliverable is theirs to see.
+            // Both parties are entitled to the deliverable (buyer paid, seller owns).
             $order->shop?->withDeliverable();
+            if ($isPurchases) {
+                $order->shop?->user?->setVisible(['uuid', 'name', 'username', 'avatar_url']);
+            }
+            $buyer = $isPurchases ? null : $buyers->get($order->user_id);
 
-            // Determine delay status
             $isDelayed = false;
-            if ($order->shop->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
+            if ($order->shop?->type === 'physical' && ($deliverable->status ?? 'pending') !== 'delivered') {
                 if (Carbon::parse($order->created_at)->addDays(7)->isPast()) {
                     $isDelayed = true;
                 }
             }
 
-            return [
+            $row = [
                 'id' => $order->id,
                 'uuid' => $order->uuid,
                 'amount' => $order->amount,
@@ -1910,10 +1936,6 @@ class ShopsController extends Controller
                 'shipping_amount' => $order->shipping_amount ?? 0,
                 'currency' => $order->currency,
                 'created_at' => $order->created_at,
-                'name' => $order->name ?? ($buyer->name ?? 'Anonymous'),
-                'username' => $buyer->username ?? '',
-                'email' => $order->email ?? ($buyer->email ?? ''),
-                'avatar_url' => $buyer->avatar_url ?? null,
                 'shop' => $order->shop,
                 'quantity' => $order->quantity,
                 'shipping_info' => $order->shipping_info,
@@ -1928,14 +1950,34 @@ class ShopsController extends Controller
                 'answer' => $order->answer,
                 'message' => $order->message,
             ];
-        });
+
+            if ($isPurchases) {
+                $row['name'] = $order->shop->user->name ?? 'Unknown';
+                $row['username'] = $order->shop->user->username ?? '';
+                $row['avatar_url'] = $order->shop->user->avatar_url ?? null;
+            } else {
+                $row['name'] = $order->name ?? ($buyer->name ?? 'Anonymous');
+                $row['username'] = $buyer->username ?? '';
+                $row['email'] = $order->email ?? ($buyer->email ?? '');
+                $row['avatar_url'] = $buyer->avatar_url ?? null;
+            }
+
+            return $row;
+        })->values();
 
         return response()->json([
             'status' => true,
             'orders' => $formattedOrders,
             'all_time' => $allTime,
             'thirtydays' => $thirtyDays,
-            'total_claims' => $formattedOrders->count(),
+            'total_claims' => $paginator->total(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'has_more' => $paginator->hasMorePages(),
+            ],
         ]);
     }
 

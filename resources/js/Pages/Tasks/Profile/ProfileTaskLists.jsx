@@ -13,17 +13,17 @@ export default function ProfileTaskLists({ tasks, IsloggedIn, profileUser, suppr
 
             {hasTasks ? 
                 <div className="">
-                    <ul className="">
+                    <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         {tasks.map((task, index) => (
-                            <ProfileTask 
-                                key={task.id || index} 
-                                task={task} 
-                                IsloggedIn={IsloggedIn} 
+                            <ProfileTask
+                                key={task.id || index}
+                                task={task}
+                                IsloggedIn={IsloggedIn}
                                 profileUser={profileUser}
                             />
                         ))}
                         {IsloggedIn && (
-                            <li className="pt-2">
+                            <li className="md:col-span-2">
                                 <AddMoreTile
                                     variant="row"
                                     title="Add Task"

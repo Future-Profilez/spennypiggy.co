@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers;
 use App\Models\FinancialTransaction;
 use App\Models\User;
+use App\Models\WishItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -43,12 +44,14 @@ class CreatorOpportunityService
         return [
             'currency' => $currency,
             'supporters' => $supporters->take(self::VIP_ENRICH_LIMIT)->values()->all(),
+            'tiers' => $this->tierDistribution($supporters->pluck('supporter_id')->all()),
             'retention' => $retention,
             'alerts' => $alerts,
             'actions' => $this->suggestedActions($creator, $supporters, $retention),
             'totals' => [
                 'supporters' => $supporters->count(),
                 'lifetime_value' => round((float) $supporters->sum('lifetime_spent'), 2),
+                'monthly_value' => round((float) $supporters->sum('monthly_spent'), 2),
                 'average_supporter_value' => $supporters->isEmpty()
                     ? 0.0
                     : round((float) $supporters->sum('lifetime_spent') / $supporters->count(), 2),
@@ -57,11 +60,51 @@ class CreatorOpportunityService
     }
 
     /**
+     * How the creator's supporters spread across the platform VIP tiers, over
+     * ALL of them (not just the displayed slice) — one batched lookup, so the
+     * "tier mix" is honest rather than a sample of the top few.
+     */
+    private function tierDistribution(array $supporterIds): array
+    {
+        $meta = [
+            'Bronze' => ['color' => '#92400e', 'icon' => '🥉'],
+            'Silver' => ['color' => '#6b7280', 'icon' => '🥈'],
+            'Gold' => ['color' => '#f59e0b', 'icon' => '🥇'],
+            'Platinum' => ['color' => '#a855f7', 'icon' => '🏆'],
+            'Diamond' => ['color' => '#e879f9', 'icon' => '💎'],
+        ];
+
+        $counts = array_fill_keys(array_keys($meta), 0);
+
+        if (! empty($supporterIds)) {
+            foreach ($this->vip->badgesFor($supporterIds) as $badge) {
+                $level = $badge['level'] ?? null;
+                if (isset($counts[$level])) {
+                    $counts[$level]++;
+                }
+            }
+        }
+
+        return collect($meta)
+            ->map(fn ($m, $level) => [
+                'level' => $level,
+                'count' => $counts[$level],
+                'color' => $m['color'],
+                'icon' => $m['icon'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Per-supporter lifetime picture: total spent, purchase count, first and
      * last purchase, average order value — and a VIP tier for the top few.
      */
     public function supporters(User $creator, string $currency = 'GBP')
     {
+        // Boundary for "spend this calendar month", used alongside the lifetime total.
+        $monthStart = now()->startOfMonth()->toDateTimeString();
+
         $rows = FinancialTransaction::query()
             ->where('user_id', $creator->id)
             ->where('type', 'income')
@@ -74,6 +117,10 @@ class CreatorOpportunityService
                 DB::raw('COUNT(*) as purchases'),
                 DB::raw('MIN(transaction_date) as first_purchase'),
                 DB::raw('MAX(transaction_date) as last_purchase'),
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN transaction_date >= ? THEN net_amount + COALESCE(vat_amount, 0) ELSE 0 END) as month_total',
+                [$monthStart]
             )
             ->groupBy('supporter_id', 'currency')
             ->get();
@@ -88,10 +135,16 @@ class CreatorOpportunityService
                 ? $amount
                 : (float) Helpers::priceFormat($from, $amount, $currency);
 
+            $monthAmount = (float) $row->month_total;
+            $monthConverted = $from === $currency
+                ? $monthAmount
+                : (float) Helpers::priceFormat($from, $monthAmount, $currency);
+
             if (! isset($bySupporter[$id])) {
                 $bySupporter[$id] = [
                     'supporter_id' => $id,
                     'lifetime_spent' => 0.0,
+                    'monthly_spent' => 0.0,
                     'purchases' => 0,
                     'first_purchase' => $row->first_purchase,
                     'last_purchase' => $row->last_purchase,
@@ -99,6 +152,7 @@ class CreatorOpportunityService
             }
 
             $bySupporter[$id]['lifetime_spent'] += $converted;
+            $bySupporter[$id]['monthly_spent'] += $monthConverted;
             $bySupporter[$id]['purchases'] += (int) $row->purchases;
 
             if ($row->first_purchase < $bySupporter[$id]['first_purchase']) {
@@ -132,6 +186,7 @@ class CreatorOpportunityService
             $row['avatar'] = $user->avatar ?? null;
             $row['currency'] = $currency;
             $row['lifetime_spent'] = round($row['lifetime_spent'], 2);
+            $row['monthly_spent'] = round($row['monthly_spent'], 2);
             $row['average_order_value'] = $row['purchases'] > 0
                 ? round($row['lifetime_spent'] / $row['purchases'], 2)
                 : 0.0;
@@ -289,6 +344,24 @@ class CreatorOpportunityService
             ];
         }
 
+        // New Platinum supporter: a Platinum-tier supporter whose first purchase
+        // from this creator landed in the window. Distinct from the combined
+        // top-tier count above — this is a fresh arrival at the top of the ladder.
+        $newPlatinum = $supporters->filter(
+            fn ($s) => ($s['vip']['level'] ?? null) === 'Platinum'
+                && ! empty($s['first_purchase'])
+                && Carbon::parse($s['first_purchase'])->gte($windowStart)
+        );
+
+        if ($newPlatinum->isNotEmpty()) {
+            $alerts[] = [
+                'key' => 'new_platinum',
+                'severity' => 'good',
+                'title' => 'A new Platinum supporter',
+                'detail' => $newPlatinum->count().' Platinum-tier supporter(s) started buying from you this month.',
+            ];
+        }
+
         // Returning whale: a high-value supporter who came back after 60+ days
         // of silence. Different from a steady regular — they nearly left.
         $reactivatedIds = $retention['reactivated_ids'] ?? [];
@@ -404,11 +477,69 @@ class CreatorOpportunityService
             ];
         }
 
+        // Contact the very top of the ladder. Platinum/Diamond is called out
+        // separately from a general VIP follow-up because they are the few
+        // supporters most worth a personal touch.
+        $platinumSupporter = $supporters->first(
+            fn ($s) => in_array($s['vip']['level'] ?? null, ['Platinum', 'Diamond'], true)
+        );
+
+        if ($platinumSupporter) {
+            $actions[] = [
+                'key' => 'contact_platinum',
+                'title' => 'Contact your Platinum supporter',
+                'detail' => ($platinumSupporter['name'] ?? 'A supporter').' is '
+                    .($platinumSupporter['vip']['level'] ?? 'top-tier').' on the platform and has spent '
+                    .number_format($platinumSupporter['lifetime_spent'], 2).' with you.',
+                'hint' => 'Consider reaching out through your own social channels, if appropriate.',
+            ];
+        }
+
+        // Follow up with a Gold-tier VIP who is still active — a nudge keeps them
+        // climbing toward Platinum.
+        $goldSupporter = $supporters->first(
+            fn ($s) => ($s['vip']['level'] ?? null) === 'Gold' && ! $s['at_risk']
+        );
+
+        if ($goldSupporter) {
+            $actions[] = [
+                'key' => 'follow_up_vip',
+                'title' => 'Follow up with a VIP',
+                'detail' => ($goldSupporter['name'] ?? 'A supporter').' is a Gold-tier supporter across '
+                    .$goldSupporter['purchases'].' purchase(s).',
+                'hint' => 'Consider reaching out through your own social channels, if appropriate.',
+            ];
+        }
+
+        // Product mix: what to promote (already selling) vs what to start (never
+        // sold). $sold drives both branches, so it is fetched once.
+        $sold = $this->soldProductTypes($creator);
+
+        // Encourage upgrades where a membership already exists — distinct from
+        // "offer a membership" below, which is for creators with none.
+        if (in_array('MembershipPayment', $sold, true)) {
+            $actions[] = [
+                'key' => 'upgrade_membership',
+                'title' => 'Encourage a membership upgrade',
+                'detail' => 'You already have members. A higher tier with more content is the simplest way to lift recurring income.',
+                'hint' => 'Add a premium tier, then tell existing members what they unlock by upgrading.',
+            ];
+        }
+
+        // Promote an existing wishlist — distinct from "add a wishlist item"
+        // below, which is for creators who have never published one.
+        if (WishItem::where('user_id', $creator->id)->exists()) {
+            $actions[] = [
+                'key' => 'promote_wishlist',
+                'title' => 'Promote your wishlist',
+                'detail' => 'You have wishlist items published. Sharing them turns interest into a sale.',
+                'hint' => 'Point supporters at your wishlist through your own channels, if appropriate.',
+            ];
+        }
+
         // Nudge the creator toward products they haven't published, because an
         // empty product type is revenue that simply cannot happen.
-        $missing = $this->missingProductTypes($creator);
-
-        foreach ($missing as $type) {
+        foreach ($this->missingProductTypes($sold) as $type) {
             $actions[] = [
                 'key' => 'publish_'.$type['key'],
                 'title' => $type['title'],
@@ -420,10 +551,10 @@ class CreatorOpportunityService
         return $actions;
     }
 
-    /** Product types this creator has never sold — each is unrealised revenue. */
-    private function missingProductTypes(User $creator): array
+    /** Distinct product types (class basenames) this creator has ever sold. */
+    private function soldProductTypes(User $creator): array
     {
-        $sold = FinancialTransaction::query()
+        return FinancialTransaction::query()
             ->where('user_id', $creator->id)
             ->where('type', 'income')
             ->whereNotIn('status', self::EXCLUDED_STATUSES)
@@ -431,7 +562,11 @@ class CreatorOpportunityService
             ->pluck('source_type')
             ->map(fn ($t) => class_basename($t))
             ->all();
+    }
 
+    /** Product types this creator has never sold — each is unrealised revenue. */
+    private function missingProductTypes(array $sold): array
+    {
         $suggestions = [];
 
         if (! in_array('MembershipPayment', $sold, true)) {

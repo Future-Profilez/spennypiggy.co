@@ -2,13 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Jobs\EnrichSupportTicketStripeEvidence;
-use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketConfirmationMail;
-use App\Mail\SupportTicketUpdatedMail;
+use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketRefundStatusMail;
+use App\Mail\SupportTicketUpdatedMail;
+use App\Models\BillPayment;
+use App\Models\FinancialTransaction;
+use App\Models\MembershipPayment;
+use App\Models\PiggyPotContribution;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentItems;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Services\MagicBellService;
 use App\Services\SupportTicketRefundService;
@@ -39,7 +48,7 @@ class SupportTicketController extends Controller
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
         ], $context);
 
-        $event = array_filter($event, fn($v) => !($v === null || $v === ''));
+        $event = array_filter($event, fn ($v) => ! ($v === null || $v === ''));
 
         $evidence = $ticket->evidence ?? [];
         $events = $evidence['events'] ?? [];
@@ -48,7 +57,7 @@ class SupportTicketController extends Controller
             $events = array_slice($events, -50);
         }
 
-        if (!isset($evidence['created'])) {
+        if (! isset($evidence['created'])) {
             $evidence['created'] = $event;
         }
         $evidence['last'] = $event;
@@ -77,7 +86,7 @@ class SupportTicketController extends Controller
         ]);
 
         $supporter = Auth::user();
-        if (!$supporter) {
+        if (! $supporter) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -96,15 +105,6 @@ class SupportTicketController extends Controller
             'last_message_at' => now(),
             'last_supporter_message_at' => now(),
         ]);
-
-        $recentMessages = SupportTicketMessage::where('ticket_id', $ticket->id)
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
-
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn($m) => $m->sender_role === 'supporter')) {
-            return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
-        }
 
         SupportTicketMessage::create([
             'ticket_id' => $ticket->id,
@@ -131,7 +131,7 @@ class SupportTicketController extends Controller
 
             app(MagicBellService::class)->sendNotification(
                 'New Support Request',
-                'You have a new support request from @' . $supporter->username . '. Please respond within 48 hours.',
+                'You have a new support request from @'.$supporter->username.'. Please respond within 48 hours.',
                 $creator->email
             );
         }
@@ -142,7 +142,7 @@ class SupportTicketController extends Controller
 
             app(MagicBellService::class)->sendNotification(
                 'Support Request Received',
-                'Your support request has been successfully sent to @' . $creator->username . '.',
+                'Your support request has been successfully sent to @'.$creator->username.'.',
                 $supporter->email
             );
         }
@@ -157,7 +157,7 @@ class SupportTicketController extends Controller
     public function show(string $uuid)
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -172,6 +172,7 @@ class SupportTicketController extends Controller
             ->get()
             ->map(function ($m) {
                 $sender = $m->sender_user_id ? User::find($m->sender_user_id) : null;
+
                 return [
                     'id' => $m->id,
                     'sender_role' => $m->sender_role,
@@ -189,23 +190,23 @@ class SupportTicketController extends Controller
         $transaction = null;
         if ($ticket->source && $ticket->source_id) {
             $sourceModelClass = match ($ticket->source) {
-                'stripe_payment_items' => \App\Models\StripePaymentItems::class,
-                'membership_payments' => \App\Models\MembershipPayment::class,
-                'bill_payments' => \App\Models\BillPayment::class,
-                'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
-                'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
-                'shop_payments' => \App\Models\ShopPayment::class,
-                'task_purchases' => \App\Models\TaskPurchase::class,
+                'stripe_payment_items' => StripePaymentItems::class,
+                'membership_payments' => MembershipPayment::class,
+                'bill_payments' => BillPayment::class,
+                'tip_goals_payments' => TipGoalsPayment::class,
+                'piggy_pot_contributions' => PiggyPotContribution::class,
+                'shop_payments' => ShopPayment::class,
+                'task_purchases' => TaskPurchase::class,
                 default => null,
             };
 
             $ft = null;
             if ($sourceModelClass) {
-                $ft = \App\Models\FinancialTransaction::with('source')->where('source_type', $sourceModelClass)
+                $ft = FinancialTransaction::with('source')->where('source_type', $sourceModelClass)
                     ->where('source_id', $ticket->source_id)
                     ->first();
             } elseif ($ticket->source === 'financial_transactions') {
-                $ft = \App\Models\FinancialTransaction::with('source')->find($ticket->source_id);
+                $ft = FinancialTransaction::with('source')->find($ticket->source_id);
             }
 
             if ($ft) {
@@ -252,29 +253,29 @@ class SupportTicketController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             throw new AuthorizationException('Unauthorized');
         }
 
         $sourceModelClass = match ($request->source) {
-            'stripe_payment_items' => \App\Models\StripePaymentItems::class,
-            'membership_payments' => \App\Models\MembershipPayment::class,
-            'bill_payments' => \App\Models\BillPayment::class,
-            'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
-            'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
-            'shop_payments' => \App\Models\ShopPayment::class,
-            'task_purchases' => \App\Models\TaskPurchase::class,
-            'financial_transactions' => \App\Models\FinancialTransaction::class,
+            'stripe_payment_items' => StripePaymentItems::class,
+            'membership_payments' => MembershipPayment::class,
+            'bill_payments' => BillPayment::class,
+            'tip_goals_payments' => TipGoalsPayment::class,
+            'piggy_pot_contributions' => PiggyPotContribution::class,
+            'shop_payments' => ShopPayment::class,
+            'task_purchases' => TaskPurchase::class,
+            'financial_transactions' => FinancialTransaction::class,
             default => null,
         };
 
-        if (!$sourceModelClass) {
+        if (! $sourceModelClass) {
             return response()->json(['status' => false, 'message' => 'Invalid source.'], 422);
         }
 
         $ft = null;
         if ($request->source === 'financial_transactions') {
-            $ft = \App\Models\FinancialTransaction::query()
+            $ft = FinancialTransaction::query()
                 ->with([
                     'user:id,username,name',
                     'supporter:id,username,name',
@@ -282,7 +283,7 @@ class SupportTicketController extends Controller
                 ])
                 ->find($request->source_id);
         } else {
-            $ft = \App\Models\FinancialTransaction::query()
+            $ft = FinancialTransaction::query()
                 ->with([
                     'user:id,username,name',
                     'supporter:id,username,name',
@@ -299,13 +300,13 @@ class SupportTicketController extends Controller
             }
 
             $ft->loadMorph('source', [
-                \App\Models\ShopPayment::class => ['shop', 'shop.user'],
-                \App\Models\TaskPurchase::class => ['task', 'creator'],
-                \App\Models\StripePaymentItems::class => ['wish', 'payment', 'payment.owner'],
-                \App\Models\MembershipPayment::class => ['membership', 'membership.user'],
-                \App\Models\BillPayment::class => ['bill', 'bill.user'],
-                \App\Models\PiggyPotContribution::class => ['piggyPot', 'creator'],
-                \App\Models\TipGoalsPayment::class => ['tipGoal'],
+                ShopPayment::class => ['shop', 'shop.user'],
+                TaskPurchase::class => ['task', 'creator'],
+                StripePaymentItems::class => ['wish', 'payment', 'payment.owner'],
+                MembershipPayment::class => ['membership', 'membership.user'],
+                BillPayment::class => ['bill', 'bill.user'],
+                PiggyPotContribution::class => ['piggyPot', 'creator'],
+                TipGoalsPayment::class => ['tipGoal'],
             ]);
 
             $base = class_basename($ft->source_type);
@@ -360,7 +361,7 @@ class SupportTicketController extends Controller
         }
 
         $model = $sourceModelClass::query()->find($request->source_id);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['status' => false, 'message' => 'Transaction not found.'], 404);
         }
 
@@ -463,7 +464,7 @@ class SupportTicketController extends Controller
     public function resolve(string $uuid)
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             abort(403, 'Unauthorized');
         }
 
@@ -498,7 +499,7 @@ class SupportTicketController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -514,7 +515,7 @@ class SupportTicketController extends Controller
             ->limit(3)
             ->get();
 
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn($m) => $m->sender_role === $senderRole)) {
+        if ($recentMessages->count() === 3 && $recentMessages->every(fn ($m) => $m->sender_role === $senderRole)) {
             return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
         }
 
@@ -543,9 +544,9 @@ class SupportTicketController extends Controller
             $supporterEmail = $ticket->supporter ? $ticket->supporter->email : $ticket->guest_email;
             if ($supporterEmail) {
                 Mail::to($supporterEmail)->send(new SupportTicketUpdatedMail($ticket));
-                \App\Helpers::sendNotification(
+                Helpers::sendNotification(
                     'Ticket Updated',
-                    'The creator has replied to your support request (Ticket #' . explode('-', $ticket->uuid)[0] . ').',
+                    'The creator has replied to your support request (Ticket #'.explode('-', $ticket->uuid)[0].').',
                     $supporterEmail
                 );
             }
@@ -562,9 +563,9 @@ class SupportTicketController extends Controller
             $creator = User::find($ticket->creator_id);
             if ($creator && $creator->email) {
                 Mail::to($creator->email)->send(new SupportTicketUpdatedMail($ticket));
-                \App\Helpers::sendNotification(
+                Helpers::sendNotification(
                     'Ticket Updated',
-                    'The supporter has replied to the support request (Ticket #' . explode('-', $ticket->uuid)[0] . ').',
+                    'The supporter has replied to the support request (Ticket #'.explode('-', $ticket->uuid)[0].').',
                     $creator->email
                 );
             }
@@ -584,7 +585,7 @@ class SupportTicketController extends Controller
 
             $user = Auth::user();
 
-            if (!$user) {
+            if (! $user) {
                 throw new AuthorizationException('Unauthorized');
             }
 
@@ -597,7 +598,7 @@ class SupportTicketController extends Controller
             if ($ticket->type !== 'refund') {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Not a refund ticket.'
+                    'message' => 'Not a refund ticket.',
                 ], 422);
             }
 
@@ -608,7 +609,7 @@ class SupportTicketController extends Controller
             if (in_array($ticket->status, ['refund_initiated', 'refunded', 'resolved', 'rejected'], true)) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'This refund has already been processed.'
+                    'message' => 'This refund has already been processed.',
                 ], 422);
             }
 
@@ -638,7 +639,7 @@ class SupportTicketController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Refund initiated successfully.'
+                'message' => 'Refund initiated successfully.',
             ]);
         } catch (ApiErrorException $e) {
 
@@ -652,7 +653,7 @@ class SupportTicketController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => 'Stripe refund failed: ' . $e->getMessage(),
+                'message' => 'Stripe refund failed: '.$e->getMessage(),
             ], 422);
         } catch (Exception $e) {
 
@@ -667,7 +668,7 @@ class SupportTicketController extends Controller
 
             return response()->json([
                 'status' => false,
-                'message' => 'Something went wrong while processing the refund.'
+                'message' => 'Something went wrong while processing the refund.',
             ], 500);
         }
     }
@@ -679,7 +680,7 @@ class SupportTicketController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             throw new AuthorizationException('Unauthorized');
         }
 
@@ -710,9 +711,9 @@ class SupportTicketController extends Controller
         $supporterEmail = $ticket->supporter ? $ticket->supporter->email : $ticket->guest_email;
         if ($supporterEmail) {
             Mail::to($supporterEmail)->send(new SupportTicketRefundStatusMail($ticket, 'rejected', 'supporter'));
-            \App\Helpers::sendNotification(
+            Helpers::sendNotification(
                 'Refund Rejected',
-                'Your refund request (Ticket #' . explode('-', $ticket->uuid)[0] . ') has been rejected.',
+                'Your refund request (Ticket #'.explode('-', $ticket->uuid)[0].') has been rejected.',
                 $supporterEmail
             );
         }
@@ -721,9 +722,9 @@ class SupportTicketController extends Controller
         $creator = User::find($ticket->creator_id);
         if ($creator && $creator->email) {
             Mail::to($creator->email)->send(new SupportTicketRefundStatusMail($ticket, 'rejected', 'creator'));
-            \App\Helpers::sendNotification(
+            Helpers::sendNotification(
                 'Refund Rejected',
-                'You have rejected the refund for Ticket #' . explode('-', $ticket->uuid)[0] . '.',
+                'You have rejected the refund for Ticket #'.explode('-', $ticket->uuid)[0].'.',
                 $creator->email
             );
         }

@@ -47,7 +47,7 @@ export default function OfferAnnouncement({
     return <>
 
     
-    <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-[30px]    p-6 text-white bg-[#ff6b6b] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+    <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-[30px]    p-6 text-white bg-[#ff6b6b] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <button
                 onClick={handleDismiss}
                 className="absolute !text-[20px] z-1 top-1 right-1 py-[3px] px-[10px] rounded-full hover:bg-white/20 transition-all"

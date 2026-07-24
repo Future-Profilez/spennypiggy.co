@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('session_id')->nullable();
             $table->foreignIdFor(TipGoal::class);
             $table->foreignIdFor(User::class);
+            $table->unsignedBigInteger('creator_id')->nullable();
             $table->string('guest_name')->nullable();
             $table->string('guest_email')->nullable();
             $table->string('currency')->nullable();
@@ -32,6 +33,7 @@ return new class extends Migration
         Schema::table('tip_goals_payments', function (Blueprint $table) {
             $table->index('tip_goal_id');
             $table->index('user_id');
+            $table->index('creator_id');
         });
     }
 

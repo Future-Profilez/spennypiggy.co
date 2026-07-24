@@ -246,7 +246,10 @@ class CreatorActivityService
      */
     public function clearActivityCache(User $creator): void
     {
-        // NO CACHE - Nothing to clear
+        // No external cache — but drop the per-request breakdown memo so a caller that
+        // creates content and then re-reads the breakdown in the same request (e.g. savePost)
+        // sees the new count, not the pre-insert snapshot.
+        unset($this->breakdownCache[$creator->id]);
     }
 
     /**

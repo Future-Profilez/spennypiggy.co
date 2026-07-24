@@ -2,65 +2,88 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
- * Cross-application mutual exclusion for payout execution.
+ * Durable, cross-application mutex for payout execution, backed by the shared `payout_locks`
+ * table (the website and admin apps are separate deployments that share one database).
  *
- * The website app and this admin app are separate deployments that both execute payout
- * runs against the SAME database. A per-app cache lock cannot see the other app, so the
- * lock has to live where both can reach it: MySQL's named locks. A run started from the
- * admin panel while the website's Friday cron is mid-run would otherwise create a second
- * PayoutRun over the same still-unstamped payments — two Stripe payouts, same money.
- *
- * MySQL: GET_LOCK() — session-scoped, released automatically if the connection dies.
- * Anything else (sqlite in tests): falls back to the cache lock.
+ * Chosen over MySQL GET_LOCK because GET_LOCK is session-scoped: a mid-run connection drop +
+ * Laravel auto-reconnect silently releases it, letting a concurrent run start and issue a
+ * second Stripe payout over the same payments. A table row with an owner token and an expiry
+ * survives reconnects and self-heals if a holder crashes (the expiry lets the next run steal a
+ * stale lock).
  */
 class PayoutLock
 {
     public const NAME = 'spennypiggy_payout_execute';
 
-    /** Seconds a run may hold the lock before another process may take it. */
+    /** Seconds a run may hold the lock before another run may steal it as stale. */
     public const TTL = 3600;
 
     /**
-     * Returns a release handle on success, null when another run holds the lock.
+     * Returns an opaque owner token on success, or null when another run holds a live lock.
      */
-    public static function acquire(): ?array
+    public static function acquire(?string $name = null, int $ttl = self::TTL): ?string
     {
-        if (DB::getDriverName() === 'mysql') {
-            try {
-                $got = DB::selectOne('SELECT GET_LOCK(?, 0) AS acquired', [self::NAME]);
+        $name = $name ?: self::NAME;
+        $token = (string) Str::uuid();
+        $now = time();
+        $expires = $now + $ttl;
 
-                return ((int) ($got->acquired ?? 0) === 1) ? ['driver' => 'mysql'] : null;
-            } catch (\Throwable $e) {
-                Log::error('PayoutLock: GET_LOCK failed, refusing the run rather than risking a double payout: '.$e->getMessage());
+        // 1. Fresh acquire: INSERT wins on the primary key when no row exists.
+        try {
+            DB::table('payout_locks')->insert([
+                'name' => $name,
+                'token' => $token,
+                'expires_at' => $expires,
+            ]);
 
-                return null;
-            }
+            return $token;
+        } catch (\Throwable $e) {
+            // Row already exists — fall through to the steal-if-stale path.
         }
 
-        $lock = Cache::lock(self::NAME, self::TTL);
+        // 2. Steal a STALE lock atomically: only one racer's conditional UPDATE can match the
+        //    expired row; the loser then sees the now-future expiry and matches zero rows.
+        try {
+            $stolen = DB::table('payout_locks')
+                ->where('name', $name)
+                ->where('expires_at', '<', $now)
+                ->update([
+                    'token' => $token,
+                    'expires_at' => $expires,
+                ]);
 
-        return $lock->get() ? ['driver' => 'cache', 'lock' => $lock] : null;
+            return $stolen === 1 ? $token : null;
+        } catch (\Throwable $e) {
+            // A hard DB error (e.g. the table is missing before a deploy migrates) must refuse
+            // the run, never proceed unlocked — a lockless run risks a double payout.
+            Log::error('PayoutLock: could not acquire, refusing the run rather than risking a double payout: '.$e->getMessage());
+
+            return null;
+        }
     }
 
-    public static function release(?array $handle): void
+    /**
+     * Release the lock only if we still own it (token match), so a run that overran its TTL
+     * and was stolen cannot delete the new owner's lock.
+     */
+    public static function release(?string $token, ?string $name = null): void
     {
-        if (! $handle) {
+        if (! $token) {
             return;
         }
 
+        $name = $name ?: self::NAME;
+
         try {
-            if (($handle['driver'] ?? null) === 'mysql') {
-                DB::selectOne('SELECT RELEASE_LOCK(?) AS released', [self::NAME]);
-
-                return;
-            }
-
-            $handle['lock']?->release();
+            DB::table('payout_locks')
+                ->where('name', $name)
+                ->where('token', $token)
+                ->delete();
         } catch (\Throwable $e) {
             Log::warning('PayoutLock: release failed: '.$e->getMessage());
         }

@@ -78,7 +78,7 @@ export default function Index() {
                     </div>
                     
                     {/* Founder Bonuses Block embedded in grid */}
-                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                       <div className="relative z-1">
                           <h2 className="text-2xl sm:text-4xl lg:text-4xl  font-gulfs uppercase mb-6 leading-none">
                             Founder Bonuses <br className='hidden lg:visible'/> for Early Creators
@@ -173,7 +173,7 @@ export default function Index() {
                     </div>
 
                     {/* Disputes */}
-                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px]  p-6 md:p-10 border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px]  p-6 md:p-10 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                       
                       <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
                           <div>

@@ -45,7 +45,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
         return (
             <div className="about-sec m-auto max-w-4xl">
                 {shouldShowAboutSection && (
-                    <div className="relative mb-10 rounded-[30px]  overflow-hidden bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
+                    <div className="relative mb-10 rounded-[30px]  overflow-hidden bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group">
                         <div className="p-8 md:p-12 relative">
                             <div className="">
                                 <h3 className="text-sm font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
@@ -136,7 +136,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                 {/* Supporter Offerings Card */}
                 {IsloggedIn && (
                     <div className="relative group mb-10">
-                        <div className="relative p-8 md:p-12 rounded-[30px]  bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="relative p-8 md:p-12 rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                                 <div>
                                     <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
@@ -251,7 +251,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             <div className="max-w-[1400px] mx-auto pt-8">
                 {isBlocked ? (
                     <div className="max-w-4xl mx-auto">
-                        <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             {/* Icon */}
                             <div className="flex justify-center">
                                 <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">

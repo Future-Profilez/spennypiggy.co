@@ -10,7 +10,7 @@ export default function Show({ evidence }) {
     if (!evidence) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center p-8 bg-white border-[3px] border-black rounded-[30px]  shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div className="text-center p-8 bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     <h1 className="text-2xl font-black uppercase text-red-500 mb-2">Error</h1>
                     <p className="font-bold text-gray-600 uppercase tracking-widest">Evidence pack data is missing or unavailable.</p>
                 </div>

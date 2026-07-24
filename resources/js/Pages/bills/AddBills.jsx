@@ -1,98 +1,124 @@
 import st from "../../../css/uploader.module.css";
-// import data  from "../../../css/uploader.module.css"
-import { router, useForm, usePage } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
-import { useEffect, lazy } from "react";
-import LoaderButton from "@/Components/LoaderButton";
-// const Popup = lazy(() => import("@/Components/Popup"));
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
-import Popup from "@/Components/Popup";
 import { Pagination, Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-import { useRef } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { SlCalender } from "react-icons/sl";
+import ItemFormShell from "@/Components/ItemFormShell";
+import RewardEditor, {
+    emptyReward,
+    rewardFromItem,
+    rewardToPayload,
+    validateReward,
+} from "@/Components/Reward/RewardEditor";
+import RewardPreview from "@/Components/Reward/RewardPreview";
+
+const FIELD =
+    "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]";
+const FIELD_LABEL = "mb-2 block text-left text-[11px] font-black uppercase tracking-[0.14em]";
+
+const PERIODS = [
+    { value: "weekly", label: "Weekly" },
+    { value: "monthly", label: "Monthly" },
+    { value: "yearly", label: "Yearly" },
+];
+
+const BillsImages = [
+    "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
+    "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
+    "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
+    "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
+    "55965522-e075-4ef3-8afc-195dacbf267b",
+    "bcd5dc1e-a97f-4f76-aa93-511c997ff2f0",
+    "7490cf45-09a0-427d-abb7-568d98edf344",
+    "59cf9a4a-6a4d-4297-915d-513847681f29",
+];
 
 export default function AddBills(props) {
-    const { successAlert, errorAlert, infoAlert, errorsHandling } = useAlerts();
+    const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
     const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
-    const [thumbnail, setThumbnail] = useState("");
-    const [close, setClose] = useState();
-    const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
+    const { item, isEdit, editpop, text, classes, fetchBills } = props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
-    const BillsImages = [
-        "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
-        "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
-        "467f7ad0-e397-45fe-be22-a6e8e8afe9fa",
-        "897b3ec3-63f8-42c0-83b3-a3a9a1b90b7c",
-        "55965522-e075-4ef3-8afc-195dacbf267b", // first
-        "bcd5dc1e-a97f-4f76-aa93-511c997ff2f0",
-        "7490cf45-09a0-427d-abb7-568d98edf344",
-        "59cf9a4a-6a4d-4297-915d-513847681f29",
-    ];
+    const defaultCurrency = auth?.user?.default_currency || "USD";
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: item && item.name ? item.name : "",
-        goal_label: item && item.goal_label ? item.goal_label : "",
-        price: item && item.price ? item.price : "",
-        thumbnail: item && item.thumbnail ? item.thumbnail : BillsImages[0],
-        period: item && item.period ? item.period : "weekly",
-    });
-
-    const uploaderRef = useRef();
-    const resetUploader = () => {
-        if (uploaderRef.current) {
-            uploaderRef.current.reset();
-        }
-    };
-
-    const [period, setPeriod] = useState(
-        item && item.period ? item.period : "weekly"
-    );
-    const spValue = (e) => {
-        setPeriod(e.target.value);
-        setData("period", e.target.value);
-    };
-
-    const onSlideChange = (swiper) => {
-        setData("thumbnail", BillsImages[swiper && swiper.activeIndex]);
-    };
-
+    const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    // The form posts via axios, so Inertia's `errors` bag never fills — server
+    // field errors are kept locally to render inline.
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [thumbnail, setThumbnail] = useState("");
     const [isEditable, setIsEditable] = useState(false);
-    const getFileUID = async (data) => {
-        let ss = data?.uuid;
-        setThumbnail(ss);
-        setIsEditable(true);
-    };
+    const uploaderRef = useRef();
 
-    const wishImageEdited = async (d, uuid) => {
-        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
-        setThumbnail(url);
-        setIsEditable(false);
-    };
+    const [data, setDataState] = useState(() => ({
+        name: item?.name || "",
+        goal_label: item?.goal_label || "",
+        price: item?.price || "",
+        thumbnail: item?.thumbnail || BillsImages[0],
+        period: item?.period || "weekly",
+        reward: rewardFromItem(item),
+    }));
+
+    const setData = useCallback(
+        (key, value) => setDataState((current) => ({ ...current, [key]: value })),
+        [],
+    );
+
+    const setReward = useCallback((next) => setData("reward", next), [setData]);
 
     useEffect(() => {
-        setData("thumbnail", thumbnail);
-    }, [thumbnail]);
+        if (thumbnail) setData("thumbnail", thumbnail);
+    }, [setData, thumbnail]);
 
-    const [loading, setLoading] = useState(false);
-    // The form posts via axios, not useForm.post, so Inertia's `errors` never fills.
-    // Keep server-side field errors locally so they can render inline.
-    const [fieldErrors, setFieldErrors] = useState({});
-    const createBills = async (e) => {
-        e.preventDefault();
+    const fieldError = (field) => {
+        const error = fieldErrors[field];
+        return Array.isArray(error) ? error[0] : error;
+    };
+
+    const resetForm = () => {
+        setDataState({
+            name: item?.name || "",
+            goal_label: item?.goal_label || "",
+            price: item?.price || "",
+            thumbnail: item?.thumbnail || BillsImages[0],
+            period: item?.period || "weekly",
+            reward: rewardFromItem(item),
+        });
+        setFieldErrors({});
+        uploaderRef.current?.reset?.();
+    };
+
+    const closeSheet = () => {
+        setOpen(false);
+        resetForm();
+    };
+
+    const submit = () => {
         if (loading) return;
+
+        const rewardProblem = validateReward(data.reward);
+        if (rewardProblem) {
+            errorAlert(rewardProblem);
+            return;
+        }
+
         setLoading(true);
         setFieldErrors({});
+
+        const { reward, ...rest } = data;
+        const payload = { ...rest, ...rewardToPayload(reward) };
+
         axios
-            .post(isEdit ? `/bill/edit/${item.uuid}` : `/bill/save`, data)
+            .post(isEdit ? `/bill/edit/${item.uuid}` : `/bill/save`, payload)
             .then((resp) => {
                 fetchBills && fetchBills();
                 if (resp.data.status) {
@@ -101,19 +127,12 @@ export default function AddBills(props) {
                             username: auth.user.username,
                             page: "bills",
                         }),
-                        {
-                            preserveState: true,
-                            preserveScroll: true,
-                        }
+                        { preserveState: true, preserveScroll: true },
                     );
                     successAlert(resp.data.msg);
-                    setClose(false);
+                    setOpen(false);
                     window.dispatchEvent(new Event("closeAddOptions"));
-                    setTimeout(() => {
-                        setClose();
-                    }, 100);
-                    reset();
-                    resetUploader();
+                    resetForm();
                 } else {
                     setFieldErrors(resp.data.errors || {});
                     errorAlert(resp.data.msg);
@@ -127,361 +146,333 @@ export default function AddBills(props) {
             });
     };
 
-    const AddItem = () => {
-        return (
-            <div className=" flex items-center">
-                <div className="p-1 rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
-                    <SlCalender color="var(--pink)" size="1.5rem" />
-                </div>
-                <div className="pl-3 text-left">
-                    <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">Recurring content</h2>
-                    <p className="text-sm font-poppins">
-                        Sell content your supporters unlock every week or month.
-                    </p>
-                </div>
-            </div>
-        );
-    };
+    const steps = [
+        {
+            key: "content",
+            title: "Your subscription",
+            hint: "Name the content supporters unlock every period, and give it an image.",
+            validate: () => (data.name.trim() ? null : "Name your recurring content."),
+            render: () => (
+                <div className="space-y-6">
+                    {item?.is_suspended == 1 && (
+                        <div className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] p-4 text-left">
+                            <p className="text-sm font-black uppercase tracking-wide">Item suspended</p>
+                            {item.suspend_reason && (
+                                <p className="mt-1 text-sm font-medium">{item.suspend_reason}</p>
+                            )}
+                        </div>
+                    )}
 
-    const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
-    const fieldError = (field) => {
-        const err = fieldErrors[field] || errors[field];
-        return Array.isArray(err) ? err[0] : err;
-    };
-    return (
-        <Popup
-            modalclass="pinkmodal full"
-            size="md"
-            action={close}
-            classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-box   p-3 mb-2 text-center"}`}
-            text={text ? text : <AddItem />} >
-            <div className="editprofileModal  wishlistModal ">
-                <div className="editprofileModalInner">
-                    <h2 className="p-4 !pb-0 text-black text-left !border-0 font-GillSans uppercase text-large mb-1 pr-5">
-                        {isEdit ? "Manage subscription" : "Add recurring content"}
-                    </h2>
-                    <div className="wishinfo  p-4  ">
-                        {item && item.is_suspended == 1 && (
-                            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-box-sm">
-                                <div className="flex">
-                                    <div className="flex-shrink-0">
-                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-red-800">Item Suspended</h3>
-                                        {item.suspend_reason && (
-                                            <div className="mt-2 text-sm text-red-700">
-                                                <p>{item.suspend_reason}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                    <div>
+                        <label htmlFor="bill-name" className={FIELD_LABEL}>
+                            Subscription / content name <span className="text-[#FF007F]">*</span>
+                        </label>
+                        <input
+                            id="bill-name"
+                            type="text"
+                            className={FIELD}
+                            placeholder="Eg. Weekly behind-the-scenes"
+                            value={data.name}
+                            onChange={(event) => setData("name", event.target.value)}
+                        />
+                        {fieldError("name") && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                {fieldError("name")}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label htmlFor="bill-goal" className={FIELD_LABEL}>
+                            Goal <span className="text-neutral-400">(optional)</span>
+                        </label>
+                        <input
+                            id="bill-goal"
+                            type="text"
+                            maxLength={60}
+                            className={FIELD}
+                            placeholder="Eg. Studio upgrade"
+                            value={data.goal_label}
+                            onChange={(event) => setData("goal_label", event.target.value)}
+                        />
+                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                            Context only — never what the supporter buys. Don't name a bill, debt or
+                            expense.
+                        </p>
+                        {fieldError("goal_label") && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                {fieldError("goal_label")}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <span className={FIELD_LABEL}>Cover image</span>
+                        {item?.perma_link ? (
+                            <div className="overflow-hidden rounded-box-sm border-[3px] border-black">
+                                <img
+                                    src={item.perma_link}
+                                    alt={item?.name || "Subscription image"}
+                                    className="h-auto w-full"
+                                />
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden rounded-box-sm border-[3px] border-black">
+                                <Swiper
+                                    spaceBetween={0}
+                                    pagination={{ clickable: true }}
+                                    navigation={true}
+                                    onSlideChange={(swiper) =>
+                                        setData("thumbnail", BillsImages[swiper?.activeIndex || 0])
+                                    }
+                                    modules={[Pagination, Navigation]}
+                                    slidesPerView={1}
+                                >
+                                    {BillsImages.map((image) => (
+                                        <SwiperSlide key={`swiper-item-${image}`}>
+                                            <img
+                                                src={`https://ucarecdn.com/${image}/`}
+                                                alt=""
+                                                className="h-auto w-full"
+                                            />
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
                             </div>
                         )}
-                        <form onSubmit={createBills}>
-                            <ul className="pl-0">
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Goal{" "}
-                                        <span className="text-gray-400">(optional)</span>
-                                    </label>
-                                    <input
-                                        id="goal_label"
-                                        name="goal_label"
-                                        type="text"
-                                        maxLength={60}
-                                        placeholder="Eg. Studio upgrade"
-                                        value={data.goal_label}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
-                                        onChange={(e) =>
-                                            setData("goal_label", e.target.value)
-                                        }
-                                    />
-                                    <p className="mt-1 text-xs text-gray-500 text-left">
-                                        A goal you're working toward — shown as context
-                                        only, never what the supporter buys. Don't name a
-                                        bill, debt or expense (e.g. rent, phone bill).
-                                    </p>
-                                    {fieldError("goal_label") && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
-                                            {fieldError("goal_label")}
-                                        </p>
-                                    )}
-                                </li>
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        {" "}
-                                        Subscription / content name{" "}
-                                    </label>
-                                    <input
-                                        id="wishname"
-                                        name="name"
-                                        type="text"
-                                        placeholder="Eg. Weekly behind-the-scenes"
-                                        value={data.name}
-                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
-                                        autoComplete="name"
-                                        onChange={(e) =>
-                                            setData("name", e.target.value)
-                                        }
-                                        required
-                                    />
-                                    {fieldError("name") && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
-                                            {fieldError("name")}
-                                        </p>
-                                    )}
-                                </li>
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Price ({defaultCurrency})
-                                    </label>
-                                    <div className="currency-wrapper dollar-symbols relative">
-                                        <span className="currency-tag "> 
-                                            {defaultCurrency}
-                                        </span>
-                                        <input
-                                            id="price"
-                                            type="number"
-                                            name="price"
-                                            placeholder="Eg. 50"
-                                            value={data.price}
-                                            min="4.99"
-                                            max="100"
-                                            step="0.01"
-                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box-sm  "
-                                            autoComplete="price"
-                                            onChange={(e) =>
-                                                setData("price", e.target.value)
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                    <p className="mt-1 text-xs text-gray-500 text-left">
-                                        Between {defaultCurrency} 4.99 and {defaultCurrency} 100 per period.
-                                    </p>
-                                    {fieldError("price") && (
-                                        <p className="mt-1 text-xs text-red-500 text-left">
-                                            {fieldError("price")}
-                                        </p>
-                                    )}
-                                    {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-box  border border-gray-100">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm text-gray-600">Fans pay:</span>
-                                                <span className="font-bold text-gray-900">
-                                                    {new Intl.NumberFormat('en-GB', { 
-                                                        style: 'currency', 
-                                                        currency: defaultCurrency 
-                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">You receive:</span>
-                                                <span className="font-bold text-green-600">
-                                                    {new Intl.NumberFormat('en-GB', { 
-                                                        style: 'currency', 
-                                                        currency: defaultCurrency 
-                                                    }).format(data.price)}
-                                                </span>
-                                            </div>
-                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                            <p className="mt-1 text-xs text-gray-500 font-medium">All platform and payment processing fees are included in the fan price, so you always receive 100% of your listed amount (or slightly more).</p>
-                                        </div>
-                                    )}
-                                    {defaultCurrency !== global_currency && data.price > 0 && (
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        ≈ {formatMultiPrice(
-                                            data.price,
-                                            defaultCurrency
-                                        )} ({global_currency})
-                                    </p> 
-                                    )}
-                                </li>
 
-                                <li className="mb-4">
-                                    <div className="singlewishbox rounded ">
-                                        <strong className="mb-2 text-left block ">
-                                            {" "}
-                                            Allows fans to purchase this item
-                                            on a recurring basis.{" "}
-                                        </strong>
-                                        <div className="repeatpurchase mt-2 text-left">
-                                            <label
-                                                htmlFor="weekly"
-                                                className="w-auto"
-                                            >
-                                                <input
-                                                    checked={period == "weekly"}
-                                                    type="radio"
-                                                    id="weekly"
-                                                    value={"weekly"}
-                                                    name="subscription_period"
-                                                    onChange={spValue}
-                                                />{" "}
-                                                Weekly
-                                            </label>
-                                        </div>
-                                        <div className="repeatpurchase mt-2 text-left">
-                                            <label
-                                                htmlFor="monthly"
-                                                className="w-auto"
-                                            >
-                                                <input
-                                                    checked={
-                                                        period == "monthly"
-                                                    }
-                                                    type="radio"
-                                                    id="monthly"
-                                                    value={"monthly"}
-                                                    name="subscription_period"
-                                                    onChange={spValue}
-                                                />{" "}
-                                                Monthly
-                                            </label>
-                                        </div>
-                                        <div className="repeatpurchase text-left">
-                                            <label
-                                                htmlFor="yearly"
-                                                className="w-auto"
-                                            >
-                                                <input
-                                                    checked={period == "yearly"}
-                                                    type="radio"
-                                                    id="yearly"
-                                                    value={"yearly"}
-                                                    name="subscription_period"
-                                                    onChange={spValue}
-                                                />{" "}
-                                                Yearly
-                                            </label>
-                                        </div>
-                                    </div>
-                                </li>
+                        <p className="my-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-neutral-400">
+                            or upload your own
+                        </p>
 
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Choose Image or Upload
-                                    </label>
+                        <div className={isEditable ? "d-none" : "editable"}>
+                            <GlobalUploader
+                                ctxName="add-bills-context"
+                                type="minimal"
+                                ref={uploaderRef}
+                                sendFile={(file) => {
+                                    setThumbnail(file?.uuid);
+                                    setIsEditable(true);
+                                }}
+                                options={st.wishitemUploader}
+                            />
+                        </div>
 
-                                    {item && item.perma_link ? (
-                                        <div className="default-wish-img mb-1">
-                                            <img
-                                                src={
-                                                    (item && item.perma_link) ||
-                                                    uploadedimg
-                                                }
-                                                alt={item?.name || "Bill image"}
-                                                className="w-full h-auto"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <Swiper
-                                            spaceBetween={0}
-                                            pagination={{ clickable: true }}
-                                            navigation={true}
-                                            onSlideChange={onSlideChange}
-                                            modules={[Pagination, Navigation]}
-                                            slidesPerView={1}
-                                        >
-                                            {BillsImages &&
-                                                BillsImages.map((image) => {
-                                                    return (
-                                                        <SwiperSlide
-                                                            key={`swiper-item-${image}`}
-                                                        >
-                                                            <div className="default-wish-img mb-1">
-                                                                <img
-                                                                    src={`https://ucarecdn.com/${image}/`}
-                                                                    alt=""
-                                                                    className="w-full h-auto"
-                                                                />
-                                                            </div>
-                                                        </SwiperSlide>
-                                                    );
-                                                })}
-                                        </Swiper>
-                                    )}
-
-                                    <h4 className="mt-2 mb-2 w-full text-center">
-                                        OR
-                                    </h4>
-
-                                    <div
-                                        className={`${
-                                            !isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
-                                        <GlobalUploader ctxName='add-bills-context'
-                                            type="minimal"
-                                            ref={uploaderRef}
-                                            sendFile={getFileUID}
-                                            options={st.wishitemUploader}
-                                        />
-                                    </div>
-
-                                    <div
-                                        className={`${
-                                            isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
-                                        <UploadcareEditor
-                                            uuid={thumbnail}
-                                            updateFile={wishImageEdited}
-                                        />
-                                    </div>
-                                </li>
-                            </ul>
-
-                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-box-sm    bg-yellow-50" role="alert">
-                                Describe the recurring content supporters receive
-                                (e.g. "Weekly behind-the-scenes"). Do not list bills,
-                                personal expenses, or brand/third-party service names —
-                                these will be rejected and removed. Our AI blocks adult
-                                content but any overly suggestive images will also be
-                                rejected. Please reach out to support for further
-                                clarification.
-                            </p>
-
-                            <div className="publish text-start mt-6 mb-4">
-    {isEdit ? (
-        <LoaderButton
-            disabled={loading}
-            type="submit"
-            className="p w-full min-h-[54px]"
-            spinnerclass="fill-red-600"
-        >
-            {loading ? "Updating.." : "Manage subscription"}
-        </LoaderButton>
-    ) : (
-        <>
-            <LoaderButton
-                disabled={loading || subscriberOnlyPostsCount === 0}
-                type="submit"
-                className="p w-full min-h-[54px]"
-                spinnerclass="fill-red-600"
-            >
-                {loading ? "Processing" : "Add Recurring Content"}
-            </LoaderButton>
-
-            {subscriberOnlyPostsCount === 0 && (
-                <div className="pt-3 px-2">
-                    <p className="text-center text-red-500 text-sm leading-6">
-                        You haven't added any subscriber-only posts yet.
-                        <br />
-                        Please create at least one before adding a bill.
-                    </p>
-                </div>
-            )}
-        </>
-    )}
-</div>
-                        </form>
+                        <div className={isEditable ? "editable" : "d-none"}>
+                            <UploadcareEditor
+                                uuid={thumbnail}
+                                updateFile={(edited, uuid) => {
+                                    setThumbnail(`${uuid}/${edited.cdnUrlModifiers}-/preview/`);
+                                    setIsEditable(false);
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
-            </div>
-        </Popup>
+            ),
+        },
+        {
+            key: "reward",
+            title: "What they get",
+            hint: "One recurring content stream: something the moment they subscribe, then your subscriber-only posts.",
+            validate: () => validateReward(data.reward),
+            render: () => (
+                <RewardEditor
+                    value={data.reward}
+                    onChange={setReward}
+                    recurring
+                    // A Bill is not a tier — it sells one content stream, so it
+                    // has no perks bundle. That is the whole difference from a
+                    // Membership; giving it perks made the two products
+                    // indistinguishable.
+                    showPerks={false}
+                    postAccessLabel="Subscriber-only posts"
+                    memberPostsCount={subscriberOnlyPostsCount}
+                    ctxName="bill-reward"
+                    errors={{
+                        reward_title: fieldError("reward_title"),
+                        reward_body: fieldError("reward_body"),
+                    }}
+                />
+            ),
+        },
+        {
+            key: "price",
+            title: "Price & billing",
+            hint: "Supporters see one total price; every fee is already inside it.",
+            validate: () => {
+                const price = Number(data.price);
+                if (!price) return "Set a price.";
+                if (price < 4.99) return `Minimum is ${defaultCurrency} 4.99 per period.`;
+                if (price > 100) return `Maximum is ${defaultCurrency} 100 per period.`;
+                return null;
+            },
+            render: () => (
+                <div className="space-y-6">
+                    <div>
+                        <label htmlFor="bill-price" className={FIELD_LABEL}>
+                            Price ({defaultCurrency}) <span className="text-[#FF007F]">*</span>
+                        </label>
+                        <input
+                            id="bill-price"
+                            type="number"
+                            inputMode="decimal"
+                            min="4.99"
+                            max="100"
+                            step="0.01"
+                            className={FIELD}
+                            placeholder="Eg. 50"
+                            value={data.price}
+                            onChange={(event) => setData("price", event.target.value)}
+                        />
+                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                            Between {defaultCurrency} 4.99 and {defaultCurrency} 100 per period.
+                        </p>
+                        {fieldError("price") && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                {fieldError("price")}
+                            </p>
+                        )}
+
+                        {data.price > 0 && (
+                            <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#F7F7F7] p-4">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-neutral-600">
+                                        Supporters pay
+                                    </span>
+                                    <span className="font-black">
+                                        {new Intl.NumberFormat("en-GB", {
+                                            style: "currency",
+                                            currency: defaultCurrency,
+                                        }).format(
+                                            calculateTotalSupporterPays(data.price, defaultCurrency)
+                                                .total_supporter_pays,
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-neutral-600">
+                                        You receive
+                                    </span>
+                                    <span className="font-black text-green-600">
+                                        {new Intl.NumberFormat("en-GB", {
+                                            style: "currency",
+                                            currency: defaultCurrency,
+                                        }).format(data.price)}
+                                    </span>
+                                </div>
+                                <p className="mt-3 text-left text-xs font-medium text-neutral-500">
+                                    All platform and processing fees are inside the supporter price, so
+                                    you always receive your listed amount.
+                                </p>
+                            </div>
+                        )}
+
+                        {defaultCurrency !== global_currency && data.price > 0 && (
+                            <p className="mt-2 text-left text-sm font-medium text-neutral-500">
+                                ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <span className={FIELD_LABEL}>Billed every</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            {PERIODS.map((period) => {
+                                const active = data.period === period.value;
+                                return (
+                                    <button
+                                        key={period.value}
+                                        type="button"
+                                        onClick={() => setData("period", period.value)}
+                                        aria-pressed={active}
+                                        className={`min-h-[48px] rounded-box-sm border-[3px] border-black text-sm font-black uppercase tracking-wide transition-all ${
+                                            active
+                                                ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] shadow-none"
+                                                : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                        }`}
+                                    >
+                                        {period.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <p className="rounded-box-sm border-[3px] border-black bg-[#FFF6D6] p-4 text-left text-xs font-medium">
+                        Describe the recurring content supporters receive. Do not list bills, personal
+                        expenses, or brand names — these are rejected. Adult content is blocked
+                        automatically and overly suggestive images are removed.
+                    </p>
+
+                    {!isEdit && subscriberOnlyPostsCount === 0 && (
+                        <p className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] p-4 text-left text-sm font-bold">
+                            You haven't added any subscriber-only posts yet. Create at least one before
+                            selling a subscription.
+                        </p>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
+    const canSubmit = isEdit || subscriberOnlyPostsCount > 0;
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => setOpen(true)}
+                className={
+                    classes ||
+                    (editpop
+                        ? "editpop"
+                        : "addop w-full font-bold bg-white rounded-box p-3 mb-2 text-center")
+                }
+            >
+                {text || <AddItemTrigger />}
+            </button>
+
+            <ItemFormShell
+                open={open}
+                onClose={closeSheet}
+                title={isEdit ? "Manage subscription" : "Add recurring content"}
+                steps={steps}
+                onSubmit={canSubmit ? submit : undefined}
+                processing={loading}
+                submitLabel={isEdit ? "Save changes" : "Publish subscription"}
+                error={
+                    canSubmit
+                        ? null
+                        : "Add at least one subscriber-only post before selling a subscription."
+                }
+                preview={() => (
+                    <RewardPreview
+                        value={data.reward}
+                        recurring
+                        showPerks={false}
+                        postAccessLabel="Subscriber-only posts"
+                    />
+                )}
+            />
+        </>
+    );
+}
+
+function AddItemTrigger() {
+    return (
+        <span className="flex items-center">
+            <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-pink-100 p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
+                <SlCalender color="var(--pink)" size="1.5rem" />
+            </span>
+            <span className="pl-3 text-left">
+                <span className="block font-GillSans text-sm font-normal uppercase leading-tight md:text-lg">
+                    Recurring content
+                </span>
+                <span className="block font-poppins text-sm">
+                    Sell content your supporters unlock every week or month.
+                </span>
+            </span>
+        </span>
     );
 }

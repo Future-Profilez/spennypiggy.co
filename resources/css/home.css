@@ -592,11 +592,6 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .headingSm{font-size:39px;}
 .loginPage h2.headingLg{font-size:50px;line-height:60px;}
 }
-@media (max-width:1024px){.userphoto{margin:0 !important;}
-.userphoto span{width:130px !important;}
-.userphoto{padding-bottom:12px;margin:auto !important;}
-.userphoto{width:fit-content !important;margin:auto !important;}
-}
 @media (max-width:991px){.nextimage-wrap,.nextimage-wrap img,.nextimage-wrap span{width:100% !important;}
 .wishManage{padding:0;}
 .containerbox{max-width:740px;}

@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 import Turnstile from './Turnstile';
 
-export default function ReportContentModal({ reportedUser }) {
+export default function ReportContentModal({ reportedUser, classes, text }) {
     const { turnstileSiteKey } = usePage().props;
     const [isOpen, setIsOpen] = useState(false);
     const [verified, setVerified] = useState(false);
@@ -66,8 +66,8 @@ export default function ReportContentModal({ reportedUser }) {
             modalclass="pinkmodal max-w-2xl"
             size="xl"
             space="6"
-            classes="bg-yellow-500 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-black group"
-            text={<Flag size={20} strokeWidth={2.5} />}
+            classes={classes || "bg-yellow-500 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-box-sm text-black group"}
+            text={text || <Flag size={20} strokeWidth={2.5} />}
             action={isOpen}
             onHide={() => setIsOpen(false)}
             onShow={() => setIsOpen(true)}

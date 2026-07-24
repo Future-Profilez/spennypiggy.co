@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasRewardContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,34 +11,39 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasRewardContract, SoftDeletes;
+
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'payment_methods_accepted',
-        "user_id",
-        "stripe_product_id",
-        "wishname",
-        "goal_label",
-        "price",
-        "currency",
-        "fullfill_amount",
+        'user_id',
+        'stripe_product_id',
+        'wishname',
+        'goal_label',
+        'price',
+        'currency',
+        'fullfill_amount',
         'tax_amount',
         'price_id',
-        "item_url",
-        "thumbnail",
+        'item_url',
+        'thumbnail',
         'reward',
+        'reward_title',
+        'reward_type',
+        'reward_body',
+        'reward_description',
         'content_file',
         'content_file_type',
         'content_file_name',
         'content_file_size',
         'ai_generated',
-        "subscription",
-        "subscription_period",
-        "repeat_purchase",
-        "category",
+        'subscription',
+        'subscription_period',
+        'repeat_purchase',
+        'category',
         'is_pin',
-        "twitter_response",
+        'twitter_response',
         'delete_reason',
         'edited_reason',
         'edited_status',
@@ -50,46 +56,47 @@ class WishItem extends Model
         'rising_score',
         'engagement_level',
         'trending_status',
-        'is_suspended'
+        'is_suspended',
     ];
 
     protected $appends = [
-        "perma_link",
+        'perma_link',
         'is_cart',
         'reward_url',
         'content_file_url',
-        'real_category'
+        'real_category',
     ];
 
     protected $casts = [
-        "twitter_response" => "array",
+        'twitter_response' => 'array',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     protected $hidden = [
         // 'thumbnail',
         // 'is_pin',
-        "created_at",
-        "updated_at",
-        "deleted_at"
+        // The paid deliverable when the reward is a message or a link —
+        // revealReward() opts entitled surfaces back in.
+        'reward_body',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
-
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
-
     public function getPermaLinkAttribute()
     {
         $url = false;
-        if (!empty($this->thumbnail)) {
+        if (! empty($this->thumbnail)) {
             // $api = Uploadcare::getApiObj()->file();
             // $info = $api->fileInfo($this->thumbnail)->getContentInfo();
             // $width = $info->getImage()->getWidth();
@@ -103,9 +110,9 @@ class WishItem extends Model
             // $fontsize = $textWm['fontsize'];
             // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
             // $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
-            $url = "https://ucarecdn.com/" . $this->thumbnail . "/-/format/jpeg/";
+            $url = 'https://ucarecdn.com/'.$this->thumbnail.'/-/format/jpeg/';
         } else {
-            $url = "https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/";
+            $url = 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/';
         }
 
         return $url;
@@ -114,8 +121,8 @@ class WishItem extends Model
     public function getRewardUrlAttribute()
     {
         $url = false;
-        if (!empty($this->reward)) {
-            $url = "https://ucarecdn.com/" . $this->reward . "/-/format/jpeg/";
+        if (! empty($this->reward)) {
+            $url = 'https://ucarecdn.com/'.$this->reward.'/-/format/jpeg/';
         }
 
         return $url;
@@ -124,13 +131,13 @@ class WishItem extends Model
     public function getContentFileUrlAttribute()
     {
         $url = null;
-        if (!empty($this->content_file)) {
+        if (! empty($this->content_file)) {
             // If it's a full Uploadcare URL (with modifiers), return as is
             if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
                 $url = $this->content_file;
             } else {
                 // If it's just a UUID, construct the Uploadcare URL
-                $url = "https://ucarecdn.com/" . $this->content_file . "/";
+                $url = 'https://ucarecdn.com/'.$this->content_file.'/';
             }
         }
 
@@ -189,7 +196,7 @@ class WishItem extends Model
             'user' => function ($query) {
                 $query->select('id', 'username', 'name', 'avatar', 'bio');
             },
-            'wishCategories.category'
+            'wishCategories.category',
         ];
     }
 
@@ -200,7 +207,7 @@ class WishItem extends Model
     {
         return [
             'id', 'uuid', 'user_id', 'wishname', 'thumbnail', 'reward',
-            'subscription', 'is_pin', 'supporter_count', 'trending_status', 'created_at'
+            'subscription', 'is_pin', 'supporter_count', 'trending_status', 'created_at',
         ];
     }
 

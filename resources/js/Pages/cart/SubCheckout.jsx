@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { rewardLines } from "@/constants/rewards";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
@@ -9,14 +10,24 @@ import axios from "axios";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import Turnstile from "@/Components/Turnstile";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 
 export default function SubCheckout(props) {
-    const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
+    const turnstileRef = useRef(null);
+    const [verified, setVerified] = useState(false);
+    // Stable identity so Turnstile's render effect doesn't remount the widget on re-render.
+    const onTurnstileVerify = useCallback((token) => {
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
+    }, [setData]);
     const {data, setData, post, processing, errors} = useForm({
         name: name,
         email: email,
@@ -25,6 +36,7 @@ export default function SubCheckout(props) {
         digital_waiver: false,
         anonymous: 0,
         payment_method: 'card',
+        cf_turnstile_response: '',
     });
     const [previewPrices, setPreviewPrices] = useState(null);
 
@@ -75,6 +87,13 @@ export default function SubCheckout(props) {
     }
 
     const submitCheckout = () => {
+        // Re-entrancy guard: a second tap before the disabled re-render must not
+        // fire a second checkout session.
+        if (processing) return;
+        if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
+            errorAlert("Please complete the security check.");
+            return;
+        }
         if (!auth?.user) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is disabled. Please log in.";
@@ -97,7 +116,16 @@ export default function SubCheckout(props) {
             reccure:reccure
         }),
         {
-            preserveScroll:true
+            preserveScroll:true,
+            onError: (errorBag) => {
+                const first = errorBag && Object.values(errorBag).flat()[0];
+                if (first) errorAlert(String(first));
+                setVerified(false);
+                setData("cf_turnstile_response", "");
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
+            },
         });
     }
 
@@ -355,13 +383,34 @@ export default function SubCheckout(props) {
                                 @{wish?.user?.username || ""}
                             </Link>
                         </h2>
-                        <p className="pb-4">
-                            You are about to subscribe to
-                            <strong> {wish?.user?.name || ""} </strong> to fund their
-                            wishes.
-                        </p>
+                        <OrderContextCard
+                            className="mb-4"
+                            image={wish.perma_link}
+                            typeBadge={reccure == 'onetime' ? 'One-off content' : 'Content subscription'}
+                            itemTitle={wish.wishname}
+                            itemSub={wish.content_description || wish.description}
+                            payingLabel="You're unlocking from"
+                            creatorName={wish?.user?.name}
+                            creatorUsername={wish?.user?.username}
+                            creatorAvatar={wish?.user?.avatar_url}
+                            whatYouGet={
+                                reccure == 'onetime'
+                                    ? [
+                                          ...rewardLines(wish),
+                                          "Instant access to this content after payment",
+                                          "A copy sent to your email",
+                                          "Yours to keep — one-time payment",
+                                      ]
+                                    : [
+                                          ...rewardLines(wish),
+                                          `New content from this creator every ${wish.subscription_period || 'cycle'}`,
+                                          "Delivered while your subscription is active",
+                                          "Cancel anytime from your purchases",
+                                      ]
+                            }
+                        />
                         <div className="CartItemBox">
-                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-[30px]   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
+                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-box   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
                                 <div className='prodcartbox items-center'>
                                     <div className='productimg'>
                                         <img src={wish.perma_link || cartproductimg} alt='img' />
@@ -369,7 +418,7 @@ export default function SubCheckout(props) {
                                     <div>
                                         <div className='cartProdTitle pl-3'>{wish.wishname}</div>
                                         {/* {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''} */}
-                                        <div className="inline-block px-2 py-1 bg-blue-100 text-gray-800 rounded mr-4 ml-3">
+                                        <div className="inline-block px-2 py-1 bg-blue-100 text-black rounded mr-4 ml-3">
                                         Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
                                     </div>
                                     </div>
@@ -390,7 +439,7 @@ export default function SubCheckout(props) {
 
                         <div className="cartTotal justify-end px-0 py-3">
                             <div className="cartSubTotal mt-1 mb-4">
-                                <strong className="text-gray-900 text-xl">Total:</strong>
+                                <strong className="text-black text-xl">Total:</strong>
                                 <span className=" text-black">
                                     <strong className="block text-xl">
                                         {formatMultiPrice(
@@ -401,7 +450,7 @@ export default function SubCheckout(props) {
                                         )}
                                     </strong>
                                     {global_currency && global_currency.toUpperCase() !== (wish?.currency || '').toUpperCase() && (
-                                        <div className="text-sm text-gray-500 font-medium mt-1">
+                                        <div className="text-sm text-black/60 font-medium mt-1">
                                             ≈ {formatMultiPrice(
                                                 data.payment_method === 'bank' && previewPrices?.bank != null
                                                     ? previewPrices.bank
@@ -412,7 +461,7 @@ export default function SubCheckout(props) {
                                     )}
                                 </span>
                             </div>
-                            <span className="text-[10px] mb-4 text-gray-500 font-normal mt-1 leading-tight block">
+                            <span className="text-[10px] mb-4 text-black/60 font-normal mt-1 leading-tight block">
                                 *Includes platform and payment processing fees. You will be charged in {wish?.currency}.
                             </span>
                         </div>
@@ -423,7 +472,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label>Add Message </label>
                                         <textarea
-                                            className="w-full border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            className={fieldClass}
                                             onKeyUp={(e) =>
                                                 setData('message',e.target.value)
                                             }
@@ -439,7 +488,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                                    className={fieldClass}
                                                     onChange={(e) =>
                                                         setData('name',e.target.value)
                                                     } value={data.name}
@@ -450,8 +499,8 @@ export default function SubCheckout(props) {
                                             </div>
                                             <div className="w-full mb-4">
                                                 <label className="block !text-start w-full">Email </label>
-                                                <p className="text-sm text-gray-500 mb-1">Your e-mail remains private.</p>
-                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500`}
+                                                <p className="text-sm text-black/60 mb-1">Your e-mail remains private.</p>
+                                                <input className={fieldClass}
                                                     value={data.email}
                                                     disabled={auth && auth.user && auth.user.email ? true : false}
                                                     onChange={(e) => setData('email',e.target.value)}
@@ -473,7 +522,7 @@ export default function SubCheckout(props) {
                                             className="mr-2"
                                             value="anonymous" ></input> Keep anonymous
                                     </label>
-                                    <p className="text-gray-500 text-sm mb-3" >Your personal email and name will be private.</p>
+                                    <p className="text-black/60 text-sm mb-3" >Your personal email and name will be private.</p>
                                     
                                     {reccure == 'onetime' && (
                                         <PaymentMethodSelector
@@ -491,14 +540,26 @@ export default function SubCheckout(props) {
                                         setData('agree', checked);
                                         setData('digital_waiver', checked);
                                     }} />
+
+                                    {turnstileSiteKey ? (
+                                        <div className="flex justify-center my-3">
+                                            <Turnstile
+                                                ref={turnstileRef}
+                                                size="normal"
+                                                theme="light"
+                                                onVerify={onTurnstileVerify}
+                                            />
+                                        </div>
+                                    ) : null}
                                     </li>
                                 </ul>
-                                <div className="mt-4 flex items-center justify-center" >
-                                    <button type="submit"
-                                        className={`${!data.agree || !data.digital_waiver || processing ? "disabled" : ""} main-button p`}
-                                        disabled={!data.agree || !data.digital_waiver || processing}>
-                                        {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
-                                    </button>
+                                <div className="mt-4" >
+                                    <PayButton
+                                        label={reccure == 'onetime' ? 'Subscribe Once' : `Subscribe ${wish.subscription_period}`}
+                                        processing={processing}
+                                        disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified)}
+                                        onClick={submitCheckout}
+                                    />
                                 </div>
                             </form>
                         </div>
@@ -514,15 +575,15 @@ export default function SubCheckout(props) {
             >
                 <div className="!rounded-none p-6">
                     <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || "Confirm Your Payment"}</h2>
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-black/60 mb-6 text-center">
                         {stepUpData?.ui?.body || "For your security, please confirm this payment."}
                     </p>
                     <form onSubmit={handleVerifyStepUp}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -530,10 +591,10 @@ export default function SubCheckout(props) {
                             />
                         </div>
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -564,11 +625,11 @@ export default function SubCheckout(props) {
                                 type="button"
                                 onClick={handlePasskeyStepUp}
                                 disabled={passkeyLoading || verifyingOtp}
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? "Checking device..." : "Use Face ID / Fingerprint"}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a saved passkey.
                             </p>
                         </div>

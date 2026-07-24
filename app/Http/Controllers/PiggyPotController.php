@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
+use App\Services\RewardService;
 use App\Services\UserProfileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -97,6 +98,12 @@ class PiggyPotController extends Controller
             return redirect()->back()->with('error', 'Please connect your Stripe account before creating a Piggy Pot.');
         }
 
+        // Default the reward headline from the pot title so a missing field
+        // never blocks creation (the pot's content IS the deliverable).
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->title]);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -112,19 +119,26 @@ class PiggyPotController extends Controller
             ],
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
-            'content_file' => 'required|string',
+            'content_file' => RewardService::fileRule(),
             'content_description' => 'nullable|string',
             'deadline' => 'nullable|date',
             'is_pinned' => 'boolean',
             'enable_leaderboard' => 'boolean',
             'allow_anonymous' => 'boolean',
-        ]);
+        ] + RewardService::validationRules());
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->withErrors(['reward_body' => $linkError])->withInput();
+        }
+
         $data = $validator->validated();
+        // Normalised in one place so a link is stored https-prefixed and a file
+        // reward never keeps a leftover message body.
+        $data = array_merge($data, RewardService::columnsFrom($request->all()));
         $data['user_id'] = Auth::id();
         $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
@@ -158,6 +172,12 @@ class PiggyPotController extends Controller
     {
         $piggyPot = PiggyPot::where('user_id', Auth::id())->findOrFail($id);
 
+        // Default the reward headline from the pot title so a missing field
+        // never blocks creation (the pot's content IS the deliverable).
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->title]);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -173,20 +193,25 @@ class PiggyPotController extends Controller
             ],
             'currency' => 'required|string|max:3',
             'cover_media' => 'nullable|string',
-            'content_file' => 'required|string',
+            'content_file' => RewardService::fileRule(),
             'content_description' => 'nullable|string',
             'deadline' => 'nullable|date',
             'is_pinned' => 'boolean',
             'enable_leaderboard' => 'boolean',
             'allow_anonymous' => 'boolean',
             'status' => 'in:active,completed,expired,archived,moderation_hold',
-        ]);
+        ] + RewardService::validationRules());
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->withErrors(['reward_body' => $linkError])->withInput();
+        }
+
         $data = $validator->validated();
+        $data = array_merge($data, RewardService::columnsFrom($request->all()));
 
         // A held pot can only be released by admin approval (Content Review in
         // the admin app) — never by the creator re-submitting status=active.

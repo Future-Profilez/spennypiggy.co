@@ -1550,7 +1550,10 @@ class StripeController extends Controller
                         'currency' => $dd->wish->currency ?? 'USD',
                         'product_data' => [
                             'name' => 'Total value of item including all fees',
-                            'description' => 'Support payment for '.($dd->wish->title ?? 'Wish Item'),
+                            'description' => Helpers::rewardLineDescription(
+                                $dd->wish ?? null,
+                                'Content purchase'
+                            ),
                         ],
                         'unit_amount' => (int) round($totalPrice * 100),
                     ],
@@ -1848,7 +1851,10 @@ class StripeController extends Controller
                             'currency' => $currency,
                             'product_data' => [
                                 'name' => 'Total value of item including all fees',
-                                'description' => 'Support payment for '.($value->wish->title ?? 'Wish Item'),
+                                'description' => Helpers::rewardLineDescription(
+                                    $value->wish ?? null,
+                                    'Content purchase'
+                                ),
                             ],
                             'unit_amount' => (int) round($totalPrice * 100),
                         ],
@@ -2031,6 +2037,9 @@ class StripeController extends Controller
                 'message' => $guestRestriction['message'],
             ]);
         }
+
+        // Bot gate — wishes allow guest checkout. Self-gating: no-op with no secret.
+        $this->ensureTurnstileVerified($request);
 
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($wish->user);
@@ -2306,7 +2315,10 @@ class StripeController extends Controller
                         'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => "Wish: {$wish->name} (Total value including all fees)",
-                            'description' => "Subscription content from {$wish->user->name}",
+                            'description' => Helpers::rewardLineDescription(
+                                $wish,
+                                "Subscription content from {$wish->user->name}"
+                            ),
                         ],
                         'unit_amount' => round($finalTotalAmount * $multiplier),
                     ],
@@ -2789,11 +2801,6 @@ class StripeController extends Controller
                 ];
 
                 if ($sub->wish_item->content_file) {
-                    $thankYouParams['wish_content'] = [
-                        'type' => $sub->wish_item->content_file_type,
-                        'name' => $sub->wish_item->content_file_name,
-                        'url' => $sub->wish_item->content_file_url,
-                    ];
                 }
 
                 return to_route('thank-you', $thankYouParams)->with('success', $message);

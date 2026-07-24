@@ -74,6 +74,10 @@ class PiggyPotPaymentController extends Controller
 
         $request->validate($rules);
 
+        // Bot gate — pots allow guest checkout, so this was the easiest fraud
+        // path with no captcha at all. Self-gating: no-op when no secret is set.
+        $this->ensureTurnstileVerified($request);
+
         $user = Auth::user();
 
         $piggyPot = PiggyPot::where('uuid', $piggy_pot_uuid)->first();
@@ -313,7 +317,10 @@ class PiggyPotPaymentController extends Controller
                     'currency' => $sourceCurrency,
                     'product_data' => [
                         'name' => 'Exclusive content',
-                        'description' => "Exclusive content from {$creator->name}.",
+                        'description' => Helpers::rewardLineDescription(
+                            $pay->piggyPot ?? null,
+                            "Exclusive content from {$creator->name}."
+                        ),
                     ],
                     'unit_amount' => $unitAmount,
                 ],
@@ -628,13 +635,7 @@ class PiggyPotPaymentController extends Controller
                     if (! str_starts_with($contentUrl, 'http://') && ! str_starts_with($contentUrl, 'https://')) {
                         $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
                     }
-                    $thankYouParams['wish_content'] = [
-                        'type' => null,
-                        'name' => $pay->piggyPot?->content_description ?: 'Exclusive content',
-                        'url' => $contentUrl,
-                    ];
                 } elseif (! empty($pay->piggyPot?->content_description)) {
-                    $thankYouParams['benefits'] = $pay->piggyPot->content_description;
                 }
 
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');

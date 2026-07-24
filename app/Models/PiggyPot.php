@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasRewardContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,7 +10,15 @@ use Ramsey\Uuid\Uuid;
 
 class PiggyPot extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasRewardContract, SoftDeletes;
+
+    /**
+     * The paid deliverable when the reward is a message or a link — entitled
+     * surfaces opt back in with revealReward().
+     */
+    protected $hidden = [
+        'reward_body',
+    ];
 
     protected $fillable = [
         'payment_methods_accepted',
@@ -22,6 +31,10 @@ class PiggyPot extends Model
         'cover_media',
         'content_file',
         'content_description',
+        'reward_title',
+        'reward_type',
+        'reward_body',
+        'reward_description',
         'deadline',
         'is_pinned',
         'enable_leaderboard',

@@ -1,6 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { IoMdRefresh } from "react-icons/io";
+import {
+    CircleUserRound,
+    Sparkles,
+    ShoppingBag,
+    ClipboardList,
+    PiggyBank,
+    Crown,
+    Repeat,
+} from "lucide-react";
 
 /**
  * Ultra-responsive tab system with instant visual feedback
@@ -31,14 +40,14 @@ function InstantTabSystem({
     });
 
     const tabs = [
-        { id: 'about', label: 'About' },
+        { id: 'about', label: 'About', Icon: CircleUserRound },
         // { id: 'feed', label: 'Feed' },
-        { id: 'wishes', label: 'Wishes' },
-        { id: 'shop', label: 'Shop' },
-        { id: 'tasks', label: 'Tasks' },
-        { id: 'piggy-pots', label: 'Piggy Pots' },
-        { id: 'memberships', label: 'Memberships' },
-        { id: 'bills', label: 'Bills' },
+        { id: 'wishes', label: 'Wishes', Icon: Sparkles },
+        { id: 'shop', label: 'Shop', Icon: ShoppingBag },
+        { id: 'tasks', label: 'Tasks', Icon: ClipboardList },
+        { id: 'piggy-pots', label: 'Piggy Pots', Icon: PiggyBank },
+        { id: 'memberships', label: 'Memberships', Icon: Crown },
+        { id: 'bills', label: 'Bills', Icon: Repeat },
     ];
 
     // Get effective active tab (including pending state)
@@ -271,7 +280,8 @@ function InstantTabSystem({
                 aria-label={`Switch to ${tab.label} tab`}
             >
                 {/* Tab content */}
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5">
+                    {tab.Icon ? <tab.Icon size={22} strokeWidth={2.5} className="shrink-0" /> : null}
                     <span>{tab.label}</span>
                 </span>
             </button>

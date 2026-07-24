@@ -36,7 +36,7 @@ export default function PiggyPotsGrid({
     const content = useMemo(() => {
         if (piggyPots && piggyPots.length > 0) {
             return (
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {piggyPots.map((pot) => {
                         const target = Number(pot?.target_amount) || 0;
                         const raised = Number(pot?.total_raised) || 0;
@@ -48,7 +48,7 @@ export default function PiggyPotsGrid({
                         const isComplete = pot?.status === 'completed' || remaining <= 0 || progressPercent >= 100;
                         const statusLabel = isComplete ? 'completed' : (pot?.status || 'active');
                         const statusBadgeClass = isComplete
-                            ? 'bg-[#FFD700] text-black'
+                            ? 'bg-[#A2E4B8] text-black'
                             : statusLabel === 'active'
                                 ? 'bg-[#A2E4B8] text-black'
                                 : statusLabel === 'moderation_hold'
@@ -61,7 +61,7 @@ export default function PiggyPotsGrid({
                                 type="button"
                                 onClick={() => setActivePiggyPot(pot)}
                                 aria-label={`Open ${pot.title}`}
-                                className={`text-left cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-box "} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#e85d9a]`}
+                                className={`text-left cursor-pointer ${inPopup ? '' : "bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 rounded-box "} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
                             >
                                 <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
@@ -73,7 +73,7 @@ export default function PiggyPotsGrid({
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     alt={pot.title} />
                                     {/* <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <div className="w-16 h-10 bg-[#e85d9a] rounded-full border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="w-16 h-10 bg-[#FF007F] rounded-full border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <span className="text-black font-black text-3xl mb-1">
                                                 +
                                             </span>
@@ -96,7 +96,7 @@ export default function PiggyPotsGrid({
                                 </div>
                                 <div className="mt-2 w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden  shadow-[inset_0_2px_0_rgba(0,0,0,0.1)]">
                                     <div
-                                        className={`${isComplete ? 'bg-[#FFD700]' : 'bg-[#e85d9a]'} h-full transition-all duration-1000 ease-out`}
+                                        className={`${isComplete ? 'bg-[#A2E4B8]' : 'bg-[#FF007F]'} h-full transition-all duration-1000 ease-out`}
                                         style={{ width: `${progressPercent}%` }}
                                     ></div>
                                 </div>
@@ -135,7 +135,7 @@ export default function PiggyPotsGrid({
                         onClick={() =>
                             window.dispatchEvent(new Event("toggleAddOptions"))
                         }
-                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
                     >
                         Create Piggy Pot
                     </button>

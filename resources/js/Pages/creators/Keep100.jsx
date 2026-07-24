@@ -47,7 +47,7 @@ export default function Keep100() {
 
               <div className="grid md:grid-cols-2 gap-6 md:gap-10">
                  
-                 <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group">
+                 <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group">
                     <div className="bg-yellow-300 w-16 h-16 md:w-20 md:h-20 rounded-[30px]  border-[3px] border-black flex items-center justify-center mb-8">
                        <DollarSign className="text-[#FF007F]" size={40} />
                     </div>
@@ -66,7 +66,7 @@ export default function Keep100() {
                     </ul>
                  </div>
 
-                 <div className="bg-black text-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                 <div className="bg-black text-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                        <ShieldCheck size={180} className="text-white" />
                     </div>

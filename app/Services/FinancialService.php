@@ -73,14 +73,22 @@ class FinancialService
         // Note: includes both executed payout-run reserves and pending (unreleased) reserves.
         $heldReservesAmount = (float) ($reserves['total_held'] ?? 0);
 
-        // Review Holds and Disputed payments
-        $reviewHoldsAmount = Payment::where('creator_id', $user->uuid)
+        // Review Holds and Disputed payments — grouped by currency, not a flat
+        // sum(amount). Payment.amount is minor units of Payment.currency, so a
+        // creator holding both USD and GBP review-holds would otherwise have those
+        // raw minor units added together and the total mislabelled as GBP. Each
+        // currency subtotal is converted individually below.
+        $reviewHoldsByCurrency = Payment::where('creator_id', $user->uuid)
             ->where('status', 'review_hold')
-            ->sum('amount');
+            ->selectRaw("UPPER(COALESCE(currency, 'GBP')) as ccy, SUM(amount) as total")
+            ->groupBy('ccy')
+            ->pluck('total', 'ccy');
 
-        $disputesAmount = Payment::where('creator_id', $user->uuid)
+        $disputesByCurrency = Payment::where('creator_id', $user->uuid)
             ->where('status', 'disputed')
-            ->sum('amount');
+            ->selectRaw("UPPER(COALESCE(currency, 'GBP')) as ccy, SUM(amount) as total")
+            ->groupBy('ccy')
+            ->pluck('total', 'ccy');
 
         $grossDisplay = 0;
         $feesDisplay = 0;
@@ -228,8 +236,38 @@ class FinancialService
 
         // Already in display currency — do NOT re-convert.
         $heldReservesDisplay = $heldReservesAmount;
-        $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
-        $disputesDisplay = $convert('GBP', $disputesAmount / 100, $displayCurrency) ?? ($disputesAmount / 100);
+
+        // Convert each currency's subtotal to the display currency, then sum. A
+        // currency with no known rate falls back to its own major units rather
+        // than being dropped.
+        $sumConverted = function ($byCurrency) use ($convert, $displayCurrency) {
+            $total = 0.0;
+            foreach ($byCurrency as $ccy => $minor) {
+                $major = ((int) $minor) / 100;
+                $total += $ccy === $displayCurrency
+                    ? $major
+                    : ($convert($ccy, $major, $displayCurrency) ?? $major);
+            }
+
+            return $total;
+        };
+
+        $reviewHoldsDisplay = $sumConverted($reviewHoldsByCurrency);
+        $disputesDisplay = $sumConverted($disputesByCurrency);
+
+        // GBP figures for the *_gbp summary keys, converted the same per-currency way.
+        $sumConvertedGbp = function ($byCurrency) use ($convert) {
+            $total = 0.0;
+            foreach ($byCurrency as $ccy => $minor) {
+                $major = ((int) $minor) / 100;
+                $total += $ccy === 'GBP' ? $major : ($convert($ccy, $major, 'GBP') ?? $major);
+            }
+
+            return $total;
+        };
+
+        $reviewHoldsGbp = $sumConvertedGbp($reviewHoldsByCurrency);
+        $disputesGbp = $sumConvertedGbp($disputesByCurrency);
 
         // Calculate Expected Next Payout using PayoutService directly.
         // Scoped to this creator: the platform-wide call walked every creator on the
@@ -367,8 +405,8 @@ class FinancialService
             'held_reserves_gbp' => $heldReservesGbp,
             'pending_balance_gbp' => $pendingAmountMajor,
             'clearing_balance_gbp' => $clearingGbp,
-            'review_holds_gbp' => $reviewHoldsAmount / 100,
-            'disputes_gbp' => $disputesAmount / 100,
+            'review_holds_gbp' => $reviewHoldsGbp,
+            'disputes_gbp' => $disputesGbp,
         ];
     }
 

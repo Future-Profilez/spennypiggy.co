@@ -216,7 +216,7 @@ export default function SecurityZone() {
 
                     {/* Search Results Dropdown */}
                     {searchQuery.length >= 2 && (
-                        <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-[25px] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                        <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-[25px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                             {searching ? (
                                 <div className="p-8 text-center">
                                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-black border-t-transparent"></div>

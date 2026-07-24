@@ -35,7 +35,7 @@ export default function MyGoal({  IsloggedIn}) {
             </h2>
         </div> */}
         <div className='' >
-            <p className='mb-6 text-black/40 font-black text-[13px] tracking-[0.2em] uppercase'>Total Earned</p>
+            <p className='mb-6 text-black/60 font-black text-[13px] tracking-[0.2em] uppercase'>Total Earned</p>
             <div className="relative w-full h-[12px] bg-[#F3F4F6] rounded-full overflow-visible mb-6">
                  <div className="h-full bg-[#FF007F] rounded-full relative shadow-[0_0_20px_rgba(249,79,150,0.3)] transition-all duration-1000" 
                     style={{ width: `${percentage}%` }} >
@@ -52,13 +52,13 @@ export default function MyGoal({  IsloggedIn}) {
             </div> */}
 
             {IsloggedIn ?
-                <p className='text-black/50 text-normal font-medium mt-4' >
+                <p className='text-black/60 text-normal font-medium mt-4' >
                     <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned of {formatMultiPrice(goal?.target, goal?.currency)}
                 </p> 
             :  '' }
 
             {!IsloggedIn && user && user?.show_piggy_bank ?
-                <p className='text-black/50 text-normal font-medium mt-4' >
+                <p className='text-black/60 text-normal font-medium mt-4' >
                     <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned of {formatMultiPrice(goal?.target, goal?.currency)}
                 </p> 
             : '' }

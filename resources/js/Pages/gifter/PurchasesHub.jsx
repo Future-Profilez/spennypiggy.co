@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePage } from "@inertiajs/react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import LazyVideo from "../../Components/LazyVideo";
@@ -6,7 +6,8 @@ import {
     Heart, ShoppingBag, CheckCircle2, PiggyBank, Crown, Repeat, Coins,
     Wallet, Unlock, FileText, Music, Image as ImageIcon, Film,
     ArrowUpRight, Play, Trophy, Download, Truck, Clock, AlertTriangle, ReceiptText,
-    Users, BellRing, RotateCw, MessageCircle, Bookmark,
+    Users, BellRing, RotateCw, MessageCircle, Bookmark, Search, X,
+    ArrowDownUp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 /* Category system — one quiet colour + icon per type, rendered as soft tinted
@@ -26,10 +27,34 @@ const tint = (hex, a = "1a") => hex + a; // 8-digit hex alpha
 const TIER_COLOR = { Bronze: "#B45309", Silver: "#71717A", Gold: "#D97706", Platinum: "#2563EB", Diamond: "#DB2777" };
 
 const ACCENT = "#FF007F";
-const CARD = "bg-white border border-zinc-200/70 rounded-[30px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+const CARD = "bg-white border border-zinc-200/70 rounded-box shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
 const CARD_HOVER = "transition-shadow duration-200 hover:shadow-[0_10px_30px_-12px_rgba(16,24,40,0.18)]";
 const MONO = "[font-variant-numeric:tabular-nums] tabular-nums";
 const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400";
+
+/* Which tabs accept a search box, and which sort keys each supports. Type-filter
+   chips only appear where a tab mixes source types. */
+const SORTS = {
+    recent: "Recent",
+    price_desc: "Price: high → low",
+    price_asc: "Price: low → high",
+    name: "Name A–Z",
+};
+const TAB_TOOLS = {
+    media:         { search: true, types: true,  sorts: ["recent", "name"] },
+    incoming:      { search: true, types: false, sorts: ["recent"] },
+    subscriptions: { search: true, types: false, sorts: ["recent", "price_desc", "price_asc", "name"] },
+    unlocked:      { search: true, types: true,  sorts: ["recent", "name"] },
+    creators:      { search: true, types: false, sorts: ["price_desc", "price_asc", "name"] },
+    saved:         { search: true, types: true,  sorts: ["recent", "name"] },
+    receipts:      { search: true, types: true,  sorts: ["recent", "price_desc", "price_asc", "name"] },
+    spending:      { search: false, types: false, sorts: [] },
+};
+
+const norm = (s) => String(s || "").toLowerCase();
+const amountOf = (x) => Number(x?.amount ?? x?.total_spent ?? 0);
+const nameOf = (x) => x?.title || x?.owner?.username || "";
+const typeOf = (x) => x?.source_type || x?.product_type;
 
 export default function PurchasesHub({
     display_currency = "GBP",
@@ -57,6 +82,12 @@ export default function PurchasesHub({
     const [canceling, setCanceling] = useState(null);
     const [savedItems, setSavedItems] = useState(saved);
 
+    // Toolbar state (reset when switching tabs)
+    const [query, setQuery] = useState("");
+    const [sort, setSort] = useState("recent");
+    const [typeFilter, setTypeFilter] = useState(null); // null = all
+    const [lightbox, setLightbox] = useState(null); // index into filtered media
+
     useEffect(() => {
         setMedia(media_library);
         setPage(media_pagination.current_page || 1);
@@ -64,6 +95,7 @@ export default function PurchasesHub({
     }, [media_library]);
     useEffect(() => { setSubs(subscriptions); }, [subscriptions]);
     useEffect(() => { setSavedItems(saved); }, [saved]);
+    useEffect(() => { setQuery(""); setTypeFilter(null); setSort(TAB_TOOLS[tab]?.sorts?.[0] || "recent"); }, [tab]);
 
     const symbol = symbols?.[display_currency] ?? "";
     const money = (n) => `${symbol}${Number(n || 0).toFixed(2)}`;
@@ -107,6 +139,42 @@ export default function PurchasesHub({
         return d >= 0 && d <= 7;
     });
 
+    // Source list per tab (pre-filter)
+    const source = {
+        media, incoming, subscriptions: subs, unlocked,
+        creators, saved: savedItems, receipts,
+    }[tab] || [];
+
+    // Type-filter options present in the current tab's data
+    const typeOptions = useMemo(() => {
+        if (!TAB_TOOLS[tab]?.types) return [];
+        const set = new Set(source.map(typeOf).filter(Boolean));
+        return [...set];
+    }, [tab, source]);
+
+    // Apply search + type filter + sort
+    const view = useMemo(() => {
+        const tools = TAB_TOOLS[tab] || {};
+        let out = source;
+        if (tools.search && query.trim()) {
+            const q = norm(query);
+            out = out.filter((x) => norm(nameOf(x)).includes(q) || norm(x?.owner?.username).includes(q));
+        }
+        if (tools.types && typeFilter) out = out.filter((x) => typeOf(x) === typeFilter);
+        if (sort && sort !== "recent") {
+            out = [...out].sort((a, b) => {
+                if (sort === "name") return norm(nameOf(a)).localeCompare(norm(nameOf(b)));
+                if (sort === "price_desc") return amountOf(b) - amountOf(a);
+                if (sort === "price_asc") return amountOf(a) - amountOf(b);
+                return 0;
+            });
+        }
+        return out;
+    }, [tab, source, query, typeFilter, sort]);
+
+    const toolsFor = TAB_TOOLS[tab] || {};
+    const showToolbar = toolsFor.search && source.length > 0;
+
     const sections = [
         { key: "media", label: "Media", icon: Film, count: media.length },
         ...(incoming.length ? [{ key: "incoming", label: "Incoming", icon: Truck, count: incoming.length }] : []),
@@ -119,41 +187,56 @@ export default function PurchasesHub({
     ];
 
     const inner = (
-        <div className={`mx-auto px-4 sm:px-6 ${embedded ? "max-w-[1080px]" : "max-w-[1140px] pt-10"}`}>
+        <div className={`mx-auto px-4 sm:px-6 ${embedded ? "max-w-[1080px]" : "max-w-[1140px] pt-6 sm:pt-10"}`}>
             <Hero embedded={embedded} media={media} summary={spend_summary} money={money} reduce={reduce} status={supporter_status} />
 
             {renewingSoon.length > 0 && (
                 <RenewingBanner items={renewingSoon} money={money} onCancel={cancelSub} canceling={canceling} onView={() => setTab("subscriptions")} />
             )}
 
-            {/* Tab rail — a cohesive toolbar that wraps to the next line */}
-            <div className="flex flex-wrap gap-1 bg-white border border-zinc-200/70 rounded-[20px] p-1.5 mt-8 mb-7 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-                {sections.map((s) => {
-                    const Icon = s.icon;
-                    const active = tab === s.key;
-                    const alert = s.key === "incoming" && incoming.some((i) => i.is_overdue);
-                    return (
-                        <button
-                            key={s.key}
-                            onClick={() => setTab(s.key)}
-                            aria-pressed={active}
-                            className={`group flex items-center gap-2 px-3.5 py-2 rounded-[14px] text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
-                                active ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
-                            }`}
-                        >
-                            <Icon size={15} strokeWidth={2} />
-                            {s.label}
-                            <span className={`text-[11px] rounded-full px-1.5 py-0.5 ${MONO} ${
-                                alert ? "bg-rose-100 text-rose-600 font-semibold"
-                                : active ? "bg-white/15 text-white/80"
-                                : "bg-zinc-100 text-zinc-400"
-                            }`}>
-                                {s.count}
-                            </span>
-                        </button>
-                    );
-                })}
+            {/* Tab rail — sticky, horizontally scrollable on mobile */}
+            <div className={`${embedded ? "" : "sticky top-2 z-20"} mt-8 mb-4`}>
+                <div
+                    className="flex gap-1 flex-nowrap sm:flex-wrap overflow-x-auto no-scrollbar bg-white/90 backdrop-blur border border-zinc-200/70 rounded-box-sm p-1.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+                    style={{ WebkitOverflowScrolling: "touch" }}
+                >
+                    {sections.map((s) => {
+                        const Icon = s.icon;
+                        const active = tab === s.key;
+                        const alert = s.key === "incoming" && incoming.some((i) => i.is_overdue);
+                        return (
+                            <button
+                                key={s.key}
+                                onClick={() => setTab(s.key)}
+                                aria-pressed={active}
+                                className={`group flex items-center gap-2 px-3.5 min-h-[44px] rounded-[14px] text-sm font-medium whitespace-nowrap shrink-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
+                                    active ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                                }`}
+                            >
+                                <Icon size={15} strokeWidth={2} />
+                                {s.label}
+                                <span className={`text-[11px] rounded-full px-1.5 py-0.5 ${MONO} ${
+                                    alert ? "bg-rose-100 text-rose-600 font-semibold"
+                                    : active ? "bg-white/15 text-white/80"
+                                    : "bg-zinc-100 text-zinc-400"
+                                }`}>
+                                    {s.count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
+
+            {showToolbar && (
+                <Toolbar
+                    query={query} setQuery={setQuery}
+                    sort={sort} setSort={setSort} sorts={toolsFor.sorts}
+                    typeOptions={toolsFor.types ? typeOptions : []}
+                    typeFilter={typeFilter} setTypeFilter={setTypeFilter}
+                    shown={view.length} total={source.length}
+                />
+            )}
 
             <AnimatePresence mode="wait">
                 <motion.div
@@ -163,21 +246,33 @@ export default function PurchasesHub({
                     exit={reduce ? { opacity: 1 } : { opacity: 0, y: -6 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 >
-                    {tab === "media" && <MediaGrid items={media} hasMore={hasMore} loadMore={loadMore} loading={loading} reduce={reduce} />}
-                    {tab === "incoming" && <IncomingList items={incoming} reduce={reduce} />}
-                    {tab === "subscriptions" && <SubscriptionList items={subs} money={money} reduce={reduce} onCancel={cancelSub} canceling={canceling} />}
-                    {tab === "unlocked" && <UnlockedList items={unlocked} reduce={reduce} />}
-                    {tab === "creators" && <CreatorsList items={creators} money={money} reduce={reduce} />}
-                    {tab === "saved" && <SavedList items={savedItems} reduce={reduce} onRemove={removeSaved} />}
-                    {tab === "receipts" && <ReceiptsList items={receipts} money={money} reduce={reduce} />}
+                    {tab === "media" && <MediaGrid items={view} hasMore={hasMore} loadMore={loadMore} loading={loading} reduce={reduce} filtered={!!(query.trim() || typeFilter)} onOpen={setLightbox} />}
+                    {tab === "incoming" && <IncomingList items={view} reduce={reduce} />}
+                    {tab === "subscriptions" && <SubscriptionList items={view} money={money} reduce={reduce} onCancel={cancelSub} canceling={canceling} />}
+                    {tab === "unlocked" && <UnlockedList items={view} reduce={reduce} />}
+                    {tab === "creators" && <CreatorsList items={view} money={money} reduce={reduce} />}
+                    {tab === "saved" && <SavedList items={view} reduce={reduce} onRemove={removeSaved} />}
+                    {tab === "receipts" && <ReceiptsList items={view} money={money} reduce={reduce} />}
                     {tab === "spending" && <SpendingDetail summary={spend_summary} money={money} reduce={reduce} />}
                 </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {lightbox !== null && view[lightbox] && (
+                    <Lightbox
+                        items={view}
+                        index={lightbox}
+                        onIndex={setLightbox}
+                        onClose={() => setLightbox(null)}
+                        reduce={reduce}
+                    />
+                )}
             </AnimatePresence>
         </div>
     );
 
     if (embedded) return inner;
-    return <div className="relative min-h-screen pb-24 bg-[#F7F7F8] text-zinc-900">{inner}</div>;
+    return <div className="relative min-h-dvh pb-24 bg-[#F7F7F8] text-zinc-900" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}>{inner}</div>;
 }
 
 const stagger = (reduce) => ({ hidden: {}, show: { transition: { staggerChildren: reduce ? 0 : 0.04 } } });
@@ -185,6 +280,192 @@ const rise = (reduce) => ({
     hidden: reduce ? { opacity: 1 } : { opacity: 0, y: 12 },
     show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
 });
+
+/* ---------------- Toolbar ---------------- */
+function Toolbar({ query, setQuery, sort, setSort, sorts = [], typeOptions = [], typeFilter, setTypeFilter, shown, total }) {
+    const hasSort = sorts.length > 1;
+    return (
+        <div className="mb-6">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
+                <div className="relative flex-1">
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search by title or creator…"
+                        className="w-full min-h-[44px] pl-10 pr-9 rounded-box-sm bg-white border border-zinc-200/70 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 focus:border-[#FF007F]/40 transition"
+                    />
+                    {query && (
+                        <button onClick={() => setQuery("")} aria-label="Clear search"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 inline-flex items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition">
+                            <X size={15} />
+                        </button>
+                    )}
+                </div>
+                {hasSort && (
+                    <div className="relative shrink-0">
+                        <ArrowDownUp size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                        <select
+                            value={sort}
+                            onChange={(e) => setSort(e.target.value)}
+                            aria-label="Sort"
+                            className="appearance-none min-h-[44px] pl-9 pr-9 rounded-box-sm bg-white border border-zinc-200/70 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 cursor-pointer"
+                        >
+                            {sorts.map((k) => <option key={k} value={k}>{SORTS[k]}</option>)}
+                        </select>
+                        <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-zinc-400 pointer-events-none" />
+                    </div>
+                )}
+            </div>
+
+            {typeOptions.length > 1 && (
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    <FilterChip active={!typeFilter} onClick={() => setTypeFilter(null)} label="All" />
+                    {typeOptions.map((t) => {
+                        const c = cat(t);
+                        return (
+                            <FilterChip key={t} active={typeFilter === t} onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+                                label={c.label} color={c.color} Icon={c.icon} />
+                        );
+                    })}
+                </div>
+            )}
+
+            {(query.trim() || typeFilter) && (
+                <div className="text-[11px] text-zinc-400 mt-2">{shown} of {total} shown</div>
+            )}
+        </div>
+    );
+}
+
+function FilterChip({ active, onClick, label, color = "#71717A", Icon }) {
+    return (
+        <button onClick={onClick} aria-pressed={active}
+            className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full text-xs font-medium border transition ${
+                active ? "text-white border-transparent" : "text-zinc-600 bg-white border-zinc-200/70 hover:border-zinc-300"
+            }`}
+            style={active ? { backgroundColor: color } : undefined}>
+            {Icon && <Icon size={12} strokeWidth={2.4} />} {label}
+        </button>
+    );
+}
+
+/* ---------------- Lightbox ---------------- */
+function Lightbox({ items, index, onIndex, onClose, reduce }) {
+    const item = items[index];
+    const touch = useRef(null);
+
+    const go = useCallback((dir) => {
+        onIndex((i) => {
+            const n = i + dir;
+            if (n < 0) return items.length - 1;
+            if (n >= items.length) return 0;
+            return n;
+        });
+    }, [items.length, onIndex]);
+
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === "Escape") onClose();
+            else if (e.key === "ArrowRight") go(1);
+            else if (e.key === "ArrowLeft") go(-1);
+        };
+        window.addEventListener("keydown", onKey);
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+    }, [go, onClose]);
+
+    if (!item) return null;
+    const c = cat(item.source_type);
+    const multi = items.length > 1;
+
+    const onTouchStart = (e) => { touch.current = e.touches[0].clientX; };
+    const onTouchEnd = (e) => {
+        if (touch.current == null) return;
+        const dx = e.changedTouches[0].clientX - touch.current;
+        if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+        touch.current = null;
+    };
+
+    return (
+        <motion.div
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col"
+            initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={onClose}
+            style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-4 py-3 text-white/90" onClick={(e) => e.stopPropagation()}>
+                <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{item.title}</div>
+                    <div className="text-xs text-white/50 truncate">@{item.owner?.username}{multi ? ` · ${index + 1} / ${items.length}` : ""}</div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {item.media_url && (
+                        <a href={item.media_url} target="_blank" rel="noreferrer" download aria-label="Download"
+                            className="w-11 h-11 inline-flex items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition">
+                            <Download size={19} />
+                        </a>
+                    )}
+                    <button onClick={onClose} aria-label="Close"
+                        className="w-11 h-11 inline-flex items-center justify-center rounded-full text-white/90 hover:bg-white/10 transition">
+                        <X size={22} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Stage */}
+            <div className="flex-1 flex items-center justify-center px-3 pb-3 min-h-0 relative"
+                onClick={(e) => e.stopPropagation()} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+                {multi && (
+                    <button onClick={() => go(-1)} aria-label="Previous"
+                        className="hidden sm:flex absolute left-4 w-12 h-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition z-10">
+                        <ChevronLeft size={26} />
+                    </button>
+                )}
+                <div className="max-w-[92vw] max-h-full flex items-center justify-center">
+                    {item.media_kind === "video" ? (
+                        <LazyVideo src={item.media_url} posterSrc={item.media_url} fallback={item.owner?.avatar} controls
+                            className="max-h-[80vh] max-w-[92vw] rounded-box-sm object-contain bg-black" />
+                    ) : item.media_kind === "image" ? (
+                        <img src={item.media_url} alt={item.title} className="max-h-[80vh] max-w-[92vw] rounded-box-sm object-contain" />
+                    ) : item.media_kind === "audio" ? (
+                        <div className="w-[min(92vw,520px)] rounded-box bg-white p-6 text-center">
+                            <span className="inline-flex w-14 h-14 rounded-full items-center justify-center mb-4" style={{ backgroundColor: tint(c.color, "16"), color: c.color }}>
+                                <Music size={26} />
+                            </span>
+                            <div className="text-sm font-medium text-zinc-900 mb-4 truncate">{item.title}</div>
+                            <audio src={item.media_url} controls className="w-full" />
+                        </div>
+                    ) : (
+                        <a href={item.media_url} target="_blank" rel="noreferrer"
+                            className="flex flex-col items-center gap-3 text-white bg-white/10 rounded-box px-10 py-12 hover:bg-white/15 transition">
+                            <FileText size={40} strokeWidth={1.6} />
+                            <span className="text-sm font-medium">Open file</span>
+                        </a>
+                    )}
+                </div>
+                {multi && (
+                    <button onClick={() => go(1)} aria-label="Next"
+                        className="hidden sm:flex absolute right-4 w-12 h-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition z-10">
+                        <ChevronRight size={26} />
+                    </button>
+                )}
+            </div>
+
+            {/* Mobile nav */}
+            {multi && (
+                <div className="sm:hidden flex items-center justify-center gap-6 pb-4 text-white" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => go(-1)} aria-label="Previous" className="w-12 h-12 inline-flex items-center justify-center rounded-full bg-white/10"><ChevronLeft size={24} /></button>
+                    <span className="text-xs text-white/60 tabular-nums">{index + 1} / {items.length}</span>
+                    <button onClick={() => go(1)} aria-label="Next" className="w-12 h-12 inline-flex items-center justify-center rounded-full bg-white/10"><ChevronRight size={24} /></button>
+                </div>
+            )}
+        </motion.div>
+    );
+}
 
 function Chip({ type }) {
     const c = cat(type);
@@ -197,7 +478,7 @@ function Chip({ type }) {
     );
 }
 
-function IconTile({ type, size = 44, rounded = "rounded-[20px]" }) {
+function IconTile({ type, size = 44, rounded = "rounded-box-sm" }) {
     const c = cat(type);
     const Icon = c.icon;
     return (
@@ -315,7 +596,7 @@ function Mosaic({ tiles, extra, reduce }) {
                     const isImg = t.media_kind === "image" && t.media_url;
                     return (
                         <motion.div key={t.id} variants={rise(reduce)}
-                            className="aspect-square rounded-[20px] border border-zinc-200 bg-white shadow-[0_4px_14px_-6px_rgba(16,24,40,0.2)] overflow-hidden"
+                            className="aspect-square rounded-box-sm border border-zinc-200 bg-white shadow-[0_4px_14px_-6px_rgba(16,24,40,0.2)] overflow-hidden"
                             style={{ transform: `rotate(${rot[i]})` }}>
                             {isImg ? (
                                 <img src={t.media_url} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -338,21 +619,25 @@ function Mosaic({ tiles, extra, reduce }) {
 }
 
 /* ---------------- Media ---------------- */
-function MediaGrid({ items, hasMore, loadMore, loading, reduce }) {
-    if (!items.length) return <Empty title="No media yet" sub="Content you buy from creators lands here." Icon={Film} />;
+function MediaGrid({ items, hasMore, loadMore, loading, reduce, filtered, onOpen }) {
+    if (!items.length) {
+        return filtered
+            ? <Empty title="No matches" sub="Try a different search or clear the filters." Icon={Search} />
+            : <Empty title="No media yet" sub="Content you buy from creators lands here." Icon={Film} />;
+    }
     return (
         <>
             <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" variants={stagger(reduce)} initial="hidden" animate="show">
-                {items.map((it) => (
-                    <motion.div key={it.id} variants={rise(reduce)}><MediaCard item={it} /></motion.div>
+                {items.map((it, i) => (
+                    <motion.div key={it.id} variants={rise(reduce)}><MediaCard item={it} onOpen={() => onOpen(i)} /></motion.div>
                 ))}
                 {loading && [0, 1, 2, 3].map((i) => <SkeletonCard key={`sk${i}`} />)}
             </motion.div>
             {hasMore && (
                 <div className="text-center mt-7">
                     <button onClick={loadMore} disabled={loading}
-                        className="px-5 py-2.5 rounded-full text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors disabled:opacity-50">
-                        {loading ? "Loading…" : "Load more"}
+                        className="px-5 min-h-[44px] rounded-full text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors disabled:opacity-50">
+                        {loading ? "Loading…" : filtered ? "Load more to search further" : "Load more"}
                     </button>
                 </div>
             )}
@@ -360,15 +645,27 @@ function MediaGrid({ items, hasMore, loadMore, loading, reduce }) {
     );
 }
 
-function MediaCard({ item }) {
+function MediaCard({ item, onOpen }) {
     const { media_kind, media_url, owner, title } = item;
     const c = cat(item.source_type);
+    const openable = media_kind === "image" || media_kind === "video" || media_kind === "audio" || media_kind === "pdf";
     return (
         <div className={`${CARD} ${CARD_HOVER} overflow-hidden flex flex-col group`}>
-            <div className="aspect-square flex items-center justify-center overflow-hidden relative" style={{ backgroundColor: tint(c.color, "10") }}>
+            <button
+                type="button"
+                onClick={openable ? onOpen : undefined}
+                aria-label={openable ? `Open ${title}` : title}
+                className="aspect-square flex items-center justify-center overflow-hidden relative text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40"
+                style={{ backgroundColor: tint(c.color, "10"), cursor: openable ? "zoom-in" : "default" }}
+            >
                 {media_kind === "video" ? (
                     <>
-                        <LazyVideo src={media_url} posterSrc={media_url} fallback={owner?.avatar} controls className="w-full h-full object-cover" />
+                        <img src={owner?.avatar} alt="" className="w-full h-full object-cover opacity-40" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                                <Play size={20} className="ml-0.5" />
+                            </span>
+                        </span>
                         <span className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 pointer-events-none backdrop-blur-sm">
                             <Play size={10} /> Video
                         </span>
@@ -376,13 +673,13 @@ function MediaCard({ item }) {
                 ) : media_kind === "image" ? (
                     <img src={media_url} alt={title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
                 ) : (
-                    <NonVisual kind={media_kind} url={media_url} color={c.color} />
+                    <NonVisual kind={media_kind} color={c.color} />
                 )}
-            </div>
+            </button>
             <div className="p-3.5">
                 <div className="text-sm font-medium text-zinc-900 truncate" title={title}>{title}</div>
                 <div className="flex items-center justify-between mt-2 gap-2">
-                    <span className="text-xs text-zinc-400 truncate">@{owner?.username}</span>
+                    <a href={owner?.username ? `/${owner.username}` : undefined} className="text-xs text-zinc-400 truncate hover:text-zinc-700 hover:underline">@{owner?.username}</a>
                     <Chip type={item.source_type} />
                 </div>
             </div>
@@ -402,13 +699,13 @@ function SkeletonCard() {
     );
 }
 
-function NonVisual({ kind, url, color }) {
+function NonVisual({ kind, color }) {
     const Icon = kind === "audio" ? Music : kind === "pdf" ? FileText : ImageIcon;
     return (
-        <a href={url} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 text-sm font-medium hover:underline" style={{ color }}>
+        <span className="flex flex-col items-center gap-2 text-sm font-medium" style={{ color }}>
             <Icon size={30} strokeWidth={1.8} />
             <span>Open file</span>
-        </a>
+        </span>
     );
 }
 
@@ -422,14 +719,14 @@ function RenewingBanner({ items, money, onCancel, canceling, onView }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {items.slice(0, 4).map((s) => (
-                    <div key={s.id} className="bg-zinc-50 border border-zinc-200/70 rounded-[20px] px-3.5 py-2.5 flex items-center gap-3">
+                    <div key={s.id} className="bg-zinc-50 border border-zinc-200/70 rounded-box-sm px-3.5 py-2.5 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-zinc-900 truncate">{s.title}</div>
                             <div className={`text-xs text-zinc-400 ${MONO}`}>{money(s.amount)} · renews {fmtDate(s.next_charge_at)}</div>
                         </div>
                         {s.cancelable && (
                             <button onClick={() => onCancel(s)} disabled={canceling === s.id}
-                                className="shrink-0 text-xs font-medium text-zinc-500 hover:text-rose-600 transition-colors disabled:opacity-50">
+                                className="shrink-0 text-xs font-medium text-zinc-500 hover:text-rose-600 transition-colors disabled:opacity-50 min-h-[44px] px-2">
                                 {canceling === s.id ? "…" : "Cancel"}
                             </button>
                         )}
@@ -437,7 +734,7 @@ function RenewingBanner({ items, money, onCancel, canceling, onView }) {
                 ))}
             </div>
             {items.length > 4 && (
-                <button onClick={onView} className="mt-3 text-xs font-medium text-zinc-400 hover:text-zinc-900">View all {items.length}</button>
+                <button onClick={onView} className="mt-3 text-xs font-medium text-zinc-400 hover:text-zinc-900 min-h-[44px]">View all {items.length}</button>
             )}
         </div>
     );
@@ -450,7 +747,7 @@ function SubscriptionList({ items, money, reduce, onCancel, canceling }) {
         <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4" variants={stagger(reduce)} initial="hidden" animate="show">
             {items.map((s) => (
                 <motion.div key={s.id} variants={rise(reduce)} className={`${CARD} ${CARD_HOVER} p-4 flex items-center gap-3.5`}>
-                    <img src={s.owner?.avatar} alt="" className="w-12 h-12 rounded-[20px] object-cover bg-zinc-100" />
+                    <img src={s.owner?.avatar} alt="" className="w-12 h-12 rounded-box-sm object-cover bg-zinc-100" />
                     <div className="flex-1 min-w-0">
                         <div className="font-medium text-zinc-900 truncate">{s.title}</div>
                         <div className="text-xs text-zinc-400 truncate mt-0.5">@{s.owner?.username}</div>
@@ -491,7 +788,7 @@ function IncomingList({ items, reduce }) {
                 const StatusIcon = it.is_overdue ? AlertTriangle : it.is_physical ? Truck : Clock;
                 return (
                     <motion.div key={it.id} variants={rise(reduce)} className={`${CARD} ${CARD_HOVER} p-4 flex items-center gap-3.5`}>
-                        <span className="w-12 h-12 rounded-[20px] flex items-center justify-center shrink-0" style={{ backgroundColor: tint(tone, "16"), color: tone }}>
+                        <span className="w-12 h-12 rounded-box-sm flex items-center justify-center shrink-0" style={{ backgroundColor: tint(tone, "16"), color: tone }}>
                             <StatusIcon size={20} strokeWidth={2} />
                         </span>
                         <div className="flex-1 min-w-0">
@@ -506,7 +803,7 @@ function IncomingList({ items, reduce }) {
                                 {it.is_physical && it.eta && <span className="text-[11px] text-zinc-400">Arrives {fmtDate(it.eta)}</span>}
                             </div>
                         </div>
-                        <a href={it.open_link} className="shrink-0 text-zinc-300 hover:text-zinc-900 transition-colors"><ArrowUpRight size={18} strokeWidth={2} /></a>
+                        <a href={it.open_link} className="shrink-0 w-11 h-11 inline-flex items-center justify-center text-zinc-300 hover:text-zinc-900 transition-colors"><ArrowUpRight size={18} strokeWidth={2} /></a>
                     </motion.div>
                 );
             })}
@@ -530,7 +827,7 @@ function SavedList({ items, reduce, onRemove }) {
                         </a>
                     </div>
                     <button onClick={() => onRemove(s)} title="Remove" aria-label="Remove from saved"
-                        className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full text-rose-500 hover:bg-rose-50 transition-colors">
+                        className="shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-full text-rose-500 hover:bg-rose-50 transition-colors">
                         <Heart size={16} strokeWidth={2} fill="currentColor" />
                     </button>
                 </motion.div>

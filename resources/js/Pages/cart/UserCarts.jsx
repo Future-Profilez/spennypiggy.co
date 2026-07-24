@@ -10,6 +10,8 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -117,6 +119,10 @@ export default function UserCarts(props) {
     );
     const [subtotal, setsubtotal] = useState(0);
     const [fee, setFee] = useState(0);
+    // Base the price-preview / bank total on the SAME amount the charge grosses up
+    // (price + VAT + shipping) — the bare subtotal under-quoted physical/VAT carts.
+    const [chargeBase, setChargeBase] = useState(0);
+    const [previewPrices, setPreviewPrices] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("card");
 
     const [checking, setChecking] = useState(false);
@@ -481,18 +487,6 @@ export default function UserCarts(props) {
                     (isZeroDecimalCurrency(chargeCurrency) ? 1 : 100),
             );
 
-            // Debug Log
-            console.log("STEP UP VERIFY PAYLOAD", {
-                otp: otpCode?.trim(),
-                typed_confirmation: typedConfirmation?.toUpperCase()?.trim(),
-                amount: amountInCents,
-                currency: chargeCurrency,
-                creator_id: datas?.user?.uuid || datas?.user?.id,
-                email: email || auth?.user?.email,
-                device_id: deviceid,
-                risk_identity_id: stepUpContext?.risk_identity_id,
-            });
-
             const response = await axios.post("/api/risk/step-up/verify", {
                 otp: otpCode?.trim(),
                 typed_confirmation: typedConfirmation?.toUpperCase()?.trim(),
@@ -511,8 +505,6 @@ export default function UserCarts(props) {
                 risk_identity_id: stepUpContext?.risk_identity_id || null,
             });
 
-            console.log("STEP UP VERIFY RESPONSE", response?.data);
-
             if (response?.data?.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
 
@@ -526,11 +518,6 @@ export default function UserCarts(props) {
                 toast.error(response?.data?.error || "Verification failed.");
             }
         } catch (error) {
-            console.log(
-                "OTP verification FULL error:",
-                error?.response?.data || error,
-            );
-
             toast.error(
                 error?.response?.data?.error ||
                     error?.response?.data?.message ||
@@ -552,6 +539,9 @@ export default function UserCarts(props) {
     );
 
     const handleSubmit = () => {
+        // Re-entrancy guard: a second tap landing before the disabled re-render
+        // must not fire a second checkout session.
+        if (checking) return;
         pushDebug("checkout_clicked", {
             isChecked,
             checking,
@@ -571,9 +561,8 @@ export default function UserCarts(props) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is currently disabled. Please log in to continue.";
                 pushDebug("blocked_guest_disabled", { msg });
-                if (window.confirm("Login Required\n\n" + msg)) {
-                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
-                }
+                toast.error(msg);
+                router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
                 return;
             }
             const upCurrency = (chargeCurrency || "GBP").toUpperCase();
@@ -581,14 +570,15 @@ export default function UserCarts(props) {
             const totalGbp = rate ? (fee + subtotal) / rate : fee + subtotal;
             if (totalGbp > 50) {
                 pushDebug("blocked_guest_high_value", { totalGbp });
-                if (window.confirm("Login required\n\nLarger payments more than £50 need to login.",)
-                ) {
-                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
-                }
+                const msg = "Payments over £50 need an account — please log in to continue.";
+                toast.error(msg);
+                router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
                 return;
             }
         }
-        if (!captchaToken && !skipCaptcha) {
+        // Only demand a captcha token when Turnstile is actually configured —
+        // without the key no token can ever exist and checkout would hard-block.
+        if (turnstileSiteKey && !captchaToken && !skipCaptcha) {
             toast.error("Please complete the CAPTCHA verification.");
             pushDebug("blocked_missing_captcha", { turnstileSiteKey });
             if (debugEnabled) {
@@ -664,20 +654,23 @@ export default function UserCarts(props) {
     const [cartCleared, setCartCleared] = useState(false);
     const clearcart = (ownerid, index) => {
         setLoading(true);
-        router.get(`/clear-cart/${deviceid}/${ownerid}`, {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                setCartCleared(true);
-                setLoading(false);
-                if (index == 0) {
-                    window.location.reload = false;
-                }
+        // router.get(url, data, options) — the options were previously passed as
+        // the DATA argument, so the callbacks never fired and the loading state hung.
+        router.get(
+            `/clear-cart/${deviceid}/${ownerid}`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setCartCleared(true);
+                    setLoading(false);
+                },
+                onError: () => {
+                    toast.error("Could not clear the basket. Please try again.");
+                    setLoading(false);
+                },
             },
-            onError: (_err) => {
-                console.error("error", _err);
-                setLoading(false);
-            },
-        });
+        );
     };
 
     const [items, setItems] = useState(datas?.items);
@@ -723,6 +716,7 @@ export default function UserCarts(props) {
         if (!items || items.length === 0) {
             setsubtotal(0);
             setFee(0);
+            setChargeBase(0);
             return;
         }
 
@@ -765,6 +759,7 @@ export default function UserCarts(props) {
 
         setsubtotal(totalBaseNet);
         setFee(totalGross - totalBaseNet);
+        setChargeBase(totalNetWithVatAndShipping);
     }
 
     const quantityUpdate = (type, amount, tax) => {
@@ -798,11 +793,27 @@ export default function UserCarts(props) {
                                 (@{datas?.user?.username || ""})
                             </Link>
                         </h2>
-                        <p className="md:pb-4 text-lg mt-2 mb-4">
-                            You are about to send a payout to{" "}
-                            <strong> {datas?.user?.name || ""} </strong> to fund
-                            their lifestyle.
-                        </p>
+                        <OrderContextCard
+                            className="mt-2 mb-4"
+                            image={datas?.user?.avatar_url}
+                            typeBadge={`${items?.length || 0} ${(items?.length || 0) === 1 ? "item" : "items"}`}
+                            itemTitle="Your basket"
+                            itemSub="Content from this creator"
+                            payingLabel="You're supporting"
+                            creatorName={datas?.user?.name}
+                            creatorUsername={datas?.user?.username}
+                            creatorAvatar={datas?.user?.avatar_url}
+                            // Name what each item actually delivers. The old
+                            // copy ("everything in your basket") described the
+                            // basket, not the purchase — a buyer could reach
+                            // checkout without ever being told what they get.
+                            whatYouGet={[
+                                ...(items || [])
+                                    .map((item) => item?.reward_title)
+                                    .filter(Boolean),
+                                "A copy of each item sent to your email",
+                            ]}
+                        />
                         {debugEnabled ? (
                             <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-3 mb-4 rounded">
                                 <div className="flex items-center justify-between gap-3">
@@ -921,113 +932,94 @@ export default function UserCarts(props) {
                                 <strong className="!text-black">Total :</strong>
                                 <strong className="!text-right !text-black">
                                     {formatMultiPrice(
-                                        fee + subtotal || "",
+                                        // Bank pricing is cheaper — show the figure the
+                                        // buyer will actually be charged for the
+                                        // selected method, not always the card gross.
+                                        (paymentMethod === "bank" &&
+                                        previewPrices?.bank != null
+                                            ? previewPrices.bank
+                                            : fee + subtotal) || "",
                                         chargeCurrency,
                                     )}
                                 </strong>
-                                <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
+                                <div className="text-[10px] text-black/60 font-normal mt-1 leading-tight text-right">
                                     *Includes platform and payment processing
                                     fees
                                 </div>
                             </div>
                         </div>
 
-                        <div className="addMessage">
-                            <form onSubmit={(e) => e.preventDefault()}>
-                                <ul className="flex flex-wrap">
-                                    <li className="  w-full">
-                                        <label>Add Message </label>
-                                        <textarea
-                                            rows={2}
-                                            onChange={(e) =>
-                                                setMessage(e.target.value)
-                                            }
-                                            placeholder="Send some words of support..."
-                                        ></textarea>
-                                    </li>
-                                    <li className="w-full mt-3  ">
-                                        <div className="flex flex-wrap">
-                                            <div className="w-full mb-4">
-                                                <label className=" text-start w-full">
-                                                    Email{" "}
-                                                </label>
-                                                <p className="text-sm text-gray-500 mb-1">
-                                                    Your e-mail remains private.
-                                                </p>
-                                                <input
-                                                    required
-                                                    className={`${auth?.user?.email ? "disabled" : ""} border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 md:rounded-[12px] `}
-                                                    value={email}
-                                                    disabled={
-                                                        !!auth?.user?.email
-                                                    }
-                                                    onChange={(e) =>
-                                                        setEmail(e.target.value)
-                                                    }
-                                                    type="email"
-                                                    placeholder="Enter Your Email..."
-                                                />
-                                            </div>
-                                            <div className="w-full mb-4">
-                                                <label className="text-start w-full">
-                                                    From
-                                                </label>
-                                                <input
-                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
-                                                    onChange={(e) =>
-                                                        setName(e.target.value)
-                                                    }
-                                                    value={name}
-                                                    type="text"
-                                                    placeholder="Enter Your Name..."
-                                                />
-                                                {auth && auth.name}
-                                                {auth && auth.name}
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li className="cheklistbox  ">
-                                        <label
-                                            htmlFor="anonymous"
-                                            className="text-left"
-                                        >
-                                            <input
-                                                onChange={(e) =>
-                                                    setKeepAnonmyous(
-                                                        e.target.checked,
-                                                    )
-                                                }
-                                                type="checkbox"
-                                                id="anonymous"
-                                                name="anonymous"
-                                                className="mr-2"
-                                                value="anonymous"
-                                            ></input>
-                                            Keep anonymous
-                                        </label>
-                                        <p className="text-gray-500 text-sm mb-3">
-                                            Your personal email and name will be
-                                            private.
-                                        </p>
+                        {/* Plain divs, not the legacy `.addMessage ul li`
+                            markup — that stylesheet forces a pink textarea and a
+                            3px-radius input, which is why these three fields
+                            each looked like a different design system. */}
+                        <div>
+                            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+                                <TextAreaField
+                                    id="cart-message"
+                                    label="Add message"
+                                    rows={3}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Send some words of support..."
+                                />
 
-                                        <PaymentMethodSelector
-                                            amount={subtotal}
-                                            currency={chargeCurrency}
-                                            email={email || auth?.user?.email}
-                                            value={paymentMethod}
-                                            onChange={setPaymentMethod}
-                                            className="mb-4"
+                                <TextField
+                                    id="cart-email"
+                                    label="Email"
+                                    hint="Your e-mail remains private."
+                                    required
+                                    type="email"
+                                    value={email}
+                                    disabled={!!auth?.user?.email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your email…"
+                                />
+
+                                <TextField
+                                    id="cart-name"
+                                    label="From"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Enter your name…"
+                                />
+
+                                <div>
+                                    <label
+                                        htmlFor="anonymous"
+                                        className="flex min-h-[44px] items-center gap-2 text-left font-bold"
+                                    >
+                                        <input
+                                            onChange={(e) => setKeepAnonmyous(e.target.checked)}
+                                            type="checkbox"
+                                            id="anonymous"
+                                            name="anonymous"
+                                            value="anonymous"
+                                            className="h-5 w-5 rounded border-2 border-black/30 text-[#FF007F] focus:ring-[#FF007F]/25"
                                         />
+                                        Keep anonymous
+                                    </label>
+                                    <p className="mb-3 text-sm text-black/60">
+                                        Your personal email and name will be private.
+                                    </p>
 
-                                        <CheckoutLegalTerms
-                                            onAgreeChange={(checked) => {
-                                                setIsChecked(checked);
-                                                setDigitalWaiver(checked);
-                                            }}
-                                        />
+                                    <PaymentMethodSelector
+                                        amount={chargeBase}
+                                        currency={chargeCurrency}
+                                        email={email || auth?.user?.email}
+                                        value={paymentMethod}
+                                        onChange={setPaymentMethod}
+                                        onPrices={setPreviewPrices}
+                                        className="mb-4"
+                                    />
 
-                                    </li>
-                                </ul>
+                                    <CheckoutLegalTerms
+                                        onAgreeChange={(checked) => {
+                                            setIsChecked(checked);
+                                            setDigitalWaiver(checked);
+                                        }}
+                                    />
+                                </div>
                                 {turnstileSiteKey ? (
                                     <div className="flex justify-center my-3">
                                         <Turnstile
@@ -1046,36 +1038,21 @@ export default function UserCarts(props) {
                                         }
                                         className={`  w-full main-button b mb-3 md:!mb-0`}
                                     >
-                                        {loading ? "Wait.." : "Clear"}{" "}
+                                        {loading ? "Clearing…" : "Clear"}{" "}
                                     </button>
-                                    <button
-                                        type="button"
+                                    <PayButton
+                                        label="Checkout"
+                                        processing={checking}
                                         disabled={
                                             !isChecked ||
                                             !digitalWaiver ||
-                                            checking ||
                                             (turnstileSiteKey &&
                                                 !captchaToken &&
                                                 !skipCaptcha) ||
                                             !card_capabilities
                                         }
                                         onClick={handleSubmit}
-                                        className={`${
-                                            isChecked &&
-                                            digitalWaiver &&
-                                            !(
-                                                turnstileSiteKey &&
-                                                !captchaToken &&
-                                                !skipCaptcha
-                                            ) &&
-                                            !checking &&
-                                            card_capabilities
-                                                ? ""
-                                                : "disabled"
-                                        } main-button p w-full`}
-                                    >
-                                        {checking ? "Wait.." : "Checkout"}{" "}
-                                    </button>
+                                    />
                                 </div>
                             </form>
                         </div>
@@ -1095,18 +1072,18 @@ export default function UserCarts(props) {
                     <h2 className="text-xl font-bold mb-2 text-center">
                         {stepUpData?.ui?.title || "Confirm Your Payment"}
                     </h2>
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-black/60 mb-6 text-center">
                         {stepUpData?.ui?.body ||
                             "For your security, please confirm this payment."}
                     </p>
                     <form onSubmit={handleVerifyStepUp}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-black/80 mb-1">
                                 Enter OTP Code (Check your email)
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -1120,7 +1097,7 @@ export default function UserCarts(props) {
                                 disabled={resendingOtp || resendCooldown > 0}
                                 className={`text-sm font-medium transition-all ${
                                     resendingOtp || resendCooldown > 0
-                                        ? "text-gray-400 cursor-not-allowed"
+                                        ? "text-black/60 cursor-not-allowed"
                                         : "text-[#FF007F] hover:text-pink-700"
                                 }`}
                             >
@@ -1132,12 +1109,12 @@ export default function UserCarts(props) {
                             </button>
                         </div>
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-black/80 mb-1">
                                 Type 'CONFIRM' to proceed
                             </label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) =>
@@ -1185,7 +1162,7 @@ export default function UserCarts(props) {
                                         ? verifyingOtp
                                         : false)
                                 }
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -1215,7 +1192,7 @@ export default function UserCarts(props) {
                                     "Use Face ID / Fingerprint"
                                 )}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a
                                 saved passkey.
                             </p>

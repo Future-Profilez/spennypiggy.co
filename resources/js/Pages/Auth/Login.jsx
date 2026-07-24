@@ -471,7 +471,7 @@ export default function Login({ status, canResetPassword }) {
     return (
         <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Log in" description="Log in to your account" />
-            <div className="min-h-[90vh]  relative flex flex-col items-center justify-center py-12 md:py-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="min-h-dvh relative flex flex-col items-center justify-center pt-28 pb-12 md:pb-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 {/* Decorative Background Elements */}
                 {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>

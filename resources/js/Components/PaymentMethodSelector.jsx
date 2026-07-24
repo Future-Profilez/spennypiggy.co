@@ -51,6 +51,7 @@ export default function PaymentMethodSelector({
     useEffect(() => {
         if (!amount || Number(amount) <= 0 || !currency) {
             setPreview(null);
+            onPrices?.(null);
             return;
         }
 
@@ -67,9 +68,17 @@ export default function PaymentMethodSelector({
                     if (res.data?.status) {
                         setPreview(res.data);
                         onPrices?.(res.data.prices);
+                    } else {
+                        setPreview(null);
+                        onPrices?.(null);
                     }
                 })
-                .catch(() => setPreview(null));
+                .catch(() => {
+                    // Clear the parent's prices too — otherwise it keeps showing a
+                    // stale bank total from the previous amount/quantity.
+                    setPreview(null);
+                    onPrices?.(null);
+                });
         }, 350);
 
         return () => clearTimeout(debounceRef.current);
@@ -113,15 +122,15 @@ export default function PaymentMethodSelector({
                     role="radio"
                     aria-checked={value === "bank"}
                     onClick={() => onChange?.("bank")}
-                    className={`relative w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+                    className={`relative w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         value === "bank"
-                            ? "bg-[#A2E4B8] shadow-[3px_3px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+                            ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
+                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     {/* Signature: tilted save sticker */}
                     {prices.saving > 0 && (
-                        <span className="absolute -top-3 right-3 rotate-[-4deg] bg-[#FF007F] text-white border-[3px] border-black rounded-lg px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider shadow-[2px_2px_0px_rgba(0,0,0,1)] pointer-events-none">
+                        <span className="absolute -top-3 right-3 rotate-[-4deg] bg-[#FF007F] text-white border-[3px] border-black rounded-box-sm px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] pointer-events-none">
                             Save {fmt(prices.saving)}
                         </span>
                     )}
@@ -137,13 +146,19 @@ export default function PaymentMethodSelector({
                                     ? "Lower fees · higher limits"
                                     : "Approve in your banking app"}
                             </span>
+                            {preview.delayed_settlement && (
+                                <span className="block text-[11px] font-bold text-black/60 mt-0.5">
+                                    Content unlocks once your bank confirms —
+                                    usually 1–2 days
+                                </span>
+                            )}
                         </span>
                         <span className="text-right">
                             <span className="block font-black text-lg leading-none">
                                 {fmt(prices.bank)}
                             </span>
                             {prices.saving > 0 && (
-                                <span className="block text-[11px] font-bold text-black/55 line-through mt-1">
+                                <span className="block text-[11px] font-bold text-black/60 line-through mt-1">
                                     {fmt(prices.card)}
                                 </span>
                             )}
@@ -158,12 +173,12 @@ export default function PaymentMethodSelector({
                     aria-checked={value === "card"}
                     onClick={() => !cardDisabled && onChange?.("card")}
                     disabled={cardDisabled}
-                    className={`w-full text-left border-[3px] border-black rounded-[18px] px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
+                    className={`w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         cardDisabled
                             ? "bg-gray-100 border-black/30 cursor-not-allowed"
                             : value === "card"
-                            ? "bg-[#A2E4B8] shadow-[3px_3px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+                            ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
+                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     <span className={`flex items-center gap-3 ${cardDisabled ? "opacity-50" : ""}`}>
