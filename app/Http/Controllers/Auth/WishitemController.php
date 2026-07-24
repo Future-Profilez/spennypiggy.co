@@ -40,6 +40,7 @@ use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -262,10 +263,9 @@ class WishitemController extends Controller
                 'sometimes',
                 'nullable',
             ],
-            'content_file' => [
-                'required', // Stripe compliance: every wish must deliver a real content file
-                'string', // Uploadcare UUID
-            ],
+            // Stripe compliance: every wish must deliver real content. The file
+            // is mandatory unless the reward is delivered as a message or link.
+            'content_file' => RewardService::fileRule(),
             'content_file_name' => [
                 'nullable',
                 'string',
@@ -298,10 +298,14 @@ class WishitemController extends Controller
                 'sometimes',
                 'nullable',
             ],
-        ], [
+        ] + RewardService::validationRules(), [
             'subscription_period.required_if' => 'Please select subscription period',
-            'content_file.required' => 'Please attach the exclusive content file the supporter will receive.',
+            'content_file.required_unless' => 'Please attach the exclusive content file the supporter will receive.',
         ]);
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->with('error', $linkError)->withInput();
+        }
 
         // return response()->json([
         //     "data" => $request->all()
@@ -346,10 +350,6 @@ class WishitemController extends Controller
             'item_url' => $request->item_url != '' ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
             'reward' => null,
-            'content_file' => $contentFile,
-            'content_file_type' => $contentFileType,
-            'content_file_name' => $contentFileName,
-            'content_file_size' => $contentFileSize,
             // 'reward' => $request->reward_file ?? null,
             'ai_generated' => $request->ai_generated,
             'subscription' => $request->subscription,
@@ -357,7 +357,7 @@ class WishitemController extends Controller
             'repeat_purchase' => $request->repeat_purchase ?? 0,
             'tax_amount' => $taxamount,
             // 'category' => $request->category ?? null,
-        ]);
+        ] + RewardService::columnsWithFile($request->all()));
 
         $wish->refresh();
 
@@ -442,10 +442,17 @@ class WishitemController extends Controller
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
 
+        // The edit form patches whatever it sends, so the reward fields are
+        // validated but not required — a price-only edit must not be forced to
+        // re-declare the reward.
         $request->validate([
             'wishname' => ['sometimes', 'string', 'min:4', 'max:255', new NoExpenseOrBrandName],
             'goal_label' => ['nullable', 'string', 'max:60', new NoExpenseOrBrandName],
-        ]);
+        ] + RewardService::validationRules(required: false));
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return redirect()->back()->with('error', $linkError);
+        }
 
         $blockedWord = Helpers::checkBlockData($request);
         if ($blockedWord !== false) {
@@ -458,10 +465,13 @@ class WishitemController extends Controller
         if ($priceErr) {
             return redirect()->back()->with('error', $priceErr);
         }
+        // A file is only required when the reward is delivered as a file — a
+        // message or link reward carries its content in reward_body instead.
+        $effectiveRewardType = $request->reward_type ?? $wish->reward_type ?? 'file';
         $effectiveContent = ($request->content_file && $request->content_file !== $wish->content_file)
             ? $request->content_file
             : $wish->content_file;
-        if (empty($effectiveContent)) {
+        if ($effectiveRewardType === 'file' && empty($effectiveContent)) {
             return redirect()->back()->with('error', 'Please attach the exclusive content file the supporter will receive.');
         }
 
@@ -514,6 +524,7 @@ class WishitemController extends Controller
                 'content_file_name' => $contentFileName,
                 'content_file_size' => $contentFileSize,
                 'ai_generated' => $request->ai_generated ?? $wish->ai_generated,
+                ...($request->has('reward_title') ? RewardService::columnsWithFile($request->all()) : []),
                 'subscription' => $request->subscription ?? $wish->subscription,
                 'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
                 'repeat_purchase' => $request->repeat_purchase ??
@@ -2518,6 +2529,10 @@ class WishitemController extends Controller
                         'name' => $value[0]['owner']['name'],
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
+                        // The basket showed a letter tile because the payload
+                        // carried no avatar at all — `avatar` is a bare
+                        // Uploadcare uuid, `avatar_url` is the display URL.
+                        'avatar_url' => $value[0]['owner']['avatar_url'] ?? null,
                         'default_currency' => $value[0]['owner']['default_currency'],
                         'currency' => $value[0]['currency'],
                         'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0,
@@ -2547,6 +2562,13 @@ class WishitemController extends Controller
                             'subscription_period' => $v['wish']['subscription_period'],
                             'repeat_purchase' => $v['wish']['repeat_purchase'],
                             'category' => $v['wish']['category'],
+                            // What the buyer actually gets. The headline and
+                            // its detail describe the purchase and belong on
+                            // the basket; reward_body is the paid content and
+                            // stays out until the payment clears.
+                            'reward_title' => $v['wish']['reward_title'] ?? null,
+                            'reward_type' => $v['wish']['reward_type'] ?? null,
+                            'reward_description' => $v['wish']['reward_description'] ?? null,
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
                             'currency' => $v['wish']['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'),
@@ -2830,6 +2852,10 @@ class WishitemController extends Controller
                         'name' => $value[0]['owner']['name'],
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
+                        // The basket showed a letter tile because the payload
+                        // carried no avatar at all — `avatar` is a bare
+                        // Uploadcare uuid, `avatar_url` is the display URL.
+                        'avatar_url' => $value[0]['owner']['avatar_url'] ?? null,
                         'default_currency' => $value[0]['owner']['default_currency'],
                         'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0,
                     ],
@@ -2858,6 +2884,13 @@ class WishitemController extends Controller
                             'subscription_period' => $v['wish']['subscription_period'],
                             'repeat_purchase' => $v['wish']['repeat_purchase'],
                             'category' => $v['wish']['category'],
+                            // What the buyer actually gets. The headline and
+                            // its detail describe the purchase and belong on
+                            // the basket; reward_body is the paid content and
+                            // stays out until the payment clears.
+                            'reward_title' => $v['wish']['reward_title'] ?? null,
+                            'reward_type' => $v['wish']['reward_type'] ?? null,
+                            'reward_description' => $v['wish']['reward_description'] ?? null,
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
                             'currency' => $v['wish']['currency'] ?? ($cart[$key]['user']['default_currency'] ?? null),

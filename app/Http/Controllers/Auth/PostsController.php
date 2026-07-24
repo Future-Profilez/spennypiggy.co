@@ -15,6 +15,7 @@ use App\Services\CreatorActivityService;
 use App\Services\ModerationService;
 use App\Services\UserProfileService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -51,8 +52,29 @@ class PostsController extends Controller
         ];
     }
 
+    /**
+     * Feed posts belong to creators (role 1). Fans/gifters (role 0) have no audience,
+     * so publishing to `membership`/`subscription`/`support` is meaningless for them —
+     * the route was gated only by `auth`, so a non-creator could POST a post directly.
+     */
+    private function ensureCreator(): ?JsonResponse
+    {
+        if ((int) (Auth::user()->role ?? 0) !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Only creator accounts can publish posts.',
+            ], 403);
+        }
+
+        return null;
+    }
+
     public function savePost(Request $request)
     {
+        if ($block = $this->ensureCreator()) {
+            return $block;
+        }
+
         $request->validate($this->postRules(), [
             'content.required_without' => 'Add some text or choose an image for this post.',
             'image.required_without' => 'Add some text or choose an image for this post.',
@@ -105,6 +127,10 @@ class PostsController extends Controller
 
     public function editPost(Request $request, $uuid)
     {
+        if ($block = $this->ensureCreator()) {
+            return $block;
+        }
+
         $request->validate($this->postRules(), [
             'content.required_without' => 'Add some text or choose an image for this post.',
             'image.required_without' => 'Add some text or choose an image for this post.',

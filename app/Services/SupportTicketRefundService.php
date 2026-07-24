@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BillPayment;
+use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\PiggyPotContribution;
 use App\Models\ShopPayment;
@@ -11,6 +12,8 @@ use App\Models\SupportTicket;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use Stripe\Refund;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 
 class SupportTicketRefundService
@@ -21,28 +24,28 @@ class SupportTicketRefundService
         $paymentIntentId = $ticket->stripe_payment_intent_id;
         $sessionId = $ticket->stripe_session_id;
 
-        if (!$paymentIntentId || !$sessionId) {
+        if (! $paymentIntentId || ! $sessionId) {
             [$paymentIntentId, $sessionId, $connectedAccountId] = $this->resolveStripeIdentifiers($ticket, $connectedAccountId);
         }
 
-        if (!$paymentIntentId) {
+        if (! $paymentIntentId) {
             throw new \RuntimeException(
                 'Unable to locate payment information for refund. '
-                    . 'Source: ' . $ticket->source
-                    . ', Source ID: ' . $ticket->source_id
+                    .'Source: '.$ticket->source
+                    .', Source ID: '.$ticket->source_id
             );
         }
 
-        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('services.stripe.secret'));
         $options = [];
         if ($connectedAccountId) {
             $options['stripe_account'] = $connectedAccountId;
         }
         // Idempotency: a retry/double-submit returns the same refund instead of issuing
         // a second one. Keyed to the ticket (one refund per support ticket).
-        $options['idempotency_key'] = 'refund_ticket_' . $ticket->uuid;
+        $options['idempotency_key'] = 'refund_ticket_'.$ticket->uuid;
 
-        \Stripe\Refund::create([
+        Refund::create([
             'payment_intent' => $paymentIntentId,
             'reason' => 'requested_by_customer',
             'metadata' => [
@@ -85,7 +88,6 @@ class SupportTicketRefundService
             case 'bill_payments':
             case 'BillPayment':
                 $p = BillPayment::with('bill.user')->findOrFail($ticket->source_id);
-                $paymentIntentId = $p->stripe_id;
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->bill?->user?->account_id ?? $connectedAccountId;
                 break;
@@ -100,7 +102,7 @@ class SupportTicketRefundService
                 $p = ShopPayment::with(['shop.user'])->where('uuid', $ticket->source_id)->firstOrFail();
                 $sessionId = $p->session_id;
                 $connectedAccountId = $p->shop?->user?->account_id ?? $connectedAccountId;
-                $deliverable = \App\Models\Deliverable::where('session_id', $p->session_id)->first();
+                $deliverable = Deliverable::where('session_id', $p->session_id)->first();
                 $paymentIntentId = $deliverable?->payment_intent_id;
                 break;
             case 'task_purchases':
@@ -111,10 +113,10 @@ class SupportTicketRefundService
                 $connectedAccountId = $p->creator?->account_id ?? $connectedAccountId;
                 break;
             default:
-                throw new \RuntimeException('Unsupported ticket source for refund: ' . (string) $ticket->source);
+                throw new \RuntimeException('Unsupported ticket source for refund: '.(string) $ticket->source);
         }
 
-        if (!$paymentIntentId && $sessionId) {
+        if (! $paymentIntentId && $sessionId) {
 
             \Log::info('Refund Debug Before Session Fetch', [
                 'ticket_uuid' => $ticket->uuid,
@@ -138,7 +140,7 @@ class SupportTicketRefundService
             ]);
             $paymentIntentId = $session?->payment_intent;
 
-            if (!$paymentIntentId && !empty($session?->subscription)) {
+            if (! $paymentIntentId && ! empty($session?->subscription)) {
 
                 $subscription = $client->subscriptions->retrieve(
                     $session->subscription,

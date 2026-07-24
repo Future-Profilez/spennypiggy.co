@@ -23,6 +23,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
@@ -139,7 +140,11 @@ class TaskController extends Controller
             'deliverable_note' => 'nullable|string',
             'media_file' => 'nullable',
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
-        ]);
+        ] + RewardService::validationRules());
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return back()->withErrors(['reward_body' => $linkError]);
+        }
 
         if (Helpers::checkBlockData($request)) {
             return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
@@ -158,6 +163,7 @@ class TaskController extends Controller
         $task->sla_hours = $request->type === 'timed' ? $request->sla_hours : null;
         $task->status = 'active'; // Admin skip
         $task->payment_methods_accepted = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
+        $task->fill(RewardService::columnsFrom($request->all()));
 
         if ($request->media_file) {
             $task->media_url = $request->media_file['url'] ?? null;
@@ -251,7 +257,11 @@ class TaskController extends Controller
             'deliverable_note' => 'nullable|string',
             'media_file' => 'nullable',
             'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
-        ]);
+        ] + RewardService::validationRules());
+
+        if ($linkError = RewardService::submittedLinkError($request->all())) {
+            return back()->withErrors(['reward_body' => $linkError]);
+        }
 
         if (Helpers::checkBlockData($request)) {
             return back()->withErrors(['title' => 'The task contains blocked words or phrases. Please check the title, description and deliverable content.']);
@@ -263,6 +273,7 @@ class TaskController extends Controller
         $task->category = $request->category;
         $task->type = $request->type;
         $task->sla_hours = $request->type === 'timed' ? $request->sla_hours : null;
+        $task->fill(RewardService::columnsFrom($request->all()));
 
         if ($request->media_file) {
             $task->media_url = $request->media_file['url'] ?? null;
@@ -565,7 +576,10 @@ class TaskController extends Controller
                     'currency' => $currency,
                     'product_data' => [
                         'name' => 'Total value of item including all fees',
-                        'description' => 'You are purchasing a digital task. Delivery method: '.ucfirst($task->type).'.',
+                        'description' => Helpers::rewardLineDescription(
+                            $task,
+                            'Delivery method: '.ucfirst($task->type).'.'
+                        ),
                         'images' => $task->media_url ? [asset($task->media_url)] : [],
                     ],
                     'unit_amount' => round($finalTotalAmount * $multiplier),
@@ -776,11 +790,6 @@ class TaskController extends Controller
                 $contentUrl = 'https://ucarecdn.com/'.$contentUrl.'/';
             }
 
-            $thankYouParams['wish_content'] = [
-                'type' => $task->deliverable_content_type ?? 'image',
-                'name' => 'Task Content',
-                'url' => $contentUrl,
-            ];
         }
         Log::info('Redirecting to thank you page after task purchase', [
             'thank_you_params' => $thankYouParams,

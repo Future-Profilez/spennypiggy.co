@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Jobs\EnrichSupportTicketStripeEvidence;
-use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketConfirmationMail;
+use App\Mail\SupportTicketCreatedMail;
 use App\Mail\SupportTicketUpdatedMail;
+use App\Models\BillPayment;
+use App\Models\FinancialTransaction;
+use App\Models\MembershipPayment;
+use App\Models\PiggyPotContribution;
+use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
+use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use Carbon\Carbon;
@@ -16,7 +24,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
-use App\Services\MagicBellService;
 
 class GuestSupportTicketController extends Controller
 {
@@ -35,7 +42,7 @@ class GuestSupportTicketController extends Controller
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
         ], $context);
 
-        $event = array_filter($event, fn($v) => !($v === null || $v === ''));
+        $event = array_filter($event, fn ($v) => ! ($v === null || $v === ''));
 
         $evidence = $ticket->evidence ?? [];
         $events = $evidence['events'] ?? [];
@@ -44,7 +51,7 @@ class GuestSupportTicketController extends Controller
             $events = array_slice($events, -50);
         }
 
-        if (!isset($evidence['created'])) {
+        if (! isset($evidence['created'])) {
             $evidence['created'] = $event;
         }
         $evidence['last'] = $event;
@@ -61,7 +68,7 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $payment = TipGoalsPayment::with(['creator'])->findOrFail($tipPaymentId);
-        if (!$payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
+        if (! $payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
@@ -99,12 +106,12 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $payment = TipGoalsPayment::with(['creator'])->findOrFail($tipPaymentId);
-        if (!$payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
+        if (! $payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
         $creator = $payment->creator;
-        if (!$creator) {
+        if (! $creator) {
             abort(404);
         }
 
@@ -124,15 +131,6 @@ class GuestSupportTicketController extends Controller
             'last_message_at' => now(),
             'last_supporter_message_at' => now(),
         ]);
-
-        $recentMessages = SupportTicketMessage::where('ticket_id', $ticket->id)
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
-
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn($m) => $m->sender_role === 'supporter')) {
-            return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
-        }
 
         SupportTicketMessage::create([
             'ticket_id' => $ticket->id,
@@ -157,7 +155,7 @@ class GuestSupportTicketController extends Controller
                 ->bcc($adminRecipients)
                 ->send(new SupportTicketCreatedMail($ticket, $request->message));
 
-            \App\Helpers::sendNotification(
+            Helpers::sendNotification(
                 'New Support Request',
                 'You have a new support request from a guest supporter. Please respond within 48 hours.',
                 $creator->email
@@ -167,7 +165,7 @@ class GuestSupportTicketController extends Controller
         Mail::to($payment->guest_email)
             ->send(new SupportTicketConfirmationMail($ticket));
 
-        \App\Helpers::sendNotification(
+        Helpers::sendNotification(
             'Support Request Received',
             'Your support request has been successfully sent to the creator.',
             $payment->guest_email
@@ -187,7 +185,7 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $payment = StripePaymentDetail::with(['owner'])->findOrFail($paymentId);
-        if (!$payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
+        if (! $payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
@@ -225,12 +223,12 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $payment = StripePaymentDetail::with(['owner'])->findOrFail($paymentId);
-        if (!$payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
+        if (! $payment->guest_email || strtolower($payment->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
         $creator = $payment->owner;
-        if (!$creator) {
+        if (! $creator) {
             abort(404);
         }
 
@@ -247,24 +245,6 @@ class GuestSupportTicketController extends Controller
             'last_message_at' => now(),
             'last_supporter_message_at' => now(),
         ]);
-
-        $recentMessages = SupportTicketMessage::where('ticket_id', $ticket->id)
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
-
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn($m) => $m->sender_role === 'supporter')) {
-            return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
-        }
-
-        $recentMessages = SupportTicketMessage::where('ticket_id', $ticket->id)
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
-
-        if ($recentMessages->count() === 3 && $recentMessages->every(fn($m) => $m->sender_role === 'supporter')) {
-            return response()->json(['status' => false, 'message' => 'You can only send up to 3 consecutive messages. Please wait for a reply.'], 422);
-        }
 
         SupportTicketMessage::create([
             'ticket_id' => $ticket->id,
@@ -288,8 +268,8 @@ class GuestSupportTicketController extends Controller
             Mail::to($creator->email)
                 ->bcc($adminRecipients)
                 ->send(new SupportTicketCreatedMail($ticket, $request->message));
-                
-            \App\Helpers::sendNotification(
+
+            Helpers::sendNotification(
                 'New Support Request',
                 'You have a new support request from a guest supporter. Please respond within 48 hours.',
                 $creator->email
@@ -298,8 +278,8 @@ class GuestSupportTicketController extends Controller
 
         Mail::to($payment->guest_email)
             ->send(new SupportTicketConfirmationMail($ticket));
-            
-        \App\Helpers::sendNotification(
+
+        Helpers::sendNotification(
             'Support Request Received',
             'Your support request has been successfully sent to the creator.',
             $payment->guest_email
@@ -319,7 +299,7 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
-        if (!$ticket->guest_email || strtolower($ticket->guest_email) !== strtolower($request->email)) {
+        if (! $ticket->guest_email || strtolower($ticket->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
@@ -328,6 +308,7 @@ class GuestSupportTicketController extends Controller
             ->get()
             ->map(function ($m) {
                 $sender = $m->sender_user_id ? User::find($m->sender_user_id) : null;
+
                 return [
                     'id' => $m->id,
                     'sender_role' => $m->sender_role,
@@ -349,34 +330,34 @@ class GuestSupportTicketController extends Controller
             $sourceModelClass = '';
             switch ($ticket->source) {
                 case 'task_purchases':
-                    $sourceModelClass = \App\Models\TaskPurchase::class;
+                    $sourceModelClass = TaskPurchase::class;
                     break;
                 case 'shop_payments':
-                    $sourceModelClass = \App\Models\ShopPayment::class;
+                    $sourceModelClass = ShopPayment::class;
                     break;
                 case 'membership_payments':
-                    $sourceModelClass = \App\Models\MembershipPayment::class;
+                    $sourceModelClass = MembershipPayment::class;
                     break;
                 case 'bill_payments':
-                    $sourceModelClass = \App\Models\BillPayment::class;
+                    $sourceModelClass = BillPayment::class;
                     break;
                 case 'stripe_payment_items':
-                    $sourceModelClass = \App\Models\StripePaymentItems::class;
+                    $sourceModelClass = StripePaymentItems::class;
                     break;
                 case 'piggy_pot_contributions':
-                    $sourceModelClass = \App\Models\PiggyPotContribution::class;
+                    $sourceModelClass = PiggyPotContribution::class;
                     break;
                 case 'tip_goals_payments':
-                    $sourceModelClass = \App\Models\TipGoalsPayment::class;
+                    $sourceModelClass = TipGoalsPayment::class;
                     break;
             }
 
             if ($sourceModelClass) {
-                $ftQuery = \App\Models\FinancialTransaction::with('source');
+                $ftQuery = FinancialTransaction::with('source');
                 $ftQuery->where('source_type', $sourceModelClass)
-                        ->where('source_id', $ticket->source_id);
+                    ->where('source_id', $ticket->source_id);
                 $ft = $ftQuery->first();
-                
+
                 if ($ft) {
                     $transaction = [
                         'amount' => $ft->gross_amount,
@@ -418,7 +399,7 @@ class GuestSupportTicketController extends Controller
         // the signed email matches the ticket's guest email. The previous check referenced
         // a non-existent `guest_access_token` column, so `null !== null` let any guest
         // (omitting the param) resolve any ticket.
-        if (!$ticket->guest_email || strtolower($ticket->guest_email) !== strtolower((string) $request->email)) {
+        if (! $ticket->guest_email || strtolower($ticket->guest_email) !== strtolower((string) $request->email)) {
             abort(403, 'Unauthorized');
         }
 
@@ -448,7 +429,7 @@ class GuestSupportTicketController extends Controller
         ]);
 
         $ticket = SupportTicket::where('uuid', $uuid)->firstOrFail();
-        if (!$ticket->guest_email || strtolower($ticket->guest_email) !== strtolower($request->email)) {
+        if (! $ticket->guest_email || strtolower($ticket->guest_email) !== strtolower($request->email)) {
             abort(403);
         }
 
@@ -475,15 +456,15 @@ class GuestSupportTicketController extends Controller
             $ticket->reminder_6h_sent_at = null;
         }
         $ticket->save();
-        
+
         $creator = User::find($ticket->creator_id);
         if ($creator && $creator->email) {
             Mail::to($creator->email)
                 ->send(new SupportTicketUpdatedMail($ticket));
-                
-            \App\Helpers::sendNotification(
+
+            Helpers::sendNotification(
                 'Ticket Updated',
-                'The supporter has replied to the support request (Ticket #' . explode('-', $ticket->uuid)[0] . ').',
+                'The supporter has replied to the support request (Ticket #'.explode('-', $ticket->uuid)[0].').',
                 $creator->email
             );
         }

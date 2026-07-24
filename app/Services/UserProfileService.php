@@ -754,6 +754,27 @@ class UserProfileService
     }
 
     /**
+     * Compact per-creator overview for the profile right rail:
+     * live listing counts + the earnings progress pair.
+     */
+    public function getProfileOverview(int $userId): array
+    {
+        return Cache::remember('profile_overview_v1_'.$userId, 600, function () use ($userId) {
+            $earnings = $this->getUserEarnings($userId);
+
+            return [
+                'wishes' => WishItem::where('user_id', $userId)->count(),
+                'piggy_pots' => PiggyPot::where('user_id', $userId)->where('status', 'active')->count(),
+                'memberships' => Membership::where('user_id', $userId)->count(),
+                'shops' => Shop::where('user_id', $userId)->where('approved', 1)->count(),
+                'tasks' => Task::where('creator_id', $userId)->where('is_approved', 1)->count(),
+                'earned' => (float) $earnings['fulfilled'],
+                'earned_target' => (float) $earnings['target'],
+            ];
+        });
+    }
+
+    /**
      * Get notification count for authenticated user
      */
     public function getNotificationCount(?int $userId): int

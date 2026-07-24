@@ -1,3 +1,4 @@
+import { rewardLines } from "@/constants/rewards";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
@@ -7,6 +8,8 @@ import Popup from "@/Components/Popup";
 import toast from "react-hot-toast";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
+import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { fieldClass } from "@/Components/Checkout/FormKit";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
@@ -105,9 +108,9 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         }
     }, [flash]);
 
-    // The GlobalErrorBoundary or GuestLayout may already be showing toasts for flash.error.
-    // By keeping this commented out or removed, we prevent the double toast.
-    /*
+    // GuestLayout does NOT surface flash messages — without this effect a refused
+    // checkout (resolver soft-refusal, validation, risk block) died silently and the
+    // buyer just saw the button un-spin. Deduped by ref so a re-render can't re-toast.
     useEffect(() => {
         if (flash?.error && flash.error !== lastFlashRef.current.error) {
             lastFlashRef.current.error = flash.error;
@@ -118,7 +121,6 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             toast.success(flash.success, { id: 'task-success' });
         }
     }, [flash?.error, flash?.success]);
-    */
 
     
     const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -305,11 +307,14 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     };
 
     const handlePurchase = () => {
+        // Re-entrancy guard: a second tap before the disabled re-render must not
+        // fire a second checkout session.
+        if (processing) return;
         if (!data.agree) {
             toast.error("Please accept the Paid Tasks terms");
             return;
         }
-        if (!verified && !data.cf_turnstile_response) {
+        if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
             toast.error("Please verify the captcha");
             return;
         }
@@ -330,7 +335,13 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
 
         post(route('task.purchase', task.uuid), {
             preserveScroll: true,
-            onError: () => {
+            onError: (errors) => {
+                // Surface the refusal — a silent reset left the buyer with no idea
+                // why nothing happened.
+                const first = errors && Object.values(errors).flat()[0];
+                if (first) {
+                    toast.error(String(first));
+                }
                 setData("cf_turnstile_response", "");
                 if (turnstileRef.current) {
                     turnstileRef.current.reset();
@@ -342,7 +353,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     return (
         <Guest auth={auth?.user} user={auth?.user}>
             <Head title={task.title} />
-            <div className="bg-white px-4 py-8 min-h-screen">
+            <div className="bg-white px-4 py-8 min-h-dvh">
                 <div className="max-w-3xl mx-auto">
                     <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
                         &larr; Back to Dashboard
@@ -397,11 +408,11 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                         )}
 
                         {/* Main Content Box */}
-                        <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
+                        <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
                             {/* Header Section */}
                             <div className="flex flex-col md:flex-row md:justify-between md:items-start border-b-2 border-gray-100 pb-6 mb-6">
                                 <div className="flex-1 md:pr-6 mb-4 md:mb-0">
-                                    <h1 className="text-2xl md:text-3xl font-black uppercase text-gray-900 mb-4 leading-tight">
+                                    <h1 className="text-2xl md:text-3xl font-black uppercase text-black mb-4 leading-tight">
                                         {task.title}
                                     </h1>
                                     <div className="flex flex-wrap gap-2">
@@ -437,7 +448,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         )}
                                     </div>
                                     {!isCreator && (
-                                        <span className="block text-xs text-gray-500 font-medium mt-2 leading-tight">
+                                        <span className="block text-xs text-black/60 font-medium mt-2 leading-tight">
                                             *Includes platform & payment fees.
                                         </span>
                                     )}
@@ -445,12 +456,12 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             </div>
 
                             {/* Description Section */}
-                            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-8 whitespace-pre-wrap">
+                            <div className="prose prose-lg max-w-none text-black/80 leading-relaxed mb-8 whitespace-pre-wrap">
                                 {task.description}
                             </div>
 
                             {/* Creator Profile Section */}
-                            <div className="bg-gray-50 rounded-[16px] p-5 flex items-center justify-between border-2 border-gray-100 mt-6">
+                            <div className="bg-gray-50 rounded-box-sm p-5 flex items-center justify-between border-2 border-gray-100 mt-6">
                                 <div className="flex items-center gap-4">
                                     <img 
                                         src={task.creator.avatar_url || userphoto} 
@@ -458,20 +469,20 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         className="w-14 h-14 rounded-full border-2 border-black object-cover"
                                     />
                                     <div>
-                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Created By</p>
+                                        <p className="text-xs text-black/60 font-bold uppercase tracking-wider mb-1">Created By</p>
                                         <Link href={`/${task.creator.username}/tasks`} className="group">
-                                            <h4 className="text-lg font-black font-anton tracking-wide text-gray-900 group-hover:text-[#FF007F] transition-colors leading-none">
+                                            <h4 className="text-lg font-black font-anton tracking-wide text-black group-hover:text-[#FF007F] transition-colors leading-none">
                                                 {task.creator.name}
                                             </h4>
-                                            <p className="text-sm text-gray-500 mt-1 font-medium">@{task.creator.username}</p>
+                                            <p className="text-sm text-black/60 mt-1 font-medium">@{task.creator.username}</p>
                                         </Link>
                                     </div>
                                 </div>
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                    <p className="text-xs text-black/60 font-bold uppercase tracking-wider">
                                         Listed On
                                     </p>
-                                    <p className="text-sm text-gray-600 font-medium mt-1">
+                                    <p className="text-sm text-black/60 font-medium mt-1">
                                         {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                                     </p>
                                 </div>
@@ -479,10 +490,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                         </div>
 
                         {/* Actions / Purchase Form */}
-                        <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
+                        <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
                             {isCreator ? (
                                 <div className="text-center py-4">
-                                    <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
+                                    <p className="mb-4 text-black/60 font-medium">You are the creator of this task.</p>
                                     <a href={route('task.dashboard')} className="button b w-full md:w-auto justify-center">
                                         Manage Orders
                                     </a>
@@ -492,19 +503,19 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                     {/* Instant Delivery Section - Only if access granted */}
                                     {task.type === 'instant' && deliverableUrl && (
                                         <div className="mb-8">
-                                            <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-4 font-bold text-base text-center">
+                                            <div className="bg-green-100 text-green-800 px-4 py-3 rounded-box-sm border-2 border-green-300 mb-4 font-bold text-base text-center">
                                                 ✓ Purchased Successfully
                                             </div>
                                             <div className="space-y-4">
                                                 {task.deliverable_note && (
-                                                    <div className="bg-gray-50 border border-gray-200 rounded-[16px] p-4 text-left">
-                                                        <h4 className="font-black text-gray-900 mb-2 uppercase tracking-wide text-sm">Note from Creator:</h4>
-                                                        <p className="whitespace-pre-wrap text-gray-700 font-medium text-sm">{task.deliverable_note}</p>
+                                                    <div className="bg-gray-50 border border-gray-200 rounded-box-sm p-4 text-left">
+                                                        <h4 className="font-black text-black mb-2 uppercase tracking-wide text-sm">Note from Creator:</h4>
+                                                        <p className="whitespace-pre-wrap text-black/80 font-medium text-sm">{task.deliverable_note}</p>
                                                     </div>
                                                 )}
                                                 <a 
                                                     href={deliverableUrl} 
-                                                    className="flex items-center justify-center gap-2 w-full text-center bg-black text-white px-4 py-3 rounded-[20px] hover:bg-gray-800 cursor-pointer font-black uppercase tracking-widest text-sm transition-all"
+                                                    className="flex items-center justify-center gap-2 w-full text-center bg-black text-white px-4 py-3 rounded-box-sm hover:bg-gray-800 cursor-pointer font-black uppercase tracking-widest text-sm transition-all"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                 >
@@ -516,6 +527,32 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
 
                                     {/* Purchase Form */}
                                     <div className="">
+                                        {!isCreator && (
+                                            <OrderContextCard
+                                                className="mb-4"
+                                                typeBadge={task.type === 'instant' ? 'Paid request · Instant' : 'Paid request · Made for you'}
+                                                itemTitle={task.title}
+                                                itemSub={task.description}
+                                                payingLabel="You're requesting from"
+                                                creatorName={task?.creator?.name}
+                                                creatorUsername={task?.creator?.username}
+                                                creatorAvatar={task?.creator?.avatar_url}
+                                                whatYouGet={
+                                                    task.type === 'instant'
+                                                        ? [
+                                                              ...rewardLines(task),
+                                                              "The creator's ready-made content, unlocked instantly",
+                                                              "A copy sent to your email",
+                                                          ]
+                                                        : [
+                                                              ...rewardLines(task),
+                                                              "Custom content the creator makes for your request",
+                                                              task.sla_hours ? `Delivered within ${task.sla_hours} hours` : "Delivered within the creator's stated time",
+                                                              "Your payment is held safely until it's delivered",
+                                                          ]
+                                                }
+                                            />
+                                        )}
                                         {!card_capabilities && (
                                             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
                                                 <p className="font-bold">Payments Unavailable</p>
@@ -524,14 +561,14 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         )}
                                         <form onSubmit={(e) => e.preventDefault()}>
                                             <div className="mb-4">
-                                                <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                <label htmlFor="gifter_message" className="block text-xs font-bold text-black/60 uppercase tracking-wider mb-2">
                                                     Message to Creator (Optional)
                                                 </label>
                                                 <textarea
                                                     id="gifter_message"
                                                     value={data.gifter_message}
                                                     onChange={e => setData('gifter_message', e.target.value)}
-                                                    className="w-full border-2 border-gray-200 rounded-[16px] p-3 focus:ring-pink-500 focus:border-[#FF007F] min-h-[100px] resize-y text-sm"
+                                                    className={`${fieldClass} min-h-[100px] resize-y`}
                                                     placeholder="Add a personal note with your purchase..."
                                                 />
                                             </div>
@@ -548,7 +585,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                             ) : null}
                                             {(task.payment_methods_accepted ?? 'both') !== 'card' && (
                                                 <PaymentMethodSelector
-                                                    amount={(parseFloat(String(task.price || 0).replace(/,/g, '')) || 0) * (1 + (task?.creator?.vat_amount_percentage || 0) / 100)}
+                                                    // Same VAT base as the displayed card total: (price + tax_amount) × vat%.
+                                                    // Using price-only here quoted a different bank figure than the card one.
+                                                    amount={(parseFloat(String(task.price || 0).replace(/,/g, '')) || 0)
+                                                        + ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)}
                                                     currency={task.currency || 'USD'}
                                                     email={auth?.user?.email}
                                                     value={data.payment_method}
@@ -563,21 +603,14 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                 setData('digital_waiver', checked);
                                             }} />
 
-                                            <button
-                                                type="button"
+                                            <PayButton
+                                                label={purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')}
+                                                processing={processing}
+                                                disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified) || !card_capabilities}
                                                 onClick={handlePurchase}
-                                                disabled={
-                                                    processing ||
-                                                    !data.agree || !data.digital_waiver || !verified || !card_capabilities
-                                                }
-                                                className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
-                                                    !data.agree || !data.digital_waiver || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
-                                                {processing ? 'Processing...' : (
-                                                    purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
-                                                )}
-                                            </button>
+                                            />
                                             {!isCreator && (
-                                                <p className="text-center text-xs text-gray-500 font-normal mt-3 leading-tight">
+                                                <p className="text-center text-xs text-black/60 font-normal mt-3 leading-tight">
                                                     You will be charged in {task.currency || 'USD'}.
                                                 </p>
                                             )}
@@ -589,18 +622,18 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
 
                         {/* Purchase History */}
                         {purchaseHistory && purchaseHistory.length > 0 && (
-                            <div className="bg-white border border-gray-200 rounded-[20px] p-6 md:p-8 mb-8">
-                                <h3 className="text-xl font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
+                            <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
+                                <h3 className="text-xl font-black font-anton uppercase mb-4 text-black">Purchase History</h3>
                                 <div className="space-y-4">
                                     {purchaseHistory.map((historyItem) => (
-                                        <div key={historyItem.uuid} className="bg-gray-50 border-2 border-gray-200 rounded-[16px] p-4 flex flex-col gap-3">
+                                        <div key={historyItem.uuid} className="bg-gray-50 border-2 border-gray-200 rounded-box-sm p-4 flex flex-col gap-3">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="font-bold text-xs uppercase text-gray-500 mb-1">
+                                                    <p className="font-bold text-xs uppercase text-black/60 mb-1">
                                                         {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                     <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
-                                                        historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                                                        historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-black border-gray-200'
                                                     }`}>
                                                         {historyItem.status}
                                                     </span>
@@ -610,7 +643,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                 </a>
                                             </div>
                                             {historyItem.gifter_message && (
-                                                <div className="bg-white p-3 rounded-[12px] text-sm italic text-gray-600 border border-gray-200">
+                                                <div className="bg-white p-3 rounded-box-sm text-sm italic text-black/60 border border-gray-200">
                                                     "{historyItem.gifter_message}"
                                                 </div>
                                             )}
@@ -621,8 +654,8 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                         )}
                         
                         {!auth?.user && !purchase && (
-                            <div className="bg-gray-50 p-4 text-center rounded-[20px] border border-gray-200 mt-6">
-                                <p className="text-sm text-gray-600 font-bold uppercase tracking-wider">
+                            <div className="bg-gray-50 p-4 text-center rounded-box-sm border border-gray-200 mt-6">
+                                <p className="text-sm text-black/60 font-bold uppercase tracking-wider">
                                     Please <a href={route('login')} className="text-[#FF007F] hover:text-[#FF007F] hover:underline">login</a> to purchase.
                                 </p>
                             </div>
@@ -641,15 +674,15 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             >
                 <div className="!rounded-none p-6">
                     <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
-                    <p className="text-gray-600 mb-6 text-center">
+                    <p className="text-black/60 mb-6 text-center">
                         {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
                     </p>
                     <form onSubmit={handleVerifyStepUp}>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Enter OTP Code (Check your email)</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="e.g. 123456"
                                 value={otpCode}
                                 onChange={(e) => setOtpCode(e.target.value)}
@@ -657,10 +690,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             />
                         </div>
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <label className="block text-sm font-medium text-black/80 mb-1">Type 'CONFIRM' to proceed</label>
                             <input
                                 type="text"
-                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+                                className={fieldClass}
                                 placeholder="CONFIRM"
                                 value={typedConfirmation}
                                 onChange={(e) => setTypedConfirmation(e.target.value)}
@@ -691,7 +724,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                 type="button"
                                 onClick={handlePasskeyStepUp}
                                 disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
-                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-black/60 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
                             >
                                 {passkeyLoading ? (
                                     <>
@@ -703,7 +736,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                     </>
                                 ) : "Use Face ID / Fingerprint"}
                             </button>
-                            <p className="text-xs text-gray-500 text-center mt-2">
+                            <p className="text-xs text-black/60 text-center mt-2">
                                 Bypass OTP by verifying your identity with a saved passkey.
                             </p>
                         </div>

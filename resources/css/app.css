@@ -193,7 +193,8 @@ body {
     will-change: transform;
 }
 .btn-pink-md {
-    border-radius: 15px;
+    /* 20px: the design system's only control radius. Was 15px. */
+    border-radius: 20px;
     border: 1px solid var(--black);
     background: var(--pink);
     color: var(--white);
@@ -415,6 +416,8 @@ body {
     left: 0;
     width: 100%;
     padding: 6px 15px;
+    /* Keep the bar above the iOS home indicator in the installed PWA */
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
 }
 .landing-bottom-bar ul {
     display: flex;

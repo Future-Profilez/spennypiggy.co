@@ -198,6 +198,21 @@ class ReleaseReserves extends Command
                     ],
                 ], $creator->account_id);
 
+                // Guard the idempotency REPLAY. If this exact reserve set was paid before,
+                // bounced (payout.failed reverted the FTs to 'held' and flipped the PayoutRecord
+                // to 'failed'), and reserve:release re-runs inside Stripe's 24h key window, Stripe
+                // replays the ORIGINAL payout object — which is 'pending' at creation time, not
+                // its later 'failed'. Marking on that replay would tell the creator money was
+                // released when it actually bounced. A payout that is already failed/canceled at
+                // return must never be treated as a fresh release; leave the FTs 'held' for the
+                // next window and let the webhook stay authoritative.
+                $payoutStatus = strtolower((string) ($payout->status ?? ''));
+                if (in_array($payoutStatus, ['failed', 'canceled'], true)) {
+                    Log::warning("reserve:release — Stripe returned status '{$payoutStatus}' for creator {$creator->uuid} (payout {$payout->id}); leaving reserves held, not marking released.");
+
+                    continue;
+                }
+
                 // Record FIRST, mark second. The record carries the idempotency key, so it is
                 // what stops tomorrow's run from re-paying this set if the marking below fails.
                 // Writing it after the marking would leave nothing behind when the marking is

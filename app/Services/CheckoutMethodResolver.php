@@ -51,8 +51,31 @@ class CheckoutMethodResolver
                 return self::refuse('bank_unavailable', 'Bank payment is not available for this currency — please pay by card.');
             }
 
+            $requestedMethods = $methods;
             $methods = StripeControl::activeBankMethodTypes($connectedAccountId, $methods);
             if (empty($methods)) {
+                // "yet" implies waiting fixes it, which sends support chasing a
+                // capability the account can never have. When the account's
+                // country is outside every scheme this currency uses, say so.
+                $capabilityMap = [
+                    'pay_by_bank' => 'pay_by_bank_payments',
+                    'sepa_debit' => 'sepa_debit_payments',
+                    'us_bank_account' => 'us_bank_account_ach_payments',
+                ];
+                try {
+                    $country = StripeControl::getAccount($connectedAccountId)->country ?? null;
+                    $countryCaps = StripeControl::bankCapabilitiesForCountry($country);
+                    $everPossible = array_intersect(
+                        $countryCaps,
+                        array_map(fn ($m) => $capabilityMap[$m] ?? '', $requestedMethods)
+                    );
+                    if (empty($everPossible)) {
+                        return self::refuse('bank_region_unsupported', 'Bank payment is not supported for this creator\'s region — please pay by card.');
+                    }
+                } catch (\Throwable) {
+                    // Account lookup failed — fall through to the generic refusal.
+                }
+
                 return self::refuse('bank_capability_missing', 'Bank payment is not available for this creator yet — please pay by card.');
             }
 

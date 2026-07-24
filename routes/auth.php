@@ -36,6 +36,7 @@ use App\Http\Controllers\SavedItemController;
 use App\Http\Controllers\StaticPageController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\ThankYouController;
 use App\Http\Controllers\WebAuthn\WebAuthnCheckController;
 use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
@@ -1122,27 +1123,10 @@ Route::prefix('wish')->name('wish.')->group(function () {
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
-Route::get('payment/thankyou/{username}', function (Illuminate\Http\Request $request, $username) {
-    $owner = User::where('username', $username)->first();
-
-    return Inertia::render('Profile/Thankyou', [
-        'owner' => $owner,
-        'type' => $request->query('type'),
-        'item_name' => $request->query('item_name'),
-        'amount' => $request->query('amount'),
-        'currency' => $request->query('currency'),
-        'benefits' => $request->query('benefits'),
-        'item_id' => $request->query('item_id'),
-        'item_slug' => $request->query('item_slug'),
-        'is_instant' => $request->query('is_instant'),
-        'wish_content' => $request->query('wish_content'),
-        'success_page_type' => $request->query('success_page_type'),
-        'ask_question' => $request->query('ask_question'),
-        'payment_id' => $request->query('payment_id'),
-        'source' => $request->query('source'),
-        'source_id' => $request->query('source_id'),
-    ]);
-})->name('thank-you');
+// The reward is resolved server-side from the item and gated on the payment
+// row — it used to travel through the query string alongside it.
+Route::get('payment/thankyou/{username}', [ThankYouController::class, 'show'])
+    ->name('thank-you');
 
 Route::prefix('membership')->name('membership.')->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware('mustCompletedCardVerification');

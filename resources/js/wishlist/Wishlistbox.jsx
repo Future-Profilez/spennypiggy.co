@@ -98,7 +98,7 @@ export default function Wishlistbox(props) {
                 isDragging ? "dragging opacity-30" : ""
             } ${isOverlay ? "is-overlay" : ""} cursor-pointer ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
         >
-            <div className="bg-[#fdfbf7] rounded-[30px]  shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
+            <div className="bg-[#fdfbf7] rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-6 md:mt-6 rounded-[20px] !text-[12px] p-6 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (

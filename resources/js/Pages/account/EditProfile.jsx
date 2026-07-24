@@ -1075,7 +1075,7 @@ export default function EditProfile({
                                     hover:bg-gray-300 transition-colors 
                                     shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
                                     hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !text-sm"
+                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] !text-sm"
                                 >
                                     Cancel
                                 </button>
@@ -1088,7 +1088,7 @@ export default function EditProfile({
                                     transition-colors font-bold !mt-0 !text-sm
                                     shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
                                     hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !text-black "
+                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] !text-black "
                                     spinnerclass="fill-black"
                                 >
                                     {loading || processing

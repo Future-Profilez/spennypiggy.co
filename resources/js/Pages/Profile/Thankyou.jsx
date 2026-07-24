@@ -5,12 +5,13 @@ import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
 import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
 import { useEffect, useMemo, useState, useRef } from 'react';
+import RewardBlock from '@/Components/Reward/RewardBlock';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, benefits, item_id, item_slug, is_instant, wish_content, success_page_type, ask_question, payment_id, source, source_id} = props;
+  const {owner, type, item_name, amount, currency, item_id, item_slug, is_instant, ask_question, payment_id, source, source_id, reward, reward_locked, awaiting_settlement} = props;
   const { global_currency, auth, user } = usePage().props;
   const { errorAlert, successAlert } = useAlerts();
 
@@ -54,19 +55,6 @@ export default function Thankyou(props) {
       });
   };
 
-  const normalizedWishContent = useMemo(() => {
-    if (!wish_content) return null;
-    if (typeof wish_content === 'string') {
-      try {
-        const parsed = JSON.parse(wish_content);
-        return parsed;
-      } catch {
-        return { url: wish_content, name: 'Exclusive Reward', type: null };
-      }
-    }
-    if (Array.isArray(wish_content)) return null;
-    return wish_content;
-  }, [wish_content]);
 
   const getTitle = () => {
     if (type === 'monthly_subscription') return <><span>Subscription</span> <span className="text-[#FF007F]">Successful!</span></>;
@@ -94,7 +82,6 @@ export default function Thankyou(props) {
   }
 
   const getBenefits = () => {
-    if (benefits) return benefits; // fallback to backend string
     switch(type) {
       case 'wish':
         return 'You have unlocked access to exclusive content.';
@@ -115,7 +102,6 @@ export default function Thankyou(props) {
       case 'support':
         return 'You have unlocked access to supporters-only posts.';
       case 'piggy_pot':
-        if (normalizedWishContent) return 'You have unlocked access to an exclusive reward.';
         return 'Thank you for supporting this creator.';
       default:
         return null;
@@ -224,46 +210,28 @@ export default function Thankyou(props) {
 
     return (
       <div className="benefits-box !p-0 !border-0 !bg-transparent">
-        <div className="benefits-title">BENEFITS INCLUDED</div>
-        <div className="benefits-text">
-          {success_page_type === 'url' ? (
-            <a href={benefitsText} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
-              {benefitsText}
-            </a>
-          ) : (
-            benefitsText
-          )}
-        </div>
-
-        {normalizedWishContent && (type === 'wish' || type === 'task' || type === 'shop' || type === 'piggy_pot') && (
-          <div className="mt-4  shadow-sm">
-            <h4 className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
-               <FaCheckCircle /> Exclusive Reward Unlocked
-            </h4>
-            
-            {String(normalizedWishContent.type || '').includes('video') ? (
-               <LazyVideo controls controlsList="nodownload" posterSrc={normalizedWishContent.url} fallback={owner?.avatar_url || userphoto} className="w-full max-h-[250px] object-contain rounded-lg border border-gray-200 bg-black">
-                   <source src={normalizedWishContent.url} type={normalizedWishContent.type} />
-                   Your browser does not support the video tag.
-               </LazyVideo>
-            ) : String(normalizedWishContent.type || '').includes('audio') ? (
-               <audio controls controlsList="nodownload" className="w-full mt-2">
-                   <source src={normalizedWishContent.url} type={normalizedWishContent.type} />
-                   Your browser does not support the audio element.
-               </audio>
-            ) : (
-               <a href={normalizedWishContent.url} target="_blank" rel="noopener noreferrer" className="block w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50 hover:opacity-90 transition-opacity">
-                   <img src={normalizedWishContent.url} alt={normalizedWishContent.name || "Exclusive Content"} className="w-full max-h-[250px] object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="p-4 block text-center text-sm font-bold text-gray-500">View Content</span>'; }} />
-               </a>
-            )}
-            
-            {normalizedWishContent.name && (
-                <div className="mt-2 text-center text-xs text-gray-500 font-bold truncate px-2">
-                    {normalizedWishContent.name}
-                </div>
-            )}
-          </div>
+        {reward ? (
+          <RewardBlock
+            reward={reward}
+            locked={!!reward_locked}
+            poster={owner?.avatar_url || userphoto}
+            heading={reward_locked ? "What you'll receive" : 'What you get'}
+            className="mb-4"
+          />
+        ) : (
+          <>
+            <div className="benefits-title">BENEFITS INCLUDED</div>
+            <div className="benefits-text">{benefitsText}</div>
+          </>
         )}
+
+        {reward_locked && !awaiting_settlement && (
+          <p className="mb-4 rounded-box-sm border-[3px] border-black bg-[#FFF6D6] p-4 text-left text-sm font-semibold">
+            Sign in with the email you used at checkout to open your content here — we've also
+            emailed it to you.
+          </p>
+        )}
+
 
         {ask_question && type === 'shop' && (
           <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
@@ -297,7 +265,7 @@ export default function Thankyou(props) {
           </div>
         )}
 
-        {rewardLink && !normalizedWishContent && (
+        {rewardLink && !reward?.media && (
           <div className="mt-3">
             <Link href={rewardLink} className="text-[#FF007F] font-bold hover:underline text-[13px] uppercase flex items-center gap-1">
               {rewardText} <FaCheckCircle className="text-[#FF007F]" />

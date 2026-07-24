@@ -82,7 +82,7 @@ export default function AddShopItem(props) {
          <div className='bg-gray-200 min-h-dvh' >
             <div className='containerbox m-auto' >
                <div className='py-8 md:py-16 max-w-[900px] m-auto pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-16'>
-                  <Head title={'Add Shop Item'}  />
+                  <Head title={'Shop'}  />
                   <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
                   {isCreator && (

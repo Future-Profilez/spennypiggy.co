@@ -2,27 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
 use App\Models\FinancialTransaction;
 use App\Models\ReferralCode;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ReferAndEarnController extends Controller
 {
     public function checkCreatorReferral($code)
     {
         try {
-            if (!$code) {
+            if (! $code) {
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Referral code is required.'
+                    'msg' => 'Referral code is required.',
                 ]);
             }
 
@@ -31,10 +29,10 @@ class ReferAndEarnController extends Controller
                 ->where('is_active', 1)
                 ->first();
 
-            if (!$referral) {
+            if (! $referral) {
                 return response()->json([
                     'status' => false,
-                    'msg' => 'Invalid or inactive referral code.'
+                    'msg' => 'Invalid or inactive referral code.',
                 ]);
             }
 
@@ -44,20 +42,19 @@ class ReferAndEarnController extends Controller
                 'status' => true,
                 'msg' => "🎉 {$creatorName}'s referral code has been applied successfully.",
                 'creator' => [
-                    'id'   => $referral->creator?->id,
+                    'id' => $referral->creator?->id,
                     'name' => $creatorName,
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Error checking referral code: ' . $e->getMessage());
+            Log::error('Error checking referral code: '.$e->getMessage());
 
             return response()->json([
                 'status' => false,
-                'msg' => 'Something went wrong while validating the referral code.'
+                'msg' => 'Something went wrong while validating the referral code.',
             ], 500);
         }
     }
-
 
     public function index(Request $request)
     {
@@ -75,7 +72,7 @@ class ReferAndEarnController extends Controller
             ->where('is_active', 1)
             ->value('code');
 
-        $referralLink = $referralCode ? url('/register?ref=' . $referralCode) : null;
+        $referralLink = $referralCode ? url('/register?ref='.$referralCode) : null;
 
         /* =====================================================| All Referrals===================================================== */
         $referralQuery = CreatorReferral::with(['referred:id,name,username,created_at'])->where('referrer_creator_id', $user->id);
@@ -90,16 +87,15 @@ class ReferAndEarnController extends Controller
                 ->first();
 
             return [
-                'id'               => $ref->id,
-                'name'             => $ref->referred->name ?? '-',
-                'username'         => $ref->referred->username ?? '-',
-                'joined_at'        => optional($ref->referred->created_at)->format('d M Y'),
-                'lifetime_gmv'     => (float) $ref->lifetime_gmv,
-                'status'           => $ref->status,
+                'id' => $ref->id,
+                'name' => $ref->referred->name ?? '-',
+                'username' => $ref->referred->username ?? '-',
+                'joined_at' => optional($ref->referred->created_at)->format('d M Y'),
+                'lifetime_gmv' => (float) $ref->lifetime_gmv,
+                'status' => $ref->status,
                 'rejection_reason' => $rejectedPayout?->rejection_reason,
             ];
         });
-
 
         /* =====================================================| Qualified Referrals (LIFETIME)===================================================== */
         $qualifiedCount = CreatorReferral::where('referrer_creator_id', $user->id)
@@ -132,7 +128,7 @@ class ReferAndEarnController extends Controller
             ->where('status', 'PAID')
             ->sum('amount');
 
-        $canRedeem = $availableForPayout >= $rewardAmount && !$hasActivePayout;
+        $canRedeem = $availableForPayout >= $rewardAmount && ! $hasActivePayout;
 
         /* =====================================================| Response===================================================== */
         // dd($referrals, $qualifiedCount, $totalEarned, $hasActivePayout, $availableForPayout, $canRedeem);
@@ -147,11 +143,11 @@ class ReferAndEarnController extends Controller
             ],
 
             'stats' => [
-                'total_referrals'      => $totalReferrals,
-                'qualified_referrals'  => $qualifiedCount,
-                'total_earned'         => $totalEarned,
+                'total_referrals' => $totalReferrals,
+                'qualified_referrals' => $qualifiedCount,
+                'total_earned' => $totalEarned,
                 'available_for_payout' => $availableForPayout,
-                'paid_out_amount'      => (float) $paidOutAmount,
+                'paid_out_amount' => (float) $paidOutAmount,
             ],
 
             'referrals' => $referrals,
@@ -177,7 +173,7 @@ class ReferAndEarnController extends Controller
             return response()->json([
                 'message' => 'You have already generated your referral link.',
                 'code' => $existing->code,
-                'link' => url('/register?ref=' . $existing->code),
+                'link' => url('/register?ref='.$existing->code),
             ], 409);
         }
 
@@ -191,13 +187,13 @@ class ReferAndEarnController extends Controller
         // ✅ Store in referral_codes table
         $referral = ReferralCode::create([
             'creator_id' => $user->id,
-            'code'       => $code,
-            'is_active'  => 1,
+            'code' => $code,
+            'is_active' => 1,
         ]);
 
         return response()->json([
             'code' => $referral->code,
-            'link' => url('/register?ref=' . $referral->code),
+            'link' => url('/register?ref='.$referral->code),
         ]);
     }
 
@@ -227,6 +223,7 @@ class ReferAndEarnController extends Controller
 
             if ($qualifiedReferrals->isEmpty()) {
                 DB::rollBack();
+
                 return back()->with('error', 'No qualified referrals available for payout.');
             }
 
@@ -237,6 +234,7 @@ class ReferAndEarnController extends Controller
 
             if ($hasActivePayout) {
                 DB::rollBack();
+
                 return back()->with('error', 'You already have a payout under review.');
             }
 
@@ -254,11 +252,11 @@ class ReferAndEarnController extends Controller
             if ($rejectedPayout) {
                 // 🔁 Reuse rejected payout
                 $rejectedPayout->update([
-                    'status'       => 'PENDING',
-                    'amount'       => $amount,
+                    'status' => 'PENDING',
+                    'amount' => $amount,
                     'requested_at' => now(),
                     // ❗ DO NOT clear rejection_reason
-                    'approved_at'  => null,
+                    'approved_at' => null,
                     'approved_by_admin_id' => null,
                 ]);
 
@@ -266,38 +264,40 @@ class ReferAndEarnController extends Controller
             } else {
                 // ➕ Create fresh payout
                 $payout = CreatorReferralPayout::create([
-                    'creator_id'   => $creator->id,
-                    'amount'       => $amount,
-                    'status'       => 'PENDING',
+                    'creator_id' => $creator->id,
+                    'amount' => $amount,
+                    'status' => 'PENDING',
                     'requested_at' => now(),
                 ]);
             }
 
-            // 5️⃣ Lock referrals into payout state
+            // 5️⃣ Lock referrals into payout state, stamped with THIS payout's id so the admin
+            // approve/reject can act on exactly this batch and not a later unpaid one.
             CreatorReferral::whereIn('id', $qualifiedReferrals->pluck('id'))
                 ->update([
                     'status' => 'PAYOUT_REQUESTED',
+                    'payout_id' => $payout->id,
                 ]);
 
             // 6️⃣ Create FinancialTransaction record for audit trail
             FinancialTransaction::updateOrCreate(
                 [
                     'source_type' => CreatorReferralPayout::class,
-                    'source_id'   => $payout->id,
+                    'source_id' => $payout->id,
                 ],
                 [
-                    'user_id'          => $creator->id,
-                    'type'             => 'referral_payout',
-                    'gross_amount'     => $amount,
-                    'platform_fee'     => 0,
-                    'stripe_fee'       => 0,
-                    'vat_amount'       => 0,
-                    'net_amount'       => $amount,
-                    'reserve_amount'   => 0,
-                    'reserve_status'   => 'none',
-                    'currency'         => config('referral.currency', 'gbp'),
-                    'status'           => 'pending',
-                    'description'      => "Referral payout request for {$qualifiedReferrals->count()} referral(s)",
+                    'user_id' => $creator->id,
+                    'type' => 'referral_payout',
+                    'gross_amount' => $amount,
+                    'platform_fee' => 0,
+                    'stripe_fee' => 0,
+                    'vat_amount' => 0,
+                    'net_amount' => $amount,
+                    'reserve_amount' => 0,
+                    'reserve_status' => 'none',
+                    'currency' => config('referral.currency', 'gbp'),
+                    'status' => 'pending',
+                    'description' => "Referral payout request for {$qualifiedReferrals->count()} referral(s)",
                     'transaction_date' => now(),
                 ]
             );

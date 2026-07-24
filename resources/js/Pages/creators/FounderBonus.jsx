@@ -48,7 +48,7 @@ export default function FounderBonus() {
 
                <div className="grid lg:grid-cols-2 gap-3 md:gap-8  mx-auto">
                   
-                  <div className="bg-[#fdfbf7] p-4 md:!p-8 lg:!p-10 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"> 
+                  <div className="bg-[#fdfbf7] p-4 md:!p-8 lg:!p-10 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
                      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Award size={150} />
                      </div>
@@ -70,7 +70,7 @@ export default function FounderBonus() {
                      </div>
                   </div>
 
-                  <div className="bg-black text-white p-4 md:!p-8 lg:!p-10 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="bg-black text-white p-4 md:!p-8 lg:!p-10 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Clock size={150} />
                      </div>

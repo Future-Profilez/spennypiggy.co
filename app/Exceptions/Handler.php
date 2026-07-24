@@ -67,6 +67,8 @@ class Handler extends ExceptionHandler
             return parent::render($request, $e);
         }
 
+        $e = $this->prepareException($e);
+
         // CSRF token mismatch (419): the page's token went stale (expired session,
         // another local app overwrote the XSRF cookie, old tab). Redirect back —
         // Inertia reloads the page with a fresh token so the user can just retry —

@@ -18,6 +18,12 @@ import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
+import RewardEditor, {
+    emptyReward,
+    rewardFromItem,
+    rewardToPayload,
+    validateReward,
+} from "@/Components/Reward/RewardEditor";
 
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
@@ -114,7 +120,10 @@ export default function Wishlist(props) {
             });
     };
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, transform, processing, errors, reset } = useForm({
+        // One reward object in form state, flattened to the server's columns on
+        // submit — see the transform() below.
+        reward: item ? rewardFromItem(item) : emptyReward(),
         wishname: item && item.wishname ? item.wishname : "",
         goal_label: item && item.goal_label ? item.goal_label : "",
         price: item && item.price ? item.price : "",
@@ -137,6 +146,11 @@ export default function Wishlist(props) {
             item && item.repeat_purchase ? item.repeat_purchase : 1,
         category: item && item.category ? item.category : 0,
         ai_generated: isAiImage ? 1 : 0,
+    });
+
+    transform((payload) => {
+        const { reward, ...rest } = payload;
+        return { ...rest, ...rewardToPayload(reward) };
     });
 
     const [step, setStep] = useState(1);
@@ -325,10 +339,9 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if (!editpop && (!data.content_file || data.content_file === "")) {
-            errorAlert(
-                "Please choose a exclusive reward content for this wish item.",
-            );
+        const rewardProblem = validateReward(data.reward);
+        if (rewardProblem) {
+            errorAlert(rewardProblem);
             return false;
         }
         if (editpop) {
@@ -748,85 +761,12 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             {/* Step 3: Fulfillment & Settings */}
                             <div className={step === 3 ? "block" : "hidden"}>
                                 <div className="mb-8">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700 flex items-center gap-2">
-                                        Content File
-                                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                            Required
-                                        </span>
-                                    </label>
-                                    <p className="text-sm text-gray-500 mb-1">
-                                        Upload the file that buyers will receive
-                                        after purchase (Image, Video, Audio,
-                                        Document, etc.).
-                                    </p>
-                                    <p className="text-sm font-semibold text-gray-700 mb-4">
-                                        This is what buyers pay for — make it good.
-                                    </p>
-
-                                    {item && item.content_file ? (
-                                        <div className="border border-green-200 bg-green-50 p-4 rounded-[30px]  flex justify-between items-center mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="bg-green-100 p-2 rounded-full">
-                                                    <RiCheckDoubleLine className="text-green-600" />
-                                                </div>
-                                                <span className="text-green-700 font-medium">
-                                                    File Uploaded
-                                                </span>
-                                            </div>
-                                            <a
-                                                target="_blank"
-                                                className="text-sm font-semibold text-green-700 hover:text-green-800 underline"
-                                                href={`https://ucarecdn.com/${item && item.content_file}/`}
-                                            >
-                                                View File
-                                            </a>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {contentFile ? (
-                                                <div className="mb-4">
-                                                    <ContentFilePreview
-                                                        fileUrl={`https://ucarecdn.com/${contentFile}/`}
-                                                        fileType={
-                                                            contentFileMetadata.type
-                                                        }
-                                                        fileName={
-                                                            contentFileMetadata.name
-                                                        }
-                                                        fileSize={
-                                                            contentFileMetadata.size
-                                                        }
-                                                        isImage={
-                                                            contentFileMetadata.isImage
-                                                        }
-                                                        isVideo={
-                                                            contentFileMetadata.isVideo
-                                                        }
-                                                        isAudio={
-                                                            contentFileMetadata.isAudio
-                                                        }
-                                                        className="mb-1"
-                                                    />
-                                                </div>
-                                            ) : null}
-                                        </>
-                                    )}
-
-                                    <GlobalUploader
-                                        type="minimal"
-                                        view={false}
+                                    <RewardEditor
+                                        value={data.reward}
+                                        onChange={(next) => setData("reward", next)}
                                         ctxName="wishlistcontent"
-                                        ref={contentUploaderRef}
-                                        imgonly={false}
-                                        accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
-                                        sendFile={getContentFileUID}
-                                        options={st.wishlistcontent}
+                                        errors={errors}
                                     />
-
-                                    <div className="mt-4 text-xs text-gray-400">
-                                        Max file size: 100MB. Supported: Images,
-                                        Videos, Audio, Docs, Archives.
-                                    </div>
                                 </div>
 
                                 <div className="hidden mb-6 border-t border-gray-100 pt-6">

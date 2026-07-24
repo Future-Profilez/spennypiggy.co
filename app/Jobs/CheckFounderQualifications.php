@@ -2,20 +2,21 @@
 
 namespace App\Jobs;
 
-use App\Models\CreatorReferral;
-use App\Models\User;
-use App\Models\FounderBonus;
+use App\EmailService;
+use App\Helpers;
 use App\Mail\FounderCongratulations;
+use App\Models\CreatorReferral;
+use App\Models\FounderBonus;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
-use App\Helpers;
 
 class CheckFounderQualifications implements ShouldQueue
 {
@@ -34,6 +35,29 @@ class CheckFounderQualifications implements ShouldQueue
      * Runs monthly on the 1st to check creators who completed their first 30 days for founder qualification
      */
     public function handle(): void
+    {
+        // One run at a time. Seat availability is read once below and enforced
+        // with a local counter, so two overlapping runs (a retry landing on top
+        // of the scheduled tick) would each see the same free seats and could
+        // jointly qualify past FOUNDER_MAX_SEATS. An atomic cache lock makes the
+        // pass mutually exclusive; qualifyAsFounder also re-checks the live count
+        // inside its transaction as a second line of defence.
+        $lock = Cache::lock('founder-qualification-check', 600);
+
+        if (! $lock->get()) {
+            Log::info('Founder qualification check already running — skipping this dispatch.');
+
+            return;
+        }
+
+        try {
+            $this->runQualificationPass();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runQualificationPass(): void
     {
         Log::info('Starting founder qualification check');
 
@@ -77,12 +101,16 @@ class CheckFounderQualifications implements ShouldQueue
             $meetsEarnings = $first30DayEarnings >= $minEarnings;
 
             if ($meetsEarnings && $newFounders < $availableSeats && FounderBonus::checkFounderQualification($creator->id, $first30DayEarnings)) {
-                // Qualify as founder
-                $this->qualifyAsFounder($creator, $first30DayEarnings);
-                $newFounders++;
+                // qualifyAsFounder re-checks the live seat count and returns false
+                // if the cap was reached since this pass started. Only count and
+                // continue when a bonus was actually created — otherwise fall
+                // through and record the miss.
+                if ($this->qualifyAsFounder($creator, $first30DayEarnings)) {
+                    $newFounders++;
+                    Log::info("New founder qualified: {$creator->name} (ID: {$creator->id}) with £{$first30DayEarnings} in first 30 days");
 
-                Log::info("New founder qualified: {$creator->name} (ID: {$creator->id}) with £{$first30DayEarnings} in first 30 days");
-                continue;
+                    continue;
+                }
             }
 
             // Window is over and they didn't make it — record the missed outcome once
@@ -100,7 +128,7 @@ class CheckFounderQualifications implements ShouldQueue
      */
     private function markAsMissed(User $creator, string $reason): void
     {
-        if (!Schema::hasColumn('users', 'founder_missed_at')) {
+        if (! Schema::hasColumn('users', 'founder_missed_at')) {
             return;
         }
 
@@ -121,7 +149,7 @@ class CheckFounderQualifications implements ShouldQueue
         try {
             Helpers::sendNotification('Founder Program update', $message, $creator->email);
         } catch (\Throwable $e) {
-            Log::error("Failed to send founder missed notification to {$creator->email}: " . $e->getMessage());
+            Log::error("Failed to send founder missed notification to {$creator->email}: ".$e->getMessage());
         }
 
         Log::info("Founder window missed recorded for creator {$creator->id} ({$reason})");
@@ -132,7 +160,7 @@ class CheckFounderQualifications implements ShouldQueue
      */
     private function calculateFirst30DayEarnings(User $creator): float
     {
-        if (!$creator->stripe_connected_at) {
+        if (! $creator->stripe_connected_at) {
             return 0.0;
         }
 
@@ -149,15 +177,24 @@ class CheckFounderQualifications implements ShouldQueue
     /**
      * Qualify a creator as a founder
      */
-    private function qualifyAsFounder(User $creator, float $first30DayEarnings): void
+    private function qualifyAsFounder(User $creator, float $first30DayEarnings): bool
     {
-        DB::transaction(function () use ($creator, $first30DayEarnings) {
+        return (bool) DB::transaction(function () use ($creator, $first30DayEarnings) {
             // Serialize on the creator row + re-check so two concurrent qualification runs
             // can't both create a founder bonus for the same creator (no unique constraint
             // is relied upon, avoiding a risky migration over possibly-duplicated data).
             User::where('id', $creator->id)->lockForUpdate()->first();
             if (FounderBonus::where('creator_id', $creator->id)->exists()) {
-                return;
+                return false;
+            }
+
+            // Live seat re-check: the count read at the start of the pass can be
+            // stale by the time we reach this creator. Never create a bonus that
+            // would take the platform past its seat cap.
+            if (FounderBonus::getTotalFounderCount() >= FounderBonus::getMaxFounderSeats()) {
+                Log::warning("Founder seats full — not qualifying creator {$creator->id} despite meeting earnings.");
+
+                return false;
             }
 
             if (Schema::hasColumn('users', 'is_founder')) {
@@ -198,10 +235,10 @@ class CheckFounderQualifications implements ShouldQueue
             // Send congratulations email
             try {
                 if (config('founder_bonus.features.email_notifications', true)) {
-                    \App\EmailService::sendMarketingEmail($creator, new FounderCongratulations($creator, $first30DayEarnings));
+                    EmailService::sendMarketingEmail($creator, new FounderCongratulations($creator, $first30DayEarnings));
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to send founder congratulations email to {$creator->email}: " . $e->getMessage());
+                Log::error("Failed to send founder congratulations email to {$creator->email}: ".$e->getMessage());
             }
 
             try {
@@ -211,8 +248,10 @@ class CheckFounderQualifications implements ShouldQueue
                     $creator->email
                 );
             } catch (\Throwable $e) {
-                Log::error("Failed to send founder qualification push to {$creator->email}: " . $e->getMessage());
+                Log::error("Failed to send founder qualification push to {$creator->email}: ".$e->getMessage());
             }
+
+            return true;
         });
     }
 }

@@ -28,45 +28,79 @@ export default function OrdersLists({ type = 'sales' }) {
    }
    const { global_currency } = usePage().props;
    const [orderloading, setOrderLoading] = useState(false);
+   const [loadingMore, setLoadingMore] = useState(false);
    const [orders, setOrders] = useState([]);
    const [userCurrency, setUserCurrency] = useState(global_currency);
 
    const [allEarning, setAllEarning] = useState(0);
    const [monthEarning, setmonthEarning] = useState(0);
    const [claims, setclaims] = useState(0);
+   const [page, setPage] = useState(1);
+   const [hasMore, setHasMore] = useState(false);
+
+   // Filters
+   const [statusFilter, setStatusFilter] = useState('all');
+   const [search, setSearch] = useState('');
+   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+   const STATUS_TABS = [
+      { key: 'all', label: 'All' },
+      { key: 'pending', label: 'Pending' },
+      { key: 'processing', label: 'Processing' },
+      { key: 'shipped', label: 'Shipped' },
+      { key: 'delivered', label: 'Completed' },
+   ];
 
    // Fee maths comes from PriceFormat — a second local copy of the formula drifts.
    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
    const [loadError, setLoadError] = useState(false);
-   const fetchorders = () =>{
-      setOrderLoading(true);
+
+   // append=true keeps the loaded pages and adds the next one (load-more).
+   const fetchorders = (targetPage = 1, append = false) => {
+      if (append) setLoadingMore(true); else setOrderLoading(true);
       setLoadError(false);
-        axios.get(`/shop/orders-list?type=${type}`)
-       .then(res =>{
-         setOrders(res.data.orders);
-         setAllEarning(res.data.all_time);
-         setmonthEarning(res.data.thirtydays);
-         setclaims(res.data.total_claims);
-         setUserCurrency(res.data.user_currency || global_currency);
-         setOrderLoading(false);
-        })
-       .catch(() =>{
+      const params = new URLSearchParams({
+         type,
+         page: String(targetPage),
+         status: statusFilter,
+      });
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+
+      axios.get(`/shop/orders-list?${params.toString()}`)
+         .then(res => {
+            setOrders(prev => append ? [...prev, ...res.data.orders] : res.data.orders);
+            setAllEarning(res.data.all_time);
+            setmonthEarning(res.data.thirtydays);
+            setclaims(res.data.total_claims);
+            setUserCurrency(res.data.user_currency || global_currency);
+            setPage(res.data.pagination?.current_page ?? targetPage);
+            setHasMore(Boolean(res.data.pagination?.has_more));
+            setOrderLoading(false);
+            setLoadingMore(false);
+         })
+         .catch(() => {
             // An API failure must not render as "you have no orders".
             setLoadError(true);
             setOrderLoading(false);
-        });
-   }
+            setLoadingMore(false);
+         });
+   };
 
-   useEffect(()=>{
-      fetchorders();
-   }, [type]);
+   // Debounce the search box so we don't fire a request per keystroke.
+   useEffect(() => {
+      const t = setTimeout(() => setDebouncedSearch(search), 350);
+      return () => clearTimeout(t);
+   }, [search]);
+
+   // Refetch from page 1 whenever tab, status filter or debounced search change.
+   useEffect(() => {
+      fetchorders(1, false);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [type, statusFilter, debouncedSearch]);
 
 
   return <>
-
-      {!orderloading ?
-      <>
 
       {type === 'sales' && (
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
@@ -87,12 +121,45 @@ export default function OrdersLists({ type = 'sales' }) {
 
       {type === 'sales' ? <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >Recent Claims</h2> : <h2 className='font-GillSans uppercase text-xl mb-4 pt-3' >My Purchases</h2>}
 
+      {/* Filters — always visible so an empty result is still searchable/clearable. */}
+      <div className='flex flex-col gap-3 mb-5'>
+         <div className='relative'>
+            <input
+               type='text'
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+               placeholder={type === 'sales' ? 'Search by item or buyer…' : 'Search by item or creator…'}
+               className='w-full bg-white border-[3px] border-black rounded-box-sm px-4 py-3 min-h-[44px] font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] placeholder:text-gray-400'
+            />
+            {search && (
+               <button
+                  type='button'
+                  aria-label='Clear search'
+                  onClick={() => setSearch('')}
+                  className='absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full flex items-center justify-center font-black text-gray-500 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black'
+               >×</button>
+            )}
+         </div>
+         <div className='flex gap-2 overflow-x-auto pb-1 -mx-1 px-1'>
+            {STATUS_TABS.map(t => (
+               <button
+                  key={t.key}
+                  onClick={() => setStatusFilter(t.key)}
+                  aria-pressed={statusFilter === t.key}
+                  className={`whitespace-nowrap px-4 py-2 min-h-[40px] rounded-box-sm border-2 border-black font-black uppercase text-[11px] tracking-wide transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${statusFilter === t.key ? 'bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-black'}`}
+               >
+                  {t.label}
+               </button>
+            ))}
+         </div>
+      </div>
+
       {orders && orders.length > 0 && (
          <div  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {orders.map((item) =>
                   <article 
                     key={item.uuid ?? item.id}
-                    className="relative bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+                    className="relative bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
                   >
                     <div className="p-3 md:p-4">
                         <div className="relative">
@@ -196,11 +263,22 @@ export default function OrdersLists({ type = 'sales' }) {
             )}
          </div>
       )}
-      </>
-      : ''}
 
-      {/* Skeletons, not a full-page spinner — the grid stays in place on refetch. */}
-      {orderloading ? (
+      {/* Load more — page-at-a-time, mobile-friendly (no numbered pager). */}
+      {orders.length > 0 && hasMore && (
+         <div className='text-center mt-6'>
+            <button
+               onClick={() => fetchorders(page + 1, true)}
+               disabled={loadingMore}
+               className='font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50'
+            >
+               {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+         </div>
+      )}
+
+      {/* Skeletons only on the first load; a filter refetch keeps the stale grid. */}
+      {orderloading && orders.length === 0 ? (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[0, 1, 2].map((n) => <OrderCardSkeleton key={n} />)}
          </div>
@@ -221,14 +299,22 @@ export default function OrdersLists({ type = 'sales' }) {
             </div>
          </>
       ) : orders.length < 1 ? (
-         <Nocontent
-            text={type === 'sales' ? "No orders yet" : "No purchases yet"}
-            subheading={type === 'sales'
-               ? "When a supporter buys one of your products, the order lands here."
-               : "Anything you buy from a creator shows up here with its delivery status."}
-            actionHref={type === 'sales' ? '/shop?type=products' : '/discover'}
-            actionText={type === 'sales' ? 'Manage your products' : 'Find creators'}
-         />
+         (debouncedSearch.trim() || statusFilter !== 'all') ? (
+            <Nocontent
+               hideImage
+               text="No matching orders"
+               subheading="Nothing matches these filters. Clear them to see everything."
+            />
+         ) : (
+            <Nocontent
+               text={type === 'sales' ? "No orders yet" : "No purchases yet"}
+               subheading={type === 'sales'
+                  ? "When a supporter buys one of your products, the order lands here."
+                  : "Anything you buy from a creator shows up here with its delivery status."}
+               actionHref={type === 'sales' ? '/shop?type=products' : '/discover'}
+               actionText={type === 'sales' ? 'Manage your products' : 'Find creators'}
+            />
+         )
       ) : ""}
 
       <style>{`

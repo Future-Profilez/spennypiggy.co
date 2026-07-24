@@ -22,7 +22,7 @@ export default function ProfileProductLists({ IsloggedIn, suppressEmptyState = f
     return (
         <>
             {lists && lists.length ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                     {lists.map((item, index) => (
                         <ProfileProduct
                             IsloggedIn={IsloggedIn}

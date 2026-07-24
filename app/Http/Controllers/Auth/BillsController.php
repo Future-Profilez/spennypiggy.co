@@ -26,6 +26,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
@@ -54,6 +55,30 @@ class BillsController extends Controller
 {
     use RiskEnforcement;
 
+    /**
+     * A Bill sells ONE recurring content stream: an instant welcome reward at
+     * checkout, then the creator's subscriber-only posts. It deliberately has
+     * no perks bundle — that is what makes it a different product from a
+     * Membership, which sells tiers. Giving Bills perks made the two
+     * indistinguishable.
+     *
+     * The on-platform content requirement is already met structurally: a
+     * creator cannot publish a Bill without at least one subscriber-only post,
+     * and `EnforcePostingCadence` pauses collection if they stop posting.
+     *
+     * @return string|null the reason the reward is unacceptable, or null
+     */
+    private function rewardBundleError(Request $request): ?string
+    {
+        return RewardService::submittedLinkError($request->all());
+    }
+
+    /** @return array<string, mixed> */
+    private function rewardBundleColumns(Request $request): array
+    {
+        return RewardService::columnsWithFile($request->all());
+    }
+
     public function billSave(Request $request)
     {
         // 🔴 DEBUGGING: Log that method was called
@@ -61,6 +86,12 @@ class BillsController extends Controller
             'user_id' => Auth::id(),
             'request_data' => $request->all(),
         ]);
+
+        // Default the reward headline from the listing name so a missing field
+        // never blocks the save — the reward contract still gets a title.
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->name]);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', new NoExpenseOrBrandName],
@@ -78,7 +109,8 @@ class BillsController extends Controller
                 },
             ],
             'period' => ['required', 'string'],
-        ]);
+            'content_file' => RewardService::fileRule(),
+        ] + RewardService::validationRules());
 
         if ($validator->fails()) {
             return response()->json([
@@ -86,6 +118,10 @@ class BillsController extends Controller
                 'msg' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ]);
+        }
+
+        if ($rewardError = $this->rewardBundleError($request)) {
+            return response()->json(['status' => false, 'msg' => $rewardError]);
         }
 
         $user = User::where('id', Auth::id())->first();
@@ -131,6 +167,7 @@ class BillsController extends Controller
         $bill->thumbnail = ! empty($media) ? $media : null;
         $bill->period = $request->period;
         $bill->status = 1;
+        $bill->fill($this->rewardBundleColumns($request));
 
         $bill->save();
 
@@ -187,6 +224,12 @@ class BillsController extends Controller
     {
         Log::info("from start request->period: $request->period");
 
+        // Default the reward headline from the listing name so a missing field
+        // never blocks the save — the reward contract still gets a title.
+        if (! filled($request->reward_title)) {
+            $request->merge(['reward_title' => (string) $request->name]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', new NoExpenseOrBrandName],
             // Field A — optional aspirational goal label (display-only, never on a transactional surface).
@@ -204,7 +247,8 @@ class BillsController extends Controller
             // Required on save, so it must be required on edit too — a null period
             // produced a Stripe price with interval: null and killed the checkout.
             'period' => ['required', 'string', Rule::in(array_keys(StripeControl::$periods))],
-        ]);
+            'content_file' => RewardService::fileRule(),
+        ] + RewardService::validationRules());
 
         if ($validator->fails()) {
             return response()->json([
@@ -212,6 +256,10 @@ class BillsController extends Controller
                 'msg' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ]);
+        }
+
+        if ($rewardError = $this->rewardBundleError($request)) {
+            return response()->json(['status' => false, 'msg' => $rewardError]);
         }
 
         $user = User::where('id', Auth::id())->first();
@@ -258,7 +306,7 @@ class BillsController extends Controller
             // `$media ?? null` wiped the thumbnail on every price/name-only edit.
             'thumbnail' => ! empty($media) ? $media : $bill->thumbnail,
             'period' => $request->period,
-        ])->save();
+        ] + $this->rewardBundleColumns($request))->save();
 
         try {
             Log::info("starting from try request->period: $request->period");
@@ -754,7 +802,10 @@ class BillsController extends Controller
                             'currency' => $chargeCurrency,
                             'product_data' => [
                                 'name' => 'Content membership',
-                                'description' => "Content membership · @{$bill->user->username}",
+                                'description' => Helpers::rewardLineDescription(
+                                    $bill,
+                                    "Content membership · @{$bill->user->username}"
+                                ),
                             ],
                             'unit_amount' => round($finalTotalAmount * $multiplier),
                             'recurring' => [

@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import GlobalUploader from '@/uploadcare/Uploader';
 import st from '../../../css/uploader.module.css';
-import Popup from '@/Components/Popup';
+import ItemFormShell from '@/Components/ItemFormShell';
+import RewardEditor, {
+    emptyReward,
+    rewardFromItem,
+    rewardToPayload,
+    validateReward,
+} from '@/Components/Reward/RewardEditor';
+import RewardPreview from '@/Components/Reward/RewardPreview';
+import { IMAGE_ACCEPT } from '@/constants/rewards';
+
+const DEFAULT_COVER = 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/';
+
+const FIELD =
+    'w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]';
+const FIELD_LABEL = 'mb-2 block text-left text-[11px] font-black uppercase tracking-[0.14em]';
 
 export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -15,6 +29,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         data,
         setData,
         post,
+        transform,
         delete: destroy,
         processing,
         errors,
@@ -31,10 +46,9 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         enable_leaderboard: true,
         allow_anonymous: true,
         status: 'active',
-        content_file: '',
         content_description: '',
-        cover_media:
-            'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/',
+        cover_media: DEFAULT_COVER,
+        reward: emptyReward(),
     });
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -49,11 +63,26 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         enable_leaderboard: true,
         allow_anonymous: true,
         status: 'active',
-        content_file: '',
         content_description: '',
-        cover_media:
-            'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/',
+        cover_media: DEFAULT_COVER,
+        reward: emptyReward(),
     };
+
+    // The reward lives as one object in form state and is flattened to the
+    // server's columns on submit, so the editor and the payload can never
+    // disagree about what was entered.
+    transform((payload) => {
+        const { reward, ...rest } = payload;
+        return {
+            ...rest,
+            ...rewardToPayload(reward),
+            // Kept in step with the reward's own description so the legacy
+            // column stays truthful for anything still reading it.
+            content_description: reward.description || rest.content_description || '',
+        };
+    });
+
+    const setReward = useCallback((next) => setData('reward', next), [setData]);
 
     const openCreateModal = () => {
         setIsEditing(false);
@@ -80,11 +109,12 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
             allow_anonymous:
                 pot.allow_anonymous == 1 || pot.allow_anonymous === true,
             status: pot.status || 'active',
-            content_file: pot.content_file || '',
             content_description: pot.content_description || '',
-            cover_media:
-                pot.cover_media ||
-                'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/',
+            cover_media: pot.cover_media || DEFAULT_COVER,
+            reward: {
+                ...rewardFromItem(pot),
+                description: pot.reward_description || pot.content_description || '',
+            },
         });
         clearErrors();
         setShowPotModal(true);
@@ -96,12 +126,13 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         clearErrors();
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleSubmit = () => {
+        if (processing) return;
 
-        if (!data.content_file) {
-            setError('content_file', 'Content file is required.');
-            errorAlert('Please upload the content file the supporter receives.');
+        const rewardProblem = validateReward(data.reward);
+        if (rewardProblem) {
+            setError('reward_title', rewardProblem);
+            errorAlert(rewardProblem);
             return;
         }
 
@@ -118,8 +149,8 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                     closeAndResetModal();
                 }
             },
-            onError: () => {
-                errorAlert('Please check the form for errors.');
+            onError: (formErrors) => {
+                errorAlert(Object.values(formErrors || {}).flat()[0] || 'Please check the form for errors.');
             },
         };
 
@@ -129,6 +160,200 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
             post(route('piggy-pots.store'), options);
         }
     };
+
+    const steps = [
+        {
+            key: 'content',
+            title: 'Your pot',
+            hint: 'Name the content people are buying into, and give it a cover.',
+            validate: () => {
+                if (!data.title.trim()) return 'Give your pot a title.';
+                return null;
+            },
+            render: () => (
+                <div className="space-y-6">
+                    <div>
+                        <label htmlFor="pot-title" className={FIELD_LABEL}>
+                            Content title <span className="text-[#FF007F]">*</span>
+                        </label>
+                        <input
+                            id="pot-title"
+                            type="text"
+                            className={FIELD}
+                            placeholder="e.g. Exclusive photo set"
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                        />
+                        {errors.title && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">{errors.title}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label htmlFor="pot-description" className={FIELD_LABEL}>
+                            Description
+                        </label>
+                        <textarea
+                            id="pot-description"
+                            rows="3"
+                            className={`${FIELD} resize-y`}
+                            placeholder="Describe the content supporters will unlock…"
+                            value={data.description}
+                            onChange={(e) => setData('description', e.target.value)}
+                        />
+                        {errors.description && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                {errors.description}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <span className={FIELD_LABEL}>Cover image</span>
+                        <div className="rounded-box-sm border-[3px] border-dashed border-black bg-[#F7F7F7] p-2">
+                            {data.cover_media && (
+                                <div className="relative mb-3 overflow-hidden rounded-box-sm border-[3px] border-black bg-white">
+                                    <img
+                                        src={data.cover_media}
+                                        className="h-[150px] w-full object-cover"
+                                        alt="Cover preview"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('cover_media', '')}
+                                        aria-label="Remove cover image"
+                                        className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-xl font-black text-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            )}
+                            <div className="uploader overflow-hidden">
+                                <GlobalUploader
+                                    ctxName="piggy-pot-cover"
+                                    type="minimal"
+                                    accept={IMAGE_ACCEPT}
+                                    imgonly={true}
+                                    sendFile={(file) =>
+                                        setData(
+                                            'cover_media',
+                                            file?.url || file?.cdnUrl || file?.originalUrl,
+                                        )
+                                    }
+                                    options={st.avatar}
+                                />
+                            </div>
+                        </div>
+                        {errors.cover_media && (
+                            <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                {errors.cover_media}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'reward',
+            title: 'What they get',
+            hint: 'Supporters unlock this the moment their payment clears.',
+            validate: () => validateReward(data.reward),
+            render: () => (
+                <RewardEditor
+                    value={data.reward}
+                    onChange={setReward}
+                    ctxName="piggy-pot-reward"
+                    errors={errors}
+                />
+            ),
+        },
+        {
+            key: 'goal',
+            title: 'Goal & settings',
+            hint: 'The goal is progress context only — supporters buy the content, not the target.',
+            validate: () => {
+                if (!String(data.target_amount).trim()) return 'Set a progress goal.';
+                return null;
+            },
+            render: () => (
+                <div className="space-y-6">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                            <label htmlFor="pot-target" className={FIELD_LABEL}>
+                                Progress goal ({data.currency}) <span className="text-[#FF007F]">*</span>
+                            </label>
+                            <input
+                                id="pot-target"
+                                type="number"
+                                step="0.01"
+                                min="1"
+                                inputMode="decimal"
+                                className={FIELD}
+                                placeholder="e.g. 500"
+                                value={data.target_amount}
+                                onChange={(e) => setData('target_amount', e.target.value)}
+                            />
+                            {errors.target_amount && (
+                                <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                    {errors.target_amount}
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="pot-deadline" className={FIELD_LABEL}>
+                                Deadline <span className="text-neutral-400">(optional)</span>
+                            </label>
+                            <input
+                                id="pot-deadline"
+                                type="datetime-local"
+                                className={FIELD}
+                                value={data.deadline}
+                                onChange={(e) => setData('deadline', e.target.value)}
+                            />
+                            {errors.deadline && (
+                                <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">
+                                    {errors.deadline}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Toggle
+                            checked={data.is_pinned}
+                            onChange={(next) => setData('is_pinned', next)}
+                            label="Pin to profile (featured goal)"
+                        />
+                        <Toggle
+                            checked={data.enable_leaderboard}
+                            onChange={(next) => setData('enable_leaderboard', next)}
+                            label="Show most-active supporters"
+                        />
+                    </div>
+
+                    {isEditing && (
+                        <div>
+                            <label htmlFor="pot-status" className={FIELD_LABEL}>
+                                Status
+                            </label>
+                            <select
+                                id="pot-status"
+                                className={`${FIELD} appearance-none`}
+                                value={data.status}
+                                onChange={(e) => setData('status', e.target.value)}
+                            >
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="expired">Expired</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+    ];
 
     const handleDelete = (pot) => {
         const label = pot?.title ? `"${pot.title}"` : 'this Piggy Pot';
@@ -167,285 +392,16 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                             </button>
                         </div>
 
-                        <Popup
-                            size="xl"
-                            classes="hidden"
-                            action={showPotModal}
-                            onHide={closeAndResetModal}
-                        >
-                            <div className="p-6">
-                                <h3 className="font-GillSans uppercase text-3xl mb-6">
-                                    {isEditing ? 'Edit Piggy Pot' : 'Create Piggy Pot'}
-                                </h3>
-
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-900 mb-1">
-                                            Content Title*
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                            placeholder="e.g. Exclusive photo set"
-                                            value={data.title}
-                                            onChange={(e) => setData('title', e.target.value)}
-                                            required
-                                        />
-                                        {errors.title && (
-                                            <div className="text-red-500 text-xs mt-1 font-bold">
-                                                {errors.title}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-900 mb-1">
-                                            Description
-                                        </label>
-                                        <textarea
-                                            className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                            rows="3"
-                                            placeholder="Describe the content supporters will unlock..."
-                                            value={data.description}
-                                            onChange={(e) => setData('description', e.target.value)}
-                                        />
-                                        {errors.description && (
-                                            <div className="text-red-500 text-xs mt-1 font-bold">
-                                                {errors.description}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Progress Goal* ({data.currency}) — Required
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="1"
-                                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                placeholder="e.g. 500"
-                                                value={data.target_amount}
-                                                onChange={(e) => setData('target_amount', e.target.value)}
-                                                required
-                                            />
-                                            {errors.target_amount && (
-                                                <div className="text-red-500 text-xs mt-1 font-bold">
-                                                    {errors.target_amount}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Deadline (Optional)
-                                            </label>
-                                            <input
-                                                type="datetime-local"
-                                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                value={data.deadline}
-                                                onChange={(e) => setData('deadline', e.target.value)}
-                                            />
-                                            {errors.deadline && (
-                                                <div className="text-red-500 text-xs mt-1 font-bold">
-                                                    {errors.deadline}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <label className="block text-sm font-bold text-gray-900 mb-2">
-                                            Cover Image (Optional)
-                                        </label>
-                                        <p className="text-xs text-gray-500 mb-3">
-                                            Upload a cover image to make your pot stand out.
-                                        </p>
-
-                                        <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
-                                            {data.cover_media && (
-                                                <div className="mb-3 bg-white border-2 border-black rounded-box-sm overflow-hidden relative">
-                                                    <img
-                                                        src={data.cover_media}
-                                                        className="w-full h-[150px] object-cover"
-                                                        alt="Cover preview"
-                                                    />
-                                                    {/* Persistent, not hover-only — a phone has no hover. */}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setData('cover_media', '')}
-                                                        aria-label="Remove cover image"
-                                                        className="absolute top-2 right-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-white text-red-600 font-black text-xl border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            )}
-                                            <div className="uploader overflow-hidden">
-                                                <GlobalUploader
-                                                    ctxName="piggy-pot-cover"
-                                                    type="minimal"
-                                                    accept="image/*"
-                                                    imgonly={true}
-                                                    sendFile={(file) =>
-                                                        setData(
-                                                            'cover_media',
-                                                            file?.url || file?.cdnUrl || file?.originalUrl,
-                                                        )
-                                                    }
-                                                    options={st.avatar}
-                                                />
-                                            </div>
-                                        </div>
-                                        {errors.cover_media && (
-                                            <div className="text-red-500 text-xs mt-2 font-bold">
-                                                {errors.cover_media}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="pt-2 border-t-2 border-gray-200 mt-6">
-                                        <label className="block text-sm font-bold text-gray-900 mb-2">
-                                            Content the supporter receives*
-                                        </label>
-                                        <p className="text-xs text-gray-500 mb-3">
-                                            Supporters automatically unlock this content after they purchase.
-                                        </p>
-
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Content Description
-                                            </label>
-                                            <textarea
-                                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                rows="2"
-                                                placeholder="Describe the exclusive content they will get..."
-                                                value={data.content_description}
-                                                onChange={(e) => setData('content_description', e.target.value)}
-                                            />
-                                        </div>
-                                        <label htmlFor="content_file" className="block text-sm font-bold text-gray-900 mb-1">
-                                            Content File*
-                                        </label>
-
-                                        <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
-                                            {data.content_file && (
-                                                <div className="mb-3 p-3 bg-white border-2 border-black rounded-xl text-sm font-bold flex justify-between items-center">
-                                                    <span className="truncate">File Uploaded!</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setData('content_file', '')}
-                                                        className="text-red-500 hover:text-red-700 text-xs px-3 min-h-[44px] border border-red-200 rounded-box-sm"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            )}
-                                            <div className="uploader overflow-hidden">
-                                                <GlobalUploader
-                                                    ctxName="piggy-pot-context"
-                                                    type="minimal"
-                                                    accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
-                                                    imgonly={false}
-                                                    sendFile={(file) =>
-                                                        setData(
-                                                            'content_file',
-                                                            file?.uuid || file?.url || file?.cdnUrl || '',
-                                                        )
-                                                    }
-                                                    options={st.wishlistcontent}
-                                                />
-                                            </div>
-                                        </div>
-                                        {errors.content_file && (
-                                            <div className="text-red-500 text-xs mt-2 font-bold">
-                                                {errors.content_file}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-4 pt-4 border-t-2 border-gray-200 mt-6">
-                                        <label className="flex items-center cursor-pointer">
-                                            <div className="relative">
-                                                <input
-                                                    type="checkbox"
-                                                    className="sr-only"
-                                                    checked={data.is_pinned}
-                                                    onChange={(e) => setData('is_pinned', e.target.checked)}
-                                                />
-                                                <div
-                                                    className={`block w-14 h-8 rounded-full border-2 border-black transition-colors ${
-                                                        data.is_pinned ? 'bg-[#A2E4B8]' : 'bg-gray-300'
-                                                    }`}
-                                                ></div>
-                                                <div
-                                                    className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full border-2 border-black transition-transform ${
-                                                        data.is_pinned ? 'transform translate-x-6' : ''
-                                                    }`}
-                                                ></div>
-                                            </div>
-                                            <span className="ml-3 font-bold text-gray-900">
-                                                Pin to profile (Featured Goal)
-                                            </span>
-                                        </label>
-
-                                        <label className="flex items-center cursor-pointer">
-                                            <div className="relative">
-                                                <input
-                                                    type="checkbox"
-                                                    className="sr-only"
-                                                    checked={data.enable_leaderboard}
-                                                    onChange={(e) => setData('enable_leaderboard', e.target.checked)}
-                                                />
-                                                <div
-                                                    className={`block w-14 h-8 rounded-full border-2 border-black transition-colors ${
-                                                        data.enable_leaderboard ? 'bg-[#A2E4B8]' : 'bg-gray-300'
-                                                    }`}
-                                                ></div>
-                                                <div
-                                                    className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full border-2 border-black transition-transform ${
-                                                        data.enable_leaderboard ? 'transform translate-x-6' : ''
-                                                    }`}
-                                                ></div>
-                                            </div>
-                                            <span className="ml-3 font-bold text-gray-900">
-                                                Show most-active supporters
-                                            </span>
-                                        </label>
-                                    </div>
-
-                                    {isEditing && (
-                                        <div className="pt-4">
-                                            <label className="block text-sm font-bold text-gray-900 mb-1">
-                                                Status
-                                            </label>
-                                            <select
-                                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white appearance-none"
-                                                value={data.status}
-                                                onChange={(e) => setData('status', e.target.value)}
-                                            >
-                                                <option value="active">Active</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="expired">Expired</option>
-                                                <option value="archived">Archived</option>
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    <div className="modal-action flex justify-center space-x-4 mt-8">
-                                        <button
-                                            type="submit"
-                                            disabled={processing}
-                                            className="w-full mt-2 px-8 py-3 border-2 border-black rounded-full font-bold bg-pink-500 hover:bg-pink-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
-                                        >
-                                            {processing ? 'Saving...' : 'Save Piggy Pot'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </Popup>
+                        <ItemFormShell
+                            open={showPotModal}
+                            onClose={closeAndResetModal}
+                            title={isEditing ? 'Edit Piggy Pot' : 'Create Piggy Pot'}
+                            steps={steps}
+                            onSubmit={handleSubmit}
+                            processing={processing}
+                            submitLabel={isEditing ? 'Save changes' : 'Create pot'}
+                            preview={() => <RewardPreview value={data.reward} />}
+                        />
 
                         {piggyPots.length === 0 ? (
                             <div className="text-center py-10 px-6 bg-white border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box mt-4">
@@ -473,7 +429,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                     return (
                                         <div
                                             key={pot.id}
-                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
+                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
                                         >
                                             {pot.is_pinned && (
                                                 <div className="absolute top-4 right-4 z-20">
@@ -588,5 +544,32 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+/** House switch — 44px tall so it is reliably tappable on a phone. */
+function Toggle({ checked, onChange, label }) {
+    return (
+        <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
+            <span className="relative inline-flex shrink-0">
+                <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={checked}
+                    onChange={(event) => onChange(event.target.checked)}
+                />
+                <span
+                    className={`block h-8 w-14 rounded-full border-2 border-black transition-colors ${
+                        checked ? 'bg-[#A2E4B8]' : 'bg-neutral-300'
+                    }`}
+                />
+                <span
+                    className={`absolute left-1 top-1 h-6 w-6 rounded-full border-2 border-black bg-white transition-transform ${
+                        checked ? 'translate-x-6' : ''
+                    }`}
+                />
+            </span>
+            <span className="text-left text-sm font-bold">{label}</span>
+        </label>
     );
 }

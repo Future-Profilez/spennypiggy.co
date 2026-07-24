@@ -160,7 +160,7 @@ export default function SupportStory({ creator, gifter }) {
     })();
 
     return (
-      <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
+      <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
         <div className="md:flex items-start justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -422,7 +422,7 @@ export default function SupportStory({ creator, gifter }) {
             <div className="pt-6">
               <Link
                 href={`/${data?.creator?.username || creator}`}
-                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
               > View Creator Profile </Link>
             </div>
           </div>
@@ -443,7 +443,7 @@ export default function SupportStory({ creator, gifter }) {
                 <div className="text-center mt-8">
                   <button
                     onClick={() => fetchStory(data?.next_before || null, true)}
-                    className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                   > Load More </button>
                 </div>
               ) : null}

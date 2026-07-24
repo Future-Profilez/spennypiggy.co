@@ -116,7 +116,7 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all `}
         >
-            <div className="bg-white relative !rounded-box !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
+            <div className="bg-white relative !rounded-box !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                 {itm && itm.is_suspended == 1 ? (
                     <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help w-full z-[20]">
                         Suspended

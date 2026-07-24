@@ -24,6 +24,9 @@ import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
 import SmoothScroll from "./Components/SmoothScroll.jsx";
+import OnboardingOverlay from "./Components/Onboarding/OnboardingOverlay.jsx";
+import { initGlobalHaptics } from "./utils/hapticsGlobal";
+import { initAppBadge } from "./utils/appBadge";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
@@ -238,6 +241,7 @@ createInertiaApp({
                         <App {...props} />
                     </GlobalErrorBoundary>
                 </Suspense>
+                <OnboardingOverlay />
             </>
         );
         
@@ -256,6 +260,10 @@ createInertiaApp({
         
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
+
+        // PWA app-feel (installed/standalone only; all feature-detected + try/catch)
+        initGlobalHaptics();
+        initAppBadge();
 
         // Lenis smooth-scroll runs as a SINGLE instance mounted via
         // <SmoothScroll/> (resources/js/Components/SmoothScroll.jsx). Do NOT

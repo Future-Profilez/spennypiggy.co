@@ -6,6 +6,7 @@ import { route } from 'ziggy-js';
 import axios from 'axios';
 import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
 import StatementDownloadCard from './StatementDownloadCard';
+import EnableBankPaymentsCard from '@/Components/EnableBankPaymentsCard';
 import { WalletIcon,TrendingUpIcon,TrendingDownIcon,DownloadIcon,PlusIcon,TriangleAlertIcon,CircleCheckIcon,ChartBarIcon,UsersIcon,ChevronRightIcon,ChartPieIcon,ShieldCheckIcon, } from "@animateicons/react/lucide";
 import { Calculator,FileText,Building2,ScrollText,HelpCircle,Pencil,RefreshCw,ScrollText as ScrollTextIcon,Calculator as CalculatorIcon,FileText as FileTextIcon } from "lucide-react";
 import { XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,AreaChart,Area } from 'recharts';
@@ -500,6 +501,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                             </div>
                         ) : null}
 
+                        {/* Bank payments self-service — renders only when a capability is missing. */}
+                        <div className="mt-6">
+                            <EnableBankPaymentsCard />
+                        </div>
+
                         {/* "Your money" band - payday hero first, then where the rest sits. */}
                         <section className="mt-10">
                             <div className="mb-4">
@@ -564,6 +570,24 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                         <div className="text-[12px] text-emerald-700 font-semibold mt-1">View release schedule →</div>
                                     </button>
                                 </div>
+
+                                {/* Grow-your-income entry point. Prominent on purpose — the
+                                    Opportunity Centre is the "what do I do next" companion to the
+                                    numbers above, and used to be buried as a link in the records list. */}
+                                <Link
+                                    href={route('financial.opportunities')}
+                                    className="mt-3 group flex items-center gap-4 rounded-[20px] border-2 border-[#FF007F] bg-[#FF007F]/[0.04] px-4 py-4 transition-transform duration-150 ease-out active:scale-[0.99] hover:bg-[#FF007F]/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40"
+                                >
+                                    <span className="w-11 h-11 rounded-full bg-[#FF007F]/10 border border-[#FF007F]/20 flex items-center justify-center shrink-0">
+                                        <UsersIcon size={20} className="text-[#FF007F]" />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[11px] font-bold uppercase tracking-wide text-[#FF007F]">Grow your income</div>
+                                        <div className="text-[15px] font-bold text-gray-900 leading-tight mt-0.5">See your top supporters &amp; what to do next</div>
+                                        <div className="text-[12px] text-gray-500 font-medium mt-1">Who spends the most, who&apos;s gone quiet, and the steps to earn more.</div>
+                                    </div>
+                                    <ChevronRightIcon size={20} className="text-[#FF007F] shrink-0 transition-transform group-hover:translate-x-0.5" />
+                                </Link>
 
                                 {upcomingTx.length > 0 && (
                                     <>

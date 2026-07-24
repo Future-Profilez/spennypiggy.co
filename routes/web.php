@@ -1012,3 +1012,14 @@ Route::post('/video-posters', [VideoPosterController::class, 'resolve'])
 Route::post('/payments/price-preview', [\App\Http\Controllers\PaymentMethodController::class, 'preview'])
     ->middleware('throttle:60,1')
     ->name('payments.price-preview');
+
+// Creator self-service: see / request bank payment capabilities on their own
+// connected account (drives the "Enable bank payments" dashboard card).
+Route::middleware('auth')->group(function () {
+    Route::get('/payments/bank-status', [\App\Http\Controllers\PaymentMethodController::class, 'bankStatus'])
+        ->middleware('throttle:30,1')
+        ->name('payments.bank-status');
+    Route::post('/payments/enable-bank', [\App\Http\Controllers\PaymentMethodController::class, 'enableBank'])
+        ->middleware('throttle:6,1')
+        ->name('payments.enable-bank');
+});

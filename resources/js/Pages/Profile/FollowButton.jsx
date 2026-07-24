@@ -5,7 +5,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { router, usePage } from "@inertiajs/react";
 import toast from "react-hot-toast";
 
-const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
+const FollowButton = ({ targetUserId, isInitiallyFollowing, classes }) => {
     const [isFollowing, setIsFollowing] = useState(isInitiallyFollowing);
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -44,7 +44,11 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing }) => {
 
     return (
         <button onClick={handleFollowToggle} disabled={loading}
-            className={`text-[14px] font-semibold rounded-full px-6 py-2.5 ring-1 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-60 ${isFollowing ? "bg-white/5 text-slate-300 ring-white/10" : "bg-white/10 text-white ring-white/20 hover:bg-white/15"}`} > {isFollowing ? "Following" : "Follow"}
+            className={
+                classes
+                    ? `${classes} ${isFollowing ? "bg-white text-black" : "bg-black text-white"}`
+                    : `uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-[3px] border-black px-4 md:px-6 py-2 md:py-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-60 ${isFollowing ? "bg-white text-black" : "bg-black text-white"}`
+            } > {isFollowing ? "Following" : "Follow"}
         </button>
     );
 };
