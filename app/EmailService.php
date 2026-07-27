@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportException;
+use Throwable;
 
 class EmailService
 {
@@ -82,9 +83,12 @@ class EmailService
                 'uuid' => $data->payment->owner->uuid,
             ];
 
-            Mail::to($emailData['to'])
-                ->send(new Checkout($data, $anon, $surprise, $message, $anonname, $symbol, $vat_amount));
-        } catch (TransportException $e) {
+            Mail::to($emailData['to'])->send(new Checkout($data, $anon, $surprise, $message, $anonname, $symbol, $vat_amount));
+        } catch (Throwable $e) {
+            Log::error('Creator email failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
@@ -127,7 +131,7 @@ class EmailService
 
             $cleanAmount = (float) preg_replace('/[^\d.]/', '', $amountUserPay);
 
-            $amountWithSymbol = $symbol.number_format($cleanAmount, 2);
+            $amountWithSymbol = $symbol . number_format($cleanAmount, 2);
             Mail::to($toEmail)->send(new ShopBuyedMail($data, $anon, $amountWithSymbol));
 
             Log::info('EmailService::shopBuyed - Creator email sent successfully', ['email' => $toEmail]);
@@ -435,11 +439,11 @@ class EmailService
             }
             Mail::to($array['email'])->send(new RenewMail($array, $type, $module));
         } catch (\InvalidArgumentException $e) {
-            Log::error('🚫 InvalidArgumentException: '.$e->getMessage());
+            Log::error('🚫 InvalidArgumentException: ' . $e->getMessage());
         } catch (TransportException $e) {
-            Log::error('🚨 TransportException: '.$e->getMessage());
+            Log::error('🚨 TransportException: ' . $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('🔥 Unexpected error in sendRenewMail: '.$e->getMessage(), [
+            Log::error('🔥 Unexpected error in sendRenewMail: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
         }
@@ -570,7 +574,7 @@ class EmailService
                 'GBP' => '£',
                 'EUR' => '€',
             ];
-            $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency).' ';
+            $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency) . ' ';
 
             Mail::to($recipientEmail)->send(new SupportPaymentToUser($paymentData, $symbol));
 
@@ -723,7 +727,7 @@ class EmailService
         try {
             // Check if user has marketing emails enabled
             if (! $user->marketing_emails_enabled) {
-                Log::info('EmailService::sendMarketingEmail - Skipping marketing email for user '.$user->id.' (marketing emails disabled)', [
+                Log::info('EmailService::sendMarketingEmail - Skipping marketing email for user ' . $user->id . ' (marketing emails disabled)', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                 ]);
