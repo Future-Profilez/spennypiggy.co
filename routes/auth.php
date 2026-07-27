@@ -867,6 +867,7 @@ Route::middleware('auth')->group(function () {
         Route::get('my-purchases', [GifterHubController::class, 'index'])->name('gifter.hub');
         Route::get('my-purchases-feed', [GifterHubController::class, 'feed'])->name('gifter.hub.feed');
         Route::get('my-purchases-data', [GifterHubController::class, 'data'])->name('gifter.hub.data');
+        Route::get('my-purchases-export', [GifterHubController::class, 'export'])->name('gifter.hub.export');
 
         // Save-for-later (wishlist of items to buy)
         Route::post('saved/toggle', [SavedItemController::class, 'toggle'])->name('saved.toggle');

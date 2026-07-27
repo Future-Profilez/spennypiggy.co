@@ -320,6 +320,79 @@ class SubscriptionsController extends Controller
         }
     }
 
+    /**
+     * Undo a pending cancellation (supporter changed their mind before the period ended).
+     *
+     * Mirrors cancelSubscriptionById's lookup: the row must belong to the caller, and the
+     * connected account is resolved via User::find (not the relation, whose scope hides
+     * suspended creators). Only a row still flagged cancel_at_period_end can be resumed —
+     * once Stripe has actually ended the subscription there is nothing to revive.
+     */
+    public function resumeSubscriptionById(Request $request, $id)
+    {
+        $user = $request->user();
+
+        $owned = fn ($q) => $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+
+        try {
+            $targets = [
+                [WishItemSubscription::class, 'wish_item'],
+                [MembershipPayment::class, 'membership'],
+                [BillPayment::class, 'bill'],
+            ];
+
+            foreach ($targets as [$model, $relation]) {
+                $subscription = $model::where('id', $id)->where($owned)->first();
+                if (! $subscription) {
+                    continue;
+                }
+
+                if (! $subscription->stripe_id || ! $subscription->cancel_at_period_end) {
+                    return $this->resumeResponse($request, false, 'This subscription is not scheduled to cancel.', 400);
+                }
+
+                $creatorId = optional($subscription->{$relation})->user_id;
+                $accountId = $creatorId ? optional(User::find($creatorId))->account_id : null;
+
+                if (! str_starts_with((string) $subscription->stripe_id, 'sub_test_')) {
+                    StripeControl::uncancelSubscription($subscription->stripe_id, $accountId);
+                }
+
+                $subscription->cancel_at_period_end = false;
+                if (in_array('canceled_at', $subscription->getFillable(), true)) {
+                    $subscription->canceled_at = null;
+                }
+                $subscription->save();
+
+                if (method_exists($subscription, 'logEvent')) {
+                    $subscription->logEvent('resumed', ['notes' => 'Cancellation reverted by user']);
+                }
+
+                return $this->resumeResponse($request, true, 'Subscription resumed — it will renew as normal.');
+            }
+
+            return $this->resumeResponse($request, false, 'Subscription not found.', 404);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to resume subscription', [
+                'subscription_id' => $id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->resumeResponse($request, false, 'Failed to resume subscription. Please try again.', 500);
+        }
+    }
+
+    private function resumeResponse(Request $request, bool $ok, string $message, int $status = 200)
+    {
+        if ($request->expectsJson()) {
+            return response()->json($ok ? ['success' => true, 'message' => $message] : ['error' => $message], $status);
+        }
+
+        return back()->with($ok ? 'success' : 'error', $message);
+    }
+
     private function cancelWishItemSubscription(Request $request, $subscription)
     {
         // Handle case where subscription ID is passed instead of object
@@ -420,7 +493,7 @@ class SubscriptionsController extends Controller
             $subscription->cancel_at_period_end = true;
             $subscription->save();
 
-            return back()->with('success', 'Membership will be cancelled at the end of the current billing period. You keep access until then.');
+            return $this->resumeResponse($request, true, 'Membership will be cancelled at the end of the current billing period. You keep access until then.');
 
         } catch (\Exception $e) {
             Log::error('Failed to cancel membership subscription', [
@@ -428,7 +501,7 @@ class SubscriptionsController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to cancel subscription. Please try again.');
+            return $this->resumeResponse($request, false, 'Failed to cancel subscription. Please try again.', 500);
         }
     }
 
@@ -449,7 +522,7 @@ class SubscriptionsController extends Controller
             $subscription->cancel_at_period_end = true;
             $subscription->save();
 
-            return back()->with('success', 'Bill subscription will be cancelled at the end of the current billing period. You keep access until then.');
+            return $this->resumeResponse($request, true, 'Subscription will be cancelled at the end of the current billing period. You keep access until then.');
 
         } catch (\Exception $e) {
             Log::error('Failed to cancel bill subscription', [
@@ -457,7 +530,7 @@ class SubscriptionsController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to cancel subscription. Please try again.');
+            return $this->resumeResponse($request, false, 'Failed to cancel subscription. Please try again.', 500);
         }
     }
 }

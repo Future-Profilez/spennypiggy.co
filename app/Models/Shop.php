@@ -23,6 +23,7 @@ class Shop extends Model
         'name',
         'description',
         'image',
+        'moderation_reason',
         'price',
         'currency',
         'special_member_price',

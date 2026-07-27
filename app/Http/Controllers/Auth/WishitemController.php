@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\AutoTweetWishAdd;
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\CheckoutTweet;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SendThankYouMailAdmin;
@@ -69,6 +70,38 @@ class WishitemController extends Controller
     {
         $this->userProfileService = $userProfileService;
         // $this->middleware('auth');
+    }
+
+    /**
+     * SFW gate on the wish thumbnail.
+     *
+     * A wish item is created unapproved and waits for an admin either way, so
+     * this does not gate publication — it records WHY a row is worth a closer
+     * look, which is the difference between a reviewer skimming a list and a
+     * reviewer knowing which row to open. Re-run on edit, so a listing cannot be
+     * approved with one image and then quietly swapped for another.
+     */
+    private function moderateWish(?WishItem $wish, ?string $previousThumbnail = null): void
+    {
+        if (! $wish || empty($wish->thumbnail)) {
+            return;
+        }
+
+        // Only scan an image the creator actually changed. Rekognition is
+        // deterministic, so re-scanning an unchanged image re-produces the same
+        // flag — which would silently un-approve a listing an admin had already
+        // cleared as a false positive, every time its price or description was
+        // edited, with no way out of the loop.
+        if ($previousThumbnail !== null && $previousThumbnail === $wish->thumbnail) {
+            return;
+        }
+
+        CheckMediaModeration::dispatch(
+            WishItem::class,
+            $wish->id,
+            $wish->thumbnail,
+            ['is_approved' => 0]
+        );
     }
 
     public function saveWishItem(Request $request): RedirectResponse
@@ -204,6 +237,8 @@ class WishitemController extends Controller
                 $wish->price_id = $stripeProduct->default_price;
                 $wish->save();
             }
+
+            $this->moderateWish($wish);
 
             // Clear user caches
             $this->userProfileService->clearUserCaches($user->username, $user->id);
@@ -429,6 +464,8 @@ class WishitemController extends Controller
             }
         }
 
+        $this->moderateWish($wish);
+
         // Clear activity cache to ensure real-time updates
         app(CreatorActivityService::class)->clearActivityCache(Auth::user());
 
@@ -546,7 +583,10 @@ class WishitemController extends Controller
                 'tax_amount' => $taxamount,
             ]);
 
+            $previousThumbnail = (string) $wish->thumbnail;
             $wish->refresh();
+            $this->moderateWish($wish, $previousThumbnail);
+
             if (! empty($request->category)) {
                 WishCategory::where('wish_item_id', $wish->id)->delete();
                 foreach ($request->category as $value) {

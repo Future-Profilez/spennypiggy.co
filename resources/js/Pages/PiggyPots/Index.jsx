@@ -475,15 +475,24 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 <h4 className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight">
                                                     {pot.title}
                                                 </h4>
+                                                {/* Every pot now waits for review before it is public, so the
+                                                    ordinary case must not look like a problem. Only a pot the
+                                                    image check actually flagged carries a reason — and only that
+                                                    one gets the red treatment and something to act on. */}
                                                 {pot.status === 'moderation_hold' && (
-                                                    <div className="mb-3 rounded-xl border-2 border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-                                                        ⚠️ Under review — not visible to buyers.
-                                                        {pot.moderation_reason ? (
+                                                    pot.moderation_reason ? (
+                                                        <div className="mb-3 rounded-box-sm border-2 border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                                                            ⚠️ Under review — not visible to buyers.
                                                             <span className="block font-medium text-red-600 mt-0.5">
                                                                 {pot.moderation_reason}
                                                             </span>
-                                                        ) : null}
-                                                    </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mb-3 rounded-box-sm border-2 border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                                                            ⏳ Waiting for review — it goes live once our team has
+                                                            checked it. Nothing for you to do.
+                                                        </div>
+                                                    )
                                                 )}
                                                 <p className="text-gray-600 font-medium text-sm mb-6 line-clamp-2 flex-grow">
                                                     {pot.description || 'No description'}

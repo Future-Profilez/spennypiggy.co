@@ -29,6 +29,7 @@ class PiggyPot extends Model
         'target_amount',
         'currency',
         'cover_media',
+        'moderation_reason',
         'content_file',
         'content_description',
         'reward_title',

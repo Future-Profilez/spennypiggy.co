@@ -454,6 +454,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/subscriptions/{id}/cancel', [SubscriptionsController::class, 'cancelSubscriptionById'])
         ->name('subscriptions.cancel');
 
+    // Undo a pending cancellation while the paid period is still running.
+    Route::post('/subscriptions/{id}/resume', [SubscriptionsController::class, 'resumeSubscriptionById'])
+        ->name('subscriptions.resume');
+
     // Comprehensive subscription management routes
     Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
         Route::get('/', [SubscriptionsController::class, 'index'])->name('index');

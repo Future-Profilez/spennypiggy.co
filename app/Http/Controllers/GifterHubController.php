@@ -50,7 +50,10 @@ class GifterHubController extends Controller
 
         $sources = $this->loadSources($buyer);
 
-        $media = $this->buildMediaLibrary($sources);
+        // The media library paginates, so search/filter/sort MUST run server-side over
+        // the whole set — a client-side filter over the loaded page silently claims
+        // "no matches" for anything on page 2+.
+        $media = $this->applyMediaQuery($this->buildMediaLibrary($sources), $request);
         $page = max(1, (int) $request->input('page', 1));
         [$mediaPage, $pagination] = $this->paginate($media, $page, self::MEDIA_PER_PAGE);
 
@@ -58,6 +61,7 @@ class GifterHubController extends Controller
             'display_currency' => $display,
             'media_library' => $mediaPage,
             'media_pagination' => $pagination,
+            'media_types' => $this->mediaTypeCounts($sources),
             'subscriptions' => $this->buildSubscriptions($sources),
             'unlocked' => $this->buildUnlocked($sources),
             'spend_summary' => $this->buildSpendSummary($sources, $display),
@@ -81,6 +85,7 @@ class GifterHubController extends Controller
             'display_currency' => $display,
             'media_library' => $mediaPage,
             'media_pagination' => $pagination,
+            'media_types' => $this->mediaTypeCounts($sources),
             'subscriptions' => $this->buildSubscriptions($sources),
             'unlocked' => $this->buildUnlocked($sources),
             'spend_summary' => $this->buildSpendSummary($sources, $display),
@@ -132,13 +137,16 @@ class GifterHubController extends Controller
             'task' => $load(Task::class, 'task', 'creator'),
         ];
 
+        // [title, owner, price, unavailable-reason]. A buy-later list without a price
+        // or a sold-out flag can't be acted on — the buyer has to open each item to
+        // find out whether buying is still possible.
         $resolve = [
-            'wish' => fn ($i) => [$i->wishname, $i->user],
-            'shop' => fn ($i) => [$i->name, $i->user],
-            'membership' => fn ($i) => [$i->level, $i->user],
-            'bill' => fn ($i) => [$i->name, $i->user],
-            'piggypot' => fn ($i) => [$i->title, $i->user],
-            'task' => fn ($i) => [$i->title, $i->creator],
+            'wish' => fn ($i) => [$i->wishname, $i->user, $i->price, $i->is_approved ? null : 'Under review'],
+            'shop' => fn ($i) => [$i->name, $i->user, $i->price, $this->shopUnavailable($i)],
+            'membership' => fn ($i) => [$i->level, $i->user, $i->price, $i->approved ? null : 'Under review'],
+            'bill' => fn ($i) => [$i->name, $i->user, $i->price, $i->approved ? null : 'Under review'],
+            'piggypot' => fn ($i) => [$i->title, $i->user, null, $i->status === 'moderation_hold' ? 'Under review' : null],
+            'task' => fn ($i) => [$i->title, $i->creator, $i->price, $i->is_approved ? null : 'Under review'],
         ];
 
         $out = [];
@@ -147,7 +155,7 @@ class GifterHubController extends Controller
             if (! $item || empty($resolve[$r->product_type])) {
                 continue; // item deleted since saving
             }
-            [$title, $owner] = $resolve[$r->product_type]($item);
+            [$title, $owner, $price, $unavailable] = $resolve[$r->product_type]($item);
             if (! $owner) {
                 continue;
             }
@@ -157,12 +165,31 @@ class GifterHubController extends Controller
                 'item_id' => $r->item_id,
                 'title' => $title ?: 'Content',
                 'owner' => $this->ownerBlock($owner),
+                'price' => $price !== null ? (float) $price : null,
+                'currency' => $item->currency ?? ($owner->default_currency ?: 'GBP'),
+                'unavailable_reason' => $unavailable,
                 'open_link' => $this->openLink($owner, $this->pageFor($r->product_type)),
                 'saved_at' => $this->ts($r->created_at),
             ];
         }
 
         return $out;
+    }
+
+    /** slot_limitation IS remaining stock (the server decrements it per sale). */
+    private function shopUnavailable(Shop $shop): ?string
+    {
+        if ($shop->is_suspended) {
+            return 'Unavailable';
+        }
+        if (! $shop->approved || ! $shop->status) {
+            return 'Under review';
+        }
+        if ($shop->slot_limitation !== null && (int) $shop->slot_limitation <= 0) {
+            return 'Sold out';
+        }
+
+        return null;
     }
 
     /* ----------------------------------------------------------------- */
@@ -231,6 +258,14 @@ class GifterHubController extends Controller
             ->with(['creator', 'wishItem', 'bill', 'membership', 'task', 'shop'])
             ->latest()->limit(80)->get();
 
+        // Task deliverables carry an ACTION for the buyer (accept the work, releasing
+        // escrow). Without the purchase uuid the hub can only link away to the profile,
+        // which is not where that action lives — so resolve them in one batched query.
+        $taskOrderIds = $rows->where('product_type', 'task')->pluck('order_id')->filter()->all();
+        $taskPurchases = $taskOrderIds
+            ? TaskPurchase::whereIn('id', $taskOrderIds)->get()->keyBy('id')
+            : collect();
+
         $out = [];
         foreach ($rows as $d) {
             if (! $d->creator) {
@@ -238,6 +273,8 @@ class GifterHubController extends Controller
             }
             $type = $this->deliverableCat($d->product_type);
             $overdue = $d->due_at && Carbon::parse($d->due_at)->isPast() && $d->status !== 'delivered';
+            $purchase = $d->product_type === 'task' ? ($taskPurchases[$d->order_id] ?? null) : null;
+
             $out[] = [
                 'id' => "incoming:{$d->id}",
                 'source_type' => $type,
@@ -251,6 +288,14 @@ class GifterHubController extends Controller
                 'eta' => $this->ts($d->expected_delivery_date),
                 'due_at' => $this->ts($d->due_at),
                 'created_at' => $this->ts($d->created_at),
+                'waiting_days' => $d->created_at ? Carbon::parse($d->created_at)->diffInDays(now()) : null,
+                // Escrow release: only the supporter can accept, and only once the
+                // creator has actually delivered proof.
+                'task_uuid' => $purchase?->uuid,
+                'can_accept' => $purchase && in_array($purchase->status, ['delivered', 'escalated'], true),
+                'creator_username' => $d->creator->username,
+                'support_source' => $d->product_type,
+                'support_source_id' => (string) $d->id,
                 'open_link' => $this->openLink($d->creator, $this->pageFor($type)),
             ];
         }
@@ -289,18 +334,169 @@ class GifterHubController extends Controller
 
     /**
      * Ajax pagination for the media library (matches the gifter* JSON shape).
+     *
+     * Also serves search / type-filter / sort: the library is paginated, so filtering
+     * on the client would only ever look at the rows already loaded.
      */
     public function feed(Request $request)
     {
         $buyer = Auth::user();
-        $media = $this->buildMediaLibrary($this->loadSources($buyer));
+        $media = $this->applyMediaQuery($this->buildMediaLibrary($this->loadSources($buyer)), $request);
         $page = max(1, (int) $request->input('page', 1));
         [$mediaPage, $pagination] = $this->paginate($media, $page, self::MEDIA_PER_PAGE);
 
         return response()->json(array_merge([
             'status' => true,
             'medias' => $mediaPage,
+            'total_matched' => count($media),
         ], $pagination));
+    }
+
+    /**
+     * Search (title + creator), type filter, creator filter and sort over the built
+     * media library. Applied before pagination so the counts a buyer sees are real.
+     */
+    private function applyMediaQuery(array $items, Request $request): array
+    {
+        $q = trim((string) $request->input('q', ''));
+        $type = (string) $request->input('type', '');
+        $creator = (string) $request->input('creator', '');
+        $sort = (string) $request->input('sort', 'recent');
+
+        if ($q !== '') {
+            $needle = mb_strtolower($q);
+            $items = array_values(array_filter($items, function ($i) use ($needle) {
+                $hay = mb_strtolower(($i['title'] ?? '').' '.($i['owner']['username'] ?? ''));
+
+                return str_contains($hay, $needle);
+            }));
+        }
+
+        if ($type !== '') {
+            $items = array_values(array_filter($items, fn ($i) => ($i['source_type'] ?? null) === $type));
+        }
+
+        if ($creator !== '') {
+            $items = array_values(array_filter($items, fn ($i) => ($i['owner']['username'] ?? null) === $creator));
+        }
+
+        if ($sort === 'name') {
+            usort($items, fn ($a, $b) => strcasecmp((string) $a['title'], (string) $b['title']));
+        } elseif ($sort === 'oldest') {
+            usort($items, fn ($a, $b) => strcmp((string) $a['purchased_at'], (string) $b['purchased_at']));
+        }
+
+        return $items;
+    }
+
+    /** Type counts across the WHOLE library, so filter chips don't lie on page 1. */
+    private function mediaTypeCounts(array $sources): array
+    {
+        $counts = [];
+        foreach ($this->buildMediaLibrary($sources) as $i) {
+            $t = $i['source_type'] ?? 'wish';
+            $counts[$t] = ($counts[$t] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /* ----------------------------------------------------------------- */
+    /* Purchase export */
+    /* ----------------------------------------------------------------- */
+
+    /**
+     * CSV of every purchase the buyer has made. Creators can already download an
+     * earnings statement; a buyer had no way to get their own spend out at all
+     * (expenses, tax, or just "prove what I paid").
+     *
+     * Amounts are emitted twice: as charged (original currency) and converted to the
+     * buyer's display currency, because a mixed-currency total is meaningless without
+     * both. Streamed so a long history never buffers into memory.
+     */
+    public function export(Request $request)
+    {
+        $buyer = Auth::user();
+        $display = $buyer->default_currency ?: 'GBP';
+        $rows = $this->buildExportRows($this->loadSources($buyer), $display);
+
+        $filename = 'spennypiggy-purchases-'.Carbon::now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($rows, $display) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Date', 'Type', 'Creator', 'Item', 'Amount charged', 'Currency',
+                "Amount ({$display})", 'Status',
+            ]);
+            foreach ($rows as $r) {
+                fputcsv($out, $r);
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Cache-Control' => 'no-store, no-cache',
+        ]);
+    }
+
+    private function buildExportRows(array $sources, string $display): array
+    {
+        $rows = [];
+
+        $push = function ($type, $row, $title, $owner, $currency, $status) use (&$rows, $display) {
+            $gross = (float) ($row->total_paid ?: $row->amount ?: 0);
+            $rows[] = [
+                $this->ts($row->created_at),
+                $type,
+                $this->csvSafe($owner?->username ? '@'.$owner->username : ''),
+                $this->csvSafe($title ?: 'Content'),
+                number_format($gross, 2, '.', ''),
+                strtoupper($currency ?: 'GBP'),
+                number_format($this->convert($currency, $gross, $display), 2, '.', ''),
+                $this->csvSafe($status ?: ''),
+            ];
+        };
+
+        foreach ($sources['wish'] as $r) {
+            $push('Wish', $r, $r->wish?->wishname, $r->payment?->owner, $r->payment?->currency, $r->payment?->payment_status);
+        }
+        foreach ($sources['shop'] as $r) {
+            $push('Shop', $r, $r->shop?->name, $r->shop?->user, $r->currency, $r->payment_status);
+        }
+        foreach ($sources['task'] as $r) {
+            $push('Paid task', $r, $r->task?->title, $r->task?->creator, $r->currency, $r->status);
+        }
+        foreach ($sources['piggypot'] as $r) {
+            $push('Piggy Pot', $r, $r->piggyPot?->title, $r->piggyPot?->user, $r->currency, $r->status);
+        }
+        foreach ($sources['tip'] as $r) {
+            $push('Piggy Bank', $r, $r->tipGoal?->name ?: 'Exclusive content', $r->creator, $r->currency, $r->status);
+        }
+        foreach ($sources['membership'] as $r) {
+            $push('Membership', $r, $r->membership?->level, $r->membership?->user, $r->currency, $r->status);
+        }
+        foreach ($sources['bill'] as $r) {
+            $push('Subscription', $r, $r->bill?->name, $r->bill?->user, $r->currency, $r->status);
+        }
+
+        usort($rows, fn ($a, $b) => strcmp((string) $b[0], (string) $a[0]));
+
+        return $rows;
+    }
+
+    /**
+     * Neutralise spreadsheet formula injection.
+     *
+     * Item and creator names are free text written by another user. A title beginning
+     * =, +, - or @ is executed as a formula the moment this export is opened in Excel
+     * or Sheets — and a purchase history is exactly the kind of file people open there.
+     */
+    private function csvSafe(?string $value): string
+    {
+        $value = (string) $value;
+
+        return $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)
+            ? "'".$value
+            : $value;
     }
 
     /* ----------------------------------------------------------------- */
@@ -473,24 +669,9 @@ class GifterHubController extends Controller
         }
         foreach ($byMembership as $row) {
             $m = $row->membership;
-            $isActive = $this->isRecurringActive($row);
-            $subs[] = [
-                'id' => "membership:{$row->id}",
-                'raw_id' => $row->id,
-                'is_active' => $isActive,
-                'cancelable' => $isActive && (bool) $row->stripe_id,
-                'source_type' => 'membership',
-                'title' => $m->level ?: 'Membership',
-                'owner' => $this->ownerBlock($m->user),
-                'amount' => (float) $row->amount,
-                'currency' => $row->currency ?: 'GBP',
-                'recurring_type' => $row->recurring_type,
-                'next_charge_at' => $isActive ? $this->ts($row->upcoming_payment) : null,
-                'status' => $row->status,
-                'started_at' => $this->ts($row->created_at),
-                'content_file' => null,
-                'open_link' => $this->openLink($m->user, 'memberships'),
-            ];
+            $subs[] = $this->subscriptionRow(
+                'membership', $row, $m->level ?: 'Membership', $m->user, 'memberships', null
+            );
         }
 
         // Bills — keep the latest row per bill (ended ones stay listed too).
@@ -506,24 +687,9 @@ class GifterHubController extends Controller
         }
         foreach ($byBill as $row) {
             $bill = $row->bill;
-            $isActive = $this->isRecurringActive($row);
-            $subs[] = [
-                'id' => "bill:{$row->id}",
-                'raw_id' => $row->id,
-                'is_active' => $isActive,
-                'cancelable' => $isActive && (bool) $row->stripe_id,
-                'source_type' => 'bill',
-                'title' => $bill->name ?: 'Subscription',
-                'owner' => $this->ownerBlock($bill->user),
-                'amount' => (float) $row->amount,
-                'currency' => $row->currency ?: 'GBP',
-                'recurring_type' => $row->recurring_type,
-                'next_charge_at' => $isActive ? $this->ts($row->upcoming_payment) : null,
-                'status' => $row->status,
-                'started_at' => $this->ts($row->created_at),
-                'content_file' => $bill->content_file_url ?: null,
-                'open_link' => $this->openLink($bill->user, 'bills'),
-            ];
+            $subs[] = $this->subscriptionRow(
+                'bill', $row, $bill->name ?: 'Subscription', $bill->user, 'bills', $bill->content_file_url ?: null
+            );
         }
 
         // Active first, then ended (most recent first within each group).
@@ -536,6 +702,45 @@ class GifterHubController extends Controller
         });
 
         return $subs;
+    }
+
+    /**
+     * One subscription row, shared by memberships and bills.
+     *
+     * `is_canceling` is the load-bearing bit: a supporter who cancels keeps access until
+     * the period ends, so the row must stay visible and say WHEN it ends. Hiding it (or
+     * showing a renewal date it will never charge on) reads as "my access is already
+     * gone" and generates a support ticket for a working feature.
+     */
+    private function subscriptionRow(string $type, $row, string $title, $owner, string $page, ?string $contentFile): array
+    {
+        $isActive = $this->isRecurringActive($row);
+        $isCanceling = $isActive && (bool) ($row->cancel_at_period_end ?? false);
+
+        return [
+            'id' => "{$type}:{$row->id}",
+            'raw_id' => $row->id,
+            'is_active' => $isActive,
+            'is_canceling' => $isCanceling,
+            // A cancelled-at-period-end row can't be cancelled again, only resumed.
+            'cancelable' => $isActive && ! $isCanceling && (bool) $row->stripe_id,
+            'resumable' => $isCanceling && (bool) $row->stripe_id,
+            'source_type' => $type,
+            'title' => $title,
+            'owner' => $this->ownerBlock($owner),
+            'amount' => (float) $row->amount,
+            'currency' => $row->currency ?: 'GBP',
+            'recurring_type' => $row->recurring_type,
+            // Renewal date only when it will actually renew; the same date is the
+            // access-ends date once a cancellation is pending.
+            'next_charge_at' => $isActive && ! $isCanceling ? $this->ts($row->upcoming_payment) : null,
+            'ends_at' => $isCanceling ? $this->ts($row->upcoming_payment) : null,
+            'last_charge_at' => $this->ts($row->created_at),
+            'status' => $row->status,
+            'started_at' => $this->ts($row->created_at),
+            'content_file' => $contentFile,
+            'open_link' => $this->openLink($owner, $page),
+        ];
     }
 
     /* ----------------------------------------------------------------- */
@@ -705,7 +910,14 @@ class GifterHubController extends Controller
         $creators = [];
         $monthStart = Carbon::now()->startOfMonth();
 
-        $add = function ($type, $row, $currency, $owner) use (&$byType, &$count, &$thisMonth, &$creators, $display, $monthStart) {
+        // Rolling 12 months, seeded so a quiet month renders as a zero bar rather than
+        // disappearing (a gap in a timeline reads as missing data, not as "spent nothing").
+        $byMonth = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $byMonth[Carbon::now()->startOfMonth()->subMonths($i)->format('Y-m')] = 0.0;
+        }
+
+        $add = function ($type, $row, $currency, $owner) use (&$byType, &$count, &$thisMonth, &$creators, &$byMonth, $display, $monthStart) {
             $gross = (float) ($row->total_paid ?: $row->amount ?: 0);
             if ($gross <= 0) {
                 return;
@@ -716,8 +928,14 @@ class GifterHubController extends Controller
             if ($owner) {
                 $creators[$owner->id ?? $owner] = true;
             }
-            if ($row->created_at && $row->created_at >= $monthStart) {
-                $thisMonth += $value;
+            if ($row->created_at) {
+                if ($row->created_at >= $monthStart) {
+                    $thisMonth += $value;
+                }
+                $key = Carbon::parse($row->created_at)->format('Y-m');
+                if (array_key_exists($key, $byMonth)) {
+                    $byMonth[$key] += $value;
+                }
             }
         };
 
@@ -766,11 +984,18 @@ class GifterHubController extends Controller
 
         $byType = array_map(fn ($v) => round($v, 2), $byType);
 
+        $lastMonthKey = Carbon::now()->startOfMonth()->subMonth()->format('Y-m');
+
         return [
             'currency' => $display,
             'total_spent' => round(array_sum($byType), 2),
             'by_type' => $byType,
+            'by_month' => array_map(
+                fn ($k) => ['month' => $k, 'total' => round($byMonth[$k], 2)],
+                array_keys($byMonth)
+            ),
             'this_month' => round($thisMonth, 2),
+            'last_month' => round($byMonth[$lastMonthKey] ?? 0, 2),
             'purchase_count' => $count,
             'creators_supported' => count($creators),
         ];

@@ -565,6 +565,11 @@ class Helpers
      */
     private static ?array $currencyIsoCache = null;
 
+    public static function clearCurrencyCache(): void
+    {
+        self::$currencyIsoCache = null;
+    }
+
     private static function currencyByIso($iso)
     {
         $iso = strtoupper((string) $iso);
