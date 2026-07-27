@@ -39,6 +39,7 @@ use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
 use PragmaRX\Recovery\Recovery;
 use Ramsey\Uuid\Uuid;
+use Stripe\Exception\InvalidRequestException;
 use Uploadcare\Configuration;
 use Uploadcare\Uploader\Uploader;
 
@@ -389,6 +390,11 @@ class AuthenticatedSessionController extends Controller
                 ...$pageData,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],
                 'founderData' => $founderData,
+                'profile_overview' => $user->role == 1 ? $this->profileService->getProfileOverview($user->id) : null,
+                'social_proof' => $user->role == 1 ? $this->profileService->getProfileSocialProof($user->id) : null,
+                'viewer_support' => $user->role == 1
+                    ? $this->profileService->getViewerSupportHistory($user->id, Auth::id())
+                    : null,
             ];
         };
         $data = $getData();
@@ -403,11 +409,12 @@ class AuthenticatedSessionController extends Controller
         unset($data['__page']);
 
         $response = Inertia::render($pageName, $data);
-        if (app()->environment('production') && !Auth::check()) {
+        if (app()->environment('production') && ! Auth::check()) {
             return $response->withHeaders([
                 'Cache-Control' => 'public, max-age=60, s-maxage=300, must-revalidate',
             ]);
         }
+
         return $response;
     }
 
@@ -465,7 +472,7 @@ class AuthenticatedSessionController extends Controller
             });
         } catch (\Exception $e) {
             // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
-            if ($e instanceof \Stripe\Exception\InvalidRequestException && $e->getHttpStatus() === 404) {
+            if ($e instanceof InvalidRequestException && $e->getHttpStatus() === 404) {
                 $user->update(['stripe_details_submitted' => 0]);
             }
 

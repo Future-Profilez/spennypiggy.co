@@ -45,7 +45,7 @@ export default function DisputeShow({ auth, dispute }) {
         >
             <Head title={`Dispute #${dispute.stripe_dispute_id}`} />
 
-            <div className="py-12 bg-black min-h-screen">
+            <div className="py-12 bg-black min-h-dvh">
                 <div className="containerbox max-w-6xl">
                     
                     <div className="flex items-center gap-4 mb-8">

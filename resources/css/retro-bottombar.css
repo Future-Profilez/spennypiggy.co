@@ -1,7 +1,7 @@
 /* When the docked bar is on screen (logged-in mobile), give the page enough
    bottom padding that content can scroll clear of it. */
 body:has(.retro-bottom-bar) main {
-  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 @media (min-width: 768px) {
   body:has(.retro-bottom-bar) main {

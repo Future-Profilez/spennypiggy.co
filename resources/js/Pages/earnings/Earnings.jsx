@@ -305,7 +305,7 @@ export default function Earnings(props) {
                 </div>
             </div>
 
-            <div className="pb-24 bg-[#FAFAFA] min-h-screen pt-10">
+            <div className="pb-24 bg-[#FAFAFA] min-h-dvh pt-10">
                 <div className="containerbox">
                     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-10">
                         {lists &&

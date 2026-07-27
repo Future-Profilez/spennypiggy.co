@@ -252,7 +252,7 @@ export default function Discover(props) {
         <Authenticated auth={auth?.user || ''} >
             <Head title={"Seek & Search"} />
             
-            <div className="min-h-screen bg-[#A2E4B8]">
+            <div className="min-h-dvh bg-[#A2E4B8]">
 
                 {/* Hero shows on landing + trending/new browse states (not keyword search
                     or a specific content-type tab). Falls back to searchResults when the

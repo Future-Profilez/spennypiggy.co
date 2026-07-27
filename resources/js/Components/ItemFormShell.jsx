@@ -92,7 +92,7 @@ export default function ItemFormShell({
                     {visibleError && (
                         <p
                             role="alert"
-                            className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] px-4 py-3 text-left text-sm font-bold text-black"
+                            className="rounded-box-sm border-[3px] border-black bg-[#FFE0EC] px-4 py-3 text-left text-xs font-bold text-black"
                         >
                             {visibleError}
                         </p>

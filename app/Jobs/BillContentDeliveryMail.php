@@ -9,13 +9,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Str;
 
 class BillContentDeliveryMail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $billPayment;
+
     public $currencySymbol;
 
     /**
@@ -35,17 +35,18 @@ class BillContentDeliveryMail implements ShouldQueue
         \Log::info('BillContentDeliveryMail job started', [
             'bill_payment_id' => $this->billPayment->id,
             'bill_id' => $this->billPayment->bill_id,
-            'currency' => $this->currencySymbol
+            'currency' => $this->currencySymbol,
         ]);
 
         try {
             // Get the bill
             $bill = $this->billPayment->bill;
-            
-            if (!$bill) {
+
+            if (! $bill) {
                 \Log::error('BillContentDeliveryMail: Bill not found', [
-                    'bill_payment_id' => $this->billPayment->id
+                    'bill_payment_id' => $this->billPayment->id,
                 ]);
+
                 return;
             }
 
@@ -53,8 +54,9 @@ class BillContentDeliveryMail implements ShouldQueue
             if (empty($bill->content_file)) {
                 \Log::info('BillContentDeliveryMail: No content file to deliver', [
                     'bill_id' => $bill->id,
-                    'bill_name' => $bill->name
+                    'bill_name' => $bill->name,
                 ]);
+
                 return;
             }
 
@@ -64,25 +66,27 @@ class BillContentDeliveryMail implements ShouldQueue
 
             if (empty($recipientEmail)) {
                 \Log::warning('BillContentDeliveryMail: No recipient email found', [
-                    'bill_payment_id' => $this->billPayment->id
+                    'bill_payment_id' => $this->billPayment->id,
                 ]);
+
                 return;
             }
 
             // Generate content URL
             $contentUrl = $this->generateContentUrl($bill->content_file, $bill->content_file_type ?? 'file');
-            
+
             // Find existing deliverable record created by BillsController
             $deliverable = Deliverable::where('session_id', $this->billPayment->session_id)
                 ->where('creator_id', $bill->user_id)
                 ->where('gifter_id', $this->billPayment->user_id)
                 ->first();
-            
-            if (!$deliverable) {
+
+            if (! $deliverable) {
                 \Log::error('BillContentDeliveryMail: Existing deliverable record not found', [
                     'session_id' => $this->billPayment->session_id,
-                    'bill_payment_id' => $this->billPayment->id
+                    'bill_payment_id' => $this->billPayment->id,
                 ]);
+
                 return;
             }
 
@@ -96,17 +100,17 @@ class BillContentDeliveryMail implements ShouldQueue
                     [
                         'email_delivered' => true,
                         'email_delivered_at' => now()->toISOString(),
-                        'content_url' => $contentUrl
+                        'content_url' => $contentUrl,
                     ]
-                ))
+                )),
             ]);
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
-            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-            
+            ProcessWishItemDeliverable::dispatch($deliverable);
+
             \Log::info('BillContentDeliveryMail: ProcessWishItemDeliverable job dispatched for certificate generation', [
                 'deliverable_id' => $deliverable->id,
-                'bill_payment_id' => $this->billPayment->id
+                'bill_payment_id' => $this->billPayment->id,
             ]);
 
             // Send content delivery email
@@ -115,14 +119,14 @@ class BillContentDeliveryMail implements ShouldQueue
             \Log::info('BillContentDeliveryMail: Content delivery completed successfully', [
                 'bill_payment_id' => $this->billPayment->id,
                 'deliverable_id' => $deliverable->id,
-                'recipient_email' => $recipientEmail
+                'recipient_email' => $recipientEmail,
             ]);
 
         } catch (\Exception $e) {
             \Log::error('BillContentDeliveryMail: Job failed', [
                 'bill_payment_id' => $this->billPayment->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
@@ -137,20 +141,21 @@ class BillContentDeliveryMail implements ShouldQueue
             if (strpos($contentFile, 'ucarecdn.com') !== false) {
                 return $contentFile;
             }
-            
+
             // Handle UUID format (Uploadcare)
             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $contentFile)) {
                 return "https://ucarecdn.com/{$contentFile}/";
             }
-            
+
             // Handle other formats
             return $contentFile;
-            
+
         } catch (\Exception $e) {
             \Log::error('BillContentDeliveryMail: Failed to generate content URL', [
                 'content_file' => $contentFile,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -163,9 +168,9 @@ class BillContentDeliveryMail implements ShouldQueue
         $imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
         $videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'];
         $audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg'];
-        
+
         $contentType = strtolower($contentType);
-        
+
         if (in_array($contentType, $imageTypes)) {
             return 'image';
         } elseif (in_array($contentType, $videoTypes)) {
@@ -187,6 +192,7 @@ class BillContentDeliveryMail implements ShouldQueue
             \Log::info('BillContentDeliveryMail: Skipping email — user notifications disabled', [
                 'user_id' => $payer->id,
             ]);
+
             return;
         }
 
@@ -202,7 +208,7 @@ class BillContentDeliveryMail implements ShouldQueue
                 'currency' => $this->billPayment->currency ?? 'USD',
                 'owner' => $bill->user,
                 'deliverables' => [$deliverable],
-                'bill' => $bill
+                'bill' => $bill,
             ];
 
             // Add bill and content info to deliverable for email template
@@ -210,7 +216,7 @@ class BillContentDeliveryMail implements ShouldQueue
             $deliverable->content_info = [
                 'file_name' => $bill->content_file_name,
                 'file_type' => $bill->content_file_type,
-                'file_size' => $bill->content_file_size
+                'file_size' => $bill->content_file_size,
             ];
 
             // Send email using EmailService (similar to CheckoutMailToUser)
@@ -219,14 +225,14 @@ class BillContentDeliveryMail implements ShouldQueue
             \Log::info('BillContentDeliveryMail: Content delivery email sent', [
                 'bill_id' => $bill->id,
                 'recipient_email' => $recipientEmail,
-                'deliverable_id' => $deliverable->id
+                'deliverable_id' => $deliverable->id,
             ]);
 
         } catch (\Exception $e) {
             \Log::error('BillContentDeliveryMail: Failed to send content delivery email', [
                 'bill_id' => $bill->id,
                 'recipient_email' => $recipientEmail,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

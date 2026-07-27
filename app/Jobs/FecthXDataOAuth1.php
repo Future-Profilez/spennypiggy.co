@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Models\TwitterToken;
 use App\TwitterAuth1;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,7 +16,8 @@ class FecthXDataOAuth1 implements ShouldQueue
 
     /**
      * Twitter Token
-     * @var \App\Models\TwitterToken
+     *
+     * @var TwitterToken
      */
     public $token;
 
@@ -25,7 +26,7 @@ class FecthXDataOAuth1 implements ShouldQueue
      */
     public function __construct($token)
     {
-        $this->token    =   $token;
+        $this->token = $token;
     }
 
     /**
@@ -34,11 +35,11 @@ class FecthXDataOAuth1 implements ShouldQueue
     public function handle(): void
     {
         $api = new TwitterAuth1;
-        $resp   =   $api->getUser($this->token);
-        if($resp['status']) {
+        $resp = $api->getUser($this->token);
+        if ($resp['status']) {
             $this->token->update([
-                'twitter_id'    =>  $resp['user']['id'],
-                'username'      =>  $resp['user']['name'],
+                'twitter_id' => $resp['user']['id'],
+                'username' => $resp['user']['name'],
             ]);
         }
     }

@@ -115,7 +115,7 @@ export default function Create({ auth, currencySymbol }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={isEdit ? "Edit Task" : "Create Task"} />
-            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-screen font-public-sans">
+            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-dvh font-public-sans">
                 <div className="container"> 
                     <div className="mx-auto max-w-[900px]"> 
                         <div className="text-center mb-8">  
@@ -355,7 +355,17 @@ export default function Create({ auth, currencySymbol }) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    setData("type", "timed")
+                                                    setData((current) => ({
+                                                        ...current,
+                                                        type: "timed",
+                                                        // "file" is not offered
+                                                        // for timed — fall back
+                                                        // to a described promise.
+                                                        reward:
+                                                            current.reward.type === "file"
+                                                                ? { ...current.reward, type: "message", file: null }
+                                                                : current.reward,
+                                                    }))
                                                 }
                                                 className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
                                                     data.type === "timed"
@@ -443,6 +453,14 @@ export default function Create({ auth, currencySymbol }) {
                                             onChange={(next) => setData("reward", next)}
                                             ctxName="task-deliverable"
                                             errors={errors}
+                                            // A timed task has no file yet — the
+                                            // creator delivers custom work later,
+                                            // so a pre-uploaded file is excluded.
+                                            allowedTypes={
+                                                data.type === "instant"
+                                                    ? undefined
+                                                    : ["message", "link"]
+                                            }
                                         />
                                     </div>
 

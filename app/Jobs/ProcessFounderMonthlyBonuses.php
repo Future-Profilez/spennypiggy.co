@@ -16,10 +16,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class ProcessFounderMonthlyBonuses implements ShouldQueue
 {
@@ -27,7 +28,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
 
     public function handle(): void
     {
-        if (!Schema::hasTable('founder_bonus')) {
+        if (! Schema::hasTable('founder_bonus')) {
             return;
         }
 
@@ -37,15 +38,20 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
         $monthEnd = $target->copy()->endOfMonth();
 
         $rates = Currency::rates();
-        if ($rates instanceof \Illuminate\Support\Collection) {
+        if ($rates instanceof Collection) {
             $rates = $rates->toArray();
         }
 
         $convert = function (float $amount, string $from, string $to) use ($rates): float {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
@@ -59,7 +65,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
 
         foreach ($qualifications as $q) {
             $creator = $q->creator;
-            if (!$creator) {
+            if (! $creator) {
                 continue;
             }
             if (empty($creator->stripe_connected_at) || (int) ($creator->stripe_details_submitted ?? 0) !== 1 || empty($creator->account_id)) {
@@ -67,7 +73,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
             }
 
             $qualifiedAt = $q->qualification_date ? Carbon::parse($q->qualification_date)->startOfDay() : null;
-            if (!$qualifiedAt) {
+            if (! $qualifiedAt) {
                 continue;
             }
 
@@ -117,10 +123,10 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
             $row->payout_status = $row->payout_status ?: 'pending';
             $row->save();
 
-            if (!empty($creator->payout_paused_at) || $bonusAmount <= 0) {
+            if (! empty($creator->payout_paused_at) || $bonusAmount <= 0) {
                 continue;
             }
-            if (!empty($row->payout_record_uuid) || !empty($row->stripe_payout_id) || $row->payout_status === 'paid') {
+            if (! empty($row->payout_record_uuid) || ! empty($row->stripe_payout_id) || $row->payout_status === 'paid') {
                 continue;
             }
 
@@ -148,7 +154,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 'env' => (string) config('app.env'),
             ];
 
-            $transferDescription = 'Founder Monthly Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+            $transferDescription = 'Founder Monthly Bonus'.(! empty($creator->username) ? (' - '.$creator->username) : '');
 
             // Stripe calls happen OUTSIDE any DB transaction; idempotency keys keyed to the
             // monthly row make a retried run return the same transfer/payout (no double pay).
@@ -161,7 +167,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 // Key on the STABLE (creator, month), not $row->id: firstOrNew can create
                 // different rows (different ids) in concurrent runs, which would defeat the
                 // idempotency and double-pay. (creator, month) is identical across runs.
-                'founder_monthly_transfer_' . $creator->id . '_' . $monthKey
+                'founder_monthly_transfer_'.$creator->id.'_'.$monthKey
             );
 
             StripeControl::ensureManualPayoutSchedule($creator->account_id, strtolower($currency));
@@ -173,13 +179,13 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 'metadata' => array_merge($metadataBase, [
                     'transfer_id' => (string) ($transfer->id ?? ''),
                 ]),
-                'idempotency_key' => 'founder_monthly_payout_' . $creator->id . '_' . $monthKey,
+                'idempotency_key' => 'founder_monthly_payout_'.$creator->id.'_'.$monthKey,
             ], $creator->account_id);
 
             // Money has moved — commit the marks immediately in their own small transaction.
             DB::transaction(function () use ($creator, $monthKey, $amountMinor, $currency, $transfer, $payout, &$notify) {
                 $locked = FounderBonusMonthly::where('creator_id', $creator->id)->where('month', $monthKey)->lockForUpdate()->first();
-                if (!$locked || !empty($locked->payout_record_uuid) || !empty($locked->stripe_payout_id) || $locked->payout_status === 'paid') {
+                if (! $locked || ! empty($locked->payout_record_uuid) || ! empty($locked->stripe_payout_id) || $locked->payout_status === 'paid') {
                     return; // already recorded by another run (same Stripe objects via idempotency)
                 }
 
@@ -218,7 +224,7 @@ class ProcessFounderMonthlyBonuses implements ShouldQueue
                 ];
             });
 
-            if (!$notify || empty($notify['email'])) {
+            if (! $notify || empty($notify['email'])) {
                 continue;
             }
 

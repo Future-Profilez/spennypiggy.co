@@ -11,11 +11,9 @@ import {
     Flag,
     Gift,
     BadgeCheck,
-    Heart,
     Zap,
 } from "lucide-react";
 
-const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
 const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
 const ReportContentModal = lazy(
     () => import("@/Components/ReportContentModal"),
@@ -30,7 +28,7 @@ const gbp = (v) =>
 
 // Mobile: light border, no shadow (fewer heavy boxes); desktop: full brutalist card
 const cardClasses =
-    "rounded-box border border-black/10 bg-white p-4 shadow-none lg:border-2 lg:border-black lg:p-5";
+    "rounded-box border border-black/10 bg-white p-4 shadow-none sm:p-5 md:border-2 md:border-black";
 
 function CardTitle({ children, action }) {
     return (
@@ -47,7 +45,7 @@ function OverviewRow({ icon, label, value, accent }) {
     return (
         <div className="flex items-center justify-between border-b border-black/5 py-3 last:border-b-0 last:pb-0">
             <span className="flex items-center gap-2.5 text-[13px] font-semibold text-gray-700">
-                <span className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-black/10 bg-[#F6F6F4] text-gray-600">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-[#F6F6F4] text-gray-600">
                     {icon}
                 </span>
                 {label}
@@ -65,7 +63,7 @@ function HighlightRow({ icon, iconBg, title, subtitle }) {
     return (
         <div className="flex items-center gap-3 border-b border-black/5 py-2.5 last:border-b-0 last:pb-0 first:pt-0">
             <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] border border-black/10 ${iconBg}`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/10 ${iconBg}`}
             >
                 {icon}
             </span>
@@ -91,7 +89,6 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
     const {
         user,
         profile_overview: ov,
-        card_capabilities,
         piggyPotTopSupporters,
     } = usePage().props;
 
@@ -111,7 +108,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
         : [];
 
     return (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
             {/* Creator highlights — badges that are actually true for this creator */}
             {show("highlights") && (isVerified || user?.is_founder || hasPremium) && (
                 <div className={cardClasses}>
@@ -204,7 +201,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                                     }}
                                 />
                             </div>
-                            <div className="mt-1.5 flex justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                            <div className="mt-1.5 flex justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
                                 <span>Progress</span>
                                 <span>
                                     {gbp(ov.earned)} / {gbp(ov.earned_target)}
@@ -217,7 +214,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
 
             {/* Membership promo — only when there is a membership to join */}
             {show("membership") && ov?.memberships > 0 && (
-                <div className="relative overflow-hidden rounded-box bg-gradient-to-br from-[#FF007F] to-[#9333EA] p-5 text-white border-0 shadow-none lg:border-2 lg:border-black sm:flex sm:items-center sm:justify-between sm:gap-6">
+                <div className="relative overflow-hidden rounded-box bg-gradient-to-br from-[#FF007F] to-[#9333EA] p-5 text-white border-0 shadow-none md:border-2 md:border-black sm:flex sm:items-center sm:justify-between sm:gap-6">
                     <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
                     <div className="min-w-0">
                         <h3 className="text-lg font-black uppercase leading-tight tracking-wide">
@@ -248,36 +245,38 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
             {show("quick") && !IsloggedIn && (
                 <div className={cardClasses}>
                     <CardTitle>Quick actions</CardTitle>
+                    {/* One neutral tile system — the icon carries the colour, the tile
+                        stays quiet. Support Me is the primary above; these are
+                        secondary shortcuts, so none competes with it. */}
                     <div className={`grid grid-cols-2 gap-2 ${compact ? "" : "sm:grid-cols-4"}`}>
-                        {user?.stripe_details_submitted == 1 && (
-                            <Suspense fallback={null}>
-                                <SendTip
-                                    card_capabilities={card_capabilities}
-                                    classes={`${tileClasses} !bg-[#FF007F]/10 !text-[#FF007F] !border-[#FF007F]/20 hover:!border-[#FF007F] !shadow-none !normal-case !rounded-box-sm !px-2`}
-                                />
-                            </Suspense>
-                        )}
                         <Link
                             href={`/${user?.username}/wishes`}
-                            className={`${tileClasses} bg-[#FFE600]/20 text-black`}
+                            className={tileClasses}
                         >
-                            <Gift size={18} className="text-[#D9A400]" />
+                            <Gift size={18} className="text-[#FF007F]" />
                             Send a wish
+                        </Link>
+                        <Link
+                            href={`/${user?.username}/shop`}
+                            className={tileClasses}
+                        >
+                            <ShoppingBag size={18} className="text-black" />
+                            Shop
                         </Link>
                         <Suspense fallback={null}>
                             <ShareProfile
                                 username={user?.name}
-                                classes={`${tileClasses} bg-[#12A150]/5`}
+                                classes={tileClasses}
                                 custom={`${window.location.origin}/${user?.username}`}
                             >
-                                <Share2 size={18} className="text-[#12A150]" />
+                                <Share2 size={18} className="text-black" />
                                 Share
                             </ShareProfile>
                         </Suspense>
                         <Suspense fallback={null}>
                             <ReportContentModal
                                 reportedUser={user}
-                                classes={`${tileClasses} bg-[#F6F6F4] !text-gray-500 hover:!text-red-600 hover:!border-red-600`}
+                                classes={`${tileClasses} !text-gray-500 hover:!text-red-600 hover:!border-red-600`}
                                 text={
                                     <>
                                         <Flag size={18} />
@@ -314,7 +313,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                                 <span className="w-full truncate text-[10px] font-bold text-black">
                                     {s.name}
                                 </span>
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">
+                                <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-500">
                                     ×{s.purchases}
                                 </span>
                             </div>
@@ -323,25 +322,6 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                 </div>
             )}
 
-            {/* Closing nudge — visitors only */}
-            {show("cta") && !IsloggedIn && user?.stripe_details_submitted == 1 && (
-                <div className={`${cardClasses} flex items-center justify-between gap-3`}>
-                    <div className="flex items-center gap-2.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FF007F]/10">
-                            <Heart size={16} className="text-[#FF007F]" />
-                        </span>
-                        <span className="text-[13px] font-black leading-tight text-black">
-                            Love the content?
-                        </span>
-                    </div>
-                    <Suspense fallback={null}>
-                        <SendTip
-                            card_capabilities={card_capabilities}
-                            classes="!px-4 !py-2 !text-[11px] !rounded-full"
-                        />
-                    </Suspense>
-                </div>
-            )}
         </div>
     );
 }

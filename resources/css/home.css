@@ -83,7 +83,7 @@ body{background:#000;}
 .bottom-links ul li a{font-size:20px;color:#fff;}
 .bottom-links{border-top:1px solid #ffffff24;padding-top:30px;margin-top:30px;}
 .MegaMenu,.menuImg{justify-content:center;}
-.MegaMenu{display:flex;position:fixed;top:0;right:0;width:100%;height:100vh;align-items:stretch;align-content:stretch;}
+.MegaMenu{display:flex;position:fixed;top:0;right:0;width:100%;height:100dvh;align-items:stretch;align-content:stretch;}
 .MegaMenu{max-width:0;transition:0.2s ease;overflow:auto !important;z-index:9999999 !important;}
 .MegaMenu.Open{max-width:5000px;transition:0.3s cubic-bezier(0.4,0,1,1);opacity:1 !important;}
 .menuList.shows{opacity:1;transition:0.1s;}
@@ -298,7 +298,7 @@ ul.socialmedia a img{width:29px;height:29px;}
 .updateavatar.modal{background:rgb(0 0 0/52%);}
 .stick{position:sticky;top:20px;}
 .wishlistcntbox button.editpop{position:absolute;top:0;left:0;width:100%;height:calc(100% - 40px);border-radius:20px;opacity:0;z-index:1;}
-.pageheight{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.pageheight{min-height:100dvh;display:flex;align-items:center;justify-content:center;}
 .headingsm{font-size:20px;line-height:29px;}
 .static-page{color:#fff;}
 .static-page h2{font-size:22px !important;margin-top:30px;margin-bottom:13px;}

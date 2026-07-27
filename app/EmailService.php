@@ -696,7 +696,9 @@ class EmailService
     public static function featureSuggestion($data)
     {
         try {
-            $emails = ['naveen@internetbusinesssolutionsindia.com', 'support@spennypiggy.co'];
+            $emails = app()->environment('production')
+                ? ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com']
+                : ['naveen@internetbusinesssolutionsindia.com'];
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
 
             Log::info('EmailService::featureSuggestion - Email sent successfully', [

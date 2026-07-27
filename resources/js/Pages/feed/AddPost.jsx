@@ -59,9 +59,23 @@ const AUDIENCES = [
     },
 ];
 
-export default function AddPost({ item, text, classes, isEdit, title }) {
+export default function AddPost({ item, text, classes, isEdit, title, open, onClose }) {
     const { auth } = usePage().props;
+    // Controlled mode: the parent owns open/close. Used for the edit modal,
+    // which must live OUTSIDE the post's dropdown menu — rendered inside it,
+    // selecting "Edit Post" closed the menu and unmounted this component
+    // before its modal could open, so editing silently did nothing.
+    const controlled = open !== undefined;
     const [close, setClose] = useState();
+    const modalAction = controlled ? open : close;
+    const finishClose = () => {
+        if (controlled) {
+            onClose?.();
+        } else {
+            setClose(false);
+            setTimeout(() => setClose(), 100);
+        }
+    };
     const { errorsHandling } = useAlerts();
     const [rewardImage, setRewardImage] = useState(item?.image || "");
     const [isAiImage, setIsAiImage] = useState(false);
@@ -146,18 +160,17 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
 
     const [loading, setLoading] = useState(false);
 
-    // A post needs an image OR some text — it used to demand an image every time, which
-    // made a plain text update impossible and pushed creators to pad posts with stock art.
+    // Every post needs an image — a members-only feed is meant to give
+    // subscribers something to look at, not a wall of text. The caption is
+    // optional.
     const hasImage = !!rewardImage;
-    const hasText =
-        data.content.trim().length > 0 || data.title.trim().length > 0;
-    const canSubmit = hasImage || hasText;
+    const canSubmit = hasImage;
 
     const submitPost = (e) => {
         e && e.preventDefault();
 
-        if (!canSubmit) {
-            toast.error("Write something or add an image before posting.");
+        if (!hasImage) {
+            toast.error("Add an image before posting.");
             return false;
         }
 
@@ -185,9 +198,8 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
                     resetUploader();
 
                     toast.success(resp.data.msg);
-                    setClose(false);
+                    finishClose();
                     window.dispatchEvent(new Event("closeAddOptions"));
-                    setTimeout(() => setClose(), 100);
 
                     router.visit(
                         route("user.show", {
@@ -218,7 +230,7 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
 
     const AddItem = () => (
         <div className="flex items-center">
-            <div className="p-1 rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
+            <div className="p-1 rounded-box-sm border-2 border-black  bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
                 <FaPenNib color="var(--pink)" size="1.5rem" />
             </div>
             <div className="ps-3 text-start">
@@ -239,9 +251,11 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
             modalclass=""
             space="6"
             size="md"
-            action={close}
+            action={modalAction}
+            onHide={controlled ? onClose : undefined}
             classes={`w-full addop bg-white rounded-box py-2 px-3 ${classes}`}
-            text={text ? text : <AddItem />}
+            // Controlled mode has no trigger of its own — the parent opens it.
+            text={controlled ? undefined : text ? text : <AddItem />}
         >
             <div className="flex items-center justify-between gap-2">
                 <h2 className="text-xl font-bold text-dark-500">
@@ -280,7 +294,7 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
 
             {/* Live preview — see the card before it goes to the review queue. */}
             {showPreview ? (
-                <div className="mt-4 post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                <div className="mt-4 post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black ">
                     <div className="flex items-center gap-2 mb-3">
                         <img
                             src={
@@ -300,7 +314,7 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
                     </div>
                     {previewImageUrl(rewardImage, isAiImage, item) ? (
                         <div className="relative border-[3px] border-black rounded-box-sm overflow-hidden mb-3">
-                            <span className="bg-[#A2E4B8] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black absolute z-10 py-1.5 px-3 top-2 right-2 uppercase text-xs text-black rounded-box-sm">
+                            <span className="bg-[#A2E4B8] border-[3px] border-black  font-black absolute z-10 py-1.5 px-3 top-2 right-2 uppercase text-xs text-black rounded-box-sm">
                                 {AUDIENCE_BADGE[data.for_module]}
                             </span>
                             <img
@@ -314,7 +328,7 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
                             />
                         </div>
                     ) : (
-                        <span className="inline-block bg-[#A2E4B8] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm mb-3">
+                        <span className="inline-block bg-[#A2E4B8] border-[3px] border-black  font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm mb-3">
                             {AUDIENCE_BADGE[data.for_module]}
                         </span>
                     )}
@@ -369,8 +383,8 @@ export default function AddPost({ item, text, classes, isEdit, title }) {
                 </div>
 
                 <div className="chhoseimage mt-4 pt-2">
-                    <p className="text-grey-400 mb-2">
-                        Add an image (optional)
+                    <p className="mb-2 font-bold text-black">
+                        Add an image <span className="text-[#FF007F]">*</span>
                     </p>
 
                     {isEdit && item?.image_url && !isAiImage ? (

@@ -78,7 +78,7 @@ export default function OldSubscribe() {
     return (
         <>
          {open &&
-         <div className="w-screen h-screen flex justify-center items-center z-[1000005] bg-[#0009] fixed top-0 left-0 pointer-events-auto">
+         <div className="w-screen h-dvh flex justify-center items-center z-[1000005] bg-[#0009] fixed top-0 left-0 pointer-events-auto">
                <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[30px]   shadow" role="alert">
                   <div className="block">
                      <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-[30px]    mb-4">

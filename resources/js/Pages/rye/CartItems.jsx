@@ -256,11 +256,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     };
 
     return (
-        <div className={`px-2`}>
-            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-[4px_4px_0px_0px_#FF007F]ink border-pink rounded-[30px]   ">
+        <div>
+            <div className="my-4 cartPage bg-white p-4 md:p-5 border-2 border-black rounded-box">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
-                        Your Basket for {cartsItems?.creator?.name || ""}
+                        Your Basket for {cartsItems?.creator?.name || ""}{" "}
                         <Link
                             className="text-violet-600"
                             href={`/${cartsItems?.creator?.username || ""}`}

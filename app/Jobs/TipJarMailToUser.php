@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -14,20 +14,20 @@ class TipJarMailToUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
     public $pay;
-    public $symbol;
-    public $amount;
 
+    public $symbol;
+
+    public $amount;
 
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
-    public function __construct($pay,$symbol,$amount)
+    public function __construct($pay, $symbol, $amount)
     {
         $this->pay = $pay;
         $this->symbol = $symbol;
@@ -41,8 +41,8 @@ class TipJarMailToUser implements ShouldQueue
      */
     public function handle()
     {
-        if((isset($this->pay->user) && $this->pay->user->notification_send == 1) || (empty($this->pay->user))){
-            EmailService::sendTipJarToUser($this->pay,$this->symbol,$this->amount);
+        if ((isset($this->pay->user) && $this->pay->user->notification_send == 1) || (empty($this->pay->user))) {
+            EmailService::sendTipJarToUser($this->pay, $this->symbol, $this->amount);
         }
     }
 }

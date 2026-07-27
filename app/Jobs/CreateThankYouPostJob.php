@@ -2,17 +2,16 @@
 
 namespace App\Jobs;
 
-use App\Models\TipGoalsPayment;
 use App\Models\Post;
+use App\Models\TipGoalsPayment;
 use App\Services\UploadcareThankYouImageService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
-use Exception;
 
 class CreateThankYouPostJob implements ShouldQueue
 {
@@ -36,7 +35,7 @@ class CreateThankYouPostJob implements ShouldQueue
         try {
             // Generate dynamic Uploadcare image URL with supporter name and amount
             $imageUrl = UploadcareThankYouImageService::generateThankYouImageUrl($this->tipPayment);
-            
+
             // Generate unique image ID to prevent conflicts
             $uniqueImageId = UploadcareThankYouImageService::generateUniqueImageId($this->tipPayment);
 
@@ -46,20 +45,19 @@ class CreateThankYouPostJob implements ShouldQueue
             $currency = strtoupper($this->tipPayment->currency);
             $isAnonymous = $this->tipPayment->anonymous == 1;
             $displaySupporterName = $isAnonymous ? 'An anonymous supporter' : $supporterName;
-            
+
             // Use simple template content (no expensive OpenAI calls)
             $templates = [
                 [
                     'title' => '🎉 Welcome to the Squad!',
-                    'content' => "WELCOME TO THE SQUAD! {$displaySupporterName} just grabbed Supporter access — you're in. Fresh posts incoming 🎉"
+                    'content' => "WELCOME TO THE SQUAD! {$displaySupporterName} just grabbed Supporter access — you're in. Fresh posts incoming 🎉",
                 ],
             ];
-            
+
             // Pick a random template for variety
             $template = $templates[array_rand($templates)];
             $postTitle = $template['title'];
             $postContent = $template['content'];
-            
 
             // Create the post with public visibility and auto-approval
             $postData = [
@@ -82,14 +80,14 @@ class CreateThankYouPostJob implements ShouldQueue
                     'support_currency' => $currency,
                     'anonymous_support' => $isAnonymous,
                     'unique_image_id' => $uniqueImageId,
-                    'generated_at' => now()->toISOString()
-                ])
+                    'generated_at' => now()->toISOString(),
+                ]),
             ];
-            
+
             // Store the dynamic image URL - this creates the final image with supporter name and amount
             // Format: 6ac0f103-a9f5-4a95-86e0-1381da155432/-/font/bold/40/fff/-/text_box/fill/00000000/-/text/100px50p/0,50p/SupporterName/-/font/bold/40/fbd755/-/text_box/fill/00000000/-/text/100px40p/0,100p/USD%20$50.00/
             $postData['image'] = str_replace('https://ucarecdn.com/', '', $imageUrl); // Store just the UUID and transformations
-            
+
             $post = Post::create($postData);
 
             if ($post) {
@@ -98,28 +96,27 @@ class CreateThankYouPostJob implements ShouldQueue
                     'post_uuid' => $post->uuid,
                     'tip_payment_id' => $this->tipPayment->id,
                     'supporter_name' => $displaySupporterName,
-                    'support_amount' => $currency . ' $' . $amount,
+                    'support_amount' => $currency.' $'.$amount,
                     'anonymous' => $isAnonymous,
                     'image_url' => $imageUrl,
                     'unique_image_id' => $uniqueImageId,
                     'post_type' => 'support_thanks',
-                    'visibility' => 'public'
+                    'visibility' => 'public',
                 ]);
             } else {
                 Log::error('Failed to create thank you post', [
                     'tip_payment_id' => $this->tipPayment->id,
                     'supporter_name' => $displaySupporterName,
-                    'support_amount' => $currency . ' $' . $amount
+                    'support_amount' => $currency.' $'.$amount,
                 ]);
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Exception in CreateThankYouPostJob', [
                 'tip_payment_id' => $this->tipPayment->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
-
 }

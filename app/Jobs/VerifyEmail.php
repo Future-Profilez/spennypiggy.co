@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Jobs\Concerns\RetriesCriticalWork;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -11,16 +13,18 @@ use Illuminate\Queue\SerializesModels;
 
 class VerifyEmail implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     /**
      * New Registered User
-     * @var \App\Models\User
+     *
+     * @var User
      */
     public $user;
 
     /**
      * Is via Social
+     *
      * @var bool
      */
     public $social;
@@ -28,8 +32,8 @@ class VerifyEmail implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
     public function __construct($user, $social = false)

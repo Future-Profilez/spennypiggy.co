@@ -57,7 +57,7 @@ export default function DisputesIndex({ auth, disputes, tickets, queries }) {
         >
             <Head title="Dispute & Refund Center" />
 
-            <div className="py-12 bg-black min-h-screen">
+            <div className="py-12 bg-black min-h-dvh">
                 <div className="containerbox">
                     <div className="flex justify-between items-center mb-8">
                         <div>

@@ -430,7 +430,7 @@ export default function Transactions(props) {
 
   return (
     <Authenticated auth={auth.user} user={auth.user}>
-      <div className="bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] min-h-screen py-8 md:py-12">
+      <div className="bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] min-h-dvh py-8 md:py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className=" mb-8 mx-auto w-full">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">

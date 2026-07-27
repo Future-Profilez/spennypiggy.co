@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -15,17 +15,20 @@ class WishSubscriptionMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $sub;
-    public $mailToSend;
-    public $amountTotal;
-    public $creator_name;
-    public $is_renewal;
 
+    public $mailToSend;
+
+    public $amountTotal;
+
+    public $creator_name;
+
+    public $is_renewal;
 
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
     public function __construct($sub, $mailToSend, $amountTotal, $creator_name, $is_renewal = false)

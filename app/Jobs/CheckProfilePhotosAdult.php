@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Jobs\Concerns\RetriesCriticalWork;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\Log;
 
 class CheckProfilePhotosAdult implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     public $user;
+
     /**
      * Create a new job instance.
      */
@@ -30,15 +31,15 @@ class CheckProfilePhotosAdult implements ShouldQueue
      */
     public function handle(): void
     {
-        $restWords = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw','NSFW','XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking','Graphic'];
+        $restWords = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
 
-        if (!empty($this->user->avatar) && $this->isAdult($this->user->avatar, $restWords)) {
+        if (! empty($this->user->avatar) && $this->isAdult($this->user->avatar, $restWords)) {
             EmailService::sendAvatarRestrictionMail($this->user);
             $this->user->avatar = null;
             $this->user->save();
         }
 
-        if (!empty($this->user->cover) && $this->isAdult($this->user->cover, $restWords)) {
+        if (! empty($this->user->cover) && $this->isAdult($this->user->cover, $restWords)) {
             EmailService::sendCoverRestrictionMail($this->user);
             $this->user->cover = null;
             $this->user->save();
@@ -53,7 +54,7 @@ class CheckProfilePhotosAdult implements ShouldQueue
      */
     private function isAdult(string $target, array $restWords): bool
     {
-        $authHeader = 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret');
+        $authHeader = 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret');
 
         Http::withHeaders([
             'Content-Type' => 'application/json',
@@ -70,13 +71,14 @@ class CheckProfilePhotosAdult implements ShouldQueue
             $response = Http::withHeaders([
                 'Accept' => 'application/vnd.uploadcare-v0.7+json',
                 'Authorization' => $authHeader,
-            ])->get("https://api.uploadcare.com/files/" . $target . "/?include=appdata");
+            ])->get('https://api.uploadcare.com/files/'.$target.'/?include=appdata');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Uploadcare API failed for profile photo check', [
                     'user_id' => $this->user->id,
                     'status' => $response->status(),
                 ]);
+
                 continue;
             }
 
@@ -87,10 +89,11 @@ class CheckProfilePhotosAdult implements ShouldQueue
             }
         }
 
-        if (!is_array($tags)) {
+        if (! is_array($tags)) {
             Log::warning('ModerationLabels unavailable after polling for profile photo', [
                 'user_id' => $this->user->id,
             ]);
+
             return false;
         }
 

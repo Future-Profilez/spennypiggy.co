@@ -29,6 +29,6 @@ export const ONBOARDING_SLIDES = [
         emoji: '📜',
         accent: '#FF5FA2',
         title: 'Your Purchases, Organised',
-        body: 'Track everything you’ve unlocked, download receipts, follow deliveries and watch your supporter tier grow.',
+        body: 'Track everything you’ve unlocked, download receipts, follow deliveries and watch your supporter level grow.',
     },
 ];

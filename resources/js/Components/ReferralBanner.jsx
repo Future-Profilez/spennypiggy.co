@@ -1,34 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { FaShareAlt, FaPoundSign } from 'react-icons/fa';
-import { Link } from '@inertiajs/react';
+import React, { useState, useEffect } from "react";
+import { Link } from "@inertiajs/react";
+import { X, ArrowRight } from "lucide-react";
 
 export default function ReferralBanner({ onDismiss }) {
     const [isVisible, setIsVisible] = useState(false);
-    const STORAGE_KEY = 'referralBannerDismissed';
+    const STORAGE_KEY = "referralBannerDismissed";
     const DISMISS_DURATION = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
 
     useEffect(() => {
         // Check if banner was previously dismissed
         const dismissedData = localStorage.getItem(STORAGE_KEY);
-        
+
         if (dismissedData) {
             const { timestamp } = JSON.parse(dismissedData);
             const now = new Date().getTime();
-            
+
             if (now - timestamp < DISMISS_DURATION) {
                 setIsVisible(false);
+
                 return;
             } else {
                 localStorage.removeItem(STORAGE_KEY);
             }
         }
-        
+
         setIsVisible(true);
     }, []);
 
     const handleDismiss = () => {
         const dismissData = {
-            timestamp: new Date().getTime()
+            timestamp: new Date().getTime(),
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissData));
         setIsVisible(false);
@@ -38,31 +39,56 @@ export default function ReferralBanner({ onDismiss }) {
     if (!isVisible) return null;
 
     return (
-        <div className="my-4 block w-full relative overflow-hidden bg-pink-600  rounded-[30px]  p-6 text-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="relative overflow-hidden rounded-box border-2 border-black bg-gradient-to-br from-[#FF007F] to-[#C2185B] text-white">
+            {/* Soft light source, so a flat magenta block gets some depth */}
+            <div
+                className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/15 blur-2xl"
+                aria-hidden="true"
+            />
+
+            {/* Dismiss keeps its own corner; the content reserves room for it
+                instead of running underneath, as the old × did on phones. */}
             <button
+                type="button"
                 onClick={handleDismiss}
-                className="bg-white text-black border-2 border-black absolute text-[24px] font-bold z-10 top-6 right-6 md:top-4 md:right-4 py-[0px] px-[10px] rounded-[10px]  transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-            > &times; </button>
+                aria-label="Dismiss referral offer"
+                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/25 text-white transition-colors hover:bg-black/45"
+            >
+                <X size={15} strokeWidth={3} />
+            </button>
 
-            <div className="relative">
-                <div className="lg:flex items-center mb-3">
-                    <div>
-                        <h3 className="text-xl md:text-2xl font-gulfs uppercase tracking-wider">Refer & Earn £50 💸 </h3>
-                        <p className="text-sm opacity-90 font-medium">Invite creators and earn unlimited rewards!</p>
-                    </div>
+            <div className="relative flex flex-col gap-4 p-5 pr-14 sm:flex-row sm:items-center sm:gap-6 sm:p-6 sm:pr-16">
+                {/* The reward is the hook, so it reads as a figure, not a sentence */}
+                <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:gap-1 sm:border-r sm:border-white/25 sm:pr-6">
+                    <span className="font-gulfs text-[34px] leading-none tracking-tight sm:text-[40px]">
+                        £50
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/70">
+                        per creator
+                    </span>
                 </div>
-                
-                <p className="text-normal text-sm lg:text-lg opacity-95 mb-1 font-medium leading-relaxed">
-                    Earn a <span className="font-bold text-yellow-300">£50 Stripe payout</span> for every creator you refer who reaches £1,000 in lifetime GMV. 
-                </p>
-                <p className="text-normal text-sm lg:text-lg opacity-95 mb-2 font-medium leading-relaxed">
-                    There is no limit to how many creators you can refer.
-                </p>
-                <Link href="/refer-and-earn" className="inline-block ms-1 text-yellow-300 ">
-                    Get your Referral Link
-                </Link>  
 
-                 
+                <div className="min-w-0 flex-1">
+                    <h3 className="font-gulfs text-lg uppercase tracking-wide sm:text-xl">
+                        Refer &amp; earn
+                    </h3>
+                    <p className="mt-1 text-[16px] md:text-[14px] font-medium leading-relaxed text-white/85">
+                        Invite a creator and earn a{" "}
+                        <span className="font-bold text-[#FFE600]">
+                            £50 Stripe payout
+                        </span>{" "}
+                        once they reach £1,000 in lifetime GMV. No limit on how
+                        many you refer.
+                    </p>
+
+                    <Link
+                        href="/refer-and-earn"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5"
+                    >
+                        Get your link
+                        <ArrowRight size={13} strokeWidth={3} />
+                    </Link>
+                </div>
             </div>
         </div>
     );

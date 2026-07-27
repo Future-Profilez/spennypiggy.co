@@ -3,10 +3,10 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,9 +16,10 @@ use Illuminate\Support\Facades\Log;
 
 class CheckAdultContent implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     public $wish;
+
     /**
      * Create a new job instance.
      */
@@ -32,9 +33,9 @@ class CheckAdultContent implements ShouldQueue
      */
     public function handle(): void
     {
-        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw','NSFW','XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking','Graphic'];
+        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
 
-        $authHeader = 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret');
+        $authHeader = 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret');
 
         // Kick off async Rekognition moderation.
         Http::withHeaders([
@@ -54,13 +55,14 @@ class CheckAdultContent implements ShouldQueue
             $response = Http::withHeaders([
                 'Accept' => 'application/vnd.uploadcare-v0.7+json',
                 'Authorization' => $authHeader,
-            ])->get("https://api.uploadcare.com/files/". $this->wish->thumbnail ."/?include=appdata");
+            ])->get('https://api.uploadcare.com/files/'.$this->wish->thumbnail.'/?include=appdata');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Uploadcare API failed for wish thumbnail check', [
                     'wish_id' => $this->wish->id,
                     'status' => $response->status(),
                 ]);
+
                 continue;
             }
 
@@ -71,10 +73,11 @@ class CheckAdultContent implements ShouldQueue
             }
         }
 
-        if (!is_array($tags)) {
+        if (! is_array($tags)) {
             Log::warning('ModerationLabels unavailable after polling for wish thumbnail', [
                 'wish_id' => $this->wish->id,
             ]);
+
             return;
         }
 
@@ -85,8 +88,9 @@ class CheckAdultContent implements ShouldQueue
             foreach ($rest_words as $word) {
                 if (stripos($label, $word) !== false) {
                     EmailService::sendRestrictionMail($this->wish);
-                    WishCategory::where('wish_item_id',$this->wish->id)->delete();
-                    WishItem::where('id',$this->wish->id)->delete();
+                    WishCategory::where('wish_item_id', $this->wish->id)->delete();
+                    WishItem::where('id', $this->wish->id)->delete();
+
                     return;
                 }
             }

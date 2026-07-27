@@ -1280,3 +1280,17 @@ lr-config {
 .popupmodal {
     z-index: 999;
 }
+
+/*
+ * A full-screen add-item Sheet covers the whole viewport on mobile, so the
+ * fixed app chrome (bottom navigation, the dev/env purple bar) must not float
+ * over its footer — the primary CTA was landing behind the tab bar. The Sheet
+ * component toggles `.sheet-open` on <body> while it is open. Only hide the
+ * bottom-anchored chrome on phones; the desktop modal is centred and never
+ * collides with it.
+ */
+@media (max-width: 767px) {
+    body.sheet-open .bottom-navigation {
+        display: none !important;
+    }
+}

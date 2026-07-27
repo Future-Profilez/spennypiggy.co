@@ -330,7 +330,7 @@ export default function SupportStory({ creator, gifter }) {
 
   return (
     <Authenticated auth={auth?.user || ''} user={auth?.user || ''}>
-      <div className="bg-[#A2E4B8] min-h-screen py-8 md:py-12 pb-20">
+      <div className="bg-[#A2E4B8] min-h-dvh py-8 md:py-12 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 mb-6">
             <h2 className="text-black font-black text-2xl md:text-3xl uppercase tracking-widest mb-2">

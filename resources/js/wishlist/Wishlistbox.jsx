@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import ItemBadges from "@/Components/ItemBadges";
 import ShareProfile from "./ShareProfile";
 import { useState, Fragment } from "react";
 import uploadedimg from "../../assets/img/uploadedimg.png";
@@ -18,8 +19,18 @@ import { Link, usePage } from "@inertiajs/react";
 import SaveButton from "@/Components/SaveButton";
 
 export default function Wishlistbox(props) {
-    const { ziggy, auth: globalAuth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
-    const { format, formatMultiPrice, adminFeeInCurrency, calculateTotalSupporterPays } = PriceFormat();
+    const {
+        ziggy,
+        auth: globalAuth,
+        platform_fee_percentage,
+        transaction_fee_percentage,
+    } = usePage().props;
+    const {
+        format,
+        formatMultiPrice,
+        adminFeeInCurrency,
+        calculateTotalSupporterPays,
+    } = PriceFormat();
     const {
         imagesize,
         currency,
@@ -93,28 +104,34 @@ export default function Wishlistbox(props) {
 
     return (
         <div
-            style={isOverlay ? overlayStyle : (IsloggedIn ? style : stylenone)}
+            style={isOverlay ? overlayStyle : IsloggedIn ? style : stylenone}
             className={`wish-item-box !p-0 ${classes} ${
                 isDragging ? "dragging opacity-30" : ""
             } ${isOverlay ? "is-overlay" : ""} cursor-pointer ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
         >
-            <div className="bg-[#fdfbf7] rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
+            <div className="bg-[#fdfbf7] rounded-[30px] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-6 md:mt-6 rounded-[20px] !text-[12px] p-6 mb-2">
-                        {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
+                        {itm.edited_reason &&
+                        itm.edited_reason.trim() !== "" ? (
                             <>
-                                <p className="font-semibold  mb-1 text-red-600">Edit requested by admin reason : </p>
-                                <p className=" opacity-90">{itm.edited_reason}</p>
+                                <p className="font-semibold mb-1 text-red-600">
+                                    Edit requested by admin reason :{" "}
+                                </p>
+                                <p className="opacity-90">
+                                    {itm.edited_reason}
+                                </p>
                             </>
                         ) : (
                             <p>
-                                Wish item waiting for approval. Currently only you can see this wish.
+                                Wish item waiting for approval. Currently only
+                                you can see this wish.
                             </p>
                         )}
                     </div>
                 )}
                 {itm && itm.is_suspended == 1 ? (
-                    <div className="absolute top-18 w-full bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help z-20">
+                    <div className="absolute top-18 w-full bg-red-600 text-white text-xs font-bold px-3 py-2 text-center group/suspend cursor-help z-20">
                         Suspended
                         {itm.suspend_reason && (
                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none z-30">
@@ -131,13 +148,19 @@ export default function Wishlistbox(props) {
                             className={`movesvg absolute !top-6 !left-6 ${isOverlay ? "cursor-grabbing" : "cursor-grab"}`}
                             ref={setNodeRef}
                             {...listeners}
-                            {...attributes} >
+                            {...attributes}
+                        >
                             <svg
                                 fill="#000000"
                                 viewBox="0 0 16 16"
-                                xmlns="http://www.w3.org/2000/svg" >
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
                                 <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" strokeLinejoin="round" ></g>
+                                <g
+                                    id="SVGRepo_tracerCarrier"
+                                    stroke-linecap="round"
+                                    strokeLinejoin="round"
+                                ></g>
                                 <g id="SVGRepo_iconCarrier">
                                     <path d="m15.46 7-3.2-2.19-.71 1 2.29 1.57H8.62V2.16l1.57 2.29 1-.71L9 .54a1.25 1.25 0 0 0-2 0l-2.22 3.2 1 .71 1.59-2.29v5.22H2.16l2.29-1.57-.71-1L.54 7a1.25 1.25 0 0 0 0 2l3.2 2.19.71-1-2.29-1.57h5.21v5.22l-1.56-2.29-1 .71L7 15.46a1.25 1.25 0 0 0 2.06 0l2.19-3.2-1-.71-1.63 2.29V8.62h5.22l-2.29 1.57.71 1L15.46 9a1.25 1.25 0 0 0 0-2z"></path>
                                 </g>
@@ -164,11 +187,18 @@ export default function Wishlistbox(props) {
                 )}
                 {IsloggedIn && !isCreator && itm?.id && (
                     <div className="absolute top-4 left-4 z-10">
-                        <SaveButton productType="wish" itemId={itm.id} initialSaved={itm.is_saved} />
+                        <SaveButton
+                            productType="wish"
+                            itemId={itm.id}
+                            initialSaved={itm.is_saved}
+                        />
                     </div>
                 )}
                 {IsloggedIn ? (
-                    <Menu as="div" className="absolute top-4 right-4 z-10 inline-block text-left">
+                    <Menu
+                        as="div"
+                        className="absolute top-4 right-4 z-10 inline-block text-left"
+                    >
                         <div>
                             <Menu.Button className="flex flex-col gap-1 p-2 bg-transparent border-0 cursor-pointer focus:outline-none">
                                 <span className="bg-white block w-1 h-1 rounded-full"></span>
@@ -185,12 +215,17 @@ export default function Wishlistbox(props) {
                             leaveFrom="transform opacity-100 scale-100"
                             leaveTo="transform opacity-0 scale-95"
                         >
-                            <Menu.Items className="absolute right-8 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-[30px]   bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <Menu.Items className="absolute right-8 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-[30px] bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                 <div className="px-1 py-1">
                                     <Menu.Item>
                                         {({ active }) => (
-                                            <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-[30px]   px-2 py-2 text-sm text-gray-900`}>
-                                                <RemoveWish uuid={itm.uuid} text="Remove Wish" />
+                                            <div
+                                                className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[30px] px-2 py-2 text-sm text-gray-900`}
+                                            >
+                                                <RemoveWish
+                                                    uuid={itm.uuid}
+                                                    text="Remove Wish"
+                                                />
                                             </div>
                                         )}
                                     </Menu.Item>
@@ -203,10 +238,11 @@ export default function Wishlistbox(props) {
                 )}
                 <div
                     onClick={openAddtocart}
-                    className={`h-[110px] sm:h-[150px]  md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize} p-3`} >
+                    className={`h-[110px] sm:h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize} p-3`}
+                >
                     <LazyLoadImage
                         alt={"image"}
-                        effect="blur" 
+                        effect="blur"
                         height={193}
                         className={`block w-full h-full object-cover rounded-[20px] overflow-hidden border-[3px] border-black`}
                         src={itm?.perma_link ? itm?.perma_link : uploadedimg}
@@ -216,26 +252,35 @@ export default function Wishlistbox(props) {
 
                 <div
                     onClick={openAddtocart}
-                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7]" >
+                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7]"
+                >
                     <div className="px-3">
+                        <ItemBadges
+                            createdAt={itm?.created_at}
+                            className="mb-1.5 justify-center"
+                        />
                         {itm.goal_label ? (
                             <p className="text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
                                 🎯 {itm.goal_label}
                             </p>
                         ) : null}
-                        <h4 className={`text-xl font-black !text-black uppercase text-center ${
+                        <h4
+                            className={`text-xl font-black !text-black uppercase text-center ${
                                 itm.subscription !== "0" ? "el1" : "el2"
-                            }`} > {itm.wishname}
+                            }`}
+                        >
+                            {" "}
+                            {itm.wishname}
                         </h4>
                         <p className="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wide -mt-1">
                             Exclusive content · instant download
                         </p>
-                        <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
+                        <h5 className="text-center font-bold font-poppins text-black my-2 titleprice">
                             {IsloggedIn ? (
                                 <>
                                     {formatMultiPrice(
                                         itm.price,
-                                        itm?.currency || "GBP"
+                                        itm?.currency || "GBP",
                                     )}
                                 </>
                             ) : (
@@ -243,14 +288,20 @@ export default function Wishlistbox(props) {
                                     <span>
                                         {formatMultiPrice(
                                             calculateTotalSupporterPays(
-                                                (parseFloat(itm.price || 0) * (1 + (itm?.user?.vat_amount_percentage || 0) / 100)), 
-                                                itm?.currency || "GBP"
-                                            ).total_supporter_pays, 
-                                            itm?.currency || "GBP"
+                                                parseFloat(itm.price || 0) *
+                                                    (1 +
+                                                        (itm?.user
+                                                            ?.vat_amount_percentage ||
+                                                            0) /
+                                                            100),
+                                                itm?.currency || "GBP",
+                                            ).total_supporter_pays,
+                                            itm?.currency || "GBP",
                                         )}
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                        *Includes platform and payment processing fees
+                                        *Includes platform and payment
+                                        processing fees
                                     </span>
                                 </div>
                             )}
@@ -286,21 +337,26 @@ export default function Wishlistbox(props) {
                         {IsloggedIn ? (
                             <ShareProfile
                                 username={itm.wishname}
-                                custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
-                                <div className=" bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[13px] md:text-normal py-2 px-4 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`}
+                            >
+                                <div className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[13px] md:text-normal py-2 px-4 rounded-xl border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                                     Share Link
                                 </div>
                             </ShareProfile>
-                        ) : 
-                            <button className="bg-yellow-300 hover:bg-yellow-400 
-                            text-black font-black uppercase text-[13px] md:text-normal 
-                            py-2 px-4 rounded-xl border-[3px] border-black 
-                            shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] 
-                            hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] 
-                            transition-all"> Unlock </button>
-                        }
+                        ) : (
+                            <button
+                                className="bg-yellow-300 hover:bg-yellow-400 
+ text-black font-black uppercase text-[13px] md:text-normal 
+ py-2 px-4 rounded-xl border-[3px] border-black 
+ hover:translate-x-[2px] 
+ hover:translate-y-[2px]  
+ transition-all"
+                            >
+                                {" "}
+                                Unlock{" "}
+                            </button>
+                        )}
                     </div>
-
 
                     {itm.user ? (
                         <div className="flex px-2 mt-3 justify-center">
@@ -337,14 +393,14 @@ export default function Wishlistbox(props) {
     );
 }
 
-// <div className="bg-white rounded-[30px]    shadow-[4px_4px_0px_0px_#FF007F]ink  sshadow-lg relative border-2 border-[#FF007F] w-full max-w-[250px]">
+// <div className="bg-white rounded-[30px] shadow-[4px_4px_0px_0px_#FF007F]ink sshadow-lg relative border-2 border-[#FF007F] w-full max-w-[250px]">
 
-//                                                 <div className="flex justify-center ">
-//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[30px]  " />
+//                                                 <div className="flex justify-center">
+//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[30px]" />
 //                                                 </div>
 //                                                 <div className="p-4">
-//                                                     <div className="text-lg   text-gray-800 text-center">Naveen Tehrpariya</div>
-//                                                     <div className="text-center font-bold font-poppins  text-black my-2">US$45.00</div>
+//                                                     <div className="text-lg text-gray-800 text-center">Naveen Tehrpariya</div>
+//                                                     <div className="text-center font-bold font-poppins text-black my-2">US$45.00</div>
 //                                                     <div className="text-center mt-4">
 //                                                         <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-full shadow">
 //                                                         Special Link

@@ -143,7 +143,7 @@ const HorizontalFeatures = ({ features }) => {
     }
     return (
         <section ref={targetRef} style={{ height: `${dims.dist + dims.vh}px` }} className="relative left-1/2 w-screen -translate-x-1/2">
-            <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+            <div className="sticky top-0 flex h-dvh items-center overflow-hidden">
                 <motion.div ref={trackRef} style={{ x }} className="flex gap-6 pl-[max(20px,calc((100vw-1024px)/2))] pr-16">
                     {features.map((f, i) => <HCard key={f.title} {...f} index={i + 1} />)}
                 </motion.div>

@@ -491,8 +491,8 @@ class PayoutService
         // only guards the cron against itself — an admin triggering a run from the panel (or
         // from the SEPARATE admin app, which shares this database) while the cron is mid-run
         // would produce two PayoutRun ids over the same still-unstamped payments, and therefore
-        // two Stripe payouts with two different idempotency keys. PayoutLock is held in MySQL
-        // precisely so it is visible to both applications.
+        // two Stripe payouts with two different idempotency keys. PayoutLock lives in a shared
+        // DB table precisely so it is visible to both applications.
         $lock = PayoutLock::acquire();
 
         if (! $lock) {
@@ -500,7 +500,7 @@ class PayoutService
         }
 
         try {
-            return $this->runPayouts($previewData, $runId);
+            return $this->runPayouts($previewData, $runId, $lock);
         } finally {
             PayoutLock::release($lock);
         }
@@ -509,7 +509,7 @@ class PayoutService
     /**
      * Execute the run. Only ever called from executePayouts(), which holds the run lock.
      */
-    protected function runPayouts($previewData, $runId = null)
+    protected function runPayouts($previewData, $runId = null, ?string $lockToken = null)
     {
         // The Stripe payout for each creator is an irreversible external side effect.
         // We therefore DO NOT wrap the whole run in one DB transaction (a late rollback
@@ -543,6 +543,17 @@ class PayoutService
         $actualCreatorCount = 0;
 
         foreach ($previewData['payouts'] as $creatorId => $data) {
+            // Heartbeat the lock so a long run (thousands of Stripe calls) never lets its lock
+            // expire mid-flight and get stolen by a second run → double payout. If we've lost
+            // the lock, another run now owns it; stop before issuing any more money.
+            if ($lockToken !== null && ! PayoutLock::extend($lockToken)) {
+                Log::critical('Payout: lock lost mid-run — another run has taken over. Stopping to avoid a double payout.', [
+                    'run_id' => $run->id,
+                    'processed_creators' => $actualCreatorCount,
+                ]);
+                break;
+            }
+
             // Process each creator's payout
             $netPayout = (int) ($data['net_payout'] ?? 0);
             $isBelowThreshold = (bool) ($data['is_below_threshold'] ?? false);

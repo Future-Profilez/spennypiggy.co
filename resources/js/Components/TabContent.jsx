@@ -92,7 +92,7 @@ const WishesTab = ({
     itemid,
     setuped,
 }) => (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <WishlistGrid
                 wishitems={wishitems}
@@ -111,7 +111,7 @@ const WishesTab = ({
 
 // Memberships Tab Component
 const MembershipsTab = ({ IsloggedIn, username }) => (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <MembershipsLists IsloggedIn={IsloggedIn} username={username} />
         </Suspense>
@@ -120,7 +120,7 @@ const MembershipsTab = ({ IsloggedIn, username }) => (
 
 // Bills Tab Component
 const BillsTab = ({ IsloggedIn, username }) => (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <Billslist IsloggedIn={IsloggedIn} username={username} />
         </Suspense>
@@ -129,7 +129,7 @@ const BillsTab = ({ IsloggedIn, username }) => (
 
 // Shop Tab Component
 const ShopTab = ({ IsloggedIn, username }) => (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <ProfileProductLists IsloggedIn={IsloggedIn} username={username} />
         </Suspense>
@@ -138,7 +138,7 @@ const ShopTab = ({ IsloggedIn, username }) => (
 
 // Gifts Tab Component
 const GiftsTab = ({ gifts, giftsloading }) => (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <GiftListing gifts={gifts} loading={giftsloading} />
         </Suspense>
@@ -147,7 +147,7 @@ const GiftsTab = ({ gifts, giftsloading }) => (
 
 // Security Tab Component
 const SecurityTab = () => (
-    <div className="p-4 min-h-screen">
+    <div className="p-4 min-h-dvh">
         <Suspense fallback={<LoadingScreen />}>
             <div className="bg-white rounded-[30px]  p-6 shadow-sm border-2 border-black">
                 <SecurityZone />

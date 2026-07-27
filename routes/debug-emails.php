@@ -11,7 +11,7 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
     define('SPENNY_DEBUG_EMAILS_LOADED', true);
 
     // ── Magic fake model — handles any property/method/foreach on any template ──
-    class FakeModel implements \IteratorAggregate, \Countable
+    class FakeModel implements Countable, IteratorAggregate
     {
         private static array $stringHints = [
             'name' => 'Demo User',
@@ -43,12 +43,15 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
         ];
 
         // No recursion — foreach yields two simple child instances
-        public function getIterator(): \Traversable
+        public function getIterator(): Traversable
         {
-            return new \ArrayIterator([new self(), new self()]);
+            return new ArrayIterator([new self, new self]);
         }
 
-        public function count(): int { return 2; }
+        public function count(): int
+        {
+            return 2;
+        }
 
         public function __get(string $name): mixed
         {
@@ -58,7 +61,8 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
             if (isset(self::$numberHints[$name])) {
                 return self::$numberHints[$name];
             }
-            return new self();
+
+            return new self;
         }
 
         public function __set(string $name, mixed $value): void {}
@@ -66,15 +70,15 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
         public function __call(string $name, array $args): mixed
         {
             return match ($name) {
-                'format'         => date($args[0] ?? 'F Y'),
-                'count'          => 2,
-                'sum', 'total'   => '£10.00',
+                'format' => date($args[0] ?? 'F Y'),
+                'count' => 2,
+                'sum', 'total' => '£10.00',
                 'getFormattedBonusAmount', 'getFormattedAmount' => '500.00',
-                'toArray'        => [],
-                'first'          => new self(),
-                'last'           => new self(),
+                'toArray' => [],
+                'first' => new self,
+                'last' => new self,
                 'toDateTimeString', 'toDateString' => now()->toDateTimeString(),
-                default          => new self(),
+                default => new self,
             };
         }
 
@@ -87,87 +91,88 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
     // ── Shared fake data bag covering all common template variables ───────────
     function emailFakeData(): array
     {
-        $fake = new FakeModel();
+        $fake = new FakeModel;
+
         return [
             // User / people
-            'user'                  => $fake,
-            'creator'               => $fake,
-            'supporter'             => $fake,
-            'admin'                 => $fake,
-            'fan'                   => $fake,
+            'user' => $fake,
+            'creator' => $fake,
+            'supporter' => $fake,
+            'admin' => $fake,
+            'fan' => $fake,
 
             // Payments / amounts
-            'payment'               => $fake,
-            'purchase'              => $fake,
-            'bill_pay'              => $fake,
-            'subscription'          => $fake,
-            'membership'            => $fake,
-            'contribution'          => $fake,
-            'piggyPot'              => $fake,
-            'shopPayment'           => $fake,
-            'tipGoalPayment'        => $fake,
-            'amount'                => '£10.00',
-            'amountWithVat'         => '£12.00',
-            'currencySymbol'        => '£',
-            'netAmount'             => '£8.50',
-            'platformFee'           => '£1.50',
+            'payment' => $fake,
+            'purchase' => $fake,
+            'bill_pay' => $fake,
+            'subscription' => $fake,
+            'membership' => $fake,
+            'contribution' => $fake,
+            'piggyPot' => $fake,
+            'shopPayment' => $fake,
+            'tipGoalPayment' => $fake,
+            'amount' => '£10.00',
+            'amountWithVat' => '£12.00',
+            'currencySymbol' => '£',
+            'netAmount' => '£8.50',
+            'platformFee' => '£1.50',
 
             // Tasks / deliverables
-            'task'                  => $fake,
-            'taskPurchase'          => $fake,
-            'contentDeliverables'   => [$fake, $fake],
+            'task' => $fake,
+            'taskPurchase' => $fake,
+            'contentDeliverables' => [$fake, $fake],
             'certificateDeliverables' => [$fake, $fake],
-            'deliverables'          => [$fake, $fake],
+            'deliverables' => [$fake, $fake],
 
             // Founder / bonus
-            'founderBonus'          => $fake,
-            'fastStartBonus'        => $fake,
-            'bonusAmount'           => '£500.00',
-            'bonusMonth'            => 'June 2025',
-            'bonusPeriod'           => 'June 2025',
+            'founderBonus' => $fake,
+            'fastStartBonus' => $fake,
+            'bonusAmount' => '£500.00',
+            'bonusMonth' => 'June 2025',
+            'bonusPeriod' => 'June 2025',
 
             // Shop / product
-            'shop'                  => $fake,
-            'order'                 => $fake,
-            'product'               => $fake,
-            'item'                  => $fake,
+            'shop' => $fake,
+            'order' => $fake,
+            'product' => $fake,
+            'item' => $fake,
 
             // Support / tickets
-            'ticket'                => $fake,
-            'supportTicket'         => $fake,
-            'dispute'               => $fake,
+            'ticket' => $fake,
+            'supportTicket' => $fake,
+            'dispute' => $fake,
 
             // Misc flags / strings
-            'status'                => 'approved',
-            'message'               => 'This is a demo preview message.',
-            'reason'                => 'Demo reason for this action.',
-            'reasons'               => ['Reason one', 'Reason two', 'Reason three'],
-            'metrics'               => ['Engagement' => '92%', 'Revenue' => '£500', 'Fans' => '120'],
-            'results'               => [
+            'status' => 'approved',
+            'message' => 'This is a demo preview message.',
+            'reason' => 'Demo reason for this action.',
+            'reasons' => ['Reason one', 'Reason two', 'Reason three'],
+            'metrics' => ['Engagement' => '92%', 'Revenue' => '£500', 'Fans' => '120'],
+            'results' => [
                 ['label' => 'Demo Result', 'value' => 'Pass', 'errors' => ['Error one', 'Error two']],
             ],
-            'note'                  => 'Demo note.',
-            'subject'               => 'Demo Email Subject',
-            'actionUrl'             => '#',
-            'profileUrl'            => '#',
-            'unsubscribeUrl'        => '#',
-            'loginUrl'              => '#',
+            'note' => 'Demo note.',
+            'subject' => 'Demo Email Subject',
+            'actionUrl' => '#',
+            'profileUrl' => '#',
+            'unsubscribeUrl' => '#',
+            'loginUrl' => '#',
 
             // Error templates
-            'th'                    => 'DemoException: Something went wrong (fake data for preview)',
-            'errorMessage'          => 'Demo error message',
-            'errorFile'             => '/var/www/app/Http/Controllers/DemoController.php',
-            'errorLine'             => 42,
-            'errorTrace'            => "#0 /var/www/app/Http/Controllers/DemoController.php(42)\n#1 vendor/laravel/framework/src/...",
+            'th' => 'DemoException: Something went wrong (fake data for preview)',
+            'errorMessage' => 'Demo error message',
+            'errorFile' => '/var/www/app/Http/Controllers/DemoController.php',
+            'errorLine' => 42,
+            'errorTrace' => "#0 /var/www/app/Http/Controllers/DemoController.php(42)\n#1 vendor/laravel/framework/src/...",
 
             // Identity / verification
-            'verificationResult'    => $fake,
-            'identityStatus'        => 'verified',
+            'verificationResult' => $fake,
+            'identityStatus' => 'verified',
 
             // Feature suggestions
-            'suggestion'            => $fake,
-            'featureSuggestion'     => $fake,
-            'suggestionStatus'      => 'approved',
+            'suggestion' => $fake,
+            'featureSuggestion' => $fake,
+            'suggestionStatus' => 'approved',
         ];
     }
 
@@ -195,7 +200,7 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
 
         // One level of subdirectories (e.g. email/risk/)
         foreach (glob(resource_path("views/{$viewPath}/*/"), GLOB_ONLYDIR) as $dir) {
-            $subDir   = basename($dir);
+            $subDir = basename($dir);
             $subFiles = glob("{$dir}*.blade.php") ?: [];
             foreach ($subFiles as $file) {
                 $base = basename($file, '.blade.php');
@@ -209,17 +214,23 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
         }
 
         usort($templates, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
         return $templates;
     }
 
     // ── Routes ───────────────────────────────────────────────────────────────
 
-    Route::prefix('debug/emails')->group(function () {
+    // `! app()->isProduction()` alone is NOT a guard: the deployed development
+    // environment is a publicly reachable host, and these routes rendered every
+    // email template and SENT mail to a hardcoded address on an unauthenticated
+    // GET. Admin session required on top of the environment check.
+    Route::prefix('debug/emails')->middleware(['auth', 'verified', 'admin'])->group(function () {
 
         // ── List page ──
         Route::get('/', function () {
-            $main  = emailTemplateList('email', 'email');
-            $html  = debugEmailListHtml($main, 'SpennPiggy.co', 'main');
+            $main = emailTemplateList('email', 'email');
+            $html = debugEmailListHtml($main, 'SpennPiggy.co', 'main');
+
             return response($html);
         })->name('debug.emails.list');
 
@@ -228,35 +239,37 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
             [$viewPrefix, $view] = resolveEmailView($slug);
             try {
                 $html = view($view, emailFakeData())->render();
+
                 return response($html);
-            } catch (\Throwable $e) {
-                return response("<pre style='color:red;padding:20px;font-family:monospace'><b>Preview failed:</b>\n" . e($e->getMessage()) . "\n\n" . e($e->getTraceAsString()) . "</pre>");
+            } catch (Throwable $e) {
+                return response("<pre style='color:red;padding:20px;font-family:monospace'><b>Preview failed:</b>\n".e($e->getMessage())."\n\n".e($e->getTraceAsString()).'</pre>');
             }
         })->name('debug.emails.preview');
 
         // ── Send to test address ──
         Route::get('/send/{slug}', function (string $slug) {
             [$viewPrefix, $view] = resolveEmailView($slug);
-            $to   = 'naveen@internetbusinesssolutionsindia.com';
+            $to = 'naveen@internetbusinesssolutionsindia.com';
             $data = emailFakeData();
             try {
                 Mail::send($view, $data, function ($m) use ($to, $slug) {
                     $m->to($to)
-                      ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SpennPiggy'))
-                      ->subject('[PREVIEW] ' . str_replace('_', ' ', $slug));
+                        ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SpennPiggy'))
+                        ->subject('[PREVIEW] '.str_replace('_', ' ', $slug));
                 });
+
                 return response("<div style='font-family:sans-serif;padding:24px;color:#1a1a1a'>
                     <h2 style='color:#22c55e'>✅ Sent!</h2>
                     <p>Template: <code>{$view}</code></p>
                     <p>To: <code>{$to}</code></p>
-                    <p><a href='" . route('debug.emails.list') . "'>← Back to list</a></p>
+                    <p><a href='".route('debug.emails.list')."'>← Back to list</a></p>
                 </div>");
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 return response("<div style='font-family:sans-serif;padding:24px;color:#1a1a1a'>
                     <h2 style='color:#ef4444'>❌ Send failed</h2>
                     <p>Template: <code>{$view}</code></p>
-                    <pre style='background:#f5f5f5;padding:14px;border-radius:6px;font-size:12px;overflow:auto'>" . e($e->getMessage()) . "</pre>
-                    <p><a href='" . route('debug.emails.list') . "'>← Back to list</a></p>
+                    <pre style='background:#f5f5f5;padding:14px;border-radius:6px;font-size:12px;overflow:auto'>".e($e->getMessage())."</pre>
+                    <p><a href='".route('debug.emails.list')."'>← Back to list</a></p>
                 </div>");
             }
         })->name('debug.emails.send');
@@ -272,6 +285,7 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
         if (! $view || ! str_starts_with($view, 'email.')) {
             abort(404);
         }
+
         return ['email', $view];
     }
 
@@ -279,11 +293,11 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
     {
         $rows = '';
         foreach ($templates as $t) {
-            $slug    = $t['slug'];
-            $name    = $t['name'];
+            $slug = $t['slug'];
+            $name = $t['name'];
             $preview = route('debug.emails.preview', ['slug' => $slug]);
-            $send    = route('debug.emails.send',    ['slug' => $slug]);
-            $rows   .= "
+            $send = route('debug.emails.send', ['slug' => $slug]);
+            $rows .= "
             <tr>
                 <td style='padding:10px 16px;font-family:monospace;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6'>{$name}</td>
                 <td style='padding:10px 16px;border-bottom:1px solid #f3f4f6;white-space:nowrap'>
@@ -299,6 +313,7 @@ if (! app()->isProduction() && ! defined('SPENNY_DEBUG_EMAILS_LOADED')) {
         }
 
         $count = count($templates);
+
         return "<!DOCTYPE html>
 <html>
 <head>

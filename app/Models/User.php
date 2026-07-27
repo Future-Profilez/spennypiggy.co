@@ -824,13 +824,22 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     }
 
     /**
-     * Check if user is eligible for founder program
+     * Check if user is currently eligible for founder program qualification
      */
     public function isEligibleForFounder()
     {
-        // Check if user has been active for at least 30 days
-        $thirtyDaysAgo = now()->subDays(30);
-        return $this->stripe_connected_at !== null && $this->stripe_connected_at <= $thirtyDaysAgo && !$this->is_founder;
+        if ($this->is_founder || $this->stripe_connected_at === null) {
+            return false;
+        }
+
+        if (isset($this->founder_missed_at) && $this->founder_missed_at !== null) {
+            return false;
+        }
+
+        $qualificationDays = FounderBonus::getQualificationDays();
+        $thirtyDaysAgo = now()->subDays($qualificationDays);
+
+        return $this->stripe_connected_at <= $thirtyDaysAgo && FounderBonus::getAvailableSeats() > 0;
     }
 
     /* =========================

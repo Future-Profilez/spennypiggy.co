@@ -511,6 +511,18 @@ class WishitemController extends Controller
                 $contentFileSize = $request->content_file_size;
             }
 
+            // columnsWithFile() reads the file columns straight off the request,
+            // so a title-only edit (no content_file in the body) would send NULL
+            // and wipe the supporter's paid file. Feed it the safe merged values
+            // instead — for a file reward it keeps the existing file; for a
+            // message/link reward it correctly clears the file columns.
+            $request->merge([
+                'content_file' => $contentFile,
+                'content_file_type' => $contentFileType,
+                'content_file_name' => $contentFileName,
+                'content_file_size' => $contentFileSize,
+            ]);
+
             WishItem::where('uuid', $uuid)->update([
                 'user_id' => Auth::id(),
                 'wishname' => $request->wishname ?? $wish->wishname,

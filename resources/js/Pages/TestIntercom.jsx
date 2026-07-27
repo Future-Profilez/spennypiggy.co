@@ -63,7 +63,7 @@ export default function TestIntercom() {
         <>
             <Head title="Test Intercom" />
             <IntercomProviderFixed />
-            <div className="min-h-screen bg-gray-100 p-8">
+            <div className="min-h-dvh bg-gray-100 p-8">
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">Intercom Test Page</h1>
                     

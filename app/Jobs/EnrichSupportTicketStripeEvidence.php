@@ -2,20 +2,31 @@
 
 namespace App\Jobs;
 
+use App\Models\BillPayment;
+use App\Models\MembershipPayment;
 use App\Models\Payment;
+use App\Models\PiggyPotContribution;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentItems;
 use App\Models\SupportTicket;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class EnrichSupportTicketStripeEvidence implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $ticketId;
+
     public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(int $ticketId)
@@ -26,12 +37,12 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
     public function handle(): void
     {
         $ticket = SupportTicket::find($this->ticketId);
-        if (!$ticket) {
+        if (! $ticket) {
             return;
         }
 
         $piId = $this->resolvePaymentIntentId($ticket);
-        if (!$piId) {
+        if (! $piId) {
             return;
         }
 
@@ -42,13 +53,13 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
         }
 
         $secret = config('services.stripe.secret');
-        if (!$secret) {
+        if (! $secret) {
             return;
         }
 
         try {
-            \Stripe\Stripe::setApiKey($secret);
-            $pi = \Stripe\PaymentIntent::retrieve($piId, [
+            Stripe::setApiKey($secret);
+            $pi = PaymentIntent::retrieve($piId, [
                 'expand' => [
                     'charges.data.outcome',
                     'charges.data.payment_method_details',
@@ -71,7 +82,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
             'created' => isset($pi->created) ? (int) $pi->created : null,
             'payment_method_types' => isset($pi->payment_method_types) ? $pi->payment_method_types : null,
             'livemode' => $pi->livemode ?? null,
-        ], fn($v) => !($v === null || $v === ''));
+        ], fn ($v) => ! ($v === null || $v === ''));
 
         $chargePayload = null;
         if ($charge) {
@@ -97,7 +108,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
                     'type' => data_get($charge, 'outcome.type'),
                     'reason' => data_get($charge, 'outcome.reason'),
                     'rule' => data_get($charge, 'outcome.rule'),
-                ], fn($v) => !($v === null || $v === '')),
+                ], fn ($v) => ! ($v === null || $v === '')),
                 'card' => is_array($card) ? array_filter([
                     'brand' => data_get($card, 'brand'),
                     'last4' => data_get($card, 'last4'),
@@ -110,14 +121,14 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
                         'result' => data_get($threeDS, 'result'),
                         'result_reason' => data_get($threeDS, 'result_reason'),
                         'version' => data_get($threeDS, 'version'),
-                    ], fn($v) => !($v === null || $v === '')) : null,
+                    ], fn ($v) => ! ($v === null || $v === '')) : null,
                     'checks' => is_array($checks) ? array_filter([
                         'address_line1_check' => data_get($checks, 'address_line1_check'),
                         'address_postal_code_check' => data_get($checks, 'address_postal_code_check'),
                         'cvc_check' => data_get($checks, 'cvc_check'),
-                    ], fn($v) => !($v === null || $v === '')) : null,
-                ], fn($v) => !($v === null || $v === '')) : null,
-            ], fn($v) => !($v === null || $v === ''));
+                    ], fn ($v) => ! ($v === null || $v === '')) : null,
+                ], fn ($v) => ! ($v === null || $v === '')) : null,
+            ], fn ($v) => ! ($v === null || $v === ''));
         }
 
         $stripeBlock = $evidence['stripe'] ?? [];
@@ -125,7 +136,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
             'enriched_at' => now()->toISOString(),
             'payment_intent' => $piPayload,
             'charge' => $chargePayload,
-        ], fn($v) => !($v === null || $v === '')));
+        ], fn ($v) => ! ($v === null || $v === '')));
 
         $evidence['stripe'] = $stripeBlock;
         $this->appendEvent($evidence, array_filter([
@@ -135,7 +146,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
             'charge_id' => $chargePayload['id'] ?? null,
             'pi_status' => $piPayload['status'] ?? null,
             'charge_risk_level' => data_get($chargePayload, 'outcome.risk_level'),
-        ], fn($v) => !($v === null || $v === '')));
+        ], fn ($v) => ! ($v === null || $v === '')));
 
         $ticket->evidence = $evidence;
         $ticket->save();
@@ -169,22 +180,22 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
     private function resolveFromSource(string $source, string $sourceId): ?string
     {
         $map = [
-            'stripe_payment_items' => \App\Models\StripePaymentItems::class,
-            'membership_payments' => \App\Models\MembershipPayment::class,
-            'bill_payments' => \App\Models\BillPayment::class,
-            'tip_goals_payments' => \App\Models\TipGoalsPayment::class,
-            'piggy_pot_contributions' => \App\Models\PiggyPotContribution::class,
-            'shop_payments' => \App\Models\ShopPayment::class,
-            'task_purchases' => \App\Models\TaskPurchase::class,
+            'stripe_payment_items' => StripePaymentItems::class,
+            'membership_payments' => MembershipPayment::class,
+            'bill_payments' => BillPayment::class,
+            'tip_goals_payments' => TipGoalsPayment::class,
+            'piggy_pot_contributions' => PiggyPotContribution::class,
+            'shop_payments' => ShopPayment::class,
+            'task_purchases' => TaskPurchase::class,
         ];
 
         $modelClass = $map[$source] ?? null;
-        if (!$modelClass) {
+        if (! $modelClass) {
             return null;
         }
 
         $model = $modelClass::query()->find($sourceId);
-        if (!$model || !method_exists($model, 'getAttribute')) {
+        if (! $model || ! method_exists($model, 'getAttribute')) {
             return null;
         }
 
@@ -197,7 +208,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
 
         foreach (['stripe_session_id', 'session_id', 'stripe_session'] as $key) {
             $value = $model->getAttribute($key);
-            if (!$value) {
+            if (! $value) {
                 continue;
             }
 
@@ -215,7 +226,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
     private function appendEvent(array &$evidence, array $event): void
     {
         $events = $evidence['events'] ?? [];
-        if (!is_array($events)) {
+        if (! is_array($events)) {
             $events = [];
         }
 
@@ -224,7 +235,7 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
             $events = array_slice($events, -50);
         }
 
-        if (!isset($evidence['created'])) {
+        if (! isset($evidence['created'])) {
             $evidence['created'] = $event;
         }
         $evidence['last'] = $event;
@@ -233,17 +244,17 @@ class EnrichSupportTicketStripeEvidence implements ShouldQueue
 
     private function stripeObjectToArray($obj): ?array
     {
-        if (!$obj) {
+        if (! $obj) {
             return null;
         }
 
         $json = json_encode($obj);
-        if (!is_string($json)) {
+        if (! is_string($json)) {
             return null;
         }
 
         $decoded = json_decode($json, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return null;
         }
 

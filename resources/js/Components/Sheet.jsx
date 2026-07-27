@@ -1,16 +1,15 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 /**
  * The creation surface for every sellable item.
  *
- * On a phone this is a full-screen sheet: the app ships as an installable PWA,
- * and a small centred card floating on a dimmed page is the single clearest
- * tell that you are looking at a website rather than an app. On a desktop it is
- * a centred modal, wide enough to show the form and a live preview side by
- * side.
+ * On a phone this is a true full-screen surface — full width and height, no
+ * rounded top, no gap. The app ships as an installable PWA, and a small centred
+ * card floating on a dimmed page is the single clearest tell that you are
+ * looking at a website rather than an app. On a desktop it is a centred modal,
+ * wide enough to show the form and a live preview side by side.
  *
  * Behaviour that the old Popup lacked and every form had to improvise:
  *  - the body cannot scroll behind the sheet;
@@ -18,7 +17,6 @@ import { X } from "lucide-react";
  *    primary action is always reachable without scrolling to the end of a long
  *    form;
  *  - iOS safe areas are respected on both edges;
- *  - dragging the grab handle down dismisses it on touch devices;
  *  - `onHide` may return false to veto a close (unsaved-changes guard).
  */
 export default function Sheet({
@@ -32,8 +30,6 @@ export default function Sheet({
     size = "xl",
     initialFocus,
 }) {
-    const reduceMotion = useReducedMotion();
-    const [dragging, setDragging] = useState(false);
     const fallbackFocus = useRef(null);
 
     const maxWidth =
@@ -57,8 +53,15 @@ export default function Sheet({
         if (!open) return undefined;
         const previous = document.body.style.overflow;
         document.body.style.overflow = "hidden";
+        // A full-screen sheet owns the whole viewport, so the app's fixed
+        // bottom navigation must not sit on top of its footer — the CONTINUE
+        // button was landing behind the tab bar. Native apps hide the tab bar
+        // inside a full-screen sheet for the same reason. Driven by a body
+        // class (see resources/css/app.css) so no component needs a prop.
+        document.body.classList.add("sheet-open");
         return () => {
             document.body.style.overflow = previous;
+            document.body.classList.remove("sheet-open");
         };
     }, [open]);
 
@@ -82,7 +85,7 @@ export default function Sheet({
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
                 </Transition.Child>
 
-                <div className="fixed inset-0 flex items-end justify-center md:items-center md:p-6">
+                <div className="fixed inset-0 flex items-stretch justify-center md:items-center md:p-6">
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-250"
@@ -93,24 +96,17 @@ export default function Sheet({
                         leaveTo="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
                     >
                         <Dialog.Panel
-                            as={motion.div}
-                            drag={reduceMotion ? false : "y"}
-                            dragDirectionLock
-                            dragConstraints={{ top: 0, bottom: 0 }}
-                            dragElastic={{ top: 0, bottom: 0.4 }}
-                            onDragStart={() => setDragging(true)}
-                            onDragEnd={(event, info) => {
-                                setDragging(false);
-                                if (info.offset.y > 140 || info.velocity.y > 700) requestClose();
-                            }}
-                            className={`flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-box border-[3px] border-b-0 border-black bg-white md:h-auto md:max-h-[88dvh] md:rounded-box md:border-b-[3px] md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] ${maxWidth}`}
+                            // Mobile: a true full-screen surface (full width AND
+                            // height, no rounded top, no gap), so an add-item
+                            // form feels like a native screen rather than a card
+                            // floating on the page. Desktop stays a centred modal.
+                            className={`flex h-dvh w-full flex-col overflow-hidden border-[3px] border-black bg-white md:h-auto md:max-h-[88dvh] md:rounded-box md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] ${maxWidth}`}
                         >
-                            <header className="relative shrink-0 border-b-[3px] border-black bg-[#FF007F] px-5 pb-4 pt-2 text-white md:pt-4">
-                                {/* Grab handle — the drag affordance, touch only. */}
+                            <header className="relative shrink-0 bg-[#FF007F] px-5 pb-4 text-white" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
+                                {/* Decorative sheet handle — kept for the
+                                    familiar bottom-sheet look on mobile. */}
                                 <div
-                                    className={`mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/70 md:hidden ${
-                                        dragging ? "bg-white" : ""
-                                    }`}
+                                    className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/70 md:hidden"
                                     aria-hidden="true"
                                 />
                                 <div className="flex items-start gap-3 pr-12">

@@ -88,28 +88,10 @@ Route::middleware('guest')->group(function () {
 | WebAuthn Passkey Routes
 |--------------------------------------------------------------------------
 */
-// debug route
-Route::get('/debug/webauthn-credentials', function () {
-
-    return User::with('webAuthnCredentials')->get()
-        ->map(function ($user) {
-
-            return [
-                'email' => $user->email,
-
-                'credentials' => $user->webAuthnCredentials->map(function ($cred) {
-
-                    return [
-                        'device' => $cred->device_name,
-                        'browser' => $cred->browser,
-                        'platform' => $cred->platform,
-                        'last_used' => $cred->last_used_at,
-                    ];
-                }),
-
-            ];
-        });
-})->middleware('auth');
+// Removed: GET /debug/webauthn-credentials — behind `auth` only, it returned EVERY
+// user's email address plus each of their passkey devices, browsers and platforms.
+// Any signed-in account could dump the whole user table's contact details.
+// The per-user equivalent (`/debug-webauthn-credential`) is local/testing only.
 
 // delete single device
 // Route::delete('/webauthn/device/{id}', function ($id) {
@@ -127,29 +109,33 @@ Route::get('/debug/webauthn-credentials', function () {
 // });
 
 // ========== WEBAUTHN ROUTES ==========
-Route::get('/debug-webauthn-credential', function () {
-    if (! auth()->check()) {
-        return response()->json(['error' => 'Not authenticated'], 401);
-    }
+// Passkey diagnostic — dumps credential id, rp_id and origin for the signed-in user.
+// Local/testing only; credential metadata is authentication material, not page data.
+if (app()->environment('local', 'testing')) {
+    Route::get('/debug-webauthn-credential', function () {
+        if (! auth()->check()) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
 
-    $user = auth()->user();
-    $credential = $user->webAuthnCredentials()->first();
+        $user = auth()->user();
+        $credential = $user->webAuthnCredentials()->first();
 
-    if (! $credential) {
-        return response()->json(['error' => 'No passkey found for user'], 404);
-    }
+        if (! $credential) {
+            return response()->json(['error' => 'No passkey found for user'], 404);
+        }
 
-    return response()->json([
-        'user_id' => $user->id,
-        'user_email' => $user->email,
-        'credential_exists' => true,
-        'credential_id' => $credential->id,
-        'rp_id' => $credential->rp_id,
-        'origin' => $credential->origin,
-        'counter' => $credential->counter,
-        'last_used' => $credential->last_used_at,
-    ]);
-})->middleware('auth');
+        return response()->json([
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'credential_exists' => true,
+            'credential_id' => $credential->id,
+            'rp_id' => $credential->rp_id,
+            'origin' => $credential->origin,
+            'counter' => $credential->counter,
+            'last_used' => $credential->last_used_at,
+        ]);
+    })->middleware('auth');
+}
 
 Route::prefix('webauthn')->group(function () {
 

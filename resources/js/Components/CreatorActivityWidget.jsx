@@ -13,7 +13,7 @@ const CreatorActivityWidget = (props) => {
     if (activityStatus.status === "not_fully_verified") {
         return (
             <div
-                className={`rounded-[30px]    border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}
+                className={`rounded-[30px] border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}
             >
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
@@ -116,19 +116,21 @@ const CreatorActivityWidget = (props) => {
     return (
         <>
             <div
-                className={`rounded-[30px]  border-2 p-4 md:p-6 mt-6 lg:mt-0  ${getStatusColor(activityStatus.status)} ${className} !bg-white border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)]`}
+                className={`rounded-[30px] border-2 p-4 md:p-6 mt-6 lg:mt-0  ${getStatusColor(activityStatus.status)} ${className} !bg-white border-black`}
             >
                 <div className="lg:flex items-center justify-between">
                     <div className="md:flex items-centerx gap-3 lg:max-w-[70%] me-3">
                         <div>
-                            <h3 className=" text-xl font-gulfs uppercase">
+                            <h3 className="text-xl font-gulfs uppercase">
                                 <span
                                     className="me-2"
                                     role="img"
                                     aria-label="status"
                                 >
-                                    {getStatusIcon(activityStatus.status)}{" "}
-                                </span>{" "}
+                                    {getStatusIcon(activityStatus.status)}
+                                    {" "}
+                                </span>
+                                {" "}
                                 Activity Status
                             </h3>
                             <p className="text-normal opacity-90 mt-2">
@@ -145,7 +147,7 @@ const CreatorActivityWidget = (props) => {
                     <div className="!mt-3">
                         <Link
                             href="/creator/activity"
-                            className="text-center border !border-black block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-4 py-2  rounded-[30px]   text-sm  hover:underline opacity-80 hover:opacity-100"
+                            className="text-center border !border-black block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black px-4 py-2 rounded-[30px] text-sm hover:underline opacity-80 hover:opacity-100"
                         >
                             View Details
                         </Link>
@@ -163,10 +165,10 @@ const CreatorActivityWidget = (props) => {
                 )}
 
                 {postingCadence && (
-                    <div className="mt-4 pt-4 ">
+                    <div className="mt-4 pt-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                            <p className="text-normal capitalize font-bold">
+                                <p className="text-normal capitalize font-bold">
                                     Content membership posting
                                 </p>
                                 <p className="text-sm opacity-80 mt-1">
@@ -211,7 +213,8 @@ const CreatorActivityWidget = (props) => {
                                 {postingCadence.posts_needed} more member{" "}
                                 {postingCadence.posts_needed === 1
                                     ? "post"
-                                    : "posts"}{" "}
+                                    : "posts"}
+                                {" "}
                                 to resume payments.
                             </p>
                         )}
@@ -222,11 +225,13 @@ const CreatorActivityWidget = (props) => {
                                     ⏳{" "}
                                     {postingCadence.pause_in_days <= 1
                                         ? "Pauses within 24 hours"
-                                        : `Pauses in ~${postingCadence.pause_in_days} days`}{" "}
-                                    — {postingCadence.subscriber_count} paying{" "}
+                                        : `Pauses in ~${postingCadence.pause_in_days} days`}
+                                    {" "}— {postingCadence.subscriber_count}{" "}
+                                    paying{" "}
                                     {postingCadence.subscriber_count === 1
                                         ? "subscriber"
-                                        : "subscribers"}{" "}
+                                        : "subscribers"}
+                                    {" "}
                                     affected.
                                 </p>
                             )}

@@ -17,6 +17,7 @@ class LinkUserToCrmCreator implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $userId;
+
     public ?string $inviteToken;
 
     public function __construct(int $userId, ?string $inviteToken = null)
@@ -28,7 +29,7 @@ class LinkUserToCrmCreator implements ShouldQueue
     public function handle(): void
     {
         $user = User::with('social_links')->find($this->userId);
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -55,7 +56,7 @@ class LinkUserToCrmCreator implements ShouldQueue
             }
         }
 
-        if (!$matched && $this->inviteToken) {
+        if (! $matched && $this->inviteToken) {
             $matched = CrmCreator::query()
                 ->whereNull('user_id')
                 ->whereNotNull('invite_token')
@@ -69,6 +70,7 @@ class LinkUserToCrmCreator implements ShouldQueue
 
         if ($matched) {
             $this->link($user, $matched, $triggerSource);
+
             return;
         }
 
@@ -101,15 +103,15 @@ class LinkUserToCrmCreator implements ShouldQueue
     private function createSocialMatchSuggestion(User $user): void
     {
         $social = $user->social_links;
-        if (!$social) {
+        if (! $social) {
             return;
         }
 
         $candidates = [
-            'twitter'   => $social->twitter,
+            'twitter' => $social->twitter,
             'instagram' => $social->instagram,
-            'youtube'   => $social->youtube,
-            'twitch'    => $social->twitch,
+            'youtube' => $social->youtube,
+            'twitch' => $social->twitch,
         ];
 
         // Minimum handle length — a 1-2 char handle would (with substring matching) collide with countless
@@ -145,7 +147,7 @@ class LinkUserToCrmCreator implements ShouldQueue
             foreach ($normalized as $col => $value) {
                 // Exact, normalized equality (strip surrounding @ and whitespace). Substring (LIKE %x%)
                 // matching previously let any user claim a prospect by setting a partial-overlapping handle.
-                $q->orWhereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(" . $col . ",'')))) = ?", [$value]);
+                $q->orWhereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(".$col.",'')))) = ?", [$value]);
             }
             if ($usernameMatch !== null) {
                 $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [$usernameMatch]);
@@ -153,7 +155,7 @@ class LinkUserToCrmCreator implements ShouldQueue
         });
 
         $match = $query->first();
-        if (!$match) {
+        if (! $match) {
             return;
         }
 
@@ -175,8 +177,8 @@ class LinkUserToCrmCreator implements ShouldQueue
         $v = rtrim($v, '/');
 
         $urlish = $v;
-        if (!str_contains($urlish, '://') && (str_contains($urlish, '.') && str_contains($urlish, '/'))) {
-            $urlish = 'https://' . $urlish;
+        if (! str_contains($urlish, '://') && (str_contains($urlish, '.') && str_contains($urlish, '/'))) {
+            $urlish = 'https://'.$urlish;
         }
 
         $host = null;
@@ -208,6 +210,7 @@ class LinkUserToCrmCreator implements ShouldQueue
                         return ltrim($seg, '@') ?: null;
                     }
                 }
+
                 return $first ?: null;
             }
             if ($host === 'twitch.tv') {
@@ -223,6 +226,7 @@ class LinkUserToCrmCreator implements ShouldQueue
                 if (($segments[0] ?? null) === 'c' && isset($segments[1])) {
                     return trim((string) $segments[1]) ?: null;
                 }
+
                 return $first ?: null;
             }
         }
@@ -231,6 +235,7 @@ class LinkUserToCrmCreator implements ShouldQueue
         $v = preg_replace('/^www\./', '', $v);
         $v = trim($v, " \t\n\r\0\x0B/");
         $v = ltrim($v, '@');
+
         return $v === '' ? null : $v;
     }
 
@@ -244,6 +249,7 @@ class LinkUserToCrmCreator implements ShouldQueue
         $v = preg_replace('/^https?:\/\//', '', $v);
         $v = preg_replace('/^www\./', '', $v);
         $v = rtrim($v, '/');
+
         return $v === '' ? null : $v;
     }
 }

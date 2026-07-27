@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { Link } from '@inertiajs/react';
+import React, { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "@inertiajs/react";
 
 /**
  * MySQL-style "Y-m-d H:i:s" is Invalid Date in Safari/iOS, and
@@ -9,7 +9,7 @@ import { Link } from '@inertiajs/react';
  */
 const relativeTime = (value) => {
     if (!value) return null;
-    const parsed = new Date(String(value).replace(' ', 'T'));
+    const parsed = new Date(String(value).replace(" ", "T"));
     if (Number.isNaN(parsed.getTime())) return null;
     try {
         return formatDistanceToNow(parsed, { addSuffix: true });
@@ -18,133 +18,133 @@ const relativeTime = (value) => {
     }
 };
 
+const initial = (name) => String(name || "A").charAt(0).toUpperCase();
+
 export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
     // Hooks must run before any early return, or the first render where the
     // lists go from empty to populated throws "Rendered more hooks…".
-    const [activeTab, setActiveTab] = useState('top');
+    const [activeTab, setActiveTab] = useState("top");
 
-    if ((!topSupporters || topSupporters.length === 0) && (!feed || feed.length === 0)) return null;
+    const top = topSupporters || [];
+    const recent = feed || [];
 
-    const activeList = activeTab === 'top' ? (topSupporters || []) : (feed || []);
+    if (top.length === 0 && recent.length === 0) return null;
+
+    const activeList = activeTab === "top" ? top : recent;
+
+    // A segmented control, not two competing black buttons — this is a filter,
+    // not the section's primary action.
+    const tab = (id, label, count) => (
+        <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            aria-pressed={activeTab === id}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors ${
+                activeTab === id
+                    ? "bg-black text-white"
+                    : "text-gray-500 hover:text-black"
+            }`}
+        >
+            {label}
+            {count > 0 && (
+                <span
+                    className={
+                        activeTab === id ? "text-white/60" : "text-gray-500"
+                    }
+                >
+                    {" "}
+                    {count}
+                </span>
+            )}
+        </button>
+    );
 
     return (
-        <div className="mb-6 w-full bg-white rounded-box  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-4">
-                <h3 className="font-gulfs text-2xl md:text-2xl text-black uppercase tracking-wide">COMMUNITY ACTIVITY</h3>
-                <div className="flex gap-2">
-                    <button onClick={() => setActiveTab('top')} className={`px-4 py-2 rounded-full border-[3px] border-black font-black text-xs md:text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${activeTab === 'top' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>TOP SUPPORTERS</button>
-                    <button onClick={() => setActiveTab('feed')} className={`px-4 py-2 rounded-full border-[3px] border-black font-black text-xs md:text-sm uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all ${activeTab === 'feed' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'}`}>RECENT</button>
+        <div className="w-full rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                    Community activity
+                </h3>
+                <div className="flex items-center gap-1 rounded-full bg-[#F3F4F6] p-1">
+                    {tab("top", "Top", top.length)}
+                    {tab("feed", "Recent", recent.length)}
                 </div>
             </div>
-            
-            <div className="!border-b-[2px] border-black mb-4 w-full"></div>
-            
-            <div className="flex flex-col gap-4 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
-                {activeTab === 'top' ? (
-                    <>
-                        <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
-                            {activeList.map((item, idx) => {
-                                // Brand tints only — the old pink/blue/yellow/green cycle
-                                // introduced three hues the design system doesn't have.
-                                const bgColors = ['bg-[#A2E4B8]', 'bg-[#FF007F]/20', 'bg-black/10', 'bg-white'];
-                                const bgColor = bgColors[idx % bgColors.length];
-                                
-                                const username = item.username || item.user?.username || '';
-                                const isClickable = Boolean(username) && item.name !== 'Anonymous';
-                                
-                                const content = (
-                                    <>
-                                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full ${bgColor} border-[3px] border-black flex items-center justify-center font-black text-2xl md:text-3xl text-black relative shadow-[inset_0_-2px_0_rgba(0,0,0,0.1)]`}>
-                                            {item.avatar ? (
-                                                <img src={item.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                                            ) : (
-                                                String(item.name || 'A').charAt(0).toUpperCase()
-                                            )}
-                                            <div className="absolute -bottom-2 -right-2 bg-[#A2E4B8] border-[2px] border-black text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded-full z-10 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">#{idx + 1}</div>
-                                        </div>
-                                        <div className="font-black text-black mt-3 w-full text-center truncate">{item.name}</div>
-                                        {/* Supporter's VIP tier — same VipScoreService that
-                                            drives the public leaderboard and their own hub,
-                                            so the badge reads identically everywhere. */}
-                                        {item.vip && (
-                                            <div
-                                                title={`${item.vip.level} supporter · VIP score ${item.vip.score}`}
-                                                aria-label={`${item.vip.level} supporter tier`}
-                                                className="mt-2 inline-flex items-center gap-1 rounded-full border-[2px] border-black bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                style={{ color: item.vip.color }}
-                                            >
-                                                <span aria-hidden="true">{item.vip.icon}</span>
-                                                {item.vip.level}
-                                            </div>
-                                        )}
-                                        <div className="font-black text-[#FF007F] mt-1 text-xs md:text-sm uppercase tracking-widest">
-                                            {(item.purchases ?? 0)} {(item.purchases === 1 ? 'unlock' : 'unlocks')}
-                                        </div>
-                                    </>
-                                );
 
-                                const cardClasses = isClickable
-                                    ? "flex-shrink-0 w-[140px] md:w-[160px] bg-white rounded-box-sm border-[3px] border-black p-4 flex flex-col items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer"
-                                    : "flex-shrink-0 w-[140px] md:w-[160px] bg-white rounded-box-sm border-[3px] border-black p-4 flex flex-col items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-default";
-
-                                return isClickable ? (
-                                    <Link key={idx} href={route('user.show', username)} className={cardClasses}>
-                                        {content}
-                                    </Link>
-                                ) : (
-                                    <div key={idx} className={cardClasses}>
-                                        {content}
-                                    </div>
-                                );
-                            })}
-                            
-                            {/* Placeholder Cards */}
-                            {[...Array(Math.min(3, Math.max(0, 4 - activeList.length)))].map((_, idx) => (
-                                <div key={`empty-${idx}`} className="flex-shrink-0 w-[140px] md:w-[160px] bg-gray-50 rounded-box-sm border-[3px] border-dashed border-gray-400 p-4 flex flex-col items-center justify-center min-h-[160px]">
-                                    <div className="text-3xl md:text-4xl mb-2 opacity-50">🐷</div>
-                                    <div className="font-bold text-gray-400 text-xs md:text-sm text-center">Be the next!</div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
+            {activeTab === "top" ? (
+                top.length === 0 ? (
+                    <p className="py-6 text-center text-[13px] font-semibold text-gray-500">
+                        No supporters yet — be the first.
+                    </p>
                 ) : (
-                    <div className="flex flex-col gap-4">
-                        {activeList.map((item, idx) => {
-                            const username = item.username || item.user?.username || '';
-                            const isClickable = Boolean(username) && item.name !== 'Anonymous';
-                            
+                    <div className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1">
+                        {top.map((item, idx) => {
+                            const username =
+                                item.username || item.user?.username || "";
+                            const isClickable =
+                                Boolean(username) && item.name !== "Anonymous";
+
                             const content = (
-                                <div className="flex items-start space-x-3 md:space-x-4">
-                                    <div className="text-xl md:text-2xl mt-1 bg-white rounded-full p-2 border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] w-12 h-12 md:w-14 md:h-14 flex items-center justify-center flex-shrink-0">
-                                        🎉
+                                <>
+                                    <div className="relative">
+                                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 border-black bg-[#A2E4B8] text-xl font-black text-black">
+                                            {item.avatar ? (
+                                                <img
+                                                    src={item.avatar}
+                                                    alt=""
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                initial(item.name)
+                                            )}
+                                        </div>
+                                        {/* Rank, small — the ordering is the point, not a medal */}
+                                        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-black bg-white px-1 text-[9px] font-black leading-none">
+                                            {idx + 1}
+                                        </span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm md:text-lg font-black text-gray-800 leading-snug">
-                                            <span className="font-black text-black break-words">{item.name}</span>{' '}
-                                            <span className="font-black text-pink-500 whitespace-nowrap">
-                                                unlocked content
+
+                                    <div className="mt-2.5 w-full truncate text-center text-[12px] font-black text-black">
+                                        {item.name}
+                                    </div>
+
+                                    {/* Ranked and labelled by unlocks, never by amount */}
+                                    <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#FF007F]">
+                                        {item.purchases ?? 0}{" "}
+                                        {item.purchases === 1
+                                            ? "unlock"
+                                            : "unlocks"}
+                                    </div>
+
+                                    {item.vip && (
+                                        <div
+                                            title={`${item.vip.level} supporter · engagement score ${item.vip.score}`}
+                                            aria-label={`${item.vip.level} supporter`}
+                                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-black/10 bg-[#FAFAF8] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider"
+                                            style={{ color: item.vip.color }}
+                                        >
+                                            <span aria-hidden="true">
+                                                {item.vip.icon}
                                             </span>
-                                        </p>
-                                        {item.message && (
-                                            <div className="mt-3 bg-white p-3 rounded-box-sm border-[3px] border-black relative shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] inline-block max-w-full">
-                                                <p className="text-xs md:text-sm text-gray-800 font-bold italic break-words">"{item.message}"</p>
-                                            </div>
-                                        )}
-                                        {relativeTime(item.created_at) && (
-                                            <p className="text-[10px] md:text-xs font-black text-gray-500 mt-3 uppercase tracking-widest">
-                                                {relativeTime(item.created_at)}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
+                                            {item.vip.level}
+                                        </div>
+                                    )}
+                                </>
                             );
 
-                            const cardClasses = isClickable
-                                ? "bg-pink-50 p-4 md:p-5 rounded-box  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer block"
-                                : "bg-pink-50 p-4 md:p-5 rounded-box  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-default block";
+                            const cardClasses = `flex w-[124px] shrink-0 flex-col items-center rounded-box-sm border border-black/10 bg-[#FAFAF8] p-3 transition-all ${
+                                isClickable
+                                    ? "cursor-pointer hover:-translate-y-0.5 hover:border-black"
+                                    : "cursor-default"
+                            }`;
 
                             return isClickable ? (
-                                <Link key={idx} href={route('user.show', username)} className={cardClasses}>
+                                <Link
+                                    key={idx}
+                                    href={route("user.show", username)}
+                                    className={cardClasses}
+                                >
                                     {content}
                                 </Link>
                             ) : (
@@ -153,15 +153,89 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                 </div>
                             );
                         })}
-                        {activeList.length === 0 && (
-                            <div className="w-full bg-gray-50 rounded-box-sm border-[3px] border-dashed border-gray-400 p-8 flex flex-col items-center justify-center">
-                                <div className="text-4xl mb-2 opacity-50">🐷</div>
-                                <div className="font-bold text-gray-400 text-sm text-center">No recent unlocks yet.</div>
+
+                        {/* Open seats: the row reads as a board with room on it,
+                            not as a list that ran out. */}
+                        {Array.from({
+                            length: Math.min(3, Math.max(0, 4 - top.length)),
+                        }).map((_, i) => (
+                            <div
+                                key={`seat-${i}`}
+                                className="flex w-[124px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-box-sm border border-dashed border-black/15 bg-[#FAFAF8] p-3 text-center"
+                            >
+                                <span className="text-2xl opacity-40" aria-hidden="true">
+                                    🐷
+                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                    Be the next
+                                </span>
                             </div>
-                        )}
+                        ))}
                     </div>
-                )}
-            </div>
+                )
+            ) : recent.length === 0 ? (
+                <p className="py-6 text-center text-[13px] font-semibold text-gray-500">
+                    No unlocks yet.
+                </p>
+            ) : (
+                <div className="scrollbar-hide flex max-h-[340px] flex-col divide-y divide-black/5 overflow-y-auto">
+                    {recent.map((item, idx) => {
+                        const username =
+                            item.username || item.user?.username || "";
+                        const isClickable =
+                            Boolean(username) && item.name !== "Anonymous";
+
+                        const content = (
+                            <div className="flex items-start gap-3 py-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-black bg-[#A2E4B8] text-[13px] font-black">
+                                    {item.avatar ? (
+                                        <img
+                                            src={item.avatar}
+                                            alt=""
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        initial(item.name)
+                                    )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[13px] font-semibold leading-snug text-gray-700">
+                                        <span className="font-black text-black">
+                                            {item.name}
+                                        </span>{" "}
+                                        unlocked content
+                                        {relativeTime(item.created_at) && (
+                                            <span className="text-gray-500">
+                                                {" · "}
+                                                {relativeTime(item.created_at)}
+                                            </span>
+                                        )}
+                                    </p>
+
+                                    {item.message && (
+                                        <p className="mt-1.5 border-l-2 border-[#FF007F]/30 pl-2.5 text-[12px] font-medium italic leading-relaxed text-gray-600">
+                                            {item.message}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+
+                        return isClickable ? (
+                            <Link
+                                key={idx}
+                                href={route("user.show", username)}
+                                className="block transition-colors hover:bg-[#FAFAF8]"
+                            >
+                                {content}
+                            </Link>
+                        ) : (
+                            <div key={idx}>{content}</div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

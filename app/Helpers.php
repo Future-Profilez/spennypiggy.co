@@ -45,7 +45,9 @@ class Helpers
         $configured = is_array($configured) ? $configured : [];
 
         if (empty($configured)) {
-            $configured = ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com'];
+            $configured = app()->environment('production')
+                ? ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com']
+                : ['naveen@internetbusinesssolutionsindia.com'];
         }
 
         /*
@@ -896,6 +898,12 @@ class Helpers
      */
     public static function sendNotification($title, $content, $email)
     {
+        if (empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('Helpers::sendNotification: Invalid or missing recipient email', ['email' => $email, 'title' => $title]);
+
+            return false;
+        }
+
         Log::info('Helpers::sendNotification: Preparing push', ['email' => $email, 'title' => $title]);
 
         $payload = [
@@ -908,8 +916,8 @@ class Helpers
             ],
         ];
         try {
-            $apiKey = env('MAGICBELL_API_KEY');
-            $apiSecret = env('MAGICBELL_API_SECRET');
+            $apiKey = config('services.magicbell.key');
+            $apiSecret = config('services.magicbell.secret');
 
             if (empty($apiKey) || empty($apiSecret)) {
                 Log::error('Helpers::sendNotification: Missing MagicBell credentials');

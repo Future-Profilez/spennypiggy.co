@@ -42,7 +42,7 @@ function BillItem(props) {
     const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
         const listedPrice = parseFloat(String(price || 0).replace(/,/g, ""));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
@@ -55,7 +55,8 @@ function BillItem(props) {
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+            (priceWithVat + stripeFixedFee + adminFee) /
+            (1 - totalDeductionRate);
         if (!isZeroDecimal) {
             return Math.ceil(totalSupporterPays * 100) / 100;
         }
@@ -64,13 +65,8 @@ function BillItem(props) {
 
     const isCreator = auth?.user?.id === itm?.user_id;
 
-    const {
-        attributes,
-        listeners,
-        isDragging,
-        setNodeRef,
-        transform,
-    } = useSortable({ id: itm && itm.id });
+    const { attributes, listeners, isDragging, setNodeRef, transform } =
+        useSortable({ id: itm && itm.id });
 
     const style = useMemo(
         () => ({
@@ -105,8 +101,14 @@ function BillItem(props) {
         }
     }, [itemUID, itm.uuid]);
 
-    const imageSrc = useMemo(() => itm?.perma_link || uploadedimg, [itm?.perma_link]);
-    const periodDisplay = useMemo(() => (itm && itm.period) || "Monthly", [itm?.period]);
+    const imageSrc = useMemo(
+        () => itm?.perma_link || uploadedimg,
+        [itm?.perma_link],
+    );
+    const periodDisplay = useMemo(
+        () => (itm && itm.period) || "Monthly",
+        [itm?.period],
+    );
 
     return (
         <div
@@ -114,11 +116,11 @@ function BillItem(props) {
             {...attributes}
             {...listeners}
             style={IsloggedIn ? style : stylenone}
-            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all `}
+            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
         >
-            <div className="bg-white relative !rounded-box !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
+            <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full">
                 {itm && itm.is_suspended == 1 ? (
-                    <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help w-full z-[20]">
+                    <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center group/suspend cursor-help w-full z-[20]">
                         Suspended
                         {itm.suspend_reason && (
                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-box-sm pointer-events-none z-30">
@@ -127,9 +129,9 @@ function BillItem(props) {
                         )}
                     </div>
                 ) : IsloggedIn && itm && itm.approved === 0 ? (
-                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-box-sm  p-3 py-2 mb-2 !text-white">
-                        Bill item waiting for approval. Currently only you can see
-                        this bill.
+                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-box-sm p-3 py-2 mb-2 !text-white">
+                        Bill item waiting for approval. Currently only you can
+                        see this bill.
                     </div>
                 ) : (
                     ""
@@ -141,18 +143,24 @@ function BillItem(props) {
                         effect="blur"
                         height={193}
                         src={imageSrc}
-                        className=" !rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto"
+                        className="!rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto"
                         width={220}
                     />
 
-                    <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1.5 rounded-box-sm capitalize shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black whitespace-nowrap z-10">
+                    <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10">
                         {periodDisplay} Subscribable
                     </div>
 
                     {IsloggedIn && (
-                        <Menu as="div" className="absolute top-8 right-8 z-10 inline-block text-left">
+                        <Menu
+                            as="div"
+                            className="absolute top-8 right-8 z-10 inline-block text-left"
+                        >
                             <div>
-                                <Menu.Button aria-label="Bill options" className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
+                                <Menu.Button
+                                    aria-label="Bill options"
+                                    className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center"
+                                >
                                     <div className="dots">
                                         <span className="bg-white"></span>
                                         <span className="bg-white"></span>
@@ -197,7 +205,7 @@ function BillItem(props) {
                     tabIndex={0}
                     aria-label={itm?.name ? `View ${itm.name}` : "View bill"}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
+                        if (e.key === "Enter" || e.key === "") {
                             e.preventDefault();
                             openAddtocart();
                         }
@@ -215,19 +223,24 @@ function BillItem(props) {
                         </h4>
                         <h5 className="text-center font-black text-2xl text-black mt-1 mb-1 titleprice">
                             {isCreator ? (
-                                formatMultiPrice(itm.price, itm?.currency || "GBP")
+                                formatMultiPrice(
+                                    itm.price,
+                                    itm?.currency || "GBP",
+                                )
                             ) : (
                                 <div className="flex flex-col items-center">
                                     {formatMultiPrice(
                                         calculateTotalSupporterPays(
                                             itm.price,
                                             itm?.currency || "GBP",
-                                            itm?.user?.vat_amount_percentage || 0,
+                                            itm?.user?.vat_amount_percentage ||
+                                                0,
                                         ),
                                         itm?.currency || "GBP",
                                     )}
                                     <div className="text-[10px] text-gray-600 font-bold mt-1 leading-tight text-center">
-                                        *Includes platform and payment processing fees
+                                        *Includes platform and payment
+                                        processing fees
                                     </div>
                                 </div>
                             )}
@@ -239,7 +252,7 @@ function BillItem(props) {
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                                 text="Manage subscription"
                                 item={itm}
                                 isEdit={true}
@@ -248,8 +261,10 @@ function BillItem(props) {
                             <Link
                                 method="get"
                                 as="button"
-                                href={route("bill.checkout", { uuid: itm.uuid })}
-                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                href={route("bill.checkout", {
+                                    uuid: itm.uuid,
+                                })}
+                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                             >
                                 Subscribe
                             </Link>
@@ -263,7 +278,9 @@ function BillItem(props) {
                             <Link
                                 as="button"
                                 method="get"
-                                href={route("user.show", { username: itm.user.username })}
+                                href={route("user.show", {
+                                    username: itm.user.username,
+                                })}
                                 className="ml-1 text-xs font-black uppercase text-[#FF007F] underline hover:opacity-90"
                             >
                                 @{itm.user.username}

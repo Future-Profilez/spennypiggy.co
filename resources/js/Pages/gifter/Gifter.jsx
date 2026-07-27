@@ -244,7 +244,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
 
     return (
         <div
-            className={`relative z-1 min-h-screen pb-20 bg-[#A2E4B8] ${
+            className={`relative z-1 min-h-dvh pb-20 bg-[#A2E4B8] ${
                 IsloggedIn ? "IsloggedIn" : ""
             }`}
         >

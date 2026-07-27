@@ -4041,119 +4041,103 @@ class StripeController extends Controller
             return back()->with('error', 'Subscription not allowed for this user.');
         }
 
-        // If user doesn't have a stripe_id, try to find one by email on Stripe first
-        if (! $user->stripe_id) {
-            try {
-                $search = StripeControl::searchCustomer("email:'".$user->email."'");
-                if ($search->data && count($search->data) > 0) {
-                    $user->stripe_id = $search->data[0]->id;
-                    $user->save();
-                    Log::info("Found existing Stripe customer for user {$user->id} by email: {$user->stripe_id}");
-                }
-            } catch (Exception $e) {
-                Log::warning('StripeController: Could not search for existing customer: '.$e->getMessage());
-            }
+        // Prevent duplicate subscriptions: sync status from Stripe first (robust search by id and email across accounts)
+        try {
+            $stripeSub = $this->userProfileService->syncUserSubscription($user);
+        } catch (Exception $e) {
+            Log::warning('StripeController: Direct/Email sync failed in checkout flow: '.$e->getMessage());
+            $stripeSub = null;
         }
 
-        // Prevent duplicate subscriptions: sync status from Stripe first, then check all cases
-        if ($user->stripe_id) {
-            // Fetch active subscription from Stripe
-            $stripeSub = StripeControl::getActiveSubscriptionByCustomer($user->stripe_id);
+        if ($stripeSub) {
+            // Refresh user model and its relationships to ensure subscription_status is accurate
+            $user->load('creatorMonthlySubscription');
+            $user->refresh();
 
-            if ($stripeSub) {
-                // Fetch the latest invoice for this subscription to ensure accurate sync
-                $invoice = null;
+            Log::info("StripeController: Sync completed for user {$user->id}. New status: ".$user->subscription_status);
+
+            if ($user->subscription_status >= 1) {
+                // Subscription is now active locally (either fully active or trialing)
+                $msg = $user->subscription_status == 2 ? 'Your trial was synchronized.' : 'Your subscription was synchronized.';
+
+                return redirect(
+                    route('user.show', [
+                        'username' => $user->username,
+                    ]).'#profile'
+                )->with('success', $msg);
+            }
+
+            // Fallback check if subscription_status didn't catch it but stripeSub is active/trialing
+            if (in_array($stripeSub->status, ['active', 'trialing'])) {
+                return redirect(
+                    route('user.show', [
+                        'username' => $user->username,
+                    ]).'#profile'
+                )->with('success', 'Your subscription is active on Stripe and has been synchronized.');
+            }
+
+            if ($stripeSub->cancel_at_period_end) {
+                // Cancelled but still in paid period — offer to resume
                 try {
                     $stripe = StripeControl::getClient();
-                    $invoices = $stripe->invoices->all([
-                        'subscription' => $stripeSub->id,
-                        'status' => 'paid',
-                        'limit' => 1,
+                    $resumedSub = $stripe->subscriptions->update($stripeSub->id, [
+                        'cancel_at_period_end' => false,
                     ]);
-                    $invoice = $invoices->data[0] ?? null;
-                } catch (Exception $e) {
-                    Log::warning('StripeController: Could not fetch latest invoice for sync: '.$e->getMessage());
-                }
 
-                // Subscription exists on Stripe - sync it using the unified service method
-                // This mimics "sending the webhook again" as requested by the user
-                $this->userProfileService->syncMandatorySubscriptionStatus($stripeSub, 'manual_sync', $invoice, $user);
-
-                // Refresh user model and its relationships to ensure subscription_status is accurate
-                $user->load('creatorMonthlySubscription');
-                $user->refresh();
-
-                Log::info("StripeController: Sync completed for user {$user->id}. New status: ".$user->subscription_status);
-
-                if ($user->subscription_status >= 1) {
-                    // Subscription is now active locally (either fully active or trialing)
-                    $msg = $user->subscription_status == 2 ? 'Your trial was synchronized.' : 'Your subscription was synchronized.';
-
-                    return redirect(
-                        route('user.show', [
-                            'username' => $user->username,
-                        ]).'#profile'
-                    )->with('success', $msg);
-                }
-
-                // Fallback check if subscription_status didn't catch it but stripeSub is active/trialing
-                if (in_array($stripeSub->status, ['active', 'trialing'])) {
-                    return redirect(
-                        route('user.show', [
-                            'username' => $user->username,
-                        ]).'#profile'
-                    )->with('success', 'Your subscription is active on Stripe and has been synchronized.');
-                }
-
-                if ($stripeSub->cancel_at_period_end) {
-                    // Cancelled but still in paid period — offer to resume
+                    // Sync the change locally
+                    // Fetch the latest invoice for this subscription to ensure accurate sync
+                    $invoice = null;
                     try {
-                        $stripe = StripeControl::getClient();
-                        $resumedSub = $stripe->subscriptions->update($stripeSub->id, [
-                            'cancel_at_period_end' => false,
+                        $invoices = $stripe->invoices->all([
+                            'subscription' => $stripeSub->id,
+                            'status' => 'paid',
+                            'limit' => 1,
                         ]);
-
-                        // Sync the change locally
-                        $this->userProfileService->syncMandatorySubscriptionStatus($resumedSub, 'manual_sync', $invoice, $user);
-
-                        return redirect(
-                            route('user.show', [
-                                'username' => $user->username,
-                            ]).'#profile'
-                        )->with('success', 'Your auto-renewal has been re-enabled successfully!');
-                    } catch (Exception $e) {
-                        Log::warning('StripeController: Auto-resume failed in checkout flow: '.$e->getMessage());
-                        $endDate = Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
-
-                        return back()->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
+                        $invoice = $invoices->data[0] ?? null;
+                    } catch (Exception $invoiceEx) {
+                        Log::warning('StripeController: Could not fetch latest invoice for sync during resume: '.$invoiceEx->getMessage());
                     }
-                }
 
-                if ($user->subscription_status >= 1) {
-                    // Fully active subscription — no action needed
+                    $this->userProfileService->syncMandatorySubscriptionStatus($resumedSub, 'manual_sync', $invoice, $user);
+
                     return redirect(
                         route('user.show', [
                             'username' => $user->username,
                         ]).'#profile'
-                    )->with('success', 'You already have an active subscription.');
-                }
+                    )->with('success', 'Your auto-renewal has been re-enabled successfully!');
+                } catch (Exception $e) {
+                    Log::warning('StripeController: Auto-resume failed in checkout flow: '.$e->getMessage());
+                    $endDate = Carbon::createFromTimestamp($stripeSub->current_period_end)->format('d M Y');
 
-                // If we found a subscription on Stripe but local status is not active,
-                // it might be because the webhook was missed or sync was delayed.
-                // Since syncUserSubscription was just called and it's robust,
-                // we should check again if it fixed the user status.
-                if ($user->is_subscribed) {
-                    return redirect(
-                        route('user.show', [
-                            'username' => $user->username,
-                        ]).'#profile'
-                    )->with('success', 'Your subscription was found and has been synchronized.');
+                    return back()->with('info', "Your subscription is active until {$endDate}. You can renew after that date.");
                 }
+            }
 
-                // If it's still not active (e.g. past_due or unpaid), we should not allow a new checkout.
-                return to_route('user.show', ['username' => $user->username])
-                    ->with('info', 'An existing subscription was found on Stripe but it requires attention (e.g. payment failed). Please check your Stripe billing or contact support.');
-            } else {
+            if ($user->subscription_status >= 1) {
+                // Fully active subscription — no action needed
+                return redirect(
+                    route('user.show', [
+                        'username' => $user->username,
+                    ]).'#profile'
+                )->with('success', 'You already have an active subscription.');
+            }
+
+            // If we found a subscription on Stripe but local status is not active,
+            // it might be because the webhook was missed or sync was delayed.
+            // Since syncUserSubscription was just called and it's robust,
+            // we should check again if it fixed the user status.
+            if ($user->is_subscribed) {
+                return redirect(
+                    route('user.show', [
+                        'username' => $user->username,
+                    ]).'#profile'
+                )->with('success', 'Your subscription was found and has been synchronized.');
+            }
+
+            // If it's still not active (e.g. past_due or unpaid), we should not allow a new checkout.
+            return to_route('user.show', ['username' => $user->username])
+                ->with('info', 'An existing subscription was found on Stripe but it requires attention (e.g. payment failed). Please check your Stripe billing or contact support.');
+        } else {
                 // No active subscription on Stripe — check if local record is still in its paid/trial window
                 $canceledButActive = MonthlyCharge::where('user_id', $user->id)
                     ->where('status', 'canceled')
@@ -4203,7 +4187,6 @@ class StripeController extends Controller
                     $existingActive->save();
                 }
             }
-        }
 
         $currency = strtolower($request->cookie('currency', 'GBP'));
         $price = 8.99;
@@ -4345,15 +4328,15 @@ class StripeController extends Controller
 
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
-            $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid' || $session->payment_status == 'no_payment_required') {
-
                 $sub->stripe_id = $session->subscription;
 
                 // Set upcoming payment and subscription dates based on whether a trial was applied
                 if (! empty($sub->current_end_trial_date)) {
+                    $sub->status = 'trialing';
                     $sub->upcoming_payment = Carbon::parse($sub->current_end_trial_date);
                 } else {
+                    $sub->status = 'active';
                     $sub->upcoming_payment = Carbon::now()->addMonth();
                     $sub->current_start_subscription_date = now();
                     $sub->current_end_subscription_date = now()->addMonth();

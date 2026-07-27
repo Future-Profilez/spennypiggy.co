@@ -19,7 +19,7 @@ export default function Authenticated(props){
 
     return <>
         {auth?.is_emulated && (
-            <div className="bg-purple-600 w-full text-white px-12 py-2 flex justify-between items-center fixed bottom-0 z-[100] shadow-md border-b border-purple-400/30">
+            <div className="bg-purple-600 w-full text-white px-12 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex justify-between items-center fixed bottom-0 z-[100] shadow-md border-b border-purple-400/30">
                 <div className="flex items-center gap-[#8px]">
                     <div>✨ Logged in as: <b>{auth?.user?.name} (@{auth?.user?.username})</b></div>
                 </div>

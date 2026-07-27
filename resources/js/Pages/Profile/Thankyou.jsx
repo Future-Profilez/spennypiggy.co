@@ -280,7 +280,7 @@ export default function Thankyou(props) {
         <Authenticated auth={auth?.user} user={user} >
             <Head title={"Thank You"} />
             <style>{`
-            .thankyou-wrap{min-height:calc(100vh - 80px);background:#A2E4B8;padding:20px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+            .thankyou-wrap{min-height:calc(100dvh - 80px);background:#A2E4B8;padding:20px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
             .giftthank{background:#ffffff;border:3px solid #000;border-radius:30px;box-shadow:4px 4px 0px 0px rgba(0,0,0,1);position:relative;overflow:hidden;width:100%;max-width:550px;margin:0 auto;}
             .details-box{background:#f9f9f9;border-radius:12px;padding:16px;margin-top:16px;text-align:left;border:2px solid #000;box-shadow:2px 2px 0px 0px rgba(0,0,0,1);}
             .details-box h3{margin-bottom:12px;font-weight:900;color:#000;text-transform:uppercase;font-size:0.9rem;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}

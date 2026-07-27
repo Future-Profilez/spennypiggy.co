@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
 import RewardMedia, { RewardLink } from "./RewardMedia";
@@ -182,11 +182,29 @@ export default function RewardEditor({
     postAccessLabel = "Members-only posts",
     ongoingLabel = "Then, every month",
     memberPostsCount = 0,
+    // Restrict the delivery types offered. A timed task has no file yet — its
+    // deliverable is custom work handed over later — so "file" is excluded to
+    // avoid a pre-uploaded file the buyer could download before it's delivered.
+    allowedTypes = null,
     ctxName = "reward-file",
     errors = {},
     className = "",
 }) {
     const uploaderRef = useRef();
+
+    const types = allowedTypes
+        ? REWARD_TYPES.filter((type) => allowedTypes.includes(type.value))
+        : REWARD_TYPES;
+
+    // If the current type is no longer offered (e.g. a legacy task saved as
+    // "file" opened where only message/link are allowed), fall back to the
+    // first allowed type so the editor never shows nothing selected.
+    useEffect(() => {
+        if (types.length && !types.some((type) => type.value === value.type)) {
+            onChange({ ...value, type: types[0].value, file: null });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value.type, allowedTypes]);
 
     const patch = useCallback((next) => onChange({ ...value, ...next }), [onChange, value]);
 
@@ -268,8 +286,8 @@ export default function RewardEditor({
                 <span className={`${LABEL} mb-2`}>
                     {recurring ? "They get this straight away" : "How is it delivered?"}
                 </span>
-                <div className="grid grid-cols-3 gap-2">
-                    {REWARD_TYPES.map((type) => {
+                <div className={`grid gap-2 ${types.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                    {types.map((type) => {
                         const active = value.type === type.value;
                         return (
                             <button
@@ -289,7 +307,7 @@ export default function RewardEditor({
                     })}
                 </div>
                 <p className="mt-2 text-left text-xs font-medium text-neutral-500">
-                    {REWARD_TYPES.find((type) => type.value === value.type)?.hint}
+                    {types.find((type) => type.value === value.type)?.hint}
                 </p>
             </div>
 

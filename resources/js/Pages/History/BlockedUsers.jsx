@@ -111,7 +111,7 @@ export default function BlockedUsers({ auth }) {
 
     return (
         <Authenticated auth={auth.user} user={auth.user}>
-            <div className="min-h-screen bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] py-10">
+            <div className="min-h-dvh bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] py-10">
                 <div className="max-w-5xl mx-auto px-4">
                     <div className="mb-8">
                         <div className="flex items-center gap-3 mb-2">

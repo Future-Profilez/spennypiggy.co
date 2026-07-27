@@ -15,7 +15,9 @@ class SendContractMail implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $contract;
+
     public $type;
+
     public $url;
 
     public function __construct(FanContract $contract, $type, $url)

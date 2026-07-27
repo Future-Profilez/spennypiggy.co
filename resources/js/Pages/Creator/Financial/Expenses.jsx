@@ -79,7 +79,7 @@ export default function Expenses({ auth, expenses, filters }) {
             <Head title="Manage Expenses" />
 
             <div className='bg-white'>
-                <div className="py-8  containerbox mx-auto space-y-6 bg-white min-h-screen">
+                <div className="py-8  containerbox mx-auto space-y-6 bg-white min-h-dvh">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>

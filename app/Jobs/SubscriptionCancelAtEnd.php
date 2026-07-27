@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\RetriesCriticalWork;
+use App\Models\WishItemSubscription;
 use App\StripeControl;
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,11 +13,12 @@ use Illuminate\Queue\SerializesModels;
 
 class SubscriptionCancelAtEnd implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     /**
      * Wish Item Subscription
-     * @var \App\Models\WishItemSubscription
+     *
+     * @var WishItemSubscription
      */
     public $subscription;
 

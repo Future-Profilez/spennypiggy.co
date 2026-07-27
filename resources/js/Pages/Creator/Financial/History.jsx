@@ -33,7 +33,7 @@ export default function History({ auth, transactions }) {
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Financial History" />
 
-            <div className="bg-[#A2E4B8] min-h-screen pb-12">
+            <div className="bg-[#A2E4B8] min-h-dvh pb-12">
                 <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 border-[3px] border-black rounded-[32px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">

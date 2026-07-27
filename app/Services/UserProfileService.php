@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\BillPayment;
 use App\Models\Bills;
+use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\MonthlyCharge;
@@ -775,6 +777,152 @@ class UserProfileService
     }
 
     /**
+     * Public social proof for a creator profile: who is actually buying, and how
+     * reliably this creator delivers.
+     *
+     * Supporters come from the ledger rather than one module, so a wish buyer and
+     * a shop buyer both count — Piggy Pot's own board only ever saw pot
+     * contributions. Ranked and labelled by PURCHASE COUNT, never by amount
+     * (Stripe compliance: this is a most-active board, not a spend race).
+     */
+    public function getProfileSocialProof(int $userId): array
+    {
+        $token = $this->getProfileCacheToken($userId);
+
+        return Cache::remember('profile_social_proof_v1_'.$userId.'_v'.$token, 600, function () use ($userId) {
+            $rows = FinancialTransaction::query()
+                ->where('user_id', $userId)
+                ->where('type', 'income')
+                ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+                ->whereNotNull('supporter_id')
+                ->selectRaw('supporter_id, COUNT(*) as purchases, MAX(transaction_date) as last_purchase')
+                ->groupBy('supporter_id')
+                ->orderByDesc('last_purchase')
+                ->limit(12)
+                ->get();
+
+            $ids = $rows->pluck('supporter_id')->all();
+
+            $users = User::whereIn('id', $ids)
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_cdn_modifier', 'avatar_approved'])
+                ->keyBy('id');
+
+            // Same badges the gifter hub and public leaderboard show, so a
+            // supporter reads identically wherever they appear.
+            $badges = $ids ? app(VipScoreService::class)->badgesFor($ids) : [];
+
+            $supporters = [];
+            foreach ($rows as $row) {
+                $u = $users->get($row->supporter_id);
+                if (! $u) {
+                    continue;
+                }
+                $supporters[] = [
+                    'name' => $u->name,
+                    'username' => $u->username,
+                    'avatar' => $u->avatar_url,
+                    'purchases' => (int) $row->purchases,
+                    'vip' => $badges[$row->supporter_id] ?? null,
+                ];
+            }
+
+            $active30d = FinancialTransaction::query()
+                ->where('user_id', $userId)
+                ->where('type', 'income')
+                ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+                ->whereNotNull('supporter_id')
+                ->where('transaction_date', '>=', Carbon::now()->subDays(30))
+                ->distinct()
+                ->count('supporter_id');
+
+            return [
+                'supporters' => $supporters,
+                'supporters_30d' => $active30d,
+                'delivery' => $this->deliveryReliability($userId),
+            ];
+        });
+    }
+
+    /**
+     * How this creator has actually delivered: how many were handed over, and how
+     * many of those with a deadline landed before it. A buyer of a paid task has
+     * no other way to judge that before paying.
+     *
+     * Only deadlines that exist are judged — an instant unlock has no `due_at`
+     * and counting it as "on time" would inflate the figure into meaninglessness.
+     */
+    private function deliveryReliability(int $userId): array
+    {
+        $delivered = Deliverable::query()
+            ->where('creator_id', $userId)
+            ->whereIn('status', ['delivered', 'completed', 'fulfilled'])
+            ->whereNotNull('delivered_at');
+
+        $total = (clone $delivered)->count();
+
+        if ($total < 3) {
+            // Too few to be a claim rather than noise.
+            return ['total' => $total, 'on_time' => null, 'median_hours' => null];
+        }
+
+        $withDeadline = (clone $delivered)->whereNotNull('due_at');
+        $deadlineCount = (clone $withDeadline)->count();
+        $onTime = $deadlineCount > 0
+            ? (clone $withDeadline)->whereColumn('delivered_at', '<=', 'due_at')->count()
+            : null;
+
+        // Median beats mean here: one forgotten order shouldn't define the creator.
+        $hours = (clone $delivered)
+            ->whereNotNull('created_at')
+            ->orderBy('id')
+            ->limit(200)
+            ->get(['created_at', 'delivered_at'])
+            ->map(fn ($d) => $d->created_at && $d->delivered_at
+                ? $d->created_at->diffInMinutes($d->delivered_at) / 60
+                : null)
+            ->filter(fn ($h) => $h !== null && $h >= 0)
+            ->sort()
+            ->values();
+
+        $median = $hours->count() ? $hours[intdiv($hours->count(), 2)] : null;
+
+        return [
+            'total' => $total,
+            'on_time' => $onTime,
+            'on_time_of' => $deadlineCount,
+            'median_hours' => $median !== null ? round($median, 1) : null,
+        ];
+    }
+
+    /**
+     * What the signed-in viewer has already bought from this creator. Not cached
+     * with the public payload — it is per-viewer by definition.
+     */
+    public function getViewerSupportHistory(int $creatorId, ?int $viewerId): ?array
+    {
+        if (! $viewerId || $viewerId === $creatorId) {
+            return null;
+        }
+
+        $row = FinancialTransaction::query()
+            ->where('user_id', $creatorId)
+            ->where('type', 'income')
+            ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+            ->where('supporter_id', $viewerId)
+            ->selectRaw('COUNT(*) as purchases, MIN(transaction_date) as first_purchase')
+            ->first();
+
+        if (! $row || ! $row->purchases) {
+            return null;
+        }
+
+        return [
+            'purchases' => (int) $row->purchases,
+            'since' => $row->first_purchase ? Carbon::parse($row->first_purchase)->format('M Y') : null,
+        ];
+    }
+
+    /**
      * Get notification count for authenticated user
      */
     public function getNotificationCount(?int $userId): int
@@ -1339,23 +1487,9 @@ class UserProfileService
             $user->save();
         }
 
-        // Also update any local MonthlyCharge record that thinks it's active
-        $now = now()->toDateString();
-
-        MonthlyCharge::where(function ($q) use ($now) {
-
-            // Expired subscription
-            $q->where(function ($sq) use ($now) {
-                $sq->whereNotNull('current_end_subscription_date')
-                    ->whereDate('current_end_subscription_date', '<', $now);
-            })
-
-                // Expired trial
-                ->orWhere(function ($sq) use ($now) {
-                    $sq->whereNotNull('current_end_trial_date')
-                        ->whereDate('current_end_trial_date', '<', $now);
-                });
-        })
+        // Also update any local MonthlyCharge record for this user that thinks it's active
+        // since Stripe has confirmed there is no active subscription whatsoever.
+        MonthlyCharge::where('user_id', $user->id)
             ->whereIn('status', ['paid', 'active', 'trialing', 'renew'])
             ->update([
                 'status' => 'expired',
@@ -1415,7 +1549,7 @@ class UserProfileService
                 ->get(['id', 'name', 'username', 'avatar', 'avatar_cdn_modifier', 'avatar_approved'])
                 ->keyBy('id');
 
-            // VIP tier chips, resolved for the whole list in one pass. Same
+            // Engagement Level chips, resolved for the whole list in one pass. Same
             // VipScoreService the gifter hub and public leaderboard use, so a
             // supporter's badge reads the same wherever it appears.
             $badges = app(VipScoreService::class)

@@ -2,23 +2,27 @@
 
 namespace App\Jobs;
 
+use App\Events\SupportPaymentMetadataFailed;
+use App\Events\SupportPaymentMetadataUpdated;
 use App\Models\Deliverable;
 use App\Services\StripeMetadataService;
-use App\Events\SupportPaymentMetadataUpdated;
-use App\Events\SupportPaymentMetadataFailed;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class UpdateSupportPaymentStripeMetadata implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $deliverableId;
+
     public int $tries = 3;
+
     public int $timeout = 60;
 
     /**
@@ -35,17 +39,18 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
     public function handle(): void
     {
         Log::info('UpdateSupportPaymentStripeMetadata job started', [
-            'deliverable_id' => $this->deliverableId
+            'deliverable_id' => $this->deliverableId,
         ]);
 
         try {
             // Load fresh deliverable record
             $deliverable = Deliverable::find($this->deliverableId);
-            
-            if (!$deliverable) {
+
+            if (! $deliverable) {
                 Log::error('UpdateSupportPaymentStripeMetadata: Deliverable not found', [
-                    'deliverable_id' => $this->deliverableId
+                    'deliverable_id' => $this->deliverableId,
                 ]);
+
                 return;
             }
 
@@ -53,24 +58,27 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             if ($deliverable->product_type !== 'support_payment') {
                 Log::warning('UpdateSupportPaymentStripeMetadata: Not a support payment', [
                     'deliverable_id' => $this->deliverableId,
-                    'product_type' => $deliverable->product_type
+                    'product_type' => $deliverable->product_type,
                 ]);
+
                 return;
             }
 
             if (empty($deliverable->certificate_url)) {
                 Log::warning('UpdateSupportPaymentStripeMetadata: No certificate URL available', [
                     'deliverable_id' => $this->deliverableId,
-                    'deliverable_uuid' => $deliverable->uuid
+                    'deliverable_uuid' => $deliverable->uuid,
                 ]);
+
                 return;
             }
 
-            if (!$deliverable->payment_intent_id) {
+            if (! $deliverable->payment_intent_id) {
                 Log::warning('UpdateSupportPaymentStripeMetadata: No payment intent ID', [
                     'deliverable_id' => $this->deliverableId,
-                    'deliverable_uuid' => $deliverable->uuid
+                    'deliverable_uuid' => $deliverable->uuid,
                 ]);
+
                 return;
             }
 
@@ -78,49 +86,50 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             if ($this->isAlreadyUpdated($deliverable)) {
                 Log::info('UpdateSupportPaymentStripeMetadata: Already updated, skipping', [
                     'deliverable_id' => $this->deliverableId,
-                    'payment_intent_id' => $deliverable->payment_intent_id
+                    'payment_intent_id' => $deliverable->payment_intent_id,
                 ]);
+
                 return;
             }
 
             // Update Stripe metadata using the service
             $stripeMetadataService = app(StripeMetadataService::class);
-            
+
             Log::info('UpdateSupportPaymentStripeMetadata: About to call StripeMetadataService', [
                 'deliverable_id' => $deliverable->id,
                 'payment_intent_id' => $deliverable->payment_intent_id,
                 'certificate_url' => $deliverable->certificate_url,
                 'product_type' => $deliverable->product_type,
-                'status' => $deliverable->status
+                'status' => $deliverable->status,
             ]);
-            
+
             $success = $stripeMetadataService->updateDeliverableMetadata($deliverable);
-            
+
             Log::info('UpdateSupportPaymentStripeMetadata: StripeMetadataService returned', [
                 'deliverable_id' => $deliverable->id,
                 'payment_intent_id' => $deliverable->payment_intent_id,
-                'success' => $success ? 'true' : 'false'
+                'success' => $success ? 'true' : 'false',
             ]);
-            
+
             // Verify the update by reading back from Stripe
             if ($success) {
                 try {
-                    \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                    $verifyPI = \Stripe\PaymentIntent::retrieve($deliverable->payment_intent_id);
+                    Stripe::setApiKey(config('services.stripe.secret'));
+                    $verifyPI = PaymentIntent::retrieve($deliverable->payment_intent_id);
                     $hasCertUrl = isset($verifyPI->metadata['certificate_url']);
                     $certUrlValue = $verifyPI->metadata['certificate_url'] ?? null;
-                    
+
                     Log::info('UpdateSupportPaymentStripeMetadata: Verification check', [
                         'payment_intent_id' => $deliverable->payment_intent_id,
                         'has_certificate_url' => $hasCertUrl ? 'YES' : 'NO',
                         'certificate_url_value' => $certUrlValue,
                         'expected_cert_url' => $deliverable->certificate_url,
-                        'urls_match' => $certUrlValue === $deliverable->certificate_url ? 'YES' : 'NO'
+                        'urls_match' => $certUrlValue === $deliverable->certificate_url ? 'YES' : 'NO',
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('UpdateSupportPaymentStripeMetadata: Could not verify Stripe update', [
                         'payment_intent_id' => $deliverable->payment_intent_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -140,7 +149,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
                 Log::info('UpdateSupportPaymentStripeMetadata: Successfully updated Stripe metadata', [
                     'deliverable_id' => $this->deliverableId,
                     'payment_intent_id' => $deliverable->payment_intent_id,
-                    'certificate_url' => $deliverable->certificate_url
+                    'certificate_url' => $deliverable->certificate_url,
                 ]);
             } else {
                 // Fire failure event
@@ -154,7 +163,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
 
                 Log::error('UpdateSupportPaymentStripeMetadata: Failed to update Stripe metadata', [
                     'deliverable_id' => $this->deliverableId,
-                    'payment_intent_id' => $deliverable->payment_intent_id
+                    'payment_intent_id' => $deliverable->payment_intent_id,
                 ]);
 
                 throw new \Exception('Failed to update Stripe metadata via StripeMetadataService');
@@ -165,7 +174,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
                 'deliverable_id' => $this->deliverableId,
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // Fire failure event
@@ -190,34 +199,35 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
     {
         try {
             // Initialize Stripe
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-            
+            Stripe::setApiKey(config('services.stripe.secret'));
+
             // Retrieve current payment intent metadata
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($deliverable->payment_intent_id);
-            $currentMetadata = $paymentIntent->metadata ?? new \stdClass();
-            
+            $paymentIntent = PaymentIntent::retrieve($deliverable->payment_intent_id);
+            $currentMetadata = $paymentIntent->metadata ?? new \stdClass;
+
             // Check if certificate URL matches what we want to set
             $currentCertUrl = $currentMetadata->certificate_url ?? null;
-            
+
             if ($currentCertUrl === $deliverable->certificate_url) {
                 Log::info('UpdateSupportPaymentStripeMetadata: Stripe metadata already has matching certificate URL', [
                     'deliverable_id' => $deliverable->id,
                     'payment_intent_id' => $deliverable->payment_intent_id,
                     'current_cert_url' => $currentCertUrl,
-                    'deliverable_cert_url' => $deliverable->certificate_url
+                    'deliverable_cert_url' => $deliverable->certificate_url,
                 ]);
+
                 return true;
             }
 
             return false;
-            
+
         } catch (\Exception $e) {
             Log::warning('UpdateSupportPaymentStripeMetadata: Could not check existing metadata', [
                 'deliverable_id' => $deliverable->id,
                 'payment_intent_id' => $deliverable->payment_intent_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             // If we can't check, proceed with update to be safe
             return false;
         }
@@ -233,19 +243,19 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             $metadata = json_decode($deliverable->metadata, true) ?? [];
             $metadata['stripe_metadata_updated'] = true;
             $metadata['stripe_metadata_updated_at'] = now()->toISOString();
-            
+
             $deliverable->update([
-                'metadata' => json_encode($metadata)
+                'metadata' => json_encode($metadata),
             ]);
 
             Log::info('UpdateSupportPaymentStripeMetadata: Marked deliverable as updated', [
-                'deliverable_id' => $deliverable->id
+                'deliverable_id' => $deliverable->id,
             ]);
-            
+
         } catch (\Exception $e) {
             Log::warning('UpdateSupportPaymentStripeMetadata: Could not mark as updated', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -259,7 +269,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             'deliverable_id' => $this->deliverableId,
             'error' => $exception->getMessage(),
             'error_class' => get_class($exception),
-            'attempts' => $this->attempts()
+            'attempts' => $this->attempts(),
         ]);
 
         // Fire final failure event
@@ -271,7 +281,7 @@ class UpdateSupportPaymentStripeMetadata implements ShouldQueue
             [
                 'attempts' => $this->attempts(),
                 'permanent_failure' => true,
-                'trace' => $exception->getTraceAsString()
+                'trace' => $exception->getTraceAsString(),
             ]
         );
     }

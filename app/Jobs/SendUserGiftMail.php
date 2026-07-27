@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\EmailService;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -15,12 +16,14 @@ class SendUserGiftMail implements ShouldQueue
 
     /**
      * New Registered User
-     * @var \App\Models\User
+     *
+     * @var User
      */
     public $user;
 
     /**
      * Is via Social
+     *
      * @var bool
      */
     public $owner;
@@ -28,8 +31,8 @@ class SendUserGiftMail implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
     public function __construct($user, $owner)
@@ -45,7 +48,7 @@ class SendUserGiftMail implements ShouldQueue
      */
     public function handle()
     {
-        if($this->user->notification_send == 1){
+        if ($this->user->notification_send == 1) {
             $emailData = [
                 'to' => $this->user->email,
                 'name' => $this->user->name,

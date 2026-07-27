@@ -18,7 +18,9 @@ class PiggyPotContributionMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $contributionId;
+
     public bool $sendCreator;
+
     public bool $sendSupporter;
 
     public function __construct(int $contributionId, bool $sendCreator = true, bool $sendSupporter = true)
@@ -31,7 +33,7 @@ class PiggyPotContributionMailToUser implements ShouldQueue
     public function handle(): void
     {
         $pay = PiggyPotContribution::with(['creator', 'piggyPot', 'user'])->find($this->contributionId);
-        if (!$pay) {
+        if (! $pay) {
             return;
         }
 
@@ -46,7 +48,7 @@ class PiggyPotContributionMailToUser implements ShouldQueue
 
         if ($this->sendSupporter) {
             $supporterEmail = $pay->user?->email ?: $pay->guest_email;
-            if (!$supporterEmail) {
+            if (! $supporterEmail) {
                 return;
             }
 
@@ -62,10 +64,10 @@ class PiggyPotContributionMailToUser implements ShouldQueue
                 'currency' => $pay->currency,
             ];
 
-            if (!empty($pay->piggyPot?->content_file)) {
+            if (! empty($pay->piggyPot?->content_file)) {
                 $contentUrl = $pay->piggyPot->content_file;
-                if (!str_starts_with($contentUrl, 'http://') && !str_starts_with($contentUrl, 'https://')) {
-                    $contentUrl = 'https://ucarecdn.com/' . trim($contentUrl, '/') . '/';
+                if (! str_starts_with($contentUrl, 'http://') && ! str_starts_with($contentUrl, 'https://')) {
+                    $contentUrl = 'https://ucarecdn.com/'.trim($contentUrl, '/').'/';
                 }
                 $thankYouParams['wish_content'] = [
                     'type' => null,

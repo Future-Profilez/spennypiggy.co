@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\EmailService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -29,7 +28,7 @@ class SubscriptionFailed implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->sub->user) && $this->sub->user->notification_send == 1) || empty($this->sub->user)){
+        if ((isset($this->sub->user) && $this->sub->user->notification_send == 1) || empty($this->sub->user)) {
             EmailService::subscriptionFailed($this->sub);
         }
     }

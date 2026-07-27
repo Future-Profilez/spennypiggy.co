@@ -355,8 +355,8 @@ class StripeWebhookController extends Controller
                     $this->processMandatorySubscription($event);
                     break;
 
-                    // case 'customer.subscription.trial_will_end':
-                    // case 'customer.subscription.created':
+                case 'customer.subscription.trial_will_end':
+                case 'customer.subscription.created':
                 case 'customer.updated':
                     $this->processMandatorySubscription($event);
                     break;
@@ -476,6 +476,12 @@ class StripeWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to retrieve subscription/customer in processMandatorySubscription: '.$e->getMessage());
 
+            return;
+        }
+
+        // Only process platform/site subscriptions to avoid interfering with supporter memberships/bills
+        $purpose = $subscription->metadata->payment_category ?? $subscription->metadata->subscription_purpose ?? null;
+        if ($purpose !== 'site_subscription' && $purpose !== 'mandatory_platform_access') {
             return;
         }
 

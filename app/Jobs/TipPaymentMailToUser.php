@@ -2,10 +2,11 @@
 
 namespace App\Jobs;
 
-use App\Models\TipGoalsPayment;
-use App\Models\Deliverable;
-use App\Services\CertificateService;
 use App\EmailService;
+use App\Models\Deliverable;
+use App\Models\TipGoalsPayment;
+use App\Services\CertificateService;
+use App\StripeControl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,6 +20,7 @@ class TipPaymentMailToUser implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tipPayment;
+
     public $currency;
 
     /**
@@ -41,7 +43,7 @@ class TipPaymentMailToUser implements ShouldQueue
             'creator_id' => $this->tipPayment->creator_id,
             'supporter_id' => $this->tipPayment->user_id,
             'amount' => $this->tipPayment->amount,
-            'currency' => $this->currency
+            'currency' => $this->currency,
         ]);
 
         try {
@@ -58,7 +60,7 @@ class TipPaymentMailToUser implements ShouldQueue
                 Log::info('TipPaymentMailToUser completed successfully', [
                     'tip_payment_id' => $this->tipPayment->id,
                     'deliverable_id' => $deliverable->id,
-                    'certificate_url' => $deliverable->certificate_url
+                    'certificate_url' => $deliverable->certificate_url,
                 ]);
             } else {
                 Log::error('TipPaymentMailToUser: Failed to create deliverable');
@@ -68,7 +70,7 @@ class TipPaymentMailToUser implements ShouldQueue
             Log::error('TipPaymentMailToUser: Job failed with exception', [
                 'tip_payment_id' => $this->tipPayment->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
@@ -97,34 +99,35 @@ class TipPaymentMailToUser implements ShouldQueue
 
             if (empty($customerEmail)) {
                 Log::error('TipPaymentMailToUser: No customer email available', [
-                    'tip_payment_id' => $this->tipPayment->id
+                    'tip_payment_id' => $this->tipPayment->id,
                 ]);
+
                 return null;
             }
-            
+
             // Extract payment intent ID from Stripe session for metadata updates
             if ($this->tipPayment->session_id) {
                 try {
-                    $session = \App\StripeControl::getCheckoutSession($this->tipPayment->session_id);
+                    $session = StripeControl::getCheckoutSession($this->tipPayment->session_id);
                     $paymentIntentId = $session->payment_intent ?? null;
-                    
+
                     Log::info('TipPaymentMailToUser: Extracted payment intent from session', [
                         'tip_payment_id' => $this->tipPayment->id,
                         'session_id' => $this->tipPayment->session_id,
-                        'payment_intent_id' => $paymentIntentId
+                        'payment_intent_id' => $paymentIntentId,
                     ]);
                 } catch (\Exception $e) {
                     Log::warning('TipPaymentMailToUser: Could not retrieve session for payment intent', [
                         'tip_payment_id' => $this->tipPayment->id,
                         'session_id' => $this->tipPayment->session_id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
 
             $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
-                'product_id' => 'supporter_access_' . $this->tipPayment->creator_id, // Supporter access to creator
+                'product_id' => 'supporter_access_'.$this->tipPayment->creator_id, // Supporter access to creator
                 'item_id' => $this->tipPayment->tip_goal_id, // Reference tip goal if exists
                 'price_id' => null,
                 'creator_id' => $this->tipPayment->creator_id, // Creator being supported
@@ -158,14 +161,14 @@ class TipPaymentMailToUser implements ShouldQueue
                     'certificate' => 'true', // Enable certificate generation
                 ]),
                 'status' => 'delivered', // Supporter access is immediate
-                'delivered_at' => now()
+                'delivered_at' => now(),
             ]);
 
             Log::info('TipPaymentMailToUser: Supporter deliverable created', [
                 'deliverable_id' => $deliverable->id,
                 'tip_payment_id' => $this->tipPayment->id,
                 'creator_id' => $this->tipPayment->creator_id,
-                'supporter_email' => $customerEmail
+                'supporter_email' => $customerEmail,
             ]);
 
             return $deliverable;
@@ -173,8 +176,9 @@ class TipPaymentMailToUser implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('TipPaymentMailToUser: Failed to create supporter deliverable', [
                 'tip_payment_id' => $this->tipPayment->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -187,16 +191,16 @@ class TipPaymentMailToUser implements ShouldQueue
         try {
             Log::info('TipPaymentMailToUser: Generating supporter certificate', [
                 'deliverable_id' => $deliverable->id,
-                'tip_payment_id' => $this->tipPayment->id
+                'tip_payment_id' => $this->tipPayment->id,
             ]);
 
-            $certificateService = new CertificateService();
+            $certificateService = new CertificateService;
             $certificateUrl = $certificateService->generateAndUploadSupportCertificate($this->tipPayment);
 
             if ($certificateUrl) {
                 $deliverable->update([
                     'certificate_url' => $certificateUrl,
-                    'deliverable_url' => $certificateUrl // Certificate serves as the deliverable
+                    'deliverable_url' => $certificateUrl, // Certificate serves as the deliverable
                 ]);
 
                 // Also update the tip payment record
@@ -204,29 +208,29 @@ class TipPaymentMailToUser implements ShouldQueue
 
                 Log::info('TipPaymentMailToUser: Certificate generated and attached', [
                     'deliverable_id' => $deliverable->id,
-                    'certificate_url' => $certificateUrl
+                    'certificate_url' => $certificateUrl,
                 ]);
 
                 // Dispatch job to update Stripe payment intent metadata with certificate URL
                 if ($deliverable->product_type === 'support_payment') {
-                    \App\Jobs\UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
+                    UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
                         ->delay(now()->addSeconds(10)); // Small delay to ensure database transaction is complete
-                    
+
                     Log::info('TipPaymentMailToUser: Dispatched UpdateSupportPaymentStripeMetadata job', [
                         'deliverable_id' => $deliverable->id,
-                        'certificate_url' => $certificateUrl
+                        'certificate_url' => $certificateUrl,
                     ]);
                 }
             } else {
                 Log::error('TipPaymentMailToUser: Certificate generation failed', [
-                    'deliverable_id' => $deliverable->id
+                    'deliverable_id' => $deliverable->id,
                 ]);
             }
 
         } catch (\Exception $e) {
             Log::error('TipPaymentMailToUser: Certificate generation exception', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -239,25 +243,26 @@ class TipPaymentMailToUser implements ShouldQueue
         try {
             Log::info('TipPaymentMailToUser: Sending supporter email', [
                 'deliverable_id' => $deliverable->id,
-                'customer_email' => $deliverable->customer_email
+                'customer_email' => $deliverable->customer_email,
             ]);
 
             // Check if user has notifications enabled (for authenticated users)
             $shouldSendEmail = false;
-            
+
             if ($this->tipPayment->user && $this->tipPayment->user->notification_send == 1) {
                 $shouldSendEmail = true;
                 Log::info('TipPaymentMailToUser: Sending email - user notifications enabled');
-            } elseif (!$this->tipPayment->user && !empty($this->tipPayment->guest_email)) {
+            } elseif (! $this->tipPayment->user && ! empty($this->tipPayment->guest_email)) {
                 $shouldSendEmail = true;
                 Log::info('TipPaymentMailToUser: Sending email - guest supporter');
             }
 
-            if (!$shouldSendEmail) {
+            if (! $shouldSendEmail) {
                 Log::info('TipPaymentMailToUser: Email not sent - notifications disabled or no email', [
                     'has_user' => $this->tipPayment->user ? 'yes' : 'no',
-                    'notification_send' => $this->tipPayment->user->notification_send ?? 'null'
+                    'notification_send' => $this->tipPayment->user->notification_send ?? 'null',
                 ]);
+
                 return;
             }
 
@@ -281,7 +286,7 @@ class TipPaymentMailToUser implements ShouldQueue
                 'tip_goal' => $this->tipPayment->tipGoal,
                 // Additional fields for compatibility with existing template
                 'creator' => $this->tipPayment->creator,  // For tip-granted template compatibility
-                'amount' => $this->tipPayment->total_paid ?? $this->tipPayment->amount     // For tip-granted template compatibility
+                'amount' => $this->tipPayment->total_paid ?? $this->tipPayment->amount,     // For tip-granted template compatibility
             ];
 
             // Use the existing email service
@@ -289,13 +294,13 @@ class TipPaymentMailToUser implements ShouldQueue
 
             Log::info('TipPaymentMailToUser: Email sent successfully', [
                 'deliverable_id' => $deliverable->id,
-                'customer_email' => $deliverable->customer_email
+                'customer_email' => $deliverable->customer_email,
             ]);
 
         } catch (\Exception $e) {
             Log::error('TipPaymentMailToUser: Failed to send email', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }

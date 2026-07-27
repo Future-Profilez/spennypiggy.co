@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\EmailService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,8 +12,8 @@ use Illuminate\Queue\SerializesModels;
 class ThankyouMailToUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    public $payment;
 
+    public $payment;
 
     /**
      * Create a new job instance.
@@ -29,7 +28,7 @@ class ThankyouMailToUser implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->payment->payment->user) && $this->payment->payment->user->notification_send == 1) || (empty($this->payment->payment->user))){
+        if ((isset($this->payment->payment->user) && $this->payment->payment->user->notification_send == 1) || (empty($this->payment->payment->user))) {
             EmailService::thankyouUser($this->payment);
         }
     }

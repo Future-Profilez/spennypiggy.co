@@ -254,6 +254,7 @@ class FounderBonus extends Model
             ->where('role', 1) // Only include creators (role 1), not gifters (role 0)
             ->whereNotNull('stripe_connected_at')
             ->where('stripe_connected_at', '>=', $cutoffDate)
+            ->whereNull('founder_missed_at')
             ->whereNotIn('id', $existingFounderIds)
             ->get();
 

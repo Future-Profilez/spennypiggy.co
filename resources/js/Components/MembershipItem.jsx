@@ -12,7 +12,7 @@ const rewards_lists = [
     { title: "Green Circle Insta", value: "green_circle_insta" },
     { title: "Insta Broadcast", value: "insta_broadcast" },
     { title: "⁠Telegram Group", value: "telegram_group" },
-    { title: " ⁠X Community ", value: "x_community" },
+    { title: " ⁠X Community", value: "x_community" },
     { title: "⁠Monthly Content Bundle", value: "monthly_content_bundle" },
     { title: "Weekly Content Bundle", value: "weekly_content_bundle" },
     { title: "⁠Weekly DM chat", value: "weekly_DM_chat" },
@@ -93,30 +93,35 @@ export default function MembershipItem({
         return Math.ceil(totalSupporterPays);
     };
 
+    // The tier's colour is its identity, so it owns the whole card head rather than
+    // a stray pill. Platinum reads as the top rung (near-black) — as flat tints
+    // it and silver were within a hair of each other and told tiers apart badly.
     const tierThemes = {
-        gold: {
-            bg: "bg-[#FFD700]",
-            text: "text-black",
-        },
+        gold: { bg: "bg-[#FFD700]", text: "text-black", ink: "text-black/60" },
         silver: {
-            bg: "bg-[#E5E7EB]",
+            bg: "bg-[#D8DCE3]",
             text: "text-black",
+            ink: "text-black/55",
         },
         bronze: {
             bg: "bg-[#F97316]",
             text: "text-white",
+            ink: "text-white/75",
         },
         platinum: {
-            bg: "bg-[#F3F4F6]",
-            text: "text-black",
+            bg: "bg-[#12131A]",
+            text: "text-white",
+            ink: "text-white/60",
         },
         lifetime: {
             bg: "bg-[#22C55E]",
             text: "text-white",
+            ink: "text-white/75",
         },
         default: {
-            bg: "bg-white",
+            bg: "bg-[#A2E4B8]",
             text: "text-black",
+            ink: "text-black/55",
         },
     };
 
@@ -132,89 +137,73 @@ export default function MembershipItem({
         <div
             className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}
         >
-            <div className="relative flex flex-col h-full bg-white rounded-box border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden">
-                <div className="pt-16 px-6 pb-6 relative bg-[#fdfbf7]">
-                    {item?.is_suspended == 1 && (
-                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-box-sm z-10 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] group/suspend cursor-help">
-                            Suspended
-                            {item.suspend_reason && (
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-black text-white text-[10px] p-2 rounded-box-sm pointer-events-none">
-                                    Reason: {item.suspend_reason}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    {IsloggedIn &&
-                        item?.approved == 0 &&
-                        item?.is_suspended != 1 && (
-                            <div className="absolute top-3 left-3 z-20 group/approval">
-                                <div className="bg-yellow-400 text-black text-xs font-bold px-4 py-1.5 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-help">
-                                    Pending Approval
-                                </div>
-
-                                {item?.edited_reason && (
-                                    <div className="absolute top-full left-0 mt-2 w-64 bg-black text-white text-[11px] leading-relaxed p-3 rounded-box-sm shadow-lg">
-                                        <div className="font-bold text-yellow-300 mb-1">
-                                            Edit Reason
-                                        </div>
-
-                                        <p className="font-medium break-words">
-                                            {item.edited_reason}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex flex-col">
+            <div className="relative flex flex-col h-full bg-white rounded-box border-[3px] border-black hover:-translate-y-1 transition-all duration-200 overflow-hidden">
+                {/* Tier head — the colour IS the tier, so the name sits in it */}
+                <div className={`relative ${theme.bg} ${theme.text} px-5 py-4`}>
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
                             <span
-                                className={`inline-block px-3 py-1 text-[10px] font-black uppercase tracking-widest border-2 border-black rounded-full mb-3 w-max ${theme.bg} ${theme.text} shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}
+                                className={`block text-[10px] font-black uppercase tracking-[0.2em] ${theme.ink}`}
                             >
-                                Tier
+                                Membership tier
                             </span>
-                            <h3 className="text-2xl font-black uppercase tracking-tight leading-none text-gray-900">
+                            <h3 className="mt-1 text-2xl font-black uppercase leading-none tracking-tight line-clamp-1">
                                 {item?.level}
                             </h3>
                         </div>
-                        <div className="w-14 h-14 rounded-box border-[3px] border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0 group-hover/card:-rotate-3 transition-transform">
+
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border-[3px] border-black bg-white transition-transform group-hover/card:-rotate-6">
                             <img
                                 src={item?.perma_link || dummy}
                                 alt={item?.level}
-                                className="w-full h-full object-cover"
+                                className="h-full w-full object-cover"
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-baseline gap-1 mt-2">
-                        <span className="text-4xl font-black tracking-tighter text-black">
-                            {isCreator
-                                ? formatMultiPrice(item?.price, item?.currency)
-                                : formatMultiPrice(
-                                      calculateTotalSupporterPays(
-                                          item?.price,
-                                          item?.currency,
-                                          item?.user?.vat_amount_percentage ||
-                                              0,
-                                      ),
-                                      item?.currency,
-                                  )}
-                        </span>
-                        <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                            / mo
-                        </span>
-                    </div>
+                    {/* Status flags live on the head so the body stays about the offer */}
+                    {(item?.is_suspended == 1 ||
+                        (IsloggedIn && item?.approved == 0)) && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {item?.is_suspended == 1 && (
+                                <span className="group/suspend relative cursor-help rounded-full border-2 border-black bg-red-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+                                    Suspended
+                                    {item.suspend_reason && (
+                                        <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-56 rounded-box-sm bg-black p-2 text-[10px] normal-case tracking-normal text-white group-hover/suspend:block">
+                                            Reason: {item.suspend_reason}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
+                            {IsloggedIn &&
+                                item?.approved == 0 &&
+                                item?.is_suspended != 1 && (
+                                    <span className="group/approval relative cursor-help rounded-full border-2 border-black bg-yellow-400 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black">
+                                        Pending approval
+                                        {item?.edited_reason && (
+                                            <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-64 rounded-box-sm bg-black p-3 text-[10px] normal-case leading-relaxed tracking-normal text-white group-hover/approval:block">
+                                                <span className="mb-1 block font-bold text-yellow-300">
+                                                    Edit reason
+                                                </span>
+                                                {item.edited_reason}
+                                            </span>
+                                        )}
+                                    </span>
+                                )}
+                        </div>
+                    )}
 
                     {IsloggedIn && (
-                        <div className="absolute top-4 right-4">
+                        <div className="absolute right-3 top-3">
                             <Menu as="div" className="relative">
                                 <Menu.Button
                                     aria-label="Membership options"
-                                    className="p-1.5 min-h-[44px] px-4 rounded-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-colors"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white transition-colors hover:bg-gray-100"
                                 >
                                     <div className="flex gap-[3px]">
-                                        <span className="bg-black w-1 h-1 rounded-full"></span>
-                                        <span className="bg-black w-1 h-1 rounded-full"></span>
-                                        <span className="bg-black w-1 h-1 rounded-full"></span>
+                                        <span className="h-1 w-1 rounded-full bg-black"></span>
+                                        <span className="h-1 w-1 rounded-full bg-black"></span>
+                                        <span className="h-1 w-1 rounded-full bg-black"></span>
                                     </div>
                                 </Menu.Button>
                                 <Transition
@@ -226,7 +215,7 @@ export default function MembershipItem({
                                     leaveFrom="transform opacity-100 scale-100"
                                     leaveTo="transform opacity-0 scale-95"
                                 >
-                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 focus:outline-none overflow-hidden">
+                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right overflow-hidden rounded-box border-[3px] border-black bg-white focus:outline-none z-50">
                                         <div className="p-1">
                                             <Menu.Item>
                                                 {({ active }) => (
@@ -245,66 +234,87 @@ export default function MembershipItem({
                     )}
                 </div>
 
-                <div className="h-0 border-t-[3px] border-black border-dashed opacity-20 mx-6"></div>
+                {/* Offer */}
+                <div className="flex flex-grow flex-col bg-[#fdfbf7] px-5 pb-5 pt-4">
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-[34px] font-black leading-none tracking-tighter text-black">
+                            {isCreator
+                                ? formatMultiPrice(item?.price, item?.currency)
+                                : formatMultiPrice(
+                                      calculateTotalSupporterPays(
+                                          item?.price,
+                                          item?.currency,
+                                          item?.user?.vat_amount_percentage ||
+                                              0,
+                                      ),
+                                      item?.currency,
+                                  )}
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                            / month
+                        </span>
+                    </div>
+                    {!isCreator && (
+                        <p className="mt-1 text-[10px] font-semibold text-gray-400">
+                            Includes platform &amp; processing fees
+                        </p>
+                    )}
 
-                <div className="p-6 flex-grow flex flex-col bg-[#fdfbf7]">
+                    <div className="my-4 border-t-2 border-dashed border-black/15"></div>
+
                     <div className="flex-grow">
-                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">
-                            Includes:
+                        <h4 className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-gray-500">
+                            What you get
                         </h4>
-                        <ul className="space-y-3">
+                        <ul className="space-y-2.5">
                             {rewards && rewards.length > 0 ? (
                                 visibleRewards.map((r, i) => (
                                     <li
                                         key={`reward-${i}`}
-                                        className="flex items-start gap-3"
+                                        className="flex items-start gap-2.5"
                                     >
-                                        <div className="mt-0.5 shrink-0 text-[#FF007F]">
+                                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#FF007F]/10 text-[#FF007F]">
                                             <svg
-                                                width="18"
-                                                height="18"
+                                                width="11"
+                                                height="11"
                                                 viewBox="0 0 24 24"
                                                 fill="none"
                                                 stroke="currentColor"
-                                                strokeWidth="3"
+                                                strokeWidth="4"
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                             >
                                                 <polyline points="20 6 9 17 4 12"></polyline>
                                             </svg>
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-700 leading-snug">
+                                        </span>
+                                        <span className="text-[13px] font-bold leading-snug text-gray-700">
                                             {getRewardTitle(r)}
                                         </span>
                                     </li>
                                 ))
                             ) : (
-                                <li className="text-sm font-bold text-gray-500 italic">
-                                    Standard Access Benefits
+                                <li className="text-[13px] font-bold italic text-gray-500">
+                                    Standard access benefits
                                 </li>
                             )}
                         </ul>
                         {!showAllBenefits &&
                             remainingBenefits > 0 &&
                             !isExpanded && (
-                                <div className="mt-4">
-                                    <div className="border-t-[2px] border-dashed border-black/30 mb-3"></div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsExpanded(true)}
-                                        className="text-xs font-black uppercase tracking-wider text-gray-700 hover:text-[#FF007F] transition-colors"
-                                    >
-                                        + {remainingBenefits} more benefits
-                                        (View all)
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsExpanded(true)}
+                                    className="mt-3 text-[11px] font-black uppercase tracking-wider text-gray-500 underline decoration-dotted underline-offset-4 transition-colors hover:text-[#FF007F]"
+                                >
+                                    Show {remainingBenefits} more
+                                </button>
                             )}
                     </div>
 
-                    <div className="mt-8">
+                    <div className="mt-5">
                         {IsloggedIn ? (
                             <EditMembership
-                                classes="w-full py-3.5 bg-white border-[3px] border-black text-black font-black uppercase text-xs tracking-widest rounded-box-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                classes="w-full py-3 bg-white border-2 border-black text-black font-black uppercase text-xs tracking-widest rounded-box-sm transition-colors hover:bg-gray-100"
                                 item={item}
                             />
                         ) : (
@@ -314,12 +324,12 @@ export default function MembershipItem({
                                 href={route("membership.checkout", {
                                     uuid: item?.uuid,
                                 })}
-                                className={`w-full py-3.5 ${theme.bg} ${theme.text} border-[3px] border-black font-black uppercase text-xs tracking-widest rounded-box-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2`}
+                                className="flex w-full items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
                             >
-                                Join Tier
+                                Join {item?.level}
                                 <svg
-                                    width="16"
-                                    height="16"
+                                    width="15"
+                                    height="15"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
@@ -331,19 +341,6 @@ export default function MembershipItem({
                                     <polyline points="12 5 19 12 12 19"></polyline>
                                 </svg>
                             </Link>
-                        )}
-
-                        {item.user && (
-                            <div className="mt-4 text-center">
-                                <Link
-                                    href={route("user.show", {
-                                        username: item.user.username,
-                                    })}
-                                    className="text-[10px] font-bold uppercase text-gray-400 hover:text-[#FF007F] transition-colors tracking-widest"
-                                >
-                                    @{item.user.username}
-                                </Link>
-                            </div>
                         )}
                     </div>
                 </div>

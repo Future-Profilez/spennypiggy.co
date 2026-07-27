@@ -2,6 +2,7 @@
 
 namespace App\Jobs\FraudWarning;
 
+use App\Mail\FraudWarningMail;
 use App\Models\EarlyFraudWarning;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -9,9 +10,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\FraudWarningMail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendFraudWarningMailJob implements ShouldQueue
 {
@@ -19,19 +19,20 @@ class SendFraudWarningMailJob implements ShouldQueue
 
     // UPDATED: Store full model for now (to match controller expectations)
     protected $user;
+
     protected $fraudWarning;
+
     protected $eventType;
 
     // UPDATED: Add retry configuration
     public $tries = 3;
+
     public $backoff = [60, 300, 600]; // 1 min, 5 min, 10 min
 
     /**
      * Create a new job instance.
      *
-     * @param User $user
-     * @param EarlyFraudWarning $fraudWarning
-     * @param string $eventType 'created', 'updated', 'closed'
+     * @param  string  $eventType  'created', 'updated', 'closed'
      */
     public function __construct(User $user, EarlyFraudWarning $fraudWarning, string $eventType)
     {
@@ -58,19 +59,21 @@ class SendFraudWarningMailJob implements ShouldQueue
             $user = User::find($this->user->id);
             $fraudWarning = EarlyFraudWarning::find($this->fraudWarning->id);
 
-            if (!$user) {
+            if (! $user) {
                 Log::error('User not found for fraud warning email', [
                     'user_id' => $this->user->id,
                     'fraud_warning_id' => $this->fraudWarning->id,
                 ]);
+
                 return;
             }
 
-            if (!$fraudWarning) {
+            if (! $fraudWarning) {
                 Log::error('Fraud warning not found for email', [
                     'fraud_warning_id' => $this->fraudWarning->id,
                     'user_id' => $this->user->id,
                 ]);
+
                 return;
             }
 

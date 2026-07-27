@@ -2,6 +2,8 @@
 
 namespace App\Jobs\Dispute;
 
+use App\Jobs\Concerns\RetriesCriticalWork;
+use App\Mail\DisputeUpdatedMail;
 use App\Models\Dispute;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -9,24 +11,23 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\DisputeUpdatedMail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendDisputeUpdatedMailJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     protected $user;
+
     protected $dispute;
+
     protected $changes;
 
     /**
      * Create a new job instance.
      *
-     * @param User|null $user
-     * @param Dispute $dispute
-     * @param array $changes
+     * @param  User|null  $user
      */
     public function __construct($user, Dispute $dispute, array $changes)
     {
@@ -42,7 +43,7 @@ class SendDisputeUpdatedMailJob implements ShouldQueue
      */
     public function handle()
     {
-        if (!$this->user) {
+        if (! $this->user) {
             return;
         }
 

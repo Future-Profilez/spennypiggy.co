@@ -486,7 +486,8 @@ export default function BuyShopItem({
                         <img
                             className="object-cover object-center h-32 w-full"
                             src={s.user.avatar_url || userdefaultphoto}
-                            alt="Woman looking front"
+                            alt={s.user.name || "Creator"}
+                            onError={(e) => { if (e.target.src !== userdefaultphoto) e.target.src = userdefaultphoto; }}
                         />
                     </div>
                     <div className="text-center mt-2">
@@ -921,7 +922,7 @@ export default function BuyShopItem({
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button b"
+                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                             >
                                 Cancel
                             </button>

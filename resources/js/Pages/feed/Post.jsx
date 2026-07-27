@@ -80,6 +80,7 @@ export default function Post({ item }) {
     const updateComments = () => setccount((c) => c + 1);
     const updatecount = (next) => setlcount(next);
     const [showComments, setShowComments] = useState(false);
+    const [editing, setEditing] = useState(false);
 
     const audienceLabel = AUDIENCE_LABELS[item?.for_module] || "";
     const lock = LOCK_COPY[item?.for_module];
@@ -87,7 +88,7 @@ export default function Post({ item }) {
 
     return (
         <>
-            <div className=" post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+            <div className=" post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black   hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         {/* Leading slash matters: without it the href resolved relative to the
@@ -98,7 +99,7 @@ export default function Post({ item }) {
                         >
                             <img
                                 alt={`${item?.user?.name || user?.name || "Creator"} avatar`}
-                                className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                className=" author-img border-[3px] border-black rounded-full "
                                 src={
                                     item?.user?.avatar_url ||
                                     user?.avatar_url ||
@@ -157,17 +158,18 @@ export default function Post({ item }) {
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
-                                                <div
-                                                    className={`${active ? "bg-gray-100" : ""} group flex w-full items-center rounded-box-sm text-sm`}
+                                                // Opens the edit modal via state,
+                                                // rendered OUTSIDE this menu — a
+                                                // modal nested in the dropdown
+                                                // unmounted the moment the menu
+                                                // closed, so editing did nothing.
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditing(true)}
+                                                    className={`${active ? "bg-gray-100" : ""} group flex w-full items-center rounded-box-sm px-4 py-2 text-left text-sm`}
                                                 >
-                                                    <AddPost
-                                                        title="Edit Post"
-                                                        text={"Edit Post"}
-                                                        classes={`text-left w-full px-4 py-2`}
-                                                        item={item}
-                                                        isEdit={true}
-                                                    />
-                                                </div>
+                                                    Edit Post
+                                                </button>
                                             )}
                                         </Menu.Item>
                                         <Menu.Item>
@@ -192,6 +194,18 @@ export default function Post({ item }) {
                     )}
                 </div>
 
+                {/* Edit modal lives here, outside the dropdown, so closing the
+                    menu does not tear it down before it can open. */}
+                {editing && (
+                    <AddPost
+                        title="Edit Post"
+                        item={item}
+                        isEdit={true}
+                        open={editing}
+                        onClose={() => setEditing(false)}
+                    />
+                )}
+
                 {IsloggedIn && item && item.approved == 0 ? (
                     <div className="bg-yellow-50 text-yellow-800 p-3 text-sm rounded-box-sm mb-3 border !border-yellow-500 flex items-start gap-2">
                         <span aria-hidden="true">⏳</span>
@@ -207,10 +221,10 @@ export default function Post({ item }) {
                 )}
 
                 {hasImage ? (
-                    <div className="fading post-images lazywrap relative w-full border-[3px] border-black rounded-box-sm overflow-hidden">
+                    <div className=" post-images lazywrap relative w-full border-[3px] border-black rounded-box-sm overflow-hidden">
                         {/* One audience badge, not two. */}
                         {audienceLabel ? (
-                            <span className="bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-black absolute z-10 py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-box-sm">
+                            <span className="bg-[#A2E4B8] border-[3px] border-black  font-black absolute z-10 py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-box-sm">
                                 {audienceLabel}
                             </span>
                         ) : null}
@@ -234,7 +248,7 @@ export default function Post({ item }) {
                     </div>
                 ) : audienceLabel ? (
                     // A text-only post still needs to say who can see it.
-                    <span className="inline-block bg-[#A2E4B8] border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm">
+                    <span className="inline-block bg-[#A2E4B8] border-[3px] border-black  font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm">
                         {audienceLabel}
                     </span>
                 ) : null}
@@ -257,7 +271,7 @@ export default function Post({ item }) {
                 {isLocked && lock && creatorUsername ? (
                     <Link
                         href={`/${creatorUsername}?page=${lock.page}`}
-                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-white font-black uppercase tracking-wide text-sm border-[3px] border-black rounded-box-sm px-4 py-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-white font-black uppercase tracking-wide text-sm border-[3px] border-black rounded-box-sm px-4 py-3  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                     >
                         🔒 {lock.cta}
                     </Link>
@@ -292,12 +306,12 @@ export default function Post({ item }) {
                 {/* These were duplicate `id="like-number"` elements — one id repeated on every
             post on the page. */}
                 <div className="flex mt-3">
-                    <p className="fading like-count text-black mr-4 font-black uppercase text-sm border-[3px] border-black bg-[#A2E4B8] px-3 py-1 rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <p className="fading like-count text-black mr-4 font-black uppercase text-sm border-[3px] border-black bg-[#A2E4B8] px-3 py-1 rounded-box-sm ">
                         <b>
                             {lcount || 0} {lcount === 1 ? "like" : "likes"}
                         </b>
                     </p>
-                    <p className="fading like-count text-black font-black uppercase text-sm border-[3px] border-black bg-[#b892ff] px-3 py-1 rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <p className="fading like-count text-black font-black uppercase text-sm border-[3px] border-black bg-[#b892ff] px-3 py-1 rounded-box-sm ">
                         <b>
                             {ccount || 0}{" "}
                             {ccount === 1 ? "Comment" : "Comments"}

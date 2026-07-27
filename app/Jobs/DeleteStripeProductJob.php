@@ -2,26 +2,28 @@
 
 namespace App\Jobs;
 
-use App\Models\User;
+use App\Jobs\Concerns\RetriesCriticalWork;
+use App\Mail\ProductDeletionMail;
 use App\Models\Bills;
-use App\Models\WishItem;
 use App\Models\Membership;
 use App\Models\Shop;
+use App\Models\User;
+use App\Models\WishItem;
+use App\StripeControl;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Mail\ProductDeletionMail;
-use App\StripeControl;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class DeleteStripeProductJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     protected $userId;
+
     protected $productIds;
 
     public function __construct(int $userId, array $productIds)
@@ -29,6 +31,7 @@ class DeleteStripeProductJob implements ShouldQueue
         $this->userId = $userId;
         $this->productIds = $productIds;
     }
+
     /**
      * The job's maximum number of attempts.
      *
@@ -36,10 +39,11 @@ class DeleteStripeProductJob implements ShouldQueue
      */
     public function handle()
     {
-        Log::info("DeleteStripeProductJob started for user ID: {$this->userId} with products: " . implode(', ', $this->productIds));
+        Log::info("DeleteStripeProductJob started for user ID: {$this->userId} with products: ".implode(', ', $this->productIds));
         $user = User::find($this->userId);
-        if (!$user) {
+        if (! $user) {
             Log::warning("User not found with ID: {$this->userId}");
+
             return;
         }
 
@@ -79,7 +83,7 @@ class DeleteStripeProductJob implements ShouldQueue
                     Log::info("Stripe product {$stripeProduct->id} deleted for user {$user->id}");
                 }
             } catch (\Exception $e) {
-                Log::error("Error deleting Stripe product {$stripeProductId} for user {$user->id}: " . $e->getMessage());
+                Log::error("Error deleting Stripe product {$stripeProductId} for user {$user->id}: ".$e->getMessage());
             }
         }
 

@@ -61,7 +61,7 @@ export default function EmailPreference({ user, preferences }) {
 
     return (
         <AuthenticatedLayout>
-            <div className="bg-white py-6 md:py-12 min-h-screen">
+            <div className="bg-white py-6 md:py-12 min-h-dvh">
                 <div className="max-w-xl mx-auto px-6 py-8">
                     <h2 className="text-2xl font-bold mb-2 text-center">Communication Preferences</h2>
                     <p className="text-gray-600 text-center mb-6">

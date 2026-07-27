@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Models\TwitterToken;
 use App\TwitterAuthService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -14,10 +14,10 @@ class FetchSelfTwitterData implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
     /**
      * Twitter Token
-     * @var \App\Models\TwitterToken
+     *
+     * @var TwitterToken
      */
     public $token;
 
@@ -26,7 +26,7 @@ class FetchSelfTwitterData implements ShouldQueue
      */
     public function __construct($token)
     {
-        $this->token    =   $token;
+        $this->token = $token;
     }
 
     /**
@@ -34,11 +34,11 @@ class FetchSelfTwitterData implements ShouldQueue
      */
     public function handle(): void
     {
-        $resp   =   TwitterAuthService::getSelf($this->token);
-        if($resp['success']) {
+        $resp = TwitterAuthService::getSelf($this->token);
+        if ($resp['success']) {
             $this->token->update([
-                'twitter_id'    =>  $resp['data']['id'],
-                'username'      =>  $resp['data']['username'],
+                'twitter_id' => $resp['data']['id'],
+                'username' => $resp['data']['username'],
             ]);
         }
     }

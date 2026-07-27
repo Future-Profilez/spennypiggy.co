@@ -144,6 +144,15 @@ class Kernel extends ConsoleKernel
             ->dailyAt('10:30')
             ->withoutOverlapping();
 
+        // Catch-all for bank payment capabilities: onboarding payloads and the
+        // account.updated self-heal cover new creators, but a missed webhook or
+        // an account created down a path that omitted the capabilities payload
+        // otherwise stays broken until someone runs the backfill by hand. This
+        // guarantees every eligible creator is topped up within a day.
+        $schedule->command('stripe:request-bank-capabilities')
+            ->dailyAt('07:40')
+            ->withoutOverlapping(30);
+
         // Safety net for dropped payout webhooks: resolve records stuck in_transit.
         $schedule->command('payout:reconcile')
             ->dailyAt('11:30')
