@@ -25,6 +25,7 @@ class Bills extends Model
         'currency',
         'tax_amount',
         'thumbnail',
+        'moderation_reason',
         'content_file',
         'content_file_type',
         'content_file_name',

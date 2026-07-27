@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
@@ -552,10 +553,17 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * Upload-time SFW check — immediate feedback while the creator is still on
+     * the form, so a rejected image can be swapped before they finish filling
+     * it in. The authority is the queued CheckMediaModeration scan, which runs
+     * server-side and cannot be skipped by calling the save endpoint directly.
+     *
+     * Both use the same label list and the same confidence floor, so the fast
+     * check and the authoritative one cannot disagree about the same image.
+     */
     public function checkAdultContent($uuid)
     {
-        $rest_words = ['Adult', '18+', 'Pornographic', 'xxx', 'nsfw', 'NSFW', 'XXX', 'Blood', 'Brutality', 'Explicit', 'Mature', 'Weapons', 'Aggression', 'Combat', 'Sexual', 'Porn', 'Fucking', 'Graphic'];
-
         // For avatar adult check.
         Http::withHeaders([
             'Content-Type' => 'application/json',
@@ -583,16 +591,28 @@ class ProfileController extends Controller
             ]);
         }
 
-        foreach ($tags as $key => $tag) {
-            $name = explode(' ', $tag['Name']);
+        foreach ($tags as $tag) {
+            $label = $tag['Name'] ?? '';
+            $confidence = (float) ($tag['Confidence'] ?? 0);
 
-            $common = array_intersect($rest_words, $name);
+            // A low-confidence guess is not a reason to refuse a creator's
+            // upload — without this floor, a faint match on any label rejected
+            // the image outright.
+            if ($confidence < CheckMediaModeration::MIN_CONFIDENCE) {
+                continue;
+            }
 
-            if (count($common) > 0) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => 'Your content contains nudity. Please try an alternative.',
-                ]);
+            foreach (CheckMediaModeration::REST_WORDS as $word) {
+                // Substring, not a word-split intersection: Rekognition returns
+                // multi-word labels ("Explicit Nudity", "Non-Explicit Nudity",
+                // "Graphic Violence") and splitting them on spaces missed every
+                // one whose individual words were not themselves in the list.
+                if (stripos($label, $word) !== false) {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => 'This image did not pass our content check. Please try a different one.',
+                    ]);
+                }
             }
         }
 

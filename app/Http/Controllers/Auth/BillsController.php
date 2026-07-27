@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\BillPayMail;
 use App\Jobs\BillPayToUser;
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\NotificationSave;
 use App\Jobs\ProcessWishItemDeliverable;
 use App\Jobs\SendRenewMail;
@@ -77,6 +78,34 @@ class BillsController extends Controller
     private function rewardBundleColumns(Request $request): array
     {
         return RewardService::columnsWithFile($request->all());
+    }
+
+    /**
+     * SFW gate on the bill thumbnail.
+     *
+     * A bill is created unapproved and waits for an admin either way, so this
+     * does not gate publication — it records WHY a row deserves a closer look.
+     * Re-run on edit so an approved listing cannot have its image swapped.
+     */
+    private function moderateBill(?Bills $bill, ?string $previousThumbnail = null): void
+    {
+        if (! $bill || empty($bill->thumbnail)) {
+            return;
+        }
+
+        // Only scan an image the creator actually changed — re-scanning an
+        // unchanged one re-produces the same flag and un-approves a listing an
+        // admin already cleared, on the creator's next unrelated edit.
+        if ($previousThumbnail !== null && $previousThumbnail === $bill->thumbnail) {
+            return;
+        }
+
+        CheckMediaModeration::dispatch(
+            Bills::class,
+            $bill->id,
+            $bill->thumbnail,
+            ['approved' => 0]
+        );
     }
 
     public function billSave(Request $request)
@@ -161,6 +190,8 @@ class BillsController extends Controller
         $bill->fill($this->rewardBundleColumns($request));
 
         $bill->save();
+
+        $this->moderateBill($bill);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -267,6 +298,7 @@ class BillsController extends Controller
 
         $old_price = $bill->price;
         $old_price_id = $bill->price_id;
+        $previousThumbnail = (string) $bill->thumbnail;
 
         $media = $request->thumbnail;
         $price = $request->price;
@@ -298,6 +330,8 @@ class BillsController extends Controller
             'thumbnail' => ! empty($media) ? $media : $bill->thumbnail,
             'period' => $request->period,
         ] + $this->rewardBundleColumns($request))->save();
+
+        $this->moderateBill($bill->refresh(), $previousThumbnail);
 
         try {
             Log::info("starting from try request->period: $request->period");

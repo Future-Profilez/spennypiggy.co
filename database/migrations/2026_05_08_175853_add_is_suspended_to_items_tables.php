@@ -13,7 +13,7 @@ return new class extends Migration
     {
         if (! Schema::hasColumn('shops', 'is_suspended')) {
             Schema::table('shops', function (Blueprint $table) {
-                $table->boolean('is_suspended')->default(false)->after('status');
+                $table->boolean('is_suspended')->default(false)->after('approved');
             });
         }
 
@@ -31,7 +31,7 @@ return new class extends Migration
 
         if (! Schema::hasColumn('memberships', 'is_suspended')) {
             Schema::table('memberships', function (Blueprint $table) {
-                $table->boolean('is_suspended')->default(false)->after('status');
+                $table->boolean('is_suspended')->default(false)->after('approved');
             });
         }
 

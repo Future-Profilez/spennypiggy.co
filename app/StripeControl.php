@@ -1337,6 +1337,38 @@ class StripeControl
     }
 
     /**
+     * Undo a pending "cancel at period end" so the subscription renews again.
+     *
+     * Distinct from resumeSubscription(), which clears a pause_collection set by the
+     * posting-cadence enforcer. This one clears the supporter's own cancellation and is
+     * only valid while the current period has not ended (once Stripe actually cancels
+     * the subscription it cannot be revived — the supporter must re-subscribe).
+     *
+     * @param  string  $sub_id  Stripe subscription ID
+     * @param  string|null  $connectedAccountId  Creator's connected account
+     * @return Throwable|Subscription
+     */
+    public static function uncancelSubscription($sub_id, $connectedAccountId = null)
+    {
+        self::setClient();
+        try {
+            $options = $connectedAccountId ? ['stripe_account' => $connectedAccountId] : [];
+
+            return self::$client->subscriptions->update($sub_id, [
+                'cancel_at_period_end' => false,
+            ], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Pause a subscription's billing (no new invoices) — used when a creator falls below
      * the min posting cadence. Reversible via resumeSubscription(). behavior 'void' means
      * invoices during the pause are voided rather than collected later.

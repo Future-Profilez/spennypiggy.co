@@ -30,20 +30,30 @@ class CheckMediaModeration implements ShouldQueue
      * clearly-prohibited (NSFW / violent / hateful) categories so legitimate
      * creator content (swimwear, "Suggestive", combat sports) is NOT flagged.
      * Matched case-insensitively as a substring of the full label name.
+     *
+     * Public because the upload-time check (ProfileController::checkAdultContent)
+     * reads the same two constants. It used to keep its own list, which had
+     * drifted to include `Combat`, `Weapons`, `Blood`, `Mature` and `Aggression`
+     * with no confidence floor at all — so a boxing or gym photo was told
+     * "your content contains nudity" — while missing the label Rekognition
+     * actually returns for the thing it is meant to catch.
      */
-    private const REST_WORDS = [
+    public const REST_WORDS = [
         'Nudity', 'Sexual', 'Porn', 'Explicit', 'Gore', 'Graphic Violence',
         'Visually Disturbing', 'Hate Symbol', 'Self-Injury', 'Self Injury',
     ];
 
     /** Minimum Rekognition confidence (%) before a label counts — cuts false positives. */
-    private const MIN_CONFIDENCE = 80.0;
+    public const MIN_CONFIDENCE = 80.0;
 
     /** Human-readable feature names for creator-facing notifications, keyed by model basename. */
     private const FEATURE_LABELS = [
         'PiggyPot' => 'Piggy Pot',
         'Shop' => 'shop listing',
         'Task' => 'task',
+        'WishItem' => 'wish item',
+        'Bills' => 'bill',
+        'Membership' => 'membership level',
     ];
 
     /**
@@ -86,6 +96,29 @@ class CheckMediaModeration implements ShouldQueue
             'Accept' => 'application/vnd.uploadcare-v0.7+json',
             'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
         ];
+
+        // Rekognition's moderation labels only apply to images. A PDF, zip,
+        // document or video returns nothing, which the fail-closed branch below
+        // would read as "no verdict" and hold — so every non-image reward would
+        // be stuck waiting for a scan that can never produce an answer. These
+        // items are still created unapproved and reviewed by a human, so
+        // passing here does not put them live unseen.
+        $isImage = $this->isImage($headers);
+
+        if ($isImage === null) {
+            // The file could not be read at all — treat as unverified.
+            Log::warning('Uploadcare file info unavailable — flagging for manual review', [
+                'model' => $this->modelClass,
+                'id' => $this->modelId,
+            ]);
+            $this->flag();
+
+            return;
+        }
+
+        if ($isImage === false) {
+            return;
+        }
 
         // Kick off the Rekognition add-on. Processing is asynchronous, so the
         // moderation labels are not available on the immediate read — poll the
@@ -149,6 +182,32 @@ class CheckMediaModeration implements ShouldQueue
                 }
             }
         }
+    }
+
+    /**
+     * Is the stored file an image? null when the file could not be read.
+     *
+     * Uploadcare reports `is_image` on the file object; the MIME type is used
+     * as a fallback for older records where that flag is absent.
+     */
+    private function isImage(array $headers): ?bool
+    {
+        $response = Http::withHeaders($headers)
+            ->get('https://api.uploadcare.com/files/'.$this->mediaUuid.'/');
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $isImage = $response->json('is_image');
+
+        if (is_bool($isImage)) {
+            return $isImage;
+        }
+
+        $mime = (string) ($response->json('mime_type') ?? $response->json('content_info.mime.mime') ?? '');
+
+        return $mime !== '' ? str_starts_with(strtolower($mime), 'image/') : null;
     }
 
     private function flag(string $reasonLabel = ''): void

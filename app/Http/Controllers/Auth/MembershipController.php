@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckMediaModeration;
 use App\Jobs\MembershipMail;
 use App\Jobs\MembershipMailToUser;
 use App\Jobs\NotificationSave;
@@ -69,6 +70,34 @@ class MembershipController extends Controller
      * list (config/rewards.php → on_platform_perks) is enforced in one place —
      * a local copy silently drifted out of sync with the config.
      */
+    /**
+     * SFW gate on the membership thumbnail.
+     *
+     * A level is created unapproved and waits for an admin either way, so this
+     * does not gate publication — it records WHY a row deserves a closer look.
+     * Re-run on edit so an approved level cannot have its image swapped.
+     */
+    private function moderateMembership(?Membership $mem, ?string $previousThumbnail = null): void
+    {
+        if (! $mem || empty($mem->thumbnail)) {
+            return;
+        }
+
+        // Only scan an image the creator actually changed — re-scanning an
+        // unchanged one re-produces the same flag and un-approves a level an
+        // admin already cleared, on the creator's next unrelated edit.
+        if ($previousThumbnail !== null && $previousThumbnail === $mem->thumbnail) {
+            return;
+        }
+
+        CheckMediaModeration::dispatch(
+            Membership::class,
+            $mem->id,
+            $mem->thumbnail,
+            ['approved' => 0]
+        );
+    }
+
     public static function hasOnPlatformContent($rewards): bool
     {
         return RewardService::hasOnPlatformPerk($rewards);
@@ -187,6 +216,8 @@ class MembershipController extends Controller
         $mem->status = 1;
         $mem->fill(RewardService::columnsWithFile($request->all()));
         $mem->save();
+
+        $this->moderateMembership($mem);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -309,6 +340,8 @@ class MembershipController extends Controller
                 $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
                 $totalTaxAmount = $breakdown['application_fee'];
 
+                $previousThumbnail = (string) $mem->thumbnail;
+
                 $mem->level = $newLevel;
                 $mem->price = $price;
                 // The new Stripe price is created in $currency — without this the row
@@ -321,6 +354,8 @@ class MembershipController extends Controller
                 }
                 $mem->fill(RewardService::columnsWithFile($request->all()));
                 $mem->save();
+
+                $this->moderateMembership($mem, $previousThumbnail);
 
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $connectedAccountId = $user->account_id;

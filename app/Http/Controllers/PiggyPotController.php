@@ -142,14 +142,24 @@ class PiggyPotController extends Controller
         $data['user_id'] = Auth::id();
         $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
-        if (! empty($data['is_pinned']) && $data['is_pinned']) {
-            // Unpin others
-            PiggyPot::where('user_id', Auth::id())->update(['is_pinned' => false]);
-        }
+        // Held until an admin releases it, exactly like a shop listing or a paid
+        // task. A pot used to be created `active`, so it was public and buyable
+        // for the ~20 seconds the scan takes — and permanently public whenever
+        // the queue worker was not running. The owner still sees it on their own
+        // page (getOptimizedPiggyPots includes moderation_hold for the owner).
+        $data['status'] = 'moderation_hold';
+
+        // A pot nobody can see cannot be the pinned one. Pinning at creation
+        // used to unpin the creator's current live pot immediately, so the
+        // featured slot on their profile went EMPTY for as long as the new pot
+        // sat in review. The creator can pin it from the edit form once it is
+        // live.
+        $data['is_pinned'] = false;
 
         $piggyPot = PiggyPot::create($data);
 
-        // SFW gate: scan the cover image; hold for review if it fails moderation.
+        // SFW gate: scan the cover image; record a reason if it fails moderation
+        // so the reviewer knows which rows to look at hardest.
         // Skip the platform default cover — known-safe, nothing user-uploaded.
         if (! empty($piggyPot->cover_media) && ! str_contains($piggyPot->cover_media, self::DEFAULT_COVER_UUID)) {
             CheckMediaModeration::dispatch(
@@ -162,7 +172,7 @@ class PiggyPotController extends Controller
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
-        return redirect()->back()->with('success', 'Piggy Pot created successfully');
+        return redirect()->back()->with('success', 'Piggy Pot created — it goes live once our team has reviewed it.');
     }
 
     /**
@@ -219,7 +229,11 @@ class PiggyPotController extends Controller
             unset($data['status']);
         }
 
-        if (! empty($data['is_pinned']) && $data['is_pinned']) {
+        // Same rule as creation: a pot still in review cannot take the featured
+        // slot, or the creator's profile shows nothing pinned until it clears.
+        if ($piggyPot->status === 'moderation_hold') {
+            $data['is_pinned'] = false;
+        } elseif (! empty($data['is_pinned']) && $data['is_pinned']) {
             // Unpin others
             PiggyPot::where('user_id', Auth::id())->where('id', '!=', $id)->update(['is_pinned' => false]);
         }

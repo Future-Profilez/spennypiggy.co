@@ -14,6 +14,8 @@ class EarningsCurrencyConsistencyTest extends TestCase
 
     public function test_earnings_endpoint_converts_to_display_currency_cookie(): void
     {
+        \App\Helpers::clearCurrencyCache();
+
         Currency::create(['ISO' => 'GBP', 'name' => 'Pound Sterling', 'conversion_rate' => 1, 'ISOdigits' => 2, 'symbol' => '£']);
         Currency::create(['ISO' => 'USD', 'name' => 'US Dollar', 'conversion_rate' => 1.25, 'ISOdigits' => 2, 'symbol' => '$']);
         Currency::create(['ISO' => 'EUR', 'name' => 'Euro', 'conversion_rate' => 1.15, 'ISOdigits' => 2, 'symbol' => '€']);
