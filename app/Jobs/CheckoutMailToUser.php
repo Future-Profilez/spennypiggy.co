@@ -1155,15 +1155,7 @@ class CheckoutMailToUser implements ShouldQueue
             $anonname = $this->payment->name ?? 'A Fan';
             $vat_amount = $this->payment->vat_tax_amount ?? 0;
 
-            EmailService::checkOutUser(
-                $creatorEmailData,
-                $anon,
-                $surprise,
-                $message,
-                $anonname,
-                $this->curr,
-                $vat_amount
-            );
+            EmailService::checkOutUser($creatorEmailData, $anon, $surprise, $message, $anonname, $this->curr, $vat_amount);
 
             Log::info('CheckoutMailToUser: Creator email sent successfully', [
                 'payment_id' => $this->payment->id,
