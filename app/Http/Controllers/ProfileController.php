@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
+use App\Services\RekognitionModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
 use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
@@ -73,6 +74,13 @@ use Uploadcare\Configuration;
 
 class ProfileController extends Controller
 {
+    /**
+     * How long the upload-time check waits for Rekognition before letting the
+     * image through unjudged. The uploader shows a "scanning" state for this,
+     * and the queued scan is the authority behind it either way.
+     */
+    private const UPLOAD_SCAN_WAIT_SECONDS = 8;
+
     protected $uploadcareApi;
 
     protected $google2FA;
@@ -590,62 +598,33 @@ class ProfileController extends Controller
      */
     public function checkAdultContent($uuid)
     {
-        // For avatar adult check.
-        Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
-        ])->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
-            'target' => $uuid,
-        ]);
+        // Fast feedback while the creator is still on the upload form. The
+        // authority is the queued CheckMediaModeration scan, which runs
+        // server-side on save and cannot be skipped by posting straight to the
+        // save endpoint — this only saves the creator from filling in a whole
+        // form around an image that was never going to be accepted.
+        //
+        // ⚠️ It used to `execute` the add-on and read the labels on the very
+        // next call. The add-on is asynchronous, so that read returned an EMPTY
+        // array — indistinguishable from "clean" — and the check therefore
+        // passed explicit images almost every time. RekognitionModeration waits
+        // for the scan to actually finish.
+        $labels = RekognitionModeration::labels($uuid, self::UPLOAD_SCAN_WAIT_SECONDS);
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
-        ])->get('https://api.uploadcare.com/files/'.$uuid.'/?include=appdata');
-
-        $data = $response->json();
-        $tags = [];
-        if (isset($data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'])) {
-            $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
+        // No verdict in time: let it through rather than refusing an upload we
+        // have not actually judged. The queued scan still holds it on save.
+        if ($labels === null) {
+            return response()->json(['status' => true, 'msg' => 'Success.']);
         }
 
-        if (empty($tags)) {
+        if (RekognitionModeration::restrictedLabel($labels) !== null) {
             return response()->json([
-                'status' => true,
-                'msg' => 'Success.',
+                'status' => false,
+                'msg' => 'This image did not pass our content check. Please try a different one.',
             ]);
         }
 
-        foreach ($tags as $tag) {
-            $label = $tag['Name'] ?? '';
-            $confidence = (float) ($tag['Confidence'] ?? 0);
-
-            // A low-confidence guess is not a reason to refuse a creator's
-            // upload — without this floor, a faint match on any label rejected
-            // the image outright.
-            if ($confidence < CheckMediaModeration::MIN_CONFIDENCE) {
-                continue;
-            }
-
-            foreach (CheckMediaModeration::REST_WORDS as $word) {
-                // Substring, not a word-split intersection: Rekognition returns
-                // multi-word labels ("Explicit Nudity", "Non-Explicit Nudity",
-                // "Graphic Violence") and splitting them on spaces missed every
-                // one whose individual words were not themselves in the list.
-                if (stripos($label, $word) !== false) {
-                    return response()->json([
-                        'status' => false,
-                        'msg' => 'This image did not pass our content check. Please try a different one.',
-                    ]);
-                }
-            }
-        }
-
-        return response()->json([
-            'status' => true,
-            'msg' => 'Success.',
-        ]);
+        return response()->json(['status' => true, 'msg' => 'Success.']);
     }
 
     /**
