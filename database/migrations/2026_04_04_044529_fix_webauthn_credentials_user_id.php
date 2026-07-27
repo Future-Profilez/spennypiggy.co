@@ -17,7 +17,7 @@ class FixWebauthnCredentialsUserId extends Migration
                     ->whereNull('user_id')
                     ->whereNotNull('authenticatable_id')
                     ->update([
-                        'user_id' => DB::raw('authenticatable_id')
+                        'user_id' => DB::raw('authenticatable_id'),
                     ]);
             }
         });

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->enum('penalty_applied', [
                 'warning',
                 'restriction_1d',
-                'restriction_3d', 
+                'restriction_3d',
                 'restriction_7d',
-                'restriction_10d'
+                'restriction_10d',
             ])->nullable();
             $table->timestamp('penalty_start_date')->nullable();
             $table->timestamp('penalty_end_date')->nullable();
@@ -30,11 +30,11 @@ return new class extends Migration
             $table->text('violation_reason')->nullable();
             $table->text('admin_notes')->nullable();
             $table->timestamps();
-            
+
             // Foreign key constraints
             $table->foreign('deliverable_id')->references('id')->on('deliverables')->onDelete('cascade');
             $table->foreign('creator_id')->references('id')->on('users')->onDelete('cascade');
-            
+
             // Indexes for common queries
             $table->index(['creator_id', 'violation_type']);
             $table->index(['penalty_start_date', 'penalty_end_date']);

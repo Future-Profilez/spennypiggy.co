@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\Shop;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class DiscoveryService
@@ -36,7 +40,7 @@ class DiscoveryService
 
     public function getTrendingCreators($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('trending_creators_v4_limit_' . $limit, 3600, function () use ($limit) {
+        return Cache::remember('trending_creators_v4_limit_'.$limit, 3600, function () use ($limit) {
             // Simplified trending query: Just get recent active creators with some basic ranking
             return User::query()
                 ->where('role', 1)
@@ -59,7 +63,7 @@ class DiscoveryService
                         'profile_status_lock' => $u->profile_status_lock,
                         'role' => $u->role,
                         'clicks_24h' => 0,
-                        'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                        'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                         'intro' => $u->intro ? [
                             'poster_url' => $u->intro->posterUrlNonBlocking(),
                             'perma_link' => $u->intro->perma_link,
@@ -73,8 +77,9 @@ class DiscoveryService
 
     public function getNewVerifiedCreators($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('new_verified_creators_limit_' . $limit, 300, function () use ($limit) {
+        return Cache::remember('new_verified_creators_limit_'.$limit, 300, function () use ($limit) {
             $nowUtc = Carbon::now('UTC');
+
             return User::query()
                 ->where('role', 1)
                 ->where('suspended_account', 0)
@@ -97,7 +102,7 @@ class DiscoveryService
                         'bio' => $u->bio,
                         'profile_status_lock' => $u->profile_status_lock,
                         'role' => $u->role,
-                        'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                        'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                         'intro' => $u->intro ? [
                             'poster_url' => $u->intro->posterUrlNonBlocking(),
                             'perma_link' => $u->intro->perma_link,
@@ -128,16 +133,16 @@ class DiscoveryService
             });
         }
 
-        $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
+        $page = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
         $offset = ($page - 1) * $limit;
 
-        if (!empty($filters['categories'])) {
+        if (! empty($filters['categories'])) {
             // If it's a comma-separated string, explode it
             $categories = is_array($filters['categories']) ? $filters['categories'] : explode(',', $filters['categories']);
             // Filter out empty strings
             $categories = array_filter($categories);
 
-            if (!empty($categories)) {
+            if (! empty($categories)) {
                 // Assuming user_categories relationship or column
                 // $query->whereIn('creator_category', $categories);
 
@@ -148,8 +153,8 @@ class DiscoveryService
             }
         }
 
-        if (!empty($filters['search'])) {
-            $term = '%' . $filters['search'] . '%';
+        if (! empty($filters['search'])) {
+            $term = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('username', 'like', $term)
@@ -172,7 +177,7 @@ class DiscoveryService
                 'wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 },
-                'intro'
+                'intro',
             ])
             ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
             ->map(function ($u) {
@@ -187,7 +192,7 @@ class DiscoveryService
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
-                    'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                    'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                     'intro' => $u->intro ? [
                         'poster_url' => $u->intro->posterUrlNonBlocking(),
                         'perma_link' => $u->intro->perma_link,
@@ -209,24 +214,24 @@ class DiscoveryService
             })
             ->with('wishCategories.category');
 
-        $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
+        $page = isset($filters['page']) ? max(1, (int) $filters['page']) : 1;
         $offset = ($page - 1) * $limit;
 
-        if (!empty($filters['minPrice'])) {
+        if (! empty($filters['minPrice'])) {
             $query->where('price', '>=', $filters['minPrice']);
         }
-        if (!empty($filters['maxPrice'])) {
+        if (! empty($filters['maxPrice'])) {
             $query->where('price', '<=', $filters['maxPrice']);
         }
 
-        if (!empty($filters['search'])) {
-            $query->where('wishname', 'like', '%' . $filters['search'] . '%');
+        if (! empty($filters['search'])) {
+            $query->where('wishname', 'like', '%'.$filters['search'].'%');
         }
 
-        if (!empty($filters['categories'])) {
+        if (! empty($filters['categories'])) {
             $categories = is_array($filters['categories']) ? $filters['categories'] : explode(',', $filters['categories']);
             $categories = array_filter($categories);
-            if (!empty($categories)) {
+            if (! empty($categories)) {
                 $query->whereHas('wishCategories.category', function ($q) use ($categories) {
                     $q->whereIn('category', $categories);
                 });
@@ -260,6 +265,7 @@ class DiscoveryService
             ->map(function ($w) {
                 return [
                     'id' => $w->id,
+                    ...$this->rewardFields($w),
                     'uuid' => $w->uuid, // Needed for cart
                     'wishname' => $w->wishname,
                     'title' => $w->wishname,
@@ -288,9 +294,9 @@ class DiscoveryService
             $limit = 50;
         }
 
-        $cacheKey = 'top_earners_v4_' . ($period ?: 'all_time') . '_limit_' . $limit;
+        $cacheKey = 'top_earners_v4_'.($period ?: 'all_time').'_limit_'.$limit;
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($period, $limit) {
+        return Cache::remember($cacheKey, 3600, function () use ($period, $limit) {
             $nowLondon = Carbon::now('Europe/London');
             $label = 'All Time';
 
@@ -341,9 +347,28 @@ class DiscoveryService
         });
     }
 
+    /**
+     * Reward hint for a sellable item — the "what you get" a buyer sees while
+     * browsing Discover. Reads the shared reward-contract columns only; never
+     * exposes reward_body (that IS the paid content). Fails soft so an odd/missing
+     * reward can never break discovery.
+     */
+    private function rewardFields($item): array
+    {
+        try {
+            return [
+                'reward_title' => $item->reward_title ?: null,
+                'reward_type' => $item->reward_type ?: null,
+                'reward_description' => $item->reward_description ?: null,
+            ];
+        } catch (\Throwable $e) {
+            return ['reward_title' => null, 'reward_type' => null, 'reward_description' => null];
+        }
+    }
+
     public function getFeaturedWishes($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_wishes_limit_' . $limit, 300, function () use ($limit) {
+        return Cache::remember('featured_wishes_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
                 $this->applyApprovalFilter(WishItem::query(), 'wish_items'),
                 'wish_items'
@@ -360,6 +385,7 @@ class DiscoveryService
                 ->map(function ($w) {
                     return [
                         'id' => $w->id,
+                        ...$this->rewardFields($w),
                         'uuid' => $w->uuid,
                         'wishname' => $w->wishname,
                         'price' => $w->price,
@@ -379,7 +405,7 @@ class DiscoveryService
             return [];
         }
 
-        $term = '%' . $term . '%';
+        $term = '%'.$term.'%';
 
         $users = User::query()
             ->where('suspended_account', 0)
@@ -393,10 +419,10 @@ class DiscoveryService
                 return [
                     'id' => $u->id,
                     'text' => $u->name,
-                    'subtext' => '@' . $u->username,
+                    'subtext' => '@'.$u->username,
                     'search_term' => $u->username,
                     'image' => $u->avatar_url,
-                    'type' => 'creator'
+                    'type' => 'creator',
                 ];
             });
 
@@ -418,16 +444,16 @@ class DiscoveryService
 
         return [
             'creators' => $users,
-            'wishes' => []
+            'wishes' => [],
             // 'wishes' => $wishes
         ];
     }
 
     public function getFeaturedBills($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_bills_limit_' . $limit, 300, function () use ($limit) {
+        return Cache::remember('featured_bills_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
+                $this->applyApprovalFilter(Bills::query(), 'bills'),
                 'bills'
             )
                 ->where(function ($q) {
@@ -447,6 +473,7 @@ class DiscoveryService
                 ->map(function ($b) {
                     return [
                         'id' => $b->id,
+                        ...$this->rewardFields($b),
                         'uuid' => $b->uuid,
                         'user_id' => $b->user_id,
                         'name' => $b->name,
@@ -478,9 +505,9 @@ class DiscoveryService
 
     public function getFeaturedMemberships($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_memberships_limit_' . $limit, 300, function () use ($limit) {
+        return Cache::remember('featured_memberships_limit_'.$limit, 300, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
+                $this->applyApprovalFilter(Membership::query(), 'memberships'),
                 'memberships'
             )
                 ->where(function ($q) {
@@ -500,18 +527,19 @@ class DiscoveryService
                 ->map(function ($m) {
                     return [
                         'id' => $m->id,
+                        ...$this->rewardFields($m),
                         'uuid' => $m->uuid,
                         'user_id' => $m->user_id,
                         'name' => $m->level,
                         'level' => $m->level,
-                        'title' => $m->level . ' Membership',
+                        'title' => $m->level.' Membership',
                         'amount' => null,
                         'image_url' => $m->thumbnail,
                         'perma_link' => $m->perma_link,
                         'price' => $m->price ?? null,
                         'currency' => $m->currency ?? null,
                         'rewards' => $m->rewards ?? null,
-                        'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
+                        'benefits' => ! empty($m->rewards) ? json_decode($m->rewards, true) : [],
                         'approved' => $m->approved ?? null,
                         'is_approved' => $m->is_approved ?? null,
                         'status' => $m->status ?? null,
@@ -534,7 +562,7 @@ class DiscoveryService
     public function getSearchBills($filters, $limit = 24)
     {
         $query = $this->applyUnsuspendedFilter(
-            $this->applyApprovalFilter(\App\Models\Bills::query(), 'bills'),
+            $this->applyApprovalFilter(Bills::query(), 'bills'),
             'bills'
         )
             ->where(function ($q) {
@@ -547,8 +575,8 @@ class DiscoveryService
                     ->where('profile_status_lock', 2);
             });
 
-        if (!empty($filters['search'])) {
-            $query->where('name', 'like', '%' . $filters['search'] . '%');
+        if (! empty($filters['search'])) {
+            $query->where('name', 'like', '%'.$filters['search'].'%');
         }
 
         // Bills specific filtering if needed
@@ -578,6 +606,7 @@ class DiscoveryService
             ->map(function ($b) {
                 return [
                     'id' => $b->id,
+                    ...$this->rewardFields($b),
                     'uuid' => $b->uuid,
                     'user_id' => $b->user_id,
                     'name' => $b->name,
@@ -609,7 +638,7 @@ class DiscoveryService
     public function getSearchMemberships($filters, $limit = 24)
     {
         $query = $this->applyUnsuspendedFilter(
-            $this->applyApprovalFilter(\App\Models\Membership::query(), 'memberships'),
+            $this->applyApprovalFilter(Membership::query(), 'memberships'),
             'memberships'
         )
             ->where(function ($q) {
@@ -622,8 +651,8 @@ class DiscoveryService
                     ->where('profile_status_lock', 2);
             });
 
-        if (!empty($filters['search'])) {
-            $query->where('level', 'like', '%' . $filters['search'] . '%');
+        if (! empty($filters['search'])) {
+            $query->where('level', 'like', '%'.$filters['search'].'%');
         }
 
         $sort = $filters['sortBy'] ?? 'Trending';
@@ -651,18 +680,19 @@ class DiscoveryService
             ->map(function ($m) {
                 return [
                     'id' => $m->id,
+                    ...$this->rewardFields($m),
                     'uuid' => $m->uuid,
                     'user_id' => $m->user_id,
                     'name' => $m->level,
                     'level' => $m->level,
-                    'title' => $m->level . ' Membership',
+                    'title' => $m->level.' Membership',
                     'amount' => null,
                     'image_url' => $m->thumbnail,
                     'perma_link' => $m->perma_link,
                     'price' => $m->price ?? null,
                     'currency' => $m->currency ?? null,
                     'rewards' => $m->rewards ?? null,
-                    'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
+                    'benefits' => ! empty($m->rewards) ? json_decode($m->rewards, true) : [],
                     'approved' => $m->approved ?? null,
                     'is_approved' => $m->is_approved ?? null,
                     'status' => $m->status ?? null,
@@ -684,7 +714,7 @@ class DiscoveryService
     public function getSearchTasks($filters, $limit = 24)
     {
         $query = $this->applyUnsuspendedFilter(
-            $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
+            $this->applyApprovalFilter(Task::query(), 'tasks'),
             'tasks'
         )
             ->where('status', 'active')
@@ -693,10 +723,10 @@ class DiscoveryService
                     ->where('profile_status_lock', 2);
             });
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('title', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                $q->where('title', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('description', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -715,6 +745,7 @@ class DiscoveryService
             ->map(function ($t) {
                 return [
                     'id' => $t->id,
+                    ...$this->rewardFields($t),
                     'uuid' => $t->uuid,
                     'title' => $t->title,
                     'description' => $t->description,
@@ -740,9 +771,9 @@ class DiscoveryService
 
     public function getFeaturedTasks($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_tasks_limit_' . $limit, 1800, function () use ($limit) {
+        return Cache::remember('featured_tasks_limit_'.$limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                $this->applyApprovalFilter(\App\Models\Task::query(), 'tasks'),
+                $this->applyApprovalFilter(Task::query(), 'tasks'),
                 'tasks'
             )
                 ->where('status', 'active')
@@ -757,6 +788,7 @@ class DiscoveryService
                 ->map(function ($t) {
                     return [
                         'id' => $t->id,
+                        ...$this->rewardFields($t),
                         'uuid' => $t->uuid,
                         'title' => $t->title,
                         'description' => $t->description,
@@ -784,7 +816,7 @@ class DiscoveryService
     public function getSearchShops($filters, $limit = 24)
     {
         $query = $this->applyUnsuspendedFilter(
-            $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
+            $this->applyApprovalFilter(Shop::query(), 'shops'),
             'shops'
         )
             ->where('status', 1)
@@ -793,10 +825,10 @@ class DiscoveryService
                     ->where('profile_status_lock', 2);
             });
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('name', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                $q->where('name', 'like', '%'.$filters['search'].'%')
+                    ->orWhere('description', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -818,6 +850,7 @@ class DiscoveryService
             ->map(function ($s) {
                 return [
                     'id' => $s->id,
+                    ...$this->rewardFields($s),
                     'uuid' => $s->uuid,
                     'user_id' => $s->user_id,
                     'name' => $s->name,
@@ -853,9 +886,9 @@ class DiscoveryService
 
     public function getFeaturedShops($limit = 12)
     {
-        return \Illuminate\Support\Facades\Cache::remember('featured_shops_limit_' . $limit, 1800, function () use ($limit) {
+        return Cache::remember('featured_shops_limit_'.$limit, 1800, function () use ($limit) {
             return $this->applyUnsuspendedFilter(
-                $this->applyApprovalFilter(\App\Models\Shop::query(), 'shops'),
+                $this->applyApprovalFilter(Shop::query(), 'shops'),
                 'shops'
             )
                 ->where('status', 1)
@@ -873,6 +906,7 @@ class DiscoveryService
                 ->map(function ($s) {
                     return [
                         'id' => $s->id,
+                        ...$this->rewardFields($s),
                         'uuid' => $s->uuid,
                         'user_id' => $s->user_id,
                         'name' => $s->name,
@@ -914,22 +948,22 @@ class DiscoveryService
     public function clearDiscoveryCache()
     {
         // Clear section caches
-        \Illuminate\Support\Facades\Cache::forget('trending_creators_limit_12');
-        \Illuminate\Support\Facades\Cache::forget('trending_creators_limit_10');
-        \Illuminate\Support\Facades\Cache::forget('new_verified_creators_limit_12');
-        \Illuminate\Support\Facades\Cache::forget('new_verified_creators_limit_10');
-        \Illuminate\Support\Facades\Cache::forget('featured_wishes_limit_12');
-        \Illuminate\Support\Facades\Cache::forget('featured_wishes_limit_10');
-        \Illuminate\Support\Facades\Cache::forget('featured_bills_limit_12');
-        \Illuminate\Support\Facades\Cache::forget('featured_bills_limit_10');
-        \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_12');
-        \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_10');
+        Cache::forget('trending_creators_limit_12');
+        Cache::forget('trending_creators_limit_10');
+        Cache::forget('new_verified_creators_limit_12');
+        Cache::forget('new_verified_creators_limit_10');
+        Cache::forget('featured_wishes_limit_12');
+        Cache::forget('featured_wishes_limit_10');
+        Cache::forget('featured_bills_limit_12');
+        Cache::forget('featured_bills_limit_10');
+        Cache::forget('featured_memberships_limit_12');
+        Cache::forget('featured_memberships_limit_10');
 
         // Clear top earners
-        \Illuminate\Support\Facades\Cache::forget('top_earners_weekly_limit_10');
-        \Illuminate\Support\Facades\Cache::forget('top_earners_all_time_limit_9');
-        \Illuminate\Support\Facades\Cache::forget('top_earners_daily_limit_9');
-        \Illuminate\Support\Facades\Cache::forget('top_earners_monthly_limit_9');
+        Cache::forget('top_earners_weekly_limit_10');
+        Cache::forget('top_earners_all_time_limit_9');
+        Cache::forget('top_earners_daily_limit_9');
+        Cache::forget('top_earners_monthly_limit_9');
 
         // Note: discover_v2_* keys are harder to clear without tags because they use md5(request).
         // However, with 5 min TTL they will refresh soon enough, or we can use a cache tag if supported.

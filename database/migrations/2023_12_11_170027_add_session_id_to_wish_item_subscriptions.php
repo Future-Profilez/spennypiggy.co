@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wish_item_subscriptions', function (Blueprint $table) {
-            $table->string("session_id")->nullable()->after("stripe_id")->comment("Stripe Session Id");
+            $table->string('session_id')->nullable()->after('stripe_id')->comment('Stripe Session Id');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wish_item_subscriptions', function (Blueprint $table) {
-            $table->dropColumn("session_id");
+            $table->dropColumn('session_id');
         });
     }
 };

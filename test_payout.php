@@ -1,6 +1,10 @@
 <?php
+
+use App\Services\Risk\PayoutService;
+use Illuminate\Contracts\Console\Kernel;
+
 require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
-app(\App\Services\Risk\PayoutService::class)->calculatePayouts();
+app(PayoutService::class)->calculatePayouts();

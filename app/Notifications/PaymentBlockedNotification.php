@@ -6,13 +6,13 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\View;
 
 class PaymentBlockedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     protected $activityData;
+
     protected $paymentAmount;
 
     public function __construct(array $activityData, $paymentAmount = null)
@@ -48,18 +48,18 @@ class PaymentBlockedNotification extends Notification implements ShouldQueue
             'suggestions' => $this->activityData['suggestions'] ?? [],
             'payment_amount' => $this->paymentAmount,
             'action_url' => '/dashboard',
-            'priority' => 'high'
+            'priority' => 'high',
         ];
     }
 
     public function toPush($notifiable)
     {
-        $paymentText = $this->paymentAmount ? "£" . number_format($this->paymentAmount, 2) : "a payment";
+        $paymentText = $this->paymentAmount ? '£'.number_format($this->paymentAmount, 2) : 'a payment';
         $needed = $this->activityData['needed'] ?? 1;
-        
+
         return [
             'title' => '🚨 Payment Alert - Content Needed',
-            'content' => "Someone tried to pay you {$paymentText}, but you need {$needed} more content item" . ($needed > 1 ? 's' : '') . " from the last 28 days to receive payments. Add content now to unlock payments!"
+            'content' => "Someone tried to pay you {$paymentText}, but you need {$needed} more content item".($needed > 1 ? 's' : '').' from the last 28 days to receive payments. Add content now to unlock payments!',
         ];
     }
 

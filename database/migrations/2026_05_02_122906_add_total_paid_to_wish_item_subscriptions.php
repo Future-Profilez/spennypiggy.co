@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('wish_item_subscriptions') && !Schema::hasColumn('wish_item_subscriptions', 'total_paid')) {
+        if (Schema::hasTable('wish_item_subscriptions') && ! Schema::hasColumn('wish_item_subscriptions', 'total_paid')) {
             Schema::table('wish_item_subscriptions', function (Blueprint $table) {
                 $table->double('total_paid', 15, 2)->default(0.00)->after('amount');
             });

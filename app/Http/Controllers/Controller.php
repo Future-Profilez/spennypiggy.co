@@ -7,6 +7,7 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class Controller extends BaseController
@@ -44,13 +45,13 @@ class Controller extends BaseController
         ]);
 
         $verifyJson = $verifyResponse->json();
-        if (!$verifyResponse->ok() || empty($verifyJson['success'])) {
-            \Illuminate\Support\Facades\Log::error('Turnstile verification failed', [
+        if (! $verifyResponse->ok() || empty($verifyJson['success'])) {
+            Log::error('Turnstile verification failed', [
                 'response' => $verifyJson,
                 'status' => $verifyResponse->status(),
                 'ip' => $request->ip(),
                 'token_length' => strlen($token),
-                'secret_set' => !empty($turnstileSecret),
+                'secret_set' => ! empty($turnstileSecret),
             ]);
             throw ValidationException::withMessages([
                 'cf_turnstile_response' => 'Captcha verification failed. Please try again.',

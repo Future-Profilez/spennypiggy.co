@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\CriticalCssService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Process;
 
 class GenerateCriticalCss extends Command
@@ -29,14 +29,14 @@ class GenerateCriticalCss extends Command
 
         foreach ($templates as $template) {
             $this->info("📝 Processing template: {$template}");
-            
+
             try {
                 // Use Node.js script for advanced critical CSS extraction
                 $this->generateAdvancedCriticalCss($template);
                 $this->line("✅ Critical CSS generated for {$template}");
             } catch (\Exception $e) {
-                $this->error("❌ Failed to generate critical CSS for {$template}: " . $e->getMessage());
-                
+                $this->error("❌ Failed to generate critical CSS for {$template}: ".$e->getMessage());
+
                 // Fallback to PHP service
                 $this->info("🔄 Using fallback PHP extraction for {$template}");
                 $criticalCssService->generateCriticalCssFiles();
@@ -44,6 +44,7 @@ class GenerateCriticalCss extends Command
         }
 
         $this->info('🎉 Critical CSS generation completed!');
+
         return 0;
     }
 
@@ -53,25 +54,25 @@ class GenerateCriticalCss extends Command
     private function generateAdvancedCriticalCss(string $template): void
     {
         $scriptPath = base_path('scripts/generate-critical-css.js');
-        $templateUrl = config('app.url') . "/{$template}";
+        $templateUrl = config('app.url')."/{$template}";
         $outputDir = storage_path('app/critical-css');
 
-        if (!file_exists($scriptPath)) {
+        if (! file_exists($scriptPath)) {
             $this->createCriticalCssScript($scriptPath);
         }
 
         $command = [
             'node',
             $scriptPath,
-            '--template=' . $template,
-            '--url=' . $templateUrl,
-            '--output=' . $outputDir,
-            '--css=' . public_path('build/assets/app.css')
+            '--template='.$template,
+            '--url='.$templateUrl,
+            '--output='.$outputDir,
+            '--css='.public_path('build/assets/app.css'),
         ];
 
         $result = Process::run(implode(' ', $command));
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             throw new \Exception($result->errorOutput());
         }
     }
@@ -144,7 +145,7 @@ generateCriticalCSS();
 JS;
 
         // Ensure directory exists
-        if (!file_exists(dirname($scriptPath))) {
+        if (! file_exists(dirname($scriptPath))) {
             mkdir(dirname($scriptPath), 0755, true);
         }
 

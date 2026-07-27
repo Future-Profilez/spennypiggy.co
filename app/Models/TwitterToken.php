@@ -11,7 +11,7 @@ class TwitterToken extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable =    [
+    protected $fillable = [
         'uuid',
         'user_id',
         'twitter_id',
@@ -19,7 +19,7 @@ class TwitterToken extends Model
         'token',
         'secret',
         'refresh_token',
-        'expires_at'
+        'expires_at',
     ];
 
     protected $hidden = [
@@ -30,16 +30,16 @@ class TwitterToken extends Model
         'refresh_token',
         'created_at',
         'deleted_at',
-        'updated_at'
+        'updated_at',
     ];
 
     protected $casts = [
-        'expires_at'    =>  'datetime'
+        'expires_at' => 'datetime',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($t) =>  $t->uuid = Uuid::uuid4());
+        static::creating(fn ($t) => $t->uuid = Uuid::uuid4());
     }
 }

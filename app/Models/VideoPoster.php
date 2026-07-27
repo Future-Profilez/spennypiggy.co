@@ -29,6 +29,6 @@ class VideoPoster extends Model
 
         $cdn = config('services.uploadcare.cdn', 'https://ucarecdn.com/');
 
-        return rtrim($cdn, '/') . '/' . $this->poster_uuid . '/nth/0/';
+        return rtrim($cdn, '/').'/'.$this->poster_uuid.'/nth/0/';
     }
 }

@@ -51,7 +51,7 @@ class SupportTicket extends Model
     protected static function booted(): void
     {
         static::creating(function (self $ticket) {
-            if (!$ticket->uuid) {
+            if (! $ticket->uuid) {
                 $ticket->uuid = (string) Str::uuid();
             }
         });

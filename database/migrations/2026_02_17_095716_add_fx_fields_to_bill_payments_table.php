@@ -11,33 +11,33 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('bill_payments')) {
+        if (! Schema::hasTable('bill_payments')) {
             return;
         }
 
-        Schema::table('bill_payments', function (Blueprint $table){
-            if (!Schema::hasColumn('bill_payments', 'creator_currency')) {
+        Schema::table('bill_payments', function (Blueprint $table) {
+            if (! Schema::hasColumn('bill_payments', 'creator_currency')) {
                 $table->string('creator_currency', 3)->nullable()->after('currency');
             }
-            if (!Schema::hasColumn('bill_payments', 'charge_currency')) {
+            if (! Schema::hasColumn('bill_payments', 'charge_currency')) {
                 $table->string('charge_currency', 3)->nullable()->after('creator_currency');
             }
-            if (!Schema::hasColumn('bill_payments', 'display_currency')) {
+            if (! Schema::hasColumn('bill_payments', 'display_currency')) {
                 $table->string('display_currency', 3)->nullable()->after('charge_currency');
             }
-            if (!Schema::hasColumn('bill_payments', 'stripe_fee_actual')) {
+            if (! Schema::hasColumn('bill_payments', 'stripe_fee_actual')) {
                 $table->decimal('stripe_fee_actual', 10, 2)->nullable()->after('display_currency');
             }
-            if (!Schema::hasColumn('bill_payments', 'stripe_fee_expected')) {
+            if (! Schema::hasColumn('bill_payments', 'stripe_fee_expected')) {
                 $table->decimal('stripe_fee_expected', 10, 2)->nullable()->after('stripe_fee_actual');
             }
-            if (!Schema::hasColumn('bill_payments', 'supporter_country')) {
+            if (! Schema::hasColumn('bill_payments', 'supporter_country')) {
                 $table->string('supporter_country', 3)->nullable()->after('stripe_fee_expected');
             }
-            if (!Schema::hasColumn('bill_payments', 'card_country')) {
+            if (! Schema::hasColumn('bill_payments', 'card_country')) {
                 $table->string('card_country', 3)->nullable()->after('supporter_country');
             }
-            if (!Schema::hasColumn('bill_payments', 'fee_variance')) {
+            if (! Schema::hasColumn('bill_payments', 'fee_variance')) {
                 $table->decimal('fee_variance', 10, 2)->nullable()->after('card_country');
             }
         });
@@ -46,8 +46,9 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void {
-        if (!Schema::hasTable('bill_payments')) {
+    public function down(): void
+    {
+        if (! Schema::hasTable('bill_payments')) {
             return;
         }
 
@@ -67,7 +68,7 @@ return new class extends Migration
                 return Schema::hasColumn('bill_payments', $col);
             }));
 
-            if (!empty($existing)) {
+            if (! empty($existing)) {
                 $table->dropColumn($existing);
             }
         });

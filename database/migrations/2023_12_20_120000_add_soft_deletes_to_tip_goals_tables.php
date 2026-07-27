@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('tip_goals') && !Schema::hasColumn('tip_goals', 'deleted_at')) {
+        if (Schema::hasTable('tip_goals') && ! Schema::hasColumn('tip_goals', 'deleted_at')) {
             Schema::table('tip_goals', function (Blueprint $table) {
                 $table->softDeletes();
             });
         }
 
-        if (Schema::hasTable('tip_goals_payments') && !Schema::hasColumn('tip_goals_payments', 'deleted_at')) {
+        if (Schema::hasTable('tip_goals_payments') && ! Schema::hasColumn('tip_goals_payments', 'deleted_at')) {
             Schema::table('tip_goals_payments', function (Blueprint $table) {
                 $table->softDeletes();
             });

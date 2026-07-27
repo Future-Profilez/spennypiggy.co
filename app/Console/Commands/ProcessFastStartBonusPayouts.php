@@ -5,11 +5,12 @@ namespace App\Console\Commands;
 use App\Helpers;
 use App\Mail\FastStartBonusPayoutInitiated;
 use App\Models\AuditLog;
+use App\Models\Currency;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
 use App\Models\PayoutRecord;
 use App\Models\User;
-use App\Models\Currency;
+use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -69,12 +70,14 @@ class ProcessFastStartBonusPayouts extends Command
 
             if ($now->lt($windowEnd)) {
                 $skipped++;
+
                 continue;
             }
 
             $existing = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->first();
             if ($existing && in_array($existing->status, ['pending', 'in_transit', 'paid', 'processing'], true)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -84,8 +87,13 @@ class ProcessFastStartBonusPayouts extends Command
             $convert = function (float $amount, string $from, string $to) use ($rates): float {
                 $from = strtoupper($from ?: 'GBP');
                 $to = strtoupper($to ?: 'GBP');
-                if ($from === $to) return $amount;
-                if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+                if ($from === $to) {
+                    return $amount;
+                }
+                if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                    return $amount;
+                }
+
                 return ($amount / $rates[$from]) * $rates[$to];
             };
 
@@ -113,12 +121,13 @@ class ProcessFastStartBonusPayouts extends Command
             $bonusMinor = (int) round($earningsMinor * $bonusRate);
 
             if ($dryRun) {
-                $this->line($creator->uuid . ' eligible_at=' . $eligibleAt->toDateTimeString() . ' earnings=' . $earningsMinor . ' bonus=' . $bonusMinor . ' rate=' . $bonusRate . ' ' . $currency);
+                $this->line($creator->uuid.' eligible_at='.$eligibleAt->toDateTimeString().' earnings='.$earningsMinor.' bonus='.$bonusMinor.' rate='.$bonusRate.' '.$currency);
                 $processed++;
+
                 continue;
             }
 
-            $payoutRow = $existing ?: new FastStartBonusPayout();
+            $payoutRow = $existing ?: new FastStartBonusPayout;
             $payoutRow->creator_uuid = $creator->uuid;
             $payoutRow->stripe_account_id = $creator->account_id;
             $payoutRow->window_start = $windowStart;
@@ -134,6 +143,7 @@ class ProcessFastStartBonusPayouts extends Command
 
             if ($payoutRow->status !== 'ready') {
                 $skipped++;
+
                 continue;
             }
 
@@ -141,6 +151,7 @@ class ProcessFastStartBonusPayouts extends Command
                 $payoutRow->status = 'payout_paused';
                 $payoutRow->save();
                 $skipped++;
+
                 continue;
             }
 
@@ -148,13 +159,14 @@ class ProcessFastStartBonusPayouts extends Command
                 $payoutRow->status = 'no_bonus';
                 $payoutRow->save();
                 $skipped++;
+
                 continue;
             }
 
             // Claim the row in its own small transaction so a concurrent run can't double-process
             $payoutRow = DB::transaction(function () use ($creator, $windowStart, $windowEnd, $earningsMinor, $bonusMinor, $currency) {
                 $row = FastStartBonusPayout::where('creator_uuid', $creator->uuid)->lockForUpdate()->first();
-                if (!$row) {
+                if (! $row) {
                     $row = new FastStartBonusPayout(['creator_uuid' => $creator->uuid]);
                 } elseif (in_array($row->status, ['pending', 'in_transit', 'paid', 'processing'], true)) {
                     return null;
@@ -171,8 +183,9 @@ class ProcessFastStartBonusPayouts extends Command
                 return $row;
             });
 
-            if (!$payoutRow) {
+            if (! $payoutRow) {
                 $skipped++;
+
                 continue;
             }
 
@@ -194,32 +207,32 @@ class ProcessFastStartBonusPayouts extends Command
                 'env' => (string) config('app.env'),
             ];
 
-            $transferDescription = 'Fast Start Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+            $transferDescription = 'Fast Start Bonus'.(! empty($creator->username) ? (' - '.$creator->username) : '');
 
             // Stripe calls happen OUTSIDE any DB transaction; idempotency keys make a re-run safe
             try {
-                $transfer = \App\StripeControl::transferToConnectedAccountMinor(
+                $transfer = StripeControl::transferToConnectedAccountMinor(
                     $creator->account_id,
                     $bonusMinor,
                     strtolower($currency),
                     $metadataBase,
                     $transferDescription,
-                    'fast_start_transfer_' . $creator->uuid . '_' . $payoutRow->id
+                    'fast_start_transfer_'.$creator->uuid.'_'.$payoutRow->id
                 );
 
                 $payoutRow->stripe_transfer_id = $transfer->id ?? null;
                 $payoutRow->save();
 
-                \App\StripeControl::ensureManualPayoutSchedule($creator->account_id, strtolower($currency));
+                StripeControl::ensureManualPayoutSchedule($creator->account_id, strtolower($currency));
 
-                $payout = \App\StripeControl::createPayout([
+                $payout = StripeControl::createPayout([
                     'amount' => (int) $bonusMinor,
                     'currency' => strtolower($currency),
                     'method' => 'standard',
                     'metadata' => array_merge($metadataBase, [
                         'transfer_id' => (string) ($transfer->id ?? ''),
                     ]),
-                    'idempotency_key' => 'fast_start_payout_' . $creator->uuid . '_' . $payoutRow->id,
+                    'idempotency_key' => 'fast_start_payout_'.$creator->uuid.'_'.$payoutRow->id,
                 ], $creator->account_id);
             } catch (\Exception $e) {
                 $payoutRow->status = 'failed';
@@ -230,13 +243,14 @@ class ProcessFastStartBonusPayouts extends Command
                     'currency' => $currency,
                     'error' => $e->getMessage(),
                 ]);
-                $this->error($creator->uuid . ' payout failed: ' . $e->getMessage());
+                $this->error($creator->uuid.' payout failed: '.$e->getMessage());
                 $skipped++;
+
                 continue;
             }
 
-            if (!empty($transfer->id) && !empty($payout->id)) {
-                \App\StripeControl::updateTransferMinor((string) $transfer->id, strtolower($currency), array_merge($metadataBase, [
+            if (! empty($transfer->id) && ! empty($payout->id)) {
+                StripeControl::updateTransferMinor((string) $transfer->id, strtolower($currency), array_merge($metadataBase, [
                     'stripe_payout_id' => (string) $payout->id,
                 ]), $transferDescription);
             }
@@ -300,7 +314,7 @@ class ProcessFastStartBonusPayouts extends Command
 
             Helpers::sendNotification(
                 '🚀 Fast Start Bonus Payout Initiated!',
-                "Your {$currencySymbol} {$bonusFormatted} Fast Start Bonus is on its way!" . ($arrivalDate ? " Expected: {$arrivalDate}." : ''),
+                "Your {$currencySymbol} {$bonusFormatted} Fast Start Bonus is on its way!".($arrivalDate ? " Expected: {$arrivalDate}." : ''),
                 $creator->email
             );
 
@@ -324,8 +338,8 @@ class ProcessFastStartBonusPayouts extends Command
             $processed++;
         }
 
-        $this->info('Processed: ' . $processed);
-        $this->info('Skipped: ' . $skipped);
+        $this->info('Processed: '.$processed);
+        $this->info('Skipped: '.$skipped);
 
         return self::SUCCESS;
     }

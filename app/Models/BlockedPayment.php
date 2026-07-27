@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class BlockedPayment extends Model
 {
@@ -48,7 +48,7 @@ class BlockedPayment extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
@@ -121,7 +121,7 @@ class BlockedPayment extends Model
      */
     public function getFormattedAmountAttribute()
     {
-        return $this->currency . ' ' . number_format((float)$this->amount, 2, '.', '');
+        return $this->currency.' '.number_format((float) $this->amount, 2, '.', '');
     }
 
     /**

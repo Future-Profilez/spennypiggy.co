@@ -15,10 +15,15 @@ class FastStartBonusPayoutStatusUpdated extends Mailable
     use Queueable, SerializesModels;
 
     public User $creator;
+
     public float $amount;
+
     public string $currency;
+
     public string $status;
+
     public ?string $arrivalDate;
+
     public ?string $failureMessage;
 
     public function __construct(

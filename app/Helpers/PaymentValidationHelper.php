@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 class PaymentValidationHelper
 {
     protected $activityService;
+
     protected $subscriptionService;
 
     public function __construct(CreatorActivityService $activityService, CreatorSubscriptionService $subscriptionService)
@@ -27,9 +28,9 @@ class PaymentValidationHelper
     {
         // First check subscription status
         $subscriptionValidation = $this->subscriptionService->validatePaymentSubscription($creator, $paymentData);
-        
+
         // If subscription is not valid, block payment
-        if (!$subscriptionValidation['eligible']) {
+        if (! $subscriptionValidation['eligible']) {
             return response()->json([
                 'success' => false,
                 'error' => 'payment_blocked',
@@ -39,7 +40,7 @@ class PaymentValidationHelper
                     'subscription_status' => $subscriptionValidation['subscription_status'] ?? 'unknown',
                     'action_required' => $subscriptionValidation['action_required'] ?? null,
                     'suggestions' => $subscriptionValidation['suggestions'] ?? [],
-                ]
+                ],
             ], 402); // Payment Required
         }
 
@@ -47,7 +48,7 @@ class PaymentValidationHelper
         $activityValidation = $this->activityService->validatePaymentAndLog($creator, $paymentData);
 
         // If activity is not sufficient, block payment
-        if (!$activityValidation['eligible']) {
+        if (! $activityValidation['eligible']) {
             return response()->json([
                 'success' => false,
                 'error' => 'payment_blocked',
@@ -57,7 +58,7 @@ class PaymentValidationHelper
                     'content_count' => $activityValidation['content_count'] ?? 0,
                     'needed_content' => $activityValidation['needed'] ?? 0,
                     'suggestions' => $activityValidation['suggestions'] ?? [],
-                ]
+                ],
             ], 402); // Payment Required
         }
 
@@ -78,7 +79,7 @@ class PaymentValidationHelper
             'metadata' => [
                 'tip_message' => $request->input('message'),
                 'is_anonymous' => $request->boolean('is_anonymous'),
-            ]
+            ],
         ];
 
         // Check if payment is allowed
@@ -89,10 +90,10 @@ class PaymentValidationHelper
 
         // Continue with normal payment processing...
         // Your existing tip payment logic here
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Tip payment processed successfully'
+            'message' => 'Tip payment processed successfully',
         ]);
     }
 
@@ -110,7 +111,7 @@ class PaymentValidationHelper
             'metadata' => [
                 'bill_id' => $billId,
                 'custom_fields' => $request->input('custom_fields', []),
-            ]
+            ],
         ];
 
         // Check if payment is allowed
@@ -121,10 +122,10 @@ class PaymentValidationHelper
 
         // Continue with normal payment processing...
         // Your existing bill payment logic here
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Bill payment processed successfully'
+            'message' => 'Bill payment processed successfully',
         ]);
     }
 
@@ -142,7 +143,7 @@ class PaymentValidationHelper
             'metadata' => [
                 'membership_id' => $membershipId,
                 'subscription_period' => $request->input('period'),
-            ]
+            ],
         ];
 
         // Check if payment is allowed
@@ -153,10 +154,10 @@ class PaymentValidationHelper
 
         // Continue with normal payment processing...
         // Your existing membership payment logic here
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Membership payment processed successfully'
+            'message' => 'Membership payment processed successfully',
         ]);
     }
 
@@ -174,7 +175,7 @@ class PaymentValidationHelper
             'metadata' => [
                 'wish_id' => $wishId,
                 'quantity' => $request->input('quantity', 1),
-            ]
+            ],
         ];
 
         // Check if payment is allowed
@@ -185,10 +186,10 @@ class PaymentValidationHelper
 
         // Continue with normal payment processing...
         // Your existing wish payment logic here
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Wish item payment processed successfully'
+            'message' => 'Wish item payment processed successfully',
         ]);
     }
 
@@ -207,7 +208,7 @@ class PaymentValidationHelper
                 'shop_item_id' => $shopItemId,
                 'quantity' => $request->input('quantity', 1),
                 'shipping_address' => $request->input('shipping_address'),
-            ]
+            ],
         ];
 
         // Check if payment is allowed
@@ -218,10 +219,10 @@ class PaymentValidationHelper
 
         // Continue with normal payment processing...
         // Your existing shop payment logic here
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Shop item payment processed successfully'
+            'message' => 'Shop item payment processed successfully',
         ]);
     }
 }

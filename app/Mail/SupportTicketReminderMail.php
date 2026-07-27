@@ -19,4 +19,3 @@ class SupportTicketReminderMail extends Mailable
             ->subject('Reminder: Support request pending');
     }
 }
-

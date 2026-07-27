@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\Payment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 
 class ActivityLogger
 {
@@ -31,7 +34,7 @@ class ActivityLogger
 
             // Prepare the data for creation
             $data = [
-                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'actor' => $actor,
                 'action_type' => strtoupper($actionType),
                 'reference_id' => $referenceId,
@@ -45,31 +48,31 @@ class ActivityLogger
             }
 
             // Add optional fields if provided
-            if (!empty($options['entity_type'])) {
+            if (! empty($options['entity_type'])) {
                 $data['entity_type'] = $options['entity_type'];
             }
-            if (!empty($options['entity_id'])) {
+            if (! empty($options['entity_id'])) {
                 $data['entity_id'] = $options['entity_id'];
             }
-            if (!empty($options['case_id'])) {
+            if (! empty($options['case_id'])) {
                 $data['case_id'] = $options['case_id'];
             }
-            if (!empty($options['correlation_id'])) {
+            if (! empty($options['correlation_id'])) {
                 $data['correlation_id'] = $options['correlation_id'];
             }
-            if (!empty($options['reason_code'])) {
+            if (! empty($options['reason_code'])) {
                 $data['reason_code'] = $options['reason_code'];
             }
-            if (!empty($options['old_values'])) {
+            if (! empty($options['old_values'])) {
                 $data['old_values'] = $options['old_values'];
             }
-            if (!empty($options['new_values'])) {
+            if (! empty($options['new_values'])) {
                 $data['new_values'] = $options['new_values'];
             }
-            if (!empty($options['evidence_refs'])) {
+            if (! empty($options['evidence_refs'])) {
                 $data['evidence_refs'] = $options['evidence_refs'];
             }
-            if (!empty($options['payment_refs'])) {
+            if (! empty($options['payment_refs'])) {
                 $data['payment_refs'] = $options['payment_refs'];
             }
 
@@ -78,11 +81,12 @@ class ActivityLogger
 
             return $auditLog;
         } catch (\Exception $e) {
-            Log::error('Failed to create activity log: ' . $e->getMessage(), [
+            Log::error('Failed to create activity log: '.$e->getMessage(), [
                 'action_type' => $actionType,
                 'reference_id' => $referenceId,
                 'exception' => $e,
             ]);
+
             return null;
         }
     }
@@ -132,18 +136,21 @@ class ActivityLogger
         // Check if user is logged in via web guard (most common)
         if (Auth::guard('web')->check()) {
             $user = Auth::guard('web')->user();
+
             return "user:{$user->id}";
         }
 
         // Check for API guard
         if (Auth::guard('api')->check()) {
             $user = Auth::guard('api')->user();
+
             return "user:{$user->id}";
         }
 
         // Check for admin guard ONLY if it exists
         if (self::guardExists('admin') && Auth::guard('admin')->check()) {
             $admin = Auth::guard('admin')->user();
+
             return "admin:{$admin->id}";
         }
 
@@ -158,6 +165,7 @@ class ActivityLogger
     {
         try {
             Auth::guard($guard);
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -206,7 +214,7 @@ class ActivityLogger
         try {
             $request = Request::instance();
 
-            if (!$request->hasSession() || !$request->session()->get('emulated_by_admin')) {
+            if (! $request->hasSession() || ! $request->session()->get('emulated_by_admin')) {
                 return null;
             }
 
@@ -216,7 +224,7 @@ class ActivityLogger
             }
 
             $actor = self::getCurrentActor();
-            if (!str_starts_with($actor, 'user:')) {
+            if (! str_starts_with($actor, 'user:')) {
                 return null;
             }
 
@@ -235,8 +243,7 @@ class ActivityLogger
     /**
      * Log a batch of activities (for performance)
      *
-     * @param array $activities - Array of activity data
-     * @return bool
+     * @param  array  $activities  - Array of activity data
      */
     public static function logBatch(array $activities): bool
     {
@@ -244,7 +251,7 @@ class ActivityLogger
             $records = [];
             foreach ($activities as $activity) {
                 $record = [
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'actor' => $activity['actor'] ?? self::getCurrentActor(),
                     'action_type' => strtoupper($activity['action_type']),
                     'reference_id' => $activity['reference_id'] ?? null,
@@ -266,9 +273,11 @@ class ActivityLogger
             }
 
             AuditLog::insert($records);
+
             return true;
         } catch (\Exception $e) {
-            Log::error('Failed to log batch activities: ' . $e->getMessage());
+            Log::error('Failed to log batch activities: '.$e->getMessage());
+
             return false;
         }
     }
@@ -276,12 +285,7 @@ class ActivityLogger
     /**
      * Log an activity with old/new values diff (useful for updates)
      *
-     * @param string $actionType
-     * @param mixed $model - The model being changed
-     * @param array $oldValues
-     * @param array $newValues
-     * @param string|null $referenceId
-     * @return \App\Models\AuditLog|null
+     * @param  mixed  $model  - The model being changed
      */
     public static function logDiff(
         string $actionType,
@@ -295,7 +299,7 @@ class ActivityLogger
             if (isset($oldValues[$key]) && $oldValues[$key] != $value) {
                 $diff[$key] = [
                     'old' => $oldValues[$key],
-                    'new' => $value
+                    'new' => $value,
                 ];
             }
         }
@@ -318,10 +322,7 @@ class ActivityLogger
      * Check if a specific action was performed by a user
      * (Useful for security checks)
      *
-     * @param string $userId
-     * @param string $actionType
-     * @param int $hours - Check within last X hours
-     * @return bool
+     * @param  int  $hours  - Check within last X hours
      */
     public static function hasPerformedAction(string $userId, string $actionType, int $hours = 24): bool
     {
@@ -333,11 +334,6 @@ class ActivityLogger
 
     /**
      * Log system-level activity (no user context)
-     *
-     * @param string $actionType
-     * @param string|null $referenceId
-     * @param array $metadata
-     * @return \App\Models\AuditLog|null
      */
     public static function logSystem(string $actionType, ?string $referenceId = null, array $metadata = []): ?AuditLog
     {
@@ -346,12 +342,6 @@ class ActivityLogger
 
     /**
      * Log admin action with admin context
-     *
-     * @param int $adminId
-     * @param string $actionType
-     * @param string|null $referenceId
-     * @param array $metadata
-     * @return \App\Models\AuditLog|null
      */
     public static function logAdmin(int $adminId, string $actionType, ?string $referenceId = null, array $metadata = []): ?AuditLog
     {
@@ -361,9 +351,7 @@ class ActivityLogger
     /**
      * Get recent activities for a specific entity
      *
-     * @param string $referenceId
-     * @param int $limit
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public static function getEntityHistory(string $referenceId, int $limit = 50)
     {
@@ -376,9 +364,7 @@ class ActivityLogger
     /**
      * Get activities by type
      *
-     * @param string $actionType
-     * @param int $limit
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public static function getByActionType(string $actionType, int $limit = 100)
     {
@@ -391,9 +377,7 @@ class ActivityLogger
     /**
      * Get user's activity timeline
      *
-     * @param string $userId
-     * @param int $limit
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public static function getUserTimeline(string $userId, int $limit = 100)
     {
@@ -407,22 +391,22 @@ class ActivityLogger
     /**
      * Clean old logs (for maintenance)
      *
-     * @param int $daysToKeep - Keep logs newer than this many days
+     * @param  int  $daysToKeep  - Keep logs newer than this many days
      * @return int - Number of records deleted
      */
     public static function cleanOldLogs(int $daysToKeep = 90): int
     {
         $cutoffDate = now()->subDays($daysToKeep);
+
         return AuditLog::where('created_at', '<', $cutoffDate)->delete();
     }
 
     /**
      * Log payment activity with comprehensive details
      *
-     * @param \App\Models\Payment $payment
-     * @param string $actionType - e.g., PAYMENT_CREATED, PAYMENT_PROCESSED, PAYMENT_FAILED
-     * @param array $details - Additional payment details
-     * @return \App\Models\AuditLog|null
+     * @param  Payment  $payment
+     * @param  string  $actionType  - e.g., PAYMENT_CREATED, PAYMENT_PROCESSED, PAYMENT_FAILED
+     * @param  array  $details  - Additional payment details
      */
     /**
      * Enhanced payment logging with better structure
@@ -467,16 +451,17 @@ class ActivityLogger
 
             return self::log(
                 $actionType,
-                (string)$payment->id,
+                (string) $payment->id,
                 $metadata,
                 null,
                 $options
             );
         } catch (\Exception $e) {
-            Log::error('Failed to log payment activity: ' . $e->getMessage(), [
+            Log::error('Failed to log payment activity: '.$e->getMessage(), [
                 'payment_id' => $payment->id ?? 'unknown',
                 'action_type' => $actionType,
             ]);
+
             return null;
         }
     }
@@ -484,11 +469,7 @@ class ActivityLogger
     /**
      * Log payment state change with before/after values
      *
-     * @param \App\Models\Payment $payment
-     * @param array $oldValues
-     * @param array $newValues
-     * @param string $reason
-     * @return \App\Models\AuditLog|null
+     * @param  Payment  $payment
      */
     public static function logPaymentStateChange($payment, array $oldValues, array $newValues, string $reason = ''): ?AuditLog
     {
@@ -514,15 +495,16 @@ class ActivityLogger
 
             return self::log(
                 'PAYMENT_STATE_CHANGED',
-                (string)$payment->id,
+                (string) $payment->id,
                 $metadata,
                 null,
                 $options
             );
         } catch (\Exception $e) {
-            Log::error('Failed to log payment state change: ' . $e->getMessage(), [
+            Log::error('Failed to log payment state change: '.$e->getMessage(), [
                 'payment_id' => $payment->id ?? 'unknown',
             ]);
+
             return null;
         }
     }
@@ -530,11 +512,7 @@ class ActivityLogger
     /**
      * Log payment refund with details
      *
-     * @param \App\Models\Payment $payment
-     * @param float $refundAmount
-     * @param string $reason
-     * @param array $metadata
-     * @return \App\Models\AuditLog|null
+     * @param  Payment  $payment
      */
     public static function logPaymentRefund($payment, float $refundAmount, string $reason = '', array $metadata = []): ?AuditLog
     {
@@ -551,11 +529,7 @@ class ActivityLogger
     /**
      * Log payment failure/error
      *
-     * @param \App\Models\Payment $payment
-     * @param string $errorCode
-     * @param string $errorMessage
-     * @param array $metadata
-     * @return \App\Models\AuditLog|null
+     * @param  Payment  $payment
      */
     public static function logPaymentError($payment, string $errorCode, string $errorMessage = '', array $metadata = []): ?AuditLog
     {

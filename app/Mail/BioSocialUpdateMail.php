@@ -12,6 +12,7 @@ class BioSocialUpdateMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+
     public $updatedFields;
 
     public function __construct(User $user, array $updatedFields)
@@ -20,13 +21,12 @@ class BioSocialUpdateMail extends Mailable
         $this->updatedFields = $updatedFields; // ['bio' => true, 'social' => true]
     }
 
-
     public function build()
     {
         // Mail::to($admin->email)->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         try {
             // Check if bio was updated AND user has content in bio
-            if ($this->updatedFields['bio'] && !empty($this->user->bio)) {
+            if ($this->updatedFields['bio'] && ! empty($this->user->bio)) {
                 $subject = "{$this->user->name} updated their Bio – Approval Needed";
             } elseif ($this->updatedFields['social']) {
                 $subject = "{$this->user->name} updated their Social Media Handle – Approval Needed";
@@ -34,6 +34,7 @@ class BioSocialUpdateMail extends Mailable
                 // Fallback - shouldn't happen with controller fix
                 $subject = "{$this->user->name} updated their Profile – Approval Needed";
             }
+
             return $this->view('email.bio-social-update')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

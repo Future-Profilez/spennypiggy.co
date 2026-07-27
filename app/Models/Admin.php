@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
-use Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Admin extends Authenticatable
 {
-    use HasFactory, HasApiTokens, SoftDeletes;
+    use HasApiTokens, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,7 +21,7 @@ class Admin extends Authenticatable
         'email',
         'password',
         'email_verified_at',
-        'g2fa_secret'
+        'g2fa_secret',
     ];
 
     /**
@@ -44,7 +43,6 @@ class Admin extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
 
     public function setGoogle2faSecretAttribute($value)
     {

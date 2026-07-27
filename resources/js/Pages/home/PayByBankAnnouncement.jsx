@@ -115,7 +115,7 @@ export default function PayByBankAnnouncement() {
                                 {stamps.map((s, i) => (
                                     <StaggerItem key={s.code} index={i} y={16} rotate={0} stagger={0.12} duration={0.5}>
                                         <div className={`transform ${s.tilt} border-[3px] border-dashed border-[#A2E4B8] rounded-2xl px-4 py-2.5 text-center min-w-[96px]`}>
-                                            <div className="text-2xl leading-none">{s.flag}</div>
+                                            <div className="text-2xl leading-none !text-white">{s.flag}</div>
                                             <div className="font-mono font-black text-[#A2E4B8] text-base leading-none mt-1 tracking-wide">{s.code}</div>
                                             <div className="text-white/70 text-[9px] font-black uppercase tracking-[0.14em] mt-1">{s.rail}</div>
                                         </div>

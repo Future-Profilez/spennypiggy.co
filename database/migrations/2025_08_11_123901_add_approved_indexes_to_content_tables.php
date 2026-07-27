@@ -19,8 +19,8 @@ return new class extends Migration
         Schema::table('memberships', function (Blueprint $table) {
             $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('memberships');
-            if (!array_key_exists('memberships_approved_index', $indexes)) {
-                 $table->index('approved');
+            if (! array_key_exists('memberships_approved_index', $indexes)) {
+                $table->index('approved');
             }
         });
 
@@ -28,16 +28,16 @@ return new class extends Migration
         Schema::table('bills', function (Blueprint $table) {
             $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('bills');
-            if (!array_key_exists('bills_approved_index', $indexes)) {
+            if (! array_key_exists('bills_approved_index', $indexes)) {
                 $table->index('approved');
             }
         });
 
         // Add index to shops.approved
         Schema::table('shops', function (Blueprint $table) {
-             $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('shops');
-            if (!array_key_exists('shops_approved_index', $indexes)) {
+            if (! array_key_exists('shops_approved_index', $indexes)) {
                 $table->index('approved');
             }
         });
@@ -46,16 +46,16 @@ return new class extends Migration
         Schema::table('user_intros', function (Blueprint $table) {
             $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('user_intros');
-            if (!array_key_exists('user_intros_approved_index', $indexes)) {
+            if (! array_key_exists('user_intros_approved_index', $indexes)) {
                 $table->index('approved');
             }
         });
 
         // Add index to posts.approved
         Schema::table('posts', function (Blueprint $table) {
-             $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('posts');
-            if (!array_key_exists('posts_approved_index', $indexes)) {
+            if (! array_key_exists('posts_approved_index', $indexes)) {
                 $table->index('approved');
             }
         });

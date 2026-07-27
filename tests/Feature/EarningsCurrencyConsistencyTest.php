@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Helpers;
 use App\Models\Currency;
 use App\Models\FinancialTransaction;
+use App\Models\ShopPayment;
+use App\Models\TipGoalsPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,7 +17,7 @@ class EarningsCurrencyConsistencyTest extends TestCase
 
     public function test_earnings_endpoint_converts_to_display_currency_cookie(): void
     {
-        \App\Helpers::clearCurrencyCache();
+        Helpers::clearCurrencyCache();
 
         Currency::create(['ISO' => 'GBP', 'name' => 'Pound Sterling', 'conversion_rate' => 1, 'ISOdigits' => 2, 'symbol' => '£']);
         Currency::create(['ISO' => 'USD', 'name' => 'US Dollar', 'conversion_rate' => 1.25, 'ISOdigits' => 2, 'symbol' => '$']);
@@ -25,7 +28,7 @@ class EarningsCurrencyConsistencyTest extends TestCase
         FinancialTransaction::create([
             'user_id' => $user->id,
             'supporter_id' => null,
-            'source_type' => \App\Models\TipGoalsPayment::class,
+            'source_type' => TipGoalsPayment::class,
             'source_id' => 1,
             'type' => 'income',
             'gross_amount' => 10.00,
@@ -42,7 +45,7 @@ class EarningsCurrencyConsistencyTest extends TestCase
         FinancialTransaction::create([
             'user_id' => $user->id,
             'supporter_id' => null,
-            'source_type' => \App\Models\ShopPayment::class,
+            'source_type' => ShopPayment::class,
             'source_id' => 2,
             'type' => 'income',
             'gross_amount' => 20.00,
@@ -64,8 +67,8 @@ class EarningsCurrencyConsistencyTest extends TestCase
         $this->assertSame('eur', $json['currency']);
 
         $expected = round(
-            \App\Helpers::priceFormat('GBP', 8.50, 'EUR') +
-            \App\Helpers::priceFormat('USD', 17.00, 'EUR'),
+            Helpers::priceFormat('GBP', 8.50, 'EUR') +
+            Helpers::priceFormat('USD', 17.00, 'EUR'),
             2
         );
 

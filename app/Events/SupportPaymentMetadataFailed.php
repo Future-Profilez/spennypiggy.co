@@ -10,9 +10,13 @@ class SupportPaymentMetadataFailed
     use Dispatchable, SerializesModels;
 
     public int $deliverableId;
+
     public ?string $paymentIntentId;
+
     public string $error;
+
     public string $errorClass;
+
     public array $context;
 
     /**

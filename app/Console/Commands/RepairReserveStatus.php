@@ -50,9 +50,10 @@ class RepairReserveStatus extends Command
         $this->info("Found {$withinCount} prematurely-released reserve(s) still within the 30-day window.");
         $this->info("Found {$overdueCount} prematurely-released reserve(s) already past the window (need review).");
 
-        if (!$apply) {
+        if (! $apply) {
             $this->warn('DRY RUN — no changes written. Re-run with --apply to revert the within-window reserves to held'
-                . ($includeOverdue ? ' (and overdue too).' : '.'));
+                .($includeOverdue ? ' (and overdue too).' : '.'));
+
             return self::SUCCESS;
         }
 
@@ -66,7 +67,8 @@ class RepairReserveStatus extends Command
             $this->info("Reverted {$revertedOverdue} overdue reserve(s) to 'held' — reserve:release will pay them on its next run.");
         }
 
-        Log::warning("reserve:repair-status applied — within-window reverted: {$reverted}, overdue included: " . ($includeOverdue ? 'yes' : 'no') . ".");
+        Log::warning("reserve:repair-status applied — within-window reverted: {$reverted}, overdue included: ".($includeOverdue ? 'yes' : 'no').'.');
+
         return self::SUCCESS;
     }
 }

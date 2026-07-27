@@ -3,16 +3,17 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class SubsMail extends Mailable
 {
     use Queueable, SerializesModels;
+
     public $sub;
+
     public $creatorFinalAmount;
+
     /**
      * Create a new message instance.
      *
@@ -33,9 +34,10 @@ class SubsMail extends Mailable
     {
         try {
             $subject = 'WooHoo! You got a new subscription.';
+
             return $this->view('email.subscription')
-            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-            ->subject($subject);
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+                ->subject($subject);
         } catch (\Exception $e) {
         }
     }

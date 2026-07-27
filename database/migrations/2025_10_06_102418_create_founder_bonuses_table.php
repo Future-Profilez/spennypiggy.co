@@ -20,10 +20,10 @@ return new class extends Migration
             $table->date('estimated_payout_date'); // When bonus will be paid
             $table->enum('payout_status', ['pending', 'paid'])->default('pending');
             $table->timestamps();
-            
+
             // Ensure each creator can only qualify once
             $table->unique('creator_id');
-            
+
             // Index for efficient queries
             $table->index(['qualification_date', 'payout_status']);
         });

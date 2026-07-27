@@ -11,8 +11,11 @@ class PaymentSuccessMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+
     public $amount;
+
     public $planCurrency;
+
     public $nextPaymentDate;
 
     public function __construct($user, $amount, $planCurrency, $nextPaymentDate)

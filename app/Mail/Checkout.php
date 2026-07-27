@@ -2,23 +2,26 @@
 
 namespace App\Mail;
 
-use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class Checkout extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $data;
+
     public $anon;
+
     public $surprise;
+
     public $messages;
+
     public $anonname;
+
     public $symbol;
+
     public $vat_amount;
 
     /**
@@ -47,6 +50,7 @@ class Checkout extends Mailable
     {
         try {
             $subject = 'You’ve just received a gift on Spenny Piggy.';
+
             return $this->view('email.checkout')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

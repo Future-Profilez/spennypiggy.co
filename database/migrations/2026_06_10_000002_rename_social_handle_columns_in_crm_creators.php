@@ -4,10 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
         if (Schema::hasColumn('crm_creators', 'x_handle')) {
             DB::statement('ALTER TABLE crm_creators CHANGE x_handle twitter VARCHAR(255) NULL');
         }
@@ -24,7 +27,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
         if (Schema::hasColumn('crm_creators', 'twitter')) {
             DB::statement('ALTER TABLE crm_creators CHANGE twitter x_handle VARCHAR(255) NULL');
         }

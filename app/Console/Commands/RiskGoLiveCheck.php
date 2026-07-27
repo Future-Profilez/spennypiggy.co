@@ -50,13 +50,12 @@ class RiskGoLiveCheck extends Command
 
         $fail = false;
         foreach ($checks as $c) {
-            if (!$c['ok']) {
+            if (! $c['ok']) {
                 $fail = true;
             }
-            $this->line(($c['ok'] ? 'PASS' : 'FAIL') . ' - ' . $c['name']);
+            $this->line(($c['ok'] ? 'PASS' : 'FAIL').' - '.$c['name']);
         }
 
         return $fail ? 1 : 0;
     }
 }
-

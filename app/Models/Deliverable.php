@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class Deliverable extends Model
 {
@@ -60,7 +59,7 @@ class Deliverable extends Model
         'last_system_reminder_at',
         'needs_admin_review',
         'admin_reminder_sent_at',
-        'admin_reminder_count'
+        'admin_reminder_count',
     ];
 
     protected $casts = [
@@ -76,13 +75,13 @@ class Deliverable extends Model
 
     protected $dates = [
         'delivered_at',
-        'accessed_at'
+        'accessed_at',
     ];
 
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
@@ -105,7 +104,7 @@ class Deliverable extends Model
     {
         return $this->belongsTo(User::class, 'creator_id');
     }
-    
+
     /**
      * Get the wish item this deliverable is for
      */
@@ -113,7 +112,7 @@ class Deliverable extends Model
     {
         return $this->belongsTo(WishItem::class, 'item_id');
     }
-    
+
     /**
      * Get the membership this deliverable is for
      */
@@ -121,7 +120,7 @@ class Deliverable extends Model
     {
         return $this->belongsTo(Membership::class, 'item_id');
     }
-    
+
     /**
      * Get the bill this deliverable is for
      */
@@ -158,10 +157,10 @@ class Deliverable extends Model
     {
         return $this->belongsTo(ShopPayment::class, 'session_id', 'session_id');
     }
-    
+
     /**
      * Get the item based on product_type
-     * 
+     *
      * @return mixed
      */
     public function getItemByType()
@@ -195,7 +194,7 @@ class Deliverable extends Model
         'shipping',
         'platform_access',
         'content_file',
-        'digital_task'
+        'digital_task',
     ];
 
     // Status enum
@@ -204,13 +203,13 @@ class Deliverable extends Model
         'processing',
         'shipped',
         'delivered',
-        'failed'
+        'failed',
     ];
 
     /**
      * Mark deliverable as delivered
      */
-    public function markAsDelivered(string $deliverableUrl = null): void
+    public function markAsDelivered(?string $deliverableUrl = null): void
     {
         $this->update([
             'status' => 'delivered',
@@ -225,7 +224,7 @@ class Deliverable extends Model
     public function markAsFailed(): void
     {
         $this->update([
-            'status' => 'failed'
+            'status' => 'failed',
         ]);
     }
 
@@ -318,7 +317,7 @@ class Deliverable extends Model
     {
         return $query->where('gifter_id', $gifterId);
     }
-    
+
     /**
      * Scope for specific wish item deliverables
      */
@@ -326,7 +325,7 @@ class Deliverable extends Model
     {
         return $query->where('item_id', $wishItemId);
     }
-    
+
     /**
      * Scope for deliverable items only
      */
@@ -334,7 +333,7 @@ class Deliverable extends Model
     {
         return $query->where('is_deliverable', true);
     }
-    
+
     /**
      * Mark as deliverable item
      */
@@ -342,7 +341,7 @@ class Deliverable extends Model
     {
         $this->update(['is_deliverable' => true]);
     }
-    
+
     /**
      * Mark as non-deliverable item
      */

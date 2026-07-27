@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -24,39 +24,39 @@ return new class extends Migration
 
         Schema::table('users', function (Blueprint $table) use ($existingIndexes) {
             // Add missing composite indexes for performance
-            if (!in_array('idx_subscribed_account', $existingIndexes)) {
+            if (! in_array('idx_subscribed_account', $existingIndexes)) {
                 $table->index(['is_subscribed', 'account_id'], 'idx_subscribed_account');
             }
-            if (!in_array('idx_suspended_deleted', $existingIndexes)) {
+            if (! in_array('idx_suspended_deleted', $existingIndexes)) {
                 $table->index(['suspended_account', 'deleted_at'], 'idx_suspended_deleted');
             }
-            if (!in_array('idx_created_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
+            if (! in_array('idx_created_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
                 $table->index(['created_at', 'role'], 'idx_created_role');
             }
-            if (!in_array('idx_updated_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
+            if (! in_array('idx_updated_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
                 $table->index(['updated_at', 'role'], 'idx_updated_role');
             }
-            
+
             // Single column indexes for frequently queried fields
-            if (!in_array('idx_stripe_id', $existingIndexes)) {
+            if (! in_array('idx_stripe_id', $existingIndexes)) {
                 $table->index('stripe_id', 'idx_stripe_id');
             }
-            if (!in_array('idx_account_id', $existingIndexes)) {
+            if (! in_array('idx_account_id', $existingIndexes)) {
                 $table->index('account_id', 'idx_account_id');
             }
-            if (!in_array('idx_identity_status', $existingIndexes)) {
+            if (! in_array('idx_identity_status', $existingIndexes)) {
                 $table->index('identity_status', 'idx_identity_status');
             }
-            if (!in_array('idx_country', $existingIndexes)) {
+            if (! in_array('idx_country', $existingIndexes)) {
                 $table->index('country', 'idx_country');
             }
-            if (!in_array('idx_charges_enabled', $existingIndexes)) {
+            if (! in_array('idx_charges_enabled', $existingIndexes)) {
                 $table->index('charges_enabled', 'idx_charges_enabled');
             }
         });
-        
+
         // Handle TEXT column index separately
-        if (!in_array('idx_creator_category', $existingIndexes) && Schema::hasColumn('users', 'creator_category')) {
+        if (! in_array('idx_creator_category', $existingIndexes) && Schema::hasColumn('users', 'creator_category')) {
             // For TEXT columns, specify key length (using first 255 characters)
             DB::statement('ALTER TABLE `users` ADD INDEX `idx_creator_category` (`creator_category`(255))');
         }

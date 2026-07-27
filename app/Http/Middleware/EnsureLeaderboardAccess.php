@@ -16,7 +16,7 @@ class EnsureLeaderboardAccess
      * - Allows public access to general leaderboard endpoints for all users
      * - Requires authentication (and optionally role=admin/creator) for sensitive endpoints with financial data
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next, string $accessType = 'public'): Response
     {
@@ -35,10 +35,10 @@ class EnsureLeaderboardAccess
         // Check if the current route is a sensitive endpoint
         $currentRoute = $request->route()->getName() ?? '';
         $currentPath = $request->path();
-        
+
         $isSensitiveEndpoint = false;
         foreach ($sensitiveEndpoints as $pattern) {
-            if (str_contains($currentRoute, str_replace('*', '', $pattern)) || 
+            if (str_contains($currentRoute, str_replace('*', '', $pattern)) ||
                 str_contains($currentPath, str_replace('*', '', $pattern))) {
                 $isSensitiveEndpoint = true;
                 break;
@@ -49,71 +49,71 @@ class EnsureLeaderboardAccess
         switch ($accessType) {
             case 'public':
                 // Allow public access to general leaderboard endpoints
-                if (!$isSensitiveEndpoint) {
+                if (! $isSensitiveEndpoint) {
                     return $next($request);
                 }
-                
+
                 // For sensitive endpoints, require authentication
-                if (!Auth::check()) {
+                if (! Auth::check()) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Authentication required to access financial data.'
+                        'message' => 'Authentication required to access financial data.',
                     ], 401);
                 }
                 break;
 
             case 'auth':
                 // Require authentication for all endpoints
-                if (!Auth::check()) {
+                if (! Auth::check()) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Authentication required.'
+                        'message' => 'Authentication required.',
                     ], 401);
                 }
                 break;
 
             case 'admin':
                 // Require authentication and admin role
-                if (!Auth::check()) {
+                if (! Auth::check()) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Authentication required.'
+                        'message' => 'Authentication required.',
                     ], 401);
                 }
 
                 $user = Auth::user();
-                if (!$user || !in_array($user->role, ['admin', 'super_admin'])) {
+                if (! $user || ! in_array($user->role, ['admin', 'super_admin'])) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Admin access required.'
+                        'message' => 'Admin access required.',
                     ], 403);
                 }
                 break;
 
             case 'creator':
                 // Require authentication and creator/admin role
-                if (!Auth::check()) {
+                if (! Auth::check()) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Authentication required.'
+                        'message' => 'Authentication required.',
                     ], 401);
                 }
 
                 $user = Auth::user();
-                if (!$user || !in_array($user->role, ['creator', 'admin', 'super_admin'])) {
+                if (! $user || ! in_array($user->role, ['creator', 'admin', 'super_admin'])) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Creator or admin access required.'
+                        'message' => 'Creator or admin access required.',
                     ], 403);
                 }
                 break;
 
             case 'owner':
                 // Require authentication and check if user owns the data
-                if (!Auth::check()) {
+                if (! Auth::check()) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Authentication required.'
+                        'message' => 'Authentication required.',
                     ], 401);
                 }
 

@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\UserBlock;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Jenssegers\Agent\Agent;
-use Carbon\Carbon;
 
 class SecurityController extends Controller
 {
@@ -36,13 +36,14 @@ class SecurityController extends Controller
             } catch (\Exception $e) {
                 // If decoding fails, keep the session in the list for security safety
             }
+
             return true;
         });
 
         return response()->json([
             'status' => true,
             'sessions' => $filteredSessions->values()->map(function ($session) {
-                $agent = new Agent();
+                $agent = new Agent;
                 $agent->setUserAgent($session->user_agent);
 
                 return [
@@ -92,7 +93,7 @@ class SecurityController extends Controller
 
         return response()->json([
             'status' => true,
-            'blocked_users' => $blockedUsers->filter(fn($block) => $block->blockedUser !== null)->values()->map(function ($block) {
+            'blocked_users' => $blockedUsers->filter(fn ($block) => $block->blockedUser !== null)->values()->map(function ($block) {
                 return [
                     'id' => $block->blockedUser->id,
                     'name' => $block->blockedUser->name,
@@ -112,7 +113,7 @@ class SecurityController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'reason'  => 'required|string|max:500',
+            'reason' => 'required|string|max:500',
         ]);
 
         UserBlock::updateOrCreate(

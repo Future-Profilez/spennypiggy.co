@@ -1,15 +1,17 @@
 <?php
 
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\WebVitalsController;
+use App\Http\Controllers\Admin\AuditExportController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Api\DeliverableController;
+use App\Http\Controllers\Api\InternalSyncController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RiskController;
-use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Api\WebVitalsController;
 use App\Http\Controllers\Auth\WishitemController;
-use App\Http\Controllers\FounderBonusController;
-use App\Http\Controllers\StripeWebhookController;
-use App\Http\Controllers\WishtenderController;
+use App\Http\Controllers\ProfilePostController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,7 +49,8 @@ Route::prefix('analytics')->group(function () {
 Route::post('/alerts/performance', function (Request $request) {
     // This endpoint receives performance alerts from the frontend
     // and can forward them to external monitoring services
-    Illuminate\Support\Facades\Log::channel('performance')->critical('Performance alert received', $request->all());
+    Log::channel('performance')->critical('Performance alert received', $request->all());
+
     return response()->json(['status' => 'received'], 200);
 });
 
@@ -68,9 +71,9 @@ Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {
     Route::get('/{uuid}/certificate/download', [DeliverableController::class, 'downloadCertificate'])->name('api.deliverables.certificate');
 });
 
-// Profile Posts API (supports pagination and filtering) 
+// Profile Posts API (supports pagination and filtering)
 Route::middleware('web')->group(function () {
-    Route::get('/profile/{user}/posts', [\App\Http\Controllers\ProfilePostController::class, 'index'])
+    Route::get('/profile/{user}/posts', [ProfilePostController::class, 'index'])
         ->name('api.profile.posts');
 });
 
@@ -81,7 +84,7 @@ Route::middleware('web')->group(function () {
 Route::prefix('risk')->group(function () {
     Route::post('/evaluate', [RiskController::class, 'evaluate'])->middleware('throttle:60,1');
     Route::post('/step-up/verify', [RiskController::class, 'verifyStepUp'])->middleware('web');
-    Route::post('/step-up/resend',[RiskController::class, 'resendStepUpOtp'])->middleware('web');
+    Route::post('/step-up/resend', [RiskController::class, 'resendStepUpOtp'])->middleware('web');
     Route::post('/step-up/verify-passkey', [RiskController::class, 'verifyStepUpPasskey'])->middleware('web');
     Route::get('/limits', [RiskController::class, 'getEffectiveLimits'])->middleware('throttle:60,1');
 });
@@ -96,24 +99,24 @@ Route::prefix('payments')->group(function () {
 // });
 
 // Internal Sync Routes
-Route::post('/internal/sync-financials', [\App\Http\Controllers\Api\InternalSyncController::class, 'syncFinancials']);
+Route::post('/internal/sync-financials', [InternalSyncController::class, 'syncFinancials']);
 
 // Admin Dashboard & Exports — require an authenticated ADMIN (role 2), not just any
 // authenticated token. Previously any valid Sanctum token could reach these.
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
-    Route::get('/export/audit-pack', [\App\Http\Controllers\Admin\AuditExportController::class, 'export']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/export/audit-pack', [AuditExportController::class, 'export']);
 
     // Risk Management Routes
-    Route::post('/risk/override', [\App\Http\Controllers\Admin\RiskController::class, 'override']);
-    Route::post('/risk/reset', [\App\Http\Controllers\Admin\RiskController::class, 'reset']);
-    Route::get('/risk/creators/{id}/disputes', [\App\Http\Controllers\Admin\RiskController::class, 'disputes']);
-    Route::get('/risk/creators/{id}/reserves', [\App\Http\Controllers\Admin\RiskController::class, 'reserves']);
-    Route::post('/risk/recalculate/{id}', [\App\Http\Controllers\Admin\RiskController::class, 'recalculate']);
+    Route::post('/risk/override', [App\Http\Controllers\Admin\RiskController::class, 'override']);
+    Route::post('/risk/reset', [App\Http\Controllers\Admin\RiskController::class, 'reset']);
+    Route::get('/risk/creators/{id}/disputes', [App\Http\Controllers\Admin\RiskController::class, 'disputes']);
+    Route::get('/risk/creators/{id}/reserves', [App\Http\Controllers\Admin\RiskController::class, 'reserves']);
+    Route::post('/risk/recalculate/{id}', [App\Http\Controllers\Admin\RiskController::class, 'recalculate']);
 
     // Payout Routes
     Route::prefix('payout')->group(function () {
-        Route::post('/preview', [\App\Http\Controllers\Admin\PayoutController::class, 'preview']);
-        Route::post('/execute', [\App\Http\Controllers\Admin\PayoutController::class, 'execute']);
+        Route::post('/preview', [PayoutController::class, 'preview']);
+        Route::post('/execute', [PayoutController::class, 'execute']);
     });
 });

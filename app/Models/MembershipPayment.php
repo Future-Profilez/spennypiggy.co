@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecurringPaymentState;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Ramsey\Uuid\Uuid;
 
 class MembershipPayment extends Model
 {
-    use \App\Models\Concerns\RecurringPaymentState, HasFactory, SoftDeletes;
+    use HasFactory, RecurringPaymentState, SoftDeletes;
 
     protected $fillable = [
         'uuid',

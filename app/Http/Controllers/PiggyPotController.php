@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
 use Illuminate\Http\Request;
@@ -158,6 +159,14 @@ class PiggyPotController extends Controller
 
         $piggyPot = PiggyPot::create($data);
 
+        // Text half of the gate. A pot is already held on create, so this only
+        // records WHY — but on update it is what re-holds a live pot.
+        ItemTextModeration::apply(
+            $piggyPot,
+            ['reward_title', 'reward_body', 'reward_description', 'title', 'content_description'],
+            ['status' => 'moderation_hold']
+        );
+
         // SFW gate: scan the cover image; record a reason if it fails moderation
         // so the reviewer knows which rows to look at hardest.
         // Skip the platform default cover — known-safe, nothing user-uploaded.
@@ -166,7 +175,8 @@ class PiggyPotController extends Controller
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,
-                ['status' => 'moderation_hold']
+                ['status' => 'moderation_hold'],
+                'cover_image'
             );
         }
 
@@ -240,6 +250,12 @@ class PiggyPotController extends Controller
 
         $piggyPot->update($data);
 
+        ItemTextModeration::apply(
+            $piggyPot->refresh(),
+            ['reward_title', 'reward_body', 'reward_description', 'title', 'content_description'],
+            ['status' => 'moderation_hold']
+        );
+
         // SFW gate: re-scan the cover image on update.
         // Skip the platform default cover — known-safe, nothing user-uploaded.
         if (! empty($piggyPot->cover_media) && ! str_contains($piggyPot->cover_media, self::DEFAULT_COVER_UUID)) {
@@ -247,7 +263,8 @@ class PiggyPotController extends Controller
                 PiggyPot::class,
                 $piggyPot->id,
                 $piggyPot->cover_media,
-                ['status' => 'moderation_hold']
+                ['status' => 'moderation_hold'],
+                'cover_image'
             );
         }
 

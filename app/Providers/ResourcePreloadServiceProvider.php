@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Blade;
 use App\Services\ResourcePreloadService;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
 
 class ResourcePreloadServiceProvider extends ServiceProvider
 {
@@ -14,7 +14,7 @@ class ResourcePreloadServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('resource-preload', function () {
-            return new ResourcePreloadService();
+            return new ResourcePreloadService;
         });
     }
 

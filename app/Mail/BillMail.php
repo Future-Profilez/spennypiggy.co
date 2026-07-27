@@ -3,19 +3,17 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class BillMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $bill_pay;
+
     public $amountWithVat;
+
     /**
      * Create a new message instance.
      *
@@ -37,6 +35,7 @@ class BillMail extends Mailable
     {
         try {
             $subject = 'WooHoo! You got a new Bill subscription.';
+
             return $this->view('email.bills')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

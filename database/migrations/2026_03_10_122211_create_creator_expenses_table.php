@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('status')->default('logged'); // logged, verified
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index(['user_id', 'expense_date']);
         });
     }

@@ -42,10 +42,10 @@ class AuditLog extends Model
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            if (!$model->id) {
+            if (! $model->id) {
                 $model->id = (string) Str::uuid();
             }
-            if (!$model->created_at) {
+            if (! $model->created_at) {
                 $model->created_at = now();
             }
         });
@@ -60,6 +60,7 @@ class AuditLog extends Model
     public function getActorId(): ?string
     {
         $parts = explode(':', $this->actor);
+
         return $parts[1] ?? null;
     }
 
@@ -78,11 +79,12 @@ class AuditLog extends Model
         return $this->actor === 'system';
     }
 
-    public function getMetadata(string $key = null)
+    public function getMetadata(?string $key = null)
     {
         if ($key === null) {
             return $this->metadata_json;
         }
+
         return $this->metadata_json[$key] ?? null;
     }
 
@@ -105,6 +107,7 @@ class AuditLog extends Model
         if ($to) {
             $query->whereDate('created_at', '<=', $to);
         }
+
         return $query;
     }
 }

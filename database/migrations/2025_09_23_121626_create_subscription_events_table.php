@@ -26,7 +26,7 @@ return new class extends Migration
             $table->json('event_data')->nullable(); // Full event data from Stripe or system
             $table->text('notes')->nullable(); // Additional notes
             $table->timestamps();
-            
+
             // Indexes
             $table->index(['subscription_type', 'subscription_id'], 'idx_subscription_events_ref');
             $table->index(['stripe_subscription_id', 'event_type'], 'idx_stripe_event_type');

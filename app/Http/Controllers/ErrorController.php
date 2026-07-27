@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\SeoMeta;
-use App\Services\SeoTemplateService;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ErrorController extends Controller
@@ -19,7 +17,7 @@ class ErrorController extends Controller
         SeoMeta::addTag('title', 'Page Not Found – SpennyPiggy');
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => 'Sorry, this page could not be found. Discover amazing creators, browse wishlists, or explore our help resources on SpennyPiggy.']);
         SeoMeta::setCanonical(url('/404'));
-        
+
         // Set OpenGraph for social sharing of 404 page
         SeoMeta::setOgData(
             'website',
@@ -28,7 +26,7 @@ class ErrorController extends Controller
             url('/og-image.png'),
             url('/404')
         );
-        
+
         // Add structured data for 404 page
         $webPageSchema = [
             '@context' => 'https://schema.org',
@@ -39,13 +37,13 @@ class ErrorController extends Controller
             'isPartOf' => [
                 '@type' => 'WebSite',
                 'name' => 'SpennyPiggy',
-                'url' => url('/')
+                'url' => url('/'),
             ],
             'mainEntity' => [
                 '@type' => 'Organization',
                 'name' => 'SpennyPiggy',
-                'url' => url('/')
-            ]
+                'url' => url('/'),
+            ],
         ];
         SeoMeta::addJsonLd($webPageSchema);
 
@@ -72,10 +70,10 @@ class ErrorController extends Controller
         // Search suggestions
         $searchSuggestions = [
             'creators',
-            'wishlists', 
+            'wishlists',
             'memberships',
             'gifts',
-            'support creators'
+            'support creators',
         ];
 
         return Inertia::render('Errors/404', [
@@ -93,7 +91,7 @@ class ErrorController extends Controller
     {
         SeoMeta::addTag('title', 'Server Error – SpennyPiggy');
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => 'We are experiencing technical difficulties. Please try again later.']);
-        
+
         return Inertia::render('Errors/500', [
             'message' => 'We are experiencing technical difficulties. Please try again later.',
         ])->toResponse(request())->setStatusCode(500);

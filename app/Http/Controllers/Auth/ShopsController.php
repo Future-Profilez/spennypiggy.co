@@ -30,6 +30,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\RiskService;
@@ -96,6 +97,20 @@ class ShopsController extends Controller
      * Run the SFW gate over a listing's paid deliverable. Only Uploadcare-hosted
      * images/videos can be scanned — an external URL is left alone.
      */
+    /** Text half of the gate — a shop reward can be a written message or a link. */
+    private function moderateShopText(?Shop $shop): void
+    {
+        if (! $shop) {
+            return;
+        }
+
+        ItemTextModeration::apply(
+            $shop,
+            ['reward_title', 'reward_body', 'reward_description', 'name', 'description'],
+            ['approved' => 0]
+        );
+    }
+
     private function moderateRewardFile(Shop $shop): void
     {
         if (empty($shop->reward_file) || Str::startsWith($shop->reward_file, ['http://', 'https://'])) {
@@ -111,7 +126,8 @@ class ShopsController extends Controller
             Shop::class,
             $shop->id,
             $shop->reward_file,
-            ['approved' => 0]
+            ['approved' => 0],
+            'reward_file'
         );
     }
 
@@ -338,13 +354,15 @@ class ShopsController extends Controller
                 Shop::class,
                 $shop->id,
                 $shop->image,
-                ['approved' => 0]
+                ['approved' => 0],
+                'product_image'
             );
         }
 
         // The reward file is the thing actually sold — scanning only the shop-front
         // thumbnail let unscanned media ship to buyers.
         $this->moderateRewardFile($shop);
+        $this->moderateShopText($shop);
 
         // Stripe compliance: high-value listings (>£2,500 GBP-equiv) get an enhanced review
         // before going live (held un-approved until an admin clears them).
@@ -554,10 +572,11 @@ class ShopsController extends Controller
             // An edit could swap in new media, so re-run the SFW gate — previously
             // only creation was scanned, making edit a way around moderation.
             if (! empty($request->image) && $request->image !== $oldImage) {
-                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ['approved' => 0]);
+                CheckMediaModeration::dispatch(Shop::class, $shop->id, $shop->image, ['approved' => 0], 'product_image');
             }
             if ($shop->reward_file && $shop->reward_file !== $oldRewardFile) {
                 $this->moderateRewardFile($shop);
+                $this->moderateShopText($shop);
             }
 
             if (! empty($request->category)) {

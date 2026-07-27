@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('shop_payments')) {
+        if (! Schema::hasTable('shop_payments')) {
             Schema::create('shop_payments', function (Blueprint $table) {
                 $table->id();
                 $table->uuid('uuid')->nullable();
@@ -35,7 +35,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('bill_payments')) {
+        if (! Schema::hasTable('bill_payments')) {
             Schema::create('bill_payments', function (Blueprint $table) {
                 $table->id();
                 $table->uuid('uuid')->nullable();
@@ -64,7 +64,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('membership_payments')) {
+        if (! Schema::hasTable('membership_payments')) {
             Schema::create('membership_payments', function (Blueprint $table) {
                 $table->id();
                 $table->uuid('uuid')->nullable();

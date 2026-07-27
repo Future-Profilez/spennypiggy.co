@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendEngagementNotification;
+use App\Mail\ReactivationReminder;
 use App\Models\Currency;
 use App\Models\EngagementNotification;
 use App\Models\FinancialTransaction;
@@ -15,6 +16,7 @@ use App\Services\NotificationDispatcher;
 use App\Services\SupporterLapseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -150,7 +152,7 @@ class EngagementEngineTest extends TestCase
         // arrived. Assert the channel AND the mailable are on the payload.
         Queue::assertPushed(SendEngagementNotification::class, function ($job) use ($creator) {
             return in_array(NotificationDispatcher::CHANNEL_EMAIL, $job->channels, true)
-                && ($job->payload['mailable'] ?? null) === \App\Mail\ReactivationReminder::class
+                && ($job->payload['mailable'] ?? null) === ReactivationReminder::class
                 && collect($job->payload['mailable_args']['creators'] ?? [])
                     ->pluck('username')->contains($creator->username);
         });
@@ -158,7 +160,7 @@ class EngagementEngineTest extends TestCase
 
     public function test_reactivation_email_is_not_sent_to_an_opted_out_supporter(): void
     {
-        \Illuminate\Support\Facades\Mail::fake();
+        Mail::fake();
 
         $creator = $this->makeUser();
         $supporter = $this->makeUser(['reactivation_emails_enabled' => false]);
@@ -169,21 +171,21 @@ class EngagementEngineTest extends TestCase
             [
                 'title' => 'New content',
                 'body' => 'Come see',
-                'mailable' => \App\Mail\ReactivationReminder::class,
+                'mailable' => ReactivationReminder::class,
                 'mailable_args' => ['userId' => $supporter->id, 'days' => 7, 'creators' => []],
             ],
             [NotificationDispatcher::CHANNEL_EMAIL],
             true,
         );
 
-        \Illuminate\Support\Facades\Mail::assertNothingSent();
+        Mail::assertNothingSent();
     }
 
     public function test_reactivation_email_renders_with_the_creators_they_support(): void
     {
         $supporter = $this->makeUser(['name' => 'Sam Taylor']);
 
-        $html = (new \App\Mail\ReactivationReminder($supporter->id, 7, [
+        $html = (new ReactivationReminder($supporter->id, 7, [
             ['name' => 'Creator One', 'username' => 'creatorone', 'avatar' => 'https://example.test/a.jpg'],
         ]))->render();
 

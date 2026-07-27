@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\Currency;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -12,7 +12,9 @@ class TaskPurchasedSupporterMail extends Mailable
     use Queueable, SerializesModels;
 
     public $purchase;
+
     public $task;
+
     public $supporter;
 
     public function __construct($purchase, $task, $supporter)
@@ -24,9 +26,9 @@ class TaskPurchasedSupporterMail extends Mailable
 
     public function build()
     {
-        $subject = "Task Purchase Confirmation: " . $this->task->title;
+        $subject = 'Task Purchase Confirmation: '.$this->task->title;
 
-        $currencySymbol = \App\Models\Currency::where('ISO', $this->task->currency)->value('symbol') ?? '$';
+        $currencySymbol = Currency::where('ISO', $this->task->currency)->value('symbol') ?? '$';
 
         $deliverableUrl = null;
         if ($this->task->type === 'instant' && $this->task->deliverable_content) {
@@ -42,7 +44,7 @@ class TaskPurchasedSupporterMail extends Mailable
             ->subject($subject)
             ->with([
                 'currencySymbol' => $currencySymbol,
-                'deliverableUrl' => $deliverableUrl
+                'deliverableUrl' => $deliverableUrl,
             ]);
     }
 }

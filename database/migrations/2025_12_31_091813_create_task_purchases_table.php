@@ -17,23 +17,23 @@ return new class extends Migration
             $table->foreignId('task_id')->constrained('tasks')->onDelete('cascade');
             $table->foreignId('supporter_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('creator_id')->constrained('users')->onDelete('cascade');
-            
+
             $table->string('stripe_session_id')->nullable();
             $table->string('payment_intent_id')->nullable();
             $table->decimal('amount', 10, 2);
-            
+
             // Status: 'initiated', 'paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded'
             // NOTE: This column handles BOTH payment status (initially 'paid') and task progress status.
             // There is no separate payment_status column. 'paid' implies the task is ready for the creator to start.
             $table->string('status')->default('initiated');
-            
+
             // Timed Task Specifics
             $table->text('proof_content')->nullable(); // JSON or Text path to proof
             $table->text('rejection_reason')->nullable();
             $table->timestamp('sla_deadline')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamp('completed_at')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
         });

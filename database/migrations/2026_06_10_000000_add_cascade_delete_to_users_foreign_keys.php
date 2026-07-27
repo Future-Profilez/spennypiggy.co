@@ -19,7 +19,7 @@ return new class extends Migration
         // ── 1. Fix existing FK constraints that are missing onDelete ──────────
 
         // creator_referrals: RESTRICT → CASCADE
-        if (!$this->fkHasCascade('creator_referrals', 'creator_referrals_referrer_creator_id_foreign')) {
+        if (! $this->fkHasCascade('creator_referrals', 'creator_referrals_referrer_creator_id_foreign')) {
             Schema::table('creator_referrals', function (Blueprint $table) {
                 $table->dropForeign(['referrer_creator_id']);
                 $table->dropForeign(['referred_creator_id']);
@@ -31,7 +31,7 @@ return new class extends Migration
         }
 
         // creator_referral_payouts: creator_id → CASCADE; approved_by_admin_id → SET NULL
-        if (!$this->fkHasCascade('creator_referral_payouts', 'creator_referral_payouts_creator_id_foreign')) {
+        if (! $this->fkHasCascade('creator_referral_payouts', 'creator_referral_payouts_creator_id_foreign')) {
             Schema::table('creator_referral_payouts', function (Blueprint $table) {
                 $table->dropForeign(['creator_id']);
                 $table->dropForeign(['approved_by_admin_id']);
@@ -175,7 +175,7 @@ return new class extends Migration
      */
     private function addUserFk(string $tbl, string $col, string $onDelete, bool $nullable): void
     {
-        if (!Schema::hasTable($tbl) || $this->hasForeignKey($tbl, "{$tbl}_{$col}_foreign")) {
+        if (! Schema::hasTable($tbl) || $this->hasForeignKey($tbl, "{$tbl}_{$col}_foreign")) {
             return;
         }
 
@@ -206,13 +206,13 @@ return new class extends Migration
 
     private function fkHasCascade(string $table, string $fkName): bool
     {
-        $rules = DB::select("
+        $rules = DB::select('
             SELECT DELETE_RULE
             FROM information_schema.REFERENTIAL_CONSTRAINTS
             WHERE CONSTRAINT_SCHEMA = DATABASE()
               AND TABLE_NAME = ?
               AND CONSTRAINT_NAME = ?
-        ", [$table, $fkName]);
+        ', [$table, $fkName]);
 
         return count($rules) > 0 && in_array($rules[0]->DELETE_RULE, ['CASCADE', 'SET NULL']);
     }

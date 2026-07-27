@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Models\TaskPurchase;
-use App\Models\Deliverable;
+use App\Mail\TaskRefunded;
 use App\Models\Currency;
+use App\Models\Deliverable;
+use App\Models\TaskPurchase;
 use App\Services\StripeMetadataService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
-use Stripe\Stripe;
 use Stripe\Refund;
-use App\Helpers;
-use App\Mail\TaskRefunded;
+use Stripe\Stripe;
 
 class TaskPurchaseController extends Controller
 {
@@ -28,40 +28,41 @@ class TaskPurchaseController extends Controller
         }
 
         if ($request->filled('type')) {
-            $query->whereHas('task', fn($q) => $q->where('type', $request->type));
+            $query->whereHas('task', fn ($q) => $q->where('type', $request->type));
         }
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->whereHas('task', fn($t) => $t->where('title', 'like', "%{$search}%"))
-                  ->orWhereHas('creator', fn($u) => $u->where('username', 'like', "%{$search}%"))
-                  ->orWhereHas('supporter', fn($u) => $u->where('username', 'like', "%{$search}%"));
+                $q->whereHas('task', fn ($t) => $t->where('title', 'like', "%{$search}%"))
+                    ->orWhereHas('creator', fn ($u) => $u->where('username', 'like', "%{$search}%"))
+                    ->orWhereHas('supporter', fn ($u) => $u->where('username', 'like', "%{$search}%"));
             });
         }
 
         $purchases = $query->paginate(30)->through(function ($p) {
             $currencySymbol = Currency::where('ISO', strtoupper($p->task?->currency ?? 'GBP'))->value('symbol') ?? '£';
+
             return [
-                'uuid'             => $p->uuid,
-                'task_title'       => $p->task?->title ?? '—',
-                'task_type'        => $p->task?->type ?? '—',
-                'creator_name'     => $p->creator?->name ?? '—',
+                'uuid' => $p->uuid,
+                'task_title' => $p->task?->title ?? '—',
+                'task_type' => $p->task?->type ?? '—',
+                'creator_name' => $p->creator?->name ?? '—',
                 'creator_username' => $p->creator?->username ?? '—',
-                'supporter_name'   => $p->supporter?->name ?? '—',
+                'supporter_name' => $p->supporter?->name ?? '—',
                 'supporter_username' => $p->supporter?->username ?? '—',
-                'amount'           => $p->amount,
-                'currency'         => strtoupper($p->task?->currency ?? 'GBP'),
-                'currency_symbol'  => $currencySymbol,
-                'status'           => $p->status,
-                'dispute_status'   => $p->dispute_status,
-                'rejection_count'  => $p->rejection_count,
+                'amount' => $p->amount,
+                'currency' => strtoupper($p->task?->currency ?? 'GBP'),
+                'currency_symbol' => $currencySymbol,
+                'status' => $p->status,
+                'dispute_status' => $p->dispute_status,
+                'rejection_count' => $p->rejection_count,
                 'rejection_reason' => $p->rejection_reason,
-                'sla_deadline'     => $p->sla_deadline,
-                'completed_at'     => $p->completed_at,
-                'refunded_at'      => $p->refunded_at,
-                'created_at'       => $p->created_at,
-                'proof_content'    => $p->proof_content,
+                'sla_deadline' => $p->sla_deadline,
+                'completed_at' => $p->completed_at,
+                'refunded_at' => $p->refunded_at,
+                'created_at' => $p->created_at,
+                'proof_content' => $p->proof_content,
             ];
         });
 
@@ -70,9 +71,9 @@ class TaskPurchaseController extends Controller
             ->pluck('total', 'status');
 
         return Inertia::render('Admin/Tasks/Index', [
-            'purchases'    => $purchases,
+            'purchases' => $purchases,
             'statusCounts' => $statusCounts,
-            'filters'      => $request->only(['status', 'type', 'search']),
+            'filters' => $request->only(['status', 'type', 'search']),
         ]);
     }
 
@@ -96,7 +97,7 @@ class TaskPurchaseController extends Controller
 
     private function processRefund(TaskPurchase $purchase)
     {
-        if (!$purchase->payment_intent_id) {
+        if (! $purchase->payment_intent_id) {
             return response()->json(['status' => false, 'message' => 'Missing payment intent — cannot refund.'], 422);
         }
 
@@ -110,20 +111,20 @@ class TaskPurchaseController extends Controller
 
             $refund = Refund::create([
                 'payment_intent' => $purchase->payment_intent_id,
-                'reason'         => 'requested_by_customer',
-                'metadata'       => [
-                    'reason'               => 'admin_dispute_refund',
-                    'task_purchase_uuid'   => $purchase->uuid,
-                    'resolved_by'          => 'admin',
-                    'resolution'           => 'gifter_wins',
+                'reason' => 'requested_by_customer',
+                'metadata' => [
+                    'reason' => 'admin_dispute_refund',
+                    'task_purchase_uuid' => $purchase->uuid,
+                    'resolved_by' => 'admin',
+                    'resolution' => 'gifter_wins',
                 ],
             ], $stripeOptions);
 
-            $purchase->status         = 'refunded';
-            $purchase->refund_status  = 'refunded';
-            $purchase->refunded_at    = now();
+            $purchase->status = 'refunded';
+            $purchase->refund_status = 'refunded';
+            $purchase->refunded_at = now();
             $purchase->dispute_status = 'refunded';
-            $purchase->refund_id      = $refund->id;
+            $purchase->refund_id = $refund->id;
             $purchase->save();
 
             $this->updateDeliverableStatus($purchase, 'refunded', ['admin_resolution' => 'gifter_wins', 'refunded_by' => 'admin']);
@@ -132,32 +133,34 @@ class TaskPurchaseController extends Controller
 
             return response()->json(['status' => true, 'message' => 'Refund processed. Gifter wins.']);
         } catch (\Exception $e) {
-            Log::error("Admin task refund failed [{$purchase->uuid}]: " . $e->getMessage());
-            return response()->json(['status' => false, 'message' => 'Stripe error: ' . $e->getMessage()], 500);
+            Log::error("Admin task refund failed [{$purchase->uuid}]: ".$e->getMessage());
+
+            return response()->json(['status' => false, 'message' => 'Stripe error: '.$e->getMessage()], 500);
         }
     }
 
     private function processRelease(TaskPurchase $purchase)
     {
         try {
-            $purchase->status         = 'completed_accepted';
+            $purchase->status = 'completed_accepted';
             $purchase->dispute_status = 'won';
-            $purchase->completed_at   = now();
-            $purchase->reviewed_at    = now();
+            $purchase->completed_at = now();
+            $purchase->reviewed_at = now();
             $purchase->save();
 
             $this->updateDeliverableStatus($purchase, 'delivered', [
                 'admin_resolution' => 'creator_wins',
-                'dispute_status'   => 'won',
-                'delivered_at'     => now()->toISOString(),
+                'dispute_status' => 'won',
+                'delivered_at' => now()->toISOString(),
             ]);
 
             $this->notifyUsers($purchase, 'release');
 
             return response()->json(['status' => true, 'message' => 'Payment released. Creator wins.']);
         } catch (\Exception $e) {
-            Log::error("Admin task release failed [{$purchase->uuid}]: " . $e->getMessage());
-            return response()->json(['status' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            Log::error("Admin task release failed [{$purchase->uuid}]: ".$e->getMessage());
+
+            return response()->json(['status' => false, 'message' => 'Error: '.$e->getMessage()], 500);
         }
     }
 
@@ -174,7 +177,7 @@ class TaskPurchaseController extends Controller
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, array_merge(['status' => $status], $meta));
             }
         } catch (\Exception $e) {
-            Log::error("Admin task: failed to update deliverable [{$purchase->uuid}]: " . $e->getMessage());
+            Log::error("Admin task: failed to update deliverable [{$purchase->uuid}]: ".$e->getMessage());
         }
     }
 
@@ -183,7 +186,7 @@ class TaskPurchaseController extends Controller
         $task = $purchase->task;
         $isRefund = $resolution === 'refund';
 
-        $creatorMsg  = $isRefund
+        $creatorMsg = $isRefund
             ? "Admin resolved the dispute for '{$task->title}' in the gifter's favour. Payment has been refunded."
             : "Admin resolved the dispute for '{$task->title}' in your favour. Payment has been released.";
 
@@ -211,7 +214,7 @@ class TaskPurchaseController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Admin task: notification failed [{$purchase->uuid}]: " . $e->getMessage());
+            Log::error("Admin task: notification failed [{$purchase->uuid}]: ".$e->getMessage());
         }
     }
 }

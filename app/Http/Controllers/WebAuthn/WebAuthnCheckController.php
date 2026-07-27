@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Jenssegers\Agent\Agent;
 
 class WebAuthnCheckController extends Controller
 {
@@ -13,15 +14,15 @@ class WebAuthnCheckController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email|string'
+                'email' => 'required|email|string',
             ]);
 
             $user = User::where('email', $request->email)->first();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'has_passkey' => false,
-                    'user_exists' => false
+                    'user_exists' => false,
                 ]);
             }
 
@@ -46,20 +47,20 @@ class WebAuthnCheckController extends Controller
             // Also check if there's a passkey specifically for this exact device
             $agent = request()->userAgent();
             $ip = request()->ip();
-            
-            // This is a rough heuristic - WebAuthn doesn't provide a guaranteed way 
+
+            // This is a rough heuristic - WebAuthn doesn't provide a guaranteed way
             // to link a specific browser instance to a credential before the challenge
             // so we rely on the browser/platform fingerprint
-            $parsedAgent = new \Jenssegers\Agent\Agent();
+            $parsedAgent = new Agent;
             $parsedAgent->setUserAgent($agent);
-            
-            $browser = $parsedAgent->browser() . ' ' . $parsedAgent->version($parsedAgent->browser());
-            $platform = $parsedAgent->platform() . ' ' . $parsedAgent->version($parsedAgent->platform());
-            
+
+            $browser = $parsedAgent->browser().' '.$parsedAgent->version($parsedAgent->browser());
+            $platform = $parsedAgent->platform().' '.$parsedAgent->version($parsedAgent->platform());
+
             $hasDevicePasskey = $user->webAuthnCredentials()
-                ->where(function($query) use ($browser, $platform) {
-                    $query->where('browser', 'like', explode(' ', $browser)[0] . '%')
-                          ->where('platform', 'like', explode(' ', $platform)[0] . '%');
+                ->where(function ($query) use ($browser, $platform) {
+                    $query->where('browser', 'like', explode(' ', $browser)[0].'%')
+                        ->where('platform', 'like', explode(' ', $platform)[0].'%');
                 })
                 ->exists();
 
@@ -69,19 +70,20 @@ class WebAuthnCheckController extends Controller
             $canUsePasskey = $hasPasskey;
 
             return response()->json([
-                'has_passkey' => $canUsePasskey, 
+                'has_passkey' => $canUsePasskey,
                 'has_any_passkey' => $hasPasskey,
                 'has_device_passkey' => $hasDevicePasskey,
                 'passkeys' => $passkeys,
                 'user_exists' => true,
-                'user_id' => $user->id
+                'user_id' => $user->id,
             ]);
         } catch (\Exception $e) {
-            Log::error('WebAuthn check error: ' . $e->getMessage());
+            Log::error('WebAuthn check error: '.$e->getMessage());
+
             return response()->json([
                 'has_passkey' => false,
                 'has_any_passkey' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -91,15 +93,15 @@ class WebAuthnCheckController extends Controller
         try {
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not authenticated'
+                    'message' => 'User not authenticated',
                 ], 401);
             }
 
             $query = $user->webAuthnCredentials();
-            
+
             if ($id) {
                 $query->where('id', $id);
             }
@@ -110,24 +112,25 @@ class WebAuthnCheckController extends Controller
                 Log::info('WebAuthn credential(s) deleted', [
                     'user_id' => $user->id,
                     'credential_id' => $id,
-                    'count' => $deleted
+                    'count' => $deleted,
                 ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Passkey removed successfully'
+                    'message' => 'Passkey removed successfully',
                 ]);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'No passkeys found to delete'
+                'message' => 'No passkeys found to delete',
             ], 404);
         } catch (\Exception $e) {
-            Log::error('WebAuthn delete error: ' . $e->getMessage());
+            Log::error('WebAuthn delete error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete passkey: ' . $e->getMessage()
+                'message' => 'Failed to delete passkey: '.$e->getMessage(),
             ], 500);
         }
     }

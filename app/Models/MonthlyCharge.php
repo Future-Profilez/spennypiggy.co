@@ -11,7 +11,7 @@ class MonthlyCharge extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable =   [
+    protected $fillable = [
         'uuid',
         'stripe_id',
         'session_id',
@@ -43,7 +43,7 @@ class MonthlyCharge extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn ($s) => $s->uuid = Uuid::uuid4());
     }
 
     /**

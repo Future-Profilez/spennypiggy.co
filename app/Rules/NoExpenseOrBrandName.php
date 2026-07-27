@@ -60,15 +60,17 @@ class NoExpenseOrBrandName implements ValidationRule
         $haystack = strtolower((string) $value);
 
         foreach (self::BLOCKED_BRANDS as $brand) {
-            if (preg_match('/\b' . preg_quote($brand, '/') . '\b/i', $haystack)) {
-                $fail('Listings must describe your own content, not a brand or third-party service. Please remove "' . $brand . '".');
+            if (preg_match('/\b'.preg_quote($brand, '/').'\b/i', $haystack)) {
+                $fail('Listings must describe your own content, not a brand or third-party service. Please remove "'.$brand.'".');
+
                 return;
             }
         }
 
         foreach (self::BLOCKED_EXPENSE_TERMS as $term) {
-            if (preg_match('/\b' . preg_quote($term, '/') . '\b/i', $haystack)) {
+            if (preg_match('/\b'.preg_quote($term, '/').'\b/i', $haystack)) {
                 $fail('This reads as a bill or personal expense, which can\'t be sold or named here. Describe the content the supporter receives (a goal like "studio upgrade" is fine).');
+
                 return;
             }
         }

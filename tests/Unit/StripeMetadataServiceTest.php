@@ -10,11 +10,11 @@ class StripeMetadataServiceTest extends TestCase
 {
     public function test_it_prunes_metadata_to_a_safe_payload_size(): void
     {
-        $service = new StripeMetadataService();
+        $service = new StripeMetadataService;
         $metadata = [];
 
         for ($i = 0; $i < 60; $i++) {
-            $metadata['key_' . $i] = 'value_' . $i;
+            $metadata['key_'.$i] = 'value_'.$i;
         }
 
         $pruned = (new \ReflectionMethod($service, 'pruneStripeMetadataPayload'))
@@ -25,7 +25,7 @@ class StripeMetadataServiceTest extends TestCase
 
     public function test_it_keeps_task_metadata_compact_for_task_deliverables(): void
     {
-        $deliverable = new Deliverable();
+        $deliverable = new Deliverable;
         $deliverable->product_type = 'task';
         $deliverable->transaction_amount = 12.34;
         $deliverable->payment_currency = 'GBP';
@@ -40,7 +40,7 @@ class StripeMetadataServiceTest extends TestCase
         $deliverable->creator_id = null;
         $deliverable->deliverable_type = 'digital_task';
 
-        $service = new StripeMetadataService();
+        $service = new StripeMetadataService;
         $metadata = (new \ReflectionMethod($service, 'buildProductSpecificMetadata'))
             ->invoke($service, $deliverable);
 

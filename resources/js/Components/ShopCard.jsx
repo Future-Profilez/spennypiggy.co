@@ -1,6 +1,7 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import AddItem from "@/Pages/shop/AddItem";
+import RewardHint from "@/Pages/discover/components/RewardHint";
 
 export default function ShopCard({
     item,
@@ -152,6 +153,7 @@ export default function ShopCard({
                     <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
                         {item?.description}
                     </span>
+                    <RewardHint item={item} className="mt-1 max-w-full" />
                 </div>
 
                 <div className="mt-auto">

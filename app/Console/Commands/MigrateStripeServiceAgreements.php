@@ -39,14 +39,14 @@ class MigrateStripeServiceAgreements extends Command
 
         $this->info('🔄 Starting Stripe Service Agreement Migration');
         $this->info('============================================');
-        
+
         if ($dryRun) {
             $this->warn('🧪 DRY RUN MODE - No changes will be made');
         }
 
         // Build query
         $query = User::whereNotNull('account_id')
-                    ->whereNotNull('country');
+            ->whereNotNull('country');
 
         if ($countryFilter) {
             $query->where('country', strtoupper($countryFilter));
@@ -69,7 +69,7 @@ class MigrateStripeServiceAgreements extends Command
             'migrated_successfully' => 0,
             'migration_failed' => 0,
             'no_migration_needed' => 0,
-            'errors' => 0
+            'errors' => 0,
         ];
 
         $needsMigrationAccounts = [];
@@ -80,29 +80,29 @@ class MigrateStripeServiceAgreements extends Command
 
         foreach ($users as $user) {
             $stats['checked']++;
-            
+
             try {
                 $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                
+
                 if ($migrationCheck['needs_migration']) {
                     $stats['needs_migration']++;
                     $needsMigrationAccounts[] = [
                         'user' => $user,
-                        'check_result' => $migrationCheck
+                        'check_result' => $migrationCheck,
                     ];
                 } else {
                     $stats['no_migration_needed']++;
                 }
-                
+
             } catch (\Exception $e) {
                 $stats['errors']++;
-                $this->error("❌ Error checking user {$user->id}: " . $e->getMessage());
+                $this->error("❌ Error checking user {$user->id}: ".$e->getMessage());
                 Log::error('Migration check failed', [
                     'user_id' => $user->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
-            
+
             $progressBar->advance();
         }
 
@@ -123,6 +123,7 @@ class MigrateStripeServiceAgreements extends Command
 
         if (empty($needsMigrationAccounts)) {
             $this->info('✅ No accounts need migration!');
+
             return;
         }
 
@@ -138,7 +139,7 @@ class MigrateStripeServiceAgreements extends Command
                 $check['country'] ?? 'N/A',
                 $check['current_agreement'] ?? 'N/A',
                 $check['required_agreement'] ?? 'N/A',
-                $check['charges_enabled'] ? '✅' : '❌'
+                $check['charges_enabled'] ? '✅' : '❌',
             ];
         }
 
@@ -148,13 +149,15 @@ class MigrateStripeServiceAgreements extends Command
         );
 
         if ($dryRun) {
-            $this->info('🧪 DRY RUN: Would migrate ' . count($needsMigrationAccounts) . ' accounts');
+            $this->info('🧪 DRY RUN: Would migrate '.count($needsMigrationAccounts).' accounts');
+
             return;
         }
 
         // Ask for confirmation unless it's a single user
-        if (!$userIdFilter && !$this->confirm('🚀 Proceed with migrating ' . count($needsMigrationAccounts) . ' accounts?')) {
+        if (! $userIdFilter && ! $this->confirm('🚀 Proceed with migrating '.count($needsMigrationAccounts).' accounts?')) {
             $this->info('❌ Migration cancelled');
+
             return;
         }
 
@@ -164,10 +167,10 @@ class MigrateStripeServiceAgreements extends Command
 
         foreach ($needsMigrationAccounts as $item) {
             $user = $item['user'];
-            
+
             try {
                 $result = StripeController::migrateExistingAccount($user);
-                
+
                 if ($result['success']) {
                     $stats['migrated_successfully']++;
                     $this->line("✅ User {$user->id} ({$user->username}): {$result['message']}");
@@ -175,16 +178,16 @@ class MigrateStripeServiceAgreements extends Command
                     $stats['migration_failed']++;
                     $this->error("❌ User {$user->id} ({$user->username}): {$result['message']}");
                 }
-                
+
             } catch (\Exception $e) {
                 $stats['migration_failed']++;
-                $this->error("💥 User {$user->id} migration exception: " . $e->getMessage());
+                $this->error("💥 User {$user->id} migration exception: ".$e->getMessage());
                 Log::error('Account migration exception', [
                     'user_id' => $user->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
-            
+
             $migrationBar->advance();
         }
 

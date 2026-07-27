@@ -50,7 +50,7 @@ class PiggyPotContribution extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($model) => $model->uuid = Uuid::uuid4());
+        static::creating(fn ($model) => $model->uuid = Uuid::uuid4());
     }
 
     public function piggyPot()
@@ -76,6 +76,7 @@ class PiggyPotContribution extends Model
                 $sender = true;
             }
         }
+
         return $sender;
     }
 }

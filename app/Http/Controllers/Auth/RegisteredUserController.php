@@ -5,42 +5,41 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\IpTracker;
-use App\Jobs\CreateStripeCustomer;
-use App\Models\User;
-use App\Providers\RouteServiceProvider;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
-use Ramsey\Uuid\Uuid;
-use App\Jobs\WelcomeUser;
 use App\Jobs\LinkUserToCrmCreator;
+use App\Jobs\WelcomeUser;
 use App\Models\AllowedDomain;
 use App\Models\CreatorReferral;
 use App\Models\Follow;
 use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
+use App\Models\PlatformRiskState;
 use App\Models\PromoCode;
-use App\Models\Referal;
 use App\Models\ReferralCode;
+use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Crypt;
-use Stripe\StripeClient;
+use App\Services\VisitTracker;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
+use Ramsey\Uuid\Uuid;
+use Stripe\StripeClient;
 
 class RegisteredUserController extends Controller
 {
     protected $google2FA;
+
     protected $userProfileService;
 
     public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
@@ -48,6 +47,7 @@ class RegisteredUserController extends Controller
         $this->google2FA = $google2FA;
         $this->userProfileService = $userProfileService;
     }
+
     /**
      * Display the registration view.
      */
@@ -90,7 +90,7 @@ class RegisteredUserController extends Controller
             $email = (string) $request->input('email', '');
             if ($email !== '' && str_contains($email, '@')) {
                 $domain = strtolower(trim(explode('@', $email)[1] ?? ''));
-                if ($domain !== '' && !AllowedDomain::where('name', $domain)->exists()) {
+                if ($domain !== '' && ! AllowedDomain::where('name', $domain)->exists()) {
                     $validator->errors()->add('email', 'Invalid Email Id.');
                 }
             }
@@ -107,7 +107,7 @@ class RegisteredUserController extends Controller
     {
         /* =========================RISK ENGINE CHECK========================== */
         // Check Platform State (FREEZE blocks new creator activation)
-        $platformState = \App\Models\PlatformRiskState::latest('started_at')->first();
+        $platformState = PlatformRiskState::latest('started_at')->first();
         if ($platformState && $platformState->state === 'FREEZE' && $request->role == 1) {
             throw ValidationException::withMessages([
                 'email' => 'New creator registration is temporarily paused due to system maintenance.',
@@ -120,8 +120,8 @@ class RegisteredUserController extends Controller
         ];
 
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             // 0 = gifter, 1 = creator. 2 is ADMIN and must never be reachable from
@@ -129,14 +129,14 @@ class RegisteredUserController extends Controller
             // EnsureUserIsAdmin gates purely on role === '2', so an unvalidated
             // `role` made "POST /register with role=2" a route to platform admin
             // (including the founder payout triggers).
-            'role'     => ['required', \Illuminate\Validation\Rule::in([0, 1, '0', '1'])],
-            'promo'    => ['nullable', 'string'], // referral code
+            'role' => ['required', Rule::in([0, 1, '0', '1'])],
+            'promo' => ['nullable', 'string'], // referral code
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
         ], $messages);
 
         if (config('app.url') === 'https://spennypiggy.co') {
             $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
-            if (!empty($turnstileSecret)) {
+            if (! empty($turnstileSecret)) {
                 $request->validate([
                     'cf_turnstile_response' => ['required', 'string'],
                 ]);
@@ -148,7 +148,7 @@ class RegisteredUserController extends Controller
                 ]);
 
                 $verifyBody = $verifyResponse->json();
-                if (!($verifyBody['success'] ?? false)) {
+                if (! ($verifyBody['success'] ?? false)) {
                     throw ValidationException::withMessages([
                         'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
                     ]);
@@ -159,11 +159,11 @@ class RegisteredUserController extends Controller
         /* =========================FAN ADDRESS VALIDATION========================== */
         if ($request->role == 0) {
             $request->validate([
-                'country'        => 'required|string',
+                'country' => 'required|string',
                 'street_address' => 'required|string|min:20',
-                'city'           => 'required|string',
-                'state'          => 'required|string',
-                'postal_code'    => 'required|string|max:20',
+                'city' => 'required|string',
+                'state' => 'required|string',
+                'postal_code' => 'required|string|max:20',
             ]);
         }
 
@@ -177,7 +177,7 @@ class RegisteredUserController extends Controller
 
         /* =========================FRAUD PREVENTION CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
-        
+
         if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
             // Solution C: Check device cookie/session first
             // If they already have a "registered_device" cookie, block them immediately
@@ -189,7 +189,7 @@ class RegisteredUserController extends Controller
 
             // Solution A: Max accounts per IP limit
             $ipCount = User::where('ip_address', $ip_address)->count();
-            
+
             if ($ipCount >= 3) {
                 throw ValidationException::withMessages([
                     'email' => 'Too many accounts have been created from this IP address.',
@@ -201,7 +201,7 @@ class RegisteredUserController extends Controller
         $domain = strtolower(explode('@', $request->email)[1] ?? '');
         $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
-        if (!in_array($domain, $allowedDomains)) {
+        if (! in_array($domain, $allowedDomains)) {
             throw ValidationException::withMessages([
                 'email' => 'Invalid Email Id.',
             ]);
@@ -247,31 +247,31 @@ class RegisteredUserController extends Controller
             'c8011ca9-9b00-4f8f-b919-3cf837e3037c',
             '1ebf10dd-1891-4288-b461-5e3fcd3b43d3',
             'c3b7ff7a-719a-452a-ba8f-d074d916b395',
-            '133b057f-f069-4ea4-82e4-ba9184d721cd'
+            '133b057f-f069-4ea4-82e4-ba9184d721cd',
         ];
 
-        $assignedCover = $request->role == 1 
-            ? $creatorCovers[array_rand($creatorCovers)] 
+        $assignedCover = $request->role == 1
+            ? $creatorCovers[array_rand($creatorCovers)]
             : 'dc1021e2-41a4-4dfa-8379-b27fb7e3834e';
 
         $user = User::create([
-            'uuid'                => Uuid::uuid4()->toString(),
-            'tfa_key'             => $secret,
-            'name'                => $request->name,
-            'email'               => $request->email,
-            'username'            => strtolower($request->username),
-            'gender'              => $request->gender ?? null,
-            'password'            => Hash::make($request->password),
-            'role'                => $request->role,
-            'creator_category'    => $request->creator_category ?? null,
-            'ip_address'          => $ip_address,
-            'country'             => $request->country_code ?? null,
-            'terms_accepted_at'   => now(),
+            'uuid' => Uuid::uuid4()->toString(),
+            'tfa_key' => $secret,
+            'name' => $request->name,
+            'email' => $request->email,
+            'username' => strtolower($request->username),
+            'gender' => $request->gender ?? null,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'creator_category' => $request->creator_category ?? null,
+            'ip_address' => $ip_address,
+            'country' => $request->country_code ?? null,
+            'terms_accepted_at' => now(),
             'creator_email_receipt_acknowledged_at' => $request->role == 1 ? now() : null,
-            'bio_approved'        => 0,
+            'bio_approved' => 0,
             'profile_status_lock' => 0,
-            'cover'               => $assignedCover,
-            'cover_approved'      => 1,
+            'cover' => $assignedCover,
+            'cover_approved' => 1,
             // Fall back to the first-touch source cookie set by TrackSiteVisit.
             // Without it, anyone who arrived from Reddit, browsed, and signed up
             // later from a clean URL was recorded as "direct" — which is why
@@ -282,20 +282,20 @@ class RegisteredUserController extends Controller
             // the INSERT — but custom campaign tags (pride_qr) pass through
             // untouched, because collapsing them to 'other' would erase the very
             // thing they were created to measure.
-            'utm_source'          => $this->sanitiseUtm(
+            'utm_source' => $this->sanitiseUtm(
                 $request->input('utm_source')
-                    ?: $request->cookie(\App\Services\VisitTracker::ATTRIBUTION_COOKIE)
+                    ?: $request->cookie(VisitTracker::ATTRIBUTION_COOKIE)
             ),
-            'utm_medium'          => $request->input('utm_medium'),
-            'utm_campaign'        => $request->input('utm_campaign'),
+            'utm_medium' => $request->input('utm_medium'),
+            'utm_campaign' => $request->input('utm_campaign'),
         ]);
 
         Auth::login($user);
-        
+
         if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
             // Solution C: Set a long-lived cookie to identify this device
             // This prevents the same device from creating another account, even if IP changes
-            \Illuminate\Support\Facades\Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
+            Cookie::queue('registered_device', '1', 60 * 24 * 365 * 10); // 10 years
         }
 
         /* =========================AUTO FOLLOW SPENNY========================== */
@@ -311,21 +311,21 @@ class RegisteredUserController extends Controller
         /* =========================VERIFICATION / ADDRESS========================== */
         if ($request->role == 1) {
             UserVerificationStatus::create([
-                'user_id'        => $user->id,
-                'role'           => 1,
-                'bio_status'     => 1,
+                'user_id' => $user->id,
+                'role' => 1,
+                'bio_status' => 1,
                 'address_status' => 0,
             ]);
         }
 
         if ($request->role == 0) {
             GifterAddress::create([
-                'user_id'        => $user->id,
-                'country'        => $request->country,
+                'user_id' => $user->id,
+                'country' => $request->country,
                 'street_address' => $request->street_address,
-                'city'           => $request->city,
-                'state'          => $request->state,
-                'postal_code'    => $request->postal_code,
+                'city' => $request->city,
+                'state' => $request->state,
+                'postal_code' => $request->postal_code,
             ]);
         }
 
@@ -335,13 +335,13 @@ class RegisteredUserController extends Controller
             $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
                 ->exists();
 
-            if (!$alreadyExists) {
+            if (! $alreadyExists) {
                 CreatorReferral::create([
                     'referrer_creator_id' => $referrer->id,
                     'referred_creator_id' => $user->id,
-                    'referral_code_id'    => $referralCode->id, // ✅ NEW
-                    'lifetime_gmv'        => 0,
-                    'status'              => 'IN_PROGRESS',
+                    'referral_code_id' => $referralCode->id, // ✅ NEW
+                    'lifetime_gmv' => 0,
+                    'status' => 'IN_PROGRESS',
                 ]);
             }
         }
@@ -367,33 +367,31 @@ class RegisteredUserController extends Controller
     /**
      * Check if username available
      *
-     * @param Request $request
      * @return Response
      */
-
     public function checkUsername(Request $request)
     {
         $request->validate([
-            "username" => [
-                "required",
-                "string",
-                "alpha_num",
-                "not_regex:/@/",
-                "min:5",
-                "max:20"
-            ]
+            'username' => [
+                'required',
+                'string',
+                'alpha_num',
+                'not_regex:/@/',
+                'min:5',
+                'max:20',
+            ],
         ]);
         $exist = User::whereUsername($request->username)->first();
+
         return response()->json([
-            "available" => empty($exist)
+            'available' => empty($exist),
         ]);
     }
-
 
     public function checkCouponCode($code)
     {
         $promocode = PromoCode::whereCode($code)->get();
-        if (!empty($promocode)) {
+        if (! empty($promocode)) {
             return response()->json([
                 'status' => true,
                 'message' => 'promo code available',
@@ -409,18 +407,17 @@ class RegisteredUserController extends Controller
     /**
      * Check if email available
      *
-     * @param Request $request
      * @return Response
      */
     public function gifterCardVerification(Request $request)
     {
-        if ($request->header('X-Inertia') || !$request->ajax()) {
+        if ($request->header('X-Inertia') || ! $request->ajax()) {
             return Inertia::render('gifter/GifterCardVerification');
         }
 
-        $currency = strtoupper($request->cookie("currency", "GBP"));
+        $currency = strtoupper($request->cookie('currency', 'GBP'));
         $user = Auth::user();
-        if (!($user instanceof User)) {
+        if (! ($user instanceof User)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized.',
@@ -488,34 +485,34 @@ class RegisteredUserController extends Controller
             ]],
             'payment_method_types' => ['card'],
             'metadata' => [
-                'platform'                => 'SpennyPiggy',
-                'type'                    => 'gifter_card_verification',
-                'purpose'                 => 'Gifter Card Verification',
-                'payment_category'        => 'card_verification',
-                'buyer_id'                => (string) $user->id,
-                'buyer_name'              => (string) $user->name,
-                'buyer_email'             => (string) $user->email,
-                'buyer_username'          => (string) ($user->username ?? ''),
-                'verification_amount'     => (string) $baseAmount,
-                'currency'                => (string) $currency,
-                'transaction_description' => 'Card verification charge for ' . $user->name,
-                'env'                     => (string) config('app.env'),
+                'platform' => 'SpennyPiggy',
+                'type' => 'gifter_card_verification',
+                'purpose' => 'Gifter Card Verification',
+                'payment_category' => 'card_verification',
+                'buyer_id' => (string) $user->id,
+                'buyer_name' => (string) $user->name,
+                'buyer_email' => (string) $user->email,
+                'buyer_username' => (string) ($user->username ?? ''),
+                'verification_amount' => (string) $baseAmount,
+                'currency' => (string) $currency,
+                'transaction_description' => 'Card verification charge for '.$user->name,
+                'env' => (string) config('app.env'),
             ],
             'payment_intent_data' => [
-                'description' => 'SpennyPiggy - Card Verification for ' . $user->name,
+                'description' => 'SpennyPiggy - Card Verification for '.$user->name,
                 'metadata' => [
-                    'platform'                => 'SpennyPiggy',
-                    'type'                    => 'gifter_card_verification',
-                    'purpose'                 => 'Gifter Card Verification',
-                    'payment_category'        => 'card_verification',
-                    'buyer_id'                => (string) $user->id,
-                    'buyer_name'              => (string) $user->name,
-                    'buyer_email'             => (string) $user->email,
-                    'buyer_username'          => (string) ($user->username ?? ''),
-                    'verification_amount'     => (string) $baseAmount,
-                    'currency'                => (string) $currency,
-                    'transaction_description' => 'Card verification charge for ' . $user->name,
-                    'env'                     => (string) config('app.env'),
+                    'platform' => 'SpennyPiggy',
+                    'type' => 'gifter_card_verification',
+                    'purpose' => 'Gifter Card Verification',
+                    'payment_category' => 'card_verification',
+                    'buyer_id' => (string) $user->id,
+                    'buyer_name' => (string) $user->name,
+                    'buyer_email' => (string) $user->email,
+                    'buyer_username' => (string) ($user->username ?? ''),
+                    'verification_amount' => (string) $baseAmount,
+                    'currency' => (string) $currency,
+                    'transaction_description' => 'Card verification charge for '.$user->name,
+                    'env' => (string) config('app.env'),
                 ],
             ],
         ]);
@@ -547,13 +544,13 @@ class RegisteredUserController extends Controller
     {
         $user = User::where('uuid', $uuid)->first();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')->with('error', 'User not found.');
         }
 
         // Prevent IDOR: the {uuid} must belong to the authenticated user — otherwise
         // anyone could flip another user's verification by visiting their UUID.
-        if (!Auth::check() || (int) $user->id !== (int) Auth::id()) {
+        if (! Auth::check() || (int) $user->id !== (int) Auth::id()) {
             abort(403);
         }
 
@@ -567,7 +564,7 @@ class RegisteredUserController extends Controller
 
         $session = $sessions->data[0] ?? null;
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'status' => false,
                 'message' => 'Stripe session not found.',
@@ -580,7 +577,7 @@ class RegisteredUserController extends Controller
         $address = $session->customer_details->address ?? null;
 
         // Fallback: Check payment intent billing details if session address is incomplete
-        if ((!$address || empty($address->line1)) && $session->payment_intent) {
+        if ((! $address || empty($address->line1)) && $session->payment_intent) {
             try {
                 $paymentIntent = $stripe->paymentIntents->retrieve($session->payment_intent);
                 if ($paymentIntent->shipping && $paymentIntent->shipping->address) {
@@ -592,7 +589,7 @@ class RegisteredUserController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to retrieve fallback address: " . $e->getMessage());
+                Log::error('Failed to retrieve fallback address: '.$e->getMessage());
             }
         }
 
@@ -632,8 +629,8 @@ class RegisteredUserController extends Controller
             $userVerificationStatus = UserVerificationStatus::where('user_id', $user->id)
                 ->where('role', 0)
                 ->first();
-            if (!$userVerificationStatus) {
-                $userVerificationStatus = new UserVerificationStatus();
+            if (! $userVerificationStatus) {
+                $userVerificationStatus = new UserVerificationStatus;
                 $userVerificationStatus->user_id = $user->id;
                 $userVerificationStatus->role = 0; // Assuming role 0 is for regular users
             }
@@ -648,7 +645,7 @@ class RegisteredUserController extends Controller
         // pending profile
         $user->update(['profile_status_lock' => 1, 'is_subscribed' => 1]);
 
-        return redirect()->route('user.show', ['username' => $user->username])->with('success', "Payment Card Verification Successfully Completed.");
+        return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Payment Card Verification Successfully Completed.');
     }
 
     /**
@@ -658,7 +655,7 @@ class RegisteredUserController extends Controller
     {
         $user = User::where('uuid', $uuid)->first();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')->with('error', 'User not found.');
         }
 
@@ -717,7 +714,6 @@ class RegisteredUserController extends Controller
     //     //     'uuid' => $ryeProductPayment->uuid,
     //     //     'orderUuid' => $orderDetails->uuid
     //     // ]);
-
 
     //                 'payment_type' => 'product_purchase'
     //             ],

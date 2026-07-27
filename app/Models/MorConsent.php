@@ -23,7 +23,7 @@ class MorConsent extends Model
         // 'city',
         // 'latitude',
         // 'longitude',
-        'metadata'
+        'metadata',
     ];
 
     protected $casts = [
@@ -31,7 +31,7 @@ class MorConsent extends Model
         'consent_given_at' => 'datetime',
         'metadata' => 'array',
         'latitude' => 'float',
-        'longitude' => 'float'
+        'longitude' => 'float',
     ];
 
     /**

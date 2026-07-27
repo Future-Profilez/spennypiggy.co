@@ -3,16 +3,15 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class TestingMail extends Mailable
 {
     use Queueable, SerializesModels;
+
     public $data;
+
     /**
      * Create a new message instance.
      *
@@ -32,9 +31,10 @@ class TestingMail extends Mailable
     {
         try {
             $subject = 'Testing Mail';
+
             return $this->view('email.testing')
-            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-            ->subject($subject);
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+                ->subject($subject);
         } catch (\Exception $e) {
         }
     }

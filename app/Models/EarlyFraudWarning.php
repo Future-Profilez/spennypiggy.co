@@ -11,7 +11,9 @@ class EarlyFraudWarning extends Model
     protected $table = 'early_fraud_warnings';
 
     public $timestamps = false;
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected static function booted(): void

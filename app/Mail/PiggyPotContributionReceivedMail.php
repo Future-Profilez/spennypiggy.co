@@ -11,6 +11,7 @@ class PiggyPotContributionReceivedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $pay;
+
     public $symbol;
 
     public function __construct($pay, $symbol)
@@ -26,4 +27,3 @@ class PiggyPotContributionReceivedMail extends Mailable
             ->subject('You received a Piggy Pot contribution');
     }
 }
-

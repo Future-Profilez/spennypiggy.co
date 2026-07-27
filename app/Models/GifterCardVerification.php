@@ -16,16 +16,19 @@ class GifterCardVerification extends Model
         'currency',
         'status',
         'payment_details',
-        'payment_method'
+        'payment_method',
     ];
+
     protected $casts = [
         'payment_details' => 'array',
     ];
+
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tasks', function (Blueprint $table) {
-            if (!Schema::hasColumn('tasks', 'reason')) {
+            if (! Schema::hasColumn('tasks', 'reason')) {
                 $table->text('reason')->nullable()->after('is_approved');
             }
         });
@@ -24,4 +24,3 @@ return new class extends Migration
         });
     }
 };
-

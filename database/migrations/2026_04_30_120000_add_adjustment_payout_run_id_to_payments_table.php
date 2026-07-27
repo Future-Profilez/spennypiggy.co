@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('payments', 'adjustment_payout_run_id')) {
+            if (! Schema::hasColumn('payments', 'adjustment_payout_run_id')) {
                 $table->uuid('adjustment_payout_run_id')->nullable()->index();
             }
         });
@@ -24,4 +24,3 @@ return new class extends Migration
         });
     }
 };
-

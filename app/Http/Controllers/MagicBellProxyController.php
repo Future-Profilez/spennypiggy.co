@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MagicBellProxyController extends Controller
 {
@@ -23,7 +25,7 @@ class MagicBellProxyController extends Controller
         }
 
         $baseUrl = config('services.magicbell.url', env('MAGICBELL_API_URL', 'https://api.magicbell.com'));
-        $url = rtrim($baseUrl, '/') . '/' . ltrim($path ?? '', '/');
+        $url = rtrim($baseUrl, '/').'/'.ltrim($path ?? '', '/');
 
         $apiKey = config('services.magicbell.key') ?: $request->header('X-MagicBell-Api-Key') ?: $request->header('X-MAGICBELL-API-KEY');
 
@@ -53,17 +55,19 @@ class MagicBellProxyController extends Controller
         $pending = Http::withHeaders($headers);
 
         $body = $request->getContent();
-        if ($body !== '' && !in_array($request->method(), ['GET', 'HEAD'], true)) {
+        if ($body !== '' && ! in_array($request->method(), ['GET', 'HEAD'], true)) {
             $pending = $pending->withBody($body, $request->header('Content-Type', 'application/json'));
         }
 
         try {
             $upstream = $pending->timeout(10)->send($request->method(), $url, ['query' => $request->query()]);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            \Illuminate\Support\Facades\Log::warning("MagicBell Proxy Connection Timeout: " . $e->getMessage());
+        } catch (ConnectionException $e) {
+            Log::warning('MagicBell Proxy Connection Timeout: '.$e->getMessage());
+
             return response()->json(['error' => 'MagicBell service timeout'], 504);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("MagicBell Proxy Error: " . $e->getMessage());
+            Log::error('MagicBell Proxy Error: '.$e->getMessage());
+
             return response()->json(['error' => 'MagicBell service unavailable'], 502);
         }
 

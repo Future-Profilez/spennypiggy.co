@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -19,11 +19,11 @@ return new class extends Migration
         Schema::table('deliverables', function (Blueprint $table) {
             // Remove the restrictive foreign key constraint
             $table->dropForeign(['item_id']);
-            
+
             // Update the comment to reflect the new usage
             $table->bigInteger('item_id')->unsigned()->nullable()->change();
         });
-        
+
         // Add a new comment via raw SQL
         DB::statement("ALTER TABLE deliverables MODIFY COLUMN item_id BIGINT UNSIGNED NULL COMMENT 'Item ID - references different tables based on product_type (wish_items, bills, memberships, etc.)'");
     }

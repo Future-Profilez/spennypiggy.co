@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class WebVitalsController extends Controller
 {
@@ -27,7 +27,7 @@ class WebVitalsController extends Controller
             'connection' => 'array',
             'viewport' => 'array',
             'deviceMemory' => 'numeric|nullable',
-            'hardwareConcurrency' => 'numeric|nullable'
+            'hardwareConcurrency' => 'numeric|nullable',
         ]);
 
         try {
@@ -50,7 +50,7 @@ class WebVitalsController extends Controller
                 'ip_address' => $request->ip(),
                 'session_id' => session()->getId(),
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             // Update real-time cache for dashboard
@@ -64,7 +64,7 @@ class WebVitalsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to store web vitals metric', [
                 'error' => $e->getMessage(),
-                'metric' => $validated
+                'metric' => $validated,
             ]);
 
             return response()->json(['status' => 'error'], 500);
@@ -113,10 +113,10 @@ class WebVitalsController extends Controller
             DB::raw('COUNT(*) as sample_count'),
             DB::raw('SUM(CASE WHEN rating = "good" THEN 1 ELSE 0 END) as good_count'),
             DB::raw('SUM(CASE WHEN rating = "needs-improvement" THEN 1 ELSE 0 END) as needs_improvement_count'),
-            DB::raw('SUM(CASE WHEN rating = "poor" THEN 1 ELSE 0 END) as poor_count')
+            DB::raw('SUM(CASE WHEN rating = "poor" THEN 1 ELSE 0 END) as poor_count'),
         ])
-        ->groupBy('metric_name')
-        ->get();
+            ->groupBy('metric_name')
+            ->get();
 
         // Calculate performance scores
         $performanceScores = $metrics->mapWithKeys(function ($metric) {
@@ -135,16 +135,16 @@ class WebVitalsController extends Controller
                 'distribution' => [
                     'good' => round($goodPercent, 1),
                     'needs_improvement' => round($needsImprovementPercent, 1),
-                    'poor' => round($poorPercent, 1)
+                    'poor' => round($poorPercent, 1),
                 ],
-                'score' => $this->calculatePerformanceScore($goodPercent, $needsImprovementPercent)
+                'score' => $this->calculatePerformanceScore($goodPercent, $needsImprovementPercent),
             ]];
         });
 
         return response()->json([
             'timeframe' => $timeframe,
             'metrics' => $performanceScores,
-            'last_updated' => now()->toISOString()
+            'last_updated' => now()->toISOString(),
         ]);
     }
 
@@ -156,7 +156,7 @@ class WebVitalsController extends Controller
         $metric = $request->get('metric', 'LCP');
         $timeframe = $request->get('timeframe', '7d');
 
-        $interval = match($timeframe) {
+        $interval = match ($timeframe) {
             '24h' => '1 hour',
             '7d' => '4 hours',
             '30d' => '1 day',
@@ -168,10 +168,10 @@ class WebVitalsController extends Controller
                 DB::raw("DATE_TRUNC('{$interval}', created_at) as time_bucket"),
                 DB::raw('AVG(value) as avg_value'),
                 DB::raw('PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY value) as p95'),
-                DB::raw('COUNT(*) as sample_count')
+                DB::raw('COUNT(*) as sample_count'),
             ])
             ->where('metric_name', $metric)
-            ->where('created_at', '>=', match($timeframe) {
+            ->where('created_at', '>=', match ($timeframe) {
                 '24h' => now()->subDay(),
                 '7d' => now()->subWeek(),
                 '30d' => now()->subMonth(),
@@ -184,7 +184,7 @@ class WebVitalsController extends Controller
         return response()->json([
             'metric' => $metric,
             'timeframe' => $timeframe,
-            'trends' => $trends
+            'trends' => $trends,
         ]);
     }
 
@@ -216,11 +216,11 @@ class WebVitalsController extends Controller
             'CLS' => 0.1,
             'FCP' => 1800,
             'TTFB' => 600,
-            'INP' => 200
+            'INP' => 200,
         ];
 
         $threshold = $thresholds[$metric['name']] ?? null;
-        if (!$threshold || $metric['value'] <= $threshold) {
+        if (! $threshold || $metric['value'] <= $threshold) {
             return;
         }
 
@@ -234,7 +234,7 @@ class WebVitalsController extends Controller
             'threshold' => $threshold,
             'severity' => $severity,
             'url' => $metric['url'],
-            'rating' => $metric['rating']
+            'rating' => $metric['rating'],
         ]);
 
         // Send to external monitoring (implement based on your monitoring stack)
@@ -250,15 +250,15 @@ class WebVitalsController extends Controller
         try {
             // Implement your alerting logic here
             // This could send to Slack, PagerDuty, Datadog, etc.
-            
+
             Log::info('Performance alert sent to external service', [
                 'metric' => $metric['name'],
-                'severity' => $severity
+                'severity' => $severity,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to send external performance alert', [
                 'error' => $e->getMessage(),
-                'metric' => $metric
+                'metric' => $metric,
             ]);
         }
     }
@@ -270,13 +270,13 @@ class WebVitalsController extends Controller
     {
         // Core Web Vitals scoring methodology
         // Good: 90-100, Needs Improvement: 50-89, Poor: 0-49
-        
+
         if ($goodPercent >= 75) {
-            return 90 + (int)(($goodPercent - 75) / 25 * 10);
+            return 90 + (int) (($goodPercent - 75) / 25 * 10);
         } elseif ($goodPercent >= 50) {
-            return 50 + (int)(($goodPercent - 50) / 25 * 40);
+            return 50 + (int) (($goodPercent - 50) / 25 * 40);
         } else {
-            return (int)($goodPercent / 50 * 50);
+            return (int) ($goodPercent / 50 * 50);
         }
     }
 }

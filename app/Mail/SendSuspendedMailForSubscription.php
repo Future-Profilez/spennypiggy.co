@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class SendSuspendedMailForSubscription extends Mailable
@@ -16,12 +13,9 @@ class SendSuspendedMailForSubscription extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
-    {
+    public function __construct() {}
 
-    }
-
-      /**
+    /**
      * Build the message.
      *
      * @return $this
@@ -30,6 +24,7 @@ class SendSuspendedMailForSubscription extends Mailable
     {
         try {
             $subject = '⚠️ Your account is suspended! ⚠️';
+
             return $this->view('email.account-suspend')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

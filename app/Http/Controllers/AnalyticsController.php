@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use App\Models\SearchClick;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AnalyticsController extends Controller
 {
@@ -20,25 +21,29 @@ class AnalyticsController extends Controller
             $userId = Auth::id();
             $creatorId = $validated['creator_id'] ?? null;
 
-            if (!$creatorId && !empty($validated['creator_username'])) {
-                $u = \App\Models\User::where('username', $validated['creator_username'])->select('id')->first();
-                if ($u) { $creatorId = $u->id; }
+            if (! $creatorId && ! empty($validated['creator_username'])) {
+                $u = User::where('username', $validated['creator_username'])->select('id')->first();
+                if ($u) {
+                    $creatorId = $u->id;
+                }
             }
 
-            if (!$creatorId) {
+            if (! $creatorId) {
                 $ref = $request->headers->get('referer');
                 if ($ref) {
                     $path = parse_url($ref, PHP_URL_PATH);
                     $segments = array_values(array_filter(explode('/', $path)));
                     $username = $segments[0] ?? null;
                     if ($username) {
-                        $u = \App\Models\User::where('username', $username)->select('id')->first();
-                        if ($u) { $creatorId = $u->id; }
+                        $u = User::where('username', $username)->select('id')->first();
+                        if ($u) {
+                            $creatorId = $u->id;
+                        }
                     }
                 }
             }
 
-            if (!$creatorId) {
+            if (! $creatorId) {
                 return response()->json(['status' => false], 422);
             }
             $ip = $request->ip();
@@ -46,8 +51,11 @@ class AnalyticsController extends Controller
 
             $uaStr = strtolower($ua);
             $isBot = false;
-            foreach (['bot','crawl','spider','slurp','bingpreview','facebookexternalhit','monitor','headless','phantom','puppeteer'] as $k) {
-                if (strpos($uaStr, $k) !== false) { $isBot = true; break; }
+            foreach (['bot', 'crawl', 'spider', 'slurp', 'bingpreview', 'facebookexternalhit', 'monitor', 'headless', 'phantom', 'puppeteer'] as $k) {
+                if (strpos($uaStr, $k) !== false) {
+                    $isBot = true;
+                    break;
+                }
             }
             if ($isBot) {
                 return response()->json(['status' => true]);
@@ -61,7 +69,7 @@ class AnalyticsController extends Controller
                 if ($exists) {
                     return response()->json(['status' => true]);
                 }
-            } else if ($ip) {
+            } elseif ($ip) {
                 $exists = SearchClick::where('creator_id', $creatorId)
                     ->where('ip_address', $ip)
                     ->where('created_at', '>=', $recentWindow)
@@ -81,7 +89,7 @@ class AnalyticsController extends Controller
                 if ($count >= $dailyCapUser) {
                     return response()->json(['status' => true]);
                 }
-            } else if ($ip) {
+            } elseif ($ip) {
                 $count = SearchClick::where('ip_address', $ip)
                     ->where('created_at', '>=', $todayStart)
                     ->count();
@@ -104,6 +112,7 @@ class AnalyticsController extends Controller
                 'error' => $e->getMessage(),
                 'creator_id' => $validated['creator_id'] ?? null,
             ]);
+
             return response()->json(['status' => false], 500);
         }
     }

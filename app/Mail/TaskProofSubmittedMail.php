@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -12,7 +11,9 @@ class TaskProofSubmittedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $purchase;
+
     public $task;
+
     public $creator;
 
     public function __construct($purchase, $task, $creator)
@@ -24,7 +25,7 @@ class TaskProofSubmittedMail extends Mailable
 
     public function build()
     {
-        $subject = "Proof submitted for task: " . $this->task->title;
+        $subject = 'Proof submitted for task: '.$this->task->title;
 
         $proofUrl = null;
         if ($this->purchase->proof_file) {
@@ -32,7 +33,7 @@ class TaskProofSubmittedMail extends Mailable
             if (str_starts_with($this->purchase->proof_file, 'http')) {
                 $proofUrl = $this->purchase->proof_file;
             } else {
-                $proofUrl = asset('storage/' . $this->purchase->proof_file);
+                $proofUrl = asset('storage/'.$this->purchase->proof_file);
             }
         }
 

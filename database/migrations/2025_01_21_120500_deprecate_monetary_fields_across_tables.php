@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -9,14 +8,16 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * This migration adds comments to existing monetary fields to mark them as deprecated.
      * We don't actually drop the columns to maintain data integrity and backwards compatibility,
      * but we mark them as deprecated in favor of the new social engagement fields.
      */
     public function up(): void
     {
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
         if (config('database.default') === 'sqlite') {
             return;
         }
@@ -82,13 +83,15 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     * 
+     *
      * This would remove the deprecation comments, but since we're not actually
      * modifying the structure significantly, we'll leave this empty for now.
      */
     public function down(): void
     {
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql') { return; }
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return;
+        }
         // Rollback would be complex and potentially destructive
         // For now, we'll leave the deprecated fields as-is
         // In a real production environment, you might want to remove the comments

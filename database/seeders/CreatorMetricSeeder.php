@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\CreatorMetric;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class CreatorMetricSeeder extends Seeder
 {
@@ -24,11 +24,11 @@ class CreatorMetricSeeder extends Seeder
             // Randomize some data for demo purposes
             $isHighRisk = rand(0, 100) < 5; // 5% chance
             $isMediumRisk = rand(0, 100) < 15; // 15% chance
-            
+
             $riskLevel = 'low';
             $reservePercent = 0;
             $payoutDelay = 0;
-            
+
             if ($isHighRisk) {
                 $riskLevel = 'high';
                 $reservePercent = 25;
@@ -52,7 +52,7 @@ class CreatorMetricSeeder extends Seeder
                 // 'last_assessed_at' => now(), // Column does not exist in fillable
             ]);
         }
-        
-        $this->command->info("Seeding completed.");
+
+        $this->command->info('Seeding completed.');
     }
 }

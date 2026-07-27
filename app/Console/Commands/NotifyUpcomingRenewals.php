@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 class NotifyUpcomingRenewals extends Command
 {
     protected $signature = 'renewals:notify {--days=3 : Remind when renewal is within this many days} {--dry-run : Log only, send nothing}';
+
     protected $description = 'Notify supporters before a recurring subscription auto-renews';
 
     public function handle(): int
@@ -37,7 +38,7 @@ class NotifyUpcomingRenewals extends Command
             $this->dueQuery(BillPayment::with(['bill.user', 'user']), $now, $until)->get(),
             fn ($p) => [
                 'creator' => $p->bill?->user,
-                'title'   => $p->bill?->name ?: 'your subscription',
+                'title' => $p->bill?->name ?: 'your subscription',
             ],
             $dry
         );
@@ -46,12 +47,12 @@ class NotifyUpcomingRenewals extends Command
             $this->dueQuery(MembershipPayment::with(['membership.user', 'user']), $now, $until)->get(),
             fn ($p) => [
                 'creator' => $p->membership?->user,
-                'title'   => $p->membership?->level ? ($p->membership->level . ' membership') : 'your membership',
+                'title' => $p->membership?->level ? ($p->membership->level.' membership') : 'your membership',
             ],
             $dry
         );
 
-        $this->info(($dry ? '[dry-run] ' : '') . "Renewal reminders: {$sent}");
+        $this->info(($dry ? '[dry-run] ' : '')."Renewal reminders: {$sent}");
 
         return self::SUCCESS;
     }
@@ -81,13 +82,13 @@ class NotifyUpcomingRenewals extends Command
             }
 
             $email = $p->user?->email ?: $p->guest_email;
-            if (!$email) {
+            if (! $email) {
                 continue;
             }
 
             $meta = $resolve($p);
             $when = Carbon::parse($p->upcoming_payment)->format('M j');
-            $amount = strtoupper($p->currency ?: 'GBP') . ' ' . number_format((float) ($p->total_paid ?: $p->amount ?: 0), 2);
+            $amount = strtoupper($p->currency ?: 'GBP').' '.number_format((float) ($p->total_paid ?: $p->amount ?: 0), 2);
             $content = "{$meta['title']} renews on {$when} for {$amount}. Manage or cancel anytime in My Purchases.";
 
             if ($dry) {

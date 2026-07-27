@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\CheckFounderQualifications;
 use App\Models\FounderBonus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class FounderBonusAdminController extends Controller
 {
@@ -25,16 +25,16 @@ class FounderBonusAdminController extends Controller
             ->count();
 
         $stats = [
-            'total_founders'       => $totalFounders,
-            'seats_used_this_month'=> $seatsUsed,
-            'seats_remaining'      => max(0, $maxSeats - $seatsUsed),
-            'max_seats'            => $maxSeats,
-            'pending_payouts'      => FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)->count(),
-            'total_bonuses_paid'   => (float) FounderBonus::where('payout_status', FounderBonus::STATUS_PAID)->sum('bonus_amount'),
-            'rejected_payouts'     => FounderBonus::where('payout_status', FounderBonus::STATUS_REJECTED)->count(),
+            'total_founders' => $totalFounders,
+            'seats_used_this_month' => $seatsUsed,
+            'seats_remaining' => max(0, $maxSeats - $seatsUsed),
+            'max_seats' => $maxSeats,
+            'pending_payouts' => FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)->count(),
+            'total_bonuses_paid' => (float) FounderBonus::where('payout_status', FounderBonus::STATUS_PAID)->sum('bonus_amount'),
+            'rejected_payouts' => FounderBonus::where('payout_status', FounderBonus::STATUS_REJECTED)->count(),
             'referral_bonus_count' => FounderBonus::where('referral_multiplier', '>', 1.0)->count(),
-            'bonus_percentage'     => round(FounderBonus::getBonusPercentage() * 100, 1),
-            'min_earnings'         => FounderBonus::getMinFirst30dEarnings(),
+            'bonus_percentage' => round(FounderBonus::getBonusPercentage() * 100, 1),
+            'min_earnings' => FounderBonus::getMinFirst30dEarnings(),
         ];
 
         $recentBonuses = FounderBonus::with('creator')
@@ -79,8 +79,8 @@ class FounderBonusAdminController extends Controller
 
         if ($request->has('search') && $request->search) {
             $query->whereHas('creator', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -118,7 +118,7 @@ class FounderBonusAdminController extends Controller
 
         if ($bonus->payout_status !== FounderBonus::STATUS_PENDING) {
             return response()->json([
-                'error' => 'Only pending payouts can be rejected'
+                'error' => 'Only pending payouts can be rejected',
             ], 400);
         }
 
@@ -130,7 +130,7 @@ class FounderBonusAdminController extends Controller
         // Send rejection email
         $this->sendRejectionEmail($bonus);
 
-        Log::info("Admin rejected founder bonus payout", [
+        Log::info('Admin rejected founder bonus payout', [
             'bonus_id' => $bonus->id,
             'creator_id' => $bonus->creator_id,
             'reason' => $request->reason,
@@ -143,7 +143,7 @@ class FounderBonusAdminController extends Controller
                 'id' => $bonus->id,
                 'payout_status' => $bonus->payout_status,
                 'payout_rejection_reason' => $bonus->payout_rejection_reason,
-            ]
+            ],
         ]);
     }
 
@@ -169,7 +169,7 @@ class FounderBonusAdminController extends Controller
         // Settings are env-managed (config/founder_bonus.php reads FOUNDER_* env vars);
         // there is no persistent store for runtime overrides. Say so instead of
         // returning a fake success.
-        Log::info("Admin attempted founder bonus settings update (env-managed, not persisted)", [
+        Log::info('Admin attempted founder bonus settings update (env-managed, not persisted)', [
             'admin_user' => auth()->id(),
             'settings' => $request->all(),
         ]);
@@ -217,20 +217,20 @@ class FounderBonusAdminController extends Controller
     {
         try {
             // Dispatch the job to check qualifications
-            \App\Jobs\CheckFounderQualifications::dispatch();
+            CheckFounderQualifications::dispatch();
 
-            Log::info("Admin manually triggered founder qualification check", [
+            Log::info('Admin manually triggered founder qualification check', [
                 'admin_user' => auth()->id(),
             ]);
 
             return response()->json([
-                'message' => 'Qualification check triggered successfully'
+                'message' => 'Qualification check triggered successfully',
             ]);
         } catch (\Exception $e) {
-            Log::error("Failed to trigger qualification check: " . $e->getMessage());
-            
+            Log::error('Failed to trigger qualification check: '.$e->getMessage());
+
             return response()->json([
-                'error' => 'Failed to trigger qualification check'
+                'error' => 'Failed to trigger qualification check',
             ], 500);
         }
     }
@@ -240,7 +240,7 @@ class FounderBonusAdminController extends Controller
      */
     private function sendRejectionEmail(FounderBonus $bonus)
     {
-        if (!$bonus->creator || $bonus->creator->notification_send != 1) {
+        if (! $bonus->creator || $bonus->creator->notification_send != 1) {
             return;
         }
 
@@ -253,10 +253,10 @@ class FounderBonusAdminController extends Controller
                 'reason' => $bonus->payout_rejection_reason,
             ], function ($message) use ($bonus) {
                 $message->to($bonus->creator->email, $bonus->creator->name)
-                        ->subject('Founder Bonus Payout Update - ' . $bonus->month);
+                    ->subject('Founder Bonus Payout Update - '.$bonus->month);
             });
         } catch (\Exception $e) {
-            Log::error("Failed to send rejection email to founder {$bonus->creator_id}: " . $e->getMessage());
+            Log::error("Failed to send rejection email to founder {$bonus->creator_id}: ".$e->getMessage());
         }
     }
 }

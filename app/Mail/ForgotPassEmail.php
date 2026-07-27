@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class ForgotPassEmail extends Mailable
@@ -14,8 +11,6 @@ class ForgotPassEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
-
-
 
     /**
      * Create a new message instance.
@@ -36,6 +31,7 @@ class ForgotPassEmail extends Mailable
     {
         try {
             $subject = 'Forgot password email from Spenny Piggy platform.';
+
             return $this->view('email.forgot-password')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

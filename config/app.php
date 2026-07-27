@@ -1,7 +1,14 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\AuthServiceProvider;
+use App\Providers\EventServiceProvider;
+use App\Providers\PerformanceServiceProvider;
+use App\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
+use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageServiceProvider;
 
 return [
 
@@ -163,13 +170,13 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
+        AppServiceProvider::class,
+        AuthServiceProvider::class,
         // App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
-        App\Providers\PerformanceServiceProvider::class,
-        Intervention\Image\ImageServiceProvider::class,
+        EventServiceProvider::class,
+        RouteServiceProvider::class,
+        PerformanceServiceProvider::class,
+        ImageServiceProvider::class,
     ])->toArray(),
 
     /*
@@ -185,9 +192,8 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
-        'Image' => Intervention\Image\Facades\Image::class,
+        'Image' => Image::class,
     ])->toArray(),
-
 
     'crowd_tax' => 17, // wish crowed fund payment fees
     'member_tax' => 17, // membership payment fees
@@ -201,7 +207,6 @@ return [
     // 'jar_tax' => 20,
     // 'bill_tax' => 10,
     // 'shop_tax' => 20,
-
 
     'administration_fee' => 1,
     'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 17),

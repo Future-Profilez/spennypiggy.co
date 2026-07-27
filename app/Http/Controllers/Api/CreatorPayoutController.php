@@ -25,6 +25,7 @@ class CreatorPayoutController extends Controller
         $released = $this->payoutService->getReleasedReserves($uuid, 100, $currency);
         $data['released_breakdown'] = $released['breakdown'] ?? [];
         $data['total_released'] = $released['total_released'] ?? 0;
+
         return response()->json($data);
     }
 }

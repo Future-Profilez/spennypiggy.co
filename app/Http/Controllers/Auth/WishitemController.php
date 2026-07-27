@@ -41,6 +41,7 @@ use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
@@ -100,6 +101,21 @@ class WishitemController extends Controller
             WishItem::class,
             $wish->id,
             $wish->thumbnail,
+            ['is_approved' => 0],
+            'thumbnail'
+        );
+    }
+
+    /** Text half of the gate — the reward can BE text, and it is never scanned by Rekognition. */
+    private function moderateWishText(?WishItem $wish): void
+    {
+        if (! $wish) {
+            return;
+        }
+
+        ItemTextModeration::apply(
+            $wish,
+            ['reward_title', 'reward_body', 'reward_description', 'wishname'],
             ['is_approved' => 0]
         );
     }
@@ -239,6 +255,7 @@ class WishitemController extends Controller
             }
 
             $this->moderateWish($wish);
+            $this->moderateWishText($wish);
 
             // Clear user caches
             $this->userProfileService->clearUserCaches($user->username, $user->id);
@@ -465,6 +482,7 @@ class WishitemController extends Controller
         }
 
         $this->moderateWish($wish);
+        $this->moderateWishText($wish);
 
         // Clear activity cache to ensure real-time updates
         app(CreatorActivityService::class)->clearActivityCache(Auth::user());
@@ -586,6 +604,7 @@ class WishitemController extends Controller
             $previousThumbnail = (string) $wish->thumbnail;
             $wish->refresh();
             $this->moderateWish($wish, $previousThumbnail);
+            $this->moderateWishText($wish);
 
             if (! empty($request->category)) {
                 WishCategory::where('wish_item_id', $wish->id)->delete();

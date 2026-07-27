@@ -23,6 +23,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -179,6 +180,13 @@ class TaskController extends Controller
 
         $task->save();
 
+        // Text half of the gate — a task reward can be a written message or a link.
+        ItemTextModeration::apply(
+            $task,
+            ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
+            ['is_approved' => false]
+        );
+
         // SFW gate: AI-scan the task media; keep it unapproved if it fails moderation.
         $mediaUuid = $request->media_file['uuid'] ?? null;
         if (! empty($mediaUuid)) {
@@ -186,7 +194,8 @@ class TaskController extends Controller
                 Task::class,
                 $task->id,
                 $mediaUuid,
-                ['is_approved' => false]
+                ['is_approved' => false],
+                'task_image'
             );
         }
 
@@ -292,6 +301,14 @@ class TaskController extends Controller
         }
 
         $task->save();
+
+        // An edit already drops the task back to unapproved above, so this only
+        // records WHY when the new wording is the problem.
+        ItemTextModeration::apply(
+            $task,
+            ['reward_title', 'reward_body', 'reward_description', 'title', 'description'],
+            ['is_approved' => false]
+        );
 
         // Clear user caches
         $user = Auth::user();

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Str;
+use Pdo\Mysql;
 
 return [
 
@@ -61,7 +62,7 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // PDO::MYSQL_ATTR_SSL_CA is deprecated on PHP >= 8.4 in favour
                 // of Pdo\Mysql::ATTR_SSL_CA; pick whichever this runtime has.
-                (class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                (class_exists(Mysql::class) ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 

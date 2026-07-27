@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('status')->default('pending')->comment('pending, reviewed, resolved, dismissed');
             $table->boolean('good_faith_confirmed')->default(true);
             $table->timestamps();
-            
+
             $table->foreign('reported_user_id')->references('id')->on('users')->onDelete('set null');
         });
     }

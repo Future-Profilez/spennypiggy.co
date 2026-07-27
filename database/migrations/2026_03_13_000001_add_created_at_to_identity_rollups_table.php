@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('identity_rollups')) {
+        if (! Schema::hasTable('identity_rollups')) {
             return;
         }
 
@@ -23,11 +23,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('identity_rollups')) {
+        if (! Schema::hasTable('identity_rollups')) {
             return;
         }
 
-        if (!Schema::hasColumn('identity_rollups', 'created_at')) {
+        if (! Schema::hasColumn('identity_rollups', 'created_at')) {
             return;
         }
 
@@ -36,4 +36,3 @@ return new class extends Migration
         });
     }
 };
-

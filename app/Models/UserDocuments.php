@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class UserDocuments extends Model
 {
@@ -14,18 +15,18 @@ class UserDocuments extends Model
         'user_id',
         'doc_type',
         'front',
-        'back'
+        'back',
     ];
 
     protected $hidden = [
         'id',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = \Ramsey\Uuid\Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 }

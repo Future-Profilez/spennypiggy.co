@@ -2,14 +2,13 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\TaskPurchase;
-use App\Models\Deliverable;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
-use Stripe\StripeClient;
 use App\Helpers;
+use App\Models\Deliverable;
+use App\Models\TaskPurchase;
 use App\Services\StripeMetadataService;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class ProcessTaskAutoConfirmations extends Command
 {
@@ -33,9 +32,9 @@ class ProcessTaskAutoConfirmations extends Command
     public function handle()
     {
         $this->info('Starting task auto-confirmation process...');
-        
+
         $this->processAutoConfirmations();
-        
+
         $this->info('Task auto-confirmation process completed.');
     }
 
@@ -47,7 +46,7 @@ class ProcessTaskAutoConfirmations extends Command
         // Find delivered tasks older than configured hours (default 1)
         // 'pending_review' implies proof uploaded.
         // We check if proof uploaded > X hours ago.
-        
+
         $autoAcceptHours = config('tasks.auto_accept_proof_hours', 1);
 
         $tasksToConfirm = TaskPurchase::where('status', 'pending_review')
@@ -57,17 +56,18 @@ class ProcessTaskAutoConfirmations extends Command
                 $proof = $purchase->proof_content ?? [];
                 $uploadedAtStr = $proof['uploaded_at'] ?? null;
                 $uploadedAt = $uploadedAtStr ? Carbon::parse($uploadedAtStr) : Carbon::parse($purchase->updated_at);
+
                 return $uploadedAt->lt(Carbon::now()->subHours($autoAcceptHours));
             });
 
         foreach ($tasksToConfirm as $purchase) {
             $this->info("Processing auto-confirmation for purchase: {$purchase->id}");
-            
+
             try {
                 $purchase->status = 'completed_accepted';
                 $purchase->completed_at = now();
                 $purchase->save();
-                
+
                 // Update Deliverable
                 $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
@@ -78,40 +78,40 @@ class ProcessTaskAutoConfirmations extends Command
                     try {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'proof_status' => 'accepted',
-                            'accepted_by' => 'auto_system'
+                            'accepted_by' => 'auto_system',
                         ]);
                     } catch (\Exception $e) {
-                        Log::error("Failed to update metadata on auto-confirmation (charge): " . $e->getMessage());
+                        Log::error('Failed to update metadata on auto-confirmation (charge): '.$e->getMessage());
                     }
                 }
 
                 // Trigger Payout if PAID_TASK
                 $this->triggerPayout($purchase);
-                
+
                 // Notify Creator
                 if ($purchase->creator) {
                     Helpers::sendNotification(
-                        "Task Auto-Confirmed! ✅", 
-                        "Your task '{$purchase->task->title}' has been auto-confirmed.", 
+                        'Task Auto-Confirmed! ✅',
+                        "Your task '{$purchase->task->title}' has been auto-confirmed.",
                         $purchase->creator->email
                     );
                 }
-                
+
                 // Notify Supporter
                 if ($purchase->supporter) {
                     Helpers::sendNotification(
-                        "Task Auto-Confirmed ✅", 
-                        "The task '{$purchase->task->title}' has been auto-confirmed.", 
+                        'Task Auto-Confirmed ✅',
+                        "The task '{$purchase->task->title}' has been auto-confirmed.",
                         $purchase->supporter->email
                     );
                 }
 
-                Log::info("Task auto-confirmed", ['purchase_id' => $purchase->id]);
+                Log::info('Task auto-confirmed', ['purchase_id' => $purchase->id]);
 
             } catch (\Exception $e) {
-                Log::error("Failed to process auto-confirmation", [
+                Log::error('Failed to process auto-confirmation', [
                     'purchase_id' => $purchase->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -124,7 +124,7 @@ class ProcessTaskAutoConfirmations extends Command
         if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK') {
             $purchase->status = 'paid_out';
             $purchase->save();
-            
+
             // Update Deliverable Metadata
             try {
                 $deliverable = Deliverable::where('order_id', $purchase->id)->first();
@@ -132,15 +132,15 @@ class ProcessTaskAutoConfirmations extends Command
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                         'current_status_of_order' => 'paid_out',
                         'payment_status' => 'paid',
-                        'auto_confirmed' => 'true'
+                        'auto_confirmed' => 'true',
                     ]);
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to update metadata on auto-confirmation (payout): " . $e->getMessage());
+                Log::error('Failed to update metadata on auto-confirmation (payout): '.$e->getMessage());
             }
 
             Log::info('Task marked as paid_out (Direct Charge auto-confirm)', [
-                'purchase_id' => $purchase->id
+                'purchase_id' => $purchase->id,
             ]);
         }
     }

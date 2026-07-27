@@ -31,12 +31,13 @@ class PostCommentReplies extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function post_comment(){
-        return $this->belongsTo(PostComment::class,'post_comment_id');
+    public function post_comment()
+    {
+        return $this->belongsTo(PostComment::class, 'post_comment_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

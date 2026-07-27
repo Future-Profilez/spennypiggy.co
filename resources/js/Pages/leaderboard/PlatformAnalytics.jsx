@@ -1,65 +1,33 @@
-import { useState, useEffect } from "react";
-import axios from 'axios';
+import useBundleSection from './useBundle';
 import { RiBarChart2Line, RiArrowUpLine, RiUser3Line, RiEarthLine, RiMedal2Line, RiFocus3Line } from 'react-icons/ri';
 
 export default function PlatformAnalytics() {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [data, setData] = useState({
-        overview: {
-            active_creators: 0,
-            total_supporters: 0,
-            avg_growth: 0,
-            creators_trend: null,
-            supporters_trend: null
-        },
-        milestones: [],
-        countries: [],
-        achievements: []
-    });
+    // Shared with every other panel on the page — one request, not seven.
+    const { data: section, loading, error, retry: fetchAnalytics } = useBundleSection('platform_analytics');
+    const responseData = section?.data || {};
 
-    const fetchAnalytics = () => {
-        setLoading(true);
-        setError(null);
-        axios.get('leaderboard/platform-analytics')
-            .then((response) => {
-                // Safely merge response data with defaults
-                const responseData = response.data?.data || {};
-                setData({
-                    overview: {
-                        active_creators: responseData.overview?.active_creators || 0,
-                        total_supporters: responseData.overview?.total_supporters || 0,
-                        avg_growth: responseData.overview?.avg_growth || 0,
-                        creators_trend: responseData.overview?.creators_trend || null,
-                        supporters_trend: responseData.overview?.supporters_trend || null
-                    },
-                    milestones: responseData.milestones || [],
-                    countries: responseData.countries || [],
-                    achievements: responseData.achievements || []
-                });
-            })
-            .catch((error) => {
-                console.error("Error fetching analytics:", error);
-                setError("Failed to load platform analytics. Please try again.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+    const data = {
+        overview: {
+            active_creators: responseData.overview?.active_creators || 0,
+            total_supporters: responseData.overview?.total_supporters || 0,
+            avg_growth: responseData.overview?.avg_growth || 0,
+            creators_trend: responseData.overview?.creators_trend || null,
+            supporters_trend: responseData.overview?.supporters_trend || null,
+        },
+        milestones: responseData.milestones || [],
+        countries: responseData.countries || [],
+        achievements: responseData.achievements || [],
     };
 
-    useEffect(() => {
-        fetchAnalytics();
-    }, []);
-
     const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'text-blue-600' }) => (
-        <div className="stat-card bg-white rounded-[30px]  p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="stat-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-6">
             <div className="flex items-start justify-between mb-4 gap-2">
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide break-words">{title}</h3>
                     <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
                     {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
                 </div>
-                <div className="shrink-0 p-3 rounded-[30px]  bg-gray-100 flex items-center justify-center min-w-[48px]">
+                <div className="shrink-0 p-3 rounded-box bg-gray-100 flex items-center justify-center min-w-[48px]">
                     <Icon size={24} className={color} />
                 </div>
             </div>
@@ -75,7 +43,7 @@ export default function PlatformAnalytics() {
     );
 
     const MilestoneCard = ({ milestone, isCompleted }) => (
-        <div className={`milestone-card p-4 rounded-[30px]    border-2 ${isCompleted ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+        <div className={`milestone-card p-4 rounded-box border-2 ${isCompleted ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
             <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-gray-900">{milestone.title}</h4>
                 {isCompleted && (
@@ -103,7 +71,7 @@ export default function PlatformAnalytics() {
     );
 
     const CountryCard = ({ country, rank }) => (
-        <div className="country-card bg-white rounded-[30px]    p-4 shadow-sm">
+        <div className="country-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="rank-badge bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -125,7 +93,7 @@ export default function PlatformAnalytics() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -135,7 +103,7 @@ export default function PlatformAnalytics() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -150,8 +118,8 @@ export default function PlatformAnalytics() {
     }
 
     return (
-        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-left mb-4">📊 Platform Analytics</h2>
+        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
+            <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📊 Platform Analytics</h2>
             <p className="text-gray-500 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}
@@ -207,7 +175,7 @@ export default function PlatformAnalytics() {
                     </div>
                     <div className="space-y-3">
                         {data.achievements.map((achievement, index) => (
-                            <div key={index} className="achievement-card bg-white rounded-[30px]    p-4 shadow-sm">
+                            <div key={index} className="achievement-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
                                 <div className="flex items-start space-x-3">
                                     <div className="text-2xl">{achievement.icon}</div>
                                     <div>

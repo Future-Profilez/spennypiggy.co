@@ -142,7 +142,8 @@ class OptimizedProfileController extends Controller
         ]);
 
         if (app()->environment('production') && ! Auth::check()) {
-            return $response->withHeaders([
+            // Inertia\Response is Responsable, not a Response — convert before adding headers.
+            return $response->toResponse(request())->withHeaders([
                 'Cache-Control' => 'public, max-age=60, s-maxage=300, must-revalidate',
             ]);
         }

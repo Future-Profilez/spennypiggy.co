@@ -10,27 +10,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('founder_bonuses', function (Blueprint $table) {
-            if (!Schema::hasColumn('founder_bonuses', 'stripe_transfer_id')) {
+            if (! Schema::hasColumn('founder_bonuses', 'stripe_transfer_id')) {
                 $table->string('stripe_transfer_id')->nullable()->after('payout_status');
             }
 
-            if (!Schema::hasColumn('founder_bonuses', 'stripe_payout_id')) {
+            if (! Schema::hasColumn('founder_bonuses', 'stripe_payout_id')) {
                 $table->string('stripe_payout_id')->nullable()->after('stripe_transfer_id');
             }
 
-            if (!Schema::hasColumn('founder_bonuses', 'payout_record_uuid')) {
+            if (! Schema::hasColumn('founder_bonuses', 'payout_record_uuid')) {
                 $table->uuid('payout_record_uuid')->nullable()->after('stripe_payout_id');
             }
 
-            if (!Schema::hasColumn('founder_bonuses', 'paid_date')) {
+            if (! Schema::hasColumn('founder_bonuses', 'paid_date')) {
                 $table->timestamp('paid_date')->nullable()->after('payout_record_uuid');
             }
 
-            if (!$this->indexExists('founder_bonuses', 'founder_bonuses_stripe_payout_id_index')) {
+            if (! $this->indexExists('founder_bonuses', 'founder_bonuses_stripe_payout_id_index')) {
                 $table->index('stripe_payout_id');
             }
 
-            if (!$this->indexExists('founder_bonuses', 'founder_bonuses_payout_record_uuid_index')) {
+            if (! $this->indexExists('founder_bonuses', 'founder_bonuses_payout_record_uuid_index')) {
                 $table->index('payout_record_uuid');
             }
         });
@@ -64,7 +64,8 @@ return new class extends Migration
     {
         // Portable across MySQL + sqlite (raw SHOW INDEX is MySQL-only and broke the test DB).
         if (Schema::getConnection()->getDriverName() === 'mysql') {
-            $results = DB::select('SHOW INDEX FROM `' . str_replace('`', '``', $table) . '` WHERE Key_name = ?', [$indexName]);
+            $results = DB::select('SHOW INDEX FROM `'.str_replace('`', '``', $table).'` WHERE Key_name = ?', [$indexName]);
+
             return count($results) > 0;
         }
 
@@ -74,7 +75,7 @@ return new class extends Migration
                     return true;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // fall through
         }
 

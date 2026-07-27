@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('shop_payments') && !Schema::hasColumn('shop_payments', 'shipping_amount')) {
+        if (Schema::hasTable('shop_payments') && ! Schema::hasColumn('shop_payments', 'shipping_amount')) {
             Schema::table('shop_payments', function (Blueprint $table) {
                 $table->decimal('shipping_amount', 15, 2)->default(0)->after('vat_tax_amount');
             });

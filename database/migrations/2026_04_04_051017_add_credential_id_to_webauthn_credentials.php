@@ -11,14 +11,14 @@ class AddCredentialIdToWebauthnCredentials extends Migration
     {
         Schema::table('webauthn_credentials', function (Blueprint $table) {
             // Check if column doesn't exist before adding
-            if (!Schema::hasColumn('webauthn_credentials', 'credential_id')) {
+            if (! Schema::hasColumn('webauthn_credentials', 'credential_id')) {
                 $table->string('credential_id')->nullable()->after('id');
             }
         });
-        
+
         // Copy id values to credential_id for existing records
         DB::table('webauthn_credentials')->update([
-            'credential_id' => DB::raw('id')
+            'credential_id' => DB::raw('id'),
         ]);
     }
 

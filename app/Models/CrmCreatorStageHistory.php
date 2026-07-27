@@ -30,4 +30,3 @@ class CrmCreatorStageHistory extends Model
         return $this->belongsTo(Admin::class, 'triggered_by');
     }
 }
-

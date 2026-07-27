@@ -19,8 +19,8 @@ class ModerationService
     /**
      * Screen a piece of user content before it is published / charged for.
      *
-     * @param string      $text Free text to screen (title, description, message)
-     * @param string|null $mediaUrl Optional media URL to classify (image/video)
+     * @param  string  $text  Free text to screen (title, description, message)
+     * @param  string|null  $mediaUrl  Optional media URL to classify (image/video)
      */
     public function classify(string $text = '', ?string $mediaUrl = null): array
     {

@@ -1,442 +1,443 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { Head, Link } from "@inertiajs/react";
-import userphoto from "../../../assets/siteicon.png";
-import Avatar from "@/includes/Avatar";
+import { Head } from "@inertiajs/react";
 import axios from "axios";
-import { useState, useMemo, useRef, useEffect } from "react";
-import { crown } from "@/includes/Icons";
-import { CircleCheckIcon } from "@animateicons/react/lucide";
-import { BadgeCheckIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SearchIcon, TrendingUpIcon, XIcon } from "lucide-react";
+import confetti from "canvas-confetti";
+import RankRow from "./RankRow";
+import Podium from "./Podium";
+import YouBar from "./YouBar";
+import BoardSkeleton from "./BoardSkeleton";
+import MovementChip from "./MovementChip";
 import LeaderboardStars from "./LeaderboardStars";
 import RecentSupporters from "./RecentSupporters";
-import DeviceID from "@/includes/DeviceID";
-import TopSupporters from "./TopSupporters";
 import CategoryLeaders from "./CategoryLeaders";
 import VipSupporters from "./VipSupporters";
 import GrowthTrends from "./GrowthTrends";
 import PlatformAnalytics from "./PlatformAnalytics";
-import { trackSearchClick } from "@/includes/Analytics";
-import { Share2Icon, SearchIcon } from "lucide-react";
-import confetti from 'canvas-confetti';
+
+const PERIOD_LABELS = {
+    all: "All time",
+    annual: "Year",
+    quarterly: "Quarter",
+    monthly: "Month",
+    weekly: "Week",
+    daily: "Today",
+};
+
+/**
+ * All time leads and is the default view — it is the standing a creator has
+ * actually built. The server's PERIODS constant is ordered shortest-first for
+ * its own reasons, which put the default tab last in the row.
+ */
+const PERIOD_ORDER = ["all", "annual", "quarterly", "monthly", "weekly", "daily"];
+
+/** Confetti fires once per period per day, and never for reduced-motion. */
+const celebrationKey = (period) => `spenny_lb_celebrated_${period}_${new Date().toDateString()}`;
 
 export default function Board(props) {
-    const { auth, data, is_daily } = props;
-    const [positions, setPositions] = useState([]);
-    const [ranks, setRanks] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const formatSupporters = (count) => {
-        const safeCount = Number(count) || 0;
-        return `👥 ${safeCount} ${safeCount === 1 ? "supporter" : "supporters"}`;
-    };
+    const {
+        auth,
+        data: initialData = [],
+        is_daily,
+        period: initialPeriod = "all",
+        total = 0,
+        last_page: initialLastPage = 1,
+        periods = ["all", "annual", "quarterly", "monthly", "weekly", "daily"],
+        you: initialYou = null,
+        climbers = [],
+        movement_window_days: windowDays,
+        opted_out: initialOptedOut = false,
+    } = props;
 
-    const filterPositions = (d) => {
-        const newData = [...d];
-        const positionsData = newData.slice(0, 3);
-        const ranksData = newData.slice(3);
-        setPositions(positionsData);
-        setRanks(ranksData);
-    };
-
-    useMemo(() => {
-        filterPositions(data);
-    }, [data]);
-
-    const myRankData = useMemo(() => {
-        if (!auth?.user) return null;
-        const inPositions = positions.find(p => p?.username === auth.user.username);
-        if (inPositions) return inPositions;
-        const inRanks = ranks.find(r => r?.username === auth.user.username);
-        return inRanks || null;
-    }, [positions, ranks, auth]);
-
-    const handleShare = () => {
-        if (!myRankData) return;
-        
-        // Trigger confetti on share
-        confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#FF007F', '#8b5cf6', '#3b82f6', '#eab308']
-        });
-
-        const periodText = period === 'all' ? 'All-Time' : period;
-        const text = `I'm ranked #${myRankData.rank} on SpennyPiggy's ${periodText} Leaderboard! 🚀 Check it out:`;
-        
-        // Link to the user's actual profile page (spennypiggy.co/username)
-        const url = `${window.location.origin}/${auth.user.username}`;
-        
-        if (navigator.share) {
-            navigator.share({
-                title: 'My SpennyPiggy Rank',
-                text: text,
-                url: url
-            }).catch(console.error);
-        } else {
-            navigator.clipboard.writeText(`${text}\n${url}`);
-            alert("Share text copied to clipboard!");
-        }
-    };
-
-    const [period, setPeriod] = useState("all");
+    const [period, setPeriod] = useState(initialPeriod);
+    const [rows, setRows] = useState(initialData);
+    const [you, setYou] = useState(initialYou);
+    const [page, setPage] = useState(1);
+    const [lastPage, setLastPage] = useState(initialLastPage);
+    const [matched, setMatched] = useState(total);
+    const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState(null);
-    // Fire confetti once if user loads the page and is in top 10
-    useEffect(() => {
-        if (myRankData && myRankData.rank <= 10 && !loading) {
-            setTimeout(() => {
-                confetti({
-                    particleCount: 100,
-                    spread: 80,
-                    origin: { y: 0.3 },
-                    colors: ['#FF007F', '#8b5cf6', '#eab308']
+    const [optedOut, setOptedOut] = useState(initialOptedOut);
+
+    const availablePeriods = useMemo(
+        () =>
+            PERIOD_ORDER.filter(
+                (p) => periods.includes(p) && (p !== "daily" || is_daily == 1)
+            ),
+        [periods, is_daily]
+    );
+
+    const fetchBoard = useCallback(
+        (nextPeriod, query, nextPage) => {
+            const append = nextPage > 1;
+            append ? setLoadingMore(true) : setLoading(true);
+            setError(null);
+
+            return axios
+                .get(route("leaderboard", nextPeriod), { params: { q: query || undefined, page: nextPage } })
+                .then((resp) => {
+                    const payload = resp.data;
+                    setRows((prev) => (append ? [...prev, ...payload.data] : payload.data));
+                    setLastPage(payload.last_page || 1);
+                    setMatched(payload.total ?? 0);
+                    if (!append && payload.you !== undefined) setYou(payload.you);
+                })
+                .catch(() => {
+                    setError(
+                        append
+                            ? "Could not load more creators. Try again."
+                            : `Could not load the ${PERIOD_LABELS[nextPeriod] ?? nextPeriod} board. Try again.`
+                    );
+                })
+                .finally(() => {
+                    append ? setLoadingMore(false) : setLoading(false);
                 });
-            }, 500);
+        },
+        []
+    );
+
+    const switchPeriod = (next) => {
+        if (next === period) return;
+        setPeriod(next);
+        setPage(1);
+        // No trailing slash. `/leaderboard/` changes what a RELATIVE request on
+        // this page resolves against — every `axios.get('recent-gifters/…')`
+        // would start asking for `/leaderboard/recent-gifters/…` and 404.
+        window.history.replaceState({}, "", next === "all" ? "/leaderboard" : `/leaderboard/${next}`);
+        fetchBoard(next, search, 1);
+    };
+
+    // Search runs on the server across the whole board, so it is debounced
+    // rather than filtering the rows already on screen.
+    const firstSearchRun = useRef(true);
+    useEffect(() => {
+        if (firstSearchRun.current) {
+            firstSearchRun.current = false;
+
+            return;
         }
-    }, [myRankData?.rank, loading]);
 
-    const filteredRanks = useMemo(() => {
-        if (!searchQuery.trim()) return ranks;
-        const q = searchQuery.toLowerCase();
-        return ranks.filter(r => 
-            (r.name && r.name.toLowerCase().includes(q)) || 
-            (r.username && r.username.toLowerCase().includes(q))
+        const timer = setTimeout(() => {
+            setPage(1);
+            fetchBoard(period, search, 1);
+        }, 350);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
+
+    const loadMore = () => {
+        const next = page + 1;
+        setPage(next);
+        fetchBoard(period, search, next);
+    };
+
+    // Celebrate once a day per board — it used to fire on every page load,
+    // including a refresh, which turns a moment into an interruption.
+    useEffect(() => {
+        if (!you || you.rank > 10) return;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (localStorage.getItem(celebrationKey(period))) return;
+
+        localStorage.setItem(celebrationKey(period), "1");
+        const timer = setTimeout(
+            () => confetti({ particleCount: 90, spread: 80, origin: { y: 0.3 }, colors: ["#FF007F", "#05EFB8", "#E6EA7B"] }),
+            400
         );
-    }, [ranks, searchQuery]);
 
-    const switchTime = (e) => {
-        setPeriod(e);
-        setLoading(true);
-        setError(null);
+        return () => clearTimeout(timer);
+    }, [you?.rank, period]);
+
+    const handleShare = async () => {
+        if (!you) return;
+
+        const label = PERIOD_LABELS[period] ?? period;
+        const text = `I'm #${you.rank} of ${you.total} creators on the SpennyPiggy ${label} leaderboard.`;
+        const url = `${window.location.origin}/${auth.user.username}`;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: "My SpennyPiggy rank", text, url });
+            } else {
+                await navigator.clipboard.writeText(`${text}\n${url}`);
+                setError(null);
+            }
+        } catch {
+            /* the viewer dismissed the share sheet — nothing to report */
+        }
+    };
+
+    const toggleOptOut = () => {
+        const next = !optedOut;
+        setOptedOut(next);
         axios
-            .get(`leaderboard/${e}`)
-            .then((resp) => {
-                filterPositions(resp.data.data);
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-                setError(`Failed to load ${e} leaderboard. Please try again.`);
-            })
-            .finally(() => {
-                setLoading(false);
+            .post(route("leaderboard.opt-out"), { opt_out: next })
+            .catch(() => {
+                setOptedOut(!next);
+                setError("Could not change your leaderboard setting. Try again.");
             });
     };
 
-    const Rank = ({ r }) => {
-        return (
-            <div className="fading rank py-3 border-b flex items-center justify-between">
-            <div className="flex items-center justify-between">
-                <div className="sno mr-2 md:mr-4 pl-2">
-                    <p className="font-gulfs">#{r && r.rank}</p>
-                </div>
-                <div className="wisher">
-                        <Avatar
-                            role={r && r.role}
-                            profile_status_lock={r && r.profile_status_lock === 2 ? true : false}
-                            name={
-                                <div className="flex items-center flex-wrap gap-1">
-                                    <span>{(r && r.name) || "Anonymous"}</span>
-                                    {r && r.rank <= 10 && (
-                                        <span className="text-[10px] sm:text-xs font-bold text-[#FF007F] bg-pink-50 px-1.5 py-0.5 rounded-full whitespace-nowrap ml-1 flex items-center">
-                                            🌟 Rising Star
-                                        </span>
-                                    )}
-                                </div>
-                            }
-                            link={(r && r.username) || ""}
-                            subhead={`@${(r && r.username) || null}`}
-                            username={(r && r.username) || null}
-                            src={(r && r.avatar) || userphoto}
-                            onClick={() => trackSearchClick(r?.id, r?.username)}
-                        />
-                    </div>
-                </div>
-                <div className="rank-stats">
-                <p className="toppercentage md:pr-4">{r && r.top}%</p>
-                {/* Display engagement metrics if available */}
-                {r?.supporters > 0 ? (
-                    <p className="text-xs text-gray-500 md:pr-4">
-                        {formatSupporters(r.supporters)}
-                    </p>
-                ):''}
-            </div>
-            </div>
-        );
-    };
-
-    const Position = ({ p, position }) => {
-        const iconRef = useRef(null);
-
-        useEffect(() => {
-            if (p?.role == 1 && p?.profile_status_lock === 2) {
-                const startLoop = () => {
-                    iconRef.current?.startAnimation?.();
-                    const nextDelay = 3000 + Math.random() * 2000;
-                    return setTimeout(startLoop, nextDelay);
-                };
-                const initialDelay = Math.random() * 3000;
-                const initialTimeout = setTimeout(startLoop, initialDelay);
-                return () => clearTimeout(initialTimeout);
-            }
-        }, [p?.id]);
-
-        return (
-            <> 
-                {p && p.username ? (
-                    <Link
-                        href={`/${p.username}`}
-                        onClick={() => trackSearchClick(p?.id, p?.username)}
-                        onMouseEnter={() => iconRef.current?.startAnimation?.()}
-                        className={` position-${position} position text-center rounded-[30px]   md:rounded-[30px]    
-                              border-[#FF007F] !shadow-none shadow-[4px_4px_0px_0px_#FF007F]ink bg-white m-0`}
-                    > {p.id}
-                        <div className="profile p-2 sm:p-3 pb-0">
-                            <div className="relative">
-                                {position == 1 ? (
-                                    <div
-                                        className="crown-wings"
-                                        dangerouslySetInnerHTML={{
-                                            __html: crown,
-                                        }}
-                                    />
-                                ) : (
-                                    ""
-                                )}
-                                <div className="profile-image !rounded-[30px]  ">
-                                    <img
-                                        src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto !rounded-[30px] "
-                                        alt="image"
-                                    />
-                                </div>
-                            </div>
-                            <div className="profile-content">
-                                <h2 className="!text-[12px] sm:!text-lg font-bold pt-2 capitalize flex items-center justify-center group/name">
-                                    {(p && p.name) || "Anonymous"}  
-                                    {p?.role == 1 && p?.profile_status_lock === 2 ? 
-                                        <CircleCheckIcon 
-                                            ref={iconRef}
-                                            size={'1.2rem'} 
-                                            duration={1.2}
-                                            className="ml-1 inline-block text-pink" 
-                                        />
-                                        : ''}
-                                </h2>
-                                <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
-                                    @{p && p.username} 
-                                </h2>
-                                <p className="toppercentage !text-[12px] sm:!text-lg text-center font-gulfs">
-                                    {p && p.top}%{" "}
-                                </p>
-                                {/* Display engagement metrics if available */}
-                                { p?.supporters > 0 ? (
-                                    <p className="!text-[12px] md:!text-xs text-gray-600 text-center mt-1">
-                                        {formatSupporters(p.supporters)}
-                                    </p>
-                                ) : null}
-                            </div>
-                            {position === 1 ? 
-                                <div className={`fading rank-position  `}>
-                                    <h2 className="font-gulfs !text-[50px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
-                                </div>
-                                : ''
-                            }
-                            {position === 2 ? 
-                                <div className={`fading rank-position p-1`}>
-                                    <h2 className="font-gulfs  !text-[35px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
-                                </div>
-                                : ''
-                            }
-                            {position === 3 ? 
-                                <div className={`fading rank-position p-1  `}>
-                                    <h2 className="font-gulfs  !text-[20px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
-                                </div>
-                                : ''
-                            }
-                        </div>
-                    </Link>
-                ) : (
-                    <div
-                        className={`position-${position} position text-center rounded-[30px]    shadow-[4px_4px_0px_0px_#FF007F]ink bg-white`}
-                    >
-                        <div className="profile p-3 pb-0">
-                            <div className=" relative">
-                                {position == 1 ? (
-                                    <div className="crown-wings" dangerouslySetInnerHTML={{__html: crown}} />
-                                ) : (
-                                    ""
-                                )}
-                                <div className="profile-image !rounded-[30px]  ">
-                                    <img
-                                        src={(p && p.avatar) || userphoto}
-                                        className="max-w-full h-auto !rounded-[30px] "
-                                        alt="image"
-                                    />
-                                </div>
-                            </div>
-                            <div className="profile-content">
-                                <h2 className="font-bold text-large pt-2">
-                                    {(p && p.name) || "Anonymous"}
-                                </h2>
-                                <p className="toppercentage text-center">
-                                    {p && p.top}%
-                                </p>
-                            </div>
-                            <div className={`rank-position `}>
-                                <h2 className="font-GillSans">{position}</h2>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </>
-        );
-    };
+    const hero = rows.slice(0, 3);
+    const rest = rows.slice(3);
+    const searching = search.trim().length > 0;
 
     return (
         <Authenticated auth={auth && auth.user}>
-            <Head title={"Leaderboard"} />
-            <div className="bg-white pt-4 min-h-dvh">
-                <div className="containerbox pb-5 pt-2">
-                    <h1 className="text-bl font-GillSans text-center xl:!text-left text-3xl lg:text-4xl my-6 uppercase text-black ">
-                    Leaderboard
-                </h1>
+            <Head title="Leaderboard" />
+
+            <div className="min-h-dvh bg-white pt-4">
+                <div className="containerbox pb-32 pt-2 sm:pb-12">
                     <div className="flex flex-wrap items-start -mx-4">
-                        <div className="w-full xl:w-2/3 px-4 mb-4">
-                            {myRankData && (
-                                <div className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-[30px]  p-4 mb-6 flex items-center justify-between shadow-md text-white">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="text-3xl">🎉</div>
-                                        <div>
-                                            <h3 className="font-bold text-lg">You are ranked #{myRankData.rank}!</h3>
-                                            <p className="text-sm opacity-90">Top {myRankData.top}% of creators ({period === 'all' ? 'All-Time' : period})</p>
+                        <div className="w-full px-4 xl:w-2/3">
+                            {/* An ink hero gives the page a top edge and lets the
+                                board below stay light and quiet. The gold rule is
+                                the same accent the podium's first place uses, so
+                                the page reads as one system. */}
+                            <header className="relative mb-6 overflow-hidden rounded-box bg-[#0B0B0C] px-5 py-8 text-white sm:px-9 sm:py-11">
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute inset-x-0 top-0 h-px"
+                                    style={{ background: "linear-gradient(90deg, transparent, #C9A227, transparent)" }}
+                                />
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full"
+                                    style={{ background: "radial-gradient(circle, rgba(255,0,127,0.18), transparent 70%)" }}
+                                />
+
+                                <p className="text-9 font-semibold uppercase tracking-[0.3em] text-white/45 sm:text-10">
+                                    Ranked by supporters
+                                </p>
+                                <h1 className="mt-2 text-38 font-semibold leading-[0.92] tracking-[-0.035em] sm:text-60">
+                                    Leaderboard
+                                </h1>
+                                <p className="mt-3 max-w-md text-13 leading-relaxed text-white/55">
+                                    Every creator on the platform, re-ranked daily by the supporters backing them.
+                                </p>
+
+                                {/* Three facts a creator wants before they scroll:
+                                    how big the board is, which slice they're
+                                    looking at, and how fresh the arrows are. */}
+                                <dl className="mt-7 grid grid-cols-3 gap-3 border-t border-white/10 pt-5 sm:gap-6">
+                                    {[
+                                        { term: "Creators", value: total },
+                                        { term: "Showing", value: PERIOD_LABELS[period] ?? period },
+                                        { term: "Movement", value: `${windowDays}d` },
+                                    ].map(({ term, value }) => (
+                                        <div key={term} className="min-w-0">
+                                            <dt className="truncate text-8 font-semibold uppercase tracking-[0.22em] text-white/40 sm:text-9">
+                                                {term}
+                                            </dt>
+                                            <dd className="mt-1 truncate font-gulfs text-18 leading-none sm:text-22">
+                                                {value}
+                                            </dd>
                                         </div>
-                                    </div>
-                                    <button 
-                                        onClick={handleShare}
-                                        className="flex items-center space-x-2 bg-white text-[#FF007F] px-4 py-2 rounded-full font-bold text-sm hover:bg-gray-100 transition-colors"
+                                    ))}
+                                </dl>
+                            </header>
+
+                            {/* Period — one segmented control, and each one is a URL. */}
+                            <div
+                                role="tablist"
+                                aria-label="Leaderboard period"
+                                className="mb-6 -mx-1 flex gap-1 overflow-x-auto px-1 pb-1"
+                            >
+                                {availablePeriods.map((p) => (
+                                    <button
+                                        key={p}
+                                        role="tab"
+                                        aria-selected={period === p}
+                                        onClick={() => switchPeriod(p)}
+                                        className={`min-h-[44px] whitespace-nowrap rounded-full px-4 text-12 font-semibold uppercase tracking-[0.12em] transition-colors ${
+                                            period === p
+                                                ? "bg-[#0B0B0C] text-white"
+                                                : "text-black/50 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/20"
+                                        }`}
                                     >
-                                        <Share2Icon size={16} />
-                                        <span>Share Status</span>
+                                        {PERIOD_LABELS[p] ?? p}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Who is top, and by how far. */}
+                            {!searching && !loading && hero.length > 0 && (
+                                <Podium rows={hero} windowDays={windowDays} />
+                            )}
+
+                            {/* Movement is the news, so it sits above the board. */}
+                            {climbers.length > 0 && !searching && (
+                                <section className="mb-8">
+                                    <h2 className="mb-3 flex items-center gap-2 text-10 font-semibold uppercase tracking-[0.22em] text-black/40">
+                                        <TrendingUpIcon size={13} strokeWidth={2.5} aria-hidden="true" />
+                                        Climbing fastest
+                                    </h2>
+                                    <ul className="flex flex-wrap gap-2">
+                                        {climbers.map((c) => (
+                                            <li key={c.id}>
+                                                <a
+                                                    href={`/${c.username}`}
+                                                    className="flex min-h-[44px] items-center gap-2.5 rounded-full py-1.5 pl-3 pr-2.5 text-13 ring-1 ring-inset ring-black/[0.08] transition-colors hover:ring-black/25"
+                                                >
+                                                    <span className="font-gulfs text-15 text-black/30">{c.rank}</span>
+                                                    <span className="max-w-[12ch] truncate font-medium text-[#0B0B0C]">
+                                                        @{c.username}
+                                                    </span>
+                                                    <MovementChip direction="up" delta={c.delta} windowDays={windowDays} />
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
+                            )}
+
+                            <div className="relative mb-4">
+                                <SearchIcon
+                                    size={16}
+                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                    aria-hidden="true"
+                                />
+                                <input
+                                    type="search"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search every creator on the board"
+                                    aria-label="Search creators"
+                                    className="min-h-[48px] w-full rounded-full border-0 bg-black/[0.03] pl-11 pr-11 text-14 text-[#0B0B0C] placeholder:text-black/35 ring-1 ring-inset ring-black/[0.07] transition-shadow focus:bg-white focus:ring-2 focus:ring-[#0B0B0C]"
+                                />
+                                {searching && (
+                                    <button
+                                        onClick={() => setSearch("")}
+                                        aria-label="Clear search"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-black/40 transition-colors hover:text-[#0B0B0C]"
+                                    >
+                                        <XIcon size={16} strokeWidth={2.5} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {error && (
+                                <div
+                                    role="alert"
+                                    className="mb-4 flex items-center justify-between gap-3 rounded-box-sm bg-black/[0.03] p-3 text-14 ring-1 ring-inset ring-black/[0.08]"
+                                >
+                                    <span className="text-[#0B0B0C]">{error}</span>
+                                    <button
+                                        onClick={() => fetchBoard(period, search, page)}
+                                        className="min-h-[44px] shrink-0 rounded-full bg-[#0B0B0C] px-4 text-11 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
+                                    >
+                                        Retry
                                     </button>
                                 </div>
                             )}
-                            <div className="p-2 md:!p-6 pinkbg rounded-[30px]  mb-6">
-                                <div className="pt-4 md:pt-0 mt-6 mb-4 pb-4">
-                                    <h1 className="btn-shadow text-center font-GillSans text-2xl md:text-3xl mb-3 uppercase text-white ">
-                                        Top Creators Getting <br></br> the Most Love
-                                    </h1>
-                                    <p className="text-center text-white text-sm opacity-90 mb-4">
-                                        Ranked by community support and engagement
+
+                            <section className="mb-10 overflow-hidden rounded-box bg-white ring-1 ring-inset ring-black/[0.08]">
+                                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-black/[0.06] px-4 py-4">
+                                    <h2 className="text-10 font-semibold uppercase tracking-[0.22em] text-black/40">
+                                        {searching ? "Search results" : "Full ranking"}
+                                    </h2>
+                                    <p className="text-12 text-black/40">
+                                        {searching
+                                            ? `${matched} ${matched === 1 ? "creator" : "creators"} matching “${search}”`
+                                            : `Every creator, ranked ${rest.length > 0 ? "from #4 down" : ""}`}
                                     </p>
-                                    <div className="changePeriod w-full">
-                                        <button
-                                            className={` !text-sm md:!text-[18px] ${period == "all" ? "active text-white" : ""}`}
-                                            onClick={() => switchTime("all")}
-                                        >
-                                            All Time
-                                        </button>
-                                        <button
-                                            className={` !text-sm md:!text-[18px] ${period == "annual" ? "active text-white" : ""}`}
-                                            onClick={() => switchTime("annual")}
-                                        >
-                                            Annual
-                                        </button>
-                                        <button
-                                            className={` !text-sm md:!text-[18px] ${period == "quarterly" ? "active text-white" : ""}`}
-                                            onClick={() => switchTime("quarterly")}
-                                        >
-                                            Quarterly
-                                        </button>
-                                        <button
-                                            className={` !text-sm md:!text-[18px] ${period == "monthly" ? "active text-white" : ""}`}
-                                            onClick={() => switchTime("monthly")}
-                                        >
-                                            Monthly
-                                        </button>
-                                        <button
-                                            className={` !text-sm md:!text-[18px] ${period == "weekly" ? "active text-white" : ""}`}
-                                            onClick={() => switchTime("weekly")}
-                                        >
-                                            Weekly
-                                        </button>
-                                        {is_daily == 1 ? (
-                                            <button
-                                                className={` !text-sm md:!text-[18px] ${period == "daily" ? "active text-white" : ""}`}
-                                                onClick={() => switchTime("daily")}
-                                            >
-                                                Daily
-                                            </button>
-                                        ) : (
-                                            ""
-                                        )}
-                                    </div>
-                                    {error && (
-                                        <div
-                                            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 mb-3"
-                                            role="alert"
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <span>{error}</span>
-                                                <button className="ml-2 font-bold" onClick={() => setError(null)}>
-                                                    ✕
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
-                                <div
-                                    className={`${
-                                        loading ? "opacity-50 pointer-events-none" : ""
-                                    }  postions grid grid-cols-3 !gap-1 md:!gap-4 pt-[10px] md:pt-[50px] `}
-                                >
-                                    {positions && positions[1] ? <Position position={2} p={positions && positions[1]} /> : ""}
-                                    {positions && positions[0] ? <Position position={1} p={positions && positions[0]} /> : ""}
-                                    {positions && positions[2] ? <Position position={3} p={positions && positions[2]} /> : ""}
-                                </div>
-                            </div>
-                                {ranks && ranks.length ? (
-                                    <div
-                                        className={`${
-                                            loading ? "opacity-50 pointer-events-none" : ""
-                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px]  mb-6 `}
-                                    >
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                                            <div>
-                                                <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
-                                                <p className="text-gray-600 text-sm">New creators gaining support fast</p>
-                                            </div>
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                    <SearchIcon size={16} className="text-gray-400" />
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Find a creator..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full w-full sm:w-64 focus:outline-none focus:border-[#FF007F] focus:ring-0 transition-colors"
-                                                />
-                                            </div>
-                                        </div>
-                                        {filteredRanks.length > 0 ? (
-                                            filteredRanks.map((r, i) => {
-                                                return <Rank r={r} key={i} />;
-                                            })
-                                        ) : (
-                                            <div className="text-center py-8 text-gray-500">
-                                                No creators found matching "{searchQuery}"
-                                            </div>
-                                        )}
+
+                                {loading ? (
+                                    <BoardSkeleton />
+                                ) : rows.length === 0 || (!searching && rest.length === 0) ? (
+                                    <div className="px-6 py-16 text-center">
+                                        <p className="text-17 font-semibold tracking-tight text-[#0B0B0C]">
+                                            {searching ? "No creators found" : "That's everyone so far"}
+                                        </p>
+                                        <p className="mx-auto mt-1.5 max-w-sm text-13 text-black/45">
+                                            {searching
+                                                ? "Try a different name or handle."
+                                                : rows.length > 0
+                                                  ? "The rest of the board fills in as more creators pick up supporters."
+                                                  : "This board fills up as creators start selling."}
+                                        </p>
                                     </div>
                                 ) : (
-                                    ""
+                                    <>
+                                        {/* Search results are a flat list — a podium
+                                            of whoever happens to match a query is not
+                                            a podium of anything. */}
+                                        {searching
+                                            ? hero.map((row) => (
+                                                  <RankRow
+                                                      key={row.id}
+                                                      row={row}
+                                                      windowDays={windowDays}
+                                                      isYou={row.id === auth?.user?.id}
+                                                  />
+                                              ))
+                                            : null}
+
+                                        {rest.map((row) => (
+                                            <RankRow
+                                                key={row.id}
+                                                row={row}
+                                                windowDays={windowDays}
+                                                isYou={row.id === auth?.user?.id}
+                                            />
+                                        ))}
+                                    </>
                                 )}
+
+                                {page < lastPage && !loading && (
+                                    <div className="border-t border-black/[0.06] p-3">
+                                        <button
+                                            onClick={loadMore}
+                                            disabled={loadingMore}
+                                            className="min-h-[44px] w-full rounded-full text-11 font-semibold uppercase tracking-[0.14em] text-black/55 transition-colors hover:bg-black/[0.03] hover:text-[#0B0B0C] disabled:opacity-50"
+                                        >
+                                            {loadingMore ? "Loading…" : "Show more creators"}
+                                        </button>
+                                    </div>
+                                )}
+                            </section>
+
+                            {auth?.user && (
+                                <div className="mb-10 flex items-center justify-between gap-4 rounded-box p-5 ring-1 ring-inset ring-black/[0.08]">
+                                    <div>
+                                        <p className="text-14 font-semibold tracking-tight text-[#0B0B0C]">
+                                            Show me on the leaderboard
+                                        </p>
+                                        <p className="mt-0.5 text-12 text-black/45">
+                                            Turn this off and your profile is removed from every public board.
+                                        </p>
+                                    </div>
+                                    <button
+                                        role="switch"
+                                        aria-checked={!optedOut}
+                                        onClick={toggleOptOut}
+                                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                                            optedOut ? "bg-black/12" : "bg-[#0B0B0C]"
+                                        }`}
+                                    >
+                                        <span className="sr-only">
+                                            {optedOut ? "Show me on the leaderboard" : "Hide me from the leaderboard"}
+                                        </span>
+                                        <span
+                                            className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-all ${
+                                                optedOut ? "left-1" : "left-[26px]"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            )}
+
                             <CategoryLeaders />
                             <GrowthTrends />
                             <PlatformAnalytics />
                         </div>
-                        <div className="w-full xl:w-1/3 px-4 xl:self-start">
-                            <div className="xl:sticky xl:top-24 z-10">
+
+                        <div className="w-full px-4 xl:w-1/3 xl:self-start">
+                            <div className="z-10 xl:sticky xl:top-24">
                                 <RecentSupporters />
                                 <VipSupporters />
                                 <LeaderboardStars />
@@ -445,6 +446,8 @@ export default function Board(props) {
                     </div>
                 </div>
             </div>
+
+            <YouBar you={you} windowDays={windowDays} onShare={handleShare} />
         </Authenticated>
     );
 }

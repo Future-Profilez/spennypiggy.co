@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -12,9 +11,13 @@ class TaskDisputeResolvedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $purchase;
+
     public $task;
+
     public $user; // The user receiving the mail
+
     public $role; // 'creator' or 'supporter'
+
     public $resolution; // 'creator_won' or 'supporter_won'
 
     public function __construct($purchase, $task, $user, $role, $resolution)
@@ -28,7 +31,7 @@ class TaskDisputeResolvedMail extends Mailable
 
     public function build()
     {
-        $subject = "Dispute Resolved: " . $this->task->title;
+        $subject = 'Dispute Resolved: '.$this->task->title;
 
         return $this->view('email.taskdisputeresolved')
             ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))

@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Helpers;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
 
-class  TipGoalsPayment extends Model
+class TipGoalsPayment extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -53,15 +52,13 @@ class  TipGoalsPayment extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($s) =>  $s->uuid = Uuid::uuid4());
+        static::creating(fn ($s) => $s->uuid = Uuid::uuid4());
     }
-
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
 
     public function tipGoal()
     {
@@ -81,6 +78,7 @@ class  TipGoalsPayment extends Model
                 $sender = true;
             }
         }
+
         return $sender;
     }
 }

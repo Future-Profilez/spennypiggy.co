@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class SendAvatarRestrictionMail extends Mailable
@@ -16,12 +13,9 @@ class SendAvatarRestrictionMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct()
-    {
+    public function __construct() {}
 
-    }
-
-      /**
+    /**
      * Build the message.
      *
      * @return $this
@@ -30,6 +24,7 @@ class SendAvatarRestrictionMail extends Mailable
     {
         try {
             $subject = '⚠️ Profile Pic Removed! ⚠️';
+
             return $this->view('email.avatar-remove')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

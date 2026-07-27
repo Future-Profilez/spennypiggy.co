@@ -30,6 +30,7 @@ class PiggyPot extends Model
         'currency',
         'cover_media',
         'moderation_reason',
+        'moderation_asset',
         'content_file',
         'content_description',
         'reward_title',

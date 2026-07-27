@@ -37,7 +37,7 @@ class IdentityRollupService
         ", [
             $windows['10m'],
             $windows['24h'],
-            $windows['48h']
+            $windows['48h'],
         ])->first();
 
         // Spend windows count money that actually moved (or is held for review).
@@ -64,12 +64,24 @@ class IdentityRollupService
             $amountGbp = $normalizer->toGbpMinor((int) $p->amount, (string) $p->currency);
             $createdAt = $p->created_at;
 
-            if ($createdAt >= $windows['7d']) $spend['7d'] += $amountGbp;
-            if ($createdAt >= $windows['48h']) $spend['48h'] += $amountGbp;
-            if ($createdAt >= $windows['24h']) $spend['24h'] += $amountGbp;
-            if ($createdAt >= $windows['2h']) $spend['2h'] += $amountGbp;
-            if ($createdAt >= $windows['1h']) $spend['1h'] += $amountGbp;
-            if ($createdAt >= $windows['10m']) $spend['10m'] += $amountGbp;
+            if ($createdAt >= $windows['7d']) {
+                $spend['7d'] += $amountGbp;
+            }
+            if ($createdAt >= $windows['48h']) {
+                $spend['48h'] += $amountGbp;
+            }
+            if ($createdAt >= $windows['24h']) {
+                $spend['24h'] += $amountGbp;
+            }
+            if ($createdAt >= $windows['2h']) {
+                $spend['2h'] += $amountGbp;
+            }
+            if ($createdAt >= $windows['1h']) {
+                $spend['1h'] += $amountGbp;
+            }
+            if ($createdAt >= $windows['10m']) {
+                $spend['10m'] += $amountGbp;
+            }
         }
 
         // For new_creators_24h, we need to know if the creators paid in last 24h were *ever* paid before by this identity.
@@ -82,13 +94,13 @@ class IdentityRollupService
         // for each id, check if exists payment < 24h.
         // Optimization: "new_creators_24h" in identity_rollups can be updated incrementally or via this logic.
         // Let's implement the logic:
-        
+
         $creatorsPaidRecently = Payment::where('risk_identity_id', $identity->id)
             ->where('created_at', '>=', $windows['24h'])
             ->whereIn('status', ['succeeded', 'review_hold'])
             ->distinct()
             ->pluck('creator_id');
-            
+
         $newCreatorsCount = 0;
         foreach ($creatorsPaidRecently as $creatorId) {
             $existsPrior = Payment::where('risk_identity_id', $identity->id)
@@ -96,8 +108,8 @@ class IdentityRollupService
                 ->where('created_at', '<', $windows['24h'])
                 ->whereIn('status', ['succeeded', 'review_hold'])
                 ->exists();
-            
-            if (!$existsPrior) {
+
+            if (! $existsPrior) {
                 $newCreatorsCount++;
             }
         }
@@ -116,7 +128,7 @@ class IdentityRollupService
 
         // Update Rollup
         $rollup = $identity->rollup ?: new IdentityRollup(['risk_identity_id' => $identity->id]);
-        
+
         $rollup->fill([
             'spend_10m' => $spend['10m'] ?? 0,
             'spend_1h' => $spend['1h'] ?? 0,
@@ -130,9 +142,9 @@ class IdentityRollupService
             'new_creators_24h' => $newCreatorsCount,
             'disputes_30d' => $disputes30d,
         ]);
-        
+
         $rollup->save();
-        
+
         return $rollup;
     }
 }

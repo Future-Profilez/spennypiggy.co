@@ -6,10 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ReportController extends Controller
 {
@@ -29,14 +28,14 @@ class ReportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Validate Turnstile if it's provided and we have a secret key configured
         $turnstileSecret = env('TURN_SECRET');
-        if (!empty($turnstileSecret)) {
-            if (!$request->filled('cf_turnstile_response')) {
+        if (! empty($turnstileSecret)) {
+            if (! $request->filled('cf_turnstile_response')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Please complete the CAPTCHA verification.',
@@ -50,7 +49,7 @@ class ReportController extends Controller
             ]);
 
             $verifyBody = $verifyResponse->json();
-            if (!isset($verifyBody['success']) || !$verifyBody['success']) {
+            if (! isset($verifyBody['success']) || ! $verifyBody['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'CAPTCHA verification failed. Please try again.',
@@ -81,7 +80,7 @@ class ReportController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Your report has been successfully submitted. We will review it shortly.'
+            'message' => 'Your report has been successfully submitted. We will review it shortly.',
         ]);
     }
 }

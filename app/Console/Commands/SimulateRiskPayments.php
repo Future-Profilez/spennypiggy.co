@@ -30,8 +30,9 @@ class SimulateRiskPayments extends Command
         $isGuest = ((int) ($this->option('guest') ?: 0)) === 1;
         $sleep = (int) ($this->option('sleep') ?: 0);
 
-        if (!$creator) {
+        if (! $creator) {
             $this->error('Missing --creator UUID');
+
             return 1;
         }
 
@@ -62,4 +63,3 @@ class SimulateRiskPayments extends Command
         return 0;
     }
 }
-

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
@@ -10,7 +11,9 @@ class SiteSubscription extends Mailable
     use Queueable, SerializesModels;
 
     public $array;
+
     public $type;
+
     public $module;
 
     public function __construct($array, $type, $module)
@@ -25,7 +28,7 @@ class SiteSubscription extends Mailable
 
         return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject('Subscription Update')
-            ->view('email.sitesubscription')  
+            ->view('email.sitesubscription')
             ->with([
                 'array' => $this->array,
                 'type' => $this->type,
@@ -33,4 +36,3 @@ class SiteSubscription extends Mailable
             ]);
     }
 }
-

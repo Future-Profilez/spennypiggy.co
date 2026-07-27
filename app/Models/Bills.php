@@ -26,6 +26,7 @@ class Bills extends Model
         'tax_amount',
         'thumbnail',
         'moderation_reason',
+        'moderation_asset',
         'content_file',
         'content_file_type',
         'content_file_name',

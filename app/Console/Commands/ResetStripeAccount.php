@@ -26,23 +26,26 @@ class ResetStripeAccount extends Command
             ->orWhere('username', $identifier)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             $this->error("No user found for: {$identifier}");
+
             return 1;
         }
 
         $this->info("Found user: {$user->username} (ID: {$user->id}, Email: {$user->email})");
-        $this->info("Current account_id: " . ($user->account_id ?? 'none'));
-        $this->info("Current country:    " . ($user->country ?? 'none'));
-        $this->info("stripe_details_submitted: " . $user->stripe_details_submitted);
+        $this->info('Current account_id: '.($user->account_id ?? 'none'));
+        $this->info('Current country:    '.($user->country ?? 'none'));
+        $this->info('stripe_details_submitted: '.$user->stripe_details_submitted);
 
         if (empty($user->account_id)) {
-            $this->warn("This user has no Stripe account_id set. Nothing to reset.");
+            $this->warn('This user has no Stripe account_id set. Nothing to reset.');
+
             return 0;
         }
 
-        if (!$this->option('force') && !$this->confirm("Reset this user's Stripe connection? They will need to reconnect with the correct country.")) {
-            $this->info("Aborted.");
+        if (! $this->option('force') && ! $this->confirm("Reset this user's Stripe connection? They will need to reconnect with the correct country.")) {
+            $this->info('Aborted.');
+
             return 0;
         }
 
@@ -50,8 +53,8 @@ class ResetStripeAccount extends Command
 
         // Optionally delete the Stripe account
         if ($this->option('delete-stripe')) {
-            if (!$this->option('force') && !$this->confirm("Also DELETE the Stripe account {$oldAccountId}? This cannot be undone.")) {
-                $this->info("Skipping Stripe account deletion.");
+            if (! $this->option('force') && ! $this->confirm("Also DELETE the Stripe account {$oldAccountId}? This cannot be undone.")) {
+                $this->info('Skipping Stripe account deletion.');
             } else {
                 try {
                     $stripeClient = StripeControl::getClient();
@@ -62,8 +65,8 @@ class ResetStripeAccount extends Command
                         'account_id' => $oldAccountId,
                     ]);
                 } catch (\Exception $e) {
-                    $this->warn("Could not delete Stripe account: " . $e->getMessage());
-                    $this->warn("Continuing with DB reset anyway.");
+                    $this->warn('Could not delete Stripe account: '.$e->getMessage());
+                    $this->warn('Continuing with DB reset anyway.');
                 }
             }
         }
@@ -81,7 +84,7 @@ class ResetStripeAccount extends Command
         ]);
 
         $this->info("Done. User's Stripe connection has been reset.");
-        $this->info("They can now visit /stripe/authorize and select the correct country.");
+        $this->info('They can now visit /stripe/authorize and select the correct country.');
 
         return 0;
     }

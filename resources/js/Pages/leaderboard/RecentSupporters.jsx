@@ -4,10 +4,13 @@ import  axios  from 'axios';
 import { useEffect } from 'react';
 import Nocontent from '@/includes/Nocontent';
 import { trackSearchClick } from "@/includes/Analytics";
+import { fetchBundle } from './useBundle';
+
+const DEFAULT_PERIOD = 'last24hour';
 
 export default function RecentSupporters() {
 
-  const [ period, setPeriod] = useState('last24hour');
+  const [ period, setPeriod] = useState(DEFAULT_PERIOD);
   const [ loading, setLoading] = useState(false);
   const [ error, setError] = useState(null);
   const [ data, setData] = useState([]);
@@ -28,12 +31,23 @@ export default function RecentSupporters() {
     return date.toLocaleDateString();
   };
 
-  const fetchSupport = (period) => {
+  const fetchSupport = (nextPeriod) => {
     setLoading(true);
     setError(null);
-    axios.get(`recent-gifters/${period}`)
-      .then((response) => {
-        setData(response.data.data);
+
+    // The default period is already in the shared bundle, so opening the page
+    // costs no request here. Only a period the bundle doesn't cover is fetched.
+    const request = nextPeriod === DEFAULT_PERIOD
+      ? fetchBundle().then((bundle) => bundle?.recent_supporters ?? null)
+      // route(), never a relative path: this page rewrites its own URL when the
+      // board period changes, and `recent-gifters/…` resolved against
+      // `/leaderboard/weekly` asks for `/leaderboard/recent-gifters/…` → 404.
+      : axios.get(route('largest-gifts', nextPeriod)).then((response) => response.data);
+
+    request
+      .then((payload) => {
+        if (!payload) throw new Error('recent supporters unavailable');
+        setData(payload.data ?? []);
       })
       .catch((error) => {
         console.error("Error fetching supporters:", error);
@@ -45,9 +59,8 @@ export default function RecentSupporters() {
   };
 
   useEffect(() => {
-    if (!loading) {
-      fetchSupport(period);
-    }
+    fetchSupport(period);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   const SupportItem = ({ supporter, index }) => (
@@ -78,13 +91,13 @@ export default function RecentSupporters() {
   return (
     <>
     {loading ? (
-      <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+      <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     ) : error ? (
-      <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
+      <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
         <div className="alert alert-danger" role="alert">
           {error}
           <button 
@@ -95,8 +108,8 @@ export default function RecentSupporters() {
           </button>
         </div>
       </div>
-    ) : data.length > 0 ? <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
-      <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Recent Supporters</h2>
+    ) : data.length > 0 ? <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
+      <h2 className="text-bls text-19 font-semibold tracking-tight text-[#0B0B0C] ">Recent Supporters</h2>
       <p className='text-gray-500  mb-3'>Latest supporters who have shown their love.</p>
       
       {/* <div className="time-hrs">

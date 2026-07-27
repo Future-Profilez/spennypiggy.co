@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\OpenAIContentService;
+use Illuminate\Console\Command;
 
 class TestOpenAIContent extends Command
 {
@@ -29,13 +29,14 @@ class TestOpenAIContent extends Command
         $this->info('🤖 Testing OpenAI Content Generation...');
         $this->line('');
 
-        $contentService = new OpenAIContentService();
+        $contentService = new OpenAIContentService;
 
         // Test connection first
         $this->info('🔌 Testing OpenAI connection...');
-        if (!$contentService->testConnection()) {
+        if (! $contentService->testConnection()) {
             $this->error('❌ OpenAI connection failed!');
             $this->error('Please check your DALLE_SECRET_KEY in .env file');
+
             return 1;
         }
         $this->info('✅ OpenAI connection successful!');
@@ -49,7 +50,7 @@ class TestOpenAIContent extends Command
                 'amount' => '25.00',
                 'currency' => 'USD',
                 'is_anonymous' => false,
-                'message' => 'Love your content! Keep up the great work! 🎉'
+                'message' => 'Love your content! Keep up the great work! 🎉',
             ],
             [
                 'creator_name' => 'Michael Chen',
@@ -57,7 +58,7 @@ class TestOpenAIContent extends Command
                 'amount' => '50.00',
                 'currency' => 'GBP',
                 'is_anonymous' => false,
-                'message' => ''
+                'message' => '',
             ],
             [
                 'creator_name' => 'Jessica Brown',
@@ -65,31 +66,31 @@ class TestOpenAIContent extends Command
                 'amount' => '10.00',
                 'currency' => 'EUR',
                 'is_anonymous' => true,
-                'message' => 'Thank you for inspiring me daily!'
-            ]
+                'message' => 'Thank you for inspiring me daily!',
+            ],
         ];
 
         foreach ($testScenarios as $index => $scenario) {
-            $this->info("📝 Test Scenario " . ($index + 1) . ":");
+            $this->info('📝 Test Scenario '.($index + 1).':');
             $this->info("   Creator: {$scenario['creator_name']}");
             $this->info("   Supporter: {$scenario['supporter_name']}");
             $this->info("   Amount: {$scenario['currency']} {$scenario['amount']}");
-            $this->info("   Anonymous: " . ($scenario['is_anonymous'] ? 'Yes' : 'No'));
-            $this->info("   Message: " . ($scenario['message'] ?: 'None'));
+            $this->info('   Anonymous: '.($scenario['is_anonymous'] ? 'Yes' : 'No'));
+            $this->info('   Message: '.($scenario['message'] ?: 'None'));
             $this->line('');
 
             $this->info('🎨 Generating content...');
             $startTime = microtime(true);
-            
+
             $content = $contentService->generateThankYouContent($scenario);
-            
+
             $endTime = microtime(true);
             $duration = round(($endTime - $startTime) * 1000, 2);
 
             $this->info("✅ Generated in {$duration}ms");
             $this->line('');
-            $this->info("📰 Title: " . $content['title']);
-            $this->info("📝 Content:");
+            $this->info('📰 Title: '.$content['title']);
+            $this->info('📝 Content:');
             $this->line($content['content']);
             $this->line('');
             $this->line(str_repeat('-', 60));

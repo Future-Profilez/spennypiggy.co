@@ -6,8 +6,8 @@ use App\Models\Post;
 use App\Models\Shop;
 use App\Services\ModernImageService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class OptimizeImages extends Command
 {
@@ -45,11 +45,11 @@ class OptimizeImages extends Command
         $formats = explode(',', $this->option('formats'));
         $force = $this->option('force');
 
-        $this->info("Starting image optimization...");
+        $this->info('Starting image optimization...');
         $this->info("Model: {$model}");
         $this->info("Limit: {$limit}");
         $this->info("Quality: {$quality}%");
-        $this->info("Formats: " . implode(', ', $formats));
+        $this->info('Formats: '.implode(', ', $formats));
 
         if ($model === 'all' || $model === 'post') {
             $this->optimizePostImages($limit, $quality, $formats, $force);
@@ -59,21 +59,22 @@ class OptimizeImages extends Command
             $this->optimizeShopImages($limit, $quality, $formats, $force);
         }
 
-        $this->info("Image optimization completed!");
+        $this->info('Image optimization completed!');
+
         return 0;
     }
 
     protected function optimizePostImages(int $limit, int $quality, array $formats, bool $force): void
     {
-        $this->info("Optimizing Post images...");
-        
+        $this->info('Optimizing Post images...');
+
         $posts = Post::whereNotNull('image')
-                    ->when(!$force, function($query) {
-                        // Only process posts that haven't been optimized yet
-                        return $query->where('updated_at', '<', now()->subDays(1));
-                    })
-                    ->limit($limit)
-                    ->get();
+            ->when(! $force, function ($query) {
+                // Only process posts that haven't been optimized yet
+                return $query->where('updated_at', '<', now()->subDays(1));
+            })
+            ->limit($limit)
+            ->get();
 
         $progressBar = $this->output->createProgressBar($posts->count());
         $progressBar->start();
@@ -83,10 +84,10 @@ class OptimizeImages extends Command
                 $this->processUploadcareImage($post, $quality, $formats);
                 $progressBar->advance();
             } catch (\Exception $e) {
-                $this->error("Failed to process post {$post->id}: " . $e->getMessage());
-                Log::error("Post image optimization failed", [
+                $this->error("Failed to process post {$post->id}: ".$e->getMessage());
+                Log::error('Post image optimization failed', [
                     'post_id' => $post->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -98,15 +99,15 @@ class OptimizeImages extends Command
 
     protected function optimizeShopImages(int $limit, int $quality, array $formats, bool $force): void
     {
-        $this->info("Optimizing Shop images...");
-        
+        $this->info('Optimizing Shop images...');
+
         $shops = Shop::whereNotNull('image')
-                    ->when(!$force, function($query) {
-                        // Only process shops that haven't been optimized yet
-                        return $query->where('updated_at', '<', now()->subDays(1));
-                    })
-                    ->limit($limit)
-                    ->get();
+            ->when(! $force, function ($query) {
+                // Only process shops that haven't been optimized yet
+                return $query->where('updated_at', '<', now()->subDays(1));
+            })
+            ->limit($limit)
+            ->get();
 
         $progressBar = $this->output->createProgressBar($shops->count());
         $progressBar->start();
@@ -116,10 +117,10 @@ class OptimizeImages extends Command
                 $this->processUploadcareImage($shop, $quality, $formats);
                 $progressBar->advance();
             } catch (\Exception $e) {
-                $this->error("Failed to process shop {$shop->id}: " . $e->getMessage());
-                Log::error("Shop image optimization failed", [
+                $this->error("Failed to process shop {$shop->id}: ".$e->getMessage());
+                Log::error('Shop image optimization failed', [
                     'shop_id' => $shop->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -138,13 +139,13 @@ class OptimizeImages extends Command
         // For Uploadcare CDN images, we don't need to actually process them
         // since we can generate the URLs on-demand. Instead, we'll cache the
         // responsive image data for faster access.
-        
-        $cacheKey = 'optimized_image_' . class_basename($model) . '_' . $model->id;
+
+        $cacheKey = 'optimized_image_'.class_basename($model).'_'.$model->id;
         $imageData = $model->getResponsiveImageData();
-        
+
         // Cache the image data for 24 hours - DISABLED
         // cache()->put($cacheKey, $imageData, now()->addDay());
-        
+
         // Update the model's updated_at timestamp to mark it as processed
         $model->touch();
     }
@@ -158,7 +159,7 @@ class OptimizeImages extends Command
         }
 
         // Create temporary file
-        $tempPath = sys_get_temp_dir() . '/' . $filename;
+        $tempPath = sys_get_temp_dir().'/'.$filename;
         file_put_contents($tempPath, $imageContent);
 
         try {
@@ -166,15 +167,15 @@ class OptimizeImages extends Command
             $result = $this->imageService->processUploadedImage($tempPath, [
                 'quality' => $quality,
                 'formats' => $formats,
-                'responsive' => true
+                'responsive' => true,
             ]);
 
             // Store optimized images in storage
-            $storagePath = 'images/optimized/' . pathinfo($filename, PATHINFO_FILENAME);
-            
+            $storagePath = 'images/optimized/'.pathinfo($filename, PATHINFO_FILENAME);
+
             foreach ($result['formats'] as $format => $path) {
                 if (file_exists($path)) {
-                    $storageFilePath = $storagePath . '.' . $format;
+                    $storageFilePath = $storagePath.'.'.$format;
                     Storage::disk('public')->put($storageFilePath, file_get_contents($path));
                     unlink($path); // Clean up temp file
                 }
@@ -183,7 +184,7 @@ class OptimizeImages extends Command
             foreach ($result['responsive'] as $format => $sizes) {
                 foreach ($sizes as $size => $path) {
                     if (file_exists($path)) {
-                        $storageFilePath = $storagePath . '-' . $size . 'w.' . pathinfo($path, PATHINFO_EXTENSION);
+                        $storageFilePath = $storagePath.'-'.$size.'w.'.pathinfo($path, PATHINFO_EXTENSION);
                         Storage::disk('public')->put($storageFilePath, file_get_contents($path));
                         unlink($path); // Clean up temp file
                     }

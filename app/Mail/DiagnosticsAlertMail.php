@@ -15,18 +15,18 @@ class DiagnosticsAlertMail extends Mailable
 
     public function __construct(
         public string $overallStatus,
-        public array  $results,
+        public array $results,
         public string $timestamp,
-        public int    $failedCount,
-        public int    $warningCount,
+        public int $failedCount,
+        public int $warningCount,
     ) {}
 
     public function envelope(): Envelope
     {
-        $emoji   = $this->overallStatus === 'failed' ? '🚨' : '⚠️';
-        $env     = strtoupper(app()->environment());
-        $subject = "{$emoji} [{$env}] Platform Diagnostics: " . ucfirst($this->overallStatus)
-                 . " — {$this->failedCount} failed, {$this->warningCount} warnings";
+        $emoji = $this->overallStatus === 'failed' ? '🚨' : '⚠️';
+        $env = strtoupper(app()->environment());
+        $subject = "{$emoji} [{$env}] Platform Diagnostics: ".ucfirst($this->overallStatus)
+                 ." — {$this->failedCount} failed, {$this->warningCount} warnings";
 
         return new Envelope(
             subject: $subject,
@@ -43,12 +43,12 @@ class DiagnosticsAlertMail extends Mailable
             view: 'email.diagnostics-alert',
             with: [
                 'overallStatus' => $this->overallStatus,
-                'results'       => $this->results,
-                'timestamp'     => $this->timestamp,
-                'failedCount'   => $this->failedCount,
-                'warningCount'  => $this->warningCount,
-                'appUrl'        => env('APP_URL', 'https://spennypiggy.co'),
-                'environment'   => app()->environment(),
+                'results' => $this->results,
+                'timestamp' => $this->timestamp,
+                'failedCount' => $this->failedCount,
+                'warningCount' => $this->warningCount,
+                'appUrl' => env('APP_URL', 'https://spennypiggy.co'),
+                'environment' => app()->environment(),
             ],
         );
     }

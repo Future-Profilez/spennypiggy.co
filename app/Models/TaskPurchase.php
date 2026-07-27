@@ -14,18 +14,18 @@ class TaskPurchase extends Model
     // Status constants for clarity and consistency
     const TASK_STATUSES = [
         'initiated',
-        'paid', 
-        'delivered', 
-        'assigned', 
-        'pending_review', 
-        'completed_accepted', 
+        'paid',
+        'delivered',
+        'assigned',
+        'pending_review',
+        'completed_accepted',
         'paid_out',
         'expired',
-        'rejected_once', 
-        'escalated', 
-        'sla_missed', 
+        'rejected_once',
+        'escalated',
+        'sla_missed',
         'refunded',
-        'completed' // Added for instant tasks
+        'completed', // Added for instant tasks
     ];
 
     protected $fillable = [
@@ -75,7 +75,7 @@ class TaskPurchase extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();

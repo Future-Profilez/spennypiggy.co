@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\WishItem;
 use App\Models\Bills;
 use App\Models\Membership;
-use App\Models\TipGoalsPayment;
 use App\Models\Post;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use App\Models\WishItem;
 use App\Services\UserProfileService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
@@ -44,11 +43,11 @@ class ProfilePostController extends Controller
 
         // Resolve user by username or ID
         $profileUser = $this->resolveUser($user);
-        
-        if (!$profileUser) {
+
+        if (! $profileUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found',
             ], 404);
         }
 
@@ -56,7 +55,7 @@ class ProfilePostController extends Controller
         if ($profileUser->suspended_account == 1) {
             return response()->json([
                 'success' => false,
-                'message' => 'User account is suspended due to a policy violation or payout configuration issue'
+                'message' => 'User account is suspended due to a policy violation or payout configuration issue',
             ], 403);
         }
 
@@ -70,60 +69,60 @@ class ProfilePostController extends Controller
                 $subscriptionCreators = WishItem::where('subscription', 1)
                     ->whereHas('wishItemsSubscription', function ($qu) use ($profileUser) {
                         $qu->where('status', 'paid')
-                           ->where('stripe_status', 'active')
-                           ->where(function ($q) use ($profileUser) {
-                               $q->where('user_id', $profileUser->id)
-                                 ->orWhere('guest_email', $profileUser->email);
-                           })
-                           ->where(function ($que) {
-                               $que->where(function ($recurring) {
-                                   $recurring->where('recurring_for', 'continue')
-                                            ->where('upcoming_payment', '>=', Carbon::now());
-                               })->orWhere(function ($onetime) {
-                                   $onetime->where('recurring_for', 'onetime')
-                                          ->where('created_at', '>=', Carbon::now()->subDays(30));
-                               });
-                           });
+                            ->where('stripe_status', 'active')
+                            ->where(function ($q) use ($profileUser) {
+                                $q->where('user_id', $profileUser->id)
+                                    ->orWhere('guest_email', $profileUser->email);
+                            })
+                            ->where(function ($que) {
+                                $que->where(function ($recurring) {
+                                    $recurring->where('recurring_for', 'continue')
+                                        ->where('upcoming_payment', '>=', Carbon::now());
+                                })->orWhere(function ($onetime) {
+                                    $onetime->where('recurring_for', 'onetime')
+                                        ->where('created_at', '>=', Carbon::now()->subDays(30));
+                                });
+                            });
                     })
                     ->pluck('user_id')
                     ->toArray();
 
                 $billCreators = Bills::whereHas('payments', function ($qu) use ($profileUser) {
-                        $qu->where(function ($que) {
-                            $que->where('created_at', '<=', Carbon::now())
-                                ->where('upcoming_payment', '>=', Carbon::now());
-                        })->where(function ($q) use ($profileUser) {
-                            $q->where('user_id', $profileUser->id)
-                              ->orWhere('guest_email', $profileUser->email);
-                        });
-                    })
+                    $qu->where(function ($que) {
+                        $que->where('created_at', '<=', Carbon::now())
+                            ->where('upcoming_payment', '>=', Carbon::now());
+                    })->where(function ($q) use ($profileUser) {
+                        $q->where('user_id', $profileUser->id)
+                            ->orWhere('guest_email', $profileUser->email);
+                    });
+                })
                     ->pluck('user_id')
                     ->toArray();
 
                 $membershipCreators = Membership::whereHas('payments', function ($q) use ($profileUser) {
-                        $q->where(function ($que) {
-                            $que->where('created_at', '<=', Carbon::now())
-                                ->where('upcoming_payment', '>=', Carbon::now());
-                        })->where(function ($q) use ($profileUser) {
-                            $q->where('user_id', $profileUser->id)
-                              ->orWhere('guest_email', $profileUser->email);
-                        });
-                    })
+                    $q->where(function ($que) {
+                        $que->where('created_at', '<=', Carbon::now())
+                            ->where('upcoming_payment', '>=', Carbon::now());
+                    })->where(function ($q) use ($profileUser) {
+                        $q->where('user_id', $profileUser->id)
+                            ->orWhere('guest_email', $profileUser->email);
+                    });
+                })
                     ->pluck('user_id')
                     ->toArray();
 
                 // Filter memberships to separate non-lifetime vs lifetime if needed
                 $nonLifetimeCreators = Membership::whereHas('payments', function ($q) use ($profileUser) {
-                        $q->where('recurring_type', '!=', 'lifetime')
-                          ->where(function ($que) {
-                              $que->where('created_at', '<=', Carbon::now())
-                                  ->where('upcoming_payment', '>=', Carbon::now());
-                          })
-                          ->where(function ($q) use ($profileUser) {
-                              $q->where('user_id', $profileUser->id)
+                    $q->where('recurring_type', '!=', 'lifetime')
+                        ->where(function ($que) {
+                            $que->where('created_at', '<=', Carbon::now())
+                                ->where('upcoming_payment', '>=', Carbon::now());
+                        })
+                        ->where(function ($q) use ($profileUser) {
+                            $q->where('user_id', $profileUser->id)
                                 ->orWhere('guest_email', $profileUser->email);
-                          });
-                    })
+                        });
+                })
                     ->pluck('user_id')
                     ->toArray();
 
@@ -132,8 +131,8 @@ class ProfilePostController extends Controller
                 // Stripe compliance: a Lifetime membership has no recurring charge to pause, so
                 // when the creator stops meeting the posting cadence (content_posting_paused_at set)
                 // we pause the lifetime member's access to new member content until they post again.
-                if (!empty($lifetimeCreators)) {
-                    $pausedCreatorIds = \App\Models\User::whereIn('id', $lifetimeCreators)
+                if (! empty($lifetimeCreators)) {
+                    $pausedCreatorIds = User::whereIn('id', $lifetimeCreators)
                         ->whereNotNull('content_posting_paused_at')
                         ->pluck('id')
                         ->toArray();
@@ -141,9 +140,9 @@ class ProfilePostController extends Controller
                 }
 
                 $supportCreators = TipGoalsPayment::where(function ($q) use ($profileUser) {
-                        $q->where('user_id', $profileUser->id)
-                          ->orWhere('guest_email', $profileUser->email);
-                    })
+                    $q->where('user_id', $profileUser->id)
+                        ->orWhere('guest_email', $profileUser->email);
+                })
                     ->pluck('creator_id')
                     ->toArray();
 
@@ -191,30 +190,30 @@ class ProfilePostController extends Controller
                         $includeMembership,
                         $includeSubscription
                     ) {
-                        if ($includeSupport && !empty($supportCreators)) {
+                        if ($includeSupport && ! empty($supportCreators)) {
                             $query->orWhere(function ($qu) use ($supportCreators) {
                                 $qu->whereIn('user_id', $supportCreators)
-                                   ->where('for_module', 'support');
+                                    ->where('for_module', 'support');
                             });
                         }
 
-                        if ($includeMembership && (!empty($nonLifetimeCreators) || !empty($lifetimeCreators))) {
+                        if ($includeMembership && (! empty($nonLifetimeCreators) || ! empty($lifetimeCreators))) {
                             $query->orWhere(function ($qu) use ($nonLifetimeCreators, $lifetimeCreators) {
                                 $qu->where(function ($q) use ($nonLifetimeCreators, $lifetimeCreators) {
                                     $q->whereIn('user_id', $nonLifetimeCreators)
-                                      ->orWhereIn('user_id', $lifetimeCreators);
+                                        ->orWhereIn('user_id', $lifetimeCreators);
                                 })
-                                ->where('for_module', 'membership');
+                                    ->where('for_module', 'membership');
                             });
                         }
 
-                        if ($includeSubscription && (!empty($subscriptionCreators) || !empty($billCreators))) {
+                        if ($includeSubscription && (! empty($subscriptionCreators) || ! empty($billCreators))) {
                             $query->orWhere(function ($qu) use ($subscriptionCreators, $billCreators) {
                                 $qu->where(function ($q) use ($subscriptionCreators, $billCreators) {
                                     $q->whereIn('user_id', $subscriptionCreators)
-                                      ->orWhereIn('user_id', $billCreators);
+                                        ->orWhereIn('user_id', $billCreators);
                                 })
-                                ->where('for_module', 'subscription');
+                                    ->where('for_module', 'subscription');
                             });
                         }
                     })
@@ -225,6 +224,7 @@ class ProfilePostController extends Controller
                 // Mark all aggregated posts as unlocked for the gifter (self-view)
                 $posts->through(function ($post) {
                     $post->is_lock = 0;
+
                     return $post;
                 });
 
@@ -272,7 +272,7 @@ class ProfilePostController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to fetch posts. Please try again later.'
+                'message' => 'Unable to fetch posts. Please try again later.',
             ], 500);
         }
     }
@@ -283,7 +283,7 @@ class ProfilePostController extends Controller
     private function resolveUser($identifier): ?User
     {
         // Try to find by username first (most common case)
-        if (is_string($identifier) && !is_numeric($identifier)) {
+        if (is_string($identifier) && ! is_numeric($identifier)) {
             return User::where('username', $identifier)
                 ->first();
         }

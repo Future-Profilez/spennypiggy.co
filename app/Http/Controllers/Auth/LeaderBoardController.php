@@ -17,8 +17,10 @@ use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItemSubscription;
+use App\Services\LeaderboardMovementService;
 use App\Services\VipScoreService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -67,79 +69,275 @@ class LeaderBoardController extends Controller
         };
     }
 
+    /**
+     * The whole ranked board for a period, as lean arrays with rank resolved.
+     *
+     * Cached for EVERY visitor, not just guests. The board is identical for
+     * everyone (rank and supporter count, no per-viewer figures), so skipping
+     * the cache while signed in meant every authenticated page load recomputed
+     * six aggregate subqueries across every creator and sorted them in PHP.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function rankedBoard(?string $type): array
+    {
+        $period = $type ?: 'all';
+        $key = 'leaderboard_board_'.$period;
+
+        $cached = Cache::get($key);
+        if (is_array($cached) && $cached !== []) {
+            return $cached;
+        }
+
+        $users = $this->calc($type);
+        $total = max($users->count(), 1);
+
+        $rows = [];
+        $rank = 1;
+
+        foreach ($users as $user) {
+            $rows[] = [
+                'id' => $user->id,
+                'rank' => $rank,
+                'name' => $user->name ?? '',
+                'username' => $user->username ?? '',
+                'profile_status_lock' => $user->profile_status_lock,
+                'role' => $user->role,
+                'avatar' => $user->avatar_url,
+                'coverimg' => $user->cover_url,
+                'top' => round(($rank / $total) * 100, 2),
+                'amount' => 0, // Privacy: the public board ranks reach, never revenue.
+                'currency' => $user->currency ?? 'GBP',
+                'supporters' => (int) ($user->total_supporters ?? 0),
+                'engagement' => $user->engagement_score ?? 0,
+            ];
+            $rank++;
+        }
+
+        // An EMPTY board is never cached. `Cache::remember` stores whatever the
+        // callback returns, so a single bad moment — a DB hiccup, a half-run
+        // migration, a filter that briefly matched nothing — pinned "0 creators
+        // ranked" on the page for the full TTL even though the query recovered
+        // seconds later. A board with rows is worth caching; the absence of one
+        // is a symptom, not a result.
+        if ($rows !== []) {
+            Cache::put($key, $rows, $this->ttlForType($period));
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Does the daily board have any activity worth offering as a tab?
+     *
+     * Its own short cache — this used to run a second FULL leaderboard
+     * computation on every page load just to decide whether to render one
+     * button.
+     */
+    private function dailyBoardHasActivity(): int
+    {
+        return Cache::remember('leaderboard_is_daily', $this->ttlForType('daily'), function () {
+            return $this->calc('daily')->contains(fn ($user) => (float) ($user->total_amount ?? 0) > 0) ? 1 : 0;
+        });
+    }
+
     public function wishtenderWishers($type = null)
     {
         if (Auth::user() && Auth::user()->suspended_account == 1) {
             return Inertia::render('Suspanded');
         }
 
-        $getData = function () use ($type) {
-            return $this->calc($type);
-        };
+        // An unrecognised period used to fall through to the lifetime board —
+        // harmless to read, but it also became a cache key, so any URL segment
+        // could mint a new cached board.
+        $period = in_array($type, self::PERIODS, true) ? $type : 'all';
+        $board = $this->rankedBoard($period === 'all' ? null : $period);
+        $search = trim((string) request()->get('q', ''));
 
-        if (Auth::check()) {
-            $users = $getData();
-        } else {
-            $cacheKey = 'leaderboard_'.($type ?? 'all').'_'.request()->get('page', 1);
-            $users = Cache::remember($cacheKey, $this->ttlForType($type ?? 'daily'), $getData);
-        }
+        // Search runs over the WHOLE board, not the loaded page. The old
+        // client-side filter could only see the rows already rendered, so it
+        // reported "no creators found" for anyone further down the list.
+        $matches = $search === ''
+            ? $board
+            : array_values(array_filter($board, function ($row) use ($search) {
+                return stripos($row['name'] ?? '', $search) !== false
+                    || stripos($row['username'] ?? '', $search) !== false;
+            }));
 
         $perPage = 50;
-        $page = request()->get('page', 1);
-        $totalUsers = max($users->count(), 1);
+        $page = max((int) request()->get('page', 1), 1);
         $paginator = new LengthAwarePaginator(
-            $users->forPage($page, $perPage),
-            $users->count(),
+            array_slice($matches, ($page - 1) * $perPage, $perPage),
+            count($matches),
             $perPage,
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
-        $data = [];
-        $rank = (($page - 1) * $perPage) + 1;
-        foreach ($paginator as $query) {
-            $topPercent = round(($rank / $totalUsers) * 100, 2);
-            $data[] = [
-                'id' => $query->id,
-                'rank' => $rank,
-                'name' => $query->name ?? '',
-                'username' => $query->username ?? '',
-                'profile_status_lock' => $query->profile_status_lock,
-                'role' => $query->role,
-                'avatar' => $query->avatar_url,
-                'coverimg' => $query->cover_url,
-                'top' => $topPercent,
-                'amount' => 0, // Privacy: Hide amount from public leaderboard
-                'currency' => $query->currency ?? 'GBP',
-                'supporters' => $query->total_supporters ?? 0,
-                'engagement' => $query->engagement_score ?? 0,
-            ];
-            $rank++;
-        }
-        if (empty($type)) {
-            $is_daily = 0;
-            $daily = $this->calc('daily');
-            foreach ($daily as $key => $value) {
-                if ($value->total_amount > 0) {
-                    $is_daily = 1;
-                }
-            }
 
-            return Inertia::render('leaderboard/Board', [
+        $previousRanks = LeaderboardMovementService::previousRanks($period);
+
+        $pageRows = $paginator->items();
+
+        // Follow state is per-viewer, so it is resolved AFTER the shared cache —
+        // one query for the whole page, never one per row.
+        $following = [];
+        if (Auth::check() && $pageRows) {
+            $following = Follow::where('follower_id', Auth::id())
+                ->whereIn('followed_id', array_column($pageRows, 'id'))
+                ->pluck('followed_id')
+                ->flip()
+                ->all();
+        }
+
+        $data = [];
+        foreach ($pageRows as $row) {
+            $data[] = $row
+                + LeaderboardMovementService::movementFor($row['id'], $row['rank'], $previousRanks)
+                + ['is_following' => isset($following[$row['id']])];
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
                 'data' => $data,
-                'is_daily' => $is_daily,
+                'message' => 'Leaderboard loaded',
+                'last_page' => $paginator->lastPage(),
+                'current_page' => $paginator->currentPage(),
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
+                'period' => $period,
+                'you' => $this->viewerStanding($board, $previousRanks),
             ]);
         }
 
-        // Leaderboard stars
+        return Inertia::render('leaderboard/Board', [
+            'data' => $data,
+            'is_daily' => $this->dailyBoardHasActivity(),
+            'period' => $period,
+            'total' => count($board),
+            'last_page' => $paginator->lastPage(),
+            'periods' => self::PERIODS,
+            'you' => $this->viewerStanding($board, $previousRanks),
+            'climbers' => LeaderboardMovementService::climbers($board, $period),
+            'movement_window_days' => LeaderboardMovementService::lookbackDays($period),
+            'opted_out' => (bool) (Auth::user()->leaderboard_opt_out ?? false),
+        ]);
+    }
+
+    /**
+     * The signed-in creator's own standing, resolved from the full board so it
+     * is correct even when their row is 400 places down and never loaded.
+     *
+     * `to_next` is the supporter gap to the position above — the board ranks
+     * reach, so the gap is stated in supporters and never in money.
+     */
+    private function viewerStanding(array $board, array $previousRanks): ?array
+    {
+        $userId = Auth::id();
+
+        if (! $userId) {
+            return null;
+        }
+
+        $index = null;
+        foreach ($board as $i => $row) {
+            if ((int) $row['id'] === (int) $userId) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if ($index === null) {
+            return null;
+        }
+
+        $me = $board[$index];
+        $above = $index > 0 ? $board[$index - 1] : null;
+
+        return $me + LeaderboardMovementService::movementFor($me['id'], $me['rank'], $previousRanks) + [
+            'total' => count($board),
+            'next' => $above ? [
+                'username' => $above['username'],
+                'name' => $above['name'],
+                'supporters_gap' => max(($above['supporters'] ?? 0) - ($me['supporters'] ?? 0), 0),
+            ] : null,
+        ];
+    }
+
+    /**
+     * Every panel beside the main board, in one cached response.
+     *
+     * The page used to fire seven separate requests on load — one per widget —
+     * and none of those endpoints were cached, so opening the leaderboard ran
+     * seven heavy aggregate queries every time. Each section is resolved
+     * independently: one panel failing costs that panel, not the page.
+     */
+    public function bundle()
+    {
+        $sections = [
+            'category_leaders' => fn () => $this->categoryLeaders(),
+            'vip_supporters' => fn () => $this->vipSupporters(),
+            'growth_trends' => fn () => $this->growthTrends(),
+            'platform_analytics' => fn () => $this->platformAnalytics(),
+            'recent_supporters' => fn () => $this->recentGifters(),
+            'stars' => fn () => $this->topGiftersAllTime(),
+            'top_supporters' => fn () => $this->topSupportersByFrequency(),
+        ];
+
+        $payload = Cache::get('leaderboard_bundle');
+
+        if (! is_array($payload)) {
+            $payload = [];
+
+            foreach ($sections as $key => $resolve) {
+                try {
+                    $payload[$key] = $resolve()->getData(true);
+                } catch (\Throwable $e) {
+                    Log::error('Leaderboard bundle section failed', [
+                        'section' => $key,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $payload[$key] = null;
+                }
+            }
+
+            // Same rule as the board: a payload where every section failed is a
+            // symptom, not a result. Caching it would hold the whole sidebar
+            // dead for the full TTL after the cause had already cleared.
+            if (array_filter($payload) !== []) {
+                Cache::put('leaderboard_bundle', $payload, 900);
+            }
+        }
+
+        return response()->json(['success' => true] + $payload);
+    }
+
+    /**
+     * A creator can leave the public board. Ranking someone publicly is not
+     * something the platform gets to decide for them.
+     */
+    public function toggleOptOut(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Authentication required.'], 401);
+        }
+
+        $optOut = $request->boolean('opt_out');
+        $user->forceFill(['leaderboard_opt_out' => $optOut])->save();
+
+        // Their row has to appear or disappear now, not when the cache expires.
+        foreach (self::PERIODS as $period) {
+            Cache::forget('leaderboard_board_'.$period);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $data,
-            'message' => 'Wishtender wishes get successfully',
-            'last_page' => $paginator->lastPage() ?? null,
-            'current_page' => $paginator->currentPage() ?? null,
-            'total' => $paginator->total() ?? null,
-            'per_page' => $paginator->perPage() ?? null,
-            'stars' => $paginator->perPage() ?? null,
+            'opted_out' => $optOut,
+            'message' => $optOut
+                ? 'You have been removed from the public leaderboard.'
+                : 'You are back on the public leaderboard.',
         ]);
     }
 
@@ -160,6 +358,12 @@ class LeaderBoardController extends Controller
 
         $users = User::where('stripe_details_submitted', 1)
             ->where('suspended_account', 0)
+            // Public ranking is opt-out — a creator who leaves disappears from
+            // every board, not just the page they asked about.
+            ->where(function ($query) {
+                $query->where('leaderboard_opt_out', 0)
+                    ->orWhereNull('leaderboard_opt_out');
+            })
             ->withCount([
                 'followers as total_supporters' => function ($query) use ($applyPeriod) {
                     $applyPeriod($query, 'follows.created_at');

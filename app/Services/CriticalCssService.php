@@ -3,12 +3,11 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\View;
 
 class CriticalCssService
 {
     private array $criticalStyles = [];
+
     private array $deferredStyles = [];
 
     /**
@@ -17,9 +16,10 @@ class CriticalCssService
     public function inline(string $template): string
     {
         $criticalCssPath = $this->getCriticalCssPath($template);
-        
+
         if (File::exists($criticalCssPath)) {
             $criticalCss = File::get($criticalCssPath);
+
             return "<style data-critical=\"{$template}\">{$criticalCss}</style>";
         }
 
@@ -33,7 +33,7 @@ class CriticalCssService
     public function defer(string $stylesheetPath): string
     {
         $assetPath = asset($stylesheetPath);
-        
+
         return sprintf(
             '<link rel="preload" href="%s" as="style" onload="this.onload=null;this.rel=\'stylesheet\'" media="print">
             <noscript><link rel="stylesheet" href="%s"></noscript>',
@@ -48,14 +48,14 @@ class CriticalCssService
     private function extractCriticalFromMainCss(string $template): string
     {
         $mainCssPath = public_path('build/assets/app.css');
-        
-        if (!File::exists($mainCssPath)) {
+
+        if (! File::exists($mainCssPath)) {
             return '';
         }
 
         $css = File::get($mainCssPath);
         $criticalSelectors = $this->getCriticalSelectorsForTemplate($template);
-        
+
         return $this->extractSelectorsFromCss($css, $criticalSelectors);
     }
 
@@ -68,38 +68,38 @@ class CriticalCssService
             'body',
             'html',
             '.font-poppins',
-            '.font-anton', 
+            '.font-anton',
             '.headingLg',
             '.headingMd',
             '.headingSm',
             '.btn-pink',
             '.btn-mint',
             '.shadow-mint',
-            '.shadow-[4px_4px_0px_0px_#FF007F]lack'
+            '.shadow-[4px_4px_0px_0px_#FF007F]lack',
         ];
 
         // Template-specific critical selectors
-        $templateSelectors = match($template) {
+        $templateSelectors = match ($template) {
             'home' => [
                 '.landing-bottom-bar',
                 '.profile-image',
                 '.wish-item-box',
                 '.funpart',
                 '.max-width-*',
-                '[data-aos]'
+                '[data-aos]',
             ],
             'dashboard' => [
                 '.dashboard-memeber',
                 '.data-memeber',
                 '.static-chart',
                 '.rank_lists',
-                '.changePeriod'
+                '.changePeriod',
             ],
             'profile' => [
                 '.profile-content',
                 '.rank-position',
                 '.postions',
-                '.profile-image'
+                '.profile-image',
             ],
             default => []
         };
@@ -113,18 +113,18 @@ class CriticalCssService
     private function extractSelectorsFromCss(string $css, array $selectors): string
     {
         $criticalCss = '';
-        
+
         foreach ($selectors as $selector) {
             // Handle wildcard selectors
             if (str_contains($selector, '*')) {
-                $pattern = '/' . preg_quote($selector, '/') . '/';
+                $pattern = '/'.preg_quote($selector, '/').'/';
                 $pattern = str_replace('\*', '[^{]*', $pattern);
-                preg_match_all($pattern . '{[^}]*}/', $css, $matches);
+                preg_match_all($pattern.'{[^}]*}/', $css, $matches);
                 $criticalCss .= implode('', $matches[0]);
             } else {
                 // Exact selector match
                 $escapedSelector = preg_quote($selector, '/');
-                preg_match('/' . $escapedSelector . '\s*{[^}]*}/', $css, $matches);
+                preg_match('/'.$escapedSelector.'\s*{[^}]*}/', $css, $matches);
                 if (isset($matches[0])) {
                     $criticalCss .= $matches[0];
                 }
@@ -149,13 +149,13 @@ class CriticalCssService
     {
         // Remove comments
         $css = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $css);
-        
+
         // Remove extra whitespace and line breaks
         $css = str_replace(["\r\n", "\r", "\n", "\t", '  ', '    ', '    '], '', $css);
-        
+
         // Remove whitespace around certain characters
         $css = preg_replace('/\s*([{}|:;,>+~])\s*/', '$1', $css);
-        
+
         return trim($css);
     }
 
@@ -165,7 +165,7 @@ class CriticalCssService
     public function generateCriticalCssFiles(): void
     {
         $templates = ['home', 'dashboard', 'profile', 'login', 'register'];
-        
+
         foreach ($templates as $template) {
             $this->generateCriticalCssForTemplate($template);
         }
@@ -178,10 +178,10 @@ class CriticalCssService
     {
         $criticalCss = $this->extractCriticalFromMainCss($template);
         $outputPath = $this->getCriticalCssPath($template);
-        
+
         // Ensure directory exists
         File::ensureDirectoryExists(dirname($outputPath));
-        
+
         File::put($outputPath, $criticalCss);
     }
 }

@@ -24,11 +24,13 @@ class PostLike extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function user(){
-        return $this->belongsTo(User::class,'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function post(){
-        return $this->belongsTo(Post::class,'post_id');
+    public function post()
+    {
+        return $this->belongsTo(Post::class, 'post_id');
     }
 }

@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class SubscriptionMail extends Mailable
@@ -14,6 +11,7 @@ class SubscriptionMail extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
+
     /**
      * Create a new message instance.
      *
@@ -33,6 +31,7 @@ class SubscriptionMail extends Mailable
     {
         try {
             $subject = 'Subscription payment reminder.';
+
             return $this->view('email.subscription')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

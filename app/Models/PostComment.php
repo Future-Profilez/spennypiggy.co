@@ -12,11 +12,11 @@ class PostComment extends Model
     use HasFactory,SoftDeletes;
 
     protected $fillable = [
-      'uuid',
-      'post_id',
-      'user_id',
-      'comment',
-      'is_approved',
+        'uuid',
+        'post_id',
+        'user_id',
+        'comment',
+        'is_approved',
     ];
 
     protected $hidden = [
@@ -31,16 +31,18 @@ class PostComment extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function post(){
-        return $this->belongsTo(Post::class,'post_id');
+    public function post()
+    {
+        return $this->belongsTo(Post::class, 'post_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function replies(){
-        return $this->hasMany(PostCommentReplies::class,'post_comment_id');
+    public function replies()
+    {
+        return $this->hasMany(PostCommentReplies::class, 'post_comment_id');
     }
 }

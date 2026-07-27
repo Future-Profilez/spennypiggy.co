@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import axios from 'axios';
+import useBundleSection from './useBundle';
 import { RiVipDiamondLine, RiStarLine, RiHeartLine, RiTrophyLine, RiGiftLine, RiUserStarLine, RiCalendarLine } from 'react-icons/ri';
 import Avatar from '@/includes/Avatar';
 import PriceFormat from '@/includes/PriceFormat';
@@ -7,29 +6,9 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function VipSupporters() {
     const { formatMultiPrice } = PriceFormat();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [vipSupporters, setVipSupporters] = useState([]);
-
-    const fetchVipSupporters = () => {
-        setLoading(true);
-        setError(null);
-        axios.get('leaderboard/vip-supporters')
-            .then((response) => {
-                setVipSupporters(response.data?.data || []);
-            })
-            .catch((error) => {
-                console.error("Error fetching VIP supporters:", error);
-                setError("Failed to load VIP supporters. Please try again.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    };
-
-    useEffect(() => {
-        fetchVipSupporters();
-    }, []);
+    // Shared with every other panel on the page — one request, not seven.
+    const { data: section, loading, error, retry: fetchVipSupporters } = useBundleSection('vip_supporters');
+    const vipSupporters = section?.data || [];
 
     const VipCard = ({ supporter }) => {
         const { vip_level } = supporter;
@@ -40,7 +19,7 @@ export default function VipSupporters() {
         };
 
         return (
-            <div className="vip-card bg-white rounded-[35px]  p-4 mb-4 shadow-md hover:shadow-lg transition-all duration-300 border-l-4" 
+            <div className="vip-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-4 transition-all duration-300 border-l-4" 
                  style={{borderLeftColor: vip_level.color}}>
                 <div className="flex relative items-center justify-between mb-3">
                     <div className="flex items-center">
@@ -120,7 +99,7 @@ export default function VipSupporters() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading VIP Supporters...</span>
                 </div>
@@ -130,7 +109,7 @@ export default function VipSupporters() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
                 <div className="alert alert-danger" role="alert">
                     {error}
                     <button 
@@ -144,8 +123,8 @@ export default function VipSupporters() {
     }
 
     return vipSupporters.length > 0 ? (
-        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">
+        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
+            <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-start mb-2">
                 💎 VIP Supporters
             </h2>
             <p className="text-gray-600 text-sm mb-4">

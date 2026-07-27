@@ -22,13 +22,16 @@ class ConnectedAccountCustomer extends Model
         'is_active',
         'currency',
     ];
+
     protected $hidden = [
         'created_at',
         'updated_at',
     ];
+
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);

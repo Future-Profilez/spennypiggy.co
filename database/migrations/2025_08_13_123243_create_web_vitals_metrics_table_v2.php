@@ -15,7 +15,7 @@ return new class extends Migration
         if (Schema::hasTable('web_vitals_metrics')) {
             return;
         }
-        
+
         Schema::create('web_vitals_metrics', function (Blueprint $table) {
             $table->id();
             $table->string('metric_name', 10)->index(); // LCP, FID, CLS, FCP, TTFB, INP

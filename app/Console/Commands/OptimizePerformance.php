@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Services\CacheService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -177,9 +176,9 @@ class OptimizePerformance extends Command
         $this->info('🌐 Warming API endpoints...');
 
         $commonEndpoints = [
-            'currencies' => fn() => ['USD', 'EUR', 'GBP', 'JPY'],
-            'countries' => fn() => ['US', 'UK', 'CA', 'AU'],
-            'timezones' => fn() => timezone_identifiers_list(),
+            'currencies' => fn () => ['USD', 'EUR', 'GBP', 'JPY'],
+            'countries' => fn () => ['US', 'UK', 'CA', 'AU'],
+            'timezones' => fn () => timezone_identifiers_list(),
         ];
 
         foreach ($commonEndpoints as $endpoint => $callback) {
@@ -200,7 +199,7 @@ class OptimizePerformance extends Command
 
             foreach ($tables as $table) {
                 $tableName = array_values((array) $table)[0];
-                
+
                 // Optimize table
                 DB::statement("OPTIMIZE TABLE `{$tableName}`");
                 $tableCount++;
@@ -213,7 +212,7 @@ class OptimizePerformance extends Command
             $this->line('✓ Updated table statistics');
 
         } catch (\Exception $e) {
-            $this->warn("Database optimization failed: " . $e->getMessage());
+            $this->warn('Database optimization failed: '.$e->getMessage());
         }
     }
 
@@ -222,8 +221,8 @@ class OptimizePerformance extends Command
         $this->info('📦 Compressing static assets...');
 
         // Run Vite build with compression
-        $exitCode = shell_exec('cd ' . base_path() . ' && npm run build 2>&1');
-        
+        $exitCode = shell_exec('cd '.base_path().' && npm run build 2>&1');
+
         if ($exitCode !== null) {
             $this->line('✓ Assets compiled and compressed');
         } else {
@@ -243,13 +242,13 @@ class OptimizePerformance extends Command
         ];
 
         foreach ($filesToCompress as $pattern) {
-            $files = glob($publicPath . '/' . $pattern);
-            
+            $files = glob($publicPath.'/'.$pattern);
+
             foreach ($files as $file) {
-                if (function_exists('gzencode') && !file_exists($file . '.gz')) {
+                if (function_exists('gzencode') && ! file_exists($file.'.gz')) {
                     $content = file_get_contents($file);
                     $compressed = gzencode($content, 9);
-                    file_put_contents($file . '.gz', $compressed);
+                    file_put_contents($file.'.gz', $compressed);
                 }
             }
         }

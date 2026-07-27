@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\WebAuthn;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Laragear\WebAuthn\Http\Requests\AssertedRequest;
 use Laragear\WebAuthn\Http\Requests\AssertionRequest;
 use Laragear\WebAuthn\Models\WebAuthnCredential;
-use Illuminate\Support\Facades\Log;
 
 class WebAuthnLoginController extends Controller
 {
@@ -20,7 +18,7 @@ class WebAuthnLoginController extends Controller
     {
         try {
             $validated = $request->validate([
-                'email' => 'nullable|email'
+                'email' => 'nullable|email',
             ]);
 
             // The correct way to set user verification
@@ -28,10 +26,11 @@ class WebAuthnLoginController extends Controller
 
             return response()->json($options);
         } catch (\Exception $e) {
-            Log::error('WebAuthn options error: ' . $e->getMessage());
+            Log::error('WebAuthn options error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate login options: ' . $e->getMessage()
+                'message' => 'Failed to generate login options: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -49,10 +48,11 @@ class WebAuthnLoginController extends Controller
 
             return response()->json($options);
         } catch (\Exception $e) {
-            Log::error('Userless WebAuthn options error: ' . $e->getMessage());
+            Log::error('Userless WebAuthn options error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -66,49 +66,49 @@ class WebAuthnLoginController extends Controller
             Log::info('WebAuthn login attempt', [
                 'credential_id' => $request->input('id'),
                 'user_agent' => $request->userAgent(),
-                'all_input' => $request->all()
+                'all_input' => $request->all(),
             ]);
 
-            // Attempt to login the user 
+            // Attempt to login the user
             try {
                 $user = $request->login();
             } catch (\Exception $loginException) {
                 Log::error('WebAuthn request->login() exception', [
                     'message' => $loginException->getMessage(),
-                    'trace' => $loginException->getTraceAsString()
+                    'trace' => $loginException->getTraceAsString(),
                 ]);
                 throw $loginException;
             }
 
-            if (!$user) {
+            if (! $user) {
                 $userHandle = $request->input('response.userHandle');
                 Log::warning('WebAuthn login failed - authentication rejected', [
                     'credential_id' => $request->input('id'),
-                    'user_handle_present' => !empty($userHandle),
+                    'user_handle_present' => ! empty($userHandle),
                     'user_handle' => $userHandle,
                 ]);
-                
+
                 $message = 'Passkey authentication failed.';
                 if (empty($userHandle)) {
                     $message .= ' This passkey does not contain user information. Please try logging in with your email first, then re-register your passkey.';
                 } else {
                     $message .= ' The device may not be registered or verification failed.';
                 }
-                
+
                 return response()->json([
                     'success' => false,
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
-            // Update credential with last used info 
+            // Update credential with last used info
             $credentialId = $request->input('id');
 
-            // Try to find by credential_id first (since you added this column) 
+            // Try to find by credential_id first (since you added this column)
             $credential = WebAuthnCredential::where('credential_id', $credentialId)->first();
 
-            // If not found by credential_id, try by id 
-            if (!$credential) {
+            // If not found by credential_id, try by id
+            if (! $credential) {
                 $credential = WebAuthnCredential::where('id', $credentialId)->first();
             }
 
@@ -123,24 +123,25 @@ class WebAuthnLoginController extends Controller
                 Log::warning('Credential not found for update', ['credential_id' => $credentialId]);
             }
 
-            // Regenerate session to prevent session fixation 
+            // Regenerate session to prevent session fixation
             $request->session()->regenerate();
 
             Log::info('WebAuthn login successful', [
                 'user_id' => $user->getAuthIdentifier(),
-                'email' => $user->email
+                'email' => $user->email,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful',
-                'redirect_url' => $this->getRedirectUrl($user)
+                'redirect_url' => $this->getRedirectUrl($user),
             ]);
         } catch (\Exception $e) {
-            Log::error('WebAuthn login error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('WebAuthn login error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Login error: ' . $e->getMessage()
+                'message' => 'Login error: '.$e->getMessage(),
             ], 500);
         }
     }

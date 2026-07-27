@@ -2,6 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\PiggyPot;
+use App\Models\Post;
+use App\Models\Shop;
+use App\Models\Task;
+use App\Models\TipGoal;
+use App\Models\User;
+use App\Models\WishItem;
+use App\Observers\ActivityObserver;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -27,19 +37,19 @@ class EventServiceProvider extends ServiceProvider
     {
         // Register observers only for specific models
         $modelsToObserve = [
-            \App\Models\WishItem::class,
-            \App\Models\Membership::class,
-            \App\Models\Post::class,
-            \App\Models\Task::class,
-            \App\Models\Shop::class,
-            \App\Models\Bills::class,
-            \App\Models\PiggyPot::class,
-            \App\Models\TipGoal::class,
-            \App\Models\User::class,
+            WishItem::class,
+            Membership::class,
+            Post::class,
+            Task::class,
+            Shop::class,
+            Bills::class,
+            PiggyPot::class,
+            TipGoal::class,
+            User::class,
         ];
 
         foreach ($modelsToObserve as $model) {
-            $model::observe(\App\Observers\ActivityObserver::class);
+            $model::observe(ActivityObserver::class);
         }
     }
 

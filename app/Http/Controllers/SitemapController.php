@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\WishItem;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 
 class SitemapController extends Controller
 {
@@ -54,10 +52,10 @@ class SitemapController extends Controller
         foreach ($pages as $url) {
             $content .= '
   <url>
-    <loc>' . url($url) . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
+    <loc>'.url($url).'</loc>
+    <lastmod>'.now()->toW3cString().'</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>' . ($url === '/' ? '1.0' : '0.8') . '</priority>
+    <priority>'.($url === '/' ? '1.0' : '0.8').'</priority>
   </url>';
         }
 
@@ -95,16 +93,16 @@ class SitemapController extends Controller
         $content = '<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>' . url('/seo/sitemap-static.xml') . '</loc>
-    <lastmod>' . $staticLastmod->toW3cString() . '</lastmod>
+    <loc>'.url('/seo/sitemap-static.xml').'</loc>
+    <lastmod>'.$staticLastmod->toW3cString().'</lastmod>
   </sitemap>
   <sitemap>
-    <loc>' . url('/seo/sitemap-creators.xml') . '</loc>
-    <lastmod>' . $creatorsLastmod->toW3cString() . '</lastmod>
+    <loc>'.url('/seo/sitemap-creators.xml').'</loc>
+    <lastmod>'.$creatorsLastmod->toW3cString().'</lastmod>
   </sitemap>
   <sitemap>
-    <loc>' . url('/seo/sitemap-wishlists.xml') . '</loc>
-    <lastmod>' . $wishlistsLastmod->toW3cString() . '</lastmod>
+    <loc>'.url('/seo/sitemap-wishlists.xml').'</loc>
+    <lastmod>'.$wishlistsLastmod->toW3cString().'</lastmod>
   </sitemap>
 </sitemapindex>';
 
@@ -135,10 +133,10 @@ class SitemapController extends Controller
         foreach ($staticPages as $page) {
             $content .= '
   <url>
-    <loc>' . url($page['url']) . '</loc>
-    <lastmod>' . now()->toW3cString() . '</lastmod>
-    <changefreq>' . $page['changefreq'] . '</changefreq>
-    <priority>' . $page['priority'] . '</priority>
+    <loc>'.url($page['url']).'</loc>
+    <lastmod>'.now()->toW3cString().'</lastmod>
+    <changefreq>'.$page['changefreq'].'</changefreq>
+    <priority>'.$page['priority'].'</priority>
   </url>';
         }
 
@@ -177,8 +175,8 @@ class SitemapController extends Controller
         foreach ($creators as $creator) {
             $xml .= '
   <url>
-    <loc>' . url('/' . $creator->username) . '</loc>
-    <lastmod>' . $creator->updated_at->toW3cString() . '</lastmod>
+    <loc>'.url('/'.$creator->username).'</loc>
+    <lastmod>'.$creator->updated_at->toW3cString().'</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>';
@@ -219,8 +217,8 @@ class SitemapController extends Controller
         foreach ($wishlists as $wishlist) {
             $xml .= '
   <url>
-    <loc>' . url('/' . $wishlist->user->username . '/wish/' . $wishlist->id) . '</loc>
-    <lastmod>' . $wishlist->updated_at->toW3cString() . '</lastmod>
+    <loc>'.url('/'.$wishlist->user->username.'/wish/'.$wishlist->id).'</loc>
+    <lastmod>'.$wishlist->updated_at->toW3cString().'</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>';
@@ -244,7 +242,7 @@ class SitemapController extends Controller
     public function clearCache()
     {
         // Cache clearing disabled
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Sitemap cache cleared successfully',

@@ -2,21 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\CreatorActivityService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Ramsey\Uuid\Uuid;
-use Stripe\Subscription;
-use Carbon\Carbon;
-use App\Models\MonthlyCharge;
 use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 use Laragear\WebAuthn\WebAuthnAuthentication;
+use Laravel\Sanctum\HasApiTokens;
+use Ramsey\Uuid\Uuid;
+use Stripe\Subscription;
 
 class User extends Authenticatable implements WebAuthnAuthenticatable
 {
@@ -113,9 +112,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'social_url',
         'upcoming_payment_date',
         'subscription_end',
-        'is_subscription_cancelled'
+        'is_subscription_cancelled',
     ];
-    
+
     protected $with = ['social_links'];
 
     /**
@@ -132,7 +131,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // Cast to string: Uuid::uuid4() returns an object, and the in-memory model would
         // otherwise carry that object (not the string the DB stores) until re-fetched —
         // breaking any array-by-uuid lookup done in the same request the user was created.
-        static::creating(fn($u) => $u->uuid = (string) Uuid::uuid4());
+        static::creating(fn ($u) => $u->uuid = (string) Uuid::uuid4());
     }
 
     /**
@@ -145,33 +144,43 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 ->latest('id')
                 ->first();
         }
+
         return $this->runtimeMemo['latestMonthlyCharge'];
     }
 
     public function getUpcomingPaymentDateAttribute()
     {
-        if ($this->role != 1) return null;
+        if ($this->role != 1) {
+            return null;
+        }
         $charge = $this->latestMonthlyCharge();
         if ($charge && $charge->upcoming_payment) {
             return Carbon::parse($charge->upcoming_payment)->format('d M Y');
         }
+
         return null;
     }
 
     public function getSubscriptionEndAttribute()
     {
-        if ($this->role != 1) return null;
+        if ($this->role != 1) {
+            return null;
+        }
         $charge = $this->latestMonthlyCharge();
         if ($charge && $charge->current_end_subscription_date) {
             return Carbon::parse($charge->current_end_subscription_date)->format('d M Y');
         }
+
         return null;
     }
 
     public function getIsSubscriptionCancelledAttribute()
     {
-        if ($this->role != 1) return false;
+        if ($this->role != 1) {
+            return false;
+        }
         $charge = $this->latestMonthlyCharge();
+
         return $charge ? ($charge->status === 'canceled' || $charge->cancelled_at !== null) : false;
     }
 
@@ -189,27 +198,71 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         $this->attributes['name'] = ucwords(strtolower($value));
     }
 
+    /** Shown in place of a profile photo that is not approved yet. */
+    public const DEFAULT_AVATAR_URL = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
+
+    /**
+     * May the CURRENT viewer see this profile photo?
+     *
+     * An avatar and a cover are uploaded unapproved and reviewed by an admin,
+     * but the URL accessors ignored that entirely — so an unreviewed photo was
+     * served to everyone, everywhere, and the approval flag only changed a
+     * couple of banners on the creator's own dashboard.
+     *
+     * The owner always sees their own upload: replacing it with a placeholder
+     * on their own screens reads as "the upload failed" and they re-upload in a
+     * loop. Everyone else waits for the approval.
+     *
+     * ⚠️ When the flag was not selected, this returns TRUE rather than hiding.
+     * Plenty of queries fetch `avatar` without `avatar_approved`, and a missing
+     * column is not evidence of disapproval — treating it as such would blank
+     * avatars across pages that are merely selecting narrowly. Add the column
+     * to the select on any surface that must enforce this.
+     */
+    protected function profileMediaVisible(string $flag): bool
+    {
+        if (! array_key_exists($flag, $this->attributes)) {
+            return true;
+        }
+
+        if ((int) $this->attributes[$flag] === 1) {
+            return true;
+        }
+
+        return Auth::check() && ! empty($this->id) && (int) Auth::id() === (int) $this->id;
+    }
+
     public function getAvatarUrlAttribute()
     {
-        if (!$this->avatar) return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
+        if (! $this->avatar || ! $this->profileMediaVisible('avatar_approved')) {
+            return self::DEFAULT_AVATAR_URL;
+        }
 
         $modifier = $this->avatar_cdn_modifier
             ? "{$this->avatar_cdn_modifier}-/preview/"
-            : "-/format/jpeg/";
+            : '-/format/jpeg/';
 
         return "https://ucarecdn.com/{$this->avatar}/{$modifier}";
     }
 
     public function getSocialUrlAttribute()
     {
-        if (!$this->social_image) return false;
-        $modifier = "-/format/jpeg/";
+        if (! $this->social_image) {
+            return false;
+        }
+        $modifier = '-/format/jpeg/';
+
         return "https://ucarecdn.com/{$this->social_image}/{$modifier}";
     }
 
     public function getCoverUrlAttribute()
     {
-        if (!$this->cover) return false;
+        if (! $this->cover || ! $this->profileMediaVisible('cover_approved')) {
+            // No cover rather than a stand-in: the profile header already has a
+            // designed empty state, and a placeholder banner would read as a
+            // deliberate choice by the creator.
+            return false;
+        }
 
         $modifier = $this->cover_cdn_modifier
             ? "{$this->cover_cdn_modifier}-/preview/"
@@ -235,9 +288,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 ->whereIn('status', ['paid', 'trialing', 'active'])
                 ->exists();
         }
+
         return false;
     }
-
 
     public function getIsCreatorAddressFoundAttribute(): bool
     {
@@ -252,6 +305,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         if (array_key_exists('subscription_status', $this->runtimeMemo)) {
             return $this->runtimeMemo['subscription_status'];
         }
+
         return $this->runtimeMemo['subscription_status'] = $this->computeSubscriptionStatus();
     }
 
@@ -277,13 +331,13 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 ->first();
 
             // If no active period found, get the most recent one
-            if (!$subscription) {
+            if (! $subscription) {
                 $subscription = MonthlyCharge::where('user_id', $this->id)
                     ->latest('id')
                     ->first();
             }
 
-            if (!$subscription) {
+            if (! $subscription) {
                 return 3; // INACTIVE / NEVER SUBSCRIBED
             }
 
@@ -313,7 +367,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 return 1; // ACTIVE
             } elseif ($isTrialOngoing) {
                 return 2; // FREE_TRIAL
-            } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
+            } elseif ($isExpired || ! in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
                 return 0; // EXPIRED
             }
 
@@ -322,10 +376,11 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 return 2;
             }
             if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
-                if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
+                if (! isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
                     if ($subscription->status === 'trialing') {
                         return 2;
                     }
+
                     return 1;
                 }
 
@@ -336,19 +391,20 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                 if ($subscription->status === 'trialing') {
                     // Check trial dates
                     if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
-                        $now = \Carbon\Carbon::now();
-                        $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                        $now = Carbon::now();
+                        $trialEnd = Carbon::parse($subscription->current_end_trial_date);
                         if ($now->lessThan($trialEnd)) {
                             return 2; // Still in trial
                         }
                     }
+
                     return 0; // Trial expired
                 }
 
                 // Default to active if status is paid/renew/active
                 return 1;
 
-                /* 
+                /*
                 // REMOVED STRIPE API CALL TO PREVENT TIMEOUTS
                 try {
                     // Skip Stripe API call in background jobs to prevent token errors
@@ -366,19 +422,21 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
                         // Return based on local status instead of throwing exception
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-                    
+
                     // ... (Rest of Stripe API logic removed)
                 } catch (\Exception $e) {
                    // ...
                 }
                 */
             }
+
             return 0;
         }
 
         if ($this->role == 0) { // Gifter
             return $this->gifterCardVerification ? 1 : 0;
         }
+
         return 'Unknown';
     }
 
@@ -388,6 +446,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getIsSiteSubscriptionActiveAttribute()
     {
         $status = $this->subscription_status;
+
         return ($status === 1 || $status === 2) ? 1 : 0;
     }
 
@@ -421,7 +480,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function getGracePeriodStartedAtAttribute()
     {
-        if (!$this->isFullyVerified()) {
+        if (! $this->isFullyVerified()) {
             return null;
         }
 
@@ -440,7 +499,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function getGracePeriodEndsAtAttribute()
     {
         $startDate = $this->grace_period_started_at;
-        return $startDate ? $startDate->copy()->addDays(\App\Services\CreatorActivityService::GRACE_PERIOD_DAYS) : null;
+
+        return $startDate ? $startDate->copy()->addDays(CreatorActivityService::GRACE_PERIOD_DAYS) : null;
     }
 
     /**
@@ -448,7 +508,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function getIsInGracePeriodAttribute()
     {
-        if (!$this->grace_period_ends_at) {
+        if (! $this->grace_period_ends_at) {
             return false;
         }
 
@@ -460,7 +520,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      */
     public function getGracePeriodDaysRemainingAttribute()
     {
-        if (!$this->is_in_grace_period || !$this->grace_period_ends_at) {
+        if (! $this->is_in_grace_period || ! $this->grace_period_ends_at) {
             return 0;
         }
 
@@ -629,27 +689,23 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasMany(Follow::class, 'follower_id');
     }
 
-
     public function getFollowersCountAttribute()
     {
-        return Cache::remember('user_followers_count_' . $this->id, 300, function() {
+        return Cache::remember('user_followers_count_'.$this->id, 300, function () {
             return $this->followers()->count();
         });
     }
 
     public function getFollowingCountAttribute()
     {
-        return Cache::remember('user_following_count_' . $this->id, 300, function() {
+        return Cache::remember('user_following_count_'.$this->id, 300, function () {
             return $this->following()->count();
         });
     }
 
-
-
-
     public function documents()
     {
-        return $this->hasMany(\App\Models\UserDocuments::class, 'user_id');
+        return $this->hasMany(UserDocuments::class, 'user_id');
     }
 
     public function blockedUsers()
@@ -666,6 +722,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     {
         return $this->blockedBy()->where('creator_id', $creatorId)->exists();
     }
+
     public function paymentitems()
     {
         return $this->hasManyThrough(
@@ -710,7 +767,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             'social_links',
             'user_categories',
             'twitter_token',
-            'creatorShippingAddress'
+            'creatorShippingAddress',
         ];
     }
 
@@ -731,7 +788,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             'country',
             'default_currency',
             'approved',
-            'created_at'
+            'created_at',
         ];
     }
 

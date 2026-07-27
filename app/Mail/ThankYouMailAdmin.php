@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class ThankYouMailAdmin extends Mailable
@@ -14,6 +11,7 @@ class ThankYouMailAdmin extends Mailable
     use Queueable, SerializesModels;
 
     public $pay;
+
     /**
      * Create a new message instance.
      */
@@ -22,7 +20,7 @@ class ThankYouMailAdmin extends Mailable
         $this->pay = $pay;
     }
 
-      /**
+    /**
      * Build the message.
      *
      * @return $this
@@ -31,6 +29,7 @@ class ThankYouMailAdmin extends Mailable
     {
         try {
             $subject = 'New thank you message to approve.';
+
             return $this->view('email.new-thanks-message')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

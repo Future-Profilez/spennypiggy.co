@@ -10,8 +10,8 @@ class IntercomService
     {
         $enabled = (bool) config('services.intercom.enabled');
         $appId = config('services.intercom.app_id') ?: 'xomg14o9';
-        
-        if (!$enabled) {
+
+        if (! $enabled) {
             return ['enabled' => false];
         }
 
@@ -24,13 +24,13 @@ class IntercomService
             ],
         ];
 
-        if (!$user) {
+        if (! $user) {
             // For anonymous users, still show Intercom but without user data (like your Footer)
             return $settings;
         }
 
         $secret = config('services.intercom.identity_secret');
-        
+
         $userId = (string) $user->id;
         $userHash = $secret ? hash_hmac('sha256', $userId, $secret) : null;
 
@@ -49,16 +49,16 @@ class IntercomService
         $isCreator = $this->isCreator($user);
         if ($isCreator) {
             $customAttributes = [];
-            
+
             // Safely add custom attributes
             if ($user->username) {
-                $customAttributes['profile_url'] = url('/' . $user->username);
+                $customAttributes['profile_url'] = url('/'.$user->username);
             }
-            
+
             $customAttributes['is_creator'] = true;
             $customAttributes['account_status'] = ($user->suspended_account ?? false) ? 'suspended' : 'active';
             $customAttributes['role'] = $user->role ?? null;
-            
+
             $settings['boot']['custom_attributes'] = $customAttributes;
         }
 
@@ -72,12 +72,12 @@ class IntercomService
         if (isset($user->is_creator) && $user->is_creator) {
             return true;
         }
-        
+
         // Check role (both string and numeric)
         if ($user->role === 'creator' || $user->role == 1) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -85,6 +85,7 @@ class IntercomService
     {
         // Check both string and numeric role values
         $role = $user->role ?? '';
+
         return in_array($role, ['admin', 'staff', 'support']) || $role == 0; // Assuming 0 is admin
     }
 }

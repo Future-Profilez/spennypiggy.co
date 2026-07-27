@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\FastStartBonusPayout;
 use App\Models\User;
+use App\StripeControl;
 use Illuminate\Console\Command;
 
 class EnrichFastStartBonusStripeMetadata extends Command
@@ -31,8 +32,9 @@ class EnrichFastStartBonusStripeMetadata extends Command
                 ->orWhere('username', $creatorFilter)
                 ->first();
 
-            if (!$creator) {
+            if (! $creator) {
                 $this->error('Creator not found');
+
                 return self::FAILURE;
             }
 
@@ -49,8 +51,9 @@ class EnrichFastStartBonusStripeMetadata extends Command
 
         foreach ($rows as $row) {
             $creator = User::where('uuid', $row->creator_uuid)->first();
-            if (!$creator) {
+            if (! $creator) {
                 $skipped++;
+
                 continue;
             }
 
@@ -74,22 +77,23 @@ class EnrichFastStartBonusStripeMetadata extends Command
             ];
 
             $metadataBase = array_filter($metadataBase, fn ($v) => $v !== null);
-            $transferDescription = 'Fast Start Bonus' . (!empty($creator->username) ? (' - ' . $creator->username) : '');
+            $transferDescription = 'Fast Start Bonus'.(! empty($creator->username) ? (' - '.$creator->username) : '');
 
             if ($dryRun) {
-                $this->line($creator->uuid . ' transfer=' . ($row->stripe_transfer_id ?: '-') . ' payout=' . ($row->stripe_payout_id ?: '-') . ' ' . strtoupper($currency));
+                $this->line($creator->uuid.' transfer='.($row->stripe_transfer_id ?: '-').' payout='.($row->stripe_payout_id ?: '-').' '.strtoupper($currency));
                 $updated++;
+
                 continue;
             }
 
-            if (!empty($row->stripe_transfer_id)) {
-                \App\StripeControl::updateTransferMinor((string) $row->stripe_transfer_id, $currency, array_merge($metadataBase, [
+            if (! empty($row->stripe_transfer_id)) {
+                StripeControl::updateTransferMinor((string) $row->stripe_transfer_id, $currency, array_merge($metadataBase, [
                     'stripe_payout_id' => (string) ($row->stripe_payout_id ?? ''),
                 ]), $transferDescription);
             }
 
-            if (!empty($row->stripe_payout_id) && !empty($creator->account_id)) {
-                \App\StripeControl::updatePayoutMetadata((string) $row->stripe_payout_id, (string) $creator->account_id, $currency, array_merge($metadataBase, [
+            if (! empty($row->stripe_payout_id) && ! empty($creator->account_id)) {
+                StripeControl::updatePayoutMetadata((string) $row->stripe_payout_id, (string) $creator->account_id, $currency, array_merge($metadataBase, [
                     'transfer_id' => (string) ($row->stripe_transfer_id ?? ''),
                 ]));
             }
@@ -97,10 +101,9 @@ class EnrichFastStartBonusStripeMetadata extends Command
             $updated++;
         }
 
-        $this->info('Updated: ' . $updated);
-        $this->info('Skipped: ' . $skipped);
+        $this->info('Updated: '.$updated);
+        $this->info('Skipped: '.$skipped);
 
         return self::SUCCESS;
     }
 }
-

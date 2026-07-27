@@ -3,19 +3,22 @@
 namespace App\Services;
 
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MagicBellService
 {
     protected $client;
+
     protected $apiKey;
+
     protected $apiSecret;
+
     protected $apiUrl;
 
     public function __construct()
     {
-        $this->client = new Client();
+        $this->client = new Client;
         $this->apiKey = config('services.magicbell.key');
         $this->apiSecret = config('services.magicbell.secret');
         $this->apiUrl = config('services.magicbell.url', 'https://api.magicbell.com');
@@ -34,9 +37,9 @@ class MagicBellService
                 'title' => $title,
                 'content' => $content,
                 'recipients' => [
-                    ['email' => $email]
-                ]
-            ]
+                    ['email' => $email],
+                ],
+            ],
         ];
         try {
             if (empty($this->apiKey) || empty($this->apiSecret)) {
@@ -49,10 +52,11 @@ class MagicBellService
                 'X-MAGICBELL-API-KEY' => $this->apiKey,
                 'X-MAGICBELL-API-SECRET' => $this->apiSecret,
                 'Accept' => 'application/json',
-            ])->post($this->apiUrl . '/notifications', $payload);
+            ])->post($this->apiUrl.'/notifications', $payload);
 
             if ($response->successful()) {
-                Log::info('MagicBell push notification sent successfully: ' . $title, ['email' => $email]);
+                Log::info('MagicBell push notification sent successfully: '.$title, ['email' => $email]);
+
                 return true;
             }
 
@@ -64,7 +68,8 @@ class MagicBellService
 
             return false;
         } catch (\Exception $e) {
-            Log::error('Error sending push notification: ' . $e->getMessage());
+            Log::error('Error sending push notification: '.$e->getMessage());
+
             return false;
         }
     }

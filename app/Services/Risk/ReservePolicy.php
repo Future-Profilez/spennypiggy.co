@@ -12,6 +12,7 @@ class ReservePolicy
     public function getOnboardingAgeDays(): int
     {
         $creatorRules = RiskSetting::get('creator_rules', []);
+
         return (int) ($creatorRules['new_creator_age_days'] ?? 30);
     }
 
@@ -23,6 +24,7 @@ class ReservePolicy
     public function getOnboardingAnchor(User $creator): ?Carbon
     {
         $anchor = $creator->stripe_connected_at ?: $creator->created_at;
+
         return $anchor ? Carbon::parse($anchor) : null;
     }
 
@@ -31,11 +33,12 @@ class ReservePolicy
         $at = $at ?: Carbon::now();
         $ageDays = $this->getOnboardingAgeDays();
         $anchor = $this->getOnboardingAnchor($creator);
-        if (!$anchor) {
+        if (! $anchor) {
             return 0;
         }
 
         $daysSinceConnected = (int) $anchor->copy()->startOfDay()->diffInDays($at->copy()->startOfDay());
+
         return $daysSinceConnected <= $ageDays ? 10 : 0;
     }
 
@@ -43,6 +46,7 @@ class ReservePolicy
     {
         $metricPercent = (int) ($metric?->reserve_percent ?? 0);
         $onboardingPercent = $this->getOnboardingReservePercent($creator, $at);
+
         return max(0, min(100, max($metricPercent, $onboardingPercent)));
     }
 
@@ -74,4 +78,3 @@ class ReservePolicy
         ];
     }
 }
-

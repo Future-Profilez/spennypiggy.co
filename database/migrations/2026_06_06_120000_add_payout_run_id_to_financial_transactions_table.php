@@ -17,15 +17,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('financial_transactions', function (Blueprint $table) {
-            if (!Schema::hasColumn('financial_transactions', 'payout_run_id')) {
+            if (! Schema::hasColumn('financial_transactions', 'payout_run_id')) {
                 $table->string('payout_run_id')->nullable()->after('reserve_status')->index();
             }
-            if (!Schema::hasColumn('financial_transactions', 'reserve_released_at')) {
+            if (! Schema::hasColumn('financial_transactions', 'reserve_released_at')) {
                 $table->timestamp('reserve_released_at')->nullable()->after('payout_run_id');
             }
             // Stripe payout id of the reserve-release payout — lets a later payout.failed
             // webhook revert the reserve back to 'held' if the bank rejects it.
-            if (!Schema::hasColumn('financial_transactions', 'reserve_payout_id')) {
+            if (! Schema::hasColumn('financial_transactions', 'reserve_payout_id')) {
                 $table->string('reserve_payout_id')->nullable()->after('reserve_released_at')->index();
             }
         });

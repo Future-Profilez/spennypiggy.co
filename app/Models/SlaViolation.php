@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class SlaViolation extends Model
 {
@@ -22,24 +22,24 @@ class SlaViolation extends Model
         'penalty_end_date',
         'admin_override',
         'violation_reason',
-        'admin_notes'
+        'admin_notes',
     ];
 
     protected $casts = [
         'penalty_start_date' => 'datetime',
         'penalty_end_date' => 'datetime',
-        'admin_override' => 'boolean'
+        'admin_override' => 'boolean',
     ];
 
     protected $dates = [
         'penalty_start_date',
-        'penalty_end_date'
+        'penalty_end_date',
     ];
 
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
@@ -69,7 +69,7 @@ class SlaViolation extends Model
     public static function applyPenalty(int $creatorId, int $deliverableId, string $violationType = 'late'): self
     {
         $violationCount = self::where('creator_id', $creatorId)->count();
-        
+
         $penalty = match ($violationCount) {
             0 => 'warning',
             1 => 'restriction_1d',
@@ -96,7 +96,7 @@ class SlaViolation extends Model
             'penalty_applied' => $penalty,
             'penalty_start_date' => $startDate,
             'penalty_end_date' => $endDate,
-            'violation_reason' => "Deliverable not provided within SLA timeframe"
+            'violation_reason' => 'Deliverable not provided within SLA timeframe',
         ]);
     }
 
@@ -105,11 +105,12 @@ class SlaViolation extends Model
      */
     public function isPenaltyActive(): bool
     {
-        if (!$this->penalty_start_date || !$this->penalty_end_date) {
+        if (! $this->penalty_start_date || ! $this->penalty_end_date) {
             return false;
         }
 
         $now = Carbon::now();
+
         return $now->between($this->penalty_start_date, $this->penalty_end_date);
     }
 
@@ -146,9 +147,9 @@ class SlaViolation extends Model
     public function scopeActivePenalties($query)
     {
         return $query->whereNotNull('penalty_start_date')
-                    ->whereNotNull('penalty_end_date')
-                    ->where('penalty_start_date', '<=', Carbon::now())
-                    ->where('penalty_end_date', '>=', Carbon::now());
+            ->whereNotNull('penalty_end_date')
+            ->where('penalty_start_date', '<=', Carbon::now())
+            ->where('penalty_end_date', '>=', Carbon::now());
     }
 
     /**

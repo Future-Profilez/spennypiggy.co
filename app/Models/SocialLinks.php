@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SocialLinks extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $dates = ['deleted_at'];
+
     protected $fillable = [
         'uuid',
         'user_id',
@@ -29,16 +31,16 @@ class SocialLinks extends Model
         'other',
         'status',
         'other',
-        'deleted_at'
+        'deleted_at',
     ];
 
-    protected $hidden   =   [
+    protected $hidden = [
         'id',
         'uuid',
         'user_id',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     /**

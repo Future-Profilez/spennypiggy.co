@@ -19,7 +19,7 @@ class VideoPosterController extends Controller
     public function resolve(Request $request)
     {
         $data = $request->validate([
-            'uuids'   => 'required|array|max:50',
+            'uuids' => 'required|array|max:50',
             'uuids.*' => 'string|uuid',
         ]);
 
@@ -31,7 +31,7 @@ class VideoPosterController extends Controller
         foreach ($uuids as $uuid) {
             $row = $existing->get($uuid);
 
-            if (!$row) {
+            if (! $row) {
                 // First time we've seen this video — start generation.
                 // firstOrCreate avoids a unique-constraint 500 when concurrent
                 // requests race on the same new UUID.

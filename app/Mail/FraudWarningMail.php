@@ -14,15 +14,13 @@ class FraudWarningMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+
     public $fraudWarning;
+
     public $eventType;
 
     /**
      * Create a new message instance.
-     *
-     * @param User $user
-     * @param EarlyFraudWarning $fraudWarning
-     * @param string $eventType
      */
     public function __construct(User $user, EarlyFraudWarning $fraudWarning, string $eventType)
     {
@@ -46,10 +44,10 @@ class FraudWarningMail extends Mailable
     {
         // UPDATED: Better subject formatting
         $subject = match ($this->eventType) {
-            'created' => '🚨 Fraud Warning Alert - ' . config('app.name'),
-            'updated' => '🔄 Fraud Warning Updated - ' . config('app.name'),
-            'closed' => '✅ Fraud Warning Resolved - ' . config('app.name'),
-            default => '⚠️ Fraud Warning Notification - ' . config('app.name'),
+            'created' => '🚨 Fraud Warning Alert - '.config('app.name'),
+            'updated' => '🔄 Fraud Warning Updated - '.config('app.name'),
+            'closed' => '✅ Fraud Warning Resolved - '.config('app.name'),
+            default => '⚠️ Fraud Warning Notification - '.config('app.name'),
         };
 
         return $this->subject($subject)

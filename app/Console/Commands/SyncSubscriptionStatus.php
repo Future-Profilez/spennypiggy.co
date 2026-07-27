@@ -2,18 +2,17 @@
 
 namespace App\Console\Commands;
 
-use App\Models\User;
 use App\Models\MonthlyCharge;
+use App\Models\User;
 use App\Services\UserProfileService;
 use Illuminate\Console\Command;
 use Stripe\Stripe;
 use Stripe\Subscription;
-use Stripe\Invoice;
-use Carbon\Carbon;
 
 class SyncSubscriptionStatus extends Command
 {
     protected $signature = 'subscription:sync {--user_id=} {--all} {--dry-run}';
+
     protected $description = 'Sync subscription status from Stripe to local database';
 
     protected $userProfileService;
@@ -29,8 +28,9 @@ class SyncSubscriptionStatus extends Command
         $this->info('🔄 Starting subscription sync...');
 
         $stripeKey = config('services.stripe.secret');
-        if (!$stripeKey) {
+        if (! $stripeKey) {
             $this->error('STRIPE_SECRET_KEY is not set.');
+
             return 1;
         }
         Stripe::setApiKey($stripeKey);
@@ -39,8 +39,8 @@ class SyncSubscriptionStatus extends Command
 
         if ($this->option('user_id')) {
             $query->where('id', $this->option('user_id'));
-        } elseif (!$this->option('all')) {
-            // OPTIMIZATION: Instead of syncing everyone every time, 
+        } elseif (! $this->option('all')) {
+            // OPTIMIZATION: Instead of syncing everyone every time,
             // focus on users who actually have something to check.
             $query->where(function ($q) {
                 // 1. Users with active local records that might need renewal/expiry check
@@ -68,6 +68,7 @@ class SyncSubscriptionStatus extends Command
             try {
                 if ($this->option('dry-run')) {
                     $this->line("🔍 Dry-run: checking {$user->username} (ID: {$user->id})");
+
                     continue;
                 }
 
@@ -110,7 +111,7 @@ class SyncSubscriptionStatus extends Command
             }
 
             // No active subscription found → expire local trial
-            if (!$hasActiveSubscription) {
+            if (! $hasActiveSubscription) {
 
                 $trial->update([
                     'status' => 'expired',
@@ -119,13 +120,14 @@ class SyncSubscriptionStatus extends Command
 
                 if ($user) {
                     $user->update([
-                        'is_subscribed' => 0
+                        'is_subscribed' => 0,
                     ]);
                 }
 
                 $this->line("⛔ Expired old trial for user ID {$trial->user_id}");
             }
         }
+
         return 0;
     }
 }

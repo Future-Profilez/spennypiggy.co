@@ -29,6 +29,7 @@ class UserPayment extends Model
         'card_country',
         'fee_variance',
     ];
+
     protected $casts = [
         'from_user_id' => 'integer',
         'to_user_id' => 'integer',
@@ -36,6 +37,7 @@ class UserPayment extends Model
         'total_paid' => 'float',
         'paid_at' => 'datetime',
     ];
+
     protected $table = 'user_payments';
 
     public function fromUser()
@@ -48,7 +50,6 @@ class UserPayment extends Model
     {
         return $this->fromUser()->where('profile_status_lock', 0)->where('role', 0)->first();
     }
-
 
     public function toUser()
     {

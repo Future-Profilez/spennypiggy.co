@@ -32,6 +32,7 @@ class Task extends Model
         'status',
         'media_url',
         'moderation_reason',
+        'moderation_asset',
         'deliverable_content_type',
         'deliverable_content',
         'deliverable_note',

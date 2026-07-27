@@ -29,23 +29,21 @@ class SyncEchangeRate extends Command
     public function handle()
     {
         /** For updating Currency Exchange rates */
-
         try {
 
             $resp = CurrencyExchange::getRates();
-            if($resp["success"] && !empty($resp['data']['conversion_rates']))
-            {
-                foreach($resp['data']['conversion_rates'] as $iso => $rate) {
+            if ($resp['success'] && ! empty($resp['data']['conversion_rates'])) {
+                foreach ($resp['data']['conversion_rates'] as $iso => $rate) {
                     // $rate = str_replace(',', '', (string)$rate);
                     // $rate = number_format((float)$rate, 4);
                     Currency::where('ISO', $iso)->update(['conversion_rate' => $rate]);
                 }
             }
 
-            $this->info("Exchange rates synced successfuly.");
+            $this->info('Exchange rates synced successfuly.');
 
-        } catch (Exception $e){
-            $this->error("Failed to sync: ".$e->getMessage());
+        } catch (Exception $e) {
+            $this->error('Failed to sync: '.$e->getMessage());
         }
     }
 }

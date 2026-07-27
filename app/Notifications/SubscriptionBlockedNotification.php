@@ -2,18 +2,16 @@
 
 namespace App\Notifications;
 
-use App\Helpers;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Log;
 
 class SubscriptionBlockedNotification extends Notification
 {
     use Queueable;
 
     protected $subscriptionData;
+
     protected $paymentAmount;
 
     /**
@@ -56,7 +54,7 @@ class SubscriptionBlockedNotification extends Notification
             'notification' => 'Payment Blocked - Subscription Required: A payment was blocked because your subscription is not active.',
             'module' => 'subscription',
             'target_id' => $notifiable->id,
-            'is_read' => 0
+            'is_read' => 0,
         ];
     }
 
@@ -67,7 +65,7 @@ class SubscriptionBlockedNotification extends Notification
     {
         return [
             'title' => '🚨 Payment Alert - Subscription Required',
-            'content' => 'A payment was blocked because your subscription is not active. Please update your subscription to continue receiving payments.'
+            'content' => 'A payment was blocked because your subscription is not active. Please update your subscription to continue receiving payments.',
         ];
     }
 

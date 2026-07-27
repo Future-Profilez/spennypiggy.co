@@ -25,8 +25,8 @@ class ReferralQualifiedMail extends Mailable
             ->view('email.referral-qualified')
             ->with([
                 'referral' => $this->referral,
-                'amount'   => number_format($this->referral->lifetime_gmv, 2),
-                'redeemUrl'=> config('app.url') . '/wallet',
+                'amount' => number_format($this->referral->lifetime_gmv, 2),
+                'redeemUrl' => config('app.url').'/wallet',
             ]);
     }
 }

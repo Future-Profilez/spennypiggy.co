@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -30,7 +30,7 @@ return new class extends Migration
                     'max_spend_24h' => 150000, // £1500.00
                     'max_spend_7d' => 300000,  // £3000.00
                     'max_creators_per_day' => 1,
-                    'guest_allowed' => false
+                    'guest_allowed' => false,
                 ]),
                 'description' => 'Global platform spending limits (NORMAL state)',
                 'created_at' => now(),
@@ -42,7 +42,7 @@ return new class extends Migration
                     'high_dispute_rate' => 0.01,  // 1%
                     'medium_dispute_rate' => 0.005, // 0.5%
                     'high_refund_rate' => 0.05,   // 5%
-                    'min_tx_count' => 10          // Minimum transactions to evaluate
+                    'min_tx_count' => 10,          // Minimum transactions to evaluate
                 ]),
                 'description' => 'Thresholds for automated risk classification',
                 'created_at' => now(),
@@ -56,12 +56,12 @@ return new class extends Migration
                     'medium_reserve_percent' => 10,
                     'medium_payout_delay' => 7,
                     'low_reserve_percent' => 0,
-                    'low_payout_delay' => 7
+                    'low_payout_delay' => 7,
                 ]),
                 'description' => 'Consequences applied to creators based on risk level',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 

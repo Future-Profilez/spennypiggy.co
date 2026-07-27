@@ -4,19 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
+use Ramsey\Uuid\Uuid;
 
 class UserCart extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $dates = ['deleted_at'];
+
     protected $fillable = [
-        "uuid",
-        "user_id",
+        'uuid',
+        'user_id',
         'device_id',
-        "owner_id",
-        "wish_item_id",
+        'owner_id',
+        'wish_item_id',
         'amount',
         'quantity',
         'tax',
@@ -25,16 +28,15 @@ class UserCart extends Model
         'anonymous',
         'is_subscribed',
         'country',
-        "status",
+        'status',
         'deleted_at',
     ];
 
-
-    protected $hidden   =   [
+    protected $hidden = [
 
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     public static function boot()
@@ -45,13 +47,13 @@ class UserCart extends Model
         // Revalidate cart count cache on change
         static::saved(function ($cart) {
             if ($cart->user_id) {
-                \Illuminate\Support\Facades\Cache::forget("user_cart_count_{$cart->user_id}");
+                Cache::forget("user_cart_count_{$cart->user_id}");
             }
         });
 
         static::deleted(function ($cart) {
             if ($cart->user_id) {
-                \Illuminate\Support\Facades\Cache::forget("user_cart_count_{$cart->user_id}");
+                Cache::forget("user_cart_count_{$cart->user_id}");
             }
         });
     }

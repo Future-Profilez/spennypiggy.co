@@ -15,7 +15,7 @@ return new class extends Migration
 
             Schema::table('monthly_charges', function (Blueprint $table) {
 
-                if (!Schema::hasColumn('monthly_charges', 'cancelled_at')) {
+                if (! Schema::hasColumn('monthly_charges', 'cancelled_at')) {
 
                     $table->timestamp('cancelled_at')
                         ->nullable()

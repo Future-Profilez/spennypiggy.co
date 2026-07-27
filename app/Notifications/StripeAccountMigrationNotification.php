@@ -3,9 +3,9 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class StripeAccountMigrationNotification extends Notification implements ShouldQueue
 {
@@ -34,7 +34,7 @@ class StripeAccountMigrationNotification extends Notification implements ShouldQ
         $username = $notifiable->username ?? 'Creator';
         $oldAccountId = $this->migrationResult['old_account_id'] ?? 'N/A';
         $newAccountId = $this->migrationResult['new_account_id'] ?? 'N/A';
-        
+
         return (new MailMessage)
             ->subject('🚀 Your Spenny Piggy Payment Account Has Been Upgraded!')
             ->greeting("Hello {$username}!")

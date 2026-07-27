@@ -17,4 +17,3 @@ class UkTaxSetting extends Model
         'additional_rate',
     ];
 }
-

@@ -36,6 +36,7 @@ class BackfillReserveReleasePayoutRecords extends Command
 
         if ($groups->isEmpty()) {
             $this->info('No released reserves with a linked payout found. Nothing to backfill.');
+
             return self::SUCCESS;
         }
 
@@ -51,13 +52,15 @@ class BackfillReserveReleasePayoutRecords extends Command
         foreach ($groups as $stripePayoutId => $fts) {
             if ($existing->has($stripePayoutId)) {
                 $skipped++;
+
                 continue;
             }
 
             $userId = $fts->first()->user_id;
             $creator = $userCache[$userId] ??= User::find($userId);
-            if (!$creator) {
+            if (! $creator) {
                 $skipped++;
+
                 continue;
             }
 
@@ -68,13 +71,15 @@ class BackfillReserveReleasePayoutRecords extends Command
 
             if ($amountMinor <= 0) {
                 $skipped++;
+
                 continue;
             }
 
-            $this->line("  {$creator->name}: {$stripePayoutId} → " . number_format($amountMinor / 100, 2) . " {$currency} ({$fts->count()} reserves)");
+            $this->line("  {$creator->name}: {$stripePayoutId} → ".number_format($amountMinor / 100, 2)." {$currency} ({$fts->count()} reserves)");
 
             if ($dryRun) {
                 $created++;
+
                 continue;
             }
 
@@ -102,7 +107,7 @@ class BackfillReserveReleasePayoutRecords extends Command
 
                 $created++;
             } catch (\Throwable $e) {
-                Log::error("reserve:backfill-payout-records — failed for {$stripePayoutId}: " . $e->getMessage());
+                Log::error("reserve:backfill-payout-records — failed for {$stripePayoutId}: ".$e->getMessage());
                 $skipped++;
             }
         }

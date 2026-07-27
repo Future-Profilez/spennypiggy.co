@@ -15,13 +15,13 @@ return new class extends Migration
             // payment_type: 'PAID_TASK', 'STANDARD'
             // PAID_TASK: Funds routed after completion/review
             // STANDARD: Immediate or standard routing
-            if (!Schema::hasColumn('task_purchases', 'payment_type')) {
+            if (! Schema::hasColumn('task_purchases', 'payment_type')) {
                 $table->string('payment_type')->default('STANDARD')->after('status');
             }
         });
 
         Schema::table('deliverables', function (Blueprint $table) {
-            if (!Schema::hasColumn('deliverables', 'payment_type')) {
+            if (! Schema::hasColumn('deliverables', 'payment_type')) {
                 $table->string('payment_type')->default('STANDARD')->after('payment_status');
             }
         });

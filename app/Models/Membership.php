@@ -23,6 +23,7 @@ class Membership extends Model
         'tax_amount',
         'thumbnail',
         'moderation_reason',
+        'moderation_asset',
         'rewards',
         // Memberships had no content file at all — only perk checkboxes, so a
         // supporter received nothing at the moment of purchase.

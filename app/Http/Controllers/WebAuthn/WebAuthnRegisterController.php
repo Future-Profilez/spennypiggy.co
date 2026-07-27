@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\WebAuthn;
 
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;  // Add this line!
+use Illuminate\Support\Facades\Log;
 use Laragear\WebAuthn\Http\Requests\AttestationRequest;
 use Laragear\WebAuthn\Http\Requests\AttestedRequest;
-use Illuminate\Support\Facades\Log;
 
 class WebAuthnRegisterController
 {
@@ -15,12 +14,12 @@ class WebAuthnRegisterController
         $options = $request
             ->secureRegistration()
             ->toCreate();
-            
+
         Log::info('WebAuthn registration options generated', [
             'options' => $options,
-            'user_id' => $request->user()?->id
+            'user_id' => $request->user()?->id,
         ]);
-        
+
         return $options;
     }
 
@@ -31,10 +30,10 @@ class WebAuthnRegisterController
             $credentialId = $request->input('id');
             $user = $request->user();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'User not authenticated'
+                    'error' => 'User not authenticated',
                 ], 401);
             }
 
@@ -61,7 +60,7 @@ class WebAuthnRegisterController
                 return response()->json([
                     'success' => true,
                     'message' => 'WebAuthn credential registered successfully',
-                    'credential_id' => $credential->id
+                    'credential_id' => $credential->id,
                 ]);
             }
 
@@ -70,7 +69,7 @@ class WebAuthnRegisterController
                 return response()->json([
                     'success' => false,
                     'error' => $saveResult,
-                    'message' => 'Registration failed - credential not saved'
+                    'message' => 'Registration failed - credential not saved',
                 ], 400);
             }
 
@@ -86,43 +85,59 @@ class WebAuthnRegisterController
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'WebAuthn credential registered successfully'
+                    'message' => 'WebAuthn credential registered successfully',
                 ]);
             }
 
             return response()->json([
                 'success' => false,
-                'error' => 'Unknown error occurred'
+                'error' => 'Unknown error occurred',
             ], 400);
         } catch (\Exception $e) {
             Log::error('WebAuthn registration error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'Registration failed: ' . $e->getMessage()
+                'error' => 'Registration failed: '.$e->getMessage(),
             ], 500);
         }
     }
 
     private function detectBrowser($agent)
     {
-        if (str_contains($agent, 'Chrome')) return 'Chrome';
-        if (str_contains($agent, 'Firefox')) return 'Firefox';
-        if (str_contains($agent, 'Safari')) return 'Safari';
-        if (str_contains($agent, 'Edge')) return 'Edge';
+        if (str_contains($agent, 'Chrome')) {
+            return 'Chrome';
+        }
+        if (str_contains($agent, 'Firefox')) {
+            return 'Firefox';
+        }
+        if (str_contains($agent, 'Safari')) {
+            return 'Safari';
+        }
+        if (str_contains($agent, 'Edge')) {
+            return 'Edge';
+        }
 
         return 'Unknown';
     }
 
     private function detectPlatform($agent)
     {
-        if (str_contains($agent, 'Windows')) return 'Windows';
-        if (str_contains($agent, 'Mac')) return 'MacOS';
-        if (str_contains($agent, 'Android')) return 'Android';
-        if (str_contains($agent, 'iPhone')) return 'iOS';
+        if (str_contains($agent, 'Windows')) {
+            return 'Windows';
+        }
+        if (str_contains($agent, 'Mac')) {
+            return 'MacOS';
+        }
+        if (str_contains($agent, 'Android')) {
+            return 'Android';
+        }
+        if (str_contains($agent, 'iPhone')) {
+            return 'iOS';
+        }
 
         return 'Unknown';
     }

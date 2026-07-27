@@ -5,4 +5,3 @@ return [
         ? ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com']
         : ['naveen@internetbusinesssolutionsindia.com'],
 ];
-

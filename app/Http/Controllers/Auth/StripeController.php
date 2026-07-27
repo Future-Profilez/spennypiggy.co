@@ -4138,55 +4138,55 @@ class StripeController extends Controller
             return to_route('user.show', ['username' => $user->username])
                 ->with('info', 'An existing subscription was found on Stripe but it requires attention (e.g. payment failed). Please check your Stripe billing or contact support.');
         } else {
-                // No active subscription on Stripe — check if local record is still in its paid/trial window
-                $canceledButActive = MonthlyCharge::where('user_id', $user->id)
-                    ->where('status', 'canceled')
-                    ->where(function ($q) use ($now) {
-                        $q->where(function ($q2) use ($now) {
-                            $q2->whereNotNull('current_end_subscription_date')
-                                ->whereDate('current_end_subscription_date', '>=', $now);
-                        })->orWhere(function ($q2) use ($now) {
-                            $q2->whereNotNull('current_end_trial_date')
-                                ->whereDate('current_end_trial_date', '>=', $now);
-                        });
-                    })
-                    ->latest()
-                    ->first();
+            // No active subscription on Stripe — check if local record is still in its paid/trial window
+            $canceledButActive = MonthlyCharge::where('user_id', $user->id)
+                ->where('status', 'canceled')
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                        $q2->whereNotNull('current_end_subscription_date')
+                            ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function ($q2) use ($now) {
+                        $q2->whereNotNull('current_end_trial_date')
+                            ->whereDate('current_end_trial_date', '>=', $now);
+                    });
+                })
+                ->latest()
+                ->first();
 
-                if ($canceledButActive) {
-                    $date = $canceledButActive->current_end_subscription_date
-                        ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
-                        : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+            if ($canceledButActive) {
+                $date = $canceledButActive->current_end_subscription_date
+                    ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                    : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
 
-                    $date = $canceledButActive->current_end_subscription_date
-                        ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
-                        : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
+                $date = $canceledButActive->current_end_subscription_date
+                    ? Carbon::parse($canceledButActive->current_end_subscription_date)->format('d M Y')
+                    : Carbon::parse($canceledButActive->current_end_trial_date)->format('d M Y');
 
-                    $infoMessage = "Your subscription is active until {$date}. You can renew after that date.";
+                $infoMessage = "Your subscription is active until {$date}. You can renew after that date.";
 
-                    return redirect(
-                        route('user.show', [
-                            'username' => $user->username,
-                        ]).'#profile'
-                    )->with('info', $infoMessage);
-                }
-
-                // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
-                $existingActive = MonthlyCharge::where('user_id', $user->id)
-                    ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
-                    ->whereNotNull('current_end_subscription_date')
-                    ->whereDate('current_end_subscription_date', '>=', $now)
-                    ->latest()
-                    ->first();
-
-                if ($existingActive) {
-                    // Stripe says no subscription, but local DB says active — DB is stale, allow re-subscription
-                    $existingActive->status = 'canceled';
-                    $existingActive->cancelled_at = $now;
-                    $existingActive->upcoming_payment = null;
-                    $existingActive->save();
-                }
+                return redirect(
+                    route('user.show', [
+                        'username' => $user->username,
+                    ]).'#profile'
+                )->with('info', $infoMessage);
             }
+
+            // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
+            $existingActive = MonthlyCharge::where('user_id', $user->id)
+                ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+                ->whereNotNull('current_end_subscription_date')
+                ->whereDate('current_end_subscription_date', '>=', $now)
+                ->latest()
+                ->first();
+
+            if ($existingActive) {
+                // Stripe says no subscription, but local DB says active — DB is stale, allow re-subscription
+                $existingActive->status = 'canceled';
+                $existingActive->cancelled_at = $now;
+                $existingActive->upcoming_payment = null;
+                $existingActive->save();
+            }
+        }
 
         $currency = strtolower($request->cookie('currency', 'GBP'));
         $price = 8.99;

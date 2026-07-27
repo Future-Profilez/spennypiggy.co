@@ -28,6 +28,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -94,6 +95,21 @@ class MembershipController extends Controller
             Membership::class,
             $mem->id,
             $mem->thumbnail,
+            ['approved' => 0],
+            'thumbnail'
+        );
+    }
+
+    /** Text half of the gate — a level's reward can be a written message or a link. */
+    private function moderateMembershipText(?Membership $mem): void
+    {
+        if (! $mem) {
+            return;
+        }
+
+        ItemTextModeration::apply(
+            $mem,
+            ['reward_title', 'reward_body', 'reward_description'],
             ['approved' => 0]
         );
     }
@@ -218,6 +234,7 @@ class MembershipController extends Controller
         $mem->save();
 
         $this->moderateMembership($mem);
+        $this->moderateMembershipText($mem);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -356,6 +373,7 @@ class MembershipController extends Controller
                 $mem->save();
 
                 $this->moderateMembership($mem, $previousThumbnail);
+                $this->moderateMembershipText($mem);
 
                 $stripe = new StripeClient(config('services.stripe.secret'));
                 $connectedAccountId = $user->account_id;

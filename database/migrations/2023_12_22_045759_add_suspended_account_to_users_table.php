@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('users', 'suspended_account')) {
+        if (! Schema::hasColumn('users', 'suspended_account')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->integer('suspended_account')->default(0)->after('charges_enabled');
             });

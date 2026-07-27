@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import axios from 'axios';
+import { useState } from "react";
+import useBundleSection from './useBundle';
 import Avatar from '@/includes/Avatar';
 import PriceFormat from '@/includes/PriceFormat';
 import { RiHeartLine, RiGiftLine, RiShoppingBagLine, RiBankCardLine, RiGroupLine, RiStarLine } from 'react-icons/ri';
@@ -7,37 +7,19 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function CategoryLeaders() {
     const { formatMultiPrice } = PriceFormat();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('wishes');
-    const [data, setData] = useState({
+    // Shared with every other panel on the page — one request, not seven.
+    const { data: section, loading, error, retry: fetchCategoryData } = useBundleSection('category_leaders');
+
+    const data = {
         wishes: [],
         subscriptions: [],
         tips: [],
         memberships: [],
         bills: [],
-        shop: []
-    });
-
-    const fetchCategoryData = () => {
-        setLoading(true);
-        setError(null);
-        axios.get('leaderboard/category-leaders')
-            .then((response) => {
-                setData(response.data.data);
-            })
-            .catch((error) => {
-                console.error("Error fetching category leaders:", error);
-                setError("Failed to load category leaders. Please try again.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+        shop: [],
+        ...(section?.data || {}),
     };
-
-    useEffect(() => {
-        fetchCategoryData();
-    }, []);
 
     const categories = [
         { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-[#FF007F]' },
@@ -49,7 +31,7 @@ export default function CategoryLeaders() {
     ];
 
     const CategoryItem = ({ creator, rank }) => (
-        <div className="animate-fading category-item relative bg-white rounded-[30px]   p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="animate-fading category-item relative bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-3 mb-3">
             <div className="flex items-center justify-between">
                 <div className="flex items-center ">
                     <div className="absolute top-2 left-2 z-10 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
@@ -101,7 +83,7 @@ export default function CategoryLeaders() {
 
     if (loading) {
         return (
-            <div className="animate-fading bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center min-h-[400px]">
+            <div className="animate-fading bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center min-h-[400px]">
                 <svg className="animate-spin h-8 w-8 text-[#FF007F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -113,7 +95,7 @@ export default function CategoryLeaders() {
 
     if (error) {
         return (
-            <div className="animate-fading bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
+            <div className="animate-fading bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -131,8 +113,8 @@ export default function CategoryLeaders() {
     const currentData = data[activeTab] || [];
 
     return (
-        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 mt-6">
-            <h2 className="animate-fading font-GillSans text-2xl uppercase text-gray-900 text-left mb-2">🏆 Category Leaders Creators</h2>
+        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 mt-6">
+            <h2 className="animate-fading text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-2">🏆 Category Leaders Creators</h2>
             <p className="animate-fading text-gray-500 mb-6 ">Top performers in each category</p>
 
             {/* Category Tabs */}
@@ -144,10 +126,10 @@ export default function CategoryLeaders() {
                             <button
                                 key={category.key}
                                 onClick={() => setActiveTab(category.key)}
-                                className={`animate-fading category-tab flex items-center space-x-2 px-4 py-2 rounded-[30px]    font-medium transition-all ${
+                                className={`animate-fading category-tab flex min-h-[44px] items-center space-x-2 rounded-full px-4 py-2 text-13 font-semibold transition-colors ${
                                     activeTab === category.key
-                                        ? 'bg-white shadow-md text-gray-900'
-                                        : 'text-gray-600 hover:bg-white/50'
+                                        ? 'bg-[#0B0B0C] text-white'
+                                        : 'text-black/55 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/25'
                                 }`}
                             >
                                 <Icon size={16} className={category.color} />

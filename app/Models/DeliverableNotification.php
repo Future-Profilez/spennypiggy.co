@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class DeliverableNotification extends Model
 {
@@ -22,22 +22,22 @@ class DeliverableNotification extends Model
         'message',
         'status',
         'sent_at',
-        'metadata'
+        'metadata',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
-        'metadata' => 'array'
+        'metadata' => 'array',
     ];
 
     protected $dates = [
-        'sent_at'
+        'sent_at',
     ];
 
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
@@ -71,12 +71,12 @@ class DeliverableNotification extends Model
             'user_id' => $deliverable->buyer_id,
             'notification_type' => 'purchase_confirmation',
             'channel' => 'email',
-            'subject' => 'Purchase Confirmation - ' . $deliverable->product_type_display,
+            'subject' => 'Purchase Confirmation - '.$deliverable->product_type_display,
             'message' => "Thank you for your purchase! Your {$deliverable->product_type_display} order has been confirmed.",
             'metadata' => [
                 'transaction_id' => $deliverable->transaction_id,
-                'product_type' => $deliverable->product_type
-            ]
+                'product_type' => $deliverable->product_type,
+            ],
         ]);
     }
 
@@ -86,7 +86,7 @@ class DeliverableNotification extends Model
     public static function createDeliverablePending(Deliverable $deliverable): self
     {
         $timeRemaining = $deliverable->time_remaining ?? 'soon';
-        
+
         return self::create([
             'deliverable_id' => $deliverable->id,
             'user_id' => $deliverable->buyer_id,
@@ -96,8 +96,8 @@ class DeliverableNotification extends Model
             'message' => "Your {$deliverable->product_type_display} is being prepared by the creator. Expected delivery: {$timeRemaining}.",
             'metadata' => [
                 'sla_deadline' => $deliverable->sla_deadline,
-                'creator_name' => $deliverable->creator->name ?? 'Creator'
-            ]
+                'creator_name' => $deliverable->creator->name ?? 'Creator',
+            ],
         ]);
     }
 
@@ -115,8 +115,8 @@ class DeliverableNotification extends Model
             'message' => "Great news! Your {$deliverable->product_type_display} has been delivered and is ready for download.",
             'metadata' => [
                 'deliverable_url' => $deliverable->deliverable_url,
-                'receipt_url' => $deliverable->receipt_url
-            ]
+                'receipt_url' => $deliverable->receipt_url,
+            ],
         ]);
     }
 
@@ -126,7 +126,7 @@ class DeliverableNotification extends Model
     public static function createSlaWarning(Deliverable $deliverable): self
     {
         $timeRemaining = $deliverable->time_remaining ?? 'soon';
-        
+
         return self::create([
             'deliverable_id' => $deliverable->id,
             'user_id' => $deliverable->creator_id,
@@ -136,8 +136,8 @@ class DeliverableNotification extends Model
             'message' => "You have a pending deliverable that needs to be uploaded within {$timeRemaining}. Please upload it to avoid penalties.",
             'metadata' => [
                 'sla_deadline' => $deliverable->sla_deadline,
-                'buyer_name' => $deliverable->buyer->name ?? 'Buyer'
-            ]
+                'buyer_name' => $deliverable->buyer->name ?? 'Buyer',
+            ],
         ]);
     }
 
@@ -156,8 +156,8 @@ class DeliverableNotification extends Model
             'metadata' => [
                 'violation_id' => $violation->id,
                 'penalty' => $violation->penalty_applied,
-                'penalty_end_date' => $violation->penalty_end_date
-            ]
+                'penalty_end_date' => $violation->penalty_end_date,
+            ],
         ]);
     }
 
@@ -177,8 +177,8 @@ class DeliverableNotification extends Model
                 'violation_id' => $violation->id,
                 'penalty' => $violation->penalty_applied,
                 'penalty_start_date' => $violation->penalty_start_date,
-                'penalty_end_date' => $violation->penalty_end_date
-            ]
+                'penalty_end_date' => $violation->penalty_end_date,
+            ],
         ]);
     }
 
@@ -189,7 +189,7 @@ class DeliverableNotification extends Model
     {
         $this->update([
             'status' => 'sent',
-            'sent_at' => Carbon::now()
+            'sent_at' => Carbon::now(),
         ]);
     }
 
@@ -199,7 +199,7 @@ class DeliverableNotification extends Model
     public function markAsFailed(): void
     {
         $this->update([
-            'status' => 'failed'
+            'status' => 'failed',
         ]);
     }
 

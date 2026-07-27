@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid();
             $table->foreignIdFor(User::class);
             $table->string('twitter_id')->nullable();
-            $table->string("username")->nullable();
+            $table->string('username')->nullable();
             $table->string('token')->nullable();
             $table->string('secret')->nullable();
             $table->string('refresh_token')->nullable();

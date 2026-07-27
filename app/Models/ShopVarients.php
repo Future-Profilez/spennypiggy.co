@@ -25,7 +25,7 @@ class ShopVarients extends Model
         'shop_id',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     public static function boot()
@@ -34,7 +34,8 @@ class ShopVarients extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
-    public function shop(){
-        return $this->belongsTo(Shop::class,'shop_id');
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 }

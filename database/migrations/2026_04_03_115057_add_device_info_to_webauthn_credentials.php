@@ -42,7 +42,7 @@ return new class extends Migration
                 'platform',
                 'ip_address',
                 'user_agent',
-                'last_used_at'
+                'last_used_at',
 
             ]);
         });

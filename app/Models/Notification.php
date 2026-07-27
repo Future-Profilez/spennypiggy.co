@@ -19,7 +19,7 @@ class Notification extends Model
         'notification',
         'is_read',
         'target_id',
-        'module'
+        'module',
     ];
 
     protected $hidden = [
@@ -39,10 +39,11 @@ class Notification extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function notifiable(){
-        return $this->belongsTo(User::class,'notifiable_id');
+    public function notifiable()
+    {
+        return $this->belongsTo(User::class, 'notifiable_id');
     }
 }

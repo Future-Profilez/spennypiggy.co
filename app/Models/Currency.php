@@ -10,7 +10,7 @@ class Currency extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable =   [
+    protected $fillable = [
         'ISO',
         'conversion_rate',
         'name',
@@ -26,11 +26,11 @@ class Currency extends Model
         'numToBasic',
     ];
 
-    protected $hidden   =   [
+    protected $hidden = [
         'id',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     /**
@@ -48,7 +48,7 @@ class Currency extends Model
     /**
      * Get Currency Symbol like USD => $
      *
-     * @param $type symbol or symbolNative
+     * @param  $type  symbol or symbolNative
      * @return array
      */
     public static function symbols($type = 'symbolNative')

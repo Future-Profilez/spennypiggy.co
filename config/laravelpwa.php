@@ -1,6 +1,7 @@
 <?php
+
 return [
-   'manifest' => [
+    'manifest' => [
         'name' => 'Spenny Piggy',
         'short_name' => 'Spenny Piggy',
         'start_url' => '/',
@@ -12,35 +13,35 @@ return [
         'icons' => [
             '72x72' => [
                 'path' => '/favicon-32x32.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '96x96' => [
                 'path' => '/favicon-32x32.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '128x128' => [
                 'path' => '/android-chrome-192x192.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '144x144' => [
                 'path' => '/android-chrome-192x192.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '152x152' => [
                 'path' => '/android-chrome-192x192.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '192x192' => [
                 'path' => '/android-chrome-192x192.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '384x384' => [
                 'path' => '/android-chrome-192x192.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
             '512x512' => [
                 'path' => '/android-chrome-512x512.png',
-                'purpose' => 'any'
+                'purpose' => 'any',
             ],
         ],
         'splash' => [
@@ -61,12 +62,11 @@ return [
                 'description' => 'Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!',
                 'url' => '/',
                 'icons' => [
-                    "src" => "/favicon-32x32.png",
-                    "purpose" => "any"
-                ]
-            ]
+                    'src' => '/favicon-32x32.png',
+                    'purpose' => 'any',
+                ],
+            ],
         ],
-        'custom' => []
-    ]
+        'custom' => [],
+    ],
 ];
-      

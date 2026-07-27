@@ -3,24 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Mail;
-use App\StripeControl;
-use App\Models\User;
-use App\Models\WishItem;
 use App\Models\Bills;
-use App\Models\Membership;
-use App\Models\Shop;
-use App\Models\Task;
-use App\Models\UserCart;
-use App\Models\Follow;
-use App\Models\FinancialTransaction;
-use App\Models\ReferralCode;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
+use App\Models\FinancialTransaction;
+use App\Models\Follow;
+use App\Models\Membership;
+use App\Models\ReferralCode;
+use App\Models\Shop;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\UserCart;
+use App\Models\WishItem;
+use App\Services\IntercomService;
+use App\Services\MagicBellService;
+use App\StripeControl;
+use App\Uploadcare;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 class SystemDiagnosticsController extends Controller
@@ -99,11 +102,11 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $errors = [];
-            
+
             // 1. Check all registered routes
-            $routes = \Illuminate\Support\Facades\Route::getRoutes();
+            $routes = Route::getRoutes();
             $routeCount = 0;
-            
+
             foreach ($routes as $route) {
                 $action = $route->getAction();
                 if (isset($action['controller'])) {
@@ -111,10 +114,10 @@ class SystemDiagnosticsController extends Controller
                     if (count($controllerAction) === 2) {
                         $controller = $controllerAction[0];
                         $method = $controllerAction[1];
-                        
-                        if (!class_exists($controller) && !interface_exists($controller)) {
+
+                        if (! class_exists($controller) && ! interface_exists($controller)) {
                             $errors[] = "Missing controller: {$controller}";
-                        } elseif (!method_exists($controller, $method)) {
+                        } elseif (! method_exists($controller, $method)) {
                             $errors[] = "Missing method: {$method} in {$controller}";
                         }
                     }
@@ -128,52 +131,54 @@ class SystemDiagnosticsController extends Controller
                 app_path('Http/Controllers'),
                 app_path('Models'),
             ];
-            
+
             $fileCount = 0;
             foreach ($directories as $dir) {
-                if (!is_dir($dir)) continue;
+                if (! is_dir($dir)) {
+                    continue;
+                }
                 $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'php') {
                         $fileCount++;
                         $output = [];
                         $returnVar = 0;
-                        
+
                         // In web requests, PHP_BINARY can point to php-fpm; lint must run via CLI php.
                         $phpBinary = $this->resolvePhpCliBinary();
-                        exec(escapeshellarg($phpBinary) . ' -l ' . escapeshellarg($file->getPathname()) . ' 2>&1', $output, $returnVar);
-                        
+                        exec(escapeshellarg($phpBinary).' -l '.escapeshellarg($file->getPathname()).' 2>&1', $output, $returnVar);
+
                         if ($returnVar !== 0) {
-                            $errorOutput = implode(" ", $output);
+                            $errorOutput = implode(' ', $output);
                             // Clean up standard php -l output
-                            $errorOutput = str_replace("Errors parsing", "", $errorOutput);
-                            $errors[] = "Syntax error in " . $file->getFilename() . ": " . trim($errorOutput);
+                            $errorOutput = str_replace('Errors parsing', '', $errorOutput);
+                            $errors[] = 'Syntax error in '.$file->getFilename().': '.trim($errorOutput);
                         }
                     }
                 }
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
-            
+
             if (count($errors) > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => count($errors) . ' syntax/route errors found. Please check the details.',
+                    'message' => count($errors).' syntax/route errors found. Please check the details.',
                     'errors' => $errors,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
-            
+
             return [
                 'status' => 'passed',
                 'message' => "Successfully verified {$routeCount} routes and checked syntax of {$fileCount} PHP files.",
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Syntax check failed: ' . $e->getMessage()
+                'message' => 'Syntax check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -184,16 +189,16 @@ class SystemDiagnosticsController extends Controller
             $start = microtime(true);
             DB::select('SELECT 1');
             $time = round((microtime(true) - $start) * 1000, 2);
-            
+
             return [
                 'status' => 'passed',
                 'message' => 'Connected successfully',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Connection failed: ' . $e->getMessage(),
+                'message' => 'Connection failed: '.$e->getMessage(),
             ];
         }
     }
@@ -226,7 +231,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'passed',
                     'message' => 'Cache read/write successful',
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             } else {
                 return [
@@ -237,7 +242,7 @@ class SystemDiagnosticsController extends Controller
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Cache error: ' . $e->getMessage(),
+                'message' => 'Cache error: '.$e->getMessage(),
             ];
         }
     }
@@ -255,7 +260,7 @@ class SystemDiagnosticsController extends Controller
                     'username' => 'diag_'.time(),
                     'email' => 'diag_'.time().'@example.com',
                     'password' => bcrypt('password123!'),
-                    'role' => 1
+                    'role' => 1,
                 ]);
                 $success = $user->exists;
             } catch (\Exception $e) {
@@ -270,7 +275,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'passed',
                     'message' => 'User creation flow tested successfully (rolled back).',
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             } else {
                 return [
@@ -281,7 +286,7 @@ class SystemDiagnosticsController extends Controller
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Signup flow check failed: ' . $e->getMessage(),
+                'message' => 'Signup flow check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -290,7 +295,7 @@ class SystemDiagnosticsController extends Controller
     {
         try {
             $start = microtime(true);
-            
+
             // Create a test connected account
             $account = StripeControl::createAccount([
                 'type' => 'express',
@@ -305,8 +310,8 @@ class SystemDiagnosticsController extends Controller
             // Attempt to create an account link (the ID verification flow step)
             $link = StripeControl::createAccountLink([
                 'account' => $account->id,
-                'refresh_url' => config('app.url') . '/return-test',
-                'return_url' => config('app.url') . '/return-test',
+                'refresh_url' => config('app.url').'/return-test',
+                'return_url' => config('app.url').'/return-test',
                 'type' => 'account_onboarding',
             ]);
 
@@ -319,7 +324,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'passed',
                     'message' => 'Stripe Connect Account & ID Onboarding link created successfully.',
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -331,7 +336,7 @@ class SystemDiagnosticsController extends Controller
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Stripe ID flow failed: ' . $e->getMessage(),
+                'message' => 'Stripe ID flow failed: '.$e->getMessage(),
             ];
         }
     }
@@ -340,9 +345,9 @@ class SystemDiagnosticsController extends Controller
     {
         try {
             $start = microtime(true);
-            
+
             $client = StripeControl::getClient();
-            
+
             // Create a test payment intent
             $pi = $client->paymentIntents->create([
                 'amount' => 500, // £5.00
@@ -358,13 +363,13 @@ class SystemDiagnosticsController extends Controller
             return [
                 'status' => 'passed',
                 'message' => 'Stripe Payment Intent created and cancelled successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
 
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Stripe Payments check failed: ' . $e->getMessage(),
+                'message' => 'Stripe Payments check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -373,7 +378,7 @@ class SystemDiagnosticsController extends Controller
     {
         try {
             $start = microtime(true);
-            
+
             // We won't actually send an email, but we will test the SMTP/API connection
             $driver = config('mail.default');
             $status = 'warning';
@@ -388,18 +393,18 @@ class SystemDiagnosticsController extends Controller
                 $status = 'failed';
                 $message = "Email driver $driver is not properly configured.";
             }
-            
+
             $time = round((microtime(true) - $start) * 1000, 2);
 
             return [
                 'status' => $status,
                 'message' => $message,
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Email configuration check failed: ' . $e->getMessage(),
+                'message' => 'Email configuration check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -411,29 +416,29 @@ class SystemDiagnosticsController extends Controller
             $apiKey = env('MAGICBELL_API_KEY');
             $apiSecret = env('MAGICBELL_API_SECRET');
 
-            if (!$apiKey || !$apiSecret) {
+            if (! $apiKey || ! $apiSecret) {
                 return [
                     'status' => 'failed',
                     'message' => 'MagicBell credentials are missing in environment configuration.',
-                    'time_ms' => 0
+                    'time_ms' => 0,
                 ];
             }
 
             // We make a lightweight ping request to MagicBell to verify credentials
             // (Note: there isn't a direct ping, so we check the project info or just skip actual dispatching)
             // But we can test if the service class instantiates correctly.
-            $service = new \App\Services\MagicBellService();
+            $service = new MagicBellService;
             $time = round((microtime(true) - $start) * 1000, 2);
 
             return [
                 'status' => 'passed',
                 'message' => 'MagicBell Push Notification service is configured and ready.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Push notification check failed: ' . $e->getMessage(),
+                'message' => 'Push notification check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -445,27 +450,27 @@ class SystemDiagnosticsController extends Controller
             $publicKey = env('UPLOADCARE_PUBLIC_KEY');
             $secretKey = env('UPLOADCARE_SECRET_KEY');
 
-            if (!$publicKey || !$secretKey) {
+            if (! $publicKey || ! $secretKey) {
                 return [
                     'status' => 'failed',
                     'message' => 'Uploadcare credentials are missing in environment configuration.',
-                    'time_ms' => 0
+                    'time_ms' => 0,
                 ];
             }
 
             // Test API object creation
-            $api = \App\Uploadcare::getApiObj();
+            $api = Uploadcare::getApiObj();
             $time = round((microtime(true) - $start) * 1000, 2);
 
             return [
                 'status' => 'passed',
                 'message' => 'Uploadcare (Image Hosting) is configured and API initialized successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Uploadcare check failed: ' . $e->getMessage(),
+                'message' => 'Uploadcare check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -475,7 +480,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found to test wish items.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found to test wish items.'];
+            }
 
             DB::beginTransaction();
             try {
@@ -486,15 +493,15 @@ class SystemDiagnosticsController extends Controller
                     'price' => 100,
                     'currency' => 'GBP',
                     'is_approved' => true,
-                    'subscription' => 0 // Added to fix 1364 error
+                    'subscription' => 0, // Added to fix 1364 error
                 ]);
-                
+
                 // Edit
                 $item->update(['wishname' => 'Diagnostic Test Item Updated']);
-                
+
                 // Disable (assuming status or soft delete)
                 $item->delete(); // Soft delete as per model
-                
+
                 // Restore & Hard Delete for cleanup if needed, but we are in transaction
                 $success = true;
             } finally {
@@ -502,13 +509,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Wish item Add, Edit, and Delete (soft) tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Wish item test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Wish item test failed: '.$e->getMessage()];
         }
     }
 
@@ -517,7 +525,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found to test bills.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found to test bills.'];
+            }
 
             DB::beginTransaction();
             try {
@@ -527,7 +537,7 @@ class SystemDiagnosticsController extends Controller
                     'price' => 50,
                     'currency' => 'GBP',
                     'status' => 1,
-                    'period' => 'monthly'
+                    'period' => 'monthly',
                 ]);
                 $bill->update(['name' => 'Diagnostic Bill Updated']);
                 $bill->delete();
@@ -536,13 +546,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Bills Add, Edit, and Delete tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Bills test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Bills test failed: '.$e->getMessage()];
         }
     }
 
@@ -551,7 +562,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found to test memberships.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found to test memberships.'];
+            }
 
             DB::beginTransaction();
             try {
@@ -561,7 +574,7 @@ class SystemDiagnosticsController extends Controller
                     'price' => 10,
                     'currency' => 'GBP',
                     'status' => 1,
-                    'rewards' => 'Diagnostic rewards' // Added to fix 1364 error
+                    'rewards' => 'Diagnostic rewards', // Added to fix 1364 error
                 ]);
                 $membership->update(['level' => 'silver']);
                 $membership->delete();
@@ -570,13 +583,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Memberships Add, Edit, and Delete tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Memberships test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Memberships test failed: '.$e->getMessage()];
         }
     }
 
@@ -585,7 +599,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found to test shop items.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found to test shop items.'];
+            }
 
             DB::beginTransaction();
             try {
@@ -595,7 +611,7 @@ class SystemDiagnosticsController extends Controller
                     'price' => 25,
                     'currency' => 'GBP',
                     'status' => 1,
-                    'type' => 'digital'
+                    'type' => 'digital',
                 ]);
                 $shop->update(['name' => 'Diagnostic Shop Item Updated']);
                 $shop->delete();
@@ -604,13 +620,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Shop items Add, Edit, and Delete tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Shop items test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Shop items test failed: '.$e->getMessage()];
         }
     }
 
@@ -619,7 +636,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found to test tasks.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found to test tasks.'];
+            }
 
             DB::beginTransaction();
             try {
@@ -629,7 +648,7 @@ class SystemDiagnosticsController extends Controller
                     'price' => 20,
                     'status' => 1,
                     'category' => 'Diagnostic',
-                    'type' => 'digital'
+                    'type' => 'digital',
                 ]);
                 $task->update(['title' => 'Diagnostic Task Updated']);
                 $task->delete();
@@ -638,13 +657,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Tasks Add, Edit, and Delete tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Tasks test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Tasks test failed: '.$e->getMessage()];
         }
     }
 
@@ -654,8 +674,8 @@ class SystemDiagnosticsController extends Controller
             $start = microtime(true);
             $user = User::first();
             $wishItem = WishItem::first();
-            
-            if (!$user || !$wishItem) {
+
+            if (! $user || ! $wishItem) {
                 return ['status' => 'warning', 'message' => 'Missing user or wish item for cart test.'];
             }
 
@@ -667,7 +687,7 @@ class SystemDiagnosticsController extends Controller
                     'wish_item_id' => $wishItem->id,
                     'amount' => $wishItem->price,
                     'quantity' => 1,
-                    'status' => 1
+                    'status' => 1,
                 ]);
                 $cart->delete();
             } finally {
@@ -675,13 +695,14 @@ class SystemDiagnosticsController extends Controller
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Add to cart flow tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Cart flow test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Cart flow test failed: '.$e->getMessage()];
         }
     }
 
@@ -702,25 +723,26 @@ class SystemDiagnosticsController extends Controller
                 // Follow
                 Follow::create([
                     'follower_id' => $follower->id,
-                    'followed_id' => $followed->id
+                    'followed_id' => $followed->id,
                 ]);
-                
+
                 // Unfollow
                 Follow::where('follower_id', $follower->id)
-                      ->where('followed_id', $followed->id)
-                      ->delete();
+                    ->where('followed_id', $followed->id)
+                    ->delete();
             } finally {
                 DB::rollBack();
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Follow/Unfollow functionality tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Social flow test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Social flow test failed: '.$e->getMessage()];
         }
     }
 
@@ -729,7 +751,9 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $user = User::first();
-            if (!$user) return ['status' => 'warning', 'message' => 'No user found for profile update test.'];
+            if (! $user) {
+                return ['status' => 'warning', 'message' => 'No user found for profile update test.'];
+            }
 
             $oldBio = $user->bio;
 
@@ -739,20 +763,21 @@ class SystemDiagnosticsController extends Controller
                     'bio' => 'Diagnostic test bio update',
                     'name' => 'Diagnostic Test User',
                     'avatar' => '901c0a0e-e5de-4d7a-8ac3-de11a4632542', // Sample UUID
-                    'cover' => '901c0a0e-e5de-4d7a-8ac3-de11a4632542'
+                    'cover' => '901c0a0e-e5de-4d7a-8ac3-de11a4632542',
                 ]);
             } finally {
                 DB::rollBack();
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Profile update (Bio, Name) tested successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Profile update test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Profile update test failed: '.$e->getMessage()];
         }
     }
 
@@ -760,21 +785,22 @@ class SystemDiagnosticsController extends Controller
     {
         try {
             $start = microtime(true);
-            
+
             // Test user search
             $users = User::where('username', 'like', '%admin%')->limit(1)->get();
-            
+
             // Test wish item search
             $items = WishItem::where('wishname', 'like', '%test%')->limit(1)->get();
 
             $time = round((microtime(true) - $start) * 1000, 2);
+
             return [
                 'status' => 'passed',
                 'message' => 'Database search queries for users and items executed successfully.',
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Search engine test failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Search engine test failed: '.$e->getMessage()];
         }
     }
 
@@ -785,27 +811,27 @@ class SystemDiagnosticsController extends Controller
             $appId = config('services.intercom.app_id');
             $enabled = config('services.intercom.enabled');
 
-            if (!$appId) {
+            if (! $appId) {
                 return [
                     'status' => 'warning',
                     'message' => 'Intercom App ID is not configured.',
-                    'time_ms' => 0
+                    'time_ms' => 0,
                 ];
             }
 
-            $service = new \App\Services\IntercomService();
+            $service = new IntercomService;
             $settings = $service->buildSettings(null); // Anonymous user settings
             $time = round((microtime(true) - $start) * 1000, 2);
 
             return [
                 'status' => $enabled ? 'passed' : 'warning',
-                'message' => 'Intercom integration is configured. (Enabled: ' . ($enabled ? 'Yes' : 'No') . ')',
-                'time_ms' => $time
+                'message' => 'Intercom integration is configured. (Enabled: '.($enabled ? 'Yes' : 'No').')',
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Intercom check failed: ' . $e->getMessage(),
+                'message' => 'Intercom check failed: '.$e->getMessage(),
             ];
         }
     }
@@ -820,7 +846,7 @@ class SystemDiagnosticsController extends Controller
             $failedJobsCount = DB::table('failed_jobs')->count();
             if ($failedJobsCount > 0) {
                 $latestFailed = DB::table('failed_jobs')->orderByDesc('failed_at')->first();
-                $issues[] = "{$failedJobsCount} failed job(s) in queue. Latest: " . ($latestFailed ? substr($latestFailed->exception, 0, 100) : 'unknown');
+                $issues[] = "{$failedJobsCount} failed job(s) in queue. Latest: ".($latestFailed ? substr($latestFailed->exception, 0, 100) : 'unknown');
             }
 
             // Check pending jobs stuck for > 10 minutes
@@ -840,9 +866,9 @@ class SystemDiagnosticsController extends Controller
             if (count($issues) > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => 'Queue issues detected. Failed: ' . $failedJobsCount . ', Pending: ' . $pendingJobs,
+                    'message' => 'Queue issues detected. Failed: '.$failedJobsCount.', Pending: '.$pendingJobs,
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -850,12 +876,12 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => "Queue is healthy. Pending jobs: {$pendingJobs}, Failed jobs: 0.",
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'warning',
-                'message' => 'Queue check skipped (table may not exist): ' . $e->getMessage(),
+                'message' => 'Queue check skipped (table may not exist): '.$e->getMessage(),
             ];
         }
     }
@@ -866,8 +892,8 @@ class SystemDiagnosticsController extends Controller
             $start = microtime(true);
             $logPath = storage_path('logs/laravel.log');
 
-            if (!file_exists($logPath)) {
-                return ['status' => 'warning', 'message' => 'Log file not found at ' . $logPath, 'time_ms' => 0];
+            if (! file_exists($logPath)) {
+                return ['status' => 'warning', 'message' => 'Log file not found at '.$logPath, 'time_ms' => 0];
             }
 
             // Read last 300 lines efficiently
@@ -878,7 +904,7 @@ class SystemDiagnosticsController extends Controller
             $startLine = max(0, $totalLines - 300);
 
             $file->seek($startLine);
-            while (!$file->eof()) {
+            while (! $file->eof()) {
                 $lines[] = $file->current();
                 $file->next();
             }
@@ -889,7 +915,7 @@ class SystemDiagnosticsController extends Controller
             $today = now()->format('Y-m-d');
 
             foreach ($lines as $line) {
-                if (preg_match('/\[('. $today . '|' . $yesterday . ')/', $line) &&
+                if (preg_match('/\[('.$today.'|'.$yesterday.')/', $line) &&
                     preg_match('/\.(ERROR|CRITICAL|ALERT|EMERGENCY)/i', $line)) {
                     $errorLines[] = trim($line);
                 }
@@ -900,7 +926,7 @@ class SystemDiagnosticsController extends Controller
             $seen = [];
             foreach ($errorLines as $err) {
                 $key = substr($err, 0, 100);
-                if (!in_array($key, $seen)) {
+                if (! in_array($key, $seen)) {
                     $seen[] = $key;
                     $unique[] = $err;
                 }
@@ -915,7 +941,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => "{$errorCount} unique error(s) found in logs (last 24 hours). Review below.",
                     'errors' => $unique,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -923,10 +949,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => 'No ERROR/CRITICAL entries in logs in the last 24 hours.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'warning', 'message' => 'Could not read error log: ' . $e->getMessage()];
+            return ['status' => 'warning', 'message' => 'Could not read error log: '.$e->getMessage()];
         }
     }
 
@@ -975,7 +1001,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => "Financial integrity issues found in {$totalTx} total transactions.",
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -983,10 +1009,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => "All {$totalTx} financial transaction(s) passed integrity checks.",
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Financial integrity check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Financial integrity check failed: '.$e->getMessage()];
         }
     }
 
@@ -1017,8 +1043,8 @@ class SystemDiagnosticsController extends Controller
 
             // Check referral config
             $rewardAmount = config('referral.reward_amount');
-            if (!$rewardAmount) {
-                $issues[] = "referral.reward_amount config is not set — payout calculations may be wrong.";
+            if (! $rewardAmount) {
+                $issues[] = 'referral.reward_amount config is not set — payout calculations may be wrong.';
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
@@ -1028,7 +1054,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'warning',
                     'message' => "Referral system has {$activeCodes} active code(s) but issues detected.",
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1036,10 +1062,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => "Referral system OK. Active codes: {$activeCodes}. No stuck payouts.",
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Referral system check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Referral system check failed: '.$e->getMessage()];
         }
     }
 
@@ -1058,9 +1084,9 @@ class SystemDiagnosticsController extends Controller
             ];
 
             foreach ($paths as $path) {
-                if (!is_dir($path)) {
+                if (! is_dir($path)) {
                     $issues[] = "Directory missing: {$path}";
-                } elseif (!is_writable($path)) {
+                } elseif (! is_writable($path)) {
                     $issues[] = "Not writable: {$path}";
                 }
             }
@@ -1070,9 +1096,9 @@ class SystemDiagnosticsController extends Controller
             if (count($issues) > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => count($issues) . ' storage permission issue(s) detected.',
+                    'message' => count($issues).' storage permission issue(s) detected.',
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1080,10 +1106,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => 'All storage directories exist and are writable.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Storage permission check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Storage permission check failed: '.$e->getMessage()];
         }
     }
 
@@ -1105,7 +1131,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'failed',
                     'message' => "Disk is {$usedPercent}% full! Only {$freeGB} GB free. Immediate action needed.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1113,17 +1139,17 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'warning',
                     'message' => "Disk is {$usedPercent}% full. {$freeGB} GB free remaining.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
             return [
                 'status' => 'passed',
                 'message' => "Disk usage: {$usedPercent}%. {$freeGB} GB free available.",
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'warning', 'message' => 'Disk space check failed: ' . $e->getMessage()];
+            return ['status' => 'warning', 'message' => 'Disk space check failed: '.$e->getMessage()];
         }
     }
 
@@ -1134,17 +1160,17 @@ class SystemDiagnosticsController extends Controller
             $missing = [];
 
             $required = [
-                'APP_KEY'               => env('APP_KEY'),
-                'DB_HOST'               => env('DB_HOST'),
-                'DB_DATABASE'           => env('DB_DATABASE'),
-                'STRIPE_SECRET'         => config('services.stripe.secret') ?? env('STRIPE_SECRET'),
-                'STRIPE_KEY'            => config('services.stripe.key') ?? env('STRIPE_KEY'),
+                'APP_KEY' => env('APP_KEY'),
+                'DB_HOST' => env('DB_HOST'),
+                'DB_DATABASE' => env('DB_DATABASE'),
+                'STRIPE_SECRET' => config('services.stripe.secret') ?? env('STRIPE_SECRET'),
+                'STRIPE_KEY' => config('services.stripe.key') ?? env('STRIPE_KEY'),
                 'STRIPE_WEBHOOK_SECRET' => config('services.stripe.webhook_secret'),
-                'MAGICBELL_API_KEY'     => env('MAGICBELL_API_KEY'),
-                'MAGICBELL_API_SECRET'  => env('MAGICBELL_API_SECRET'),
+                'MAGICBELL_API_KEY' => env('MAGICBELL_API_KEY'),
+                'MAGICBELL_API_SECRET' => env('MAGICBELL_API_SECRET'),
                 'UPLOADCARE_PUBLIC_KEY' => env('UPLOADCARE_PUBLIC_KEY'),
                 'UPLOADCARE_SECRET_KEY' => env('UPLOADCARE_SECRET_KEY'),
-                'MAIL_HOST'             => env('MAIL_HOST'),
+                'MAIL_HOST' => env('MAIL_HOST'),
             ];
 
             foreach ($required as $key => $value) {
@@ -1158,20 +1184,20 @@ class SystemDiagnosticsController extends Controller
             if (count($missing) > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => count($missing) . ' required environment variable(s) are missing.',
+                    'message' => count($missing).' required environment variable(s) are missing.',
                     'errors' => $missing,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
             return [
                 'status' => 'passed',
-                'message' => 'All ' . count($required) . ' required environment variables are configured.',
+                'message' => 'All '.count($required).' required environment variables are configured.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Environment check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Environment check failed: '.$e->getMessage()];
         }
     }
 
@@ -1184,12 +1210,12 @@ class SystemDiagnosticsController extends Controller
 
             if (empty($webhookSecret)) {
                 $issues[] = 'STRIPE_WEBHOOK_SECRET is not set — Stripe webhook signature verification will fail.';
-            } elseif (!str_starts_with($webhookSecret, 'whsec_')) {
+            } elseif (! str_starts_with($webhookSecret, 'whsec_')) {
                 $issues[] = 'STRIPE_WEBHOOK_SECRET does not start with "whsec_" — may be invalid.';
             }
 
             $stripeKey = config('services.stripe.secret') ?? env('STRIPE_SECRET');
-            if (!empty($stripeKey) && str_starts_with($stripeKey, 'sk_live_') && app()->environment('local')) {
+            if (! empty($stripeKey) && str_starts_with($stripeKey, 'sk_live_') && app()->environment('local')) {
                 $issues[] = 'WARNING: Live Stripe key (sk_live_) used in local environment!';
             }
 
@@ -1200,18 +1226,19 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => 'Stripe webhook configuration issues found.',
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
             $mode = str_starts_with($stripeKey ?? '', 'sk_live_') ? 'LIVE' : 'TEST';
+
             return [
                 'status' => 'passed',
                 'message' => "Stripe webhook secret is configured. Mode: {$mode}.",
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Stripe webhook config check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Stripe webhook config check failed: '.$e->getMessage()];
         }
     }
 
@@ -1224,7 +1251,7 @@ class SystemDiagnosticsController extends Controller
             // Check if the schedule:run command cache key exists (set by our scheduler heartbeat)
             $lastHeartbeat = Cache::get('scheduler_heartbeat');
 
-            if (!$lastHeartbeat) {
+            if (! $lastHeartbeat) {
                 $issues[] = 'No scheduler heartbeat found. The cron job may not be running. Ensure "php artisan schedule:run" runs every minute.';
             } else {
                 $minutesAgo = round((time() - $lastHeartbeat) / 60, 1);
@@ -1235,18 +1262,18 @@ class SystemDiagnosticsController extends Controller
 
             // Check horizon or queue worker via cache key (if set by worker)
             $queueWorkerAlive = Cache::get('queue_worker_heartbeat');
-            if (!$queueWorkerAlive) {
+            if (! $queueWorkerAlive) {
                 $issues[] = 'No queue worker heartbeat detected. Consider setting a heartbeat in a scheduled command.';
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
 
-            if (!empty($issues)) {
+            if (! empty($issues)) {
                 return [
                     'status' => 'warning',
                     'message' => 'Scheduler/Worker heartbeat check has warnings.',
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1254,10 +1281,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => 'Laravel scheduler heartbeat is active and recent.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'warning', 'message' => 'Scheduled tasks check failed: ' . $e->getMessage()];
+            return ['status' => 'warning', 'message' => 'Scheduled tasks check failed: '.$e->getMessage()];
         }
     }
 
@@ -1271,12 +1298,12 @@ class SystemDiagnosticsController extends Controller
 
             // Get all migration files
             $migrationPath = database_path('migrations');
-            $files = glob($migrationPath . '/*.php');
+            $files = glob($migrationPath.'/*.php');
             $pending = [];
 
             foreach ($files as $file) {
                 $name = pathinfo($file, PATHINFO_FILENAME);
-                if (!in_array($name, $ran)) {
+                if (! in_array($name, $ran)) {
                     $pending[] = $name;
                 }
             }
@@ -1286,20 +1313,20 @@ class SystemDiagnosticsController extends Controller
             if (count($pending) > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => count($pending) . ' migration(s) not yet run. Run "php artisan migrate" on the server.',
+                    'message' => count($pending).' migration(s) not yet run. Run "php artisan migrate" on the server.',
                     'errors' => $pending,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
             return [
                 'status' => 'passed',
-                'message' => 'All ' . count($ran) . ' migrations have been applied.',
+                'message' => 'All '.count($ran).' migrations have been applied.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Migration check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Migration check failed: '.$e->getMessage()];
         }
     }
 
@@ -1313,7 +1340,7 @@ class SystemDiagnosticsController extends Controller
                 return ['status' => 'warning', 'message' => 'APP_URL is not configured.', 'time_ms' => 0];
             }
 
-            $pingUrl = rtrim($appUrl, '/') . '/ping';
+            $pingUrl = rtrim($appUrl, '/').'/ping';
             $response = Http::timeout(10)
                 ->withHeaders(['User-Agent' => 'SpennyPiggyDiagnostics/1.0'])
                 ->get($pingUrl);
@@ -1330,7 +1357,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'failed',
                     'message' => "Homepage response is critically slow: {$time}ms (HTTP {$statusCode}). Possible server overload.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1338,7 +1365,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'warning',
                     'message' => "Homepage response is slow: {$time}ms (HTTP {$statusCode}). Consider optimisation.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1346,7 +1373,7 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'failed',
                     'message' => "Homepage returned HTTP {$statusCode}. Server error detected.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1354,17 +1381,17 @@ class SystemDiagnosticsController extends Controller
                 return [
                     'status' => 'warning',
                     'message' => "Homepage responded in {$time}ms with HTTP {$statusCode}. Non-success response detected.",
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
             return [
                 'status' => 'passed',
                 'message' => "Homepage responded in {$time}ms with HTTP {$statusCode}.",
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'App response time check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'App response time check failed: '.$e->getMessage()];
         }
     }
 
@@ -1414,7 +1441,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => 'Payout flow issues detected.',
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1422,10 +1449,10 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => 'No stuck payouts or blocked reserves found.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
-            return ['status' => 'failed', 'message' => 'Stuck payouts check failed: ' . $e->getMessage()];
+            return ['status' => 'failed', 'message' => 'Stuck payouts check failed: '.$e->getMessage()];
         }
     }
 
@@ -1439,10 +1466,10 @@ class SystemDiagnosticsController extends Controller
             $appBladePath = resource_path('views/app.blade.php');
             if (file_exists($appBladePath)) {
                 $content = file_get_contents($appBladePath);
-                if (!str_contains($content, 'app.termly.io/embed.min.js')) {
+                if (! str_contains($content, 'app.termly.io/embed.min.js')) {
                     $issues[] = 'Termly consent script (app.termly.io/embed.min.js) is missing from app.blade.php.';
                 }
-                if (!str_contains($content, 'data-website-uuid')) {
+                if (! str_contains($content, 'data-website-uuid')) {
                     $issues[] = 'Termly script is missing the data-website-uuid attribute.';
                 }
             } else {
@@ -1456,7 +1483,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => 'Termly consent script configuration issues found.',
                     'errors' => $issues,
-                    'time_ms' => $time
+                    'time_ms' => $time,
                 ];
             }
 
@@ -1464,12 +1491,12 @@ class SystemDiagnosticsController extends Controller
                 'status' => 'passed',
                 'message' => 'Termly consent script is properly configured in app.blade.php.',
                 'errors' => [],
-                'time_ms' => $time
+                'time_ms' => $time,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'failed',
-                'message' => 'Termly consent check failed: ' . $e->getMessage()
+                'message' => 'Termly consent check failed: '.$e->getMessage(),
             ];
         }
     }

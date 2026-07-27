@@ -10,6 +10,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SyncCrmCreatorStages extends Command
 {
@@ -70,6 +72,7 @@ class SyncCrmCreatorStages extends Command
 
         if (count($creatorIds) === 0) {
             $this->info('No linked CRM creators found.');
+
             return self::SUCCESS;
         }
 
@@ -119,7 +122,7 @@ class SyncCrmCreatorStages extends Command
             foreach ($crmCreators as $crmCreator) {
                 $userId = (int) $crmCreator->user_id;
                 $user = $users[$userId] ?? null;
-                if (!$user) {
+                if (! $user) {
                     continue;
                 }
 
@@ -154,7 +157,7 @@ class SyncCrmCreatorStages extends Command
                 }
 
                 if ($fromStage !== $toStage) {
-                    if (!$dryRun) {
+                    if (! $dryRun) {
                         $crmCreator->crm_stage = $toStage;
                         $crmCreator->save();
 
@@ -171,13 +174,13 @@ class SyncCrmCreatorStages extends Command
                             in_array($toStage, ['milestone_2k', 'milestone_5k', 'milestone_10k'], true)
                             && $crmCreator->assigned_team_member_id
                         ) {
-                            $adminEmail = \Illuminate\Support\Facades\DB::table('admins')
+                            $adminEmail = DB::table('admins')
                                 ->where('id', $crmCreator->assigned_team_member_id)
                                 ->whereNull('deleted_at')
                                 ->value('email');
 
                             if ($adminEmail) {
-                                $adminName   = \Illuminate\Support\Facades\DB::table('admins')
+                                $adminName = DB::table('admins')
                                     ->where('id', $crmCreator->assigned_team_member_id)
                                     ->value('name') ?? 'Team';
                                 $stageLabelMap = ['milestone_2k' => '£2k', 'milestone_5k' => '£5k', 'milestone_10k' => '£10k'];
@@ -185,23 +188,23 @@ class SyncCrmCreatorStages extends Command
                                 $creatorName = $crmCreator->full_name ?: $crmCreator->email ?: "Creator #{$crmCreator->id}";
                                 $adminUrl = config('app.url');
 
-                                $html = "<!DOCTYPE html><html><body style='margin:0;padding:24px;background:#0a0a0b;font-family:sans-serif'>" .
-                                    "<div style='max-width:560px;margin:0 auto;background:#151618;border-radius:16px;padding:28px;border:1px solid rgba(255,255,255,0.06)'>" .
-                                    "<div style='font-size:32px;margin-bottom:12px'>🎉</div>" .
-                                    "<h2 style='color:#fff;font-size:18px;margin:0 0 8px'>Milestone Reached: {$stageLabel}</h2>" .
-                                    "<p style='color:#9ca3af;font-size:14px;margin:0 0 20px'>Hi {$adminName}, your creator <strong style='color:#fff'>{$creatorName}</strong> has reached the <strong style='color:#8C52FF'>{$stageLabel}</strong> monthly earnings milestone.</p>" .
-                                    "<a href='{$adminUrl}/crm/creators/{$crmCreator->id}' style='display:inline-block;background:#8C52FF;color:#fff;text-decoration:none;font-weight:700;padding:10px 22px;border-radius:9999px;font-size:13px'>View Creator →</a>" .
-                                    "<p style='color:#374151;font-size:11px;margin-top:20px'>SpennPiggy Admin · CRM Alerts</p>" .
-                                    "</div></body></html>";
+                                $html = "<!DOCTYPE html><html><body style='margin:0;padding:24px;background:#0a0a0b;font-family:sans-serif'>".
+                                    "<div style='max-width:560px;margin:0 auto;background:#151618;border-radius:16px;padding:28px;border:1px solid rgba(255,255,255,0.06)'>".
+                                    "<div style='font-size:32px;margin-bottom:12px'>🎉</div>".
+                                    "<h2 style='color:#fff;font-size:18px;margin:0 0 8px'>Milestone Reached: {$stageLabel}</h2>".
+                                    "<p style='color:#9ca3af;font-size:14px;margin:0 0 20px'>Hi {$adminName}, your creator <strong style='color:#fff'>{$creatorName}</strong> has reached the <strong style='color:#8C52FF'>{$stageLabel}</strong> monthly earnings milestone.</p>".
+                                    "<a href='{$adminUrl}/crm/creators/{$crmCreator->id}' style='display:inline-block;background:#8C52FF;color:#fff;text-decoration:none;font-weight:700;padding:10px 22px;border-radius:9999px;font-size:13px'>View Creator →</a>".
+                                    "<p style='color:#374151;font-size:11px;margin-top:20px'>SpennPiggy Admin · CRM Alerts</p>".
+                                    '</div></body></html>';
 
                                 try {
-                                    \Illuminate\Support\Facades\Mail::html($html, function ($message) use ($adminEmail, $adminName, $creatorName, $stageLabel) {
+                                    Mail::html($html, function ($message) use ($adminEmail, $adminName, $creatorName, $stageLabel) {
                                         $message->to($adminEmail, $adminName)
-                                                ->subject("🎉 {$creatorName} hit the {$stageLabel} milestone!");
+                                            ->subject("🎉 {$creatorName} hit the {$stageLabel} milestone!");
                                     });
                                 } catch (\Throwable $e) {
                                     // Non-fatal — log and continue
-                                    \Illuminate\Support\Facades\Log::warning("CRM milestone email failed for creator #{$crmCreator->id}: " . $e->getMessage());
+                                    Log::warning("CRM milestone email failed for creator #{$crmCreator->id}: ".$e->getMessage());
                                 }
                             }
                         }
@@ -220,7 +223,8 @@ class SyncCrmCreatorStages extends Command
             throw $e;
         }
 
-        $this->info("Synced CRM creator stages. Updated: {$updated}" . ($dryRun ? ' (dry-run)' : ''));
+        $this->info("Synced CRM creator stages. Updated: {$updated}".($dryRun ? ' (dry-run)' : ''));
+
         return self::SUCCESS;
     }
 
@@ -238,6 +242,7 @@ class SyncCrmCreatorStages extends Command
         if ($earningsGbp >= 500) {
             return 'milestone_500';
         }
+
         return null;
     }
 

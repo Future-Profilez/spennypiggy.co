@@ -22,18 +22,18 @@ return new class extends Migration
             $table->string('type')->default('instant'); // 'instant', 'timed'
             $table->string('status')->default('active'); // 'draft', 'pending_review', 'active', 'rejected', 'archived'
             $table->string('media_url')->nullable(); // Cover image
-            
+
             // Phase 1 Deliverables (Stored on Task for Instant)
             $table->string('deliverable_content_type')->nullable(); // 'text', 'image', 'voice', 'pdf', 'badge'
             $table->text('deliverable_content')->nullable(); // URL or Text
-            
+
             // Phase 2
             $table->integer('sla_hours')->nullable();
-            
+
             // Stripe
             $table->string('stripe_product_id')->nullable();
             $table->string('stripe_price_id')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
         });

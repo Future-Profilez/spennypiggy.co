@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('payment_method_id')->nullable()->after('stripe_metadata')->comment('Stripe payment method ID');
             $table->timestamp('trial_start')->nullable()->after('payment_method_id')->comment('Trial start date');
             $table->timestamp('trial_end')->nullable()->after('trial_start')->comment('Trial end date');
-            
+
             // Indexes for common queries
             $table->index(['stripe_status', 'current_period_end'], 'idx_subscription_status_period');
             $table->index(['user_id', 'stripe_status'], 'idx_user_subscription_status');
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->dropIndex('idx_subscription_status_period');
             $table->dropIndex('idx_user_subscription_status');
             $table->dropIndex('idx_item_subscription_status');
-            
+
             $table->dropColumn([
                 'stripe_status',
                 'cancel_at_period_end',
@@ -51,7 +51,7 @@ return new class extends Migration
                 'stripe_metadata',
                 'payment_method_id',
                 'trial_start',
-                'trial_end'
+                'trial_end',
             ]);
         });
     }

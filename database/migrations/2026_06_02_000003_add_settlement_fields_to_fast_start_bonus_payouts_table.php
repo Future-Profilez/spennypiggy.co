@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('fast_start_bonus_payouts', function (Blueprint $table) {
-            if (!Schema::hasColumn('fast_start_bonus_payouts', 'eligible_at')) {
+            if (! Schema::hasColumn('fast_start_bonus_payouts', 'eligible_at')) {
                 $table->timestamp('eligible_at')->nullable()->after('window_end');
             }
-            if (!Schema::hasColumn('fast_start_bonus_payouts', 'unsettled_count')) {
+            if (! Schema::hasColumn('fast_start_bonus_payouts', 'unsettled_count')) {
                 $table->integer('unsettled_count')->default(0)->after('eligible_at');
             }
-            if (!Schema::hasColumn('fast_start_bonus_payouts', 'last_calculated_at')) {
+            if (! Schema::hasColumn('fast_start_bonus_payouts', 'last_calculated_at')) {
                 $table->timestamp('last_calculated_at')->nullable()->after('unsettled_count');
             }
         });
@@ -30,10 +30,9 @@ return new class extends Migration
                     $cols[] = $c;
                 }
             }
-            if (!empty($cols)) {
+            if (! empty($cols)) {
                 $table->dropColumn($cols);
             }
         });
     }
 };
-

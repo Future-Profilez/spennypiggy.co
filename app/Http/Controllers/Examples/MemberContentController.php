@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Examples;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\MembershipHelper;
+use App\Http\Controllers\Controller;
 use App\Services\MembershipAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 /**
  * Example controller showing how to implement membership-protected content
- * 
+ *
  * This demonstrates the different ways to protect content with the new membership system
  */
 class MemberContentController extends Controller
@@ -31,12 +31,12 @@ class MemberContentController extends Controller
     {
         // If we get here, user has valid membership (middleware handled verification)
         $membershipAccess = $request->get('membership_access'); // Added by middleware
-        
+
         return Inertia::render('ExclusiveContent', [
             'creator_id' => $creatorId,
             'membership_access' => $membershipAccess,
             'exclusive_posts' => $this->getExclusivePosts($creatorId),
-            'member_level' => $membershipAccess['membership_level'] ?? 'Unknown'
+            'member_level' => $membershipAccess['membership_level'] ?? 'Unknown',
         ]);
     }
 
@@ -47,18 +47,18 @@ class MemberContentController extends Controller
     {
         $hasAccess = MembershipHelper::userHasAccess($creatorId);
         $accessSummary = MembershipHelper::getAccessSummary($creatorId);
-        
+
         // Get all content
         $publicContent = $this->getPublicPosts($creatorId);
         $memberContent = $hasAccess ? $this->getExclusivePosts($creatorId) : [];
-        
+
         return Inertia::render('CreatorContent', [
             'creator_id' => $creatorId,
             'has_membership_access' => $hasAccess,
             'membership_summary' => $accessSummary,
             'public_content' => $publicContent,
             'member_content' => $memberContent,
-            'show_membership_prompt' => !$hasAccess
+            'show_membership_prompt' => ! $hasAccess,
         ]);
     }
 
@@ -67,12 +67,12 @@ class MemberContentController extends Controller
      */
     public function tieredContent(Request $request, $creatorId)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
         $userId = Auth::id();
-        
+
         // Check different membership levels
         $bronzeAccess = $this->membershipService->hasActiveMembership($userId, $creatorId, 'bronze');
         $silverAccess = $this->membershipService->hasActiveMembership($userId, $creatorId, 'silver');
@@ -81,10 +81,15 @@ class MemberContentController extends Controller
 
         // Determine highest access level
         $accessLevel = 'none';
-        if ($lifetimeAccess['has_access']) $accessLevel = 'lifetime';
-        elseif ($goldAccess['has_access']) $accessLevel = 'gold';
-        elseif ($silverAccess['has_access']) $accessLevel = 'silver';
-        elseif ($bronzeAccess['has_access']) $accessLevel = 'bronze';
+        if ($lifetimeAccess['has_access']) {
+            $accessLevel = 'lifetime';
+        } elseif ($goldAccess['has_access']) {
+            $accessLevel = 'gold';
+        } elseif ($silverAccess['has_access']) {
+            $accessLevel = 'silver';
+        } elseif ($bronzeAccess['has_access']) {
+            $accessLevel = 'bronze';
+        }
 
         return Inertia::render('TieredContent', [
             'creator_id' => $creatorId,
@@ -101,21 +106,21 @@ class MemberContentController extends Controller
      */
     public function checkMembershipStatus(Request $request, $creatorId)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'has_access' => false,
-                'message' => 'Authentication required'
+                'message' => 'Authentication required',
             ], 401);
         }
 
         $access = $this->membershipService->hasActiveMembership(Auth::id(), $creatorId);
-        
+
         return response()->json([
             'has_access' => $access['has_access'],
             'membership_level' => $access['membership_level'] ?? null,
             'reason' => $access['reason'],
             'access_method' => $access['access_method'] ?? null,
-            'subscription_id' => $access['subscription_id'] ?? null
+            'subscription_id' => $access['subscription_id'] ?? null,
         ]);
     }
 
@@ -124,25 +129,48 @@ class MemberContentController extends Controller
      */
     public function userMemberships(Request $request)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['memberships' => []], 401);
         }
 
         $memberships = $this->membershipService->getUserActiveMemberships(Auth::id());
-        
+
         return response()->json([
             'memberships' => $memberships,
-            'total_active' => count($memberships)
+            'total_active' => count($memberships),
         ]);
     }
 
     // Example content retrieval methods (replace with your actual logic)
-    private function getPublicPosts($creatorId) { return []; }
-    private function getExclusivePosts($creatorId) { return []; }
-    private function getBronzeContent($creatorId) { return []; }
-    private function getSilverContent($creatorId) { return []; }
-    private function getGoldContent($creatorId) { return []; }
-    private function getLifetimeContent($creatorId) { return []; }
+    private function getPublicPosts($creatorId)
+    {
+        return [];
+    }
+
+    private function getExclusivePosts($creatorId)
+    {
+        return [];
+    }
+
+    private function getBronzeContent($creatorId)
+    {
+        return [];
+    }
+
+    private function getSilverContent($creatorId)
+    {
+        return [];
+    }
+
+    private function getGoldContent($creatorId)
+    {
+        return [];
+    }
+
+    private function getLifetimeContent($creatorId)
+    {
+        return [];
+    }
 }
 
 /*

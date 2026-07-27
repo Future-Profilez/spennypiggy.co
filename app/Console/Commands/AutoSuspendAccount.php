@@ -35,21 +35,21 @@ class AutoSuspendAccount extends Command
 
             $user = MonthlyCharge::pluck('user_id')->unique()->toArray();
 
-            $users = User::whereIn('id',$user)->get();
+            $users = User::whereIn('id', $user)->get();
             foreach ($users as $key => $value) {
-                $charge = MonthlyCharge::where('user_id',$value->id)->where('status','paid')->newestFirst()->first();
-                if(empty($charge)){
+                $charge = MonthlyCharge::where('user_id', $value->id)->where('status', 'paid')->newestFirst()->first();
+                if (empty($charge)) {
                     $value->suspended_account = 1;
                     $value->save();
 
                     Mail::to($value->email)
-                    ->send(new SendSuspendedMailForSubscription());
+                        ->send(new SendSuspendedMailForSubscription);
                 }
             }
-            $this->info("Accounts suspended successfully.");
+            $this->info('Accounts suspended successfully.');
 
-        } catch (Exception $e){
-            $this->error("Failed to sync: ".$e->getMessage());
+        } catch (Exception $e) {
+            $this->error('Failed to sync: '.$e->getMessage());
         }
     }
 }

@@ -13,15 +13,13 @@ class DisputeUpdatedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+
     public $dispute;
+
     public $changes;
 
     /**
      * Create a new message instance.
-     *
-     * @param User $user
-     * @param Dispute $dispute
-     * @param array $changes
      */
     public function __construct(User $user, Dispute $dispute, array $changes)
     {
@@ -40,7 +38,7 @@ class DisputeUpdatedMail extends Mailable
         $subject = 'Dispute Updated';
 
         if (isset($this->changes['status'])) {
-            $subject = 'Dispute Status Changed to ' . ucfirst($this->changes['status']['new']);
+            $subject = 'Dispute Status Changed to '.ucfirst($this->changes['status']['new']);
         }
 
         return $this->subject($subject)

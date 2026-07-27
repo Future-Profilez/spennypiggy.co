@@ -148,6 +148,10 @@
                 </td>
             </tr>
 
+            {{-- The creator's welcome reward (file/message/link) — the
+                 fulfillment card below covers ongoing subscriber access. --}}
+            @include('email.reward-block', ['rewardItem' => $bill_pay->bill, 'rewardShowFile' => true])
+
             {{-- Bill fulfillment card --}}
             <tr>
                 <td style="padding:0 0 18px 0;">

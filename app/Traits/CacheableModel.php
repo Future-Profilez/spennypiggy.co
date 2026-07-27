@@ -31,7 +31,7 @@ trait CacheableModel
     /**
      * Cache a query result
      */
-    public function scopeCached(Builder $query, int $minutes = null)
+    public function scopeCached(Builder $query, ?int $minutes = null)
     {
         return $query->get();
     }
@@ -39,7 +39,7 @@ trait CacheableModel
     /**
      * Cache a single model
      */
-    public function scopeCachedFind(Builder $query, $id, int $minutes = null)
+    public function scopeCachedFind(Builder $query, $id, ?int $minutes = null)
     {
         return $query->find($id);
     }
@@ -47,7 +47,7 @@ trait CacheableModel
     /**
      * Cache paginated results
      */
-    public function scopeCachedPaginate(Builder $query, int $perPage = 15, array $columns = ['*'], string $pageName = 'page', int $page = null)
+    public function scopeCachedPaginate(Builder $query, int $perPage = 15, array $columns = ['*'], string $pageName = 'page', ?int $page = null)
     {
         return $query->paginate($perPage, $columns, $pageName, $page);
     }
@@ -66,22 +66,22 @@ trait CacheableModel
     public function scopeWithCommon(Builder $query)
     {
         $commonRelations = $this->getCommonRelations();
-        
-        if (!empty($commonRelations)) {
+
+        if (! empty($commonRelations)) {
             return $query->with($commonRelations);
         }
-        
+
         return $query;
     }
 
     /**
      * Count with caching
      */
-    public function scopeCachedCount(Builder $query, int $minutes = null)
+    public function scopeCachedCount(Builder $query, ?int $minutes = null)
     {
         $minutes = $minutes ?? config('cache.ttl', 60);
         $key = $this->getCacheKeyForCount($query);
-        
+
         return CacheService::remember(
             $key,
             $minutes * 60,
@@ -100,8 +100,8 @@ trait CacheableModel
         $model = get_class($this);
         $sql = $query->toSql();
         $bindings = $query->getBindings();
-        
-        return "model_cache:{$model}:" . md5($sql . serialize($bindings));
+
+        return "model_cache:{$model}:".md5($sql.serialize($bindings));
     }
 
     /**
@@ -110,6 +110,7 @@ trait CacheableModel
     protected function getCacheKeyForFind($id): string
     {
         $model = get_class($this);
+
         return "model_find:{$model}:{$id}";
     }
 
@@ -121,8 +122,8 @@ trait CacheableModel
         $model = get_class($this);
         $sql = $query->toSql();
         $bindings = $query->getBindings();
-        
-        return "model_paginate:{$model}:" . md5($sql . serialize($bindings) . $perPage . $page);
+
+        return "model_paginate:{$model}:".md5($sql.serialize($bindings).$perPage.$page);
     }
 
     /**
@@ -133,8 +134,8 @@ trait CacheableModel
         $model = get_class($this);
         $sql = $query->toSql();
         $bindings = $query->getBindings();
-        
-        return "model_count:{$model}:" . md5($sql . serialize($bindings));
+
+        return "model_count:{$model}:".md5($sql.serialize($bindings));
     }
 
     /**
@@ -145,14 +146,15 @@ trait CacheableModel
         return [
             'models',
             strtolower(class_basename($this)),
-            get_class($this)
+            get_class($this),
         ];
     }
 
     /**
      * Clear model cache
      */
-    public function clearModelCache() {
+    public function clearModelCache()
+    {
         CacheService::invalidateTags($this->getCacheTags());
         CacheService::invalidateModel($this);
     }
@@ -169,7 +171,7 @@ trait CacheableModel
     /**
      * Optimize query by selecting only needed columns
      */
-    public function scopeOptimized(Builder $query, array $columns = null)
+    public function scopeOptimized(Builder $query, ?array $columns = null)
     {
         if ($columns) {
             return $query->select($columns);
@@ -177,11 +179,11 @@ trait CacheableModel
 
         // Select optimized columns based on model
         $optimizedColumns = $this->getOptimizedColumns();
-        
-        if (!empty($optimizedColumns)) {
+
+        if (! empty($optimizedColumns)) {
             return $query->select($optimizedColumns);
         }
-        
+
         return $query;
     }
 
@@ -197,7 +199,7 @@ trait CacheableModel
     /**
      * Batch process models to avoid N+1 queries
      */
-    public static function batchProcess(Collection $models, string $relation, callable $callback = null)
+    public static function batchProcess(Collection $models, string $relation, ?callable $callback = null)
     {
         if ($models->isEmpty()) {
             return;
@@ -217,11 +219,11 @@ trait CacheableModel
     /**
      * Remember expensive model computations
      */
-    public function rememberComputation(string $key, callable $callback, int $ttl = null)
+    public function rememberComputation(string $key, callable $callback, ?int $ttl = null)
     {
         $ttl = $ttl ?? CacheService::MEDIUM_CACHE;
         $cacheKey = $this->getComputationCacheKey($key);
-        
+
         return CacheService::rememberModel($this, $key, $ttl, $callback);
     }
 
@@ -241,11 +243,11 @@ trait CacheableModel
         if (in_array('is_active', $this->fillable) || isset($this->attributes['is_active'])) {
             return $query->where('is_active', true);
         }
-        
+
         if (in_array('status', $this->fillable) || isset($this->attributes['status'])) {
             return $query->where('status', 'active');
         }
-        
+
         return $query;
     }
 

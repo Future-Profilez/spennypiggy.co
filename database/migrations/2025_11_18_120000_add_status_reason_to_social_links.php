@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('social_links', function (Blueprint $table) {
-            if (!Schema::hasColumn('social_links', 'status')) {
+            if (! Schema::hasColumn('social_links', 'status')) {
                 $table->tinyInteger('status')->default(0)->after('other');
             }
-            if (!Schema::hasColumn('social_links', 'reason')) {
+            if (! Schema::hasColumn('social_links', 'reason')) {
                 $table->text('reason')->nullable()->after('status');
             }
         });

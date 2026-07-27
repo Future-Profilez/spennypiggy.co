@@ -11,7 +11,7 @@ return new class extends Migration
             ->where('key', 'risk_consequences')
             ->first();
 
-        if (!$row) {
+        if (! $row) {
             return;
         }
 
@@ -20,11 +20,11 @@ return new class extends Migration
         }
 
         $value = json_decode($row->value, true);
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return;
         }
 
-        if (!array_key_exists('low_payout_delay', $value)) {
+        if (! array_key_exists('low_payout_delay', $value)) {
             return;
         }
 
@@ -62,7 +62,7 @@ return new class extends Migration
             ->where('key', 'risk_consequences')
             ->first();
 
-        if (!$row) {
+        if (! $row) {
             return;
         }
 
@@ -71,7 +71,7 @@ return new class extends Migration
         }
 
         $value = json_decode($row->value, true);
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return;
         }
 

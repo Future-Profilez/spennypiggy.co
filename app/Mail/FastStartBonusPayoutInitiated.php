@@ -15,9 +15,13 @@ class FastStartBonusPayoutInitiated extends Mailable
     use Queueable, SerializesModels;
 
     public User $creator;
+
     public float $amount;
+
     public string $currency;
+
     public ?string $arrivalDate;
+
     public float $earningsAmount;
 
     public function __construct(

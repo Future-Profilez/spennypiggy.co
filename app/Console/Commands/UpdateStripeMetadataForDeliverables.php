@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Deliverable;
 use App\Services\StripeMetadataService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class UpdateStripeMetadataForDeliverables extends Command
@@ -37,33 +37,34 @@ class UpdateStripeMetadataForDeliverables extends Command
         $dryRun = $this->option('dry-run');
         $forceAll = $this->option('force-all');
 
-        $this->info("🚀 Starting Stripe metadata update for deliverables");
+        $this->info('🚀 Starting Stripe metadata update for deliverables');
         $this->info("Limit: {$limit}");
-        $this->info("Product Type Filter: " . ($productType ?: 'All'));
-        $this->info("Dry Run: " . ($dryRun ? 'Yes' : 'No'));
-        $this->info("Force All: " . ($forceAll ? 'Yes' : 'No'));
+        $this->info('Product Type Filter: '.($productType ?: 'All'));
+        $this->info('Dry Run: '.($dryRun ? 'Yes' : 'No'));
+        $this->info('Force All: '.($forceAll ? 'Yes' : 'No'));
         $this->newLine();
 
         // Build query for deliverables that need metadata updates
         $query = Deliverable::whereNotNull('payment_intent_id');
-        
+
         if ($productType) {
             $query->where('product_type', $productType);
         }
-        
-        if (!$forceAll) {
+
+        if (! $forceAll) {
             // Only process deliverables that likely haven't been updated yet
             // (either no certificate_url or older records)
-            $query->where(function($q) {
+            $query->where(function ($q) {
                 $q->whereNull('certificate_url')
-                  ->orWhere('created_at', '<', now()->subDays(1));
+                    ->orWhere('created_at', '<', now()->subDays(1));
             });
         }
 
         $deliverables = $query->orderBy('created_at', 'desc')->limit($limit)->get();
 
         if ($deliverables->isEmpty()) {
-            $this->info("✅ No deliverables found that need metadata updates.");
+            $this->info('✅ No deliverables found that need metadata updates.');
+
             return 0;
         }
 
@@ -87,7 +88,7 @@ class UpdateStripeMetadataForDeliverables extends Command
                     $this->line("  - Product Type: {$deliverable->product_type}");
                     $this->line("  - Status: {$deliverable->status}");
                     $this->line("  - Payment Intent: {$deliverable->payment_intent_id}");
-                    $this->line("  - Certificate URL: " . ($deliverable->certificate_url ? 'Yes' : 'No'));
+                    $this->line('  - Certificate URL: '.($deliverable->certificate_url ? 'Yes' : 'No'));
                 }
 
                 if ($dryRun) {
@@ -101,26 +102,26 @@ class UpdateStripeMetadataForDeliverables extends Command
                     ];
 
                     $success = $stripeMetadataService->updateDeliverableMetadata($deliverable, $additionalMetadata);
-                    
+
                     if ($success) {
                         $successful++;
                     } else {
                         $failed++;
                     }
                 }
-                
+
             } catch (\Exception $e) {
                 $failed++;
-                Log::error("UpdateStripeMetadataForDeliverables: Failed to update deliverable", [
+                Log::error('UpdateStripeMetadataForDeliverables: Failed to update deliverable', [
                     'deliverable_id' => $deliverable->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
-                
+
                 if ($this->output->isVerbose()) {
-                    $this->error("  ❌ Error: " . $e->getMessage());
+                    $this->error('  ❌ Error: '.$e->getMessage());
                 }
             }
-            
+
             $progressBar->advance();
         }
 
@@ -128,15 +129,15 @@ class UpdateStripeMetadataForDeliverables extends Command
         $this->newLine(2);
 
         // Show results
-        $this->info("📊 Results Summary:");
+        $this->info('📊 Results Summary:');
         $this->info("✅ Successful: {$successful}");
         $this->info("❌ Failed: {$failed}");
         $this->info("⏭️ Skipped: {$skipped}");
-        
+
         if ($dryRun) {
             $this->newLine();
-            $this->warn("🔍 This was a dry run - no actual changes were made to Stripe.");
-            $this->info("Run without --dry-run to apply the updates.");
+            $this->warn('🔍 This was a dry run - no actual changes were made to Stripe.');
+            $this->info('Run without --dry-run to apply the updates.');
         }
 
         return $failed > 0 ? 1 : 0;
@@ -147,25 +148,25 @@ class UpdateStripeMetadataForDeliverables extends Command
      */
     private function showWhatWouldUpdate(Deliverable $deliverable)
     {
-        if (!$this->output->isVerbose()) {
+        if (! $this->output->isVerbose()) {
             return;
         }
 
-        $this->line("  🔍 Would update with:");
+        $this->line('  🔍 Would update with:');
         $this->line("    - Product Type: {$deliverable->product_type}");
         $this->line("    - Deliverable Type: {$deliverable->deliverable_type}");
         $this->line("    - Transaction Amount: {$deliverable->transaction_amount}");
-        
+
         if ($deliverable->product_type === 'support_payment') {
-            $this->line("    - Payment Type: tip_donation");
-            $this->line("    - Support Payment: true");
-            $this->line("    - Note: No delivery/certificate fields for support payments");
+            $this->line('    - Payment Type: tip_donation');
+            $this->line('    - Support Payment: true');
+            $this->line('    - Note: No delivery/certificate fields for support payments');
         } else {
-            $this->line("    - Delivery Status: " . $this->mapStatusToDeliveryStatus($deliverable->status));
-            $this->line("    - Certificate URL: " . ($deliverable->certificate_url ?: 'none'));
-            
+            $this->line('    - Delivery Status: '.$this->mapStatusToDeliveryStatus($deliverable->status));
+            $this->line('    - Certificate URL: '.($deliverable->certificate_url ?: 'none'));
+
             if ($deliverable->deliverable_url) {
-                $this->line("    - Content Available: true");
+                $this->line('    - Content Available: true');
             }
         }
     }
@@ -175,9 +176,9 @@ class UpdateStripeMetadataForDeliverables extends Command
      */
     private function mapStatusToDeliveryStatus(string $status): string
     {
-        return match($status) {
+        return match ($status) {
             'delivered' => 'completed',
-            'pending' => 'pending', 
+            'pending' => 'pending',
             'failed' => 'failed',
             default => 'pending'
         };

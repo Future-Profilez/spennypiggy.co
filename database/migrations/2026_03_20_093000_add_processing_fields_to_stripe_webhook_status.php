@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stripe_webhook_status', function (Blueprint $table) {
-            if (!Schema::hasColumn('stripe_webhook_status', 'status')) {
+            if (! Schema::hasColumn('stripe_webhook_status', 'status')) {
                 $table->string('status')->nullable()->after('event_type');
             }
-            if (!Schema::hasColumn('stripe_webhook_status', 'processed_at')) {
+            if (! Schema::hasColumn('stripe_webhook_status', 'processed_at')) {
                 $table->timestamp('processed_at')->nullable()->after('status');
             }
-            if (!Schema::hasColumn('stripe_webhook_status', 'last_error')) {
+            if (! Schema::hasColumn('stripe_webhook_status', 'last_error')) {
                 $table->text('last_error')->nullable()->after('processed_at');
             }
         });
@@ -30,10 +30,9 @@ return new class extends Migration
                     $cols[] = $c;
                 }
             }
-            if (!empty($cols)) {
+            if (! empty($cols)) {
                 $table->dropColumn($cols);
             }
         });
     }
 };
-

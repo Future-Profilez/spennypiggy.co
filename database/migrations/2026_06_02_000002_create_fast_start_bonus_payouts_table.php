@@ -30,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('fast_start_bonus_payouts');
     }
 };
-

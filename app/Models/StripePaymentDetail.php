@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use Ramsey\Uuid\Uuid;
 
 class StripePaymentDetail extends Model
 {
@@ -41,7 +40,7 @@ class StripePaymentDetail extends Model
         'deleted_at',
     ];
 
-    protected $hidden   =   [
+    protected $hidden = [
         'id',
         'uuid',
         'session_id',
@@ -51,15 +50,14 @@ class StripePaymentDetail extends Model
         'session_expires_at',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
+        static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
     }
-
 
     public function owner()
     {

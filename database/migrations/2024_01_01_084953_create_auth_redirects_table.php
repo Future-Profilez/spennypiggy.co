@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->uuid();
             $table->foreignIdFor(User::class);
-            $table->string("country",30)->nullable();
+            $table->string('country', 30)->nullable();
             $table->string('origin')->nullable();
             $table->string('target')->nullable();
             $table->string('query_string')->nullable();

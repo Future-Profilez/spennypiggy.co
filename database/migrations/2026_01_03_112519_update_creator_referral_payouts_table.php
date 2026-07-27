@@ -4,8 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-
+return new class extends Migration
+{
     public function up(): void
     {
         // Rename stripe_payout_id → stripe_transfer_id
@@ -28,7 +28,7 @@ return new class extends Migration {
         Schema::table('creator_referral_payouts', function (Blueprint $table) {
 
             // Re-add approval_status
-            if (!Schema::hasColumn('creator_referral_payouts', 'approval_status')) {
+            if (! Schema::hasColumn('creator_referral_payouts', 'approval_status')) {
                 $table->string('approval_status')->default('PENDING');
             }
 

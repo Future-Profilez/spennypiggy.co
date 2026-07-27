@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('users', 'ip_address')) {
+        if (! Schema::hasColumn('users', 'ip_address')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->string('ip_address')->nullable()->after('remember_token');
             });

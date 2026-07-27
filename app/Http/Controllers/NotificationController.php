@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\MagicBellService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use GuzzleHttp\Client;
 
 class NotificationController extends Controller
 {
@@ -19,12 +19,12 @@ class NotificationController extends Controller
     public function getUserKey()
     {
         $user = Auth::user()?->email;  // The authenticated user's email
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
         // Call MagicBell API to generate the user key
-        $client = new Client();
+        $client = new Client;
         $response = $client->post('https://api.magicbell.com/users', [
             'headers' => [
                 'X-MAGICBELL-API-KEY' => config('services.magicbell.key'),
@@ -34,18 +34,19 @@ class NotificationController extends Controller
             'json' => [
                 'user' => [
                     'email' => $user,  // Nest the email inside a user object
-                ]
+                ],
             ],
         ]);
 
         $data = json_decode($response->getBody()->getContents());
+
         return response()->json(['userKey' => $data->user->id]);
     }
 
     // Send notification to MagicBell
     public function sendNotification(Request $request)
     {
-        $client = new Client();
+        $client = new Client;
 
         $response = $client->post('https://api.magicbell.com/notifications', [
             'headers' => [
@@ -65,13 +66,14 @@ class NotificationController extends Controller
                 ],
             ],
         ]);
+
         // return response()->json(['status' => 'Notification sent']);
         return $response;
     }
 
     public function testSendNotification(Request $request)
     {
-        $client = new Client();
+        $client = new Client;
 
         $response = $client->post('https://api.magicbell.com/notifications', [
             'headers' => [
@@ -81,7 +83,7 @@ class NotificationController extends Controller
             ],
             'json' => [
                 'notification' => [
-                    'title' => $request->query('title')  ?? '🎉 You\'re in! Let\'s get started.',
+                    'title' => $request->query('title') ?? '🎉 You\'re in! Let\'s get started.',
                     'content' => $request->query('content') ?? 'Get paid with secure, trackable income — with built-in protection against disputes and chargebacks.',
                     'category' => 'general',
                     // Scope to the authenticated user — never send to an arbitrary email.
@@ -91,6 +93,7 @@ class NotificationController extends Controller
                 ],
             ],
         ]);
+
         return $response;
     }
 

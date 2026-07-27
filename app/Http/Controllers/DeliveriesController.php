@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Deliverable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,8 +18,8 @@ class DeliveriesController extends Controller
         $user = $request->user();
         // Get deliverables for the authenticated user (as creator or gifter)
         $deliverables = Deliverable::query()->where(function ($query) use ($user) {
-                $query->where('creator_id', $user->id)->orWhere('gifter_id', $user->id);
-            })->with(['creator', 'gifter', 'task'])
+            $query->where('creator_id', $user->id)->orWhere('gifter_id', $user->id);
+        })->with(['creator', 'gifter', 'task'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -26,7 +27,7 @@ class DeliveriesController extends Controller
         $deliverables->getCollection()->transform(function ($deliverable) use ($user) {
             $metadata = $deliverable->metadata ?? [];
             $isCreator = $deliverable->creator_id === $user->id;
-            
+
             // Determine amount to display
             $amount = $metadata['amount'] ?? 0;
             if ($isCreator && $deliverable->product_type === 'task' && $deliverable->task) {
@@ -74,14 +75,14 @@ class DeliveriesController extends Controller
         $deliverable->update([
             'accessed_at' => now(),
             'access_count' => $deliverable->access_count + 1,
-            'status' => 'delivered' // Ensure it's marked as delivered if it was pending
+            'status' => 'delivered', // Ensure it's marked as delivered if it was pending
         ]);
 
-        \Illuminate\Support\Facades\Log::info('Deliverable accessed', [
+        Log::info('Deliverable accessed', [
             'uuid' => $uuid,
             'type' => $deliverable->deliverable_type,
             'ip' => request()->ip(),
-            'access_count' => $deliverable->access_count
+            'access_count' => $deliverable->access_count,
         ]);
 
         // Redirect to the actual content URL
@@ -100,7 +101,7 @@ class DeliveriesController extends Controller
     {
         $baseQuery = Deliverable::where(function ($query) use ($user) {
             $query->where('creator_id', $user->id)
-                  ->orWhere('gifter_id', $user->id);
+                ->orWhere('gifter_id', $user->id);
         });
 
         return [
@@ -117,7 +118,7 @@ class DeliveriesController extends Controller
     private function formatAmount($amount, $currency): string
     {
         $amount = $amount / 100; // Convert from cents
-        
+
         $symbols = [
             'gbp' => '£',
             'usd' => '$',
@@ -125,9 +126,9 @@ class DeliveriesController extends Controller
             'jpy' => '¥',
         ];
 
-        $symbol = $symbols[strtolower($currency)] ?? strtoupper($currency) . ' ';
-        
-        return $symbol . number_format($amount, 2);
+        $symbol = $symbols[strtolower($currency)] ?? strtoupper($currency).' ';
+
+        return $symbol.number_format($amount, 2);
     }
 
     /**

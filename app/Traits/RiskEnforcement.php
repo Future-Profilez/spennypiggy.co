@@ -3,6 +3,12 @@
 namespace App\Traits;
 
 use App\Helpers;
+use App\Models\Payment;
+use App\Services\Risk\MoneyNormalizer;
+use App\Services\Risk\RiskEngineService;
+use App\Services\Risk\RiskIdentityService;
+use App\Services\Risk\RiskService;
+use App\Services\Risk\VerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -30,7 +36,7 @@ trait RiskEnforcement
         //         // Get the exact error message from the validation bag (e.g. "Please verify you are not a robot.")
         //         $errors = $e->validator->errors()->all();
         //         $msg = !empty($errors) ? $errors[0] : 'Captcha verification failed. Please try again.';
-                
+
         //         if ($isJsonResponse) {
         //             return response()->json([
         //                 'status' => false,
@@ -58,9 +64,10 @@ trait RiskEnforcement
                     'msg' => $guestRestriction['message'],
                 ]);
             }
+
             return to_route('login', [
                 'redirect' => $request->fullUrl(),
-                'message' => $guestRestriction['message']
+                'message' => $guestRestriction['message'],
             ]);
         }
 
@@ -72,16 +79,16 @@ trait RiskEnforcement
             'email' => Auth::user()->email ?? $request->query('email') ?? $request->input('email'),
             'ip' => $request->ip(),
             'device_id' => $request->input('device_id') ?? $request->query('device_id') ?? session()->getId(),
-            'is_guest' => !Auth::check(),
+            'is_guest' => ! Auth::check(),
         ];
 
         // 4. Evaluate Risk
-        $riskResult = app(\App\Services\Risk\RiskEngineService::class)->evaluate($context);
+        $riskResult = app(RiskEngineService::class)->evaluate($context);
         $decision = $riskResult['decision'] ?? 'ALLOW';
 
         // Bypass STEP_UP if emulated by admin
         if ($decision === 'STEP_UP' && session()->get('emulated_by_admin')) {
-            Log::info("Bypassing STEP_UP for payment because user is being emulated by admin.");
+            Log::info('Bypassing STEP_UP for payment because user is being emulated by admin.');
             $decision = 'ALLOW';
         }
 
@@ -97,6 +104,7 @@ trait RiskEnforcement
                     'reason_codes' => $riskResult['reason_codes'] ?? [],
                 ]);
             }
+
             return redirect()->back()->with('error', $msg);
         }
 
@@ -109,27 +117,29 @@ trait RiskEnforcement
             } else {
                 // Not verified, initiate OTP
                 try {
-                    $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
-                    $sent = app(\App\Services\Risk\VerificationService::class)->sendOtp($identity, $context);
-                    
-                    if (!$sent) {
+                    $identity = app(RiskIdentityService::class)->resolveIdentity($context);
+                    $sent = app(VerificationService::class)->sendOtp($identity, $context);
+
+                    if (! $sent) {
                         $msg = 'Unable to send verification code. Please check your email and try again.';
                         if ($isJsonResponse) {
                             return response()->json(['status' => false, 'message' => $msg, 'msg' => $msg]);
                         }
+
                         return redirect()->back()->with('error', $msg);
                     }
 
                     // Record the initiated STEP_UP in the ledger so REVIEW_HOLD tags are captured
                     // Note: We don't have stripe_session_id yet, but this captures the step_up attempt.
-                    \App\Models\Payment::create([
+                    Payment::create([
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $identity->id,
-                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']),
+                        'amount' => app(MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']),
                         'reserve_amount_minor' => (function () use ($creator, $context) {
-                            $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']);
-                            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
+                            $amountGbp = app(MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']);
+                            $metrics = app(RiskService::class)->recalculateMetrics((string) $creator->uuid);
                             $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+
                             return $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
                         })(),
                         'currency' => 'gbp',
@@ -155,7 +165,7 @@ trait RiskEnforcement
                         'creator_id' => $context['creator_id'],
                         'email' => $context['email'],
                         'device_id' => $context['device_id'],
-                    ]
+                    ],
                 ];
 
                 if ($isJsonResponse) {
@@ -173,7 +183,7 @@ trait RiskEnforcement
         // Return passing risk evaluation data so caller can build ledger/stripe metadata
         return [
             'status' => 'passed',
-            'risk_identity_id' => app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context)->id ?? null,
+            'risk_identity_id' => app(RiskIdentityService::class)->resolveIdentity($context)->id ?? null,
             'reason_codes' => $riskResult['reason_codes'] ?? [],
             'amount_minor' => $context['amount'],
             'currency' => $context['currency'],

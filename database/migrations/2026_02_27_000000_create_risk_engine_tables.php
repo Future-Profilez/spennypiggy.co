@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('platform_risk_states', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->enum('state', ['NORMAL', 'CAUTION', 'THROTTLE', 'FREEZE'])->default('NORMAL');
-            $table->json('reason_codes')->nullable(); 
+            $table->json('reason_codes')->nullable();
             $table->text('reason_detail')->nullable();
             $table->enum('set_by', ['system', 'admin']);
             $table->uuid('set_by_user_id')->nullable();
@@ -46,20 +46,20 @@ return new class extends Migration
         Schema::create('identity_rollups', function (Blueprint $table) {
             $table->uuid('risk_identity_id')->primary();
             $table->foreign('risk_identity_id')->references('id')->on('risk_identities')->onDelete('cascade');
-            
+
             $table->bigInteger('spend_10m')->default(0);
             $table->bigInteger('spend_1h')->default(0);
             $table->bigInteger('spend_2h')->default(0);
             $table->bigInteger('spend_24h')->default(0);
             $table->bigInteger('spend_48h')->default(0);
             $table->bigInteger('spend_7d')->default(0);
-            
+
             $table->integer('payment_count_10m')->default(0);
             $table->integer('creators_paid_24h')->default(0);
             $table->integer('creators_paid_48h')->default(0);
             $table->integer('new_creators_24h')->default(0);
             $table->integer('disputes_30d')->default(0);
-            
+
             $table->timestamp('updated_at')->useCurrent();
         });
 
@@ -71,7 +71,7 @@ return new class extends Migration
             // But spec says UUID. We'll use UUID for consistency with spec.
             // If users table uses bigInt, we might need a mapping or just store as string/bigInt.
             // I'll assume UUID for now or check users table migration.
-            $table->uuid('creator_id')->index(); 
+            $table->uuid('creator_id')->index();
             $table->uuid('risk_identity_id')->index();
             $table->foreign('risk_identity_id')->references('id')->on('risk_identities')->onDelete('cascade');
 
@@ -79,13 +79,13 @@ return new class extends Migration
             $table->string('currency')->default('gbp');
             $table->string('stripe_payment_intent_id')->nullable()->index();
             $table->enum('status', [
-                'initiated', 'step_up', 'review_hold', 'succeeded', 
-                'refunded', 'disputed', 'blocked', 'failed'
+                'initiated', 'step_up', 'review_hold', 'succeeded',
+                'refunded', 'disputed', 'blocked', 'failed',
             ])->index();
-            
+
             $table->uuid('confirmation_log_id')->nullable();
             $table->json('reason_codes')->nullable();
-            
+
             $table->timestamps();
         });
 
@@ -95,13 +95,13 @@ return new class extends Migration
             $table->uuid('payment_id')->nullable()->index();
             $table->uuid('risk_identity_id')->index();
             $table->foreign('risk_identity_id')->references('id')->on('risk_identities')->onDelete('cascade');
-            
+
             $table->string('ip_hash')->nullable();
             $table->string('device_id_hash')->nullable();
             $table->boolean('otp_verified')->default(false);
             $table->string('typed_confirmation')->nullable();
             $table->json('spend_snapshot')->nullable();
-            
+
             $table->timestamps();
         });
 
@@ -131,19 +131,19 @@ return new class extends Migration
         // 8. creator_metrics (Risk Profile per Creator)
         Schema::create('creator_metrics', function (Blueprint $table) {
             $table->uuid('creator_id')->primary(); // 1-to-1 with users/creators
-            
+
             $table->integer('tx_30d')->default(0);
             $table->integer('disputes_30d')->default(0);
             $table->decimal('dispute_rate_30d', 6, 3)->default(0.000); // percent
             $table->integer('refunds_30d')->default(0);
             $table->decimal('refund_rate_30d', 6, 3)->default(0.000); // percent
-            
+
             $table->integer('reserve_percent')->default(0); // 0/5/10/15
             $table->integer('payout_delay_days')->default(0);
-            
+
             $table->decimal('top_buyer_percent', 6, 3)->default(0.000);
             $table->integer('volatility_score')->default(0);
-            
+
             $table->timestamp('updated_at')->useCurrent();
         });
 
@@ -165,7 +165,7 @@ return new class extends Migration
             $table->json('metadata_json')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
-        
+
         // 11. creator_activation_state (Onboarding Throttle) - Add to users or separate table?
         // Spec says: Add creator_activation_state: PENDING / ACTIVE / PAUSED.
         // Assuming we can add this to users table or create a separate table.
@@ -173,10 +173,10 @@ return new class extends Migration
         // But for cleaner separation, let's assume we modify users table in a separate migration or here.
         // Let's create a separate table `creator_onboarding_states` or modify users.
         // Since we are doing consolidated migration, let's modify users table if needed.
-        // But checking `users` table structure is important. 
+        // But checking `users` table structure is important.
         // I will skip adding column to users table here to avoid locking issues in migration if users table is huge.
         // Instead, I'll create `creator_risk_profiles` (which matches creator_metrics mostly) but maybe `creator_metrics` can hold this state?
-        // Or just add column to users table in a separate migration. 
+        // Or just add column to users table in a separate migration.
         // For now, I'll stick to the tables defined in the spec.
     }
 

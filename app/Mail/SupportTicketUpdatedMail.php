@@ -13,6 +13,7 @@ class SupportTicketUpdatedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $ticket;
+
     public $supportUrl;
 
     public function __construct(SupportTicket $ticket)

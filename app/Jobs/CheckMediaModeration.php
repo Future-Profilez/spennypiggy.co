@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\User;
+use App\Support\ModerationNotice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -46,14 +47,38 @@ class CheckMediaModeration implements ShouldQueue
     /** Minimum Rekognition confidence (%) before a label counts — cuts false positives. */
     public const MIN_CONFIDENCE = 80.0;
 
-    /** Human-readable feature names for creator-facing notifications, keyed by model basename. */
-    private const FEATURE_LABELS = [
+    /**
+     * The asset keys a scan may be dispatched for, and how each reads in a
+     * sentence. The key is what lands in `moderation_asset`; the label is what
+     * the creator sees. Keeping both here means the review screen never has to
+     * infer the asset from prose, and re-wording the copy cannot break it.
+     */
+    public const ASSET_LABELS = [
+        'thumbnail' => 'thumbnail',
+        'cover_image' => 'cover image',
+        'product_image' => 'product image',
+        'task_image' => 'task image',
+        'reward_file' => 'reward file',
+        'reward_text' => 'listing text',
+        'avatar' => 'profile photo',
+        'cover' => 'cover photo',
+    ];
+
+    /**
+     * Human-readable feature names for creator-facing notifications, keyed by
+     * model basename. Public because the text half of the gate
+     * (App\Services\ItemTextModeration) words its notification the same way —
+     * a creator should not be able to tell which check held their listing from
+     * the shape of the sentence.
+     */
+    public const FEATURE_LABELS = [
         'PiggyPot' => 'Piggy Pot',
         'Shop' => 'shop listing',
         'Task' => 'task',
         'WishItem' => 'wish item',
         'Bills' => 'bill',
         'Membership' => 'membership level',
+        'User' => 'profile photo',
     ];
 
     /**
@@ -61,12 +86,19 @@ class CheckMediaModeration implements ShouldQueue
      * @param  int|string  $modelId  Primary key of the record.
      * @param  string|null  $mediaUuid  Uploadcare file UUID to scan.
      * @param  array  $flagOnViolation  Attributes to set when content is rejected (e.g. ['status' => 'moderation_hold']).
+     * @param  string  $mediaAsset  Which asset this scan covers — one of self::ASSET_LABELS.
+     *                              An item can be scanned more than once (a shop listing has both a
+     *                              product image and a paid reward file), so "an image was flagged"
+     *                              tells neither the reviewer nor the creator WHICH one to replace.
+     *                              Stored in `moderation_asset` as well as named in the reason, so
+     *                              the review screen reads a value rather than parsing a sentence.
      */
     public function __construct(
         public string $modelClass,
         public $modelId,
         public ?string $mediaUuid,
-        public array $flagOnViolation = []
+        public array $flagOnViolation = [],
+        public string $mediaAsset = 'thumbnail'
     ) {}
 
     public function handle(): void
@@ -231,10 +263,16 @@ class CheckMediaModeration implements ShouldQueue
                 $attributes['moderation_reason'] = $reason;
             }
 
+            // The machine-readable half: which asset, for the review screen.
+            if (Schema::hasColumn($record->getTable(), 'moderation_asset')) {
+                $attributes['moderation_asset'] = $this->mediaAsset;
+            }
+
             $record->forceFill($attributes)->save();
             Log::warning('Content held by moderation gate', [
                 'model' => $this->modelClass,
                 'id' => $this->modelId,
+                'asset' => $this->mediaAsset,
                 'label' => $reasonLabel,
             ]);
 
@@ -258,27 +296,31 @@ class CheckMediaModeration implements ShouldQueue
             default => 'content that may not meet our guidelines',
         };
 
-        return "Held by our automated image check ({$category}). Upload a different image to make it live, or contact support if you think this is a mistake.";
+        $asset = self::ASSET_LABELS[$this->mediaAsset] ?? 'image';
+
+        return "Held by our automated check on your {$asset} ({$category}). Replace that {$asset} to make it live, or contact support if you think this is a mistake.";
     }
 
     /** Tell the creator their content is held and how to fix it. */
     private function notifyCreator($record, string $reason = ''): void
     {
         try {
-            $creatorId = $record->user_id ?? $record->creator_id ?? null;
-            $creator = $creatorId ? User::find($creatorId) : null;
+            // Profile media is scanned on the User row itself, which has neither
+            // user_id nor creator_id — without this the creator whose avatar was
+            // held would never be told.
+            $creator = $record instanceof User
+                ? $record
+                : (($creatorId = $record->user_id ?? $record->creator_id ?? null) ? User::find($creatorId) : null);
+
             if (! $creator) {
                 return;
             }
 
             $label = self::FEATURE_LABELS[class_basename($this->modelClass)] ?? 'item';
             $title = $record->title ?? $record->name ?? '';
-            $named = $title !== '' ? " \"{$title}\"" : '';
-            $why = $reason !== '' ? ' '.$reason : ' Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
+            $why = $reason !== '' ? $reason : 'Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
 
-            $message = "Your {$label}{$named} is under review and isn't visible to buyers yet.".$why;
-
-            NotificationSave::dispatch($message, $creator, $creator, 'moderation');
+            ModerationNotice::send($creator, $label, (string) $title, $why);
         } catch (\Throwable $e) {
             // A notification failure must not break the moderation hold itself.
             Log::warning('Moderation notify failed: '.$e->getMessage());

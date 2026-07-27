@@ -9,7 +9,8 @@ class EarlyFraudWarningTest extends TestCase
 {
     public function test_it_generates_a_uuid_id_when_the_creating_event_runs(): void
     {
-        $warning = new class extends EarlyFraudWarning {
+        $warning = new class extends EarlyFraudWarning
+        {
             public function triggerCreatingEvent(): void
             {
                 $this->fireModelEvent('creating');

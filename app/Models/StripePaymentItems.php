@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Helpers;
 use App\Uploadcare;
 use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,7 +42,7 @@ class StripePaymentItems extends Model
         'quantity',
         'twitter_response',
         'anonymous',
-        'message'
+        'message',
     ];
 
     protected $appends = [
@@ -51,10 +50,10 @@ class StripePaymentItems extends Model
         'message_url',
     ];
 
-    protected $hidden   =   [
+    protected $hidden = [
         // 'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     public function payment()
@@ -78,13 +77,14 @@ class StripePaymentItems extends Model
         if (Auth::check()) {
             $sender = $this->payment->owner_id == Auth::id() ? false : true;
         }
+
         return $sender;
     }
 
     public function getMessageUrlAttribute()
     {
         $url = false;
-        if (!empty($this->message_media)) {
+        if (! empty($this->message_media)) {
 
             // if ($this->media_type == 'image') {
             //     $api = Uploadcare::getApiObj()->file();
@@ -104,7 +104,7 @@ class StripePaymentItems extends Model
             //     $url = Uploadcare::getUrl($this->message_media, $this->media_type, false, false);
             // }
 
-            $url =  'https://ucarecdn.com/' . $this->message_media . '/';
+            $url = 'https://ucarecdn.com/'.$this->message_media.'/';
         }
 
         return $url;

@@ -1,74 +1,36 @@
-import { useState, useEffect } from "react";
-import axios from 'axios';
+import useBundleSection from './useBundle';
 import { RiArrowUpLine, RiArrowDownLine, RiPulseLine } from 'react-icons/ri';
 import PriceFormat from '@/includes/PriceFormat';
 import Avatar from '@/includes/Avatar';
 
 export default function GrowthTrends() {
     const { formatMultiPrice } = PriceFormat();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [data, setData] = useState({
-        fastest_growing: [],
-        momentum_leaders: [],
-        comeback_creators: [],
-        platform_stats: {
-            total_creators: 0,
-            creators_growth: 0,
-            total_interactions: 0,
-            engagement_growth: 0,
-            new_supporters: 0,
-            supporters_growth: 0,
-            avg_community_score: 0,
-            community_growth: 0,
-            monthly_revenue: 0,
-            revenue_growth: 0,
-            avg_support: 0,
-            avg_growth: 0,
-        }
-    });
+    // Shared with every other panel on the page — one request, not seven.
+    const { data: section, loading, error, retry: fetchGrowthData } = useBundleSection('growth_trends');
+    const responseData = section?.data || {};
 
-    const fetchGrowthData = () => {
-        setLoading(true);
-        setError(null);
-        axios.get('leaderboard/growth-trends')
-            .then((response) => {
-                const responseData = response.data?.data || {};
-                setData({
-                    fastest_growing: responseData.fastest_growing || [],
-                    momentum_leaders: responseData.momentum_leaders || [],
-                    comeback_creators: responseData.comeback_creators || [],
-                    platform_stats: {
-                        total_creators: responseData.platform_stats?.total_creators ?? 0,
-                        creators_growth: responseData.platform_stats?.creators_growth ?? 0,
-                        total_interactions: responseData.platform_stats?.total_interactions ?? 0,
-                        engagement_growth: responseData.platform_stats?.engagement_growth ?? 0,
-                        new_supporters: responseData.platform_stats?.new_supporters ?? 0,
-                        supporters_growth: responseData.platform_stats?.supporters_growth ?? 0,
-                        avg_community_score: responseData.platform_stats?.avg_community_score ?? 0,
-                        community_growth: responseData.platform_stats?.community_growth ?? 0,
-                        monthly_revenue: responseData.platform_stats?.monthly_revenue ?? 0,
-                        revenue_growth: responseData.platform_stats?.revenue_growth ?? 0,
-                        avg_support: responseData.platform_stats?.avg_support ?? 0,
-                        avg_growth: responseData.platform_stats?.avg_growth ?? 0,
-                    }
-                });
-            })
-            .catch((error) => {
-                console.error("Error fetching growth trends:", error);
-                setError("Failed to load growth trends. Please try again.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+    const data = {
+        fastest_growing: responseData.fastest_growing || [],
+        momentum_leaders: responseData.momentum_leaders || [],
+        comeback_creators: responseData.comeback_creators || [],
+        platform_stats: {
+            total_creators: responseData.platform_stats?.total_creators ?? 0,
+            creators_growth: responseData.platform_stats?.creators_growth ?? 0,
+            total_interactions: responseData.platform_stats?.total_interactions ?? 0,
+            engagement_growth: responseData.platform_stats?.engagement_growth ?? 0,
+            new_supporters: responseData.platform_stats?.new_supporters ?? 0,
+            supporters_growth: responseData.platform_stats?.supporters_growth ?? 0,
+            avg_community_score: responseData.platform_stats?.avg_community_score ?? 0,
+            community_growth: responseData.platform_stats?.community_growth ?? 0,
+            monthly_revenue: responseData.platform_stats?.monthly_revenue ?? 0,
+            revenue_growth: responseData.platform_stats?.revenue_growth ?? 0,
+            avg_support: responseData.platform_stats?.avg_support ?? 0,
+            avg_growth: responseData.platform_stats?.avg_growth ?? 0,
+        },
     };
 
-    useEffect(() => {
-        fetchGrowthData();
-    }, []);
-
     const TrendCard = ({ title, value, change, icon: Icon, type = 'positive' }) => (
-        <div className="trend-card bg-white rounded-[30px]    p-4 shadow-sm">
+        <div className="trend-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
             <div className="flex items-center justify-between mb-2">
                 <Icon size={24} className={`${type === 'positive' ? 'text-green-500' : 'text-red-500'}`} />
                 <span className={`text-sm font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
@@ -81,31 +43,34 @@ export default function GrowthTrends() {
     );
 
     const CreatorCard = ({ creator, rank, badge }) => (
-        <div className="creator-growth-card bg-white rounded-[30px]    p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="creator-growth-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-3">
             <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <div className="relative">
-                        <Avatar
-                            name={creator.name}
-                            src={creator.avatar_url}
-                            role={creator.role}
-                            profile_status_lock={creator.profile_status_lock}
-                            username={creator.username}
-                            link={creator.username}
-                            size="md"
-                        />
-                        {badge && (
-                            <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-1">
-                                <span className="text-xs">🔥</span>
-                            </div>
-                        )}
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-gray-900">{creator.name}</h4>
-                        <p className="text-sm text-gray-600">@{creator.username}</p>
-                    </div>
+                <div className="flex min-w-0 items-center space-x-2">
+                    {/* `Avatar` already renders the name and the handle. The card
+                        printed both again beside it, so every creator appeared
+                        twice on the same row. */}
+                    <Avatar
+                        name={creator.name}
+                        src={creator.avatar_url}
+                        role={creator.role}
+                        profile_status_lock={creator.profile_status_lock}
+                        username={creator.username}
+                        link={creator.username}
+                        size="md"
+                    />
+                    {/* The flame sits beside the block, not on top of it — an
+                        absolute badge anchored to `Avatar` lands at the far right
+                        of its TEXT, which is what put it through the name. */}
+                    {badge && (
+                        <span
+                            title="Fastest growing"
+                            className="shrink-0 rounded-full bg-yellow-400/20 px-1.5 py-1 text-xs leading-none ring-1 ring-inset ring-yellow-500/30"
+                        >
+                            🔥
+                        </span>
+                    )}
                 </div>
-                <div className="text-right">
+                <div className="shrink-0 text-right">
                     {/* Show engagement metrics if available, otherwise show monetary */}
                     {creator.supporters ? (
                         <>
@@ -125,7 +90,7 @@ export default function GrowthTrends() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -135,7 +100,7 @@ export default function GrowthTrends() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px]   p-4 mb-6 text-center">
+            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -150,8 +115,8 @@ export default function GrowthTrends() {
     }
 
     return (
-        <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-left mb-4">📈 Growth & Momentum</h2>
+        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
+            <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📈 Growth & Momentum</h2>
             <p className="text-gray-500 mb-6">Creators with the fastest growth and momentum</p>
 
             {/* Platform Stats */}

@@ -15,12 +15,19 @@ class FounderBonusPayoutStatusUpdated extends Mailable
     use Queueable, SerializesModels;
 
     public User $creator;
+
     public string $label;
+
     public float $amount;
+
     public string $currency;
+
     public string $status;
+
     public ?string $arrivalDate;
+
     public ?string $periodLabel;
+
     public ?string $failureMessage;
 
     public function __construct(
@@ -77,4 +84,3 @@ class FounderBonusPayoutStatusUpdated extends Mailable
         return [];
     }
 }
-

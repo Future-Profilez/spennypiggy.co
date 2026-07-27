@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -34,7 +35,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     * @return array<string, Rule|array|string>
      */
     public function rules(): array
     {
@@ -47,7 +48,7 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @throws \Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException
+     * @throws ValidationException|HttpResponseException
      */
     public function authenticate(): void
     {
@@ -59,7 +60,7 @@ class LoginRequest extends FormRequest
         // } else if (!in_array($this->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000'])) {
         //     $userData[] = fn (Builder $query) => $query->where('country', '!=', 'GB');
         // }
-        if (!Auth::attempt($userData, $this->boolean('remember'))) {
+        if (! Auth::attempt($userData, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             // If this is a JSON request (e.g., from frontend expecting JSON response)
@@ -68,8 +69,8 @@ class LoginRequest extends FormRequest
                     response()->json([
                         'message' => trans('auth.failed'),
                         'errors' => [
-                            'email' => [trans('auth.failed')]
-                        ]
+                            'email' => [trans('auth.failed')],
+                        ],
                     ], 422)
                 );
             }
@@ -85,11 +86,11 @@ class LoginRequest extends FormRequest
     /**
      * Ensure the login request is not rate limited.
      *
-     * @throws \Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException
+     * @throws ValidationException|HttpResponseException
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -107,8 +108,8 @@ class LoginRequest extends FormRequest
                 response()->json([
                     'message' => $throttleMessage,
                     'errors' => [
-                        'email' => [$throttleMessage]
-                    ]
+                        'email' => [$throttleMessage],
+                    ],
                 ], 429)
             );
         }
@@ -123,6 +124,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('email')) . '|' . $this->ip());
+        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
     }
 }

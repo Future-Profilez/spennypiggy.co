@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('payments', 'platform_holds_funds')) {
+            if (! Schema::hasColumn('payments', 'platform_holds_funds')) {
                 $table->boolean('platform_holds_funds')->default(false)->after('reserve_amount_minor');
             }
-            if (!Schema::hasColumn('payments', 'stripe_transfer_id')) {
+            if (! Schema::hasColumn('payments', 'stripe_transfer_id')) {
                 $table->string('stripe_transfer_id')->nullable()->after('platform_holds_funds');
             }
         });

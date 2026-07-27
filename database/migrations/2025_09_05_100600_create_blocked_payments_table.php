@@ -28,13 +28,13 @@ return new class extends Migration
             $table->string('user_agent')->nullable();
             $table->timestamp('blocked_at');
             $table->timestamps();
-            
+
             // Indexes
             $table->index(['creator_id', 'blocked_at']);
             $table->index(['payment_type', 'blocked_at']);
             $table->index(['blocked_reason', 'blocked_at']);
             $table->index('blocked_at');
-            
+
             // Foreign key
             $table->foreign('creator_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('payer_id')->references('id')->on('users')->onDelete('set null');

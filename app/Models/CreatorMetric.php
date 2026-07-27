@@ -10,7 +10,9 @@ class CreatorMetric extends Model
     use HasFactory;
 
     protected $primaryKey = 'creator_id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -26,7 +28,7 @@ class CreatorMetric extends Model
         'top_buyer_percent',
         'volatility_score',
         'risk_level',
-        'is_overridden'
+        'is_overridden',
     ];
 
     protected $casts = [

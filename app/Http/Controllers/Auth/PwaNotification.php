@@ -84,7 +84,7 @@ class PwaNotification extends Controller
                 'msg' => 'Push notifications sent successfully.',
             ]);
         } catch (\Exception $e) {
-            Log::error('Push notification error: ' . $e->getMessage());
+            Log::error('Push notification error: '.$e->getMessage());
 
             return response()->json([
                 'status' => false,
@@ -114,8 +114,8 @@ class PwaNotification extends Controller
                 'followed_id' => $followed_id,
             ]);
 
-            $title = "👥 New Follower!";
-            $content = ucfirst($LoggedInUser->name) . "($LoggedInUser->username)" . " just followed you. Just Check their profile!";
+            $title = '👥 New Follower!';
+            $content = ucfirst($LoggedInUser->name)."($LoggedInUser->username)".' just followed you. Just Check their profile!';
             $email = $followedUser->email; // user being followed
 
             Helpers::sendNotification($title, $content, $email);
@@ -145,7 +145,7 @@ class PwaNotification extends Controller
         // Get the ID of the target user to be followed
         $followedId = User::where('email', 'spennypiggyofficial@gmail.com')->value('id');
 
-        if (!$followedId) {
+        if (! $followedId) {
             return response()->json(['status' => false, 'message' => 'Target user not found.']);
         }
 
@@ -159,7 +159,7 @@ class PwaNotification extends Controller
                 );
             } catch (\Exception $e) {
                 // Log error but continue processing
-                Log::error("Failed to follow for user ID {$user->id}: " . $e->getMessage());
+                Log::error("Failed to follow for user ID {$user->id}: ".$e->getMessage());
             }
         }
 

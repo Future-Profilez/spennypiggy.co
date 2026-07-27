@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wish_item_subscriptions', function (Blueprint $table) {
-            $table->string("status",50)->nullable()->default('initiated')->after('upcoming_payment')->comment("Stripe Subscription Message");
+            $table->string('status', 50)->nullable()->default('initiated')->after('upcoming_payment')->comment('Stripe Subscription Message');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wish_item_subscriptions', function (Blueprint $table) {
-            $table->dropColumn("status");
+            $table->dropColumn('status');
         });
     }
 };

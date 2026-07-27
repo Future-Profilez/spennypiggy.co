@@ -23,10 +23,10 @@ return new class extends Migration
         ];
 
         foreach ($tables as $tableName) {
-            if (Schema::hasTable($tableName) && !Schema::hasColumn($tableName, 'total_paid')) {
+            if (Schema::hasTable($tableName) && ! Schema::hasColumn($tableName, 'total_paid')) {
                 Schema::table($tableName, function (Blueprint $table) use ($tableName) {
                     $column = $table->double('total_paid', 15, 2)->default(0.00);
-                    
+
                     if (Schema::hasColumn($tableName, 'amount')) {
                         $column->after('amount');
                     }

@@ -12,11 +12,12 @@ class LogRequests
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        Log::info('INCOMING REQUEST: ' . $request->method() . ' ' . $request->fullUrl(), $request->all());
+        Log::info('INCOMING REQUEST: '.$request->method().' '.$request->fullUrl(), $request->all());
+
         return $next($request);
     }
 }

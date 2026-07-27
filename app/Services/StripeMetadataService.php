@@ -2,30 +2,36 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-use App\Models\Deliverable;
-use App\Models\WishItem;
 use App\Models\Bill;
+use App\Models\Deliverable;
 use App\Models\Membership;
+use App\Models\User;
+use App\Models\WishItem;
+use App\StripeControl;
+use Illuminate\Support\Facades\Log;
+use Stripe\Charge;
+use Stripe\Exception\InvalidRequestException;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class StripeMetadataService
 {
     /**
      * Update Stripe payment intent metadata with new flattened format
      * Implements NEW_STRIPE_METADATA_FORMAT.md specification
-     * 
-     * @param string $paymentIntentId Stripe payment intent ID
-     * @param string|null $certificateUrl Certificate URL from Uploadcare
-     * @param string $deliveryStatus Status: pending, delivered, failed, completed
-     * @param array $additionalMetadata Additional metadata to include
-     * @param string|null $deliverableUuid UUID of the deliverable record
-     * @param string|null $deliveryUrl Content delivery URL
-     * @param bool $skipDeliveryFields Skip delivery fields for support payments
+     *
+     * @param  string  $paymentIntentId  Stripe payment intent ID
+     * @param  string|null  $certificateUrl  Certificate URL from Uploadcare
+     * @param  string  $deliveryStatus  Status: pending, delivered, failed, completed
+     * @param  array  $additionalMetadata  Additional metadata to include
+     * @param  string|null  $deliverableUuid  UUID of the deliverable record
+     * @param  string|null  $deliveryUrl  Content delivery URL
+     * @param  bool  $skipDeliveryFields  Skip delivery fields for support payments
      * @return bool Success status
      */
     public function updatePaymentIntentMetadata(
-        string $paymentIntentId, 
-        ?string $certificateUrl = null, 
+        string $paymentIntentId,
+        ?string $certificateUrl = null,
         string $deliveryStatus = 'pending',
         array $additionalMetadata = [],
         ?string $deliverableUuid = null,
@@ -37,59 +43,59 @@ class StripeMetadataService
             // Build metadata array with new flattened format
             $metadata = [
                 'updated_at' => now()->toISOString(),
-                'platform' => 'SpennyPiggy'
+                'platform' => 'SpennyPiggy',
             ];
-            
+
             // Only add delivery/certificate fields if not skipped (for support payments)
-            if (!$skipDeliveryFields) {
+            if (! $skipDeliveryFields) {
                 // STATIC VALUES AS REQUESTED - Always show delivered/true
                 $metadata['content_delivery_status'] = 'delivered';
                 $metadata['certificate'] = 'true';
                 $metadata['delivery_status'] = 'delivered';
-                
+
                 // Add certificate URL if provided
                 if ($certificateUrl) {
                     $metadata['certificate_url'] = $certificateUrl;
                 }
-                
+
                 // Add delivery URL if provided
                 if ($deliveryUrl) {
                     $metadata['delivery_url'] = $deliveryUrl;
                 }
-                
+
                 // Add deliverable UUID if provided
                 if ($deliverableUuid) {
                     $metadata['certificate_id'] = $deliverableUuid;
                     $metadata['deliverable_uuid'] = $deliverableUuid;
                 }
             }
-            
+
             // Add any additional metadata
-            if (!empty($additionalMetadata)) {
+            if (! empty($additionalMetadata)) {
                 $metadata = array_merge($metadata, $additionalMetadata);
             }
 
             $metadata = $this->pruneStripeMetadataPayload($metadata);
-            
+
             // Update payment intent metadata
             $options = [];
             if ($stripeAccountId) {
                 $options['stripe_account'] = $stripeAccountId;
             }
-            
+
             // PaymentIntents live on whichever platform (UK/US) owns the connected
             // account. We don't have the currency here, so try the UK platform first
             // and fall back to the US platform on resource_missing (multi-region setup).
             // Using region clients instead of a hardcoded global key (which forced the
             // UK key and failed "No such payment_intent" for US payments).
             try {
-                \App\StripeControl::getClient()->paymentIntents->update($paymentIntentId, [
-                    'metadata' => $metadata
+                StripeControl::getClient()->paymentIntents->update($paymentIntentId, [
+                    'metadata' => $metadata,
                 ], $options);
-            } catch (\Stripe\Exception\InvalidRequestException $e) {
+            } catch (InvalidRequestException $e) {
                 if ($e->getStripeCode() === 'resource_missing' || str_contains((string) $e->getMessage(), 'No such payment_intent')) {
-                    \App\StripeControl::getClientForCurrency('USD')->paymentIntents->update($paymentIntentId, [
-                        'metadata' => $metadata
+                    StripeControl::getClientForCurrency('USD')->paymentIntents->update($paymentIntentId, [
+                        'metadata' => $metadata,
                     ], $options);
                 } else {
                     throw $e;
@@ -104,11 +110,11 @@ class StripeMetadataService
                 'deliverable_uuid' => $deliverableUuid,
                 'skip_delivery_fields' => $skipDeliveryFields,
                 'additional_metadata_count' => count($additionalMetadata),
-                'stripe_account' => $stripeAccountId
+                'stripe_account' => $stripeAccountId,
             ]);
-            
+
             return true;
-            
+
         } catch (\Exception $e) {
             Log::error('StripeMetadataService: Failed to update payment intent metadata (NEW FORMAT)', [
                 'payment_intent_id' => $paymentIntentId,
@@ -119,13 +125,13 @@ class StripeMetadataService
                 'skip_delivery_fields' => $skipDeliveryFields,
                 'stripe_account' => $stripeAccountId,
                 'error' => $e->getMessage(),
-                'error_class' => get_class($e)
+                'error_class' => get_class($e),
             ]);
-            
+
             return false;
         }
     }
-    
+
     private function shouldRetryPaymentIntentLookup(\Exception $exception): bool
     {
         $message = strtolower($exception->getMessage());
@@ -139,18 +145,15 @@ class StripeMetadataService
 
     /**
      * Update Stripe metadata for a deliverable record - NEW FLATTENED FORMAT
-     * 
-     * @param Deliverable $deliverable
-     * @param array $additionalMetadata
-     * @return bool
      */
     public function updateDeliverableMetadata(Deliverable $deliverable, array $additionalMetadata = []): bool
     {
-        if (!$deliverable->payment_intent_id) {
+        if (! $deliverable->payment_intent_id) {
             Log::warning('StripeMetadataService: No payment intent ID found for deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'deliverable_uuid' => $deliverable->uuid
+                'deliverable_uuid' => $deliverable->uuid,
             ]);
+
             return false;
         }
 
@@ -168,24 +171,24 @@ class StripeMetadataService
                 $stripeAccountId = $deliverable->task->creator->account_id;
             }
         } elseif ($deliverable->product_type === 'wish' && $deliverable->wishItem && $deliverable->wishItem->user) {
-             $stripeAccountId = $deliverable->wishItem->user->account_id;
+            $stripeAccountId = $deliverable->wishItem->user->account_id;
         } elseif ($deliverable->product_type === 'bill' && $deliverable->bill && $deliverable->bill->user) {
-             $stripeAccountId = $deliverable->bill->user->account_id;
+            $stripeAccountId = $deliverable->bill->user->account_id;
         } elseif ($deliverable->product_type === 'membership' && $deliverable->membership && $deliverable->membership->user) {
-             $stripeAccountId = $deliverable->membership->user->account_id;
+            $stripeAccountId = $deliverable->membership->user->account_id;
         } elseif ($deliverable->product_type === 'support_payment') {
-             // Look up creator for support payments
-             if ($deliverable->creator_id) {
-                 $creator = \App\Models\User::find($deliverable->creator_id);
-                 if ($creator && $creator->account_id) {
-                     $stripeAccountId = $creator->account_id;
-                 }
-             }
+            // Look up creator for support payments
+            if ($deliverable->creator_id) {
+                $creator = User::find($deliverable->creator_id);
+                if ($creator && $creator->account_id) {
+                    $stripeAccountId = $creator->account_id;
+                }
+            }
         }
 
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             try {
-                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                Stripe::setApiKey(config('services.stripe.secret'));
 
                 $pi = null;
                 $targetAccount = null;
@@ -200,7 +203,7 @@ class StripeMetadataService
                                 $retrieveOptions['stripe_account'] = $accountCandidate;
                             }
 
-                            $pi = \Stripe\PaymentIntent::retrieve(
+                            $pi = PaymentIntent::retrieve(
                                 $deliverable->payment_intent_id,
                                 $retrieveOptions
                             );
@@ -212,7 +215,7 @@ class StripeMetadataService
                                 'attempt' => $attempt,
                                 'error' => $e->getMessage(),
                             ];
-                            if (!$this->shouldRetryPaymentIntentLookup($e) || $attempt === 3) {
+                            if (! $this->shouldRetryPaymentIntentLookup($e) || $attempt === 3) {
                                 continue;
                             }
                             usleep(500000 * $attempt);
@@ -220,15 +223,15 @@ class StripeMetadataService
                     }
                 }
 
-                if (!$pi) {
-                    throw new \RuntimeException('Unable to retrieve payment intent after retries: ' . json_encode($lookupErrors));
+                if (! $pi) {
+                    throw new \RuntimeException('Unable to retrieve payment intent after retries: '.json_encode($lookupErrors));
                 }
 
                 $chargeId = is_object($pi->latest_charge)
                     ? ($pi->latest_charge->id ?? null)
                     : ($pi->latest_charge ?? null);
 
-                if (!$chargeId) {
+                if (! $chargeId) {
                     $fallbackErrors = [];
                     $chargeLookupOptions = ['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1];
                     if ($targetAccount) {
@@ -237,8 +240,8 @@ class StripeMetadataService
 
                     for ($attempt = 1; $attempt <= 3; $attempt++) {
                         try {
-                            $charges = \Stripe\Charge::all($chargeLookupOptions);
-                            if (!empty($charges->data)) {
+                            $charges = Charge::all($chargeLookupOptions);
+                            if (! empty($charges->data)) {
                                 $chargeId = $charges->data[0]->id;
                                 break;
                             }
@@ -247,19 +250,20 @@ class StripeMetadataService
                             if ($attempt === 3) {
                                 Log::warning('StripeMetadataService: Fallback charge lookup failed', [
                                     'payment_intent_id' => $deliverable->payment_intent_id,
-                                    'error' => $e->getMessage()
+                                    'error' => $e->getMessage(),
                                 ]);
                             }
                             usleep(500000 * $attempt);
                         }
                     }
 
-                    if (!$chargeId) {
+                    if (! $chargeId) {
                         Log::warning('StripeMetadataService: No latest charge found for task deliverable', [
                             'payment_intent_id' => $deliverable->payment_intent_id,
                             'target_account' => $targetAccount,
                             'errors' => $fallbackErrors,
                         ]);
+
                         return false;
                     }
                 }
@@ -291,9 +295,9 @@ class StripeMetadataService
                 if ($targetAccount) {
                     $updateOpts = ['metadata' => $metadata, 'stripe_account' => $targetAccount];
                     // Charge::update signature is ($id, $params, $opts)
-                    \Stripe\Charge::update($chargeId, ['metadata' => $metadata], ['stripe_account' => $targetAccount]);
+                    Charge::update($chargeId, ['metadata' => $metadata], ['stripe_account' => $targetAccount]);
                 } else {
-                    \Stripe\Charge::update($chargeId, ['metadata' => $metadata]);
+                    Charge::update($chargeId, ['metadata' => $metadata]);
                 }
 
                 Log::info('StripeMetadataService: Updated latest charge metadata for task deliverable', [
@@ -302,6 +306,7 @@ class StripeMetadataService
                     'target_account' => $targetAccount,
                     'metadata_keys' => array_keys($metadata),
                 ]);
+
                 return true;
             } catch (\Exception $e) {
                 Log::error('StripeMetadataService: Failed to update latest charge metadata for task deliverable', [
@@ -309,12 +314,13 @@ class StripeMetadataService
                     'error' => $e->getMessage(),
                     'stripe_account' => $stripeAccountId,
                 ]);
+
                 return false;
             }
         }
 
         $isSupportPaymentWithCert = $this->isSupportPaymentWithCertificate($deliverable);
-        $skipDeliveryFields = ($deliverable->product_type === 'support_payment' && !$isSupportPaymentWithCert)
+        $skipDeliveryFields = ($deliverable->product_type === 'support_payment' && ! $isSupportPaymentWithCert)
                             || in_array($deliverable->product_type, ['task', 'task_purchase']);
         $deliveryStatus = $skipDeliveryFields ? 'pending' : $this->mapDeliverableStatusToDeliveryStatus($deliverable->status);
         $newFormatMetadata = $this->buildNewFlattenedMetadata($deliverable);
@@ -324,40 +330,40 @@ class StripeMetadataService
             Log::info('StripeMetadataService: Support payment metadata + cert URL', [
                 'deliverable_id' => $deliverable->id,
                 'certificate_url' => $deliverable->certificate_url,
-                'payment_intent_id' => $deliverable->payment_intent_id
+                'payment_intent_id' => $deliverable->payment_intent_id,
             ]);
         }
-        
+
         // Use the determined stripeAccountId (if any) to find/update the PI
-        // We need to verify if the PI is actually on that account first, 
+        // We need to verify if the PI is actually on that account first,
         // but updatePaymentIntentMetadata blindly tries.
         // Let's refine updatePaymentIntentMetadata to handle the check or we pass the verified account.
-        
+
         // For non-task items, we haven't verified the location yet.
         // But if it's a new flow, it should be on the connected account.
         // Let's do the same check logic here or inside updatePaymentIntentMetadata?
         // Simpler: pass the potential account ID to updatePaymentIntentMetadata and let it handle/try?
         // But updatePaymentIntentMetadata doesn't have the retry logic I wrote above.
-        
+
         // Let's pass the stripeAccountId. If the PI is on Platform, passing stripe_account will fail.
         // So we really need to know where it is.
-        
+
         // Reuse the discovery logic?
         $targetAccount = null;
         if ($stripeAccountId) {
-             try {
-                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                 \Stripe\PaymentIntent::retrieve(
-                    $deliverable->payment_intent_id, 
-                    [], 
+            try {
+                Stripe::setApiKey(config('services.stripe.secret'));
+                PaymentIntent::retrieve(
+                    $deliverable->payment_intent_id,
+                    [],
                     ['stripe_account' => $stripeAccountId]
-                 );
-                 $targetAccount = $stripeAccountId;
-             } catch (\Exception $e) {
-                 // Not on connected account, assume platform
-             }
+                );
+                $targetAccount = $stripeAccountId;
+            } catch (\Exception $e) {
+                // Not on connected account, assume platform
+            }
         }
-        
+
         return $this->updatePaymentIntentMetadata(
             $deliverable->payment_intent_id,
             $skipDeliveryFields ? null : $deliverable->certificate_url,
@@ -369,17 +375,14 @@ class StripeMetadataService
             $targetAccount
         );
     }
-    
+
     /**
      * Check if deliverable is a support payment with certificate
-     * 
-     * @param Deliverable $deliverable
-     * @return bool
      */
     private function isSupportPaymentWithCertificate(Deliverable $deliverable): bool
     {
-        return $deliverable->product_type === 'support_payment' 
-            && !empty($deliverable->certificate_url)
+        return $deliverable->product_type === 'support_payment'
+            && ! empty($deliverable->certificate_url)
             && $deliverable->status === 'delivered';
     }
 
@@ -447,19 +450,16 @@ class StripeMetadataService
                 break;
             }
 
-            if (!array_key_exists($key, $kept)) {
+            if (! array_key_exists($key, $kept)) {
                 $kept[$key] = $value;
             }
         }
 
         return array_slice($kept, 0, 45, true);
     }
-    
+
     /**
      * Map deliverable status to delivery status for Stripe
-     * 
-     * @param string $deliverableStatus
-     * @return string
      */
     private function mapDeliverableStatusToDeliveryStatus(?string $deliverableStatus): string
     {
@@ -467,7 +467,7 @@ class StripeMetadataService
             return 'pending';
         }
 
-        return match($deliverableStatus) {
+        return match ($deliverableStatus) {
             'delivered' => 'completed',
             'completed_accepted' => 'completed',
             'completed' => 'completed',
@@ -488,26 +488,23 @@ class StripeMetadataService
             default => 'pending'
         };
     }
-    
+
     /**
      * Build product-specific metadata for different product types
-     * 
-     * @param Deliverable $deliverable
-     * @return array
      */
     private function buildProductSpecificMetadata(Deliverable $deliverable): array
     {
         $metadata = [
             'product_type' => $deliverable->product_type,
             'transaction_amount' => (string) $deliverable->transaction_amount,
-            'payment_currency' => $deliverable->payment_currency ?? 'GBP'
+            'payment_currency' => $deliverable->payment_currency ?? 'GBP',
         ];
-        
+
         // Only add deliverable_type if it's NOT a task (to keep metadata clean as per request)
-        if (!in_array($deliverable->product_type, ['task', 'task_purchase'])) {
+        if (! in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             $metadata['deliverable_type'] = $deliverable->deliverable_type;
         }
-        
+
         // Add product-specific details based on product type
         switch ($deliverable->product_type) {
             case 'wish':
@@ -516,21 +513,21 @@ class StripeMetadataService
                     $metadata['creator_username'] = $deliverable->wishItem->user->username ?? 'Unknown';
                 }
                 break;
-                
+
             case 'bill':
                 if ($deliverable->bill) {
                     $metadata['bill_name'] = $deliverable->bill->name ?? 'Unknown Bill';
                     $metadata['creator_username'] = $deliverable->bill->user->username ?? 'Unknown';
                 }
                 break;
-                
+
             case 'membership':
                 if ($deliverable->membership) {
                     $metadata['membership_name'] = $deliverable->membership->name ?? 'Unknown Membership';
                     $metadata['creator_username'] = $deliverable->membership->user->username ?? 'Unknown';
                 }
                 break;
-                
+
             case 'shop_item':
                 // Add shop item specific metadata if needed
                 $metadata['shop_item_id'] = $deliverable->item_id;
@@ -542,7 +539,7 @@ class StripeMetadataService
                     $task = $deliverable->task;
                     $metadata['task_type'] = $task->type;
                     $metadata['purpose'] = 'paid_task';
-                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant';
+                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours.' hours') : 'instant';
                     $metadata['payment_date'] = $deliverable->created_at
                         ? $deliverable->created_at->toIso8601String()
                         : now()->toIso8601String();
@@ -552,7 +549,7 @@ class StripeMetadataService
                     $metadata['payment_status'] = $deliverable->payment_status ?? 'pending';
                 }
                 break;
-                
+
             case 'support_payment':
                 $metadata['support_payment'] = 'true';
                 $metadata['payment_type'] = 'tip_donation';
@@ -565,109 +562,106 @@ class StripeMetadataService
                 }
                 break;
         }
-        
-        // Add content delivery information 
+
+        // Add content delivery information
         if ($deliverable->product_type !== 'support_payment' && $deliverable->deliverable_url) {
             $metadata['content_available'] = 'true';
             $metadata['content_delivery_url'] = $deliverable->deliverable_url;
         }
-        
+
         // Special handling for support payments with certificate delivery
         if ($this->isSupportPaymentWithCertificate($deliverable) && $deliverable->deliverable_url) {
             $metadata['content_available'] = 'true';
             $metadata['content_delivery_url'] = $deliverable->deliverable_url;
         }
-        
+
         return $metadata;
     }
-    
+
     /**
      * Build COMPLETE FLATTENED metadata format as per NEW_STRIPE_METADATA_FORMAT.md
      * Applied to ALL payment types (wish, bill, membership, shop_item)
-     * 
-     * @param Deliverable $deliverable
-     * @return array
      */
     private function buildNewFlattenedMetadata(Deliverable $deliverable): array
     {
         $metadata = [];
-        
+
         // Skip for support payments - they don't need flattened content metadata
         if ($deliverable->product_type === 'support_payment') {
             return [
                 'payment_type' => 'tip_donation',
                 'support_payment' => 'true',
-                'product_type' => 'support_payment'
+                'product_type' => 'support_payment',
             ];
         }
-        
+
         // BASIC PAYMENT INFO - same structure for all payment types
         $this->addBasicPaymentInfo($metadata, $deliverable);
-        
+
         // For tasks, we want to keep metadata clean and avoid adding content items/delivery status
         // But we DO want the basic info (status, buyer/creator) added above
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             return $metadata;
         }
-        
+
         // CONTENT DELIVERY STATUS - REQUIRED
         $metadata['content_delivery_status'] = 'delivered'; // STATIC as requested
-        
+
         // Get related content items based on product type
         $contentItems = $this->getContentItemsForDeliverable($deliverable);
-        
+
         // CONTENT SUMMARY - REQUIRED
-        $metadata['has_content'] = !empty($contentItems) ? 'true' : 'false';
+        $metadata['has_content'] = ! empty($contentItems) ? 'true' : 'false';
         $metadata['content_items_count'] = (string) count($contentItems);
-        
+
         // FLATTEN INDIVIDUAL CONTENT ITEMS - item_1_*, item_2_*, etc.
         foreach ($contentItems as $index => $item) {
             $itemNum = $index + 1;
             $prefix = "item_{$itemNum}_";
-            
-            $metadata[$prefix . 'wish_id'] = (string) $item['wish_id'];
-            $metadata[$prefix . 'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
-            
-            if (!empty($item['content_url'])) {
-                $metadata[$prefix . 'content_url'] = $item['content_url'];
-                $metadata[$prefix . 'content_type'] = $item['content_type'] ?? 'file';
-                $metadata[$prefix . 'content_source'] = $item['source'] ?? 'content_file';
+
+            $metadata[$prefix.'wish_id'] = (string) $item['wish_id'];
+            $metadata[$prefix.'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
+
+            if (! empty($item['content_url'])) {
+                $metadata[$prefix.'content_url'] = $item['content_url'];
+                $metadata[$prefix.'content_type'] = $item['content_type'] ?? 'file';
+                $metadata[$prefix.'content_source'] = $item['source'] ?? 'content_file';
             }
         }
-        
+
         // PAYMENT DETAILS - same for all payment types
         $metadata['certificate'] = 'true'; // STATIC as requested
         $metadata['deliverable_type'] = $deliverable->deliverable_type;
         $metadata['items_count'] = (string) max(count($contentItems), 1);
         $metadata['payment_type'] = 'Destination Charges with transfers';
         $metadata['quantity'] = '1'; // Default quantity
-        
+
         // BUILD ITEMS SUMMARY - clean JSON format
         $this->addItemsSummary($metadata, $deliverable, $contentItems);
-        
+
         // BUILD BACKWARD COMPATIBILITY JSON - clean format
-        if (!empty($contentItems)) {
+        if (! empty($contentItems)) {
             $cleanContentUrls = [];
             foreach ($contentItems as $item) {
-                if (!empty($item['content_url'])) {
+                if (! empty($item['content_url'])) {
                     $cleanContentUrls[] = [
                         'wish_id' => $item['wish_id'],
                         'wish_name' => $item['wish_name'],
                         'content_url' => $item['content_url'],
                         'content_type' => $item['content_type'] ?? 'file',
-                        'source' => $item['source'] ?? 'content_file'
+                        'source' => $item['source'] ?? 'content_file',
                     ];
                 }
             }
-            
-            if (!empty($cleanContentUrls)) {
+
+            if (! empty($cleanContentUrls)) {
                 $metadata['content_urls'] = json_encode($cleanContentUrls);
             }
         }
-        
+
         return $metadata;
     }
-    
+
     /**
      * Add basic payment info (buyer/creator details) to metadata
      */
@@ -679,13 +673,13 @@ class StripeMetadataService
         $metadata['buyer_email'] = $deliverable->customer_email ?? 'anonymous@spennypiggy.co';
         $metadata['buyer_username'] = 'guest'; // Default for now
         $metadata['gifter_profile_url'] = 'N/A';
-        
+
         // CREATOR INFO
         $metadata['creator_id'] = (string) ($deliverable->creator_id ?? 'unknown');
         $metadata['creator_name'] = 'Creator'; // Default
         $metadata['creator_username'] = 'creator'; // Default
         $metadata['creator_profile_url'] = 'N/A';
-        
+
         // Try to get actual creator details based on product type
         switch ($deliverable->product_type) {
             case 'wish':
@@ -696,7 +690,7 @@ class StripeMetadataService
                     $metadata['creator_profile_url'] = route('user.show', $user->username);
                 }
                 break;
-                
+
             case 'bill':
                 if ($deliverable->bill && $deliverable->bill->user) {
                     $user = $deliverable->bill->user;
@@ -705,7 +699,7 @@ class StripeMetadataService
                     $metadata['creator_profile_url'] = route('user.show', $user->username);
                 }
                 break;
-                
+
             case 'membership':
                 if ($deliverable->membership && $deliverable->membership->user) {
                     $user = $deliverable->membership->user;
@@ -724,7 +718,7 @@ class StripeMetadataService
                 } elseif ($deliverable->task && $deliverable->task->creator) {
                     $creator = $deliverable->task->creator;
                 } elseif ($deliverable->creator_id) {
-                    $creator = \App\Models\User::find($deliverable->creator_id);
+                    $creator = User::find($deliverable->creator_id);
                 }
 
                 if ($creator) {
@@ -737,20 +731,20 @@ class StripeMetadataService
                 if ($deliverable->gifter) {
                     $gifter = $deliverable->gifter;
                 } elseif ($deliverable->gifter_id) {
-                    $gifter = \App\Models\User::find($deliverable->gifter_id);
+                    $gifter = User::find($deliverable->gifter_id);
                 }
 
                 if ($gifter) {
                     $metadata['gifter_name'] = $gifter->name;
                     $metadata['gifter_profile_url'] = route('user.show', $gifter->username);
                 }
-                
+
                 // Get Purchase Details
                 $purchase = $deliverable->purchase; // Assumes relationship exists
                 if ($purchase) {
                     $metadata['gifter_message'] = $purchase->gifter_message ?? '';
                     $metadata['transfer_amount'] = (string) $purchase->transfer_amount;
-                    
+
                     // Transfer Status Logic
                     $metadata['transfer_status'] = 'pending';
                     if ($purchase->status === 'paid_out') {
@@ -780,14 +774,14 @@ class StripeMetadataService
                     $task = $deliverable->task;
                     $metadata['purpose'] = 'paid_task';
                     $metadata['type'] = 'task_purchase';
-                    $metadata['task_url'] = rtrim(config('app.url'), '/') . '/task/' . $task->uuid;
+                    $metadata['task_url'] = rtrim(config('app.url'), '/').'/task/'.$task->uuid;
                     $metadata['task_type'] = $task->type;
                     $metadata['delivery_mode'] = $task->type === 'timed' ? 'Timed Delivery' : 'Instant';
-                    $metadata['value_summary'] = "Digital task service: " . $task->title;
+                    $metadata['value_summary'] = 'Digital task service: '.$task->title;
                     $metadata['sla_hours'] = (string) ($task->sla_hours ?? 0);
-                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant';
+                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours.' hours') : 'instant';
                     $metadata['payment_type'] = $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK';
-                    
+
                     // Evidence of Delivery (Strong Proof for Disputes)
                     if (in_array($deliverable->status, ['delivered', 'completed', 'completed_accepted'])) {
                         $metadata['delivery_proof'] = $deliverable->deliverable_url ?? 'Instant Access/Log';
@@ -796,7 +790,7 @@ class StripeMetadataService
                 }
 
                 $metadata['payment_date'] = $deliverable->created_at ? $deliverable->created_at->toIso8601String() : now()->toIso8601String();
-                
+
                 $orderStatus = $metadata['current_status_of_order'] ?? $deliverable->status;
                 $metadata['current_status_of_order'] = $orderStatus;
                 $metadata['delivery_status'] = $this->mapDeliverableStatusToDeliveryStatus($orderStatus);
@@ -810,7 +804,7 @@ class StripeMetadataService
                 break;
         }
     }
-    
+
     /**
      * Add items summary JSON to metadata
      */
@@ -820,11 +814,11 @@ class StripeMetadataService
             'total_items' => max(count($contentItems), 1),
             'total_amount' => $deliverable->transaction_amount ?? 0,
             'item_ids' => [],
-            'item_names' => []
+            'item_names' => [],
         ];
-        
+
         // Add items based on product type
-        if (!empty($contentItems)) {
+        if (! empty($contentItems)) {
             foreach ($contentItems as $item) {
                 $summary['item_ids'][] = $item['wish_id'];
                 $summary['item_names'][] = $item['wish_name'];
@@ -834,25 +828,25 @@ class StripeMetadataService
             $summary['item_ids'][] = $deliverable->item_id ?? 0;
             $summary['item_names'][] = $this->getItemName($deliverable);
         }
-        
+
         // Different summary key based on product type
-        $summaryKey = match($deliverable->product_type) {
+        $summaryKey = match ($deliverable->product_type) {
             'wish' => 'wish_items_summary',
             'bill' => 'bill_items_summary',
             'membership' => 'membership_items_summary',
             'shop_item' => 'shop_items_summary',
             default => 'items_summary'
         };
-        
+
         $metadata[$summaryKey] = json_encode($summary);
     }
-    
+
     /**
      * Get item name based on product type
      */
     private function getItemName(Deliverable $deliverable): string
     {
-        return match($deliverable->product_type) {
+        return match ($deliverable->product_type) {
             'wish' => $deliverable->wishItem->wishname ?? 'Wish Item',
             'bill' => $deliverable->bill->name ?? 'Bill',
             'membership' => $deliverable->membership->name ?? 'Membership',
@@ -860,18 +854,15 @@ class StripeMetadataService
             default => 'Item'
         };
     }
-    
+
     /**
      * Get content items for a deliverable based on its product type
      * Returns items in flattened format for ALL payment types
-     * 
-     * @param Deliverable $deliverable
-     * @return array
      */
     private function getContentItemsForDeliverable(Deliverable $deliverable): array
     {
         $contentItems = [];
-        
+
         switch ($deliverable->product_type) {
             case 'wish':
                 if ($deliverable->wishItem) {
@@ -881,7 +872,7 @@ class StripeMetadataService
                         'wish_name' => $wish->wishname ?? 'Unknown Wish',
                         'content_url' => $this->generateContentUrl($wish->content_file ?? $wish->reward),
                         'content_type' => $wish->content_file_type ?? 'image',
-                        'source' => !empty($wish->content_file) ? 'content_file' : 'reward'
+                        'source' => ! empty($wish->content_file) ? 'content_file' : 'reward',
                     ];
                 } else {
                     // Fallback for wishes without wishItem relation
@@ -890,43 +881,43 @@ class StripeMetadataService
                         'wish_name' => 'Wish Item',
                         'content_url' => $deliverable->deliverable_url,
                         'content_type' => 'file',
-                        'source' => 'wish_fallback'
+                        'source' => 'wish_fallback',
                     ];
                 }
                 break;
-                
+
             case 'bill':
                 // Bills use item_id as bill ID, wish_name as bill name
                 $billName = 'Bill';
                 if ($deliverable->bill) {
                     $billName = $deliverable->bill->name ?? 'Bill';
                 }
-                
+
                 $contentItems[] = [
                     'wish_id' => $deliverable->item_id ?? 0, // Bill ID
                     'wish_name' => $billName,
                     'content_url' => $deliverable->deliverable_url,
                     'content_type' => 'file',
-                    'source' => 'bill_content'
+                    'source' => 'bill_content',
                 ];
                 break;
-                
+
             case 'membership':
                 // Memberships use item_id as membership ID
                 $membershipName = 'Membership';
                 if ($deliverable->membership) {
                     $membershipName = $deliverable->membership->name ?? 'Membership';
                 }
-                
+
                 $contentItems[] = [
                     'wish_id' => $deliverable->item_id ?? 0, // Membership ID
                     'wish_name' => $membershipName,
                     'content_url' => $deliverable->deliverable_url,
                     'content_type' => 'membership',
-                    'source' => 'membership_content'
+                    'source' => 'membership_content',
                 ];
                 break;
-                
+
             case 'shop_item':
                 // Shop items use item_id as shop item ID
                 $contentItems[] = [
@@ -934,22 +925,22 @@ class StripeMetadataService
                     'wish_name' => 'Shop Item',
                     'content_url' => $deliverable->deliverable_url,
                     'content_type' => 'file',
-                    'source' => 'shop_item'
+                    'source' => 'shop_item',
                 ];
                 break;
-                
+
             default:
                 // Fallback for unknown product types
                 $contentItems[] = [
                     'wish_id' => $deliverable->item_id ?? 0,
-                    'wish_name' => ucfirst($deliverable->product_type) . ' Item',
+                    'wish_name' => ucfirst($deliverable->product_type).' Item',
                     'content_url' => $deliverable->deliverable_url,
                     'content_type' => 'file',
-                    'source' => $deliverable->product_type
+                    'source' => $deliverable->product_type,
                 ];
                 break;
         }
-        
+
         // Ensure we always have at least one item for consistent metadata structure
         if (empty($contentItems)) {
             $contentItems[] = [
@@ -957,61 +948,58 @@ class StripeMetadataService
                 'wish_name' => ucfirst($deliverable->product_type ?? 'Item'),
                 'content_url' => $deliverable->deliverable_url ?? null,
                 'content_type' => 'file',
-                'source' => $deliverable->product_type ?? 'unknown'
+                'source' => $deliverable->product_type ?? 'unknown',
             ];
         }
-        
+
         return $contentItems;
     }
-    
+
     /**
      * Generate content URL from file path/identifier
-     * 
-     * @param string|null $fileIdentifier
-     * @return string|null
      */
     private function generateContentUrl(?string $fileIdentifier): ?string
     {
         if (empty($fileIdentifier)) {
             return null;
         }
-        
+
         // Handle Uploadcare URLs
         if (str_starts_with($fileIdentifier, 'https://ucarecdn.com/')) {
             return $fileIdentifier;
         }
-        
+
         // Handle Uploadcare UUIDs
         if (preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $fileIdentifier)) {
             return "https://ucarecdn.com/{$fileIdentifier}/";
         }
-        
+
         // Handle relative paths or other formats
         if (str_starts_with($fileIdentifier, '/')) {
             return url($fileIdentifier);
         }
-        
+
         // Default: assume it's a filename in storage
-        return asset('storage/' . $fileIdentifier);
+        return asset('storage/'.$fileIdentifier);
     }
-    
+
     /**
      * Update multiple payment intents in batch
-     * 
-     * @param array $paymentIntentUpdates Array of ['payment_intent_id', 'certificate_url', 'delivery_status', 'additional_metadata']
+     *
+     * @param  array  $paymentIntentUpdates  Array of ['payment_intent_id', 'certificate_url', 'delivery_status', 'additional_metadata']
      * @return array Results with success/failure status for each
      */
     public function batchUpdatePaymentIntents(array $paymentIntentUpdates): array
     {
         $results = [];
-        
+
         foreach ($paymentIntentUpdates as $update) {
             $paymentIntentId = $update['payment_intent_id'];
             $certificateUrl = $update['certificate_url'] ?? null;
             $deliveryStatus = $update['delivery_status'] ?? 'pending';
             $additionalMetadata = $update['additional_metadata'] ?? [];
             $deliverableUuid = $update['deliverable_uuid'] ?? null;
-            
+
             $success = $this->updatePaymentIntentMetadata(
                 $paymentIntentId,
                 $certificateUrl,
@@ -1019,50 +1007,44 @@ class StripeMetadataService
                 $additionalMetadata,
                 $deliverableUuid
             );
-            
+
             $results[] = [
                 'payment_intent_id' => $paymentIntentId,
-                'success' => $success
+                'success' => $success,
             ];
         }
-        
+
         Log::info('StripeMetadataService: Batch update completed', [
             'total_updates' => count($paymentIntentUpdates),
-            'successful_updates' => count(array_filter($results, fn($r) => $r['success'])),
-            'failed_updates' => count(array_filter($results, fn($r) => !$r['success']))
+            'successful_updates' => count(array_filter($results, fn ($r) => $r['success'])),
+            'failed_updates' => count(array_filter($results, fn ($r) => ! $r['success'])),
         ]);
-        
+
         return $results;
     }
-    
+
     /**
      * Update payment intent with content delivery status specifically
      * This is a convenience method for common content delivery scenarios
      * Note: This method should not be used for support payments
-     * 
-     * @param string $paymentIntentId
-     * @param bool $hasContent
-     * @param string|null $contentUrl
-     * @param string|null $certificateUrl
-     * @return bool
      */
     public function updateContentDeliveryStatus(
-        string $paymentIntentId, 
-        bool $hasContent, 
+        string $paymentIntentId,
+        bool $hasContent,
         ?string $contentUrl = null,
         ?string $certificateUrl = null
     ): bool {
         $metadata = [
             'has_content' => $hasContent ? 'true' : 'false',
-            'content_delivery_status' => $hasContent ? 'delivered' : 'no_content'
+            'content_delivery_status' => $hasContent ? 'delivered' : 'no_content',
         ];
-        
+
         if ($contentUrl) {
             $metadata['content_url'] = $contentUrl;
         }
-        
+
         $deliveryStatus = $hasContent ? 'completed' : 'delivered';
-        
+
         return $this->updatePaymentIntentMetadata(
             $paymentIntentId,
             $certificateUrl,
@@ -1072,14 +1054,10 @@ class StripeMetadataService
             false // Don't skip delivery fields for regular content
         );
     }
-    
+
     /**
      * Update payment intent for support payments (tips/donations)
      * This excludes delivery/certificate fields entirely
-     * 
-     * @param string $paymentIntentId
-     * @param array $additionalMetadata
-     * @return bool
      */
     public function updateSupportPaymentMetadata(
         string $paymentIntentId,
@@ -1087,9 +1065,9 @@ class StripeMetadataService
     ): bool {
         $metadata = array_merge([
             'payment_type' => 'tip_donation',
-            'support_payment' => 'true'
+            'support_payment' => 'true',
         ], $additionalMetadata);
-        
+
         return $this->updatePaymentIntentMetadata(
             $paymentIntentId,
             null, // No certificate

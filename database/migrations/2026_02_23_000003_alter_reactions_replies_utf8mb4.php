@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         if (DB::connection()->getDriverName() === 'sqlite') {
@@ -14,10 +15,12 @@ return new class extends Migration {
 
         try {
             DB::statement('ALTER TABLE support_story_reactions CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        } catch (\Throwable $e) {}
+        } catch (Throwable $e) {
+        }
         try {
             DB::statement('ALTER TABLE support_story_replies CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        } catch (\Throwable $e) {}
+        } catch (Throwable $e) {
+        }
 
         if (Schema::hasTable('support_story_reactions')) {
             Schema::table('support_story_reactions', function (Blueprint $table) {
@@ -31,7 +34,5 @@ return new class extends Migration {
         }
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

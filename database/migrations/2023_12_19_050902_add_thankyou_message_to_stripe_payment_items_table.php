@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stripe_payment_items', function (Blueprint $table) {
-           $table->string('thankyou_message')->nullable()->after('message');
+            $table->string('thankyou_message')->nullable()->after('message');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('stripe_payment_items', function (Blueprint $table) {
-           $table->dropColumn('thankyou_message');
+            $table->dropColumn('thankyou_message');
         });
     }
 };

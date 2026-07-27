@@ -5,7 +5,9 @@ namespace App\Http\DTOs\LeaderBoard;
 class LeaderBoardUserDTO extends BaseLeaderBoardUserDTO
 {
     private float $totalAmount;
+
     private string $currency;
+
     private ?string $name; // Personal name - excluded from public responses
 
     public function __construct(
@@ -31,7 +33,7 @@ class LeaderBoardUserDTO extends BaseLeaderBoardUserDTO
             $profileStatusLock,
             $role
         );
-        
+
         $this->totalAmount = $totalAmount;
         $this->currency = $currency;
         $this->name = $name;

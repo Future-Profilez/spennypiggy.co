@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Helpers;
 use App\Models\BlockedPayment;
+use App\Models\Currency;
 use App\Models\Dispute;
 use App\Models\User;
 
@@ -38,7 +39,7 @@ class PaymentTierService
             // Fail closed: a missing/zero-rate currency makes priceFormat
             // return the raw amount, which could misclassify a large foreign
             // payment into a lower tier — treat unconvertible as bank-required.
-            $rate = \App\Models\Currency::where('ISO', $currency)->value('conversion_rate');
+            $rate = Currency::where('ISO', $currency)->value('conversion_rate');
             if (empty($rate) || (float) $rate <= 0) {
                 return self::TIER_BANK_REQUIRED;
             }

@@ -33,7 +33,7 @@ return new class extends Migration
                 'last_system_reminder_at',
                 'needs_admin_review',
                 'admin_reminder_sent_at',
-                'admin_reminder_count'
+                'admin_reminder_count',
             ]);
         });
     }

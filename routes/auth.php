@@ -1007,6 +1007,13 @@ Route::get('leaderboard/platform-analytics', [LeaderBoardController::class, 'pla
 Route::get('leaderboard/growth-trends', [LeaderBoardController::class, 'growthTrends'])->name('leaderboard.growth-trends');
 Route::get('leaderboard/category-leaders', [LeaderBoardController::class, 'categoryLeaders'])->name('leaderboard.category-leaders');
 Route::get('leaderboard/vip-supporters', [LeaderBoardController::class, 'vipSupporters'])->name('leaderboard.vip-supporters');
+// One cached response for every panel beside the board — replaces seven
+// separate uncached requests fired on page load.
+Route::get('leaderboard/bundle', [LeaderBoardController::class, 'bundle'])->name('leaderboard.bundle');
+// Public ranking is opt-out, and only the creator themselves can set it.
+Route::post('leaderboard/opt-out', [LeaderBoardController::class, 'toggleOptOut'])
+    ->middleware('auth')
+    ->name('leaderboard.opt-out');
 
 /* wishtender */
 Route::get('leaderboard/{type?}', [LeaderBoardController::class, 'wishtenderWishers'])->name('leaderboard');

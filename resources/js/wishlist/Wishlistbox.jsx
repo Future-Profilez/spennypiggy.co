@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import ItemBadges from "@/Components/ItemBadges";
+import RewardHint from "@/Pages/discover/components/RewardHint";
 import ShareProfile from "./ShareProfile";
 import { useState, Fragment } from "react";
 import uploadedimg from "../../assets/img/uploadedimg.png";
@@ -306,6 +307,7 @@ export default function Wishlistbox(props) {
                                 </div>
                             )}
                         </h5>
+                        <RewardHint item={itm} className="mt-2 max-w-full" />
                     </div>
                     {itm.subscription == "2" ? (
                         <div className="crowd pt-2">

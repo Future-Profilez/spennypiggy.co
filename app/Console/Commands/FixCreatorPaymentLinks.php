@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
 class FixCreatorPaymentLinks extends Command
 {
     protected $signature = 'finance:fix-payment-links {creator} {--dry-run}';
+
     protected $description = 'Backfill missing stripe_session_id on risk-ledger payments using payment_intent lookups';
 
     public function handle(): int
@@ -23,17 +24,18 @@ class FixCreatorPaymentLinks extends Command
         if (is_numeric($input)) {
             $creator = User::find((int) $input);
         }
-        if (!$creator) {
+        if (! $creator) {
             $creator = User::where('uuid', $input)
                 ->orWhere('username', $input)
                 ->first();
         }
-        if (!$creator) {
+        if (! $creator) {
             $creator = User::where('name', $input)->first();
         }
 
-        if (!$creator) {
+        if (! $creator) {
             $this->error("Creator not found: {$input}");
+
             return self::FAILURE;
         }
 
@@ -65,7 +67,7 @@ class FixCreatorPaymentLinks extends Command
                 $source = 'stripe_payment_detail';
             }
 
-            if (!$session) {
+            if (! $session) {
                 $task = TaskPurchase::where('payment_intent_id', $pi)->first();
                 if ($task && $task->stripe_session_id) {
                     $session = (string) $task->stripe_session_id;
@@ -73,7 +75,7 @@ class FixCreatorPaymentLinks extends Command
                 }
             }
 
-            if (!$session) {
+            if (! $session) {
                 $del = Deliverable::where('payment_intent_id', $pi)->first();
                 if ($del && $del->session_id) {
                     $session = (string) $del->session_id;
@@ -81,15 +83,17 @@ class FixCreatorPaymentLinks extends Command
                 }
             }
 
-            if (!$session) {
+            if (! $session) {
                 $skipped++;
                 $this->line("Skip payment {$p->id}: cannot resolve session for pi={$pi}");
+
                 continue;
             }
 
             if ($dryRun) {
                 $updated++;
                 $this->line("DRY RUN payment {$p->id}: set stripe_session_id={$session} (from {$source})");
+
                 continue;
             }
 
@@ -112,4 +116,3 @@ class FixCreatorPaymentLinks extends Command
         return self::SUCCESS;
     }
 }
-

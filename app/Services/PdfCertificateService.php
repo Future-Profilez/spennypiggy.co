@@ -2,13 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\WishItem;
-use App\Models\Membership;
 use App\Models\Deliverable;
-use Illuminate\Support\Facades\Log;
+use App\Models\Membership;
+use App\Models\WishItem;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class PdfCertificateService
 {
@@ -18,73 +16,75 @@ class PdfCertificateService
     public function generateAndUploadPdfCertificate(Deliverable $deliverable, $item): ?string
     {
         try {
-            Log::info("Starting PDF certificate generation", [
+            Log::info('Starting PDF certificate generation', [
                 'deliverable_id' => $deliverable->id,
                 'item_type' => get_class($item),
-                'item_id' => $item->id
+                'item_id' => $item->id,
             ]);
 
             // Generate HTML content for PDF
             $htmlContent = $this->generateCertificateHtml($deliverable, $item);
-            
+
             // Convert HTML to PDF using a library like DomPDF or wkhtmltopdf
             $pdfContent = $this->generatePdfFromHtml($htmlContent);
-            
+
             // Create temporary PDF file
             $tempFileName = "certificate_{$deliverable->uuid}.pdf";
             $tempFilePath = storage_path("app/temp/{$tempFileName}");
-            
+
             // Ensure temp directory exists
-            if (!is_dir(storage_path('app/temp'))) {
+            if (! is_dir(storage_path('app/temp'))) {
                 mkdir(storage_path('app/temp'), 0755, true);
             }
-            
+
             // Write PDF content to temporary file
             file_put_contents($tempFilePath, $pdfContent);
-            
+
             // Upload to Uploadcare
             $uploadcareUrl = $this->uploadToUploadcare($tempFilePath, $tempFileName);
-            
+
             // Clean up temporary file
             unlink($tempFilePath);
-            
+
             if ($uploadcareUrl) {
-                Log::info("PDF Certificate uploaded successfully", [
+                Log::info('PDF Certificate uploaded successfully', [
                     'deliverable_id' => $deliverable->id,
-                    'certificate_url' => $uploadcareUrl
+                    'certificate_url' => $uploadcareUrl,
                 ]);
+
                 return $uploadcareUrl;
             }
-            
+
             return null;
-            
+
         } catch (\Exception $e) {
-            Log::error("Failed to generate/upload PDF certificate", [
+            Log::error('Failed to generate/upload PDF certificate', [
                 'deliverable_id' => $deliverable->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }
-    
+
     /**
      * Generate HTML content for PDF certificate
      */
     private function generateCertificateHtml(Deliverable $deliverable, $item): string
     {
         $timestamp = now()->format('Y-m-d H:i:s T');
-        
+
         if ($item instanceof WishItem) {
             return $this->generateWishItemCertificateHtml($deliverable, $item, $timestamp);
         } elseif ($item instanceof Membership) {
             return $this->generateMembershipCertificateHtml($deliverable, $item, $timestamp);
         }
-        
+
         // Default certificate
         return $this->generateDefaultCertificateHtml($deliverable, $item, $timestamp);
     }
-    
+
     /**
      * Generate HTML for wish item certificate
      */
@@ -94,7 +94,7 @@ class PdfCertificateService
         $creatorName = $item->user->name ?? 'Creator';
         $buyerName = $deliverable->customer_name ?? ($deliverable->gifter->name ?? 'Purchaser');
         $metadata = $deliverable->metadata ?? [];
-        
+
         return '
         <!DOCTYPE html>
         <html>
@@ -178,19 +178,19 @@ class PdfCertificateService
                 <div class="title">This certificate validates the authentic purchase and delivery of:</div>
                 
                 <div class="content">
-                    <strong>📦 DIGITAL CONTENT:</strong> <span class="highlight">\'' . htmlspecialchars($itemName) . '\'</span><br><br>
-                    <strong>🎨 CREATED BY:</strong> ' . htmlspecialchars($creatorName) . '<br>
-                    <strong>💖 PURCHASED BY:</strong> ' . htmlspecialchars($buyerName) . '<br>
-                    ' . ($deliverable->transaction_amount ? '<strong>💰 PURCHASE AMOUNT:</strong> ' . strtoupper($deliverable->payment_currency ?? 'GBP') . ' ' . number_format($deliverable->transaction_amount, 2) : '') . '
+                    <strong>📦 DIGITAL CONTENT:</strong> <span class="highlight">\''.htmlspecialchars($itemName).'\'</span><br><br>
+                    <strong>🎨 CREATED BY:</strong> '.htmlspecialchars($creatorName).'<br>
+                    <strong>💖 PURCHASED BY:</strong> '.htmlspecialchars($buyerName).'<br>
+                    '.($deliverable->transaction_amount ? '<strong>💰 PURCHASE AMOUNT:</strong> '.strtoupper($deliverable->payment_currency ?? 'GBP').' '.number_format($deliverable->transaction_amount, 2) : '').'
                 </div>
                 
                 <div class="details">
                     <strong>📋 DELIVERY DETAILS:</strong><br>
-                    • Certificate ID: ' . htmlspecialchars($deliverable->uuid) . '<br>
-                    • Transaction Date: ' . htmlspecialchars($timestamp) . '<br>
+                    • Certificate ID: '.htmlspecialchars($deliverable->uuid).'<br>
+                    • Transaction Date: '.htmlspecialchars($timestamp).'<br>
                     • Payment Method: Stripe Secure Payment<br>
                     • Delivery Status: Completed<br>
-                    ' . (!empty($deliverable->deliverable_url) ? '• Content Access URL: <a href="' . htmlspecialchars($deliverable->deliverable_url) . '" target="_blank">' . htmlspecialchars($deliverable->deliverable_url) . '</a>' : '') . '
+                    '.(! empty($deliverable->deliverable_url) ? '• Content Access URL: <a href="'.htmlspecialchars($deliverable->deliverable_url).'" target="_blank">'.htmlspecialchars($deliverable->deliverable_url).'</a>' : '').'
                 </div>
                 
                 <div class="content">
@@ -205,18 +205,18 @@ class PdfCertificateService
                 
                 <div class="footer">
                     <strong>📞 SUPPORT & VERIFICATION:</strong><br>
-                    Certificate ID: ' . htmlspecialchars($deliverable->uuid) . '<br>
+                    Certificate ID: '.htmlspecialchars($deliverable->uuid).'<br>
                     🌐 Website: https://spennypiggy.co<br>
                     📧 Support: support@spennypiggy.co<br><br>
                     
                     Generated by Spenny Piggy Content Delivery System<br>
-                    © ' . date('Y') . ' Spenny Piggy - All Rights Reserved
+                    © '.date('Y').' Spenny Piggy - All Rights Reserved
                 </div>
             </div>
         </body>
         </html>';
     }
-    
+
     /**
      * Generate PDF from HTML using DomPDF or similar
      */
@@ -225,7 +225,7 @@ class PdfCertificateService
         // For now, we\'ll keep using text format
         // To implement PDF generation, you would need to install a PDF library like:
         // composer require dompdf/dompdf
-        
+
         // Example with DomPDF (commented out until library is installed):
         /*
         $dompdf = new \Dompdf\Dompdf();
@@ -234,11 +234,11 @@ class PdfCertificateService
         $dompdf->render();
         return $dompdf->output();
         */
-        
+
         // For now, return the HTML as text (fallback)
         return strip_tags($html);
     }
-    
+
     /**
      * Generate default certificate HTML
      */
@@ -246,28 +246,28 @@ class PdfCertificateService
     {
         return $this->generateWishItemCertificateHtml($deliverable, $item, $timestamp);
     }
-    
+
     /**
      * Generate membership certificate HTML
      */
     private function generateMembershipCertificateHtml(Deliverable $deliverable, Membership $membership, string $timestamp): string
     {
-        return $this->generateWishItemCertificateHtml($deliverable, (object)['wishname' => 'Membership Access', 'user' => $membership->user], $timestamp);
+        return $this->generateWishItemCertificateHtml($deliverable, (object) ['wishname' => 'Membership Access', 'user' => $membership->user], $timestamp);
     }
-    
+
     /**
      * Upload file to Uploadcare
      */
     private function uploadToUploadcare(string $filePath, string $fileName): ?string
     {
         try {
-            Log::info("Uploading PDF certificate to Uploadcare", [
+            Log::info('Uploading PDF certificate to Uploadcare', [
                 'file_name' => $fileName,
-                'file_size' => filesize($filePath)
+                'file_size' => filesize($filePath),
             ]);
 
-            $uploadcareHost = "https://upload.uploadcare.com/base/";
-            
+            $uploadcareHost = 'https://upload.uploadcare.com/base/';
+
             $response = Http::asMultipart()->post($uploadcareHost, [
                 [
                     'name' => 'UPLOADCARE_PUB_KEY',
@@ -283,34 +283,35 @@ class PdfCertificateService
                     'filename' => $fileName,
                 ],
             ]);
-            
+
             if ($response->successful()) {
                 $responseData = $response->json();
                 if (isset($responseData['file'])) {
                     $uuid = $responseData['file'];
                     $uploadcareUrl = "https://ucarecdn.com/{$uuid}/";
-                    
-                    Log::info("PDF Certificate uploaded to Uploadcare successfully", [
+
+                    Log::info('PDF Certificate uploaded to Uploadcare successfully', [
                         'uuid' => $uuid,
-                        'url' => $uploadcareUrl
+                        'url' => $uploadcareUrl,
                     ]);
-                    
+
                     return $uploadcareUrl;
                 }
             }
-            
-            Log::error("Uploadcare upload failed", [
+
+            Log::error('Uploadcare upload failed', [
                 'response_status' => $response->status(),
-                'response_body' => $response->body()
+                'response_body' => $response->body(),
             ]);
-            
+
             return null;
-            
+
         } catch (\Exception $e) {
-            Log::error("Exception during Uploadcare upload", [
+            Log::error('Exception during Uploadcare upload', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }

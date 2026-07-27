@@ -5,8 +5,11 @@ namespace App\Http\DTOs\LeaderBoard;
 class LargestGiftDTO extends BaseLeaderBoardUserDTO
 {
     private float $amount;
+
     private string $currency;
+
     private ?string $name; // Personal name - excluded from public responses
+
     private string $type; // Type of gift (wish, subscription, tip, etc.)
 
     public function __construct(
@@ -31,7 +34,7 @@ class LargestGiftDTO extends BaseLeaderBoardUserDTO
             $profileStatusLock,
             $role
         );
-        
+
         $this->amount = $amount;
         $this->currency = $currency;
         $this->name = $name;
@@ -41,13 +44,13 @@ class LargestGiftDTO extends BaseLeaderBoardUserDTO
     public function toPublicArray(): array
     {
         $baseArray = parent::toPublicArray();
-        
+
         // Remove rank and top percentage as they're not relevant for largest gifts
         unset($baseArray['rank'], $baseArray['top']);
-        
+
         // Add type but exclude financial amounts from public view
         return array_merge($baseArray, [
-            'type' => $this->type
+            'type' => $this->type,
         ]);
     }
 

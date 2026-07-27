@@ -18,12 +18,12 @@ class CacheInertiaResponse
         // CACHING DISABLED FOR REAL-TIME DATA
         // Just pass through without any caching
         $response = $next($request);
-        
+
         // Add no-cache headers for real-time data
         $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
         $response->headers->set('Pragma', 'no-cache');
         $response->headers->set('Expires', '0');
-        
+
         return $response;
     }
 
@@ -80,9 +80,9 @@ class CacheInertiaResponse
      */
     private function generateCacheKey(Request $request): string
     {
-        $key = 'inertia_response:' . md5(
-            $request->getRequestUri() .
-            $request->header('X-Inertia-Version', '') .
+        $key = 'inertia_response:'.md5(
+            $request->getRequestUri().
+            $request->header('X-Inertia-Version', '').
             ($request->user() ? $request->user()->id : 'guest')
         );
 
@@ -95,12 +95,12 @@ class CacheInertiaResponse
     private function shouldCache(SymfonyResponse $response): bool
     {
         // Only cache successful responses
-        if (!$response->isSuccessful()) {
+        if (! $response->isSuccessful()) {
             return false;
         }
 
         // Check if response is Inertia response
-        if (!$response->headers->has('X-Inertia')) {
+        if (! $response->headers->has('X-Inertia')) {
             return false;
         }
 
@@ -132,7 +132,7 @@ class CacheInertiaResponse
 
         // Cache for different durations based on content type
         $ttl = $this->getCacheDuration($response);
-        
+
         // Cache::put($key, $cacheData, $ttl);
     }
 
@@ -156,7 +156,7 @@ class CacheInertiaResponse
     private function isStaticContent(SymfonyResponse $response): bool
     {
         $content = $response->getContent();
-        
+
         // Check for indicators of static content
         $staticIndicators = [
             '"component":"Welcome"',
@@ -180,7 +180,7 @@ class CacheInertiaResponse
     private function createResponseFromCache(array $cachedData): Response
     {
         $content = $cachedData['content'];
-        
+
         // Decompress if needed
         if (isset($cachedData['compressed']) && $cachedData['compressed']) {
             $content = gzuncompress($content);
@@ -194,7 +194,7 @@ class CacheInertiaResponse
 
         // Add cache hit header
         $response->headers->set('X-Cache-Status', 'HIT');
-        
+
         return $this->addCompressionHeaders($response);
     }
 
@@ -205,7 +205,7 @@ class CacheInertiaResponse
     {
         // Don't add compression headers - let the server handle compression
         // This was causing issues where headers were set but content wasn't actually compressed
-        
+
         // Add cache control headers
         if ($response->isSuccessful()) {
             $response->headers->set('Cache-Control', 'public, max-age=300, s-maxage=600');
@@ -221,7 +221,7 @@ class CacheInertiaResponse
     private function shouldCompress(SymfonyResponse $response): bool
     {
         $contentType = $response->headers->get('content-type', '');
-        
+
         $compressibleTypes = [
             'text/html',
             'application/json',

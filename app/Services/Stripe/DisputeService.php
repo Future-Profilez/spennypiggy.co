@@ -3,7 +3,6 @@
 namespace App\Services\Stripe;
 
 use App\Models\Dispute;
-use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
@@ -11,6 +10,7 @@ use Stripe\StripeClient;
 class DisputeService
 {
     protected $stripe;
+
     protected $stripeUs;
 
     public function __construct()
@@ -20,7 +20,7 @@ class DisputeService
         if (empty($ukKey)) {
             $ukKey = config('services.stripe.secret');
         }
-        
+
         $usKey = config('services.stripe.secret_us');
         if (empty($usKey)) {
             $usKey = $ukKey;
@@ -31,10 +31,10 @@ class DisputeService
         $usKey = is_string($usKey) ? $usKey : 'missing_key';
 
         if ($ukKey === 'missing_key') {
-            Log::error("Stripe UK Secret Key is missing or invalid in configuration.");
+            Log::error('Stripe UK Secret Key is missing or invalid in configuration.');
         }
         if ($usKey === 'missing_key') {
-            Log::error("Stripe US Secret Key is missing or invalid in configuration.");
+            Log::error('Stripe US Secret Key is missing or invalid in configuration.');
         }
 
         $this->stripe = new StripeClient($ukKey);
@@ -49,6 +49,7 @@ class DisputeService
         if (strtoupper($dispute->currency) === 'USD') {
             return $this->stripeUs;
         }
+
         return $this->stripe;
     }
 
@@ -58,7 +59,7 @@ class DisputeService
     public function submitEvidence(Dispute $dispute, string $explanation, ?array $fileIds = [])
     {
         $client = $this->getClient($dispute);
-        
+
         try {
             $creator = $dispute->creator;
             $stripeAccount = $creator ? $creator->account_id : null;
@@ -84,10 +85,10 @@ class DisputeService
                     $options
                 );
             } catch (\Exception $e) {
-                // If it fails with "No such dispute" and we used a connected account, 
+                // If it fails with "No such dispute" and we used a connected account,
                 // it might be a platform-level dispute. Try without stripe_account.
                 if (str_contains($e->getMessage(), 'No such dispute') && $stripeAccount) {
-                    Log::info("Dispute not found on connected account, retrying on platform account", ['dispute_id' => $dispute->stripe_dispute_id]);
+                    Log::info('Dispute not found on connected account, retrying on platform account', ['dispute_id' => $dispute->stripe_dispute_id]);
                     $updatedDispute = $client->disputes->update(
                         $dispute->stripe_dispute_id,
                         ['evidence' => $evidence]
@@ -105,14 +106,14 @@ class DisputeService
                     'explanation' => $explanation,
                     'file_ids' => $fileIds,
                     'submitted_at' => now(),
-                    'stripe_account' => $stripeAccount
-                ]
+                    'stripe_account' => $stripeAccount,
+                ],
             ]);
 
             return ['success' => true, 'dispute' => $updatedDispute];
 
         } catch (\Exception $e) {
-            Log::error("Failed to submit dispute evidence: " . $e->getMessage());
+            Log::error('Failed to submit dispute evidence: '.$e->getMessage());
             throw $e;
         }
     }
@@ -123,7 +124,7 @@ class DisputeService
     public function uploadEvidenceFromPath(string $path, string $filename, ?string $stripeAccount = null, string $currency = 'GBP')
     {
         $client = strtoupper($currency) === 'USD' ? $this->stripeUs : $this->stripe;
-        
+
         try {
             $options = [];
             if ($stripeAccount) {
@@ -132,7 +133,7 @@ class DisputeService
 
             // Map extension to mime type
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            $mimeType = match($extension) {
+            $mimeType = match ($extension) {
                 'jpg', 'jpeg' => 'image/jpeg',
                 'png' => 'image/png',
                 'pdf' => 'application/pdf',
@@ -151,15 +152,16 @@ class DisputeService
         } catch (\Exception $e) {
             // If upload fails on connected account, try platform account
             if (str_contains($e->getMessage(), 'No such account') || str_contains($e->getMessage(), 'Permission denied')) {
-                Log::info("Connected account upload failed, retrying on platform account");
+                Log::info('Connected account upload failed, retrying on platform account');
                 $stripeFile = $client->files->create([
                     'purpose' => 'dispute_evidence',
                     'file' => fopen($path, 'r'),
                 ]);
+
                 return $stripeFile->id;
             }
-            
-            Log::error("Failed to upload evidence file from path: " . $e->getMessage());
+
+            Log::error('Failed to upload evidence file from path: '.$e->getMessage());
             throw $e;
         }
     }
@@ -167,8 +169,7 @@ class DisputeService
     /**
      * Upload a file to Stripe for dispute evidence.
      *
-     * @param \Illuminate\Http\UploadedFile $file
-     * @param string|null $stripeAccount
+     * @param  UploadedFile  $file
      * @return string Stripe File ID
      */
     public function uploadEvidenceFile($file, ?string $stripeAccount = null)
@@ -186,7 +187,7 @@ class DisputeService
 
             return $stripeFile->id;
         } catch (\Exception $e) {
-            Log::error("Failed to upload evidence file: " . $e->getMessage());
+            Log::error('Failed to upload evidence file: '.$e->getMessage());
             throw $e;
         }
     }

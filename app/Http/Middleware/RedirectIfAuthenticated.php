@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RedirectIfAuthenticated
 {
-
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
 
@@ -23,7 +22,6 @@ class RedirectIfAuthenticated
 
             return $next($request);
         }
-
 
         $guards = empty($guards) ? [null] : $guards;
 

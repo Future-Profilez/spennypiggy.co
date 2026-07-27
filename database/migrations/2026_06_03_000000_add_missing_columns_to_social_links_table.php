@@ -8,30 +8,30 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('social_links')) {
+        if (! Schema::hasTable('social_links')) {
             return;
         }
 
         Schema::table('social_links', function (Blueprint $table) {
-            if (!Schema::hasColumn('social_links', 'facebook')) {
+            if (! Schema::hasColumn('social_links', 'facebook')) {
                 $table->string('facebook')->nullable()->after('instagram');
             }
-            if (!Schema::hasColumn('social_links', 'youtube')) {
+            if (! Schema::hasColumn('social_links', 'youtube')) {
                 $table->string('youtube')->nullable()->after('facebook');
             }
-            if (!Schema::hasColumn('social_links', 'twitch')) {
+            if (! Schema::hasColumn('social_links', 'twitch')) {
                 $table->string('twitch')->nullable()->after('youtube');
             }
-            if (!Schema::hasColumn('social_links', 'tumblr')) {
+            if (! Schema::hasColumn('social_links', 'tumblr')) {
                 $table->string('tumblr')->nullable()->after('twitch');
             }
-            if (!Schema::hasColumn('social_links', 'reason')) {
+            if (! Schema::hasColumn('social_links', 'reason')) {
                 $table->longText('reason')->nullable()->after('other');
             }
-            if (!Schema::hasColumn('social_links', 'status')) {
+            if (! Schema::hasColumn('social_links', 'status')) {
                 $table->bigInteger('status')->default(0)->after('reason');
             }
-            if (!Schema::hasColumn('social_links', 'deleted_at')) {
+            if (! Schema::hasColumn('social_links', 'deleted_at')) {
                 $table->softDeletes();
             }
         });
@@ -39,7 +39,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('social_links')) {
+        if (! Schema::hasTable('social_links')) {
             return;
         }
 
@@ -68,4 +68,3 @@ return new class extends Migration
         });
     }
 };
-

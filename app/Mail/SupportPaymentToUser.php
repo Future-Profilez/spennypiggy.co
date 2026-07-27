@@ -2,8 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +13,7 @@ class SupportPaymentToUser extends Mailable
     use Queueable, SerializesModels;
 
     public $paymentData;
+
     public $symbol;
 
     /**
@@ -34,19 +35,19 @@ class SupportPaymentToUser extends Mailable
                 'payment_id' => $this->paymentData->id ?? 'null',
                 'symbol' => $this->symbol ?? 'null',
                 'has_user' => isset($this->paymentData->user) ? 'yes' : 'no',
-                'has_creator' => isset($this->paymentData->creator) ? 'yes' : 'no'
+                'has_creator' => isset($this->paymentData->creator) ? 'yes' : 'no',
             ]);
 
             $subject = 'Thank You for Supporting a Creator on Spenny Piggy!';
-            
+
             // Ensure creator data is available
-            if (!isset($this->paymentData->creator) && isset($this->paymentData->owner_id)) {
-                $creator = \App\Models\User::find($this->paymentData->owner_id);
+            if (! isset($this->paymentData->creator) && isset($this->paymentData->owner_id)) {
+                $creator = User::find($this->paymentData->owner_id);
                 if ($creator) {
                     $this->paymentData->creator = $creator;
                     Log::info('SupportPaymentToUser: Creator loaded successfully', [
                         'creator_name' => $creator->name ?? 'null',
-                        'creator_username' => $creator->username ?? 'null'
+                        'creator_username' => $creator->username ?? 'null',
                     ]);
                 }
             }
@@ -56,7 +57,7 @@ class SupportPaymentToUser extends Mailable
                 'subject' => $subject,
                 'creator_name' => $this->paymentData->creator->name ?? 'null',
                 'amount' => $this->paymentData->amount ?? 'null',
-                'symbol' => $this->symbol
+                'symbol' => $this->symbol,
             ]);
 
             $builtEmail = $this->view('email.tip-granted')
@@ -79,7 +80,7 @@ class SupportPaymentToUser extends Mailable
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
                 'payment_id' => $this->paymentData->id ?? 'null',
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }

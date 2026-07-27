@@ -29,6 +29,7 @@ class WishItem extends Model
         'item_url',
         'thumbnail',
         'moderation_reason',
+        'moderation_asset',
         'reward',
         'reward_title',
         'reward_type',

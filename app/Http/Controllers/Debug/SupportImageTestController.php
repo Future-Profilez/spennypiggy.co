@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Debug;
 
 use App\Http\Controllers\Controller;
+use App\Services\SocialImageGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
@@ -22,11 +23,11 @@ class SupportImageTestController extends Controller
                 'amount' => 25.0,
                 'currency' => 'USD',
                 'isAnonymous' => true,
-                'message' => 'Thank you for your support!'
+                'message' => 'Thank you for your support!',
             ];
 
             $nodeScriptPath = base_path('resources/node/renderSupportImage.js');
-            if (!file_exists($nodeScriptPath)) {
+            if (! file_exists($nodeScriptPath)) {
                 return response()->json([
                     'ok' => false,
                     'error' => 'Node script not found',
@@ -38,7 +39,10 @@ class SupportImageTestController extends Controller
             $nodeCheck = shell_exec('which node 2>/dev/null');
             if (empty(trim($nodeCheck))) {
                 foreach (['/usr/local/bin/node', '/usr/bin/node', '/opt/homebrew/bin/node'] as $candidate) {
-                    if (file_exists($candidate)) { $nodeCommand = $candidate; break; }
+                    if (file_exists($candidate)) {
+                        $nodeCommand = $candidate;
+                        break;
+                    }
                 }
             }
 
@@ -87,7 +91,7 @@ class SupportImageTestController extends Controller
                         curl_setopt($ch, CURLOPT_POST, true);
                         curl_setopt($ch, CURLOPT_POSTFIELDS, [
                             'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
-                            'file' => new \CURLFile($image_path, 'image/png', 'support-social-debug.png')
+                            'file' => new \CURLFile($image_path, 'image/png', 'support-social-debug.png'),
                         ]);
                         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -101,7 +105,7 @@ class SupportImageTestController extends Controller
                             $data = json_decode($resp, true);
                             if (isset($data['file'])) {
                                 $uploadcare['uuid'] = $data['file'];
-                                $uploadcare['cdn_url'] = 'https://ucarecdn.com/' . $data['file'] . '/';
+                                $uploadcare['cdn_url'] = 'https://ucarecdn.com/'.$data['file'].'/';
                             }
                         }
                     } catch (\Exception $e) {
@@ -115,12 +119,12 @@ class SupportImageTestController extends Controller
 
             // If node failed, exercise the PHP fallback path used by RegenerateThankYouImages
             $php_fallback = null;
-            if (!$node_ok || !$image_path || !file_exists($image_path)) {
+            if (! $node_ok || ! $image_path || ! file_exists($image_path)) {
                 try {
-                    $generator = new \App\Services\SocialImageGenerator();
+                    $generator = new SocialImageGenerator;
                     // Prefer the richer thank you image generator which uses text and decorations
                     $php_image = $generator->generateThankYouImage($payload);
-                    if (!$php_image || !file_exists($php_image)) {
+                    if (! $php_image || ! file_exists($php_image)) {
                         $php_image = $generator->generateDefaultThankYouImage();
                     }
                     $php_fallback = [
@@ -144,7 +148,7 @@ class SupportImageTestController extends Controller
                                 curl_setopt($ch, CURLOPT_POSTFIELDS, [
                                     'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
                                     'UPLOADCARE_STORE' => '1',
-                                    'file' => new \CURLFile($php_image, 'image/png', 'support-social-fallback.png')
+                                    'file' => new \CURLFile($php_image, 'image/png', 'support-social-fallback.png'),
                                 ]);
                                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                                 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
@@ -158,7 +162,7 @@ class SupportImageTestController extends Controller
                                     $data = json_decode($resp, true);
                                     if (isset($data['file'])) {
                                         $uploadcare['uuid'] = $data['file'];
-                                        $uploadcare['cdn_url'] = 'https://ucarecdn.com/' . $data['file'] . '/';
+                                        $uploadcare['cdn_url'] = 'https://ucarecdn.com/'.$data['file'].'/';
                                     }
                                 }
                             } catch (\Exception $e) {
@@ -186,6 +190,7 @@ class SupportImageTestController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('SupportImageTestController error', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'ok' => false,
                 'error' => $e->getMessage(),

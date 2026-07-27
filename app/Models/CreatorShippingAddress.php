@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class CreatorShippingAddress extends Model
 {
@@ -27,63 +27,63 @@ class CreatorShippingAddress extends Model
     public function firstName(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function lastName(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function phone(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function address1(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function address2(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function city(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function provinceCode(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function countryCode(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 
     public function postalCode(): Attribute
     {
         return Attribute::make(
-            get: fn($value) => Crypt::decryptString($value),
+            get: fn ($value) => Crypt::decryptString($value),
         );
     }
 }

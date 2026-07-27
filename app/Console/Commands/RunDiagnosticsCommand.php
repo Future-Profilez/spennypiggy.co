@@ -22,17 +22,17 @@ class RunDiagnosticsCommand extends Command
     {
         $this->info('Running system diagnostics...');
 
-        $controller = new SystemDiagnosticsController();
-        $response   = $controller->run();
-        $data       = json_decode($response->getContent(), true);
+        $controller = new SystemDiagnosticsController;
+        $response = $controller->run();
+        $data = json_decode($response->getContent(), true);
 
         $overallStatus = $data['status'];
-        $results       = $data['results'];
-        $timestamp     = $data['timestamp'];
+        $results = $data['results'];
+        $timestamp = $data['timestamp'];
 
         // Count failures and warnings
-        $failed   = collect($results)->filter(fn($r) => ($r['status'] ?? '') === 'failed')->count();
-        $warnings = collect($results)->filter(fn($r) => ($r['status'] ?? '') === 'warning')->count();
+        $failed = collect($results)->filter(fn ($r) => ($r['status'] ?? '') === 'failed')->count();
+        $warnings = collect($results)->filter(fn ($r) => ($r['status'] ?? '') === 'warning')->count();
 
         $this->line("Overall: {$overallStatus} | Failed: {$failed} | Warnings: {$warnings}");
 
@@ -40,12 +40,12 @@ class RunDiagnosticsCommand extends Command
         foreach ($results as $key => $result) {
             $status = $result['status'] ?? 'unknown';
             $icon = match ($status) {
-                'passed'  => '<fg=green>✓</>',
-                'failed'  => '<fg=red>✗</>',
+                'passed' => '<fg=green>✓</>',
+                'failed' => '<fg=red>✗</>',
                 'warning' => '<fg=yellow>!</>',
-                default   => '?',
+                default => '?',
             };
-            $this->line("  {$icon} {$key}: " . ($result['message'] ?? ''));
+            $this->line("  {$icon} {$key}: ".($result['message'] ?? ''));
         }
 
         // Send email alert if there are failures/warnings or --force flag
@@ -62,7 +62,7 @@ class RunDiagnosticsCommand extends Command
                     warningCount: $warnings,
                 ));
             }
-            $this->info('Alert sent to: ' . implode(', ', $this->alertRecipients));
+            $this->info('Alert sent to: '.implode(', ', $this->alertRecipients));
         } else {
             $this->info('All checks passed. No alert needed.');
         }

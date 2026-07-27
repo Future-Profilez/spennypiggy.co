@@ -5,18 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendBioSocialUpdateEmail;
-use App\Models\GifterCardVerification;
-use App\Models\Membership;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserVerificationStatus;
-use Carbon\Carbon;
+use App\Services\UserProfileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
-use App\Services\UserProfileService;
 
 class SocialLinksController extends Controller
 {
@@ -37,7 +33,7 @@ class SocialLinksController extends Controller
             if ($blockedWord !== false) {
                 return response([
                     'status' => 422,
-                    'message' => "The word or emoji '{$blockedWord}' is not allowed as per our policies."
+                    'message' => "The word or emoji '{$blockedWord}' is not allowed as per our policies.",
                 ], 422);
             }
 
@@ -55,7 +51,7 @@ class SocialLinksController extends Controller
                 'loyalfans',
                 'fansly',
                 'manyvids',
-                'other'
+                'other',
             ];
 
             // ✅ Enforce at least one filled field
@@ -67,29 +63,29 @@ class SocialLinksController extends Controller
                 }
             }
 
-            if (!$hasAtLeastOne) {
+            if (! $hasAtLeastOne) {
                 return response([
                     'status' => 422,
-                    'message' => 'Please add at least one social media link.'
+                    'message' => 'Please add at least one social media link.',
                 ], 422);
             }
 
             // ✅ Prepare data (ALLOW NULLS)
             $data = [
                 'whoyouinto' => $request->whoyouinto,
-                'twitter'    => $request->twitter,
-                'instagram'  => $request->instagram,
-                'facebook'   => $request->facebook,
-                'youtube'    => $request->youtube,
-                'twitch'     => $request->twitch,
-                'tumblr'     => $request->tumblr,
-                'reddit'     => $request->reddit,
-                'discord'    => $request->discord,
-                'onlyfans'   => $request->onlyfans,
-                'loyalfans'  => $request->loyalfans,
-                'fansly'     => $request->fansly,
-                'manyvids'   => $request->manyvids,
-                'other'      => $request->other,
+                'twitter' => $request->twitter,
+                'instagram' => $request->instagram,
+                'facebook' => $request->facebook,
+                'youtube' => $request->youtube,
+                'twitch' => $request->twitch,
+                'tumblr' => $request->tumblr,
+                'reddit' => $request->reddit,
+                'discord' => $request->discord,
+                'onlyfans' => $request->onlyfans,
+                'loyalfans' => $request->loyalfans,
+                'fansly' => $request->fansly,
+                'manyvids' => $request->manyvids,
+                'other' => $request->other,
                 'updated_at' => now(),
             ];
 
@@ -111,18 +107,18 @@ class SocialLinksController extends Controller
             UserVerificationStatus::updateOrCreate(
                 [
                     'user_id' => $userId,
-                    'role'    => $role,
+                    'role' => $role,
                 ],
                 [
-                    'role'                => $role,
-                    'social_status'       => 0,
+                    'role' => $role,
+                    'social_status' => 0,
                     'user_profile_status' => 0,
                 ]
             );
 
             if (Auth::user()->profile_status_lock == 2) {
                 dispatch(new SendBioSocialUpdateEmail(Auth::user(), [
-                    'bio'    => false,
+                    'bio' => false,
                     'social' => true,
                 ]));
             }
@@ -131,16 +127,16 @@ class SocialLinksController extends Controller
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             return response([
-                'status'       => 200,
-                'message'      => 'Social links updated successfully.',
-                'url'          => $redirectUrl ?? null,
-                'socialCheck'  => true,
+                'status' => 200,
+                'message' => 'Social links updated successfully.',
+                'url' => $redirectUrl ?? null,
+                'socialCheck' => true,
             ]);
         } catch (\Throwable $th) {
             Log::error('Failed to save social links', ['error' => $th->getMessage()]);
 
             return response([
-                'status'  => 500,
+                'status' => 500,
                 'message' => 'An error occurred while saving social links.',
             ], 500);
         }
@@ -190,7 +186,6 @@ class SocialLinksController extends Controller
     //             ])
     //         );
 
-
     //         // $socialCheck = SocialLinks::whereUserId($userId)
     //         //     ->where(function ($q) {
     //         //         $q->where('twitter', '!=', null)
@@ -214,7 +209,6 @@ class SocialLinksController extends Controller
     //             }
     //         }
 
-
     //         $role = Auth::user()->role;
 
     //         if ($socialCheck) {
@@ -237,7 +231,6 @@ class SocialLinksController extends Controller
 
     //             dispatch(new SendBioSocialUpdateEmail(Auth::user(), $updatedFields));
     //         }
-
 
     //         // $user = Auth::user();
     //         // $user->profile_status_lock = 1;

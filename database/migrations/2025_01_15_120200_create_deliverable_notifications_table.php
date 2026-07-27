@@ -23,7 +23,7 @@ return new class extends Migration
                 'sla_warning',
                 'sla_violation',
                 'penalty_applied',
-                'refund_processed'
+                'refund_processed',
             ]);
             $table->enum('channel', ['email', 'dashboard', 'sms'])->default('email');
             $table->string('subject')->nullable();
@@ -32,11 +32,11 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->json('metadata')->nullable(); // Store additional notification data
             $table->timestamps();
-            
+
             // Foreign key constraints
             $table->foreign('deliverable_id')->references('id')->on('deliverables')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            
+
             // Indexes for common queries
             $table->index(['user_id', 'notification_type']);
             $table->index(['status', 'created_at']);

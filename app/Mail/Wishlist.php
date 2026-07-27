@@ -2,9 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -13,6 +11,7 @@ class Wishlist extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
+
     /**
      * Create a new message instance.
      *
@@ -33,6 +32,7 @@ class Wishlist extends Mailable
         try {
             $name = $this->data['name'];
             $subject = 'Your wishlist added in the spenny piggy platform.';
+
             return $this->view('email.wishlist')->with(['name' => $name])
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

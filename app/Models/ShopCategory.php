@@ -23,13 +23,13 @@ class ShopCategory extends Model
         'user_shop_categories_id',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function shop()

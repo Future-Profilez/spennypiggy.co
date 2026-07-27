@@ -11,7 +11,7 @@ class TestRiskController extends Controller
 {
     private function ensureLocal()
     {
-        if (!app()->environment('local')) {
+        if (! app()->environment('local')) {
             abort(404);
         }
     }
@@ -24,7 +24,9 @@ class TestRiskController extends Controller
     {
         $this->ensureLocal();
         $user = $request->user();
-        if (!$user) return response()->json(['error' => 'Login required'], 401);
+        if (! $user) {
+            return response()->json(['error' => 'Login required'], 401);
+        }
 
         // 1. Set Creator Metrics (Reserve & Delay)
         $metrics = CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
@@ -36,7 +38,7 @@ class TestRiskController extends Controller
 
         return response()->json([
             'message' => 'Risk flags ACTIVATED. Check dashboard.',
-            'metrics' => $metrics
+            'metrics' => $metrics,
         ]);
     }
 
@@ -48,7 +50,9 @@ class TestRiskController extends Controller
     {
         $this->ensureLocal();
         $user = $request->user();
-        if (!$user) return response()->json(['error' => 'Login required'], 401);
+        if (! $user) {
+            return response()->json(['error' => 'Login required'], 401);
+        }
 
         $metrics = CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
         $metrics->update([
@@ -59,7 +63,7 @@ class TestRiskController extends Controller
 
         return response()->json([
             'message' => 'Risk flags CLEARED.',
-            'metrics' => $metrics
+            'metrics' => $metrics,
         ]);
     }
 
@@ -76,7 +80,7 @@ class TestRiskController extends Controller
             'set_by' => 'system',
             'started_at' => now(),
         ]);
-        
+
         return response()->json(['message' => 'Platform set to FREEZE.']);
     }
 
@@ -93,7 +97,7 @@ class TestRiskController extends Controller
             'set_by' => 'system',
             'started_at' => now(),
         ]);
-        
+
         return response()->json(['message' => 'Platform set to NORMAL.']);
     }
 
@@ -101,7 +105,9 @@ class TestRiskController extends Controller
     {
         $this->ensureLocal();
         $user = $request->user();
-        if (!$user) return response()->json(['error' => 'Login required'], 401);
+        if (! $user) {
+            return response()->json(['error' => 'Login required'], 401);
+        }
 
         $validated = $request->validate([
             'reserve_percent' => 'required|integer|min:0|max:100',
@@ -116,7 +122,7 @@ class TestRiskController extends Controller
 
         return response()->json([
             'message' => 'Reserve percent updated.',
-            'metrics' => $metrics
+            'metrics' => $metrics,
         ]);
     }
 
@@ -124,7 +130,9 @@ class TestRiskController extends Controller
     {
         $this->ensureLocal();
         $user = $request->user();
-        if (!$user) return response()->json(['error' => 'Login required'], 401);
+        if (! $user) {
+            return response()->json(['error' => 'Login required'], 401);
+        }
 
         $validated = $request->validate([
             'days_ago' => 'required|integer|min:0|max:3650',

@@ -3,9 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Ramsey\Uuid\Uuid;
 
@@ -17,7 +15,7 @@ class OfficialAccount extends Seeder
     public function run(): void
     {
         $user = User::where('email', 'spennypiggyofficial@gmail.com')->exists();
-        if (!$user) {
+        if (! $user) {
             User::insert([
                 'uuid' => Uuid::uuid4(),
                 'name' => 'Official Account',

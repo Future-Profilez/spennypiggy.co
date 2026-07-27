@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,7 +14,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('deliverables')) {
             if (DB::getDriverName() === 'mysql') {
-                DB::statement("ALTER TABLE deliverables MODIFY COLUMN deliverable_type VARCHAR(100)");
+                DB::statement('ALTER TABLE deliverables MODIFY COLUMN deliverable_type VARCHAR(100)');
             } else {
                 Schema::table('deliverables', function (Blueprint $table) {
                     $table->string('deliverable_type', 100)->change();

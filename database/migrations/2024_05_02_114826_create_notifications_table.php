@@ -18,10 +18,10 @@ return new class extends Migration
                 Schema::hasColumn('notifications', 'type') &&
                 Schema::hasColumn('notifications', 'data') &&
                 Schema::hasColumn('notifications', 'read_at') &&
-                !Schema::hasColumn('notifications', 'notification');
+                ! Schema::hasColumn('notifications', 'notification');
 
             if ($looksLikeLaravelNotifications) {
-                if (!Schema::hasTable('notifications_laravel_backup')) {
+                if (! Schema::hasTable('notifications_laravel_backup')) {
                     Schema::rename('notifications', 'notifications_laravel_backup');
                 } else {
                     Schema::drop('notifications');
@@ -29,7 +29,7 @@ return new class extends Migration
             }
         }
 
-        if (!Schema::hasTable('notifications')) {
+        if (! Schema::hasTable('notifications')) {
             Schema::create('notifications', function (Blueprint $table) {
                 $table->id();
                 $table->uuid();
@@ -62,7 +62,7 @@ return new class extends Migration
                         ];
                     }
 
-                    if (!empty($payload)) {
+                    if (! empty($payload)) {
                         DB::table('notifications')->insert($payload);
                     }
                 });

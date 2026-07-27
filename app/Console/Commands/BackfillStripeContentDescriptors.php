@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\StripeControl;
 use App\Models\User;
+use App\StripeControl;
 use Illuminate\Console\Command;
 
 class BackfillStripeContentDescriptors extends Command
@@ -36,7 +36,8 @@ class BackfillStripeContentDescriptors extends Command
             $descriptor = StripeControl::buildContentDescriptor($user->username);
 
             if ($dryRun) {
-                $this->line($user->id . ' ' . $user->account_id . ' descriptor=' . $descriptor);
+                $this->line($user->id.' '.$user->account_id.' descriptor='.$descriptor);
+
                 continue;
             }
 
@@ -48,13 +49,13 @@ class BackfillStripeContentDescriptors extends Command
                 $updated++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn('Failed ' . $user->id . ' (' . $user->account_id . '): ' . $e->getMessage());
+                $this->warn('Failed '.$user->id.' ('.$user->account_id.'): '.$e->getMessage());
             }
         }
 
-        $this->info('Matched users: ' . $users->count());
-        $this->info('Updated: ' . $updated);
-        $this->info('Failed: ' . $failed);
+        $this->info('Matched users: '.$users->count());
+        $this->info('Updated: '.$updated);
+        $this->info('Failed: '.$failed);
 
         return self::SUCCESS;
     }

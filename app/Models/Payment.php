@@ -57,44 +57,50 @@ class Payment extends Model
      */
     public function getGifter()
     {
-        if (!$this->stripe_payment_intent_id && !$this->stripe_session_id) {
+        if (! $this->stripe_payment_intent_id && ! $this->stripe_session_id) {
             return null;
         }
 
         // Try UserPayment
-        $userPaymentQuery = \App\Models\UserPayment::query();
+        $userPaymentQuery = UserPayment::query();
         if ($this->stripe_payment_intent_id) {
-            $userPaymentQuery->where('payment_details', 'LIKE', '%' . $this->stripe_payment_intent_id . '%');
+            $userPaymentQuery->where('payment_details', 'LIKE', '%'.$this->stripe_payment_intent_id.'%');
         } elseif ($this->stripe_session_id) {
-            $userPaymentQuery->where('payment_details', 'LIKE', '%' . $this->stripe_session_id . '%');
+            $userPaymentQuery->where('payment_details', 'LIKE', '%'.$this->stripe_session_id.'%');
         }
         $userPayment = $userPaymentQuery->first();
 
         if ($userPayment && $userPayment->from_user_id) {
-            $user = \App\Models\User::find($userPayment->from_user_id);
-            if ($user) return $user;
+            $user = User::find($userPayment->from_user_id);
+            if ($user) {
+                return $user;
+            }
         }
 
         // Try TipGoalsPayment
         if ($this->stripe_session_id) {
-            $tip = \App\Models\TipGoalsPayment::where('session_id', $this->stripe_session_id)->first();
+            $tip = TipGoalsPayment::where('session_id', $this->stripe_session_id)->first();
             if ($tip && $tip->user_id) {
-                $user = \App\Models\User::find($tip->user_id);
-                if ($user) return $user;
+                $user = User::find($tip->user_id);
+                if ($user) {
+                    return $user;
+                }
             }
         }
 
         // Try PiggyPotContribution
         if ($this->stripe_session_id) {
-            $piggy = \App\Models\PiggyPotContribution::where('session_id', $this->stripe_session_id)->first();
+            $piggy = PiggyPotContribution::where('session_id', $this->stripe_session_id)->first();
             if ($piggy && $piggy->user_id) {
-                $user = \App\Models\User::find($piggy->user_id);
-                if ($user) return $user;
+                $user = User::find($piggy->user_id);
+                if ($user) {
+                    return $user;
+                }
             }
         }
 
         // Try TaskPurchase
-        $taskPurchaseQuery = \App\Models\TaskPurchase::query();
+        $taskPurchaseQuery = TaskPurchase::query();
         if ($this->stripe_session_id) {
             $taskPurchaseQuery->where('stripe_session_id', $this->stripe_session_id);
         } elseif ($this->stripe_payment_intent_id) {
@@ -103,12 +109,14 @@ class Payment extends Model
         $taskPurchase = $taskPurchaseQuery->first();
 
         if ($taskPurchase && $taskPurchase->supporter_id) {
-            $user = \App\Models\User::find($taskPurchase->supporter_id);
-            if ($user) return $user;
+            $user = User::find($taskPurchase->supporter_id);
+            if ($user) {
+                return $user;
+            }
         }
 
         // Try Deliverable
-        $deliverableQuery = \App\Models\Deliverable::query();
+        $deliverableQuery = Deliverable::query();
         if ($this->stripe_session_id) {
             $deliverableQuery->where('session_id', $this->stripe_session_id);
         } elseif ($this->stripe_payment_intent_id) {
@@ -117,8 +125,10 @@ class Payment extends Model
         $deliverable = $deliverableQuery->first();
 
         if ($deliverable && $deliverable->purchaser_id) {
-            $user = \App\Models\User::find($deliverable->purchaser_id);
-            if ($user) return $user;
+            $user = User::find($deliverable->purchaser_id);
+            if ($user) {
+                return $user;
+            }
         }
 
         return null;
@@ -135,11 +145,11 @@ class Payment extends Model
         $deliverable = Deliverable::query()
             ->when(
                 $this->stripe_session_id,
-                fn($q) => $q->where('session_id', $this->stripe_session_id)
+                fn ($q) => $q->where('session_id', $this->stripe_session_id)
             )
             ->when(
-                !$this->stripe_session_id && $this->stripe_payment_intent_id,
-                fn($q) => $q->where(
+                ! $this->stripe_session_id && $this->stripe_payment_intent_id,
+                fn ($q) => $q->where(
                     'payment_intent_id',
                     $this->stripe_payment_intent_id
                 )
@@ -220,6 +230,7 @@ class Payment extends Model
 
         // Fallback to generic payment
         $gifter = $this->getGifter();
+
         return [
             'activity_type' => 'payment',
             'gifter_id' => $gifter?->id,

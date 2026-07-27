@@ -316,6 +316,32 @@ class ProfileController extends Controller
                         $user->refresh();
                     }
                 }
+                // SFW gate on profile media. Both are uploaded unapproved and wait
+                // for an admin either way; the scan is what tells the reviewer
+                // which photo to look at hardest, and writes the reason the
+                // creator sees. Only dispatched when the upload actually changed,
+                // so an unrelated profile edit does not re-scan (and re-flag) a
+                // photo an admin already cleared.
+                if (is_array($avatar) && ! empty($avatar) && ! empty($user->avatar)) {
+                    CheckMediaModeration::dispatch(
+                        User::class,
+                        $user->id,
+                        $user->avatar,
+                        ['avatar_approved' => 0],
+                        'avatar'
+                    );
+                }
+
+                if (is_array($cover) && ! empty($cover) && ! empty($user->cover)) {
+                    CheckMediaModeration::dispatch(
+                        User::class,
+                        $user->id,
+                        $user->cover,
+                        ['cover_approved' => 0],
+                        'cover'
+                    );
+                }
+
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
 
                 return redirect(route('user.show', ['username' => $request->username ?? $user->username]))->with('success', 'Profile has been updated.');

@@ -4,7 +4,6 @@ namespace App\Helpers;
 
 use App\Services\MembershipAccessService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class MembershipHelper
 {
@@ -13,13 +12,13 @@ class MembershipHelper
      */
     public static function userHasAccess($creatorId, $membershipLevel = null)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return false;
         }
 
         $service = app(MembershipAccessService::class);
         $access = $service->hasActiveMembership(Auth::id(), $creatorId, $membershipLevel);
-        
+
         return $access['has_access'];
     }
 
@@ -28,11 +27,12 @@ class MembershipHelper
      */
     public static function getUserMembership($creatorId, $membershipLevel = null)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return null;
         }
 
         $service = app(MembershipAccessService::class);
+
         return $service->hasActiveMembership(Auth::id(), $creatorId, $membershipLevel);
     }
 
@@ -41,11 +41,12 @@ class MembershipHelper
      */
     public static function getUserMemberships()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return [];
         }
 
         $service = app(MembershipAccessService::class);
+
         return $service->getUserActiveMemberships(Auth::id());
     }
 
@@ -56,11 +57,11 @@ class MembershipHelper
     {
         // Define which content types require membership
         $memberOnlyContent = ['exclusive_post', 'premium_content', 'members_only'];
-        
+
         if (in_array($contentType, $memberOnlyContent)) {
-            return !self::userHasAccess($creatorId);
+            return ! self::userHasAccess($creatorId);
         }
-        
+
         return false;
     }
 
@@ -70,12 +71,12 @@ class MembershipHelper
     public static function getAccessSummary($creatorId)
     {
         $access = self::getUserMembership($creatorId);
-        
-        if (!$access || !$access['has_access']) {
+
+        if (! $access || ! $access['has_access']) {
             return [
                 'has_access' => false,
                 'message' => 'No active membership',
-                'action' => 'Subscribe to access exclusive content'
+                'action' => 'Subscribe to access exclusive content',
             ];
         }
 
@@ -87,7 +88,7 @@ class MembershipHelper
             'level' => $level,
             'message' => "You have {$level} membership access",
             'access_method' => $access['access_method'] ?? 'unknown',
-            'subscription_id' => $access['subscription_id'] ?? null
+            'subscription_id' => $access['subscription_id'] ?? null,
         ];
     }
 
@@ -109,7 +110,7 @@ class MembershipHelper
             'silver' => 2,
             'gold' => 3,
             'platinum' => 4,
-            'lifetime' => 5
+            'lifetime' => 5,
         ];
 
         $userRank = $hierarchy[strtolower($userLevel)] ?? 0;

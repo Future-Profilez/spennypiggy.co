@@ -16,27 +16,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('bills')) {
+        if (! Schema::hasTable('bills')) {
             return;
         }
 
         Schema::table('bills', function (Blueprint $table) {
-            if (!Schema::hasColumn('bills', 'price')) {
+            if (! Schema::hasColumn('bills', 'price')) {
                 $table->double('price', 8, 2)->default(0)->after('name');
             }
-            if (!Schema::hasColumn('bills', 'currency')) {
+            if (! Schema::hasColumn('bills', 'currency')) {
                 $table->string('currency')->default('GBP')->after('price');
             }
-            if (!Schema::hasColumn('bills', 'tax_amount')) {
+            if (! Schema::hasColumn('bills', 'tax_amount')) {
                 $table->double('tax_amount', 8, 2)->default(0)->after('currency');
             }
-            if (!Schema::hasColumn('bills', 'period')) {
+            if (! Schema::hasColumn('bills', 'period')) {
                 $table->string('period')->nullable()->after('tax_amount');
             }
-            if (!Schema::hasColumn('bills', 'edited_reason')) {
+            if (! Schema::hasColumn('bills', 'edited_reason')) {
                 $table->text('edited_reason')->nullable();
             }
-            if (!Schema::hasColumn('bills', 'edited_status')) {
+            if (! Schema::hasColumn('bills', 'edited_status')) {
                 $table->string('edited_status')->nullable();
             }
         });
@@ -44,7 +44,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('bills')) {
+        if (! Schema::hasTable('bills')) {
             return;
         }
 

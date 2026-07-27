@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class PerformanceServiceProvider extends ServiceProvider
 {
@@ -27,7 +27,7 @@ class PerformanceServiceProvider extends ServiceProvider
     {
         // Add performance headers to all responses
         $this->addPerformanceHeaders();
-        
+
         // Optimize Blade rendering
         $this->optimizeBladeRendering();
     }
@@ -61,7 +61,7 @@ class PerformanceServiceProvider extends ServiceProvider
                 'performanceMetrics' => [
                     'timestamp' => now()->timestamp,
                     'memory_usage' => memory_get_usage(true),
-                ]
+                ],
             ]);
         });
 
@@ -72,13 +72,13 @@ class PerformanceServiceProvider extends ServiceProvider
                     '//fonts.googleapis.com',
                     '//fonts.gstatic.com',
                     '//widget.trustpilot.com',
-                    '//static.ads-twitter.com'
+                    '//static.ads-twitter.com',
                 ],
                 'preconnect' => [
-                    'https://fonts.gstatic.com'
-                ]
+                    'https://fonts.gstatic.com',
+                ],
             ];
-            
+
             $view->with('criticalResources', $criticalResources);
         });
     }

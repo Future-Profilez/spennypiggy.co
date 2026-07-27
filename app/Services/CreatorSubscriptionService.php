@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
@@ -22,18 +23,18 @@ class CreatorSubscriptionService
                 return [
                     'eligible' => true,
                     'status' => 'not_creator',
-                    'message' => 'Subscription validation only applies to creators'
+                    'message' => 'Subscription validation only applies to creators',
                 ];
             }
 
             // Check subscription status using the user accessor
             $subscriptionStatus = $creator->subscription_status;
-            
+
             Log::info('Subscription validation check', [
                 'creator_id' => $creator->id,
                 'creator_username' => $creator->username,
                 'subscription_status' => $subscriptionStatus,
-                'is_subscribed' => $creator->is_subscribed
+                'is_subscribed' => $creator->is_subscribed,
             ]);
 
             // Status 0 = Expired, Status 3 = Inactive/Never Subscribed
@@ -54,7 +55,7 @@ class CreatorSubscriptionService
                                 'eligible' => true,
                                 'status' => 'active_subscription',
                                 'message' => '✅ Subscription active',
-                                'subscription_status' => $subscriptionStatus
+                                'subscription_status' => $subscriptionStatus,
                             ];
                         }
                         if ($subscriptionStatus === 2) {
@@ -62,12 +63,12 @@ class CreatorSubscriptionService
                                 'eligible' => true,
                                 'status' => 'trial_active',
                                 'message' => '🌟 Trial period active',
-                                'subscription_status' => $subscriptionStatus
+                                'subscription_status' => $subscriptionStatus,
                             ];
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::warning('CreatorSubscriptionService on-demand sync failed: ' . $e->getMessage(), [
+                    Log::warning('CreatorSubscriptionService on-demand sync failed: '.$e->getMessage(), [
                         'creator_id' => $creator->id,
                     ]);
                 }
@@ -75,12 +76,12 @@ class CreatorSubscriptionService
                 return [
                     'eligible' => false,
                     'status' => $subscriptionStatus === 0 ? 'subscription_expired' : 'no_subscription',
-                    'message' => $subscriptionStatus === 0 
-                        ? '💳 Your site subscription has expired' 
+                    'message' => $subscriptionStatus === 0
+                        ? '💳 Your site subscription has expired'
                         : '💳 Active subscription required to receive payments',
                     'subscription_status' => $subscriptionStatus,
                     'action_required' => 'subscribe',
-                    'suggestions' => $this->getSubscriptionSuggestions()
+                    'suggestions' => $this->getSubscriptionSuggestions(),
                 ];
             }
 
@@ -90,7 +91,7 @@ class CreatorSubscriptionService
                     'eligible' => true,
                     'status' => 'active_subscription',
                     'message' => '✅ Subscription active',
-                    'subscription_status' => $subscriptionStatus
+                    'subscription_status' => $subscriptionStatus,
                 ];
             }
 
@@ -98,7 +99,7 @@ class CreatorSubscriptionService
             if ($subscriptionStatus === 2) {
                 $subscription = $creator->creatorMonthlySubscription;
                 $trialMessage = '🌟 Trial period active';
-                
+
                 if ($subscription && $subscription->status === 'trial_ending') {
                     $trialMessage = '⏰ Trial ending soon - please update payment method';
                 }
@@ -108,7 +109,7 @@ class CreatorSubscriptionService
                     'status' => 'trial_active',
                     'message' => $trialMessage,
                     'subscription_status' => $subscriptionStatus,
-                    'action_required' => $subscription && $subscription->status === 'trial_ending' ? 'update_payment' : null
+                    'action_required' => $subscription && $subscription->status === 'trial_ending' ? 'update_payment' : null,
                 ];
             }
 
@@ -117,17 +118,17 @@ class CreatorSubscriptionService
                 'eligible' => false,
                 'status' => 'unknown_subscription_status',
                 'message' => '⚠️ Unable to verify subscription status - please contact support',
-                'subscription_status' => $subscriptionStatus
+                'subscription_status' => $subscriptionStatus,
             ];
 
         } catch (\Exception $e) {
-            Log::error('CreatorSubscriptionService validation error: ' . $e->getMessage());
-            
+            Log::error('CreatorSubscriptionService validation error: '.$e->getMessage());
+
             // Fail safely - allow payment but log error
             return [
                 'eligible' => true,
                 'status' => 'error',
-                'message' => 'Subscription validation temporarily unavailable'
+                'message' => 'Subscription validation temporarily unavailable',
             ];
         }
     }
@@ -144,7 +145,7 @@ class CreatorSubscriptionService
                 'description' => 'Get your mandatory creator subscription to start receiving payments',
                 'action_url' => '/activate-subscription',
                 'estimated_time' => '5 minutes',
-                'priority' => 'high'
+                'priority' => 'high',
             ],
             [
                 'type' => 'contact_support',
@@ -152,8 +153,8 @@ class CreatorSubscriptionService
                 'description' => 'Contact our support team for assistance with subscription setup',
                 'action_url' => 'https://spennypiggy.co',
                 'estimated_time' => 'Immediate',
-                'priority' => 'medium'
-            ]
+                'priority' => 'medium',
+            ],
         ];
     }
 
@@ -163,8 +164,8 @@ class CreatorSubscriptionService
     public function needsSubscriptionWarning(User $creator): bool
     {
         $validation = $this->validateCreatorSubscription($creator);
-        
-        return !$validation['eligible'] || 
+
+        return ! $validation['eligible'] ||
                ($validation['status'] === 'trial_active' && isset($validation['action_required']));
     }
 
@@ -174,14 +175,14 @@ class CreatorSubscriptionService
     public function getSubscriptionStatus(User $creator): array
     {
         $validation = $this->validateCreatorSubscription($creator);
-        
+
         return [
             'status' => $validation['status'],
             'message' => $validation['message'],
             'eligible' => $validation['eligible'],
             'subscription_status' => $validation['subscription_status'] ?? 'unknown',
             'action_required' => $validation['action_required'] ?? null,
-            'suggestions' => $validation['suggestions'] ?? []
+            'suggestions' => $validation['suggestions'] ?? [],
         ];
     }
 
@@ -191,26 +192,26 @@ class CreatorSubscriptionService
     public function validatePaymentSubscription(User $creator, array $paymentData): array
     {
         $validation = $this->validateCreatorSubscription($creator);
-        
+
         // If payment is not eligible due to subscription, log it
-        if (!$validation['eligible']) {
+        if (! $validation['eligible']) {
             Log::warning('Payment blocked due to subscription issue', [
                 'creator_id' => $creator->id,
                 'creator_username' => $creator->username,
                 'amount' => $paymentData['amount'] ?? 0,
                 'payment_type' => $paymentData['payment_type'] ?? 'unknown',
                 'blocked_reason' => $validation['status'],
-                'subscription_status' => $validation['subscription_status'] ?? 'unknown'
+                'subscription_status' => $validation['subscription_status'] ?? 'unknown',
             ]);
         }
-        
+
         return $validation;
     }
 
     /**
      * Get creators who need subscription warnings
      */
-    public function getCreatorsNeedingSubscriptionWarnings(): \Illuminate\Database\Eloquent\Collection
+    public function getCreatorsNeedingSubscriptionWarnings(): Collection
     {
         return User::where('role', 1)
             ->where('stripe_details_submitted', 1) // Only verified creators
@@ -235,23 +236,25 @@ class CreatorSubscriptionService
     public function isSubscriptionExpiringsoon(User $creator, int $daysThreshold = 7): bool
     {
         $subscription = $creator->creatorMonthlySubscription;
-        
-        if (!$subscription || !$subscription->stripe_id) {
+
+        if (! $subscription || ! $subscription->stripe_id) {
             return false;
         }
 
         try {
             Stripe::setApiKey(config('services.stripe.secret'));
             $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
-            
+
             if ($stripeSubscription->status === 'trialing' && $stripeSubscription->trial_end) {
                 $trialEndDate = Carbon::createFromTimestamp($stripeSubscription->trial_end);
+
                 return Carbon::now()->diffInDays($trialEndDate, false) <= $daysThreshold;
             }
 
             return false;
         } catch (\Exception $e) {
-            Log::error('Error checking subscription expiration: ' . $e->getMessage());
+            Log::error('Error checking subscription expiration: '.$e->getMessage());
+
             return false;
         }
     }

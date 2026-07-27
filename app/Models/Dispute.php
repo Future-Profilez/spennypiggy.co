@@ -10,6 +10,7 @@ class Dispute extends Model
     protected $table = 'disputes';
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

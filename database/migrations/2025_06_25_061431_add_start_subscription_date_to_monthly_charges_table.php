@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('monthly_charges')) {
+        if (! Schema::hasTable('monthly_charges')) {
             return;
         }
 

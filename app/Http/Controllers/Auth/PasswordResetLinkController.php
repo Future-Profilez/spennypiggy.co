@@ -14,7 +14,6 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
-
 class PasswordResetLinkController extends Controller
 {
     /**
@@ -30,7 +29,7 @@ class PasswordResetLinkController extends Controller
     /**
      * Handle an incoming password reset link request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     // public function store(Request $request): RedirectResponse {
     //     $request->validate([
@@ -70,7 +69,6 @@ class PasswordResetLinkController extends Controller
     //     }
     // }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -78,18 +76,19 @@ class PasswordResetLinkController extends Controller
         ]);
         $email = $request->input('email');
         $user = User::where('email', $email)->first();
-        if (!empty($user)) {
+        if (! empty($user)) {
             $user->expired_at = Carbon::now()->addMinutes(10);
             $user->save();
             ForgotPassword::dispatch($user);
+
             return response()->json([
-                "status" => true,
-                "message" => "Password reset link has been sent to your emal address. Please check your email inbox. This mail expires in 10 minutes."
+                'status' => true,
+                'message' => 'Password reset link has been sent to your emal address. Please check your email inbox. This mail expires in 10 minutes.',
             ]);
         } else {
             return response()->json([
-                "status" => false,
-                "message" => "Email address is invalid or did't match with our records."
+                'status' => false,
+                'message' => "Email address is invalid or did't match with our records.",
             ]);
         }
     }
@@ -101,7 +100,7 @@ class PasswordResetLinkController extends Controller
                 'uuid' => $uuid,
             ]);
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -116,16 +115,17 @@ class PasswordResetLinkController extends Controller
             if ($user->expired_at < Carbon::now()) {
                 return back()->with('error', 'Mail expired');
             }
-            if (!empty($user)) {
+            if (! empty($user)) {
                 $user->expired_at = Carbon::now();
                 $user->password = Hash::make($request->password);
                 $user->save();
+
                 return redirect(route('login'))->with('success', 'Password updated successfully');
             } else {
                 return back()->with('error', 'Unable to update password');
             }
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 }

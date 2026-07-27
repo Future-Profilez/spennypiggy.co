@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Dispute;
-use App\Models\User;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class DisputeSeeder extends Seeder
@@ -17,8 +17,9 @@ class DisputeSeeder extends Seeder
         // Adjust the email to match your logged-in user if known, or pick the first creator
         $creator = User::where('email', 'creator_test@spennypiggy.co')->first() ?? User::where('role', 1)->first();
 
-        if (!$creator) {
-            $this->command->error("No creator found to seed disputes for.");
+        if (! $creator) {
+            $this->command->error('No creator found to seed disputes for.');
+
             return;
         }
 
@@ -26,7 +27,7 @@ class DisputeSeeder extends Seeder
 
         // Create a dummy RiskIdentity
         $riskIdentity = RiskIdentity::create([
-            'card_fingerprint' => 'test_card_' . Str::random(10),
+            'card_fingerprint' => 'test_card_'.Str::random(10),
             'email_hash' => hash('sha256', 'test@example.com'),
             'ip_hash' => hash('sha256', '127.0.0.1'),
             'is_guest' => true,
@@ -39,7 +40,7 @@ class DisputeSeeder extends Seeder
             'amount' => 5000, // £50.00
             'currency' => 'gbp',
             'status' => 'succeeded',
-            'stripe_payment_intent_id' => 'pi_test_' . Str::random(10),
+            'stripe_payment_intent_id' => 'pi_test_'.Str::random(10),
         ]);
 
         // 1. Action Required Dispute
@@ -47,7 +48,7 @@ class DisputeSeeder extends Seeder
             'id' => Str::uuid(),
             'creator_id' => $creator->uuid,
             'payment_id' => $payment->id,
-            'stripe_dispute_id' => 'dp_test_' . Str::random(10),
+            'stripe_dispute_id' => 'dp_test_'.Str::random(10),
             'amount' => 5000,
             'currency' => 'gbp',
             'reason' => 'product_not_received',
@@ -62,7 +63,7 @@ class DisputeSeeder extends Seeder
             'id' => Str::uuid(),
             'creator_id' => $creator->uuid,
             'payment_id' => $payment->id,
-            'stripe_dispute_id' => 'dp_test_' . Str::random(10),
+            'stripe_dispute_id' => 'dp_test_'.Str::random(10),
             'amount' => 2500,
             'currency' => 'gbp',
             'reason' => 'fraudulent',
@@ -78,7 +79,7 @@ class DisputeSeeder extends Seeder
             'id' => Str::uuid(),
             'creator_id' => $creator->uuid,
             'payment_id' => $payment->id,
-            'stripe_dispute_id' => 'dp_test_' . Str::random(10),
+            'stripe_dispute_id' => 'dp_test_'.Str::random(10),
             'amount' => 1000,
             'currency' => 'usd',
             'reason' => 'subscription_canceled',
@@ -88,6 +89,6 @@ class DisputeSeeder extends Seeder
             'created_at' => now()->subDays(30),
         ]);
 
-        $this->command->info("Seeded 3 disputes.");
+        $this->command->info('Seeded 3 disputes.');
     }
 }

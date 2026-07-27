@@ -2,16 +2,41 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Notification;
 use App\Channels\MagicBellChannel;
+use App\Models\Bills;
 use App\Models\Deliverable;
+use App\Models\Dispute;
+use App\Models\Follow;
+use App\Models\GifterCardVerification;
+use App\Models\Membership;
+use App\Models\MonthlyCharge;
+use App\Models\Payment;
+use App\Models\PiggyPot;
+use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostCommentReplies;
+use App\Models\PostLike;
+use App\Models\Shop;
+use App\Models\ShopPayment;
+use App\Models\SocialLinks;
+use App\Models\Subscription;
+use App\Models\SubscriptionEvent;
+use App\Models\Task;
+use App\Models\TipGoal;
+use App\Models\User;
+use App\Models\UserCategory;
+use App\Models\UserIntro;
+use App\Models\WishItem;
+use App\Models\WishItemSubscription;
+use App\Observers\ActivityObserver;
+use App\Observers\CreatorContentObserver;
 use App\Observers\DeliverableObserver;
+use App\Services\ResourcePreloadService;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\ServiceProvider;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Vite;
-use App\Observers\ActivityObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,38 +44,38 @@ class AppServiceProvider extends ServiceProvider
      * Models that should be observed by ActivityObserver
      */
     protected $activityLogModels = [
-        \App\Models\WishItem::class,
-        \App\Models\WishItemSubscription::class,
-        \App\Models\MonthlyCharge::class,
-        \App\Models\Subscription::class,
-        \App\Models\SubscriptionEvent::class,
+        WishItem::class,
+        WishItemSubscription::class,
+        MonthlyCharge::class,
+        Subscription::class,
+        SubscriptionEvent::class,
         // \App\Models\StripePaymentDetail::class,
         // \App\Models\StripePaymentItems::class,
-        \App\Models\TipGoal::class,
+        TipGoal::class,
         // \App\Models\TipGoalsPayment::class,
         // \App\Models\BillPayment::class,
         // \App\Models\MembershipPayment::class,
-        \App\Models\Membership::class,
-        \App\Models\Bills::class,
-        \App\Models\Task::class,
+        Membership::class,
+        Bills::class,
+        Task::class,
         // \App\Models\TaskPurchase::class,
-        \App\Models\PiggyPot::class,
+        PiggyPot::class,
         // \App\Models\PiggyPotContribution::class,
-        \App\Models\User::class,
-        \App\Models\UserCategory::class,
-        \App\Models\GifterCardVerification::class,
-        \App\Models\PostLike::class,
-        \App\Models\Follow::class,
-        \App\Models\PostComment::class,
-        \App\Models\PostCommentReplies::class,
-        \App\Models\UserIntro::class,
-        \App\Models\SocialLinks::class,
-        \App\Models\Post::class,
-        \App\Models\Shop::class,
-        \App\Models\ShopPayment::class,
-        \App\Models\Deliverable::class,
-        \App\Models\Dispute::class,
-        \App\Models\Payment::class,
+        User::class,
+        UserCategory::class,
+        GifterCardVerification::class,
+        PostLike::class,
+        Follow::class,
+        PostComment::class,
+        PostCommentReplies::class,
+        UserIntro::class,
+        SocialLinks::class,
+        Post::class,
+        Shop::class,
+        ShopPayment::class,
+        Deliverable::class,
+        Dispute::class,
+        Payment::class,
         // Add more models as needed for additional audit coverage.
     ];
 
@@ -65,8 +90,8 @@ class AppServiceProvider extends ServiceProvider
             app()->useStoragePath('/tmp/storage');
         }
 
-        $this->app->singleton(\App\Services\ResourcePreloadService::class, function ($app) {
-            return new \App\Services\ResourcePreloadService();
+        $this->app->singleton(ResourcePreloadService::class, function ($app) {
+            return new ResourcePreloadService;
         });
     }
 
@@ -92,13 +117,13 @@ class AppServiceProvider extends ServiceProvider
         // Tell a creator's followers when new content goes live (moderation-aware —
         // held items only notify once approved). See CreatorContentObserver.
         foreach ([
-            \App\Models\WishItem::class,
-            \App\Models\Shop::class,
-            \App\Models\PiggyPot::class,
-            \App\Models\Membership::class,
-            \App\Models\Bills::class,
+            WishItem::class,
+            Shop::class,
+            PiggyPot::class,
+            Membership::class,
+            Bills::class,
         ] as $contentModel) {
-            $contentModel::observe(\App\Observers\CreatorContentObserver::class);
+            $contentModel::observe(CreatorContentObserver::class);
         }
 
         // Register ActivityObserver for all models
@@ -106,7 +131,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Register custom notification channel for MagicBell push notifications
         Notification::extend('push', function ($app) {
-            return new MagicBellChannel();
+            return new MagicBellChannel;
         });
 
         // Ensure storage directories exist in Lambda environment
@@ -139,11 +164,11 @@ class AppServiceProvider extends ServiceProvider
             '/tmp/storage/framework/sessions',
             '/tmp/storage/framework/views',
             '/tmp/storage/app',
-            '/tmp/storage/logs'
+            '/tmp/storage/logs',
         ];
 
         foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 @mkdir($directory, 0755, true);
             }
         }

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->uuid();
             $table->bigInteger('creator_id');
             $table->string('product_id');
-            $table->longText('details')->comment("all the product details in json");
+            $table->longText('details')->comment('all the product details in json');
             $table->timestamps();
             $table->softDeletes();
         });

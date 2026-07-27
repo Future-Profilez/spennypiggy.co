@@ -15,7 +15,7 @@ return new class extends Migration
             // Add NOT NULL constraint to username column if it doesn't already exist
             // and add a unique constraint (if not already present)
             $table->string('username')->nullable(false)->change();
-            
+
             // Note: If the unique constraint doesn't exist, uncomment the line below
             // $table->unique('username');
         });

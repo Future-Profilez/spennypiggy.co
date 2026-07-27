@@ -14,7 +14,7 @@ return new class extends Migration
                 'UNDER_REVIEW',   // admin reviewing
                 'APPROVED',       // admin approved
                 'REJECTED',       // admin rejected
-                'PAID'            // Stripe payout completed
+                'PAID',            // Stripe payout completed
             ])->default('PENDING')->after('requested_at');
         });
     }

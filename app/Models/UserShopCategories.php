@@ -18,14 +18,13 @@ class UserShopCategories extends Model
         'category',
     ];
 
-    protected $hidden   =   [
+    protected $hidden = [
         'id',
         'user_id',
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
     ];
-
 
     public static function boot()
     {

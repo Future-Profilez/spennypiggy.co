@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])->group(function () {
     Route::get('/debug-wish-creation', function () {
         $user = Auth::user();
-        
+
         return response()->json([
             'user_authenticated' => Auth::check(),
             'user_id' => $user->id ?? null,
@@ -21,14 +21,14 @@ Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])->
             'middleware_should_pass' => true,
             'debug_info' => [
                 'has_paid_subscription' => in_array($user->subscription_status, [1, 2]),
-                'needs_identity_verification' => $user->role == 1 
-                    && $user->profile_status_lock == 2 
-                    && $user->identity_status != 1 
+                'needs_identity_verification' => $user->role == 1
+                    && $user->profile_status_lock == 2
+                    && $user->identity_status != 1
                     && in_array($user->subscription_status, [1, 2]),
-            ]
+            ],
         ]);
     });
-    
+
     Route::post('/debug-wish-creation-test', function (Request $request) {
         return response()->json([
             'success' => true,

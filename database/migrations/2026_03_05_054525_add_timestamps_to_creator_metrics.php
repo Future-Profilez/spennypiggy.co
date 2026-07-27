@@ -15,8 +15,8 @@ return new class extends Migration
             // Check if created_at exists, if not add it.
             // Also check if updated_at exists (it was in previous migration but might be different type)
             // But we specifically need created_at.
-            
-            if (!Schema::hasColumn('creator_metrics', 'created_at')) {
+
+            if (! Schema::hasColumn('creator_metrics', 'created_at')) {
                 $table->timestamp('created_at')->useCurrent()->after('updated_at');
             }
         });

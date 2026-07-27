@@ -3,10 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class ShopBuyedMailUser extends Mailable
@@ -14,17 +11,19 @@ class ShopBuyedMailUser extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
-    public $url;
-    public $curr;
-    public $deliverable;
 
+    public $url;
+
+    public $curr;
+
+    public $deliverable;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($data,$url,$curr, $deliverable = null)
+    public function __construct($data, $url, $curr, $deliverable = null)
     {
         $this->data = $data;
         $this->url = $url;
@@ -40,7 +39,7 @@ class ShopBuyedMailUser extends Mailable
     public function build()
     {
         // Ensure relationships are loaded if this is being handled in the queue
-        if (!$this->data->relationLoaded('shop.user')) {
+        if (! $this->data->relationLoaded('shop.user')) {
             $this->data->load(['shop.user']);
         }
 

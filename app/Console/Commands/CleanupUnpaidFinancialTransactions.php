@@ -18,7 +18,7 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $this->line($apply ? 'Mode: APPLY' : 'Mode: DRY-RUN');
         if ($userId) {
-            $this->line('Filter: user_id=' . $userId);
+            $this->line('Filter: user_id='.$userId);
         }
 
         $total = 0;
@@ -31,7 +31,7 @@ class CleanupUnpaidFinancialTransactions extends Command
         $total += $this->cleanupTasks($userId, $apply);
 
         $this->newLine();
-        $this->info('Total affected rows: ' . $total);
+        $this->info('Total affected rows: '.$total);
 
         return self::SUCCESS;
     }
@@ -42,11 +42,12 @@ class CleanupUnpaidFinancialTransactions extends Command
             return 0;
         }
 
-        if (!$apply) {
+        if (! $apply) {
             return count($ids);
         }
 
         $now = now();
+
         return DB::table('financial_transactions')
             ->whereIn('id', $ids)
             ->whereNull('deleted_at')
@@ -76,7 +77,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Bills unpaid: ' . $count);
+        $this->line('Bills unpaid: '.$count);
+
         return $count;
     }
 
@@ -100,7 +102,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Memberships unpaid: ' . $count);
+        $this->line('Memberships unpaid: '.$count);
+
         return $count;
     }
 
@@ -124,7 +127,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Shops unpaid: ' . $count);
+        $this->line('Shops unpaid: '.$count);
+
         return $count;
     }
 
@@ -149,7 +153,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Wishes unpaid: ' . $count);
+        $this->line('Wishes unpaid: '.$count);
+
         return $count;
     }
 
@@ -173,7 +178,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Tips unpaid: ' . $count);
+        $this->line('Tips unpaid: '.$count);
+
         return $count;
     }
 
@@ -197,7 +203,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Piggy pots unpaid: ' . $count);
+        $this->line('Piggy pots unpaid: '.$count);
+
         return $count;
     }
 
@@ -221,8 +228,8 @@ class CleanupUnpaidFinancialTransactions extends Command
 
         $ids = $q->pluck('ft.id')->all();
         $count = $this->softDeleteIds($ids, $apply);
-        $this->line('Tasks unpaid: ' . $count);
+        $this->line('Tasks unpaid: '.$count);
+
         return $count;
     }
 }
-

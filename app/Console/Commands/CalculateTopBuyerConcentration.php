@@ -31,21 +31,21 @@ class CalculateTopBuyerConcentration extends Command
     public function handle()
     {
         $this->info('Calculating top buyer concentration...');
-        
+
         // Fetch Settings
         $thresholds = RiskSetting::get('risk_thresholds', [
             'concentration_gmv_threshold' => 500000, // £5k
             'concentration_percent_trigger' => 40,
-            'concentration_reserve_increase' => 10
+            'concentration_reserve_increase' => 10,
         ]);
-        
+
         $gmvThreshold = $thresholds['concentration_gmv_threshold'] ?? 500000;
         $percentTrigger = $thresholds['concentration_percent_trigger'] ?? 40;
         $reserveIncrease = $thresholds['concentration_reserve_increase'] ?? 10;
 
         // 1. Get Creators with significant volume (e.g. > £1000 in 30d)
         // Optimization: Only scan creators active in last 30d
-        
+
         $creators = Payment::where('created_at', '>=', now()->subDays(30))
             ->where('status', 'succeeded')
             ->distinct()
@@ -64,7 +64,9 @@ class CalculateTopBuyerConcentration extends Command
                 // Spec says: "If top_buyer_percent >= 40% and creator GMV >= threshold -> apply safety".
                 // So we should calculate it anyway if feasible, or just set to 0.
                 // Let's calculate for everyone to be safe, but skip tiny ones.
-                if ($totalGmv == 0) continue;
+                if ($totalGmv == 0) {
+                    continue;
+                }
             }
 
             // 3. Find Top Buyer Spend
@@ -82,13 +84,13 @@ class CalculateTopBuyerConcentration extends Command
             // 4. Update Metric
             $metric = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
             $metric->update(['top_buyer_percent' => $percent]);
-            
+
             // 5. Apply Safety Actions if Rule Triggers
             // Rule: >= 40% and GMV >= £5k
             if ($percent >= $percentTrigger && $totalGmv >= $gmvThreshold) {
                 // Log Action
                 $this->warn("Creator {$creatorId} has {$percent}% concentration risk!");
-                
+
                 AuditLog::create([
                     'actor' => 'system',
                     'action_type' => 'CONCENTRATION_RISK_DETECTED',
@@ -96,10 +98,10 @@ class CalculateTopBuyerConcentration extends Command
                     'metadata_json' => [
                         'percent' => $percent,
                         'gmv_30d' => $totalGmv,
-                        'top_buyer_id' => $topBuyer->risk_identity_id
-                    ]
+                        'top_buyer_id' => $topBuyer->risk_identity_id,
+                    ],
                 ]);
-                
+
                 // Increase Reserve? (e.g. set floor to 10%)
                 if ($metric->reserve_percent < $reserveIncrease) {
                     $metric->update(['reserve_percent' => $reserveIncrease]);
@@ -107,7 +109,7 @@ class CalculateTopBuyerConcentration extends Command
                 }
             }
         }
-        
+
         $this->info('Concentration calculation complete.');
     }
 }

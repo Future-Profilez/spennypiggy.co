@@ -2,9 +2,28 @@
 
 namespace App\Observers;
 
-use App\Models\AuditLog;
+use App\Models\BillPayment;
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\MembershipPayment;
+use App\Models\PiggyPot;
+use App\Models\Post;
+use App\Models\Shop;
+use App\Models\ShopPayment;
+use App\Models\SocialLinks;
+use App\Models\StripePaymentDetail;
+use App\Models\Task;
+use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use App\Models\UserCategory;
+use App\Models\UserIntro;
+use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\Services\ActivityLogger;
+use App\Services\UserProfileService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class ActivityObserver
 {
@@ -27,14 +46,14 @@ class ActivityObserver
         'private_key',
         'token',
         'access_token',
-        'refresh_token'
+        'refresh_token',
     ];
 
     /**
      * Models that should NOT be logged
      */
     protected $excludedModels = [
-        \App\Models\UserCategory::class,
+        UserCategory::class,
     ];
 
     /**
@@ -57,7 +76,7 @@ class ActivityObserver
             return;
         }
 
-        if (!$model->id) {
+        if (! $model->id) {
             return;
         }
 
@@ -98,7 +117,7 @@ class ActivityObserver
         ];
 
         switch (true) {
-            case $model instanceof \App\Models\Membership:
+            case $model instanceof Membership:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'name' => $model->level ?? $model->plan_name ?? 'Unnamed Plan',
@@ -110,7 +129,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created membership plan: {$model->level} for {$model->price} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\WishItem:
+            case $model instanceof WishItem:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'name' => $model->wishname ?? $model->name ?? 'Unnamed Wish',
@@ -122,7 +141,7 @@ class ActivityObserver
                 $metadata['summary'] = "Added wishlist item: {$model->wishname} for {$model->price} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\Post:
+            case $model instanceof Post:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'title' => $model->title ?? 'Untitled Post',
@@ -132,7 +151,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created new post: {$model->title}";
                 break;
 
-            case $model instanceof \App\Models\Task:
+            case $model instanceof Task:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'title' => $model->title ?? 'Untitled Task',
@@ -143,7 +162,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created new task: {$model->title}";
                 break;
 
-            case $model instanceof \App\Models\Shop:
+            case $model instanceof Shop:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'name' => $model->name ?? 'Unnamed Item',
@@ -154,7 +173,7 @@ class ActivityObserver
                 $metadata['summary'] = "Added shop item: {$model->name} for {$model->price} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\Bills:
+            case $model instanceof Bills:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'name' => $model->name ?? 'Unnamed Bill',
@@ -165,7 +184,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created new bill: {$model->name}";
                 break;
 
-            case $model instanceof \App\Models\PiggyPot:
+            case $model instanceof PiggyPot:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'title' => $model->title ?? 'Unnamed Piggy Pot',
@@ -176,7 +195,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created new piggy pot: {$model->title} with goal of {$model->goal_amount} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\TipGoal:
+            case $model instanceof TipGoal:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'title' => $model->title ?? 'Unnamed Tip Goal',
@@ -186,7 +205,7 @@ class ActivityObserver
                 $metadata['summary'] = "Created new tip goal: {$model->title} for {$model->amount} {$model->currency}";
                 break;
 
-            case $model instanceof \App\Models\User:
+            case $model instanceof User:
                 $metadata['item'] = [
                     'id' => $model->id,
                     'name' => $model->name,
@@ -208,7 +227,7 @@ class ActivityObserver
                     'id' => $model->id,
                     'name' => $model->name ?? $model->title ?? $model->wishname ?? 'Item',
                 ];
-                $metadata['summary'] = "Created new " . class_basename($model);
+                $metadata['summary'] = 'Created new '.class_basename($model);
                 break;
         }
 
@@ -280,13 +299,13 @@ class ActivityObserver
             // Only log if there's an actual change
             if ($oldValue != $newValue) {
                 // Check if this is a real change (not just type casting)
-                $normalizedOld = is_numeric($oldValue) ? (string)$oldValue : $oldValue;
-                $normalizedNew = is_numeric($newValue) ? (string)$newValue : $newValue;
+                $normalizedOld = is_numeric($oldValue) ? (string) $oldValue : $oldValue;
+                $normalizedNew = is_numeric($newValue) ? (string) $newValue : $newValue;
 
                 if ($normalizedOld != $normalizedNew) {
                     $changes[$field] = [
                         'old' => $this->sanitizeValue($oldValue),
-                        'new' => $this->sanitizeValue($newValue)
+                        'new' => $this->sanitizeValue($newValue),
                     ];
                     $hasRealChanges = true;
                 }
@@ -313,7 +332,7 @@ class ActivityObserver
                     'model_type' => get_class($model),
                     'diff' => $changes,
                     'event' => 'updated',
-                    'changed_fields' => array_keys($changes)
+                    'changed_fields' => array_keys($changes),
                 ]
             );
         }
@@ -382,7 +401,7 @@ class ActivityObserver
             (string) $model->id,
             [
                 'model_type' => get_class($model),
-                'event' => 'restored'
+                'event' => 'restored',
             ]
         );
     }
@@ -412,7 +431,7 @@ class ActivityObserver
             [
                 'model_type' => get_class($model),
                 'deleted_data' => $this->sanitizeData($model->getAttributes()),
-                'event' => 'force_deleted'
+                'event' => 'force_deleted',
             ]
         );
     }
@@ -422,11 +441,11 @@ class ActivityObserver
      */
     private function getEventKey(Model $model, string $event, array $changes = []): string
     {
-        $key = get_class($model) . ':' . ($model->id ?? 'new') . ':' . $event;
+        $key = get_class($model).':'.($model->id ?? 'new').':'.$event;
 
         // For updates, include a hash of the changes to detect duplicate updates
-        if ($event === 'UPDATED' && !empty($changes)) {
-            $key .= ':' . md5(json_encode($changes));
+        if ($event === 'UPDATED' && ! empty($changes)) {
+            $key .= ':'.md5(json_encode($changes));
         }
 
         return $key;
@@ -468,6 +487,7 @@ class ActivityObserver
                 $sanitized[$key] = $this->sanitizeValue($value);
             }
         }
+
         return $sanitized;
     }
 
@@ -485,7 +505,7 @@ class ActivityObserver
         }
 
         if (is_string($value) && strlen($value) > 1000) {
-            return substr($value, 0, 1000) . '... [TRUNCATED]';
+            return substr($value, 0, 1000).'... [TRUNCATED]';
         }
 
         if (is_resource($value)) {
@@ -501,12 +521,12 @@ class ActivityObserver
     private function clearEarningsCache(Model $model): void
     {
         $paymentModels = [
-            \App\Models\TipGoalsPayment::class,
-            \App\Models\BillPayment::class,
-            \App\Models\MembershipPayment::class,
-            \App\Models\StripePaymentDetail::class,
-            \App\Models\WishItemSubscription::class,
-            \App\Models\ShopPayment::class,
+            TipGoalsPayment::class,
+            BillPayment::class,
+            MembershipPayment::class,
+            StripePaymentDetail::class,
+            WishItemSubscription::class,
+            ShopPayment::class,
         ];
 
         $shouldProcess = false;
@@ -517,30 +537,30 @@ class ActivityObserver
             }
         }
 
-        if (!$shouldProcess) {
+        if (! $shouldProcess) {
             return;
         }
 
         $creatorId = null;
 
         try {
-            if ($model instanceof \App\Models\TipGoalsPayment) {
+            if ($model instanceof TipGoalsPayment) {
                 $creatorId = $model->creator_id;
-            } elseif ($model instanceof \App\Models\BillPayment) {
+            } elseif ($model instanceof BillPayment) {
                 $creatorId = $model->bill?->user_id;
-            } elseif ($model instanceof \App\Models\MembershipPayment) {
+            } elseif ($model instanceof MembershipPayment) {
                 $creatorId = $model->membership?->user_id;
-            } elseif ($model instanceof \App\Models\StripePaymentDetail) {
+            } elseif ($model instanceof StripePaymentDetail) {
                 $creatorId = $model->owner_id;
-            } elseif ($model instanceof \App\Models\WishItemSubscription) {
+            } elseif ($model instanceof WishItemSubscription) {
                 $creatorId = $model->wish_item?->user_id;
-            } elseif ($model instanceof \App\Models\ShopPayment) {
+            } elseif ($model instanceof ShopPayment) {
                 $creatorId = $model->shop?->user_id;
             }
 
             if ($creatorId) {
-                \Illuminate\Support\Facades\Cache::forget('user_earnings_v2_' . $creatorId);
-                \Illuminate\Support\Facades\Cache::forget('user_supporters_count_v2_' . $creatorId);
+                Cache::forget('user_earnings_v2_'.$creatorId);
+                Cache::forget('user_supporters_count_v2_'.$creatorId);
             }
         } catch (\Throwable $e) {
             // Silently fail
@@ -555,32 +575,32 @@ class ActivityObserver
         $user = null;
 
         try {
-            if ($model instanceof \App\Models\User) {
+            if ($model instanceof User) {
                 $user = $model;
-            } elseif ($model instanceof \App\Models\WishItem) {
+            } elseif ($model instanceof WishItem) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\Membership) {
+            } elseif ($model instanceof Membership) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\Bills) {
+            } elseif ($model instanceof Bills) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\Shop) {
+            } elseif ($model instanceof Shop) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\Post) {
+            } elseif ($model instanceof Post) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\UserIntro) {
+            } elseif ($model instanceof UserIntro) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\Task) {
+            } elseif ($model instanceof Task) {
                 $user = $model->creator;
-            } elseif ($model instanceof \App\Models\PiggyPot) {
+            } elseif ($model instanceof PiggyPot) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\SocialLinks) {
+            } elseif ($model instanceof SocialLinks) {
                 $user = $model->user;
-            } elseif ($model instanceof \App\Models\UserCategory) {
+            } elseif ($model instanceof UserCategory) {
                 $user = $model->user;
             }
 
-            if ($user && class_exists(\App\Services\UserProfileService::class)) {
-                $profileService = app(\App\Services\UserProfileService::class);
+            if ($user && class_exists(UserProfileService::class)) {
+                $profileService = app(UserProfileService::class);
                 $profileService->clearUserCaches($user->username, $user->id);
             }
         } catch (\Throwable $e) {

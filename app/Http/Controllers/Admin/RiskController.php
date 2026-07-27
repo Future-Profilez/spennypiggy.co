@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\CreatorMetric;
-use App\Models\User;
 use App\Models\Dispute;
-use App\Models\Payment;
+use App\Models\User;
+use App\Services\Risk\PayoutService;
 use App\Services\Risk\RiskService;
 use Illuminate\Http\Request;
 
@@ -39,17 +39,19 @@ class RiskController extends Controller
         // Resolve User ID/UUID
         if (is_numeric($creatorId)) {
             $user = User::find($creatorId);
-            if ($user) $creatorId = $user->uuid;
+            if ($user) {
+                $creatorId = $user->uuid;
+            }
         } else {
             $user = User::where('uuid', $creatorId)->first();
         }
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $metric = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
-        
+
         // Defaults based on level if not provided
         $defaults = [
             'low' => ['reserve' => 0, 'delay' => 7],
@@ -75,13 +77,13 @@ class RiskController extends Controller
             'metadata_json' => [
                 'level' => $level,
                 'reserve' => $reserve,
-                'delay' => $delay
-            ]
+                'delay' => $delay,
+            ],
         ]);
 
         return response()->json([
             'message' => 'Risk level overridden successfully.',
-            'metric' => $metric
+            'metric' => $metric,
         ]);
     }
 
@@ -101,42 +103,44 @@ class RiskController extends Controller
         // Resolve User ID/UUID
         if (is_numeric($creatorId)) {
             $user = User::find($creatorId);
-            if ($user) $creatorId = $user->uuid;
+            if ($user) {
+                $creatorId = $user->uuid;
+            }
         } else {
             $user = User::where('uuid', $creatorId)->first();
         }
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
         $metric = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
-        
+
         $metric->update(['is_overridden' => false]);
-        
+
         // Trigger recalculation to restore correct level
         // Pass User object to ensure RiskService uses UUID
         $updatedMetric = $this->riskService->recalculateMetrics($user);
-        
+
         // If request used Integer ID, return the Integer Metric record to satisfy UI
         // The RiskService syncs data to this record, so it has the correct values.
         if (is_numeric($creatorId)) {
-             $intMetric = CreatorMetric::where('creator_id', (string)$creatorId)->first();
-             if ($intMetric) {
-                 $updatedMetric = $intMetric;
-             }
+            $intMetric = CreatorMetric::where('creator_id', (string) $creatorId)->first();
+            if ($intMetric) {
+                $updatedMetric = $intMetric;
+            }
         }
- 
+
         AuditLog::create([
             'actor' => $request->user()->id,
             'action_type' => 'RISK_RESET',
             'reference_id' => $creatorId,
-            'metadata_json' => []
+            'metadata_json' => [],
         ]);
 
         return response()->json([
             'message' => 'Risk override removed. Metrics recalculated.',
-            'metric' => $updatedMetric
+            'metric' => $updatedMetric,
         ]);
     }
 
@@ -146,15 +150,17 @@ class RiskController extends Controller
     public function disputes(Request $request, $id)
     {
         $user = is_numeric($id) ? User::find($id) : User::where('uuid', $id)->first();
-        if (!$user) return response()->json(['data' => []]);
+        if (! $user) {
+            return response()->json(['data' => []]);
+        }
 
-        $disputes = Dispute::where(function($q) use ($user) {
-                $q->where('creator_id', $user->id)
-                  ->orWhere('creator_id', $user->uuid);
-            })
+        $disputes = Dispute::where(function ($q) use ($user) {
+            $q->where('creator_id', $user->id)
+                ->orWhere('creator_id', $user->uuid);
+        })
             ->latest()
             ->get();
-            
+
         return response()->json(['data' => $disputes]);
     }
 
@@ -164,11 +170,13 @@ class RiskController extends Controller
     public function reserves(Request $request, $id)
     {
         $user = is_numeric($id) ? User::find($id) : User::where('uuid', $id)->first();
-        if (!$user) return response()->json(['data' => []]);
+        if (! $user) {
+            return response()->json(['data' => []]);
+        }
 
-        $payoutService = new \App\Services\Risk\PayoutService();
+        $payoutService = new PayoutService;
         $data = $payoutService->getHeldReserves($user->uuid);
-            
+
         return response()->json(['data' => $data['breakdown'] ?? []]);
     }
 
@@ -178,14 +186,18 @@ class RiskController extends Controller
     public function recalculate(Request $request, $id)
     {
         $user = is_numeric($id) ? User::find($id) : User::where('uuid', $id)->first();
-        if (!$user) return response()->json(['error' => 'User not found'], 404);
+        if (! $user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
 
         $updatedMetric = $this->riskService->recalculateMetrics($user);
-        
+
         // Return Integer record if Integer ID was requested
         if (is_numeric($id)) {
-             $intMetric = CreatorMetric::where('creator_id', (string)$id)->first();
-             if ($intMetric) $updatedMetric = $intMetric;
+            $intMetric = CreatorMetric::where('creator_id', (string) $id)->first();
+            if ($intMetric) {
+                $updatedMetric = $intMetric;
+            }
         }
 
         return response()->json(['metric' => $updatedMetric]);

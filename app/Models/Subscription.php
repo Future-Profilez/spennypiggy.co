@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Ramsey\Uuid\Uuid;
 
 class Subscription extends Model
 {
@@ -24,13 +24,11 @@ class Subscription extends Model
         'deleted_at',
     ];
 
-
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
-
 
     public function user()
     {

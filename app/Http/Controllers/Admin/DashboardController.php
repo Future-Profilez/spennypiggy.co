@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
-use App\Models\CreatorMetric;
 use App\Models\Dispute;
+use App\Models\EarlyFraudWarning;
 use App\Models\Payment;
+use App\Models\PayoutRun;
 use App\Models\PlatformRiskState;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -24,7 +23,7 @@ class DashboardController extends Controller
         $gmv24h = Payment::whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->where('created_at', '>=', Carbon::now()->subHours(24))
             ->sum('amount');
-            
+
         $gmv7d = Payment::whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->where('created_at', '>=', Carbon::now()->subDays(7))
             ->sum('amount');
@@ -34,31 +33,31 @@ class DashboardController extends Controller
         $totalTx30d = Payment::where('created_at', '>=', Carbon::now()->subDays(30))
             ->whereIn('status', ['succeeded', 'review_hold', 'disputed'])
             ->count();
-            
+
         $totalDisputes30d = Dispute::where('created_at', '>=', Carbon::now()->subDays(30))->count();
-        
+
         $disputeRate = $totalTx30d > 0 ? ($totalDisputes30d / $totalTx30d) * 100 : 0;
 
         // 4. Action Queue (Items needing attention)
         // - New disputes in last 24h
         // - EFWs in last 24h
         // - Platform state changes
-        
+
         $recentDisputes = Dispute::where('created_at', '>=', Carbon::now()->subHours(24))->get();
-        $recentEFWs = \App\Models\EarlyFraudWarning::where('created_at', '>=', Carbon::now()->subHours(24))->get();
-        
+        $recentEFWs = EarlyFraudWarning::where('created_at', '>=', Carbon::now()->subHours(24))->get();
+
         // 5. Exposure Estimate
         // (Payouts last 14d * expected dispute rate) - reserves - refunds
         // Let's approximate.
-        $payoutsLast14d = \App\Models\PayoutRun::where('run_date', '>=', Carbon::now()->subDays(14))
+        $payoutsLast14d = PayoutRun::where('run_date', '>=', Carbon::now()->subDays(14))
             ->get()
             ->sum(function ($run) {
                 return $run->totals['platform_total'] ?? 0;
             });
-            
+
         $expectedDisputeRate = 0.007; // 0.7% worst case?
         $exposure = ($payoutsLast14d * $expectedDisputeRate);
-        
+
         // Subtract held reserves? Reserves are deducted before payout, so they are safe.
         // Exposure is on money PAID OUT.
         // So exposure = Payouts * RiskRate.
@@ -66,7 +65,7 @@ class DashboardController extends Controller
         // No, review holds reduce payout, so they reduce exposure automatically.
         // But if we want "Net Exposure":
         // Exposure = (Money Gone * Risk) - (Money Held).
-        
+
         $moneyHeld = Payment::where('status', 'review_hold')->sum('amount');
         $netExposure = $exposure - $moneyHeld;
 
@@ -90,7 +89,7 @@ class DashboardController extends Controller
             'action_queue' => [
                 'disputes' => $recentDisputes,
                 'efws' => $recentEFWs,
-            ]
+            ],
         ]);
     }
 }

@@ -5,12 +5,19 @@ namespace App\Http\DTOs\LeaderBoard;
 abstract class BaseLeaderBoardUserDTO
 {
     protected string $uuid;
+
     protected string $username;
+
     protected ?string $avatar;
+
     protected ?string $coverImg;
+
     protected int $rank;
+
     protected float $topPercentage;
+
     protected int $profileStatusLock;
+
     protected int $role;
 
     public function __construct(

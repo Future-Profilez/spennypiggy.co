@@ -9,11 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('payments') || !Schema::hasTable('users')) {
+        if (! Schema::hasTable('payments') || ! Schema::hasTable('users')) {
             return;
         }
 
-        if (!Schema::hasColumn('payments', 'creator_id') || !Schema::hasColumn('users', 'uuid')) {
+        if (! Schema::hasColumn('payments', 'creator_id') || ! Schema::hasColumn('users', 'uuid')) {
             return;
         }
 
@@ -59,8 +59,8 @@ return new class extends Migration
                     $inPlaceholders = implode(',', array_fill(0, count($ids), '?'));
                     $bindings = array_merge($bindings, $ids);
 
-                    $sql = "UPDATE payments
-                            SET creator_id = CASE id " . implode(' ', $whenThen) . " ELSE creator_id END
+                    $sql = 'UPDATE payments
+                            SET creator_id = CASE id '.implode(' ', $whenThen)." ELSE creator_id END
                             WHERE id IN ({$inPlaceholders})";
 
                     DB::statement($sql, $bindings);
@@ -72,7 +72,7 @@ return new class extends Migration
             Schema::table('users', function (Blueprint $table) {
                 $table->unique('uuid', 'users_uuid_unique');
             });
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
 
         try {
@@ -82,13 +82,13 @@ return new class extends Migration
                     ->on('users')
                     ->onDelete('cascade');
             });
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 
     public function down(): void
     {
-        if (!Schema::hasTable('payments') || !Schema::hasTable('users')) {
+        if (! Schema::hasTable('payments') || ! Schema::hasTable('users')) {
             return;
         }
 
@@ -96,14 +96,14 @@ return new class extends Migration
             Schema::table('payments', function (Blueprint $table) {
                 $table->dropForeign('payments_creator_uuid_fk');
             });
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
 
         try {
             Schema::table('users', function (Blueprint $table) {
                 $table->dropUnique('users_uuid_unique');
             });
-        } catch (\Throwable) {
+        } catch (Throwable) {
         }
     }
 };

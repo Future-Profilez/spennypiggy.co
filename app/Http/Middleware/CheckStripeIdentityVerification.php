@@ -2,10 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Logs;
-use App\Models\MonthlyCharge;
-use App\Models\SocialLinks;
-use App\Models\UserVerificationStatus;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,15 +12,13 @@ class CheckStripeIdentityVerification
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')->with('error', 'please login first');
         }
 
@@ -35,7 +29,6 @@ class CheckStripeIdentityVerification
             && $user->identity_status != 1
             // && $isBioSocialVerified
             && $hasPaidSubscription;
-
 
         if ($needsIdentityVerification) {
             return Inertia::render('Auth/StripeIdentity', [

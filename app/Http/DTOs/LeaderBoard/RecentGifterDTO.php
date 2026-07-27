@@ -5,7 +5,9 @@ namespace App\Http\DTOs\LeaderBoard;
 class RecentGifterDTO extends BaseLeaderBoardUserDTO
 {
     private float $amount;
+
     private string $currency;
+
     private ?string $name; // Personal name - excluded from public responses
 
     public function __construct(
@@ -29,7 +31,7 @@ class RecentGifterDTO extends BaseLeaderBoardUserDTO
             $profileStatusLock,
             $role
         );
-        
+
         $this->amount = $amount;
         $this->currency = $currency;
         $this->name = $name;
@@ -38,10 +40,10 @@ class RecentGifterDTO extends BaseLeaderBoardUserDTO
     public function toPublicArray(): array
     {
         $baseArray = parent::toPublicArray();
-        
+
         // Remove rank and top percentage as they're not relevant for recent gifters
         unset($baseArray['rank'], $baseArray['top']);
-        
+
         // Return without financial amounts
         return $baseArray;
     }

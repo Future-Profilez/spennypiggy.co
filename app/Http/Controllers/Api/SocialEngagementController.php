@@ -3,25 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\WishItem;
 use App\Models\Bills;
-use App\Models\TipGoal;
-use App\Models\Shop;
 use App\Models\Membership;
-use Illuminate\Http\Request;
+use App\Models\Shop;
+use App\Models\WishItem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SocialEngagementController extends Controller
 {
     /**
      * Get trending items across all content types
-     * 
+     *
      * This replaces the old price-based sorting with social engagement metrics
      */
     public function getTrendingContent(Request $request): JsonResponse
     {
         $limit = $request->get('limit', 20);
-        
+
         // Get trending wish items
         $trendingWishes = WishItem::where('trending_status', true)
             ->where('is_approved', 1)
@@ -58,28 +57,28 @@ class SocialEngagementController extends Controller
             'meta' => [
                 'total_trending_items' => $trendingWishes->count() + $trendingBills->count() + $trendingShops->count(),
                 'sorted_by' => 'social_engagement_metrics',
-                'deprecated_fields' => 'price, currency, amount fields are deprecated in favor of social metrics'
-            ]
+                'deprecated_fields' => 'price, currency, amount fields are deprecated in favor of social metrics',
+            ],
         ]);
     }
 
     /**
      * Get content by engagement level
-     * 
+     *
      * Replaces old price-range filtering with engagement-level filtering
      */
     public function getByEngagementLevel(Request $request, string $engagementLevel): JsonResponse
     {
         $request->validate([
             'type' => 'nullable|in:wishes,bills,shops,memberships,all',
-            'limit' => 'nullable|integer|min:1|max:100'
+            'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
         $validEngagementLevels = ['low', 'medium', 'high', 'viral'];
-        if (!in_array($engagementLevel, $validEngagementLevels)) {
+        if (! in_array($engagementLevel, $validEngagementLevels)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid engagement level. Must be one of: ' . implode(', ', $validEngagementLevels)
+                'message' => 'Invalid engagement level. Must be one of: '.implode(', ', $validEngagementLevels),
             ], 400);
         }
 
@@ -133,14 +132,14 @@ class SocialEngagementController extends Controller
                 'engagement_level' => $engagementLevel,
                 'type' => $type,
                 'sorted_by' => 'supporter_count_desc,rising_score_desc',
-                'note' => 'Results sorted by social engagement metrics instead of monetary values'
-            ]
+                'note' => 'Results sorted by social engagement metrics instead of monetary values',
+            ],
         ]);
     }
 
     /**
      * Get creators with highest growth rates
-     * 
+     *
      * This provides insight into which creators are gaining momentum
      */
     public function getHighGrowthCreators(Request $request): JsonResponse
@@ -165,14 +164,14 @@ class SocialEngagementController extends Controller
             'meta' => [
                 'min_growth_rate' => $minGrowthRate,
                 'sorted_by' => 'creator_growth_rate_desc',
-                'total_results' => $highGrowthWishes->count()
-            ]
+                'total_results' => $highGrowthWishes->count(),
+            ],
         ]);
     }
 
     /**
      * Get gift frequency statistics
-     * 
+     *
      * Shows how often different types of content receive gifts
      */
     public function getGiftFrequencyStats(Request $request): JsonResponse
@@ -203,14 +202,14 @@ class SocialEngagementController extends Controller
             'data' => $stats,
             'meta' => [
                 'description' => 'Gift frequency statistics across all content types',
-                'note' => 'This replaces monetary-based analytics with social engagement patterns'
-            ]
+                'note' => 'This replaces monetary-based analytics with social engagement patterns',
+            ],
         ]);
     }
 
     /**
      * Get content by supporter count range
-     * 
+     *
      * Replaces old price range filtering with supporter count filtering
      */
     public function getBySupporterCount(Request $request): JsonResponse
@@ -219,7 +218,7 @@ class SocialEngagementController extends Controller
             'min_supporters' => 'nullable|integer|min:0',
             'max_supporters' => 'nullable|integer|min:0',
             'type' => 'nullable|in:wishes,bills,shops,memberships',
-            'limit' => 'nullable|integer|min:1|max:100'
+            'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
         $minSupporters = $request->get('min_supporters', 0);
@@ -227,7 +226,7 @@ class SocialEngagementController extends Controller
         $type = $request->get('type', 'wishes');
         $limit = $request->get('limit', 30);
 
-        $query = match($type) {
+        $query = match ($type) {
             'wishes' => WishItem::where('is_approved', 1),
             'bills' => Bills::where('status', 1),
             'shops' => Shop::query(),
@@ -235,7 +234,7 @@ class SocialEngagementController extends Controller
         };
 
         $query->where('supporter_count', '>=', $minSupporters);
-        
+
         if ($maxSupporters !== null) {
             $query->where('supporter_count', '<=', $maxSupporters);
         }
@@ -255,14 +254,14 @@ class SocialEngagementController extends Controller
                 'max_supporters' => $maxSupporters,
                 'type' => $type,
                 'total_results' => $results->count(),
-                'note' => 'Filtered by supporter count instead of price range'
-            ]
+                'note' => 'Filtered by supporter count instead of price range',
+            ],
         ]);
     }
 
     /**
      * Update social engagement metrics for a specific item
-     * 
+     *
      * This would typically be called by background jobs or webhooks
      * when engagement events occur (likes, shares, follows, etc.)
      */
@@ -279,17 +278,17 @@ class SocialEngagementController extends Controller
             'trending_status' => 'nullable|boolean',
         ]);
 
-        $model = match($request->item_type) {
+        $model = match ($request->item_type) {
             'wish_item' => WishItem::find($request->item_id),
             'bill' => Bills::find($request->item_id),
             'shop' => Shop::find($request->item_id),
             'membership' => Membership::find($request->item_id),
         };
 
-        if (!$model) {
+        if (! $model) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item not found'
+                'message' => 'Item not found',
             ], 404);
         }
 
@@ -301,7 +300,7 @@ class SocialEngagementController extends Controller
             'rising_score' => $request->rising_score,
             'engagement_level' => $request->engagement_level,
             'trending_status' => $request->trending_status,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
 
         $model->update($updateData);
 
@@ -309,7 +308,7 @@ class SocialEngagementController extends Controller
             'success' => true,
             'message' => 'Social engagement metrics updated successfully',
             'data' => $model->fresh(),
-            'updated_fields' => array_keys($updateData)
+            'updated_fields' => array_keys($updateData),
         ]);
     }
 }

@@ -16,7 +16,7 @@ class MoneyNormalizer
         $from = Currency::where('ISO', $currency)->first();
         $gbp = Currency::where('ISO', 'GBP')->first();
 
-        if (!$from || !$gbp || (float) $from->conversion_rate === 0.0) {
+        if (! $from || ! $gbp || (float) $from->conversion_rate === 0.0) {
             return $amountMinor;
         }
 
@@ -30,4 +30,3 @@ class MoneyNormalizer
         return max(0, $gbpMinor);
     }
 }
-

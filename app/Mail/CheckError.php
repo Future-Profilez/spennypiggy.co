@@ -3,15 +3,13 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class CheckError extends Mailable
 {
     use Queueable, SerializesModels;
+
     public $th;
 
     /**
@@ -33,6 +31,7 @@ class CheckError extends Mailable
     {
         try {
             $subject = 'Check Error.';
+
             return $this->view('email.check_error')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

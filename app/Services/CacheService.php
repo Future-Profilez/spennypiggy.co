@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 class CacheService
 {
@@ -14,8 +13,11 @@ class CacheService
      * Cache duration constants
      */
     const SHORT_CACHE = 300; // 5 minutes
+
     const MEDIUM_CACHE = 3600; // 1 hour
+
     const LONG_CACHE = 86400; // 24 hours
+
     const VERY_LONG_CACHE = 604800; // 7 days
 
     /**
@@ -34,7 +36,7 @@ class CacheService
     {
         $cacheKey = "user:{$userId}:{$key}";
         $tags = ['user', "user:{$userId}"];
-        
+
         return self::remember($cacheKey, $ttl, $callback, $tags);
     }
 
@@ -47,7 +49,7 @@ class CacheService
         $modelKey = $model->getKey();
         $cacheKey = "model:{$modelClass}:{$modelKey}:{$key}";
         $tags = ['models', strtolower(class_basename($modelClass)), "model:{$modelClass}:{$modelKey}"];
-        
+
         return self::remember($cacheKey, $ttl, $callback, $tags);
     }
 
@@ -58,7 +60,7 @@ class CacheService
     {
         $cacheKey = "stats:{$key}";
         $tags = ['stats'];
-        
+
         return self::remember($cacheKey, $ttl, $callback, $tags);
     }
 
@@ -70,7 +72,7 @@ class CacheService
         $paramHash = md5(serialize($params));
         $cacheKey = "api:{$endpoint}:{$paramHash}";
         $tags = ['api', "api:{$endpoint}"];
-        
+
         return self::remember($cacheKey, $ttl, $callback, $tags);
     }
 
@@ -107,7 +109,7 @@ class CacheService
     {
         $paramHash = md5(serialize($params));
         $cacheKey = "paginated:{$key}:{$paramHash}";
-        
+
         // CACHING DISABLED - just execute callback directly
         return $callback();
     }
@@ -139,7 +141,7 @@ class CacheService
      */
     public static function getQueryKey(Builder $query): string
     {
-        return md5($query->toSql() . serialize($query->getBindings()));
+        return md5($query->toSql().serialize($query->getBindings()));
     }
 
     /**
@@ -149,7 +151,7 @@ class CacheService
 
     public static function memoize(string $key, callable $callback)
     {
-        if (!isset(self::$memoized[$key])) {
+        if (! isset(self::$memoized[$key])) {
             self::$memoized[$key] = $callback();
         }
 

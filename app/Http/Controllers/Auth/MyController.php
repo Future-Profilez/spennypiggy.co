@@ -8,13 +8,13 @@ use Inertia\Inertia;
 
 class MyController extends Controller
 {
-
     public function getUsers()
     {
         // $users = User::where('name','naveen')->orderBy('created_at','DESC')->get();
         $users = User::all();
+
         return Inertia::render('Lists', [
-            'users' => $users
+            'users' => $users,
         ]);
     }
 }

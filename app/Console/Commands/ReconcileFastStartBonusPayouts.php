@@ -4,9 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\AuditLog;
 use App\Models\CreatorMetric;
+use App\Models\Currency;
 use App\Models\FastStartBonusPayout;
 use App\Models\FinancialTransaction;
-use App\Models\Currency;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -37,8 +37,13 @@ class ReconcileFastStartBonusPayouts extends Command
         $convert = function (float $amount, string $from, string $to) use ($rates): float {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
@@ -46,14 +51,16 @@ class ReconcileFastStartBonusPayouts extends Command
         $skipped = 0;
 
         foreach ($rows as $row) {
-            if (!$row->window_start || !$row->window_end) {
+            if (! $row->window_start || ! $row->window_end) {
                 $skipped++;
+
                 continue;
             }
 
             $creator = User::where('uuid', $row->creator_uuid)->first();
-            if (!$creator) {
+            if (! $creator) {
                 $skipped++;
+
                 continue;
             }
 
@@ -82,8 +89,9 @@ class ReconcileFastStartBonusPayouts extends Command
             $row->clawback_minor = $clawbackMinor;
 
             if ($dryRun) {
-                $this->line($row->creator_uuid . ' paid=' . $alreadyPaidBonusMinor . ' expected=' . $expectedBonusMinor . ' clawback=' . $clawbackMinor . ' ' . $currency);
+                $this->line($row->creator_uuid.' paid='.$alreadyPaidBonusMinor.' expected='.$expectedBonusMinor.' clawback='.$clawbackMinor.' '.$currency);
                 $processed++;
+
                 continue;
             }
 
@@ -125,10 +133,9 @@ class ReconcileFastStartBonusPayouts extends Command
             $processed++;
         }
 
-        $this->info('Processed: ' . $processed);
-        $this->info('Skipped: ' . $skipped);
+        $this->info('Processed: '.$processed);
+        $this->info('Skipped: '.$skipped);
 
         return self::SUCCESS;
     }
 }
-

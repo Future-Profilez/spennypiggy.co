@@ -279,12 +279,14 @@
                             -webkit-tap-highlight-color: transparent;
                         }
 
+                        /* NOTE: never set overflow-x or overscroll-behavior on BODY here —
+                           body then becomes its own scroll container and overscroll
+                           containment blocks chaining to the viewport, which killed ALL
+                           touch scrolling in the installed PWA. Rubber-band prevention
+                           lives on html above. */
                         body.pwa-mode {
                             margin: 0 !important;
                             padding: 0 !important;
-                            width: 100vw !important;
-                            overflow-x: hidden !important;
-                            overscroll-behavior-y: contain !important;
                             -webkit-user-select: none;
                             user-select: none;
                         }
@@ -304,29 +306,9 @@
                             padding-top: max(10px, env(safe-area-inset-top, 0px)) !important;
                         }
                         
-                        /* Floating pill bottom bar for PWA mode */
-                        body.pwa-mode .retro-bottom-bar, body.pwa-mode .bottom-navigation {
-                            position: fixed !important;
-                            bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
-                            left: 12px !important;
-                            right: 12px !important;
-                            width: calc(100vw - 24px) !important;
-                            max-width: 480px !important;
-                            margin: 0 auto !important;
-                            border-radius: 30px !important;
-                            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.35) !important;
-                            padding: 4px 12px !important;
-                            box-sizing: border-box !important;
-                            display: flex !important;
-                            z-index: 999999 !important;
-                            height: auto !important;
-                            transform: none !important;
-                        }
-                        
-                        /* Ensure main content doesn't get hidden under floating bottom bar */
-                        body.pwa-mode main {
-                            padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
-                        }
+                        /* Bottom bar styling lives in resources/css/retro-bottombar.css
+                           (docked, safe-area aware). Do not override it here — the old
+                           floating-pill !important override fought that stylesheet. */
                     `;
                     document.head.appendChild(style);
                     

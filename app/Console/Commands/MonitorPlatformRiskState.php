@@ -2,10 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PlatformRiskState;
-use App\Models\Admin;
-use App\Models\RiskSetting;
+use App\Helpers;
 use App\Mail\PlatformRiskAlert;
+use App\Models\Admin;
+use App\Models\AuditLog;
+use App\Models\EarlyFraudWarning;
+use App\Models\PlatformRiskState;
+use App\Models\RiskSetting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,16 +38,16 @@ class MonitorPlatformRiskState extends Command
         $this->info('Checking platform risk metrics...');
 
         $triggers = RiskSetting::get('platform_state_triggers', []);
-        $freezeDisputeRate = (float)($triggers['platform_dispute_rate_freeze'] ?? 0.007);
-        $dailyGmvCautionMultiplier = (float)($triggers['daily_gmv_caution_multiplier'] ?? 1.5);
-        $dailyGmvThrottleMultiplier = (float)($triggers['daily_gmv_throttle_multiplier'] ?? 2.0);
-        $weeklyGmvSpikeMultiplier = (float)($triggers['weekly_gmv_spike_multiplier'] ?? 1.3);
-        $creatorDisputeRateTrigger = (float)($triggers['creator_dispute_rate_trigger'] ?? 0.008);
-        $creatorsOverTriggerCount = (int)($triggers['creators_over_trigger_count'] ?? 5);
+        $freezeDisputeRate = (float) ($triggers['platform_dispute_rate_freeze'] ?? 0.007);
+        $dailyGmvCautionMultiplier = (float) ($triggers['daily_gmv_caution_multiplier'] ?? 1.5);
+        $dailyGmvThrottleMultiplier = (float) ($triggers['daily_gmv_throttle_multiplier'] ?? 2.0);
+        $weeklyGmvSpikeMultiplier = (float) ($triggers['weekly_gmv_spike_multiplier'] ?? 1.3);
+        $creatorDisputeRateTrigger = (float) ($triggers['creator_dispute_rate_trigger'] ?? 0.008);
+        $creatorsOverTriggerCount = (int) ($triggers['creators_over_trigger_count'] ?? 5);
 
         // 1. Calculate Dispute Rate (30d)
         // Spec: If dispute_rate_pct >= 0.7% -> FREEZE
-        
+
         $disputeStats = DB::selectOne("
             WITH tx AS (
                 SELECT COUNT(*) AS total_tx
@@ -71,13 +74,14 @@ class MonitorPlatformRiskState extends Command
             $this->transitionState('FREEZE', ['PLATFORM_DISPUTE_FREEZE'], [
                 'dispute_rate' => $disputeRate,
                 'total_tx' => $disputeStats->total_tx,
-                'total_disputes' => $disputeStats->total_disputes
+                'total_disputes' => $disputeStats->total_disputes,
             ]);
+
             return;
         }
 
         // 2. Daily GMV Spike (24h vs 7d avg)
-        
+
         $gmvStats = DB::selectOne("
             WITH last_24h AS (
                 SELECT COALESCE(SUM(amount),0) AS gmv_24h
@@ -106,8 +110,9 @@ class MonitorPlatformRiskState extends Command
             $this->transitionState('THROTTLE', ['GMV_SPIKE_THROTTLE'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
-                'avg_daily_7d' => $gmvStats->avg_daily_7d
+                'avg_daily_7d' => $gmvStats->avg_daily_7d,
             ]);
+
             return;
         }
 
@@ -115,13 +120,14 @@ class MonitorPlatformRiskState extends Command
             $this->transitionState('CAUTION', ['GMV_SPIKE_CAUTION'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
-                'avg_daily_7d' => $gmvStats->avg_daily_7d
+                'avg_daily_7d' => $gmvStats->avg_daily_7d,
             ]);
+
             return;
         }
 
         // 3. Weekly GMV Spike
-        
+
         $weeklyStats = DB::selectOne("
             WITH this_week AS (
                 SELECT COALESCE(SUM(amount),0) AS gmv
@@ -151,13 +157,14 @@ class MonitorPlatformRiskState extends Command
             $this->transitionState('THROTTLE', ['WEEKLY_GMV_SPIKE'], [
                 'weekly_ratio' => $weeklyRatio,
                 'gmv_this_week' => $weeklyStats->gmv_this_week,
-                'gmv_prev_week' => $weeklyStats->gmv_prev_week
+                'gmv_prev_week' => $weeklyStats->gmv_prev_week,
             ]);
+
             return;
         }
 
         // 4. Creator Clusters (High Disputes)
-        
+
         $badCreators = DB::selectOne("
             WITH creator_tx AS (
                 SELECT creator_id, COUNT(*) AS tx
@@ -189,25 +196,28 @@ class MonitorPlatformRiskState extends Command
 
         if ($badCreatorCount >= $creatorsOverTriggerCount) {
             $this->transitionState('THROTTLE', ['CREATOR_CLUSTER_RISK'], [
-                'bad_creator_count' => $badCreatorCount
+                'bad_creator_count' => $badCreatorCount,
             ]);
+
             return;
         }
 
         // 5. EFW Spike Trigger
-        $efwSpikeThreshold = (int)($triggers['efw_spike_threshold'] ?? 10);
-        $efwCount24h = \App\Models\EarlyFraudWarning::where('created_at', '>=', now()->subHours(24))->count();
+        $efwSpikeThreshold = (int) ($triggers['efw_spike_threshold'] ?? 10);
+        $efwCount24h = EarlyFraudWarning::where('created_at', '>=', now()->subHours(24))->count();
         $this->info("EFW Count (24h): {$efwCount24h}");
 
         if ($efwCount24h >= $efwSpikeThreshold * 2) {
             $this->transitionState('THROTTLE', ['EFW_SPIKE_THROTTLE'], [
-                'efw_count_24h' => $efwCount24h
+                'efw_count_24h' => $efwCount24h,
             ]);
+
             return;
         } elseif ($efwCount24h >= $efwSpikeThreshold) {
             $this->transitionState('CAUTION', ['EFW_SPIKE_CAUTION'], [
-                'efw_count_24h' => $efwCount24h
+                'efw_count_24h' => $efwCount24h,
             ]);
+
             return;
         }
 
@@ -216,7 +226,7 @@ class MonitorPlatformRiskState extends Command
         // and if metrics have cooled down.
         // For simplicity, if no triggers fire, we can suggest NORMAL, but we should be careful not to flap.
         // Let's only Auto-Recover if current state is NOT NORMAL and set by SYSTEM.
-        
+
         $currentState = PlatformRiskState::latest('started_at')->first();
         if ($currentState && $currentState->state !== 'NORMAL' && $currentState->set_by === 'system') {
             // Stabilization window: require the elevated state to have held for at least
@@ -229,6 +239,7 @@ class MonitorPlatformRiskState extends Command
                     'state' => $currentState->state,
                     'started_at' => (string) $currentState->started_at,
                 ]);
+
                 return;
             }
             $this->transitionState('NORMAL', ['METRICS_STABILIZED'], []);
@@ -245,14 +256,15 @@ class MonitorPlatformRiskState extends Command
         if ($currentState === $newState) {
             return;
         }
-        
-        // Priority check: Don't downgrade from FREEZE automatically? 
+
+        // Priority check: Don't downgrade from FREEZE automatically?
         // Spec says: "FREEZE blocks new creator activation until admin unfreezes."
         // So if current is FREEZE, we should NOT auto-recover to NORMAL/THROTTLE unless explicitly allowed.
         // But if triggers say FREEZE, we must upgrade.
-        
+
         if ($currentState === 'FREEZE' && $newState !== 'FREEZE') {
             $this->info("System recommends {$newState}, but current state is FREEZE (requires admin unlock). Skipping.");
+
             return;
         }
 
@@ -265,17 +277,17 @@ class MonitorPlatformRiskState extends Command
             'metrics_snapshot' => $metrics,
             'started_at' => now(),
         ]);
-        
+
         // Audit Log
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'actor' => 'system',
             'action_type' => 'PLATFORM_STATE_CHANGE',
             'metadata_json' => [
                 'from' => $currentState,
                 'to' => $newState,
                 'reasons' => $reasons,
-                'metrics' => $metrics
-            ]
+                'metrics' => $metrics,
+            ],
         ]);
 
         try {
@@ -291,7 +303,7 @@ class MonitorPlatformRiskState extends Command
                     ->whereNotNull('email')
                     ->pluck('email')
                     ->toArray();
-                
+
                 $allRecipients = array_merge($allRecipients, $adminRecipients);
 
                 $fallbackEmail = config('mail.from.address');
@@ -304,16 +316,16 @@ class MonitorPlatformRiskState extends Command
 
             foreach ($allRecipients as $email) {
                 Mail::to($email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
-                \App\Helpers::sendNotification(
+                Helpers::sendNotification(
                     "Platform Risk Alert: {$newState}",
-                    "System state changed to {$newState}. Reasons: " . implode(', ', $reasons),
+                    "System state changed to {$newState}. Reasons: ".implode(', ', $reasons),
                     $email
                 );
             }
 
-            $this->info("Platform state change notifications sent.");
+            $this->info('Platform state change notifications sent.');
         } catch (\Exception $e) {
-            Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
+            Log::error('Failed to send Platform Risk Alert email: '.$e->getMessage());
         }
     }
 }

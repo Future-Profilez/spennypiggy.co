@@ -4,16 +4,20 @@ namespace App\Console\Commands;
 
 use App\Models\CreatorMetric;
 use App\Models\Payment;
-use App\Models\PlatformRiskState;
 use App\Models\PayoutRun;
+use App\Models\PlatformRiskState;
+use App\Models\ShopPayment;
+use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Services\Risk\PayoutService;
+use App\Services\Risk\RiskService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class ExplainCreatorPayout extends Command
 {
     protected $signature = 'finance:explain-payout {creator} {--run_date=}';
+
     protected $description = 'Explain creator payout preview inputs and why estimated payout is 0 or reduced';
 
     public function handle(): int
@@ -24,17 +28,18 @@ class ExplainCreatorPayout extends Command
         if (is_numeric($input)) {
             $creator = User::find((int) $input);
         }
-        if (!$creator) {
+        if (! $creator) {
             $creator = User::where('uuid', $input)
                 ->orWhere('username', $input)
                 ->first();
         }
-        if (!$creator) {
+        if (! $creator) {
             $creator = User::where('name', $input)->first();
         }
 
-        if (!$creator) {
+        if (! $creator) {
             $this->error("Creator not found: {$input}");
+
             return self::FAILURE;
         }
 
@@ -45,7 +50,7 @@ class ExplainCreatorPayout extends Command
         $state = $platformState ? $platformState->state : 'NORMAL';
 
         try {
-            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics($creator->uuid);
+            $metrics = app(RiskService::class)->recalculateMetrics($creator->uuid);
         } catch (\Throwable) {
             $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
         }
@@ -69,8 +74,8 @@ class ExplainCreatorPayout extends Command
         $reservePercent = (int) ($metrics->reserve_percent ?? 0);
         $payoutDelayDays = (int) ($metrics->payout_delay_days ?? 0);
         $metricsUpdated = method_exists($metrics, 'getAttribute') ? ($metrics->updated_at ? $metrics->updated_at->toDateTimeString() : null) : null;
-        $this->line("Metrics: reserve_percent={$reservePercent}, payout_delay_days={$payoutDelayDays}, updated_at=" . ($metricsUpdated ?: 'n/a'));
-        $this->line("Negative balance (before): " . $this->money($negativeBefore));
+        $this->line("Metrics: reserve_percent={$reservePercent}, payout_delay_days={$payoutDelayDays}, updated_at=".($metricsUpdated ?: 'n/a'));
+        $this->line('Negative balance (before): '.$this->money($negativeBefore));
 
         $unadjustedRefundDispute = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
             ->whereIn('status', ['refunded', 'disputed'])
@@ -80,7 +85,7 @@ class ExplainCreatorPayout extends Command
         $this->line("Refund/dispute adjustments pending: {$unadjustedRefundDispute}");
 
         $hasAnyRun = PayoutRun::query()->exists();
-        $this->line("Any payout runs exist: " . ($hasAnyRun ? 'yes' : 'no'));
+        $this->line('Any payout runs exist: '.($hasAnyRun ? 'yes' : 'no'));
 
         $creatorRuns = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
             ->whereNotNull('payout_run_id')
@@ -103,7 +108,7 @@ class ExplainCreatorPayout extends Command
             ->pluck('stripe_payment_intent_id')
             ->toArray();
 
-        if (!empty($holdIntentIds)) {
+        if (! empty($holdIntentIds)) {
             $payments = $payments
                 ->reject(fn ($p) => $p->stripe_payment_intent_id && in_array($p->stripe_payment_intent_id, $holdIntentIds, true))
                 ->values();
@@ -120,54 +125,64 @@ class ExplainCreatorPayout extends Command
             $intentId = $p->stripe_payment_intent_id;
 
             if ($sessionId || $intentId) {
-                $shopPayment = \App\Models\ShopPayment::with(['shop', 'deliverable'])
+                $shopPayment = ShopPayment::with(['shop', 'deliverable'])
                     ->where(function ($q) use ($sessionId) {
-                        if ($sessionId) $q->where('session_id', $sessionId);
-                        else $q->whereRaw('1=0');
+                        if ($sessionId) {
+                            $q->where('session_id', $sessionId);
+                        } else {
+                            $q->whereRaw('1=0');
+                        }
                     })
                     ->first();
 
                 if ($shopPayment && $shopPayment->shop && $shopPayment->shop->type === 'physical') {
-                    if (!$shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
+                    if (! $shopPayment->deliverable || $shopPayment->deliverable->status !== 'delivered') {
                         $fts = app(PayoutService::class)->getAllFinancialTransactionsForPayment($p);
                         if ($fts->isNotEmpty()) {
                             $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
                         }
+
                         return false;
                     }
                 }
 
-                $taskPurchase = \App\Models\TaskPurchase::where(function ($q) use ($sessionId, $intentId) {
-                        if ($sessionId) $q->orWhere('stripe_session_id', $sessionId);
-                        if ($intentId) $q->orWhere('payment_intent_id', $intentId);
-                    })
+                $taskPurchase = TaskPurchase::where(function ($q) use ($sessionId, $intentId) {
+                    if ($sessionId) {
+                        $q->orWhere('stripe_session_id', $sessionId);
+                    }
+                    if ($intentId) {
+                        $q->orWhere('payment_intent_id', $intentId);
+                    }
+                })
                     ->first();
 
                 if ($taskPurchase) {
                     $taskType = $taskPurchase->task->type ?? 'timed';
                     if ($taskType === 'timed') {
-                        if (!in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                        if (! in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
                             $fts = app(PayoutService::class)->getAllFinancialTransactionsForPayment($p);
                             if ($fts->isNotEmpty()) {
                                 $pendingDeliverablesMinor += (int) round($fts->sum('net_amount') * 100);
                             }
+
                             return false;
                         }
                     }
                 }
             }
+
             return true;
         });
 
         $this->line("Eligible succeeded payments (after holds/cutoff/fulfilment): {$payments->count()}");
-        if (!empty($holdIntentIds)) {
-            $this->line("Hold intent IDs blocking eligibility: " . count($holdIntentIds));
+        if (! empty($holdIntentIds)) {
+            $this->line('Hold intent IDs blocking eligibility: '.count($holdIntentIds));
             $sample = array_slice($holdIntentIds, 0, 3);
-            if (!empty($sample)) {
-                $this->line("Hold intent sample: " . implode(', ', $sample));
+            if (! empty($sample)) {
+                $this->line('Hold intent sample: '.implode(', ', $sample));
             }
         }
-        $this->line("Pending fulfilment (minor): " . $this->money($pendingDeliverablesMinor));
+        $this->line('Pending fulfilment (minor): '.$this->money($pendingDeliverablesMinor));
         $this->newLine();
 
         $netEarningsMinor = 0;
@@ -189,8 +204,8 @@ class ExplainCreatorPayout extends Command
             }
         }
 
-        $this->line("Eligible net earnings (minor): " . $this->money($netEarningsMinor));
-        $this->line("New reserve held from eligible (minor): " . $this->money($totalReservesHeld));
+        $this->line('Eligible net earnings (minor): '.$this->money($netEarningsMinor));
+        $this->line('New reserve held from eligible (minor): '.$this->money($totalReservesHeld));
         $this->line("Eligible payments missing financial_transactions link: {$missingFts}");
         if ($missingFts > 0) {
             foreach ($payments as $p) {
@@ -221,7 +236,7 @@ class ExplainCreatorPayout extends Command
             }
         }
 
-        $this->line("Refund/dispute clawbacks (minor): " . $this->money($refundDisputeAmount));
+        $this->line('Refund/dispute clawbacks (minor): '.$this->money($refundDisputeAmount));
 
         $reviewHold = Payment::whereIn('creator_id', [(string) $creator->id, $creator->uuid])
             ->where('status', 'review_hold')
@@ -232,7 +247,7 @@ class ExplainCreatorPayout extends Command
 
         $netBeforeBalance = $netEarningsMinor - $totalReservesHeld - $refundDisputeAmount;
         $this->newLine();
-        $this->line("Net before negative balance (minor): " . $this->money($netBeforeBalance));
+        $this->line('Net before negative balance (minor): '.$this->money($netBeforeBalance));
 
         $negativeBalance = $negativeBefore;
         $negativeBalanceDelta = 0;
@@ -260,9 +275,9 @@ class ExplainCreatorPayout extends Command
 
         $negativeAfter = max(0, $negativeBalance + $negativeBalanceDelta);
 
-        $this->line("Estimated payout (minor): " . $this->money($netPayout));
-        $this->line("Negative balance (after): " . $this->money($negativeAfter));
-        $this->line("Below minimum threshold (<£1): " . ($isBelowThreshold ? 'yes' : 'no'));
+        $this->line('Estimated payout (minor): '.$this->money($netPayout));
+        $this->line('Negative balance (after): '.$this->money($negativeAfter));
+        $this->line('Below minimum threshold (<£1): '.($isBelowThreshold ? 'yes' : 'no'));
 
         return self::SUCCESS;
     }
@@ -270,6 +285,7 @@ class ExplainCreatorPayout extends Command
     private function money(int $minor): string
     {
         $major = number_format(((float) $minor) / 100, 2, '.', '');
+
         return "£{$major}";
     }
 }

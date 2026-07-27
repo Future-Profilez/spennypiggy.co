@@ -3,9 +3,9 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -17,14 +17,13 @@ class CommandFailed extends Mailable
     /**
      * Create a new message instance.
      *
-     * @var string $emailSubject Email Subject
-     * @var mixed $emailMessage Email Body Content
+     * @var string Email Subject
+     * @var mixed Email Body Content
      */
     public function __construct(
         public string $emailSubject,
         public $emailMessage
-    )
-    {
+    ) {
         //
     }
 
@@ -47,7 +46,7 @@ class CommandFailed extends Mailable
         return new Content(
             view: 'email.command-status',
             with: [
-                'emailMessage' => $this->emailMessage
+                'emailMessage' => $this->emailMessage,
             ]
         );
     }
@@ -55,7 +54,7 @@ class CommandFailed extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

@@ -22,7 +22,7 @@ return [
     'qualification' => [
         // Minimum earnings in first 30 days to qualify as founder (in GBP)
         'min_first_30d_earnings' => env('FOUNDER_MIN_FIRST_30D_EARNINGS', 2500.00),
-        
+
         // Number of days from joining to calculate qualification earnings
         'qualification_period_days' => 30,
     ],
@@ -38,13 +38,13 @@ return [
     'bonus' => [
         // Minimum monthly earnings to receive bonus (in GBP)
         'min_monthly_earnings' => env('FOUNDER_MIN_MONTHLY_EARNINGS', 2500.00),
-        
+
         // Maximum monthly earnings for bonus calculation (in GBP)
         'max_monthly_earnings' => env('FOUNDER_MAX_MONTHLY_EARNINGS', 10000.00),
-        
+
         // Bonus percentage (as decimal, e.g., 0.10 = 10%)
         'bonus_percentage' => env('FOUNDER_BONUS_PERCENTAGE', 0.10),
-        
+
         // Maximum bonus amount per month (in GBP)
         'max_bonus_per_month' => env('FOUNDER_MAX_BONUS_PER_MONTH', 1000.00),
 
@@ -77,7 +77,7 @@ return [
     'features' => [
         // Enable email notifications
         'email_notifications' => env('FOUNDER_EMAIL_NOTIFICATIONS', true),
-        
+
         // Enable founder badges on profiles
         'show_badges' => env('FOUNDER_SHOW_BADGES', true),
     ],

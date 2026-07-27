@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Logs extends Model
 {
     use HasFactory, SoftDeletes;
+
     protected $fillable = [
         'remove_wish_id',
         'remove_bill_id',
@@ -18,7 +19,7 @@ class Logs extends Model
         'deleted_user_id',
         'suspended_user_id',
         'message',
-        'status'
+        'status',
     ];
 
     public function removeWish()

@@ -38,7 +38,7 @@ return new class extends Migration
                 'reason_codes',
                 'score',
                 'stripe_payment_intent',
-                'closed_at'
+                'closed_at',
             ]);
         });
     }

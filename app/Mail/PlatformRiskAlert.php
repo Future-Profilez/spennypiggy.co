@@ -2,9 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\PlatformRiskState;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
@@ -16,7 +14,9 @@ class PlatformRiskAlert extends Mailable
     use Queueable, SerializesModels;
 
     public $state;
+
     public $reasons;
+
     public $metrics;
 
     /**
@@ -35,6 +35,7 @@ class PlatformRiskAlert extends Mailable
     public function envelope(): Envelope
     {
         $emoji = $this->state === 'FREEZE' ? '❄️🚨' : ($this->state === 'THROTTLE' ? '⚠️' : '✅');
+
         return new Envelope(
             subject: "{$emoji} Platform Risk Alert: State changed to {$this->state}",
             from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))

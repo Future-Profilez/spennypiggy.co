@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CreatorExpense;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class CreatorExpenseController extends Controller
 {
@@ -14,7 +14,7 @@ class CreatorExpenseController extends Controller
         $expenses = CreatorExpense::where('user_id', Auth::id())
             ->when($request->input('search'), function ($query, $search) {
                 $query->where('description', 'like', "%{$search}%")
-                      ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('category', 'like', "%{$search}%");
             })
             ->latest('expense_date')
             ->paginate(20)
@@ -22,7 +22,7 @@ class CreatorExpenseController extends Controller
 
         return Inertia::render('Creator/Financial/Expenses', [
             'expenses' => $expenses,
-            'filters' => $request->only(['search'])
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -34,7 +34,7 @@ class CreatorExpenseController extends Controller
             'currency' => 'required|string|size:3',
             'expense_date' => 'required|date',
             'description' => 'nullable|string|max:255',
-            'receipt_url' => 'nullable|string|url'
+            'receipt_url' => 'nullable|string|url',
         ]);
 
         $validated['currency'] = strtoupper(Auth::user()->default_currency ?? 'GBP');
@@ -45,7 +45,7 @@ class CreatorExpenseController extends Controller
 
         return back()->with('success', 'Expense logged successfully.');
     }
-    
+
     public function update(Request $request, CreatorExpense $expense)
     {
         if ($expense->user_id !== Auth::id()) {
@@ -58,7 +58,7 @@ class CreatorExpenseController extends Controller
             'currency' => 'required|string|size:3',
             'expense_date' => 'required|date',
             'description' => 'nullable|string|max:255',
-            'receipt_url' => 'nullable|string|url'
+            'receipt_url' => 'nullable|string|url',
         ]);
 
         $validated['currency'] = strtoupper(Auth::user()->default_currency ?? 'GBP');

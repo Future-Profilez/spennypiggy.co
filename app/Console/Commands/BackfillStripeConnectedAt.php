@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\StripeControl;
 use App\Models\User;
+use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -25,7 +25,7 @@ class BackfillStripeConnectedAt extends Command
             ->where('stripe_details_submitted', 1)
             ->orderBy('id');
 
-        if (!$overwrite) {
+        if (! $overwrite) {
             $query->whereNull('stripe_connected_at');
         }
 
@@ -43,7 +43,7 @@ class BackfillStripeConnectedAt extends Command
             $accountId = (string) $user->account_id;
 
             $stripeCreatedAt = null;
-            if (!$noStripeApi) {
+            if (! $noStripeApi) {
                 try {
                     $account = StripeControl::getAccount($accountId);
                     if (isset($account->created)) {
@@ -55,10 +55,10 @@ class BackfillStripeConnectedAt extends Command
             }
 
             $connectedAt = $stripeCreatedAt;
-            if (!$connectedAt) {
+            if (! $connectedAt) {
                 $previous = $user->stripe_connected_at ? Carbon::parse($user->stripe_connected_at)->toDateTimeString() : 'null';
                 if ($dryRun) {
-                    $this->line($user->id . ' ' . $accountId . ' prev=' . $previous . ' new=null');
+                    $this->line($user->id.' '.$accountId.' prev='.$previous.' new=null');
                 } else {
                     if ($overwrite && $user->stripe_connected_at !== null) {
                         $user->stripe_connected_at = null;
@@ -66,6 +66,7 @@ class BackfillStripeConnectedAt extends Command
                         $setNull++;
                     }
                 }
+
                 continue;
             }
             $usedStripeCreated++;
@@ -73,7 +74,8 @@ class BackfillStripeConnectedAt extends Command
             $previous = $user->stripe_connected_at ? Carbon::parse($user->stripe_connected_at)->toDateTimeString() : 'null';
 
             if ($dryRun) {
-                $this->line($user->id . ' ' . $accountId . ' prev=' . $previous . ' new=' . ($connectedAt?->toDateTimeString() ?? 'null'));
+                $this->line($user->id.' '.$accountId.' prev='.$previous.' new='.($connectedAt?->toDateTimeString() ?? 'null'));
+
                 continue;
             }
 
@@ -82,10 +84,10 @@ class BackfillStripeConnectedAt extends Command
             $updated++;
         }
 
-        $this->info('Matched users: ' . $users->count());
-        $this->info('Updated users: ' . $updated);
-        $this->info('Used Stripe account.created: ' . $usedStripeCreated);
-        $this->info('Set null (Stripe API failed): ' . $setNull);
+        $this->info('Matched users: '.$users->count());
+        $this->info('Updated users: '.$updated);
+        $this->info('Used Stripe account.created: '.$usedStripeCreated);
+        $this->info('Set null (Stripe API failed): '.$setNull);
 
         return self::SUCCESS;
     }

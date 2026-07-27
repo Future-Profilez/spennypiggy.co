@@ -9,6 +9,7 @@ const AddBills = lazy(() => import("@/Pages/bills/AddBills"));
 import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
 import { useAlerts } from "@/Components/Alerts";
+import RewardHint from "@/Pages/discover/components/RewardHint";
 
 function BillItem(props) {
     useAlerts();
@@ -249,6 +250,7 @@ function BillItem(props) {
                     <p className="text-xs mt-3 text-center font-bold text-gray-800">
                         {periodDisplay} content membership · min. 3 posts/month
                     </p>
+                    <RewardHint item={itm} className="mt-2 max-w-full" />
                     <div className="flex justify-center mt-5 mb-2">
                         {IsloggedIn ? (
                             <AddBills

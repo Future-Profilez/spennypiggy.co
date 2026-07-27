@@ -1,11 +1,12 @@
 <?php
+
 $content = file_get_contents('app/Console/Commands/SyncFinancialTransactions.php');
 
 // syncTasks
 $content = str_replace(
-    "                if (\$purchase->isDirty()) {
-                    \$purchase->save();
-                }",
+    '                if ($purchase->isDirty()) {
+                    $purchase->save();
+                }',
     "                if (\$purchase->isDirty()) {
                     \$purchase->save();
                 }
@@ -128,4 +129,4 @@ $content = str_replace("'status' => \$item->payment->payment_status === 'paid' ?
 $content = str_replace("'status' => \$payment->payment_status === 'paid' ? 'completed' : 'pending',\n                        'description' => 'Shop Purchase:'", "'status' => \$status,\n                        'description' => 'Shop Purchase:'", $content);
 
 file_put_contents('app/Console/Commands/SyncFinancialTransactions.php', $content);
-echo "Done";
+echo 'Done';

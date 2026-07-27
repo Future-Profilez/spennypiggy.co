@@ -19,7 +19,7 @@ class VerifyEmailController extends Controller
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('user.show', ['username' => $request->user()->username]) . '?verified=1');
+            return redirect()->intended(route('user.show', ['username' => $request->user()->username]).'?verified=1');
         }
 
         if ($request->user()->markEmailAsVerified()) {
@@ -28,7 +28,7 @@ class VerifyEmailController extends Controller
             LinkUserToCrmCreator::dispatch($request->user()->id);
         }
 
-        return redirect()->intended(route('user.show', ['username' => $request->user()->username]) . '?verified=1');
+        return redirect()->intended(route('user.show', ['username' => $request->user()->username]).'?verified=1');
     }
 
     public function emailVerify($uuid)
@@ -44,10 +44,11 @@ class VerifyEmailController extends Controller
             LinkUserToCrmCreator::dispatch($user->id);
 
             return redirect()->route('user.show', [$user->username])
-                ->with("success", "Email verified successfully");
+                ->with('success', 'Email verified successfully');
         } catch (\Throwable $th) {
-            Log::error('Email verification failed: ' . $th->getMessage());
-            return redirect()->route('login')->with("error", "Invalid verification link or user.");
+            Log::error('Email verification failed: '.$th->getMessage());
+
+            return redirect()->route('login')->with('error', 'Invalid verification link or user.');
         }
     }
 }

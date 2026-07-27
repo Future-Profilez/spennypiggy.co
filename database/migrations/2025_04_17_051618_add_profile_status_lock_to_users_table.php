@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('users', 'address_verification_error') || !Schema::hasColumn('users', 'profile_status_lock')) {
+        if (! Schema::hasColumn('users', 'address_verification_error') || ! Schema::hasColumn('users', 'profile_status_lock')) {
             Schema::table('users', function (Blueprint $table) {
-                if (!Schema::hasColumn('users', 'address_verification_error')) {
+                if (! Schema::hasColumn('users', 'address_verification_error')) {
                     $table->text('address_verification_error')->nullable()->after('is_uk');
                 }
-                if (!Schema::hasColumn('users', 'profile_status_lock')) {
+                if (! Schema::hasColumn('users', 'profile_status_lock')) {
                     $table->tinyInteger('profile_status_lock')->default(0)->after('is_uk')->comment('0: locked, 1: unlocked');
                 }
             });

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class CreatorReferralPayout extends Model
 {
@@ -72,6 +72,6 @@ class CreatorReferralPayout extends Model
 
     public function isPaid(): bool
     {
-        return !is_null($this->paid_at);
+        return ! is_null($this->paid_at);
     }
 }

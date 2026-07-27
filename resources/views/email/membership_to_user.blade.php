@@ -197,6 +197,10 @@
                 </td>
             </tr>
 
+            {{-- The creator's welcome reward (file/message/link) — the benefits
+                 block below covers ongoing member access + perks. --}}
+            @include('email.reward-block', ['rewardItem' => $mem->membership, 'rewardShowFile' => true])
+
             {{-- Welcome / benefits block --}}
             <tr>
                 <td style="padding:0 0 18px 0;">

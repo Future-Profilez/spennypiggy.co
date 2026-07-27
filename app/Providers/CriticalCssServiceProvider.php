@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Services\CriticalCssService;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\ServiceProvider;
 
 class CriticalCssServiceProvider extends ServiceProvider
 {
@@ -34,7 +33,7 @@ class CriticalCssServiceProvider extends ServiceProvider
 
         // Register the critical CSS service
         $this->app->singleton('critical-css', function () {
-            return new \App\Services\CriticalCssService();
+            return new CriticalCssService;
         });
     }
 }

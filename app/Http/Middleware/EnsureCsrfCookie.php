@@ -12,10 +12,11 @@ class EnsureCsrfCookie
     {
         $response = $next($request);
         $hasCookie = $request->cookies->has('XSRF-TOKEN');
-        if (!$hasCookie) {
+        if (! $hasCookie) {
             $cookie = cookie('XSRF-TOKEN', csrf_token(), config('session.lifetime'), '/', config('session.domain'), (bool) config('session.secure'), false, false, config('session.same_site'));
             $response->headers->setCookie($cookie);
         }
+
         return $response;
     }
 }

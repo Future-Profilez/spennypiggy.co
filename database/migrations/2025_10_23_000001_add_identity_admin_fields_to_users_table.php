@@ -9,18 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'identity_admin_status')) {
+            if (! Schema::hasColumn('users', 'identity_admin_status')) {
                 $table->tinyInteger('identity_admin_status')
                     ->default(0)
                     ->comment('0=pending, 1=approved, 2=rejected')
                     ->after('identity_status');
             }
-            if (!Schema::hasColumn('users', 'identity_admin_reviewed_at')) {
+            if (! Schema::hasColumn('users', 'identity_admin_reviewed_at')) {
                 $table->timestamp('identity_admin_reviewed_at')
                     ->nullable()
                     ->after('identity_admin_status');
             }
-            if (!Schema::hasColumn('users', 'identity_admin_notes')) {
+            if (! Schema::hasColumn('users', 'identity_admin_notes')) {
                 $table->text('identity_admin_notes')
                     ->nullable()
                     ->after('identity_admin_reviewed_at');

@@ -10,8 +10,11 @@ class SupportPaymentMetadataUpdated
     use Dispatchable, SerializesModels;
 
     public int $deliverableId;
+
     public string $paymentIntentId;
+
     public string $certificateUrl;
+
     public array $metadata;
 
     /**

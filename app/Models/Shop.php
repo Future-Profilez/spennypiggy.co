@@ -24,6 +24,7 @@ class Shop extends Model
         'description',
         'image',
         'moderation_reason',
+        'moderation_asset',
         'price',
         'currency',
         'special_member_price',

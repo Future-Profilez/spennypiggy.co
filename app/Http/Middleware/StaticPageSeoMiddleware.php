@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\SeoMeta;
 use Closure;
 use Illuminate\Http\Request;
-use App\SeoMeta;
 use Illuminate\Support\Str;
 
 class StaticPageSeoMiddleware
@@ -30,7 +30,7 @@ class StaticPageSeoMiddleware
         if (in_array($path, $noIndexExact, true) || Str::startsWith($path, ['reset-password/', 'admin/', 'debug', 'test'])) {
             SeoMeta::setRobots('noindex,follow');
         }
-        
+
         $seoData = [
             '/' => [
                 'title' => 'Spenny Piggy — Creator Monetisation Platform 🐷 Memberships, Wishlists & Tips',
@@ -160,18 +160,18 @@ class StaticPageSeoMiddleware
 
         // Landing Pages mapping
         $landingPages = [];
-        
+
         $match = null;
-        
+
         if (isset($seoData[$path])) {
             $match = $seoData[$path];
-        } else if (in_array($path, $landingPages)) {
+        } elseif (in_array($path, $landingPages)) {
             $topic = ucwords(str_replace(['-', '/'], [' ', ' '], str_replace('creators', '', $path)));
             if (trim($topic) === '') {
                 $topic = 'Creators';
             }
             $topic = trim($topic);
-            
+
             $match = [
                 'title' => "{$topic} — Spenny Piggy 🐷",
                 'description' => "Explore {$topic} on Spenny Piggy. Discover how our platform empowers creators with memberships, wishlists, and paid tasks globally.",
@@ -184,7 +184,7 @@ class StaticPageSeoMiddleware
 
             $keywords = isset($match['keywords']) ? $match['keywords'] : 'Spenny Piggy, Creator Monetisation, Memberships, Wishlists, Paid Tasks, Fans Funding, Support Creators';
             SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
-            
+
             // Open Graph
             SeoMeta::addTag('meta', ['property' => 'og:title', 'content' => $match['title']]);
             SeoMeta::addTag('meta', ['property' => 'og:description', 'content' => $match['description']]);
@@ -192,14 +192,14 @@ class StaticPageSeoMiddleware
             SeoMeta::addTag('meta', ['property' => 'og:url', 'content' => $url]);
             SeoMeta::addTag('meta', ['property' => 'og:type', 'content' => 'website']);
             SeoMeta::addTag('meta', ['property' => 'og:site_name', 'content' => 'Spenny Piggy']);
-            
+
             // Twitter Card
             SeoMeta::addTag('meta', ['name' => 'twitter:card', 'content' => 'summary_large_image']);
             SeoMeta::addTag('meta', ['name' => 'twitter:title', 'content' => $match['title']]);
             SeoMeta::addTag('meta', ['name' => 'twitter:description', 'content' => $match['description']]);
             SeoMeta::addTag('meta', ['name' => 'twitter:image', 'content' => $image]);
             SeoMeta::addTag('meta', ['name' => 'twitter:site', 'content' => '@spennypiggy']);
-            
+
             // Canonical
             SeoMeta::setCanonical($url);
 
@@ -207,10 +207,10 @@ class StaticPageSeoMiddleware
             $breadcrumbs = [
                 ['name' => 'Home', 'url' => url('/')],
             ];
-            if (!empty($segments)) {
+            if (! empty($segments)) {
                 $accum = '';
                 foreach ($segments as $seg) {
-                    $accum .= '/' . $seg;
+                    $accum .= '/'.$seg;
                     $breadcrumbs[] = [
                         'name' => ucwords(str_replace('-', ' ', $seg)),
                         'url' => url($accum),

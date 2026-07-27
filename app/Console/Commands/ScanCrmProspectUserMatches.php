@@ -36,7 +36,7 @@ class ScanCrmProspectUserMatches extends Command
             ->whereNull('user_id')
             ->whereIn('crm_stage', $preSignup);
 
-        if (!$force) {
+        if (! $force) {
             $query->whereNull('social_match_suggested_at');
         }
 
@@ -47,6 +47,7 @@ class ScanCrmProspectUserMatches extends Command
 
         if ($creators->count() === 0) {
             $this->info('No CRM creators to scan.');
+
             return self::SUCCESS;
         }
 
@@ -55,20 +56,21 @@ class ScanCrmProspectUserMatches extends Command
             $matchUserId = $this->findMatchingUserId($creator);
 
             if ($matchUserId) {
-                if (!$dryRun) {
+                if (! $dryRun) {
                     $creator->social_match_suggested_at = Carbon::now();
                     $creator->social_match_suggested_user_id = $matchUserId;
                     $creator->save();
                 }
                 $updated++;
-            } elseif ($force && !$dryRun) {
+            } elseif ($force && ! $dryRun) {
                 $creator->social_match_suggested_at = null;
                 $creator->social_match_suggested_user_id = null;
                 $creator->save();
             }
         }
 
-        $this->info("Scanned CRM creators: {$creators->count()}. Suggestions set: {$updated}" . ($dryRun ? ' (dry-run)' : ''));
+        $this->info("Scanned CRM creators: {$creators->count()}. Suggestions set: {$updated}".($dryRun ? ' (dry-run)' : ''));
+
         return self::SUCCESS;
     }
 
@@ -95,10 +97,10 @@ class ScanCrmProspectUserMatches extends Command
                     $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [$username]);
                 }
                 if (mb_strlen($fullName) >= 3) {
-                    $q->orWhereRaw("LOWER(COALESCE(name,'')) LIKE ?", ['%' . strtolower($fullName) . '%']);
+                    $q->orWhereRaw("LOWER(COALESCE(name,'')) LIKE ?", ['%'.strtolower($fullName).'%']);
                 }
                 if (mb_strlen($bio) >= 6) {
-                    $q->orWhereRaw("LOWER(COALESCE(bio,'')) LIKE ?", ['%' . $bio . '%']);
+                    $q->orWhereRaw("LOWER(COALESCE(bio,'')) LIKE ?", ['%'.$bio.'%']);
                 }
 
                 // Social handles use exact, normalized equality (strip surrounding @). Substring (LIKE %x%)
@@ -125,7 +127,7 @@ class ScanCrmProspectUserMatches extends Command
                 }
                 if ($web) {
                     $q->orWhereHas('social_links', function ($sq) use ($web) {
-                        $sq->whereRaw("LOWER(COALESCE(other,'')) LIKE ?", ['%' . $web . '%']);
+                        $sq->whereRaw("LOWER(COALESCE(other,'')) LIKE ?", ['%'.$web.'%']);
                     });
                 }
             })
@@ -134,6 +136,7 @@ class ScanCrmProspectUserMatches extends Command
             ->limit(1);
 
         $match = $query->first();
+
         return $match ? (int) $match->id : null;
     }
 
@@ -150,8 +153,8 @@ class ScanCrmProspectUserMatches extends Command
         $v = rtrim($v, '/');
 
         $urlish = $v;
-        if (!str_contains($urlish, '://') && (str_contains($urlish, '.') && str_contains($urlish, '/'))) {
-            $urlish = 'https://' . $urlish;
+        if (! str_contains($urlish, '://') && (str_contains($urlish, '.') && str_contains($urlish, '/'))) {
+            $urlish = 'https://'.$urlish;
         }
 
         $host = null;
@@ -183,6 +186,7 @@ class ScanCrmProspectUserMatches extends Command
                         return ltrim($seg, '@') ?: null;
                     }
                 }
+
                 return $first ?: null;
             }
             if ($host === 'twitch.tv') {
@@ -198,6 +202,7 @@ class ScanCrmProspectUserMatches extends Command
                 if (($segments[0] ?? null) === 'c' && isset($segments[1])) {
                     return trim((string) $segments[1]) ?: null;
                 }
+
                 return $first ?: null;
             }
         }
@@ -206,6 +211,7 @@ class ScanCrmProspectUserMatches extends Command
         $v = preg_replace('/^www\./', '', $v);
         $v = trim($v, " \t\n\r\0\x0B/");
         $v = ltrim($v, '@');
+
         return $v === '' ? null : $v;
     }
 
@@ -219,7 +225,7 @@ class ScanCrmProspectUserMatches extends Command
         $v = preg_replace('/^https?:\/\//', '', $v);
         $v = preg_replace('/^www\./', '', $v);
         $v = rtrim($v, '/');
+
         return $v === '' ? null : $v;
     }
 }
-

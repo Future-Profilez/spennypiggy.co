@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('approved')->default(0);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('user_id');
             $table->index('approved');
             $table->index('deleted_at');

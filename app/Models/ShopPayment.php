@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Ramsey\Uuid\Uuid;
-use App\Models\Deliverable;
 
 class ShopPayment extends Model
 {
@@ -39,7 +38,6 @@ class ShopPayment extends Model
         'creator_note',
     ];
 
-
     protected $hidden = [
         'id',
         'user_id',
@@ -52,11 +50,10 @@ class ShopPayment extends Model
         'sender',
     ];
 
-
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function getSenderAttribute()
@@ -67,6 +64,7 @@ class ShopPayment extends Model
                 $sender = true;
             }
         }
+
         return $sender;
     }
 

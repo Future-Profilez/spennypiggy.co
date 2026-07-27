@@ -13,12 +13,12 @@ class AppService extends Model
     public static $statuses = [
         'Error',
         'Running',
-        'Stopped'
+        'Stopped',
     ];
 
     protected $fillable = [
         'slug',
-        'name'
+        'name',
     ];
 
     protected $hidden = [
@@ -27,11 +27,11 @@ class AppService extends Model
         'updated_at',
         'status',
         'last_error_at',
-        'last_error'
+        'last_error',
     ];
 
     protected $casts = [
-        'last_error_at' => 'datetime'
+        'last_error_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -47,7 +47,7 @@ class AppService extends Model
 
     public function getIssueAtAttribute()
     {
-        return empty($this->last_error_at) ?  NULL : $this->last_error_at->format('h:i:s a d-m-Y');
+        return empty($this->last_error_at) ? null : $this->last_error_at->format('h:i:s a d-m-Y');
     }
 
     public function getErrorAttribute()
@@ -55,11 +55,10 @@ class AppService extends Model
         return $this->last_error;
     }
 
-
     /**
      * Get Service Status
      *
-     * @param $service Service Slug
+     * @param  $service  Service Slug
      * @return bool
      */
     public static function getStatus($service)
@@ -68,23 +67,24 @@ class AppService extends Model
         if (isset($s->status)) {
             return $s->status === 1;
         }
+
         return false;
     }
 
     /**
      * Set Service Status
      *
-     * @param $service Service Slug
-     * @param $status Status of service
-     * @param $error Error Message if any
+     * @param  $service  Service Slug
+     * @param  $status  Status of service
+     * @param  $error  Error Message if any
      * @return void
      */
-    public static function setStatus($service, $status = 1, $error = NULL)
+    public static function setStatus($service, $status = 1, $error = null)
     {
         $s = static::firstWhere('slug', $service);
         if ($s) {
             $s->status = $status;
-            if (!empty($error)) {
+            if (! empty($error)) {
                 $s->last_error = $error;
             }
             if ($status == 0) {

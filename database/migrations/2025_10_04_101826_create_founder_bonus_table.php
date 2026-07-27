@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('payout_date')->nullable();
             $table->text('payout_rejection_reason')->nullable();
             $table->timestamps();
-            
+
             // Indexes for performance
             $table->unique(['creator_id', 'month'], 'unique_creator_month');
             $table->index('month');

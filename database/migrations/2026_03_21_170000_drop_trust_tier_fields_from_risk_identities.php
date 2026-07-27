@@ -15,7 +15,7 @@ return new class extends Migration
                     $cols[] = $c;
                 }
             }
-            if (!empty($cols)) {
+            if (! empty($cols)) {
                 $table->dropColumn($cols);
             }
         });
@@ -24,13 +24,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('risk_identities', function (Blueprint $table) {
-            if (!Schema::hasColumn('risk_identities', 'trust_tier')) {
+            if (! Schema::hasColumn('risk_identities', 'trust_tier')) {
                 $table->unsignedTinyInteger('trust_tier')->default(0)->after('is_guest');
             }
-            if (!Schema::hasColumn('risk_identities', 'trust_tier_locked')) {
+            if (! Schema::hasColumn('risk_identities', 'trust_tier_locked')) {
                 $table->boolean('trust_tier_locked')->default(false)->after('trust_tier');
             }
         });
     }
 };
-

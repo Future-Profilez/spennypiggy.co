@@ -27,6 +27,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -104,6 +105,21 @@ class BillsController extends Controller
             Bills::class,
             $bill->id,
             $bill->thumbnail,
+            ['approved' => 0],
+            'thumbnail'
+        );
+    }
+
+    /** Text half of the gate — a bill's reward can be a written message or a link. */
+    private function moderateBillText(?Bills $bill): void
+    {
+        if (! $bill) {
+            return;
+        }
+
+        ItemTextModeration::apply(
+            $bill,
+            ['reward_title', 'reward_body', 'reward_description', 'name'],
             ['approved' => 0]
         );
     }
@@ -192,6 +208,7 @@ class BillsController extends Controller
         $bill->save();
 
         $this->moderateBill($bill);
+        $this->moderateBillText($bill);
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -332,6 +349,7 @@ class BillsController extends Controller
         ] + $this->rewardBundleColumns($request))->save();
 
         $this->moderateBill($bill->refresh(), $previousThumbnail);
+        $this->moderateBillText($bill);
 
         try {
             Log::info("starting from try request->period: $request->period");

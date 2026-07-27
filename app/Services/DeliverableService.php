@@ -4,10 +4,8 @@ namespace App\Services;
 
 use App\Models\Deliverable;
 use App\Models\DeliverableNotification;
-use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class DeliverableService
 {
@@ -18,7 +16,7 @@ class DeliverableService
     {
         try {
             $metadata = $sessionData['metadata'] ?? [];
-            
+
             $deliverable = Deliverable::create([
                 'transaction_id' => $sessionData['id'],
                 'stripe_session_id' => $sessionData['id'],
@@ -34,8 +32,8 @@ class DeliverableService
                     'currency' => $sessionData['currency'] ?? 'gbp',
                     'customer_email' => $sessionData['customer_details']['email'] ?? null,
                     'payment_intent' => $sessionData['payment_intent'] ?? null,
-                    'session_data' => $sessionData
-                ]
+                    'session_data' => $sessionData,
+                ],
             ]);
 
             // Generate deliverable based on product type
@@ -47,7 +45,7 @@ class DeliverableService
             Log::info('Deliverable created successfully', [
                 'deliverable_id' => $deliverable->id,
                 'transaction_id' => $deliverable->transaction_id,
-                'product_type' => $deliverable->product_type
+                'product_type' => $deliverable->product_type,
             ]);
 
             return $deliverable;
@@ -55,8 +53,9 @@ class DeliverableService
         } catch (\Exception $e) {
             Log::error('Failed to create deliverable from checkout session', [
                 'error' => $e->getMessage(),
-                'session_id' => $sessionData['id'] ?? 'unknown'
+                'session_id' => $sessionData['id'] ?? 'unknown',
             ]);
+
             return null;
         }
     }
@@ -70,31 +69,31 @@ class DeliverableService
             case 'piggy_bank':
                 $this->generatePiggyBankDeliverable($deliverable);
                 break;
-                
+
             case 'membership':
                 $this->generateMembershipDeliverable($deliverable);
                 break;
-                
+
             case 'wish_subscription':
                 $this->generateWishSubscriptionDeliverable($deliverable);
                 break;
-                
+
             case 'bill_subscription':
                 $this->generateBillSubscriptionDeliverable($deliverable);
                 break;
-                
+
             case 'wish':
                 $this->generateWishDeliverable($deliverable);
                 break;
-                
+
             case 'shop_item':
                 $this->generateShopItemDeliverable($deliverable);
                 break;
-                
+
             default:
                 Log::warning('Unknown product type for deliverable generation', [
                     'product_type' => $deliverable->product_type,
-                    'deliverable_id' => $deliverable->id
+                    'deliverable_id' => $deliverable->id,
                 ]);
         }
     }
@@ -108,26 +107,26 @@ class DeliverableService
         try {
             // Generate supporter certificate
             $certificateUrl = app(CertificateService::class)->generateSupporterCertificate($deliverable);
-            
+
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
-            
+
             // Mark as delivered immediately (instant delivery)
             $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
-            
+
             // Add to supporter wall (this would be handled by another service)
             // app(SupporterWallService::class)->addSupporter($deliverable);
-            
+
             // Send delivery notification
             DeliverableNotification::createDeliverableDelivered($deliverable);
-            
+
             Log::info('Piggy Bank deliverable generated', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Piggy Bank deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -141,26 +140,26 @@ class DeliverableService
         try {
             // Generate access certificate
             $certificateUrl = app(CertificateService::class)->generateAccessCertificate($deliverable);
-            
+
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
-            
+
             // Grant access entitlement (this would be handled by membership service)
             // app(MembershipService::class)->grantAccess($deliverable);
-            
+
             // Mark as delivered immediately (instant delivery)
             $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
-            
+
             // Send delivery notification
             DeliverableNotification::createDeliverableDelivered($deliverable);
-            
+
             Log::info('Membership deliverable generated', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Membership deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -174,26 +173,26 @@ class DeliverableService
         try {
             // Generate subscription certificate
             $certificateUrl = app(CertificateService::class)->generateSubscriptionCertificate($deliverable);
-            
+
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
-            
+
             // Grant wish feed access
             // app(WishService::class)->grantFeedAccess($deliverable);
-            
+
             // Mark as delivered immediately (instant delivery)
             $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
-            
+
             // Send delivery notification
             DeliverableNotification::createDeliverableDelivered($deliverable);
-            
+
             Log::info('Wish Subscription deliverable generated', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Wish Subscription deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -206,22 +205,22 @@ class DeliverableService
     {
         try {
             // TODO: ReceiptService class is missing. Re-enable this when the service is restored or defined.
-        // $receiptUrl = app(ReceiptService::class)->generateMonthlyReceipt($deliverable);
-        $receiptUrl = null;  
+            // $receiptUrl = app(ReceiptService::class)->generateMonthlyReceipt($deliverable);
+            $receiptUrl = null;
             // Mark as delivered (SLA: 1 day)
             $deliverable->markAsDelivered($receiptUrl, $receiptUrl);
-            
+
             // Send delivery notification
             DeliverableNotification::createDeliverableDelivered($deliverable);
-            
+
             Log::info('Bill Subscription deliverable generated', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Bill Subscription deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             // Send pending notification since this requires creator action
             DeliverableNotification::createDeliverablePending($deliverable);
         }
@@ -238,19 +237,19 @@ class DeliverableService
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             // $deliverable->update(['receipt_url' => $receiptUrl]);
-            
+
             // Send pending notification to buyer
             DeliverableNotification::createDeliverablePending($deliverable);
-            
+
             // Send notification to creator about pending upload
             DeliverableNotification::createSlaWarning($deliverable);
-            
+
             Log::info('Wish deliverable pending creator upload', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Wish deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -266,19 +265,19 @@ class DeliverableService
             // Generate receipt
             // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             // $deliverable->update(['receipt_url' => $receiptUrl]);
-            
+
             // Send pending notification to buyer
             DeliverableNotification::createDeliverablePending($deliverable);
-            
+
             // Send notification to creator about pending upload
             DeliverableNotification::createSlaWarning($deliverable);
-            
+
             Log::info('Shop Item deliverable pending creator upload', ['deliverable_id' => $deliverable->id]);
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to generate Shop Item deliverable', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -292,29 +291,31 @@ class DeliverableService
             if ($deliverable->status !== 'pending') {
                 Log::warning('Attempted to upload to non-pending deliverable', [
                     'deliverable_id' => $deliverable->id,
-                    'status' => $deliverable->status
+                    'status' => $deliverable->status,
                 ]);
+
                 return false;
             }
 
             // Mark as delivered with the uploaded artifact
             $deliverable->markAsDelivered($uploadUrl);
-            
+
             // Send delivery notification to buyer
             DeliverableNotification::createDeliverableDelivered($deliverable);
-            
+
             Log::info('Creator upload processed successfully', [
                 'deliverable_id' => $deliverable->id,
-                'upload_url' => $uploadUrl
+                'upload_url' => $uploadUrl,
             ]);
-            
+
             return true;
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to process creator upload', [
                 'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -326,18 +327,19 @@ class DeliverableService
     {
         try {
             $deliverable = Deliverable::where('transaction_id', $transactionId)->first();
-            
-            if (!$deliverable) {
+
+            if (! $deliverable) {
                 Log::warning('Deliverable not found for refund', ['transaction_id' => $transactionId]);
+
                 return false;
             }
 
             // Revoke the deliverable
             $deliverable->revoke();
-            
+
             // Remove access/entitlements based on product type
             $this->revokeAccess($deliverable);
-            
+
             // Create refund notification
             $notification = DeliverableNotification::create([
                 'deliverable_id' => $deliverable->id,
@@ -346,21 +348,22 @@ class DeliverableService
                 'channel' => 'email',
                 'subject' => 'Refund Processed',
                 'message' => 'Your refund has been processed and access has been revoked.',
-                'metadata' => ['refunded_at' => Carbon::now()]
+                'metadata' => ['refunded_at' => Carbon::now()],
             ]);
-            
+
             Log::info('Deliverable refund processed', [
                 'deliverable_id' => $deliverable->id,
-                'transaction_id' => $transactionId
+                'transaction_id' => $transactionId,
             ]);
-            
+
             return true;
-            
+
         } catch (\Exception $e) {
             Log::error('Failed to process deliverable refund', [
                 'transaction_id' => $transactionId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -374,16 +377,16 @@ class DeliverableService
             case 'membership':
                 // app(MembershipService::class)->revokeAccess($deliverable);
                 break;
-                
+
             case 'wish_subscription':
                 // app(WishService::class)->revokeFeedAccess($deliverable);
                 break;
-                
+
             case 'piggy_bank':
                 // app(SupporterWallService::class)->removeSupporter($deliverable);
                 break;
-                
-            // Other product types don't require access revocation
+
+                // Other product types don't require access revocation
         }
     }
 }

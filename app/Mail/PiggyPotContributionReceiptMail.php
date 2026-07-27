@@ -11,7 +11,9 @@ class PiggyPotContributionReceiptMail extends Mailable
     use Queueable, SerializesModels;
 
     public $pay;
+
     public $symbol;
+
     public $thankYouUrl;
 
     public function __construct($pay, $symbol, $thankYouUrl)
@@ -28,4 +30,3 @@ class PiggyPotContributionReceiptMail extends Mailable
             ->subject('Piggy Pot Contribution Confirmed');
     }
 }
-

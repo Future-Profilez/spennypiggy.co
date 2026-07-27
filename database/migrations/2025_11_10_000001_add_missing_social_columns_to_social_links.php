@@ -12,16 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('social_links', function (Blueprint $table) {
-            if (!Schema::hasColumn('social_links', 'facebook')) {
+            if (! Schema::hasColumn('social_links', 'facebook')) {
                 $table->string('facebook')->nullable()->after('instagram');
             }
-            if (!Schema::hasColumn('social_links', 'youtube')) {
+            if (! Schema::hasColumn('social_links', 'youtube')) {
                 $table->string('youtube')->nullable()->after('facebook');
             }
-            if (!Schema::hasColumn('social_links', 'twitch')) {
+            if (! Schema::hasColumn('social_links', 'twitch')) {
                 $table->string('twitch')->nullable()->after('youtube');
             }
-            if (!Schema::hasColumn('social_links', 'tumblr')) {
+            if (! Schema::hasColumn('social_links', 'tumblr')) {
                 $table->string('tumblr')->nullable()->after('twitch');
             }
         });

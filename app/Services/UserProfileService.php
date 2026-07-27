@@ -625,6 +625,20 @@ class UserProfileService
         return Cache::remember('user_shop_'.$userId.'_'.$this->getProfileCacheVersion($userId), 600, $callback);
     }
 
+    /**
+     * How long a computed cache version may be trusted before it is recomputed
+     * from the database.
+     *
+     * ⚠️ This number is the delay between the ADMIN APP approving a listing and
+     * the public profile showing it. The two apps share a database but not a
+     * cache, so nothing the back office does can invalidate a key held here —
+     * the version therefore has to expire on its own and be re-derived from the
+     * rows themselves. It used to be pinned for 24 HOURS by clearUserCaches(),
+     * so an approved listing could stay invisible to logged-out visitors for a
+     * full day and the reviewer had no way to tell their click had worked.
+     */
+    private const CACHE_VERSION_TTL = 30;
+
     private function getProfileCacheVersion(int $userId): string
     {
         $cacheKey = $this->profileCacheTokenKey($userId);
@@ -633,6 +647,9 @@ class UserProfileService
             return (string) $cached;
         }
 
+        // Every table an admin can flip a listing's approval flag on is
+        // represented here, so any approve changes `updated_at`, which changes
+        // the version, which changes every cache key derived from it.
         $timestamps = [
             User::where('id', $userId)->value('updated_at'),
             WishItem::where('user_id', $userId)->max('updated_at'),
@@ -656,7 +673,7 @@ class UserProfileService
         }
 
         $version = (string) $latestUnix;
-        Cache::put($cacheKey, $version, 86400);
+        Cache::put($cacheKey, $version, self::CACHE_VERSION_TTL);
 
         return $version;
     }
@@ -947,7 +964,12 @@ class UserProfileService
 
     public function clearUserCaches(string $username, int $userId): void
     {
-        Cache::put($this->profileCacheTokenKey($userId), (string) time(), 86400);
+        // Forget, don't overwrite. Writing a fresh `time()` here pinned the
+        // version for 24 hours, which meant the version could no longer follow
+        // the rows — so a change made anywhere else (notably an approval in the
+        // admin app) was invisible until that token happened to expire.
+        // Forgetting makes the very next read recompute it from the database.
+        Cache::forget($this->profileCacheTokenKey($userId));
 
         // Clear basic profile cache
         Cache::forget('user_profile_basic_'.$username);
@@ -1512,8 +1534,23 @@ class UserProfileService
                 $query->where('status', 'paid');
             }], 'amount');
 
+        // The profile's featured slot shows the pinned pot. A creator who has
+        // never pinned one — which is now every creator, because a pot is held
+        // for review at creation and cannot be pinned while it is invisible —
+        // would otherwise have an empty slot even with live pots, and their
+        // freshly approved pot would appear nowhere until they went and pinned
+        // it by hand. Falling back to the newest live pot keeps the slot honest.
         if (! $isOwner && $onlyPinned) {
-            $query->where('is_pinned', true);
+            $pinned = (clone $query)->where('is_pinned', true)->exists();
+
+            if ($pinned) {
+                $query->where('is_pinned', true);
+            } else {
+                // Explicitly ordered: the base query has no order of its own, so
+                // "the newest" would otherwise be whatever the database returned
+                // first.
+                $query->latest()->limit(1);
+            }
         }
 
         $token = $this->getProfileCacheToken($userId);

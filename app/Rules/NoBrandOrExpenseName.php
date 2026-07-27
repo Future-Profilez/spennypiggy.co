@@ -35,8 +35,9 @@ class NoBrandOrExpenseName implements ValidationRule
         $haystack = strtolower((string) $value);
 
         foreach (self::BLOCKED_BRANDS as $brand) {
-            if (preg_match('/\b' . preg_quote($brand, '/') . '\b/i', $haystack)) {
-                $fail('Listings must describe your own content, not a brand or third-party service. Please remove "' . $brand . '".');
+            if (preg_match('/\b'.preg_quote($brand, '/').'\b/i', $haystack)) {
+                $fail('Listings must describe your own content, not a brand or third-party service. Please remove "'.$brand.'".');
+
                 return;
             }
         }

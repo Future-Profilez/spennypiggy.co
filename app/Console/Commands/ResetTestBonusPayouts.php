@@ -35,8 +35,9 @@ class ResetTestBonusPayouts extends Command
         $dryRun = (bool) $this->option('dry-run');
         $force = (bool) $this->option('force');
 
-        if (!in_array($type, ['all', 'founder', 'fast_start'], true)) {
-            $this->error("Invalid --type. Use founder | fast_start | all.");
+        if (! in_array($type, ['all', 'founder', 'fast_start'], true)) {
+            $this->error('Invalid --type. Use founder | fast_start | all.');
+
             return self::FAILURE;
         }
 
@@ -44,8 +45,9 @@ class ResetTestBonusPayouts extends Command
         $creator = null;
         if ($creatorFilter !== '') {
             $creator = User::where('uuid', $creatorFilter)->orWhere('username', $creatorFilter)->first();
-            if (!$creator) {
+            if (! $creator) {
                 $this->error("Creator not found: {$creatorFilter}");
+
                 return self::FAILURE;
             }
             $this->line("Filtering to creator: {$creator->username} (id={$creator->id})");
@@ -72,25 +74,34 @@ class ResetTestBonusPayouts extends Command
 
         if ($founderTargets->isEmpty() && $fastStartTargets->isEmpty()) {
             $this->info('Nothing to reset.');
+
             return self::SUCCESS;
         }
 
         if ($dryRun) {
             $this->warn('Dry run — no changes written.');
+
             return self::SUCCESS;
         }
 
-        if (!$force && !$this->confirm('Reset these bonus payouts to a re-runnable state?')) {
+        if (! $force && ! $this->confirm('Reset these bonus payouts to a re-runnable state?')) {
             $this->line('Aborted.');
+
             return self::SUCCESS;
         }
 
         $founderReset = 0;
         foreach ($founderTargets as $b) {
             $fields = ['payout_status' => FounderBonus::STATUS_PENDING, 'paid_date' => null];
-            if (Schema::hasColumn('founder_bonuses', 'stripe_payout_id')) $fields['stripe_payout_id'] = null;
-            if (Schema::hasColumn('founder_bonuses', 'stripe_transfer_id')) $fields['stripe_transfer_id'] = null;
-            if (Schema::hasColumn('founder_bonuses', 'payout_record_uuid')) $fields['payout_record_uuid'] = null;
+            if (Schema::hasColumn('founder_bonuses', 'stripe_payout_id')) {
+                $fields['stripe_payout_id'] = null;
+            }
+            if (Schema::hasColumn('founder_bonuses', 'stripe_transfer_id')) {
+                $fields['stripe_transfer_id'] = null;
+            }
+            if (Schema::hasColumn('founder_bonuses', 'payout_record_uuid')) {
+                $fields['payout_record_uuid'] = null;
+            }
             FounderBonus::whereKey($b->id)->update($fields);
             $founderReset++;
         }
@@ -119,7 +130,7 @@ class ResetTestBonusPayouts extends Command
      */
     private function findFakeFounder(?User $creator)
     {
-        if (!Schema::hasTable('founder_bonuses')) {
+        if (! Schema::hasTable('founder_bonuses')) {
             return collect();
         }
 
@@ -136,7 +147,7 @@ class ResetTestBonusPayouts extends Command
      */
     private function findFakeFastStart(?User $creator)
     {
-        if (!Schema::hasTable('fast_start_bonus_payouts')) {
+        if (! Schema::hasTable('fast_start_bonus_payouts')) {
             return collect();
         }
 

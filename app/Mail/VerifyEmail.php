@@ -2,9 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -13,6 +11,7 @@ class VerifyEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $data;
+
     /**
      * Create a new message instance.
      *
@@ -32,6 +31,7 @@ class VerifyEmail extends Mailable
     {
         try {
             $subject = 'Verify email on Spenny Piggy.';
+
             return $this->view('email.user-verification')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);

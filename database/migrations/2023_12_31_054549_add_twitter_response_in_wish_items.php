@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wish_items', function (Blueprint $table) {
-            $table->json("twitter_response")->nullable()->after("tax_amount");
+            $table->json('twitter_response')->nullable()->after('tax_amount');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wish_items', function (Blueprint $table) {
-            $table->dropColumn("twitter_response");
+            $table->dropColumn('twitter_response');
         });
     }
 };

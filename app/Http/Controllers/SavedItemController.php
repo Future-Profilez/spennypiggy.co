@@ -17,23 +17,25 @@ class SavedItemController extends Controller
     {
         $data = $request->validate([
             'product_type' => ['required', Rule::in(SavedItem::TYPES)],
-            'item_id'      => ['required', 'integer', 'min:1'],
+            'item_id' => ['required', 'integer', 'min:1'],
         ]);
 
         $user = Auth::user();
         $attrs = [
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'product_type' => $data['product_type'],
-            'item_id'      => $data['item_id'],
+            'item_id' => $data['item_id'],
         ];
 
         $existing = SavedItem::where($attrs)->first();
         if ($existing) {
             $existing->delete();
+
             return response()->json(['saved' => false]);
         }
 
         SavedItem::create($attrs);
+
         return response()->json(['saved' => true]);
     }
 

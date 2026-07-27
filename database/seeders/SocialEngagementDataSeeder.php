@@ -2,20 +2,19 @@
 
 namespace Database\Seeders;
 
-use App\Models\WishItem;
 use App\Models\Bills;
-use App\Models\TipGoal;
-use App\Models\Shop;
 use App\Models\Membership;
+use App\Models\Shop;
+use App\Models\TipGoal;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\WishItem;
 use Illuminate\Database\Seeder;
 
 class SocialEngagementDataSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * 
+     *
      * This seeder populates the new social engagement fields with sample data
      * to demonstrate the transition from monetary-based metrics to social engagement metrics.
      */
@@ -97,7 +96,7 @@ class SocialEngagementDataSeeder extends Seeder
         });
 
         $this->command->info('Social engagement data seeded successfully!');
-        
+
         // Output some sample statistics
         $this->outputSampleStatistics();
     }
@@ -108,20 +107,20 @@ class SocialEngagementDataSeeder extends Seeder
     private function outputSampleStatistics(): void
     {
         $this->command->info("\n--- Sample Social Engagement Statistics ---");
-        
+
         // Top trending items across all models
         $trendingWishes = WishItem::where('trending_status', true)->count();
         $viralEngagement = WishItem::where('engagement_level', 'viral')->count();
         $highSupporters = WishItem::where('supporter_count', '>', 500)->count();
-        
+
         $this->command->info("Trending wish items: {$trendingWishes}");
         $this->command->info("Viral engagement wish items: {$viralEngagement}");
         $this->command->info("High supporter count (>500): {$highSupporters}");
-        
+
         // Average growth rates
         $avgGrowthRate = WishItem::avg('creator_growth_rate');
-        $this->command->info("Average creator growth rate: " . number_format($avgGrowthRate, 2) . "%");
-        
+        $this->command->info('Average creator growth rate: '.number_format($avgGrowthRate, 2).'%');
+
         $this->command->info("--- End Statistics ---\n");
     }
 }

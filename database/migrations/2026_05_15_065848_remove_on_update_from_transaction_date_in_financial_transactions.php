@@ -1,9 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,7 +13,7 @@ return new class extends Migration
     {
         // Skip for SQLite as it doesn't support altering column types in this way and doesn't have ON UPDATE for TIMESTAMP
         if (Schema::getConnection()->getDriverName() !== 'sqlite') {
-            DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+            DB::statement('ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP');
         }
     }
 
@@ -25,7 +24,7 @@ return new class extends Migration
     {
         // Skip for SQLite as it doesn't support altering column types in this way and doesn't have ON UPDATE for TIMESTAMP
         if (Schema::getConnection()->getDriverName() !== 'sqlite') {
-            DB::statement("ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            DB::statement('ALTER TABLE financial_transactions MODIFY transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
         }
     }
 };

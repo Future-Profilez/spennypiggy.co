@@ -13,13 +13,11 @@ class DisputeCreatedMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+
     public $dispute;
 
     /**
      * Create a new message instance.
-     *
-     * @param User $user
-     * @param Dispute $dispute
      */
     public function __construct(User $user, Dispute $dispute)
     {

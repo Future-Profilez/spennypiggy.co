@@ -1,21 +1,20 @@
 <?php
 
-use App\Models\User;
-use App\Models\Payment;
 use App\Models\CreatorMetric;
+use App\Models\Payment;
 use App\Models\RiskIdentity;
+use App\Models\User;
 use App\Services\Risk\RiskService;
-use App\Mail\RiskLevelChanged;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 // 1. Create Dummy User
 $user = User::create([
     'name' => 'Flow Test User',
-    'email' => 'flowtest_' . Str::random(5) . '@example.com',
+    'email' => 'flowtest_'.Str::random(5).'@example.com',
     'password' => bcrypt('password'),
-    'username' => 'flowtest_' . Str::random(5),
+    'username' => 'flowtest_'.Str::random(5),
 ]);
 
 // 2. Create Dummy Risk Identity
@@ -39,7 +38,7 @@ for ($i = 0; $i < 8; $i++) {
         'amount' => 1000,
         'currency' => 'GBP',
         'status' => 'succeeded',
-        'stripe_payment_intent_id' => 'pi_' . Str::random(10),
+        'stripe_payment_intent_id' => 'pi_'.Str::random(10),
     ]);
 }
 for ($i = 0; $i < 2; $i++) {
@@ -49,13 +48,13 @@ for ($i = 0; $i < 2; $i++) {
         'amount' => 1000,
         'currency' => 'GBP',
         'status' => 'disputed',
-        'stripe_payment_intent_id' => 'pi_' . Str::random(10),
+        'stripe_payment_intent_id' => 'pi_'.Str::random(10),
     ]);
 }
 
 // 5. Trigger Risk Service manually (simulating webhook)
 echo "Triggering Risk Service...\n";
-$service = new RiskService();
+$service = new RiskService;
 
 // Mock Mail to check if it would send
 // Note: In tinker script mode, Mail::fake() might not persist assertions easily if not in PHPUnit,

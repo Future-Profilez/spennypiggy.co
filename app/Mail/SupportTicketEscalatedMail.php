@@ -19,4 +19,3 @@ class SupportTicketEscalatedMail extends Mailable
             ->subject('Escalated Support Ticket');
     }
 }
-

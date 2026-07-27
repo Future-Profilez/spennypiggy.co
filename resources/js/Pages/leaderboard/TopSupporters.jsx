@@ -19,7 +19,9 @@ export default function TopSupporters({grid = false}) {
   const fetchSupporters = (period) => {
     setLoading(true);
     setError(null);
-    axios.get(`top-supporters/frequency`)
+    // route(), never a relative path — see RecentSupporters for what a rewritten
+    // page URL does to a relative request on this page.
+    axios.get(route('top-supporters-frequency'))
       .then((response) => {
         setData(response.data.data);
       })
@@ -92,8 +94,8 @@ export default function TopSupporters({grid = false}) {
 
   return (
     <>
-    {data && data.length > 0 ? <div className="bg-gray-100 rounded-[30px]   p-4 mb-6">
-      <h2 className="font-GillSans text-left text-2xl uppercase text-gray-900" title="Ranked by number of support transactions">
+    {data && data.length > 0 ? <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
+      <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C]" title="Ranked by number of support transactions">
         🏆 Top Supporters
       </h2>
       <p className='text-gray-500 mb-3'>Most active supporters by support count</p>

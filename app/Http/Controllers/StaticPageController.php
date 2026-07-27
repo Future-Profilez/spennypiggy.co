@@ -79,6 +79,7 @@ class StaticPageController extends Controller
             $user->terms_accepted_at = now();
             $user->save();
         }
+
         return response()->json(['success' => true]);
     }
 }

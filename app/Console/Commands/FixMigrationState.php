@@ -31,19 +31,19 @@ class FixMigrationState extends Command
 
         // Get all existing table names
         $tables = Schema::getConnection()->getDoctrineSchemaManager()->listTableNames();
-        
+
         // Define migrations that correspond to existing tables
         $problematic_migrations = [
             'bills' => '2024_01_01_000000_create_bills_table',
             'memberships' => '2024_01_02_000000_create_memberships_table',
             'shops' => '2024_01_03_000000_create_shops_table',
             'user_intros' => '2024_01_04_000000_create_user_intros_table',
-            'posts' => '2024_01_05_000000_create_posts_table'
+            'posts' => '2024_01_05_000000_create_posts_table',
         ];
 
         // Get the next batch number
         $nextBatch = DB::table('migrations')->max('batch') + 1;
-        
+
         $fixed = [];
         $skipped = [];
 
@@ -54,14 +54,14 @@ class FixMigrationState extends Command
                 $exists = DB::table('migrations')
                     ->where('migration', $migrationName)
                     ->exists();
-                
-                if (!$exists) {
+
+                if (! $exists) {
                     // Mark migration as completed
                     DB::table('migrations')->insert([
                         'migration' => $migrationName,
-                        'batch' => $nextBatch
+                        'batch' => $nextBatch,
                     ]);
-                    
+
                     $this->info("✓ Marked '{$migrationName}' as completed for existing table '{$tableName}'");
                     $fixed[] = $migrationName;
                 } else {
@@ -75,20 +75,21 @@ class FixMigrationState extends Command
         }
 
         if (count($fixed) > 0) {
-            $this->info("\nFixed " . count($fixed) . " migration(s):");
+            $this->info("\nFixed ".count($fixed).' migration(s):');
             foreach ($fixed as $migration) {
                 $this->line("  - {$migration}");
             }
         }
 
         if (count($skipped) > 0) {
-            $this->comment("\nSkipped " . count($skipped) . " migration(s) (already recorded or table doesn't exist):");
+            $this->comment("\nSkipped ".count($skipped)." migration(s) (already recorded or table doesn't exist):");
             foreach ($skipped as $migration) {
                 $this->line("  - {$migration}");
             }
         }
 
         $this->info("\nMigration state fix completed!");
+
         return 0;
     }
 }

@@ -29,9 +29,10 @@ class EmailVerificationNotificationController extends Controller
     {
         $user = User::whereId(Auth::id())->first();
         VerifyEmail::dispatch($user);
+
         return response()->json([
-            "status" => true,
-            "message" => "Verification link sent on your registred email address."
+            'status' => true,
+            'message' => 'Verification link sent on your registred email address.',
         ]);
     }
 }

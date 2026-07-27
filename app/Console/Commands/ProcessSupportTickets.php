@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 class ProcessSupportTickets extends Command
 {
     protected $signature = 'app:process-support-tickets';
+
     protected $description = 'Send reminders and escalate support tickets when creator does not respond within SLA';
 
     public function handle()
@@ -34,7 +35,7 @@ class ProcessSupportTickets extends Command
 
         foreach ($tickets as $ticket) {
             $creator = User::find($ticket->creator_id);
-            if (!$creator || !$creator->email) {
+            if (! $creator || ! $creator->email) {
                 continue;
             }
 
@@ -43,7 +44,7 @@ class ProcessSupportTickets extends Command
                 continue;
             }
 
-            if ($hoursLeft <= 24 && !$ticket->reminder_24h_sent_at) {
+            if ($hoursLeft <= 24 && ! $ticket->reminder_24h_sent_at) {
                 $adminRecipients = config('support.ticket_admin_recipients', []);
 
                 Mail::to($creator->email)
@@ -51,10 +52,11 @@ class ProcessSupportTickets extends Command
                     ->send(new SupportTicketReminderMail($ticket, $hoursLeft));
                 $ticket->reminder_24h_sent_at = now();
                 $ticket->save();
+
                 continue;
             }
 
-            if ($hoursLeft <= 6 && !$ticket->reminder_6h_sent_at) {
+            if ($hoursLeft <= 6 && ! $ticket->reminder_6h_sent_at) {
                 $adminRecipients = config('support.ticket_admin_recipients', []);
 
                 Mail::to($creator->email)

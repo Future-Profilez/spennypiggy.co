@@ -11,7 +11,6 @@ class StripeWebhookStatus extends Model
 
     public $table = 'stripe_webhook_status';
 
-
     protected $fillable = [
         'data',
         'event_id',
@@ -20,7 +19,7 @@ class StripeWebhookStatus extends Model
         'processed_at',
         'last_error',
         'subscription_id',
-        'invoice_type'
+        'invoice_type',
     ];
 
     protected $casts = [

@@ -2,16 +2,17 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\User;
 use App\Models\Task;
 use App\Models\TaskPurchase;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class SetupGracePeriodTest extends Command
 {
     protected $signature = 'app:setup-grace-period-test {email? : The email of the user to assign tasks to}';
+
     protected $description = 'Creates test data for verifying the Grace Period workflow';
 
     public function handle()
@@ -19,8 +20,9 @@ class SetupGracePeriodTest extends Command
         $email = $this->argument('email');
         $user = $email ? User::where('email', $email)->first() : User::first();
 
-        if (!$user) {
-            $this->error("User not found. Please provide a valid email of an existing user.");
+        if (! $user) {
+            $this->error('User not found. Please provide a valid email of an existing user.');
+
             return;
         }
 
@@ -38,7 +40,7 @@ class SetupGracePeriodTest extends Command
                 'description' => 'A test task for grace period.',
                 'status' => 'active',
                 'uuid' => Str::uuid(),
-                'deliverable_note' => 'Test note'
+                'deliverable_note' => 'Test note',
             ]
         );
 
@@ -48,11 +50,11 @@ class SetupGracePeriodTest extends Command
         // Deadline passed 30 mins ago, status is 'paid'
         // SLA is 24h. So created_at should be 24.5h ago.
         $this->createPurchase(
-            $task, 
-            $user, 
-            'paid', 
-            Carbon::now()->subHours(24)->subMinutes(30), 
-            null, 
+            $task,
+            $user,
+            'paid',
+            Carbon::now()->subHours(24)->subMinutes(30),
+            null,
             'Case 1: Should enter Grace Period (become running_late)'
         );
 
@@ -60,11 +62,11 @@ class SetupGracePeriodTest extends Command
         // Deadline passed 90 mins ago (> 1h grace period)
         $deadline2 = Carbon::now()->subHours(1)->subMinutes(30);
         $this->createPurchase(
-            $task, 
-            $user, 
-            'running_late', 
-            $deadline2->copy()->subHours(24), 
-            $deadline2, 
+            $task,
+            $user,
+            'running_late',
+            $deadline2->copy()->subHours(24),
+            $deadline2,
             'Case 2: Should Expire and Attempt Refund (Deadline passed 90 mins ago)'
         );
 
@@ -72,7 +74,7 @@ class SetupGracePeriodTest extends Command
 
         $this->info("\nTest data created successfully!");
         $this->info("Run 'php artisan app:process-sla-refunds' to see the effects.");
-        $this->info("Note: Case 2 (Refund) will show an error in logs if Stripe keys/IDs are fake, which is expected in local dev.");
+        $this->info('Note: Case 2 (Refund) will show an error in logs if Stripe keys/IDs are fake, which is expected in local dev.');
     }
 
     private function createPurchase($task, $user, $status, $createdAt, $lastReminderAt, $description)
@@ -92,8 +94,8 @@ class SetupGracePeriodTest extends Command
             'created_at' => $createdAt,
             'updated_at' => Carbon::now(),
             'last_reminder_at' => $lastReminderAt,
-            'stripe_session_id' => 'test_sess_' . $uuid,
-            'payment_intent_id' => 'pi_test_' . $uuid,
+            'stripe_session_id' => 'test_sess_'.$uuid,
+            'payment_intent_id' => 'pi_test_'.$uuid,
         ]);
 
         $this->line("Created Purchase [{$purchase->uuid}]");

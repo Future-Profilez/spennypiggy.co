@@ -146,6 +146,11 @@ $displayAmount = $supporterPaid > 0 ? $supporterPaid : $creatorAmount;
                 </td>
             </tr>
             @endif
+
+            {{-- The unified reward: adds a message/link deliverable the block
+                 above does not cover, plus the reward headline. --}}
+            @include('email.reward-block', ['rewardItem' => $task])
+
             <tr>
                 <td style="padding: 0 0 22px 0; font-family:'Outfit',Arial,sans-serif; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     @php

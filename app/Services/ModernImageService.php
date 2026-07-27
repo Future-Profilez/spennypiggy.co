@@ -2,21 +2,22 @@
 
 namespace App\Services;
 
-use Spatie\Image\Image;
-use Spatie\Image\Enums\ImageDriver;
-use Spatie\Image\Exceptions\InvalidImage;
-use Illuminate\Support\Facades\Storage;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Exception;
+use Spatie\Image\Enums\ImageDriver;
+use Spatie\Image\Enums\ImageFormat;
+use Spatie\Image\Exceptions\InvalidImage;
+use Spatie\Image\Image;
 
 class ModernImageService
 {
     protected array $supportedFormats = ['jpeg', 'jpg', 'png', 'gif', 'webp', 'avif'];
+
     protected array $responsiveSizes = [320, 640, 768, 1024, 1280, 1920];
+
     protected int $compressionQuality = 85;
-    
+
     public function __construct()
     {
         // Configure Image driver based on availability
@@ -40,11 +41,11 @@ class ModernImageService
         $quality = $options['quality'] ?? $this->compressionQuality;
         $generateResponsive = $options['responsive'] ?? true;
         $formats = $options['formats'] ?? ['webp', 'avif'];
-        
+
         $results = [
             'original' => $imagePath,
             'formats' => [],
-            'responsive' => []
+            'responsive' => [],
         ];
 
         try {
@@ -56,27 +57,27 @@ class ModernImageService
             // Generate modern formats
             foreach ($formats as $format) {
                 try {
-                    $formatPath = $directory . '/' . $baseName . '.' . $format;
-                    
+                    $formatPath = $directory.'/'.$baseName.'.'.$format;
+
                     $formatImage = clone $image;
                     $formatImage->quality($quality);
-                    
+
                     if ($format === 'webp') {
-                        $formatImage->format(\Spatie\Image\Enums\ImageFormat::Webp);
+                        $formatImage->format(ImageFormat::Webp);
                     } elseif ($format === 'avif') {
-                        $formatImage->format(\Spatie\Image\Enums\ImageFormat::Avif);
+                        $formatImage->format(ImageFormat::Avif);
                     }
-                    
+
                     $formatImage->save($formatPath);
                     $results['formats'][$format] = $formatPath;
-                    
+
                     // Generate responsive sizes for each format
                     if ($generateResponsive) {
                         $results['responsive'][$format] = $this->generateResponsiveSizes($formatPath, $quality);
                     }
-                    
+
                 } catch (Exception $e) {
-                    \Log::warning("Failed to generate {$format} format: " . $e->getMessage());
+                    \Log::warning("Failed to generate {$format} format: ".$e->getMessage());
                 }
             }
 
@@ -86,7 +87,7 @@ class ModernImageService
             }
 
         } catch (InvalidImage $e) {
-            \Log::error('Invalid image provided: ' . $e->getMessage());
+            \Log::error('Invalid image provided: '.$e->getMessage());
             throw $e;
         }
 
@@ -96,7 +97,7 @@ class ModernImageService
     /**
      * Generate responsive image sizes
      */
-    public function generateResponsiveSizes(string $imagePath, int $quality = null): array
+    public function generateResponsiveSizes(string $imagePath, ?int $quality = null): array
     {
         $quality = $quality ?? $this->compressionQuality;
         $responsiveImages = [];
@@ -115,22 +116,22 @@ class ModernImageService
                     continue;
                 }
 
-                $responsivePath = $directory . '/' . $baseName . '-' . $size . 'w.' . $extension;
-                
+                $responsivePath = $directory.'/'.$baseName.'-'.$size.'w.'.$extension;
+
                 try {
                     $responsiveImage = clone $image;
                     $responsiveImage->width($size)
-                                  ->quality($quality)
-                                  ->save($responsivePath);
-                                  
+                        ->quality($quality)
+                        ->save($responsivePath);
+
                     $responsiveImages[$size] = $responsivePath;
                 } catch (Exception $e) {
-                    \Log::warning("Failed to generate {$size}w size: " . $e->getMessage());
+                    \Log::warning("Failed to generate {$size}w size: ".$e->getMessage());
                 }
             }
 
         } catch (InvalidImage $e) {
-            \Log::error('Invalid image for responsive generation: ' . $e->getMessage());
+            \Log::error('Invalid image for responsive generation: '.$e->getMessage());
         }
 
         return $responsiveImages;
@@ -142,10 +143,10 @@ class ModernImageService
     public function generateSrcSet(array $responsiveImages, string $baseUrl = ''): string
     {
         $srcsetParts = [];
-        
+
         foreach ($responsiveImages as $width => $path) {
-            $url = $baseUrl ? $baseUrl . '/' . basename($path) : $path;
-            $srcsetParts[] = $url . ' ' . $width . 'w';
+            $url = $baseUrl ? $baseUrl.'/'.basename($path) : $path;
+            $srcsetParts[] = $url.' '.$width.'w';
         }
 
         return implode(', ', $srcsetParts);
@@ -154,7 +155,7 @@ class ModernImageService
     /**
      * Generate sizes attribute for responsive images
      */
-    public function generateSizesAttribute(array $breakpoints = null): string
+    public function generateSizesAttribute(?array $breakpoints = null): string
     {
         $defaultBreakpoints = [
             '(max-width: 320px)' => '300px',
@@ -168,9 +169,9 @@ class ModernImageService
         $sizesParts = [];
 
         foreach ($breakpoints as $mediaQuery => $size) {
-            $sizesParts[] = $mediaQuery . ' ' . $size;
+            $sizesParts[] = $mediaQuery.' '.$size;
         }
-        
+
         // Add default size
         $sizesParts[] = '100vw';
 
@@ -184,7 +185,7 @@ class ModernImageService
     {
         // Optimize original image
         $this->optimizeImage($imagePath, $options['quality'] ?? $this->compressionQuality);
-        
+
         // Generate modern formats and responsive sizes
         return $this->generateModernFormats($imagePath, $options);
     }
@@ -192,17 +193,17 @@ class ModernImageService
     /**
      * Optimize single image
      */
-    public function optimizeImage(string $imagePath, int $quality = null): void
+    public function optimizeImage(string $imagePath, ?int $quality = null): void
     {
         $quality = $quality ?? $this->compressionQuality;
-        
+
         try {
             $image = Image::load($imagePath);
             $image->quality($quality)
-                  ->optimize()
-                  ->save();
+                ->optimize()
+                ->save();
         } catch (InvalidImage $e) {
-            \Log::error('Failed to optimize image: ' . $e->getMessage());
+            \Log::error('Failed to optimize image: '.$e->getMessage());
             throw $e;
         }
     }
@@ -214,7 +215,7 @@ class ModernImageService
     {
         $support = [
             'webp' => false,
-            'avif' => false
+            'avif' => false,
         ];
 
         // Check for WebP support
@@ -240,16 +241,16 @@ class ModernImageService
     public function getOptimalFormat(string $userAgent, array $availableFormats): string
     {
         $support = $this->getBrowserSupport($userAgent);
-        
+
         // Prefer AVIF over WebP over original
         if (in_array('avif', $availableFormats) && $support['avif']) {
             return 'avif';
         }
-        
+
         if (in_array('webp', $availableFormats) && $support['webp']) {
             return 'webp';
         }
-        
+
         // Return original format as fallback
         return 'original';
     }
@@ -264,48 +265,48 @@ class ModernImageService
         $decoding = $attributes['decoding'] ?? 'async';
         $class = $attributes['class'] ?? '';
         $sizes = $attributes['sizes'] ?? $this->generateSizesAttribute();
-        
+
         $html = '<picture>';
-        
+
         // Add AVIF source if available
         if (isset($imageData['responsive']['avif'])) {
             $avifSrcset = $this->generateSrcSet($imageData['responsive']['avif']);
-            $html .= '<source srcset="' . htmlspecialchars($avifSrcset) . '" sizes="' . htmlspecialchars($sizes) . '" type="image/avif">';
+            $html .= '<source srcset="'.htmlspecialchars($avifSrcset).'" sizes="'.htmlspecialchars($sizes).'" type="image/avif">';
         }
-        
+
         // Add WebP source if available
         if (isset($imageData['responsive']['webp'])) {
             $webpSrcset = $this->generateSrcSet($imageData['responsive']['webp']);
-            $html .= '<source srcset="' . htmlspecialchars($webpSrcset) . '" sizes="' . htmlspecialchars($sizes) . '" type="image/webp">';
+            $html .= '<source srcset="'.htmlspecialchars($webpSrcset).'" sizes="'.htmlspecialchars($sizes).'" type="image/webp">';
         }
-        
+
         // Add original format as fallback
         $originalSrcset = '';
         $originalSrc = $imageData['original'];
-        
+
         if (isset($imageData['responsive']['original'])) {
             $originalSrcset = $this->generateSrcSet($imageData['responsive']['original']);
         }
-        
+
         $imgAttributes = [
-            'src="' . htmlspecialchars($originalSrc) . '"',
-            'alt="' . htmlspecialchars($alt) . '"',
-            'loading="' . htmlspecialchars($loading) . '"',
-            'decoding="' . htmlspecialchars($decoding) . '"'
+            'src="'.htmlspecialchars($originalSrc).'"',
+            'alt="'.htmlspecialchars($alt).'"',
+            'loading="'.htmlspecialchars($loading).'"',
+            'decoding="'.htmlspecialchars($decoding).'"',
         ];
-        
+
         if ($originalSrcset) {
-            $imgAttributes[] = 'srcset="' . htmlspecialchars($originalSrcset) . '"';
-            $imgAttributes[] = 'sizes="' . htmlspecialchars($sizes) . '"';
+            $imgAttributes[] = 'srcset="'.htmlspecialchars($originalSrcset).'"';
+            $imgAttributes[] = 'sizes="'.htmlspecialchars($sizes).'"';
         }
-        
+
         if ($class) {
-            $imgAttributes[] = 'class="' . htmlspecialchars($class) . '"';
+            $imgAttributes[] = 'class="'.htmlspecialchars($class).'"';
         }
-        
-        $html .= '<img ' . implode(' ', $imgAttributes) . '>';
+
+        $html .= '<img '.implode(' ', $imgAttributes).'>';
         $html .= '</picture>';
-        
+
         return $html;
     }
 
@@ -332,6 +333,7 @@ class ModernImageService
         if (preg_match('/Chrome\/(\d+)/', $userAgent, $matches)) {
             return (int) $matches[1];
         }
+
         return 0;
     }
 
@@ -340,6 +342,7 @@ class ModernImageService
         if (preg_match('/Firefox\/(\d+)/', $userAgent, $matches)) {
             return (int) $matches[1];
         }
+
         return 0;
     }
 }

@@ -16,7 +16,7 @@ return new class extends Migration
         }
 
         Schema::table('founder_bonuses', function (Blueprint $table) {
-            if (!Schema::hasColumn('founder_bonuses', 'payout_rejection_reason')) {
+            if (! Schema::hasColumn('founder_bonuses', 'payout_rejection_reason')) {
                 $table->text('payout_rejection_reason')->nullable()->after('payout_status');
             }
         });

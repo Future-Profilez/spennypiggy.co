@@ -22,28 +22,28 @@ return new class extends Migration
             $table->string('session_id')->nullable()->index(); // Stripe checkout.session.id
             $table->enum('deliverable_type', [
                 'digital_file',
-                'pdf_receipt', 
+                'pdf_receipt',
                 'badge',
                 'cert',
                 'access',
                 'post',
                 'media_bundle',
-                'email'
+                'email',
             ]);
             $table->text('deliverable_url')->nullable(); // File URL / S3 link / generated PDF path
             $table->json('metadata')->nullable(); // Copy of Stripe metadata payload
             $table->enum('status', [
-                'pending', 
-                'delivered', 
-                'failed'
+                'pending',
+                'delivered',
+                'failed',
             ])->default('pending')->index();
             $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
-            
+
             // Foreign key constraints
             $table->foreign('gifter_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('creator_id')->references('id')->on('users')->onDelete('cascade');
-            
+
             // Composite indexes for common queries
             $table->index(['creator_id', 'status']);
             $table->index(['gifter_id', 'status']);

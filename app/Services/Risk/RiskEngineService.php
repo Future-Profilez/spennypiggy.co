@@ -6,13 +6,16 @@ use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
 use App\Models\RiskSetting;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class RiskEngineService
 {
     protected $identityService;
+
     protected $rollupService;
+
     protected $limitsService;
 
     public function __construct(
@@ -27,8 +30,8 @@ class RiskEngineService
 
     /**
      * Evaluate risk for a payment attempt.
-     * 
-     * @param array $context [email, ip, device_id, card_fingerprint, amount, currency, creator_id]
+     *
+     * @param  array  $context  [email, ip, device_id, card_fingerprint, amount, currency, creator_id]
      * @return array [decision, reason_codes, limits, ui]
      */
     public function evaluate(array $context): array
@@ -36,11 +39,12 @@ class RiskEngineService
         // --- KILL SWITCH CHECK ---
         // If RISK_ENGINE_ENABLED is false in .env, bypass all checks and ALLOW.
         if (config('services.risk_engine.enabled', true) === false) {
-            Log::info("Risk Engine Bypassed (Kill Switch Active)");
+            Log::info('Risk Engine Bypassed (Kill Switch Active)');
+
             return $this->formatResponse(
                 'ALLOW',
                 ['RISK_ENGINE_DISABLED'],
-                $this->limitsService->getEffectiveLimits(new RiskIdentity()), // Default limits
+                $this->limitsService->getEffectiveLimits(new RiskIdentity), // Default limits
                 []
             );
         }
@@ -59,6 +63,7 @@ class RiskEngineService
                 'body' => 'This payment cannot be processed. Please contact support.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $this->limitsService->getEffectiveLimits($identity), $ui);
         }
 
@@ -89,15 +94,16 @@ class RiskEngineService
             $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => 'You are paying too fast. Please wait ' . $minutesLeft . ' minute' . ($minutesLeft > 1 ? 's' : '') . ' and try again.',
+                'body' => 'You are paying too fast. Please wait '.$minutesLeft.' minute'.($minutesLeft > 1 ? 's' : '').' and try again.',
             ];
 
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
         // --- RULE 1: GUEST BLOCK (THROTTLE/FREEZE) ---
-        if (!$limits['guest_allowed'] && $identity->is_guest) {
+        if (! $limits['guest_allowed'] && $identity->is_guest) {
             $decision = 'BLOCK';
             $reasons[] = 'GUEST_BLOCKED_IN_STATE';
             $ui = [
@@ -106,6 +112,7 @@ class RiskEngineService
                 'body' => 'Guest payments are temporarily disabled. Please log in.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -120,6 +127,7 @@ class RiskEngineService
                 'body' => 'You have reached your hourly spending limit. Please try again later.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -133,6 +141,7 @@ class RiskEngineService
                 'body' => 'You have reached your daily spending limit. Please try again tomorrow.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -146,12 +155,13 @@ class RiskEngineService
                 'body' => 'You have reached your weekly spending limit.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
         // --- RULE 3: SINGLE TRANSACTION LIMIT (> threshold -> STEP_UP) ---
-        $singleTxStepUpAmount = (int)($limits['step_up_threshold'] ?? ($supporterRules['single_tx_step_up_amount'] ?? 20000));
-        $singleTxReviewHoldAmount = (int)($limits['review_hold_threshold'] ?? 0);
+        $singleTxStepUpAmount = (int) ($limits['step_up_threshold'] ?? ($supporterRules['single_tx_step_up_amount'] ?? 20000));
+        $singleTxReviewHoldAmount = (int) ($limits['review_hold_threshold'] ?? 0);
 
         if ($singleTxStepUpAmount > 0 && $amountGbp > $singleTxStepUpAmount) {
             if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
@@ -176,17 +186,17 @@ class RiskEngineService
         }
 
         // --- RULE 4: NEW CREATOR ACCOUNT PROTECTION (< age_days -> daily cap) ---
-        $newCreatorAgeDays = (int)($creatorRules['new_creator_age_days'] ?? 30);
-        $newCreatorDailyCap = (int)($creatorRules['new_creator_daily_cap'] ?? 50000);
-        Log::info("Evaluating new creator protection", [
+        $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
+        $newCreatorDailyCap = (int) ($creatorRules['new_creator_daily_cap'] ?? 50000);
+        Log::info('Evaluating new creator protection', [
             'creator_id' => $creatorId,
             'new_creator_age_days' => $newCreatorAgeDays,
             'new_creator_daily_cap' => $newCreatorDailyCap,
         ]);
         if ($creatorId) {
-            $creator = \App\Models\User::where('uuid', $creatorId)->first();
-            Log::info("Creator info", [
-                'creator_exists' => (bool)$creator,
+            $creator = User::where('uuid', $creatorId)->first();
+            Log::info('Creator info', [
+                'creator_exists' => (bool) $creator,
                 'creator_created_at' => $creator ? $creator->created_at : null,
             ]);
             // "New creator" is measured from Stripe connection (when earnings start), not account creation.
@@ -199,7 +209,7 @@ class RiskEngineService
                     ->whereIn('status', ['succeeded', 'step_up', 'review_hold'])
                     ->sum('amount');
 
-                Log::info("Creator daily volume", [
+                Log::info('Creator daily volume', [
                     'creator_id' => $creatorId,
                     'daily_volume_gbp' => $dailyVolume,
                     'attempt_amount_gbp' => $amountGbp,
@@ -213,14 +223,15 @@ class RiskEngineService
                         'body' => 'This creator has reached their daily processing limit. Please try again tomorrow.',
                     ];
                     $this->logDecision($identity, $context, $decision, $reasons);
+
                     return $this->formatResponse($decision, $reasons, $limits, $ui);
                 }
             }
         }
 
         // --- RULE 6/7: VELOCITY (counts are computed on a 10m window in rollups) ---
-        $velocityStepUpCount = (int)($supporterRules['velocity_step_up_count'] ?? 3);
-        $velocityCooldownCount = (int)($supporterRules['velocity_cooldown_count'] ?? 5);
+        $velocityStepUpCount = (int) ($supporterRules['velocity_step_up_count'] ?? 3);
+        $velocityCooldownCount = (int) ($supporterRules['velocity_cooldown_count'] ?? 5);
 
         if ($velocityCooldownCount > 0 && $rollup->payment_count_10m >= $velocityCooldownCount) {
             $decision = 'COOLDOWN';
@@ -229,13 +240,14 @@ class RiskEngineService
             $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => $minutes > 0 ? 'You are paying too fast. Please wait ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ' and try again.' : 'You are paying too fast. Please try again in a moment.',
+                'body' => $minutes > 0 ? 'You are paying too fast. Please wait '.$minutes.' minute'.($minutes > 1 ? 's' : '').' and try again.' : 'You are paying too fast. Please try again in a moment.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
             // Trigger cooldown on identity
             if ($minutes > 0) {
                 $identity->update(['cooldown_until' => Carbon::now()->addMinutes($minutes)]);
             }
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -268,10 +280,11 @@ class RiskEngineService
             $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => $minutes > 0 ? 'You are paying too fast. Please wait ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '') . '.' : 'You are paying too fast. Please try again in a moment.',
+                'body' => $minutes > 0 ? 'You are paying too fast. Please wait '.$minutes.' minute'.($minutes > 1 ? 's' : '').'.' : 'You are paying too fast. Please try again in a moment.',
             ];
 
             $this->logDecision($identity, $context, $decision, $reasons);
+
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -288,17 +301,18 @@ class RiskEngineService
                 $ui = [
                     'key' => 'NEW_CREATOR_LIMIT',
                     'title' => 'Limit Reached',
-                    'body' => 'You can support ' . $limits['max_new_creators_24h'] . ' new creator per day for safety.',
+                    'body' => 'You can support '.$limits['max_new_creators_24h'].' new creator per day for safety.',
                 ];
                 $this->logDecision($identity, $context, $decision, $reasons);
+
                 return $this->formatResponse($decision, $reasons, $limits, $ui);
             }
         }
 
         // --- RULE 10: CROSS-CREATOR HOPPING -> RESTRICT NEW ---
-        $spend48hRestrictAmount = (int)($crossCreatorRules['spend_48h_restrict_amount'] ?? 500000);
-        $creatorsPaid48hMin = (int)($crossCreatorRules['creators_paid_48h_min'] ?? 2);
-        $restrictDurationHours = (int)($crossCreatorRules['restrict_duration_hours'] ?? 24);
+        $spend48hRestrictAmount = (int) ($crossCreatorRules['spend_48h_restrict_amount'] ?? 500000);
+        $creatorsPaid48hMin = (int) ($crossCreatorRules['creators_paid_48h_min'] ?? 2);
+        $restrictDurationHours = (int) ($crossCreatorRules['restrict_duration_hours'] ?? 24);
 
         if (
             $spend48hRestrictAmount > 0 &&
@@ -307,7 +321,7 @@ class RiskEngineService
             $rollup->creators_paid_48h >= $creatorsPaid48hMin
         ) {
             // Trigger restriction if not already set
-            if (!$identity->new_creator_restrict_until || Carbon::now()->greaterThan($identity->new_creator_restrict_until)) {
+            if (! $identity->new_creator_restrict_until || Carbon::now()->greaterThan($identity->new_creator_restrict_until)) {
                 $identity->update(['new_creator_restrict_until' => Carbon::now()->addHours(max(1, $restrictDurationHours))]);
                 // Log trigger
                 AuditLog::create([
@@ -330,14 +344,15 @@ class RiskEngineService
                     'body' => 'New creator payments are temporarily limited. You can still pay creators you already supported.',
                 ];
                 $this->logDecision($identity, $context, $decision, $reasons);
+
                 return $this->formatResponse($decision, $reasons, $limits, $ui);
             }
         }
 
         // --- RULE 8: HIGH VELOCITY SPEND (2H window) ---
-        $spend2hStepUpAmount = (int)($highVelocityRules['spend_2h_step_up_amount'] ?? 750000);
-        $spend2hReviewHoldAmount = (int)($highVelocityRules['spend_2h_review_hold_amount'] ?? 1500000);
-        $force3dsOnHighVelocity = (bool)($highVelocityRules['force_3ds_on_high_velocity'] ?? true);
+        $spend2hStepUpAmount = (int) ($highVelocityRules['spend_2h_step_up_amount'] ?? 750000);
+        $spend2hReviewHoldAmount = (int) ($highVelocityRules['spend_2h_review_hold_amount'] ?? 1500000);
+        $force3dsOnHighVelocity = (bool) ($highVelocityRules['force_3ds_on_high_velocity'] ?? true);
 
         if ($spend2hStepUpAmount > 0 && $rollup->spend_2h >= $spend2hStepUpAmount) {
             // Force 3DS + STEP UP
@@ -374,7 +389,7 @@ class RiskEngineService
         // Check if any *succeeded* payment exists for this creator prior to today?
         // Or just ever.
         // "New" usually means "never paid before".
-        return !Payment::where('risk_identity_id', $identity->id)
+        return ! Payment::where('risk_identity_id', $identity->id)
             ->where('creator_id', $creatorId)
             ->whereIn('status', ['succeeded', 'review_hold'])
             ->exists();
@@ -391,7 +406,7 @@ class RiskEngineService
                 'reasons' => $reasons,
                 'amount' => $context['amount'] ?? 0,
                 'creator_id' => $context['creator_id'] ?? null,
-            ]
+            ],
         ]);
     }
 

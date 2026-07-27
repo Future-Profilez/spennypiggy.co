@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\CreatorSubscriptionService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CreatorSubscriptionController extends Controller
@@ -23,20 +23,21 @@ class CreatorSubscriptionController extends Controller
     public function getSubscriptionStatus(): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Only creators can check subscription status
         if ($user->role !== 1) {
             return response()->json([
                 'eligible' => true,
                 'status' => 'not_creator',
-                'message' => 'Subscription validation only applies to creators'
+                'message' => 'Subscription validation only applies to creators',
             ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-              ->header('Pragma', 'no-cache')
-              ->header('Expires', '0');
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
         }
 
         try {
             $status = $this->subscriptionService->getSubscriptionStatus($user);
+
             return response()->json($status)
                 ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
                 ->header('Pragma', 'no-cache')
@@ -45,10 +46,10 @@ class CreatorSubscriptionController extends Controller
             return response()->json([
                 'eligible' => true,
                 'status' => 'error',
-                'message' => 'Unable to check subscription status at this time'
+                'message' => 'Unable to check subscription status at this time',
             ], 500)->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-              ->header('Pragma', 'no-cache')
-              ->header('Expires', '0');
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
         }
     }
 
@@ -58,7 +59,7 @@ class CreatorSubscriptionController extends Controller
     public function validatePaymentSubscription(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 1) {
             return response()->json(['eligible' => true]);
         }
@@ -73,8 +74,8 @@ class CreatorSubscriptionController extends Controller
 
         try {
             $validation = $this->subscriptionService->validatePaymentSubscription($user, $paymentData);
-            
-            if (!$validation['eligible']) {
+
+            if (! $validation['eligible']) {
                 return response()->json([
                     'success' => false,
                     'error' => 'subscription_required',
@@ -83,8 +84,8 @@ class CreatorSubscriptionController extends Controller
                         'blocked_reason' => $validation['status'],
                         'subscription_status' => $validation['subscription_status'] ?? 'unknown',
                         'action_required' => $validation['action_required'] ?? null,
-                        'suggestions' => $validation['suggestions'] ?? []
-                    ]
+                        'suggestions' => $validation['suggestions'] ?? [],
+                    ],
                 ], 402);
             }
 
@@ -101,11 +102,11 @@ class CreatorSubscriptionController extends Controller
     public function getDashboardInfo(): JsonResponse
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 1) {
             return response()->json([
                 'subscription_required' => false,
-                'message' => 'Only creators need subscriptions'
+                'message' => 'Only creators need subscriptions',
             ]);
         }
 
@@ -123,17 +124,17 @@ class CreatorSubscriptionController extends Controller
                     'stripe_id' => $subscription->stripe_id ?? null,
                     'created_at' => $subscription->created_at ?? null,
                 ],
-                'suggestions' => $status['suggestions'] ?? []
+                'suggestions' => $status['suggestions'] ?? [],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'subscription_status' => [
                     'eligible' => true,
                     'status' => 'error',
-                    'message' => 'Unable to load subscription information'
+                    'message' => 'Unable to load subscription information',
                 ],
                 'needs_warning' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -145,33 +146,34 @@ class CreatorSubscriptionController extends Controller
     {
         // Require admin access. Since 'role' 1 is creator, we must ensure only actual admins can access.
         // Assuming admin might be role 2, or this should be moved to admin portal.
-        if (!auth()->user() || (string) auth()->user()->role === '1') {
+        if (! auth()->user() || (string) auth()->user()->role === '1') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
-        
+
         try {
             $creators = $this->subscriptionService->getCreatorsNeedingSubscriptionWarnings();
-            
+
             $creatorsData = $creators->map(function ($creator) {
                 $status = $this->subscriptionService->getSubscriptionStatus($creator);
+
                 return [
                     'id' => $creator->id,
                     'username' => $creator->username,
                     'name' => $creator->name,
                     'email' => $creator->email,
                     'subscription_status' => $status,
-                    'created_at' => $creator->created_at
+                    'created_at' => $creator->created_at,
                 ];
             });
 
             return response()->json([
                 'creators' => $creatorsData,
-                'count' => $creatorsData->count()
+                'count' => $creatorsData->count(),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Unable to fetch creators needing warnings',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

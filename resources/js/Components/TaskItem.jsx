@@ -1,5 +1,6 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, usePage } from "@inertiajs/react";
+import RewardHint from "@/Pages/discover/components/RewardHint";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
@@ -82,6 +83,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
             <p className="text-sm text-gray-700 font-bold !mt-2 line-clamp-2">
                 {task.description}
             </p>
+            <RewardHint item={task} className="mt-2 max-w-full" />
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {task?.is_suspended == 1 && (
                     <div className="relative group/suspend cursor-help">

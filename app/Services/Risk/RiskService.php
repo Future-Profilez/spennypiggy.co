@@ -2,24 +2,26 @@
 
 namespace App\Services\Risk;
 
-use App\Models\CreatorMetric;
-use App\Models\Payment;
-use App\Models\Dispute;
-use App\Models\User;
-use App\Models\RiskSetting;
-use App\Models\TaskPurchase;
-use App\Models\MembershipPayment;
-use App\Models\BillPayment;
-use App\Models\ShopPayment;
-use App\Models\TipGoalsPayment;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use App\Helpers;
 use App\Mail\RiskLevelChanged;
+use App\Models\BillPayment;
+use App\Models\BlockedPayment;
+use App\Models\CreatorMetric;
+use App\Models\Dispute;
+use App\Models\MembershipPayment;
+use App\Models\Payment;
+use App\Models\RiskSetting;
+use App\Models\ShopPayment;
+use App\Models\TaskPurchase;
+use App\Models\TipGoalsPayment;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class RiskService
 {
     protected $identityService;
+
     protected $limitsService;
 
     public function __construct(RiskIdentityService $identityService, EffectiveLimitsService $limitsService)
@@ -32,17 +34,13 @@ class RiskService
      * Evaluate a transaction request against risk rules.
      * MUST be called BEFORE creating a PaymentIntent.
      *
-     * @param User $creator
-     * @param int $amount (in cents)
-     * @param string $ip
-     * @param string $userAgent
-     * @param string|null $email
-     * @param string|null $cardFingerprint
-     * @param string $paymentType (optional)
-     * @param array $metadata (optional)
+     * @param  int  $amount  (in cents)
+     * @param  string  $paymentType  (optional)
+     * @param  array  $metadata  (optional)
      * @return array ['decision' => 'ALLOW'|'STEP_UP'|'BLOCK'|'REVIEW', 'reason' => string, 'risk_identity_id' => string]
      */
-    public function evaluate(User $creator, int $amount, string $ip, string $userAgent, ?string $email = null, ?string $cardFingerprint = null, string $paymentType = 'unknown', array $metadata = []): array {
+    public function evaluate(User $creator, int $amount, string $ip, string $userAgent, ?string $email = null, ?string $cardFingerprint = null, string $paymentType = 'unknown', array $metadata = []): array
+    {
         $currency = strtoupper((string) ($metadata['currency'] ?? 'GBP'));
         $deviceId = (string) ($metadata['device_id'] ?? session()->getId());
         $context = [
@@ -62,7 +60,7 @@ class RiskService
         $identity = $this->identityService->resolveIdentity($context);
         if (in_array($decision, ['BLOCK', 'COOLDOWN', 'STEP_UP'], true)) {
             try {
-                \App\Models\BlockedPayment::logBlockedPayment([
+                BlockedPayment::logBlockedPayment([
                     'creator_id' => $creator->id,
                     'payer_id' => auth()->id(),
                     'amount' => $amount / 100,
@@ -77,9 +75,10 @@ class RiskService
                     'user_agent' => $userAgent,
                 ]);
             } catch (\Exception $e) {
-                Log::error("Failed to log blocked payment: " . $e->getMessage());
+                Log::error('Failed to log blocked payment: '.$e->getMessage());
             }
         }
+
         return [
             'decision' => $decision,
             'reason' => $reason,
@@ -88,24 +87,25 @@ class RiskService
         ];
     }
 
-
-
-    
     /**
      * Log a payment attempt and update risk counters.
      * MUST be called AFTER PaymentIntent creation/confirmation.
-     * 
-     * @param string $paymentId (UUID from our payments table)
-     * @param string $status (succeeded, failed, blocked, step_up)
+     *
+     * @param  string  $paymentId  (UUID from our payments table)
+     * @param  string  $status  (succeeded, failed, blocked, step_up)
      */
     public function logPayment(string $paymentId, string $status)
     {
         $payment = Payment::find($paymentId);
-        if (!$payment) return;
+        if (! $payment) {
+            return;
+        }
 
         $identity = $payment->riskIdentity;
-        if (!$identity) return;
-        
+        if (! $identity) {
+            return;
+        }
+
         $rollup = $identity->rollup;
 
         // Update Payment Status if changed
@@ -115,15 +115,15 @@ class RiskService
         }
 
         // Update Rollups
-        // We increment counters regardless of success? 
-        // Spec says: "Velocity checks count attempts (initiated)?" 
+        // We increment counters regardless of success?
+        // Spec says: "Velocity checks count attempts (initiated)?"
         // Usually, velocity counts attempts to stop brute force.
         // Spend counts successful amounts.
-        
+
         if ($status === 'initiated') {
             $rollup->increment('payment_count_10m');
         }
-        
+
         if (in_array($status, ['succeeded', 'step_up', 'review_hold'])) {
             $rollup->increment('spend_10m', $payment->amount);
             $rollup->increment('spend_1h', $payment->amount);
@@ -131,7 +131,7 @@ class RiskService
             $rollup->increment('spend_24h', $payment->amount);
             $rollup->increment('spend_48h', $payment->amount);
             $rollup->increment('spend_7d', $payment->amount);
-            
+
             // Check unique creators paid
             // This is expensive to calculate every time, maybe do it async or simple query
             // $creatorsPaid24h = Payment::where('risk_identity_id', $identity->id)...
@@ -143,7 +143,7 @@ class RiskService
      * Recalculate metrics for a creator based on last 30 days of activity.
      * Then evaluate risk rules.
      *
-     * @param User|string $creatorOrId
+     * @param  User|string  $creatorOrId
      * @return CreatorMetric
      */
     public function recalculateMetrics($creatorOrId)
@@ -163,12 +163,12 @@ class RiskService
 
         // 2. Find or Create Metric Record (UUID)
         $metric = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
-        
+
         // 3. Prepare Query Scopes
         $thirtyDaysAgo = now()->subDays(30);
         $creatorIds = [$creatorId];
         if ($user) {
-            $creatorIds[] = (string)$user->id;
+            $creatorIds[] = (string) $user->id;
         }
 
         // 4. Calculate Risk Engine Transactions (Check both UUID and ID)
@@ -181,31 +181,31 @@ class RiskService
         if ($user) {
             $taskCount = TaskPurchase::where('creator_id', $user->id)
                 ->where('created_at', '>=', $thirtyDaysAgo)->count();
-                
-            $membershipCount = MembershipPayment::whereHas('membership', function($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->where('created_at', '>=', $thirtyDaysAgo)->count();
-                
-            $billCount = BillPayment::whereHas('bill', function($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->where('created_at', '>=', $thirtyDaysAgo)->count();
-                
-            $shopCount = ShopPayment::whereHas('shop', function($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->where('created_at', '>=', $thirtyDaysAgo)->count();
-                
-            $tipCount = TipGoalsPayment::whereHas('tipGoal', function($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                })->where('created_at', '>=', $thirtyDaysAgo)->count();
-            
+
+            $membershipCount = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('created_at', '>=', $thirtyDaysAgo)->count();
+
+            $billCount = BillPayment::whereHas('bill', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('created_at', '>=', $thirtyDaysAgo)->count();
+
+            $shopCount = ShopPayment::whereHas('shop', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('created_at', '>=', $thirtyDaysAgo)->count();
+
+            $tipCount = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->where('created_at', '>=', $thirtyDaysAgo)->count();
+
             $legacyCount = $taskCount + $membershipCount + $billCount + $shopCount + $tipCount;
         }
 
         // 6. Merge Transaction Counts (Use MAX to ensure coverage)
         if ($txCount < 5) {
-             $txCount = max($txCount, $legacyCount); 
+            $txCount = max($txCount, $legacyCount);
         }
-        
+
         // 7. Calculate Disputes
         $disputeCount = Dispute::whereIn('creator_id', $creatorIds)
             ->where('created_at', '>=', $thirtyDaysAgo)
@@ -218,17 +218,17 @@ class RiskService
             ->count();
 
         if ($user) {
-             $legacyRefundCount = TaskPurchase::where('creator_id', $user->id)
+            $legacyRefundCount = TaskPurchase::where('creator_id', $user->id)
                 ->where('status', 'refunded')
                 ->where('created_at', '>=', $thirtyDaysAgo)
                 ->count();
-             $refundCount = max($refundCount, $legacyRefundCount);
+            $refundCount = max($refundCount, $legacyRefundCount);
         }
 
         // 9. Update Metric Stats
         $disputeRate = ($txCount > 0) ? ($disputeCount / $txCount) : 0;
         $refundRate = ($txCount > 0) ? ($refundCount / $txCount) : 0;
-        
+
         $metric->tx_30d = $txCount;
         $metric->disputes_30d = $disputeCount;
         $metric->refunds_30d = $refundCount;
@@ -241,9 +241,9 @@ class RiskService
 
         // 11. SYNC: If integer record exists (legacy), update it too
         if ($user && $user->id) {
-             $intMetric = CreatorMetric::where('creator_id', (string)$user->id)->first();
-             if ($intMetric && $intMetric->creator_id !== $metric->creator_id) {
-                 $intMetric->fill([
+            $intMetric = CreatorMetric::where('creator_id', (string) $user->id)->first();
+            if ($intMetric && $intMetric->creator_id !== $metric->creator_id) {
+                $intMetric->fill([
                     'tx_30d' => $metric->tx_30d,
                     'disputes_30d' => $metric->disputes_30d,
                     'refunds_30d' => $metric->refunds_30d,
@@ -252,20 +252,18 @@ class RiskService
                     'reserve_percent' => $metric->reserve_percent,
                     'payout_delay_days' => $metric->payout_delay_days,
                     'risk_level' => $metric->risk_level,
-                 ]);
-                 $intMetric->save();
-                 Log::info("Synced Integer Metric Record", ['id' => $user->id]);
-             }
+                ]);
+                $intMetric->save();
+                Log::info('Synced Integer Metric Record', ['id' => $user->id]);
+            }
         }
-        
+
         return $metric;
     }
 
     /**
      * Evaluate risk rules based on current metrics.
      * Updates risk_level, reserve_percent, payout_delay_days.
-     *
-     * @param CreatorMetric $metric
      */
     public function evaluateRisk(CreatorMetric $metric)
     {
@@ -275,38 +273,38 @@ class RiskService
         }
 
         $oldRiskLevel = $metric->risk_level;
-        
+
         // Fetch Settings (with defaults)
         $thresholds = RiskSetting::get('risk_thresholds');
-        if (!$thresholds) {
+        if (! $thresholds) {
             $thresholds = [
                 'high_dispute_rate' => 0.01,
                 'medium_dispute_rate' => 0.005,
                 'high_refund_rate' => 0.05,
-                'min_tx_count' => 1 // Lowered from 10 to ensure immediate risk profiling
+                'min_tx_count' => 1, // Lowered from 10 to ensure immediate risk profiling
             ];
         }
 
         $consequences = RiskSetting::get('risk_consequences');
-        if (!$consequences) {
+        if (! $consequences) {
             $consequences = [
                 'high_reserve_percent' => 25,
                 'high_payout_delay' => 14,
                 'medium_reserve_percent' => 10,
                 'medium_payout_delay' => 7,
                 'low_reserve_percent' => 0,
-                'low_payout_delay' => 7
+                'low_payout_delay' => 7,
             ];
         }
 
         $newRiskLevel = 'low';
         $newReservePercent = $consequences['low_reserve_percent'];
         $newPayoutDelay = $consequences['low_payout_delay'];
-        
+
         // --- RULE 0: New Creator Reserve (10% Floor) ---
         $creatorRules = RiskSetting::get('creator_rules', []);
-        $newCreatorAgeDays = (int)($creatorRules['new_creator_age_days'] ?? 30);
-        
+        $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
+
         $isNewCreator = false;
         if ($metric->creator) {
             // "New creator" is measured from Stripe connection (when earnings start), not account creation.
@@ -337,16 +335,16 @@ class RiskService
             $newReservePercent = $consequences['medium_reserve_percent'];
             $newPayoutDelay = $consequences['medium_payout_delay'];
         }
-        
+
         // Check if status changed
         if ($newRiskLevel !== $oldRiskLevel) {
             Log::info("Risk Level Changed for Creator {$metric->creator_id}: {$oldRiskLevel} -> {$newRiskLevel}");
-            
+
             $metric->risk_level = $newRiskLevel;
             $metric->reserve_percent = $newReservePercent;
             $metric->payout_delay_days = $newPayoutDelay;
             $metric->save();
-            
+
             // Notify Creator
             $this->notifyCreatorOfRiskChange($metric->creator_id, $newRiskLevel, $newReservePercent);
         } else {
@@ -356,7 +354,7 @@ class RiskService
             $metric->save();
         }
     }
-    
+
     /**
      * Notify the creator about the risk level change.
      */
@@ -364,23 +362,25 @@ class RiskService
     {
         try {
             $user = User::where('uuid', $creatorId)->first();
-            if (!$user) return;
-            
-            $title = "Account Status Update ⚠️";
-            $message = "";
-            
+            if (! $user) {
+                return;
+            }
+
+            $title = 'Account Status Update ⚠️';
+            $message = '';
+
             if ($level === 'high') {
                 $message = "Due to recent activity (high dispute rate), your account is now under High Risk monitoring. A {$reserve}% rolling reserve has been applied to new payments.";
             } elseif ($level === 'medium') {
                 $message = "Your account risk level has been updated to Medium. A {$reserve}% rolling reserve has been applied.";
             } else {
-                $title = "Account Status Update ✅";
-                $message = "Great news! Your account risk level has returned to Low. Standard payout schedules apply.";
+                $title = 'Account Status Update ✅';
+                $message = 'Great news! Your account risk level has returned to Low. Standard payout schedules apply.';
             }
-            
+
             // Send Push/In-App
             Helpers::sendNotification($title, $message, $user->email);
-            
+
             // Send Email
             try {
                 // We need to pass the metric to the Mailable.
@@ -393,11 +393,11 @@ class RiskService
                     Log::info("Risk Change Email sent to {$user->email}");
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to send Risk Change Email: " . $e->getMessage());
+                Log::error('Failed to send Risk Change Email: '.$e->getMessage());
             }
-            
+
         } catch (\Exception $e) {
-            Log::error("Failed to notify creator of risk change: " . $e->getMessage());
+            Log::error('Failed to notify creator of risk change: '.$e->getMessage());
         }
     }
 }

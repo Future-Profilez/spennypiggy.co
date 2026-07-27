@@ -4,17 +4,29 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Models\ConfirmationLog;
 use App\Models\Currency;
 use App\Models\Payment;
+use App\Models\RiskIdentity;
+use App\Models\User;
+use App\Services\Risk\EffectiveLimitsService;
+use App\Services\Risk\MoneyNormalizer;
+use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskEngineService;
+use App\Services\Risk\RiskIdentityService;
+use App\Services\Risk\RiskService;
 use App\Services\Risk\VerificationService;
 use App\StripeControl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Laragear\WebAuthn\Http\Requests\AssertedRequest;
+use Laragear\WebAuthn\Models\WebAuthnCredential;
 
 class RiskController extends Controller
 {
     protected $riskEngine;
+
     protected $verificationService;
 
     public function __construct(RiskEngineService $riskEngine, VerificationService $verificationService)
@@ -27,9 +39,9 @@ class RiskController extends Controller
      * POST /risk/step-up/verify
      * Verify OTP and proceed with payment intent creation if successful.
      */
-    public function verifyStepUpPasskey(\Laragear\WebAuthn\Http\Requests\AssertedRequest $request)
+    public function verifyStepUpPasskey(AssertedRequest $request)
     {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'amount' => 'required|integer',
             'creator_id' => 'required|string',
             'email' => 'nullable|email',
@@ -45,13 +57,13 @@ class RiskController extends Controller
 
         $user = $request->login();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Passkey verification failed. Device may not be registered.'], 400);
         }
 
         // Update credential last used
         $credentialId = $request->input('id');
-        $credential = \Laragear\WebAuthn\Models\WebAuthnCredential::where('credential_id', $credentialId)
+        $credential = WebAuthnCredential::where('credential_id', $credentialId)
             ->orWhere('id', $credentialId)->first();
 
         if ($credential) {
@@ -67,13 +79,13 @@ class RiskController extends Controller
         // 1. Resolve Identity
         if ($request->filled('risk_identity_id')) {
 
-            $identity = \App\Models\RiskIdentity::find(
+            $identity = RiskIdentity::find(
                 $request->risk_identity_id
             );
         } else {
 
             $identityService = app(
-                \App\Services\Risk\RiskIdentityService::class
+                RiskIdentityService::class
             );
 
             $identity = $identityService->resolveIdentity(
@@ -81,16 +93,16 @@ class RiskController extends Controller
             );
         }
 
-        if (!$identity) {
+        if (! $identity) {
 
             return response()->json([
                 'success' => false,
-                'error' => 'Verification session expired.'
+                'error' => 'Verification session expired.',
             ], 400);
         }
 
         // 2. Bypass OTP by creating a log
-        $log = \App\Models\ConfirmationLog::create([
+        $log = ConfirmationLog::create([
             'payment_id' => null,
             'risk_identity_id' => $identity->id,
             'ip_hash' => $identity->ip_hash,
@@ -123,12 +135,12 @@ class RiskController extends Controller
         // 1. Resolve Identity
         if ($request->filled('risk_identity_id')) {
             $riskIdentityId = $request->risk_identity_id;
-            $identity = \App\Models\RiskIdentity::find($riskIdentityId);
-            if (!$identity) {
+            $identity = RiskIdentity::find($riskIdentityId);
+            if (! $identity) {
                 return response()->json(['error' => 'Session expired. Please request a new verification code.'], 400);
             }
         } else {
-            $identityService = app(\App\Services\Risk\RiskIdentityService::class);
+            $identityService = app(RiskIdentityService::class);
             $identity = $identityService->resolveIdentity($context);
         }
 
@@ -139,7 +151,7 @@ class RiskController extends Controller
             $request->typed_confirmation
         );
 
-        if (!($otpResult['ok'] ?? false)) {
+        if (! ($otpResult['ok'] ?? false)) {
             return response()->json(['error' => $otpResult['error'] ?? 'OTP verification failed.'], 400);
         }
 
@@ -169,21 +181,21 @@ class RiskController extends Controller
 
                 $riskIdentityId = $request->risk_identity_id;
 
-                $identity = \App\Models\RiskIdentity::find(
+                $identity = RiskIdentity::find(
                     $riskIdentityId
                 );
 
-                if (!$identity) {
+                if (! $identity) {
 
                     return response()->json([
                         'success' => false,
-                        'error' => 'Session expired. Please request a new verification code.'
+                        'error' => 'Session expired. Please request a new verification code.',
                     ], 400);
                 }
             } else {
 
                 $identityService = app(
-                    \App\Services\Risk\RiskIdentityService::class
+                    RiskIdentityService::class
                 );
 
                 $identity = $identityService->resolveIdentity(
@@ -202,7 +214,7 @@ class RiskController extends Controller
                     ]
                 );
 
-            if (!$otpSent) {
+            if (! $otpSent) {
 
                 return response()->json([
                     'success' => false,
@@ -218,13 +230,13 @@ class RiskController extends Controller
         } catch (\Exception $e) {
 
             Log::error(
-                'Resend Step-Up OTP Error: ' .
+                'Resend Step-Up OTP Error: '.
                     $e->getMessage()
             );
 
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to resend OTP.'
+                'error' => 'Failed to resend OTP.',
             ], 500);
         }
     }
@@ -237,7 +249,7 @@ class RiskController extends Controller
 
         // Remove STEP_UP related reasons since we just verified it
         $reasons = array_filter($reasons, function ($reason) {
-            return !in_array($reason, ['HIGH_VALUE_TX', 'FORCE_3DS', 'ACCELERATION_3_IN_10M', 'HIGH_VALUE_VELOCITY_2H']);
+            return ! in_array($reason, ['HIGH_VALUE_TX', 'FORCE_3DS', 'ACCELERATION_3_IN_10M', 'HIGH_VALUE_VELOCITY_2H']);
         });
         $reasons[] = 'STEP_UP_VERIFIED';
         $reasons = array_values($reasons);
@@ -254,26 +266,26 @@ class RiskController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Step-Up verified successfully. Please proceed with checkout.'
+                'message' => 'Step-Up verified successfully. Please proceed with checkout.',
             ]);
         }
 
         // Create Payment Record (for Payment Intent flow)
-        $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        $amountGbp = app(MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
 
         // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
         // Webhook will backfill the exact net-based reserve once Stripe fees are known.
         $estimatedNetGbp = (int) round($amountGbp * 0.85);
 
-        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskService = app(RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
-        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $creator = User::where('uuid', $request->creator_id)->first();
         $reservePercent = $creator
-            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            ? app(ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
             : (int) ($metrics->reserve_percent ?? 0);
         $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
 
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $amountGbp,
@@ -287,8 +299,10 @@ class RiskController extends Controller
 
         // Call Stripe — funds stay on platform; weekly payout engine transfers net amounts
         try {
-            $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
-            if (!$creator) return response()->json(['error' => 'Creator not found'], 404);
+            $creator = User::where('uuid', $request->creator_id)->first();
+            if (! $creator) {
+                return response()->json(['error' => 'Creator not found'], 404);
+            }
 
             $stripePayload = [
                 'amount' => $request->amount,
@@ -318,8 +332,9 @@ class RiskController extends Controller
                 'decision' => $decision,
             ]);
         } catch (\Exception $e) {
-            Log::error("Stripe PI Creation Failed after Step-Up: " . $e->getMessage());
+            Log::error('Stripe PI Creation Failed after Step-Up: '.$e->getMessage());
             $payment->update(['status' => 'failed']);
+
             return response()->json(['error' => 'Payment processing failed'], 500);
         }
     }
@@ -334,15 +349,14 @@ class RiskController extends Controller
         // If guest, use IP/Fingerprint from request if provided, or default guest limits.
 
         $context = $this->buildContext($request);
-        $identityService = app(\App\Services\Risk\RiskIdentityService::class);
+        $identityService = app(RiskIdentityService::class);
         $identity = $identityService->resolveIdentity($context);
 
-        $limitsService = app(\App\Services\Risk\EffectiveLimitsService::class);
+        $limitsService = app(EffectiveLimitsService::class);
         $limits = $limitsService->getEffectiveLimits($identity);
 
         return response()->json($limits);
     }
-
 
     /**
      * POST /risk/evaluate
@@ -386,7 +400,7 @@ class RiskController extends Controller
         $divisor = ($currencyModel && ($currencyModel->ISOdigits ?? 2) == 0) ? 1 : 100;
         $amountMajor = ((float) $request->amount) / $divisor;
 
-        $guestRestriction = !$request->user() ? Helpers::guestCheckoutRestriction($currency, $amountMajor) : null;
+        $guestRestriction = ! $request->user() ? Helpers::guestCheckoutRestriction($currency, $amountMajor) : null;
         if ($guestRestriction) {
             return response()->json([
                 'error' => $guestRestriction['message'],
@@ -436,20 +450,20 @@ class RiskController extends Controller
         // We need identity ID to store in payments table.
         // I should update evaluate to return identity_id in metadata or separate field.
         // For now, I'll re-resolve (it's fast/idempotent).
-        $identityService = app(\App\Services\Risk\RiskIdentityService::class);
+        $identityService = app(RiskIdentityService::class);
         $identity = $identityService->resolveIdentity($context);
 
-        $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        $amountGbp = app(MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
 
         // Estimate Net Amount (approx 85% of gross to avoid over-calculating reserve before webhook sync)
         // Webhook will backfill the exact net-based reserve once Stripe fees are known.
         $estimatedNetGbp = (int) round($amountGbp * 0.85);
 
-        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskService = app(RiskService::class);
         $metrics = $riskService->recalculateMetrics((string) $request->creator_id);
-        $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
+        $creator = User::where('uuid', $request->creator_id)->first();
         $reservePercent = $creator
-            ? app(\App\Services\Risk\ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
+            ? app(ReservePolicy::class)->getEffectiveReservePercent($creator, $metrics, now())
             : (int) ($metrics->reserve_percent ?? 0);
         $reserveGbp = $reservePercent > 0 ? (int) round(($estimatedNetGbp * $reservePercent) / 100) : 0;
 
@@ -482,12 +496,12 @@ class RiskController extends Controller
 
             if ($force3ds) {
                 $stripePayload['payment_method_options'] = [
-                    'card' => ['request_three_d_secure' => 'any']
+                    'card' => ['request_three_d_secure' => 'any'],
                 ];
             }
 
-            $creator = \App\Models\User::where('uuid', $request->creator_id)->first();
-            if (!$creator) {
+            $creator = User::where('uuid', $request->creator_id)->first();
+            if (! $creator) {
                 return response()->json(['error' => 'Creator not found'], 404);
             }
 
@@ -505,8 +519,9 @@ class RiskController extends Controller
                 'decision' => $decision, // ALLOW or REVIEW_HOLD
             ]);
         } catch (\Exception $e) {
-            Log::error("Stripe PI Creation Failed: " . $e->getMessage());
+            Log::error('Stripe PI Creation Failed: '.$e->getMessage());
             $payment->update(['status' => 'failed']);
+
             return response()->json(['error' => 'Payment processing failed'], 500);
         }
     }
@@ -521,7 +536,7 @@ class RiskController extends Controller
             'ip' => $request->ip(),
             'device_id' => $request->device_id, // Header or body
             'card_fingerprint' => $request->card_fingerprint,
-            'is_guest' => !$request->user(),
+            'is_guest' => ! $request->user(),
         ];
     }
 }

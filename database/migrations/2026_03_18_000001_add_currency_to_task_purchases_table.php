@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('task_purchases', function (Blueprint $table) {
-            if (!Schema::hasColumn('task_purchases', 'currency')) {
+            if (! Schema::hasColumn('task_purchases', 'currency')) {
                 $table->string('currency', 3)->nullable()->after('amount');
             }
         });
@@ -24,4 +24,3 @@ return new class extends Migration
         });
     }
 };
-

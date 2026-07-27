@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('deliverables', function (Blueprint $table) {
             $table->boolean('is_deliverable')->default(true)->after('status')
-                  ->comment('Whether this item should be marked as deliverable in admin interface');
+                ->comment('Whether this item should be marked as deliverable in admin interface');
             $table->index('is_deliverable');
         });
     }

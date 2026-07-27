@@ -12,25 +12,25 @@ class AuthRedirect extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        "uuid",
-        "user_id",
-        "country",
-        "origin",
-        "target",
-        "ip_address",
-        "user_agent",
-        "query_string",
-        "used_at"
+        'uuid',
+        'user_id',
+        'country',
+        'origin',
+        'target',
+        'ip_address',
+        'user_agent',
+        'query_string',
+        'used_at',
     ];
 
     protected $casts = [
-        "user_at"   =>  "datetime"
+        'user_at' => 'datetime',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($a) => $a->uuid = Uuid::uuid4());
+        static::creating(fn ($a) => $a->uuid = Uuid::uuid4());
     }
 
     public function user()

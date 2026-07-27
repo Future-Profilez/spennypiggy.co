@@ -10,11 +10,13 @@ use Illuminate\Queue\SerializesModels;
 class SupportTicketCreatedMail extends Mailable
 {
     use Queueable, SerializesModels;
-    
+
     public $ticket;
+
     public $initialMessage;
 
-    public function __construct(SupportTicket $ticket, $initialMessage = null) {
+    public function __construct(SupportTicket $ticket, $initialMessage = null)
+    {
         $this->ticket = $ticket;
         $this->initialMessage = $initialMessage;
     }
@@ -25,4 +27,3 @@ class SupportTicketCreatedMail extends Mailable
             ->subject('New Support Request');
     }
 }
-

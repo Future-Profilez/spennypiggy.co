@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CheckFounderQualifications;
+use App\Jobs\ProcessFounderPayouts;
 use App\Models\FounderBonus;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,7 +18,7 @@ class FounderBonusController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+
         // Get current month's leaderboard data
         $leaderboard = FounderBonus::getCurrentMonthLeaderboard(50);
 
@@ -72,7 +75,7 @@ class FounderBonusController extends Controller
                     ] : null,
                 ];
             });
-        
+
         // Get program statistics
         $totalFounders = FounderBonus::getTotalFounderCount();
         $availableSeats = FounderBonus::getAvailableSeats();
@@ -85,7 +88,7 @@ class FounderBonusController extends Controller
         $userProgress = null;
         $founderBonusData = null;
         $userMissed = null;
-        
+
         if ($user) {
             // Check if user is already a founder
             if ($user->is_founder) {
@@ -109,7 +112,7 @@ class FounderBonusController extends Controller
                 $joinDate = $user->stripe_connected_at;
                 $thirtyDaysLater = $joinDate ? $joinDate->copy()->addDays($qualificationDays) : null;
                 $isWithin30Days = $thirtyDaysLater ? now()->lessThan($thirtyDaysLater) : false;
-                
+
                 if ($isWithin30Days) {
                     $userInRace = true;
 
@@ -150,8 +153,9 @@ class FounderBonusController extends Controller
         $qualDays = FounderBonus::getQualificationDays();
         $enrichedLeaderboard = collect($leaderboard)->map(function ($entry, $idx) use ($qualDays) {
             $daysElapsed = $qualDays - ($entry['days_remaining'] ?? 0);
+
             return array_merge($entry, [
-                'rank'         => $idx + 1,
+                'rank' => $idx + 1,
                 'progress_pct' => round($entry['qualification_progress'] ?? 0, 1),
                 'days_elapsed' => max(0, $daysElapsed),
             ]);
@@ -190,7 +194,7 @@ class FounderBonusController extends Controller
                 'bonusPercentage' => $bonusPercentage * 100,
                 'qualificationDays' => FounderBonus::getQualificationDays(),
                 'currentMonth' => now()->format('F Y'),
-            ]
+            ],
         ]);
     }
 
@@ -232,22 +236,22 @@ class FounderBonusController extends Controller
     public function programInfo(Request $request)
     {
         $user = $request->user();
-        
+
         // Get configurable qualification days
         $qualificationDays = FounderBonus::getQualificationDays();
-        
+
         // Calculate user's first qualification period earnings if they're eligible
         $first30DayEarnings = 0;
         $daysActive = 0;
-        
-        if ($user && !$user->is_founder) {
-            if (!$user->stripe_connected_at) {
+
+        if ($user && ! $user->is_founder) {
+            if (! $user->stripe_connected_at) {
                 $accountAge = 0;
             } else {
                 $accountAge = now()->diffInDays($user->stripe_connected_at);
             }
             $daysActive = min($accountAge, $qualificationDays);
-            
+
             if ($accountAge >= $qualificationDays) {
                 // Calculate their first qualification period earnings
                 $first30DayEarnings = $this->calculateFirst30DayEarnings($user->id);
@@ -276,7 +280,7 @@ class FounderBonusController extends Controller
                 'minMonthlyEarnings' => FounderBonus::getMinMonthlyEarnings(),
                 'maxMonthlyEarnings' => FounderBonus::getMaxMonthlyEarnings(),
                 'qualificationDays' => FounderBonus::getQualificationDays(),
-            ]
+            ],
         ]);
     }
 
@@ -286,12 +290,17 @@ class FounderBonusController extends Controller
     private function calculateFirst30DayEarnings(int $userId)
     {
         $user = User::find($userId);
-        if (!$user) return 0;
-        if (!$user->stripe_connected_at) return 0;
+        if (! $user) {
+            return 0;
+        }
+        if (! $user->stripe_connected_at) {
+            return 0;
+        }
 
         $qualificationDays = FounderBonus::getQualificationDays();
         $startDate = $user->stripe_connected_at;
         $endDate = $user->stripe_connected_at->copy()->addDays($qualificationDays);
+
         return (float) FounderBonus::calculateCompletedNetEarnings($user, $startDate, $endDate, 'GBP');
     }
 
@@ -301,11 +310,16 @@ class FounderBonusController extends Controller
     private function calculateCurrentEarnings(int $userId)
     {
         $user = User::find($userId);
-        if (!$user) return 0;
-        if (!$user->stripe_connected_at) return 0;
+        if (! $user) {
+            return 0;
+        }
+        if (! $user->stripe_connected_at) {
+            return 0;
+        }
 
         $startDate = $user->stripe_connected_at;
         $endDate = min($user->stripe_connected_at->copy()->addDays(FounderBonus::getQualificationDays()), now());
+
         return (float) FounderBonus::calculateCompletedNetEarnings($user, $startDate, $endDate, 'GBP');
     }
 
@@ -315,19 +329,19 @@ class FounderBonusController extends Controller
     public function getLeaderboard(Request $request)
     {
         $user = $request->user();
-        
+
         // Get current month's leaderboard data
         $leaderboard = FounderBonus::getCurrentMonthLeaderboard(50);
-        
+
         // Find current user's position if they're in the race
         $userPosition = null;
         $userInRace = false;
-        
+
         if ($user && $user->stripe_connected_at && $user->stripe_connected_at->isCurrentMonth()) {
             $userInRace = true;
             $userEntry = collect($leaderboard)->firstWhere('creator.id', $user->id);
             if ($userEntry) {
-                $userPosition = collect($leaderboard)->search(function($item) use ($user) {
+                $userPosition = collect($leaderboard)->search(function ($item) use ($user) {
                     return $item['creator']->id === $user->id;
                 }) + 1;
             }
@@ -337,8 +351,9 @@ class FounderBonusController extends Controller
         $enrichedLeaderboard = collect($leaderboard)->map(function ($entry, $idx) {
             $qualDays = FounderBonus::getQualificationDays();
             $daysElapsed = $qualDays - ($entry['days_remaining'] ?? 0);
+
             return array_merge($entry, [
-                'rank'         => $idx + 1,
+                'rank' => $idx + 1,
                 'progress_pct' => round($entry['qualification_progress'] ?? 0, 1),
                 'days_elapsed' => max(0, $daysElapsed),
             ]);
@@ -356,7 +371,7 @@ class FounderBonusController extends Controller
                 'maxSeats' => FounderBonus::getMaxFounderSeats(),
                 'minEarnings' => FounderBonus::getMinFirst30dEarnings(),
                 'bonusPercentage' => FounderBonus::getBonusPercentage() * 100,
-            ]
+            ],
         ]);
     }
 
@@ -374,7 +389,7 @@ class FounderBonusController extends Controller
         try {
             $beforeCount = FounderBonus::count();
 
-            (new \App\Jobs\CheckFounderQualifications())->handle();
+            (new CheckFounderQualifications)->handle();
 
             $afterCount = FounderBonus::count();
             $newQualified = $afterCount - $beforeCount;
@@ -388,15 +403,15 @@ class FounderBonusController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to run qualification check: ' . $e->getMessage(),
+                'message' => 'Failed to run qualification check: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Settle all pending founder bonus payouts
-     * 
-     * @return \Illuminate\Http\JsonResponse
+     *
+     * @return JsonResponse
      */
     public function settlePayouts()
     {
@@ -416,7 +431,7 @@ class FounderBonusController extends Controller
 
             // Run the real payout job synchronously — it issues Stripe transfer + payout
             // (idempotent) and creates the PayoutRecord that the creator's finance page shows.
-            (new \App\Jobs\ProcessFounderPayouts())->handle();
+            (new ProcessFounderPayouts)->handle();
 
             $stillPending = FounderBonus::where('payout_status', FounderBonus::STATUS_PENDING)
                 ->where('bonus_amount', '>', 0)
@@ -435,7 +450,7 @@ class FounderBonusController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to process payouts: ' . $e->getMessage(),
+                'message' => 'Failed to process payouts: '.$e->getMessage(),
             ], 500);
         }
     }

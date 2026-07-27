@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\UserVerificationStatus;
 use App\Models\User;
+use App\Models\UserVerificationStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\UserVerificationStatus>
+ * @extends Factory<UserVerificationStatus>
  */
 class UserVerificationStatusFactory extends Factory
 {

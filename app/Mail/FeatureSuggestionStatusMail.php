@@ -25,12 +25,13 @@ class FeatureSuggestionStatusMail extends Mailable
     {
         $subjects = [
             'under_review' => 'Your idea is under review',
-            'planned'      => 'Great news! Your idea is planned',
-            'rejected'     => 'An update on your feature suggestion',
+            'planned' => 'Great news! Your idea is planned',
+            'rejected' => 'An update on your feature suggestion',
         ];
         $subject = $subjects[$this->suggestion->status] ?? 'Update on your feature suggestion';
+
         return new Envelope(
-            subject: $subject . ' - Spenny Piggy',
+            subject: $subject.' - Spenny Piggy',
             from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
         );
     }

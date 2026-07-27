@@ -24,4 +24,3 @@ class RiskOtpMail extends Mailable
             ->subject('Confirm Your Payment - OTP Code');
     }
 }
-

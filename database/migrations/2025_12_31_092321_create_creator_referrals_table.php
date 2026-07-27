@@ -24,7 +24,7 @@ return new class extends Migration
                 'QUALIFIED',     // £1000 GMV reached
                 'PAYOUT_REQUESTED',
                 'PAID',
-                'REVOKED'
+                'REVOKED',
             ])->default('IN_PROGRESS');
 
             $table->timestamp('qualified_at')->nullable();

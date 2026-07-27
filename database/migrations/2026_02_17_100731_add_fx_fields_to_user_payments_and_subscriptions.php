@@ -14,7 +14,7 @@ return new class extends Migration
         // Add FX fields to user_payments table
         if (Schema::hasTable('user_payments')) {
             Schema::table('user_payments', function (Blueprint $table) {
-                if (!Schema::hasColumn('user_payments', 'creator_currency')) {
+                if (! Schema::hasColumn('user_payments', 'creator_currency')) {
                     $table->string('creator_currency', 3)->nullable()->after('currency');
                     $table->string('charge_currency', 3)->nullable()->after('creator_currency');
                     $table->string('display_currency', 3)->nullable()->after('charge_currency');
@@ -30,7 +30,7 @@ return new class extends Migration
         // Add FX fields to membership_payments table
         if (Schema::hasTable('membership_payments')) {
             Schema::table('membership_payments', function (Blueprint $table) {
-                if (!Schema::hasColumn('membership_payments', 'creator_currency')) {
+                if (! Schema::hasColumn('membership_payments', 'creator_currency')) {
                     $table->string('creator_currency', 3)->nullable()->after('currency');
                     $table->string('charge_currency', 3)->nullable()->after('creator_currency');
                     $table->string('display_currency', 3)->nullable()->after('charge_currency');

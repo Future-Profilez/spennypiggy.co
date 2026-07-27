@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\EmailService;
+use App\Mail\FeatureSuggestionStatusMail;
 use App\Models\FeatureSuggestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\FeatureSuggestionStatusMail;
 
 class FeatureSuggestionController extends Controller
 {
@@ -64,13 +65,13 @@ class FeatureSuggestionController extends Controller
             && $recipientEmail;
 
         $recipientUser = $suggestion->user;
-        $canSendEmail = !$recipientUser || $recipientUser->notification_send == 1;
+        $canSendEmail = ! $recipientUser || $recipientUser->notification_send == 1;
 
         if ($shouldNotify && $canSendEmail) {
             try {
                 Mail::to($recipientEmail)->send(new FeatureSuggestionStatusMail($suggestion));
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('FeatureSuggestion status email failed', ['error' => $e->getMessage()]);
+                Log::error('FeatureSuggestion status email failed', ['error' => $e->getMessage()]);
             }
         }
 

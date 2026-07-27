@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('payments', 'reserve_amount_minor')) {
+            if (! Schema::hasColumn('payments', 'reserve_amount_minor')) {
                 $table->bigInteger('reserve_amount_minor')->default(0)->after('amount');
             }
         });
@@ -24,4 +24,3 @@ return new class extends Migration
         });
     }
 };
-

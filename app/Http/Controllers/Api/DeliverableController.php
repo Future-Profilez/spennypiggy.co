@@ -17,11 +17,11 @@ class DeliverableController extends Controller
     {
         try {
             $user = Auth::user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required'
+                    'message' => 'Authentication required',
                 ], 401);
             }
 
@@ -33,7 +33,7 @@ class DeliverableController extends Controller
                 ->get()
                 ->map(function ($deliverable) {
                     $metadata = $deliverable->metadata ?? [];
-                    
+
                     return [
                         'id' => $deliverable->id,
                         'uuid' => $deliverable->uuid,
@@ -43,26 +43,26 @@ class DeliverableController extends Controller
                         'delivered_at' => $deliverable->delivered_at,
                         'content_url' => $deliverable->deliverable_url,
                         'certificate_url' => $deliverable->certificate_url,
-                        'has_certificate' => !empty($deliverable->certificate_url),
+                        'has_certificate' => ! empty($deliverable->certificate_url),
                         'transaction_amount' => $deliverable->transaction_amount,
                         'payment_currency' => $deliverable->payment_currency,
                         'anonymous' => $deliverable->anonymous ?? false,
                         'creator' => [
                             'id' => $deliverable->creator->id ?? null,
                             'name' => $deliverable->creator->name ?? 'Creator',
-                            'username' => $deliverable->creator->username ?? null
+                            'username' => $deliverable->creator->username ?? null,
                         ],
                         'wish_item' => $deliverable->wishItem ? [
                             'id' => $deliverable->wishItem->id,
                             'name' => $deliverable->wishItem->wishname,
                             'price' => $deliverable->wishItem->price,
-                            'currency' => $deliverable->wishItem->currency
+                            'currency' => $deliverable->wishItem->currency,
                         ] : null,
                         'metadata' => [
                             'wish_name' => $metadata['wish_name'] ?? null,
                             'content_type' => $metadata['content_file_type'] ?? $metadata['media_type'] ?? null,
-                            'certificate_generated' => $metadata['certificate_generated'] ?? false
-                        ]
+                            'certificate_generated' => $metadata['certificate_generated'] ?? false,
+                        ],
                     ];
                 });
 
@@ -72,20 +72,20 @@ class DeliverableController extends Controller
                     'deliverables' => $deliverables,
                     'total_count' => $deliverables->count(),
                     'certificates_count' => $deliverables->where('has_certificate', true)->count(),
-                    'content_count' => $deliverables->whereNotNull('content_url')->count()
+                    'content_count' => $deliverables->whereNotNull('content_url')->count(),
                 ],
-                'message' => 'Deliverables retrieved successfully'
+                'message' => 'Deliverables retrieved successfully',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Failed to fetch deliverables', [
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to fetch deliverables'
+                'message' => 'Failed to fetch deliverables',
             ], 500);
         }
     }
@@ -97,11 +97,11 @@ class DeliverableController extends Controller
     {
         try {
             $user = Auth::user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required'
+                    'message' => 'Authentication required',
                 ], 401);
             }
 
@@ -110,10 +110,10 @@ class DeliverableController extends Controller
                 ->with(['creator', 'wishItem'])
                 ->first();
 
-            if (!$deliverable) {
+            if (! $deliverable) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Deliverable not found'
+                    'message' => 'Deliverable not found',
                 ], 404);
             }
 
@@ -130,8 +130,8 @@ class DeliverableController extends Controller
                     'delivered_at' => $deliverable->delivered_at,
                     'content_url' => $deliverable->deliverable_url,
                     'certificate_url' => $deliverable->certificate_url,
-                    'has_certificate' => !empty($deliverable->certificate_url),
-                    'has_content' => !empty($deliverable->deliverable_url),
+                    'has_certificate' => ! empty($deliverable->certificate_url),
+                    'has_content' => ! empty($deliverable->deliverable_url),
                     'transaction_amount' => $deliverable->transaction_amount,
                     'payment_currency' => $deliverable->payment_currency,
                     'anonymous' => $deliverable->anonymous ?? false,
@@ -140,8 +140,8 @@ class DeliverableController extends Controller
                         'id' => $deliverable->creator->id ?? null,
                         'name' => $deliverable->creator->name ?? 'Creator',
                         'username' => $deliverable->creator->username ?? null,
-                        'avatar_url' => isset($deliverable->creator->avatar) ? 
-                            'https://ucarecdn.com/' . $deliverable->creator->avatar . '/' : null
+                        'avatar_url' => isset($deliverable->creator->avatar) ?
+                            'https://ucarecdn.com/'.$deliverable->creator->avatar.'/' : null,
                     ],
                     'wish_item' => $deliverable->wishItem ? [
                         'id' => $deliverable->wishItem->id,
@@ -149,29 +149,29 @@ class DeliverableController extends Controller
                         'description' => $deliverable->wishItem->description,
                         'price' => $deliverable->wishItem->price,
                         'currency' => $deliverable->wishItem->currency,
-                        'image_url' => $deliverable->wishItem->image_url
+                        'image_url' => $deliverable->wishItem->image_url,
                     ] : null,
-                    'certificate_info' => !empty($deliverable->certificate_url) ? [
+                    'certificate_info' => ! empty($deliverable->certificate_url) ? [
                         'url' => $deliverable->certificate_url,
                         'generated_at' => $deliverable->delivered_at,
                         'certificate_id' => $deliverable->uuid,
-                        'is_downloadable' => true
+                        'is_downloadable' => true,
                     ] : null,
-                    'metadata' => $metadata
+                    'metadata' => $metadata,
                 ],
-                'message' => 'Deliverable details retrieved successfully'
+                'message' => 'Deliverable details retrieved successfully',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Failed to fetch deliverable details', [
                 'uuid' => $uuid,
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to fetch deliverable details'
+                'message' => 'Failed to fetch deliverable details',
             ], 500);
         }
     }
@@ -183,11 +183,11 @@ class DeliverableController extends Controller
     {
         try {
             $user = Auth::user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Authentication required'
+                    'message' => 'Authentication required',
                 ], 401);
             }
 
@@ -195,17 +195,17 @@ class DeliverableController extends Controller
                 ->where('gifter_id', $user->id)
                 ->first();
 
-            if (!$deliverable) {
+            if (! $deliverable) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Deliverable not found'
+                    'message' => 'Deliverable not found',
                 ], 404);
             }
 
             if (empty($deliverable->certificate_url)) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Certificate not available for this deliverable'
+                    'message' => 'Certificate not available for this deliverable',
                 ], 404);
             }
 
@@ -213,7 +213,7 @@ class DeliverableController extends Controller
             Log::info('Certificate downloaded', [
                 'user_id' => $user->id,
                 'deliverable_uuid' => $uuid,
-                'certificate_url' => $deliverable->certificate_url
+                'certificate_url' => $deliverable->certificate_url,
             ]);
 
             // Redirect to certificate URL for download
@@ -223,12 +223,12 @@ class DeliverableController extends Controller
             Log::error('Failed to download certificate', [
                 'uuid' => $uuid,
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to access certificate'
+                'message' => 'Failed to access certificate',
             ], 500);
         }
     }

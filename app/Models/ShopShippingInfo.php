@@ -15,13 +15,13 @@ class ShopShippingInfo extends Model
         'uuid',
         'shop_id',
         'country',
-        'shipping_price'
+        'shipping_price',
     ];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
     public function shop()

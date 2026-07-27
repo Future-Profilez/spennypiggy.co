@@ -27,7 +27,7 @@ class CreatorActivationService
             'FREEZE' => 0,
         ]);
 
-        $dailyLimit = (int)($limits[$state] ?? 0);
+        $dailyLimit = (int) ($limits[$state] ?? 0);
 
         if ($dailyLimit === 0) {
             return [
@@ -40,7 +40,7 @@ class CreatorActivationService
         // Assuming we track 'activated_at' on users table.
         // Or we use AuditLogs to count 'CREATOR_ACTIVATED' actions today.
         // Using AuditLogs is safer if we don't trust user table timestamp updates alone.
-        
+
         $todayCount = AuditLog::where('action_type', 'CREATOR_ACTIVATED')
             ->where('created_at', '>=', Carbon::today())
             ->count();
@@ -57,12 +57,12 @@ class CreatorActivationService
         // Assuming status column exists. If not, just log for now.
         // Let's assume we set a flag.
         // For MVP, we just return success and Log.
-        
+
         AuditLog::create([
             'actor' => $adminUser ? $adminUser->id : 'system',
             'action_type' => 'CREATOR_ACTIVATED',
             'reference_id' => $creator->id,
-            'metadata_json' => ['state' => $state]
+            'metadata_json' => ['state' => $state],
         ]);
 
         return ['success' => true];

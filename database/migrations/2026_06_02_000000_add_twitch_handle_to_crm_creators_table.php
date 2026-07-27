@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('crm_creators', 'twitch_handle')) {
+        if (! Schema::hasColumn('crm_creators', 'twitch_handle')) {
             Schema::table('crm_creators', function (Blueprint $table) {
                 $table->string('twitch_handle')->nullable()->after('youtube_handle');
             });

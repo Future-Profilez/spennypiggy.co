@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class HealthController extends Controller
 {
@@ -19,19 +19,19 @@ class HealthController extends Controller
             'timestamp' => now()->toISOString(),
             'environment' => app()->environment(),
             'version' => config('app.version', '1.0.0'),
-            'checks' => []
+            'checks' => [],
         ];
 
         try {
             // Database connectivity check
             $checks['checks']['database'] = $this->checkDatabase();
-            
+
             // Cache connectivity check
             $checks['checks']['cache'] = $this->checkCache();
-            
+
             // Disk space check
             $checks['checks']['disk'] = $this->checkDiskSpace();
-            
+
             // Performance metrics check
             $checks['checks']['performance'] = $this->checkPerformance();
 
@@ -50,7 +50,7 @@ class HealthController extends Controller
                 'status' => 'unhealthy',
                 'timestamp' => now()->toISOString(),
                 'error' => $e->getMessage(),
-                'checks' => $checks['checks']
+                'checks' => $checks['checks'],
             ], 503);
         }
     }
@@ -62,23 +62,23 @@ class HealthController extends Controller
     {
         try {
             $start = microtime(true);
-            
+
             // Simple query to check connectivity
             DB::select('SELECT 1 as health_check');
-            
+
             $duration = (microtime(true) - $start) * 1000; // Convert to milliseconds
-            
+
             return [
                 'status' => 'healthy',
                 'response_time_ms' => round($duration, 2),
-                'message' => 'Database connection successful'
+                'message' => 'Database connection successful',
             ];
-            
+
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
                 'error' => $e->getMessage(),
-                'message' => 'Database connection failed'
+                'message' => 'Database connection failed',
             ];
         }
     }
@@ -92,7 +92,7 @@ class HealthController extends Controller
         return [
             'status' => 'healthy',
             'response_time_ms' => 0,
-            'message' => 'Cache check skipped'
+            'message' => 'Cache check skipped',
         ];
     }
 
@@ -105,26 +105,26 @@ class HealthController extends Controller
             $path = storage_path();
             $freeBytes = disk_free_space($path);
             $totalBytes = disk_total_space($path);
-            
+
             $freeGb = round($freeBytes / (1024 * 1024 * 1024), 2);
             $totalGb = round($totalBytes / (1024 * 1024 * 1024), 2);
             $usedPercent = round((($totalBytes - $freeBytes) / $totalBytes) * 100, 1);
-            
+
             $status = $usedPercent < 80 ? 'healthy' : ($usedPercent < 90 ? 'warning' : 'critical');
-            
+
             return [
                 'status' => $status,
                 'free_gb' => $freeGb,
                 'total_gb' => $totalGb,
                 'used_percent' => $usedPercent,
-                'message' => "Disk usage: {$usedPercent}%"
+                'message' => "Disk usage: {$usedPercent}%",
             ];
-            
+
         } catch (\Exception $e) {
             return [
                 'status' => 'unknown',
                 'error' => $e->getMessage(),
-                'message' => 'Unable to check disk space'
+                'message' => 'Unable to check disk space',
             ];
         }
     }
@@ -150,7 +150,7 @@ class HealthController extends Controller
                     $metricData = $recentMetrics[$metric];
                     $poorCount = $metricData->where('rating', 'poor')->count();
                     $totalCount = $metricData->count();
-                    
+
                     if ($totalCount > 0) {
                         $poorPercentage = ($poorCount / $totalCount) * 100;
                         if ($poorPercentage > 25) { // More than 25% poor ratings
@@ -167,14 +167,14 @@ class HealthController extends Controller
                 'status' => $status,
                 'performance_score' => $performanceScore,
                 'issues' => $issues,
-                'message' => empty($issues) ? 'Performance metrics healthy' : 'Performance issues detected'
+                'message' => empty($issues) ? 'Performance metrics healthy' : 'Performance issues detected',
             ];
 
         } catch (\Exception $e) {
             return [
                 'status' => 'unknown',
                 'error' => $e->getMessage(),
-                'message' => 'Unable to check performance metrics'
+                'message' => 'Unable to check performance metrics',
             ];
         }
     }
@@ -185,14 +185,14 @@ class HealthController extends Controller
     public function detailed(Request $request)
     {
         $checks = $this->index($request)->getData(true);
-        
+
         // Add additional detailed metrics
         $checks['system'] = [
             'php_version' => PHP_VERSION,
             'memory_usage' => [
                 'current_mb' => round(memory_get_usage(true) / (1024 * 1024), 2),
                 'peak_mb' => round(memory_get_peak_usage(true) / (1024 * 1024), 2),
-                'limit' => ini_get('memory_limit')
+                'limit' => ini_get('memory_limit'),
             ],
             'load_average' => function_exists('sys_getloadavg') ? sys_getloadavg() : null,
         ];
@@ -203,7 +203,7 @@ class HealthController extends Controller
                 ->where('type', 'exception')
                 ->where('created_at', '>=', now()->subHour())
                 ->count();
-                
+
             $checks['error_rate_last_hour'] = $errorRate;
         } catch (\Exception $e) {
             $checks['error_rate_last_hour'] = 'unavailable';

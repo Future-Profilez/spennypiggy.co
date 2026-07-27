@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\AllowedDomain;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class RegistrationValidationTest extends TestCase
@@ -14,7 +14,7 @@ class RegistrationValidationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Seed allowed domains for testing
         AllowedDomain::firstOrCreate(['name' => 'gmail.com']);
     }
@@ -62,7 +62,7 @@ class RegistrationValidationTest extends TestCase
     public function test_registration_validation_fails_with_existing_email(): void
     {
         // Create a user first
-        \App\Models\User::factory()->create([
+        User::factory()->create([
             'email' => 'existing@gmail.com',
         ]);
 

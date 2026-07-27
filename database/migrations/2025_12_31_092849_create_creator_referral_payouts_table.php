@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('approval_status', [
                 'PENDING',
                 'APPROVED',
-                'REJECTED'
+                'REJECTED',
             ])->default('PENDING');
 
             $table->unsignedBigInteger('approved_by_admin_id')->nullable();

@@ -26,7 +26,7 @@ return new class extends Migration
     {
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE deliverables MODIFY COLUMN status ENUM('pending', 'delivered', 'failed', 'refunded') DEFAULT 'pending'");
-            DB::statement("ALTER TABLE deliverables MODIFY COLUMN deliverable_type VARCHAR(100)");
+            DB::statement('ALTER TABLE deliverables MODIFY COLUMN deliverable_type VARCHAR(100)');
         }
     }
 };

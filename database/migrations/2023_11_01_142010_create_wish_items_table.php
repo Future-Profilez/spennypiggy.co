@@ -12,16 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::dropIfExists("wishitems");
+        Schema::dropIfExists('wishitems');
         Schema::create('wish_items', function (Blueprint $table) {
             $table->id();
             $table->uuid();
-            $table->foreignIdFor(User::class)->default(NULL)->nullable();
+            $table->foreignIdFor(User::class)->default(null)->nullable();
             $table->string('wishname');
             $table->double('price', 10, 2)->default(0.00);
             $table->text('item_url')->nullable();
             $table->text('thumbnail')->nullable();
-            $table->tinyInteger('subscription')->comment("0-single, 1-subs, 2-crowdfund"); // single, subcription, crowdfund
+            $table->tinyInteger('subscription')->comment('0-single, 1-subs, 2-crowdfund'); // single, subcription, crowdfund
             $table->string('subscription_period')->nullable();
             $table->tinyInteger('repeat_purchase')->default(0);
             $table->text('category')->nullable();

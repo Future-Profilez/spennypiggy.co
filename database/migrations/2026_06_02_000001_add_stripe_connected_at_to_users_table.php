@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'stripe_connected_at')) {
+            if (! Schema::hasColumn('users', 'stripe_connected_at')) {
                 $table->timestamp('stripe_connected_at')->nullable()->after('stripe_details_submitted');
             }
         });
@@ -24,4 +24,3 @@ return new class extends Migration
         });
     }
 };
-

@@ -13,8 +13,11 @@ class SupportTicketRefundStatusMail extends Mailable
     use Queueable, SerializesModels;
 
     public $ticket;
+
     public $supportUrl;
+
     public $status;
+
     public $forRole;
 
     public function __construct(SupportTicket $ticket, $status, $forRole)
@@ -36,6 +39,6 @@ class SupportTicketRefundStatusMail extends Mailable
     public function build()
     {
         return $this->view('email.support-ticket-refund-status')
-            ->subject('Refund Request ' . ucfirst($this->status));
+            ->subject('Refund Request '.ucfirst($this->status));
     }
 }

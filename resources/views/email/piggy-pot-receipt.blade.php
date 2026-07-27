@@ -148,50 +148,13 @@
                 </td>
             </tr>
 
-            @php
-                $rewardUrl = null;
-                $rewardText = null;
-                if (!empty($pay->piggyPot?->content_description)) {
-                    $rewardText = $pay->piggyPot->content_description;
-                }
-                if (!empty($pay->piggyPot?->content_file)) {
-                    $rewardUrl = $pay->piggyPot->content_file;
-                    if (strpos($rewardUrl, 'http://') !== 0 && strpos($rewardUrl, 'https://') !== 0) {
-                        $rewardUrl = 'https://ucarecdn.com/' . trim($rewardUrl, '/') . '/';
-                    }
-                }
-            @endphp
-
-            @if(!empty($rewardUrl) || !empty($rewardText))
-            <tr>
-                <td style="padding:0 0 18px 0;">
-                    <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
-                        bgcolor="#FFF1F7"
-                        style="background-color:#FFF1F7;border-radius:16px;-webkit-border-radius:16px;">
-                        <tr>
-                            <td style="padding:20px 22px;">
-                                <div style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:13px;color:#FF007F;text-transform:uppercase;text-align:center;padding:0 0 12px 0;">🎁 Exclusive Reward</div>
-
-                                @include('email.digital-content-notice')
-
-                                <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="margin:12px 0 0 0;">
-                                    <tr>
-                                        <td bgcolor="#ffffff" style="background-color:#ffffff;border-radius:12px;border-left:4px solid #8C52FF;padding:14px 16px;text-align:center;">
-                                            @if(!empty($rewardText))
-                                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 12px 0;">{{ $rewardText }}</div>
-                                            @endif
-                                            @if(!empty($rewardUrl))
-                                                <a href="{{ $rewardUrl }}" style="display:inline-block;padding:10px 24px;background-color:#8C52FF;color:#ffffff;text-decoration:none;border-radius:50px;font-family:'Outfit',Arial,sans-serif;font-size:14px;font-weight:700;" target="_blank">🎁 Access Reward</a>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-            @endif
+            {{-- The pot's reward IS its deliverable, so this block is the only
+                 reward surface here — show the file button + the no-refund
+                 notice for every reward type. --}}
+            @include('email.reward-block', [
+                'rewardItem' => $pay->piggyPot ?? null,
+                'rewardShowFile' => true,
+            ])
 
             @if(!empty($thankYouUrl))
             <tr>

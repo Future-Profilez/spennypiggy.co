@@ -86,6 +86,13 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('app:auto-suspend-account')->daily()->withoutOverlapping(4);
 
+        // Capture each period's standing once a day. Rank movement on the
+        // leaderboard is measured against these captures, so a day missed is a
+        // day of arrows the board cannot draw.
+        $schedule->command('leaderboard:snapshot')
+            ->dailyAt('03:15')
+            ->withoutOverlapping(30);
+
         // Founder Bonus System Jobs
         // Daily job to calculate first 30-day earnings for new creators
         $schedule->job(new CalculateFirstThirtyDayEarnings)
