@@ -252,7 +252,7 @@ const ActivityLogs = ({ auth, logs, filters, actionTypes }) => {
         <Authenticated auth={auth.user} user={auth.user}>
             <Head title="Activity Logs" />
 
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 py-8">
+            <div className="min-h-dvh bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 py-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Header - same as before */}
                     <div className="mb-8">

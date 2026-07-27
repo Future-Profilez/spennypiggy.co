@@ -266,12 +266,12 @@ function InstantTabSystem({
                 style={buttonStyles}
                 disabled={isTransitioning && isPending}
                 className={`
-                    relative px-5 py-2 text-sm md:text-base font-black uppercase 
+                    relative px-3.5 py-2 text-xs md:text-sm font-black uppercase
                     transition-all duration-300 min-w-max whitespace-nowrap
-                    select-none touch-manipulation tracking-widest border-[3px] border-black rounded-[17px]
-                    ${isEffectivelyActive 
-                        ? 'text-black bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' 
-                        : 'text-black bg-white hover:bg-yellow-100 sshadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
+                    select-none touch-manipulation tracking-wider border-2 border-black rounded-box-sm
+                    ${isEffectivelyActive
+                        ? 'text-black bg-yellow-300'
+                        : 'text-black bg-white hover:bg-yellow-100'
                     }
                     ${shouldShowLoading ? 'opacity-90 animate-pulse' : ''}
                     disabled:pointer-events-none
@@ -281,7 +281,7 @@ function InstantTabSystem({
             >
                 {/* Tab content */}
                 <span className="flex items-center gap-1.5">
-                    {tab.Icon ? <tab.Icon size={22} strokeWidth={2.5} className="shrink-0" /> : null}
+                    {tab.Icon ? <tab.Icon size={15} strokeWidth={2.5} className="shrink-0" /> : null}
                     <span>{tab.label}</span>
                 </span>
             </button>
@@ -290,8 +290,10 @@ function InstantTabSystem({
 
     return (
         <div className='relative pb-2 mt-4'>
-            <div className="w-full flex items-center justify-between py-2 relative">
-                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-2 md:space-x-2 pb-2 pt-1 px-0`}>
+            <div className="w-full flex items-center gap-3 py-2 relative">
+                {/* min-w-0 + flex-1: without it the flex item refuses to shrink and the last
+                    tabs get clipped off-screen instead of scrolling. */}
+                <div className="flex min-w-0 flex-1 overflow-x-auto scrollbar-hide gap-2 pb-2 pt-1 px-0">
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}
@@ -307,20 +309,20 @@ function InstantTabSystem({
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-white opacity-70 animate-pulse pointer-events-none"></div>
                 )} */}
                 {IsloggedIn && (
-                    <div className="pb-2 flex items-center gap-3">
+                    <div className="pb-2 flex shrink-0 items-center gap-2">
                         <button
                             type="button"
                             onClick={handleRefresh}
                             disabled={isTransitioning}
+                            aria-label="Refresh this tab"
                             className={`
-                                px-4 py-2 text-xs md:text-sm font-black uppercase tracking-widest
-                                border-[3px] border-black rounded-[17px]
+                                flex h-9 w-9 items-center justify-center
+                                border-2 border-black rounded-box-sm
                                 text-black bg-white hover:bg-yellow-100
-                                shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                                 disabled:opacity-70 disabled:pointer-events-none
                             `}
                         >
-                            <IoMdRefresh size={24} className="inline-block mr-1" />
+                            <IoMdRefresh size={18} />
                         </button>
                         <Toggle />
                     </div>

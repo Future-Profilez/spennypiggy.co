@@ -54,7 +54,8 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+            (priceWithVat + stripeFixedFee + adminFee) /
+            (1 - totalDeductionRate);
 
         if (!isZeroDecimal) {
             return Math.ceil(totalSupporterPays * 100) / 100;
@@ -71,7 +72,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         (vatPercentage / 100);
 
     return (
-        <div className="flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black">
             <Link
                 href={url}
                 className="text-lg sm:text-xl text-black line-clamp-1 font-black capitalize tracking-wide"
@@ -158,7 +159,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     {!IsloggedIn ? (
                         <Link
                             href={`/task/${task.uuid}`}
-                            className="shrink-0 whitespace-nowrap text-xs sm:text-sm inline-block px-4 py-2.5 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            className="shrink-0 whitespace-nowrap text-xs sm:text-sm inline-block px-4 py-2.5 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-box-sm hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                         >
                             {task.type === "instant"
                                 ? "Pay to Access 🔓"

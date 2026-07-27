@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Models\User;
+use App\Helpers;
+use App\Models\FinancialTransaction;
 use App\Models\FounderBonus;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -52,6 +54,7 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
 
         if ($availableSeats <= 0) {
             Log::info('No available founder seats remaining');
+
             return;
         }
 
@@ -83,7 +86,7 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
      */
     private function calculateFirst30DayEarnings(User $creator): float
     {
-        if (!$creator->stripe_connected_at) {
+        if (! $creator->stripe_connected_at) {
             return 0.0;
         }
 
@@ -92,7 +95,7 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
         $thirtyDaysLater = $startAt->copy()->addDays($qualificationDays);
 
         // Sum all deliverable transaction amounts for the creator in their first 30 days
-        $transactions = \App\Models\FinancialTransaction::where('user_id', $creator->id)
+        $transactions = FinancialTransaction::where('user_id', $creator->id)
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startAt, $thirtyDaysLater])
@@ -104,11 +107,11 @@ class CalculateFirstThirtyDayEarnings implements ShouldQueue
             $net = (float) ($tx->net_amount ?? 0);
             $vat = (float) ($tx->vat_amount ?? 0);
             $gross = $net + $vat;
-            
+
             if ($currency === 'GBP') {
                 $earnings += $gross;
             } else {
-                $earnings += \App\Helpers::priceFormat($currency, $gross, 'GBP');
+                $earnings += Helpers::priceFormat($currency, $gross, 'GBP');
             }
         }
 

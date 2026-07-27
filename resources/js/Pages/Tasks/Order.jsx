@@ -151,7 +151,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={`Order #${purchase.id}`} />
-            <div className="py-12 bg-white mx-auto min-h-screen px-4 sm:px-6 lg:px-8">
+            <div className="py-12 bg-white mx-auto min-h-dvh px-4 sm:px-6 lg:px-8">
                 <div className="container mx-auto max-w-[700px]">
                     <div className="md:flex items-center justify-between">
                         <h1 className="text-3xl mb-3 md:mb-0 font-black uppercase font-anton tracking-wide tracking-[1px] font-light text-gray-900">

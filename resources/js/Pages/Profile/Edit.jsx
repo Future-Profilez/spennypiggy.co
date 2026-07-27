@@ -8,7 +8,7 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
                 padding: '20px', 
                 fontFamily: 'Arial, sans-serif',
                 backgroundColor: '#f5f5f5',
-                minHeight: '100vh'
+                minHeight: '100dvh'
             }}>
                 <h1 style={{ color: '#333' }}>Profile Page - Minimal Debug Mode</h1>
                 <p style={{ color: '#666' }}>Testing without AuthenticatedLayout to isolate JSX runtime issue.</p>

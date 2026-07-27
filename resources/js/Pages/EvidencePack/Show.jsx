@@ -9,7 +9,7 @@ export default function Show({ evidence }) {
 
     if (!evidence) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-dvh flex items-center justify-center bg-gray-50">
                 <div className="text-center p-8 bg-white border-[3px] border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                     <h1 className="text-2xl font-black uppercase text-red-500 mb-2">Error</h1>
                     <p className="font-bold text-gray-600 uppercase tracking-widest">Evidence pack data is missing or unavailable.</p>
@@ -19,7 +19,7 @@ export default function Show({ evidence }) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0">
+        <div className="min-h-dvh bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0">
             <Head title={`Evidence Pack - ${evidence?.transaction_id || 'N/A'}`} />
 
             <div className="max-w-3xl mx-auto">

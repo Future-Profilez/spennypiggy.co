@@ -59,9 +59,11 @@ export default function OnboardingOverlay() {
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex flex-col bg-black text-white"
+            className="fixed inset-0 z-[99999999] flex flex-col overflow-hidden bg-black text-white"
             style={{
-                minHeight: "100dvh",
+                // fixed inset-0 already fills the viewport; a min-height of 100dvh
+                // on top of that overflowed on iOS PWA and hid the Next button
+                height: "100dvh",
                 paddingTop: "env(safe-area-inset-top)",
                 paddingBottom: "env(safe-area-inset-bottom)",
             }}
@@ -138,8 +140,9 @@ export default function OnboardingOverlay() {
                 </AnimatePresence>
             </div>
 
-            {/* Bottom actions */}
-            <div className="px-6 pb-6 pt-2">
+            {/* Bottom actions — shrink-0 so a tall slide can never push these off-screen,
+                and mt-auto keeps them pinned to the bottom edge */}
+            <div className="mt-auto shrink-0 px-6 pb-6 pt-2">
                 <button
                     type="button"
                     onClick={handleNext}

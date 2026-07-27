@@ -2,28 +2,27 @@
 
 namespace App\Jobs;
 
-use App\Mail\IdentityVerificationSuccess;
+use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Mail\IdentityVerificationFailed;
+use App\Mail\IdentityVerificationSuccess;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SendIdentityVerificationEmail implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     protected $user;
+
     protected $status;
 
     /**
      * Create a new job instance.
-     *
-     * @param $user
-     * @param $status
      */
     public function __construct($user, $status)
     {
@@ -33,8 +32,6 @@ class SendIdentityVerificationEmail implements ShouldQueue
 
     /**
      * Execute the job.
-     *
-     * @return void
      */
     public function handle(): void
     {
@@ -52,16 +49,13 @@ class SendIdentityVerificationEmail implements ShouldQueue
 
     /**
      * Get the appropriate email class based on the status.
-     *
-     * @param string $status
-     * @return string|null
      */
     protected function getEmailClassForStatus(string $status): ?string
     {
         $statusEmailMapping = [
             'success' => IdentityVerificationSuccess::class,
-            'failed'  => IdentityVerificationFailed::class,
-            'fraud'   => IdentityVerificationFailed::class,
+            'failed' => IdentityVerificationFailed::class,
+            'fraud' => IdentityVerificationFailed::class,
         ];
 
         return $statusEmailMapping[$status] ?? null;

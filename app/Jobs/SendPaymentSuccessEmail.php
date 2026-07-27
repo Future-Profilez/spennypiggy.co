@@ -4,19 +4,26 @@
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Mail\PaymentSuccessMail;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Mail;
 
 class SendPaymentSuccessEmail implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
-    public $user, $amount, $planCurrency,  $nextPaymentDate;
+    public $user;
+
+    public $amount;
+
+    public $planCurrency;
+
+    public $nextPaymentDate;
 
     public function __construct($user, $amount, $planCurrency, $nextPaymentDate)
     {

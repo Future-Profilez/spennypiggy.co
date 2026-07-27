@@ -7,7 +7,6 @@ use App\Models\User;
 use App\TwitterAuthService;
 use App\TwitterHelper;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -33,20 +32,20 @@ class SubscribeAutoTweet implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->sub->wish_item->user_id);
-        if(!empty($user->twitter_token->token)) {
-            $payload    =   [
-                'name' => $this->sub->guest_name ?? "Someone",
+        if (! empty($user->twitter_token->token)) {
+            $payload = [
+                'name' => $this->sub->guest_name ?? 'Someone',
                 'period' => $this->sub->wish_item->subscription_period,
                 'wish' => $this->sub->wish_item->wishname,
-                'amount' => Helpers::getCurrency($this->sub->currency) . $this->sub->amount,
-                "user_link" =>  route("user.show", ["username" => $user->username, "_t" => time()])
+                'amount' => Helpers::getCurrency($this->sub->currency).$this->sub->amount,
+                'user_link' => route('user.show', ['username' => $user->username, '_t' => time()]),
                 // "user_link" =>  "https://uk.spennypiggy.co/jacksgifts?_t=".time()
             ];
 
-            $content = TwitterHelper::getTwitterContent("subscription", $payload);
+            $content = TwitterHelper::getTwitterContent('subscription', $payload);
             $resp = TwitterAuthService::postTweet($user->twitter_token, $content);
             $this->sub->update([
-                "twitter_response" => $resp
+                'twitter_response' => $resp,
             ]);
         }
     }

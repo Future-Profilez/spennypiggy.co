@@ -37,7 +37,7 @@ export default function FastStartBonus({ auth, fast_start_bonus }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Fast Start Bonus" />
 
-            <div className="bg-[#A2E4B8] min-h-screen pb-16">
+            <div className="bg-[#A2E4B8] min-h-dvh pb-16">
                 <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-5">
 
                     {/* Header */}

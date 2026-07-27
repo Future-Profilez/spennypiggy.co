@@ -64,7 +64,7 @@ export default function FounderBonusIndex() {
             </Head>
 
             
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 md:py-16 lg:py-24">
+            <div className="min-h-dvh bg-gradient-to-br from-gray-50 to-gray-100 py-12 md:py-16 lg:py-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     
                     {/* Header Section */}

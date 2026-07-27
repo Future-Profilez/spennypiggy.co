@@ -364,142 +364,31 @@ class FounderBonusController extends Controller
      * Qualify winners for founder bonus program
      * This method checks all eligible users and qualifies them as founders
      */
+    /**
+     * Qualify winners for founder bonus program
+     * Delegate to the authoritative CheckFounderQualifications job to guarantee
+     * atomic locking, seat limits, referral multipliers, and notification consistency.
+     */
     public function qualifyWinners()
     {
-        // For testing purposes, allow access without authentication in development
-        if (app()->environment('local') && !auth()->check()) {
-            // Actually run the qualification process in test mode
-            try {
-                $qualifiedCount = 0;
-                $errors = [];
-                
-                $qualificationDays = FounderBonus::getQualificationDays();
-                // Get all users who are not already founders
-                $eligibleUsers = User::where('is_founder', false)
-                    ->whereNotNull('stripe_connected_at')
-                    ->where('stripe_connected_at', '<=', now()->subDays($qualificationDays))
-                    ->get();
-
-                foreach ($eligibleUsers as $user) {
-                    // Calculate first 30-day earnings
-                    $first30DayEarnings = $this->calculateFirst30DayEarnings($user->id);
-                    
-                    // Check if user qualifies for founder status
-                    if (FounderBonus::checkFounderQualification($user->id, $first30DayEarnings)) {
-                        try {
-                            \Illuminate\Support\Facades\DB::transaction(function () use ($user, $first30DayEarnings) {
-                                // Update is_founder field in users table
-                                $user->update(['is_founder' => true]);
-                                
-                                // Create entry in founder_bonuses table (correct table name)
-                                FounderBonus::create([
-                                    'creator_id' => $user->id,
-                                    'qualification_date' => now()->toDateString(),
-                                    'first_30d_earnings' => $first30DayEarnings,
-                                    'bonus_amount' => FounderBonus::calculateBonusAmount($first30DayEarnings),
-                                    'estimated_payout_date' => now()->addMonth()->startOfMonth()->addDays(6), // 7th of next month
-                                    'payout_status' => FounderBonus::STATUS_PENDING,
-                                ]);
-                            });
-                            
-                            $qualifiedCount++;
-                            
-                            // Send congratulations email if enabled
-                            if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
-                                try {
-                                    \App\EmailService::sendMarketingEmail($user, new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
-                                } catch (\Exception $e) {
-                                    $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
-                                }
-                            }
-                            
-                        } catch (\Exception $e) {
-                            $errors[] = "Failed to qualify user {$user->id}: " . $e->getMessage();
-                        }
-                    }
-                }
-                
-                return response()->json([
-                    'message' => 'Founder qualification process completed',
-                    'status' => 'success',
-                    'environment' => app()->environment(),
-                    'qualified_count' => $qualifiedCount,
-                    'total_eligible' => $eligibleUsers->count(),
-                    'errors' => $errors
-                ]);
-                
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Error during qualification process',
-                    'status' => 'error',
-                    'environment' => app()->environment(),
-                    'error' => $e->getMessage()
-                ], 500);
-            }
-        }
-        
         try {
-            $qualifiedCount = 0;
-            $errors = [];
-            
-            // Get all users who are not already founders
-            $qualificationDays = FounderBonus::getQualificationDays();
-            $eligibleUsers = User::where('is_founder', false)
-                ->whereNotNull('stripe_connected_at')
-                ->where('stripe_connected_at', '<=', now()->subDays($qualificationDays))
-                ->get();
+            $beforeCount = FounderBonus::count();
 
-            foreach ($eligibleUsers as $user) {
-                // Calculate first 30-day earnings
-                $first30DayEarnings = $this->calculateFirst30DayEarnings($user->id);
-                
-                // Check if user qualifies for founder status
-                if (FounderBonus::checkFounderQualification($user->id, $first30DayEarnings)) {
-                    try {
-                        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $first30DayEarnings) {
-                            // Update is_founder field in users table
-                            $user->update(['is_founder' => true]);
-                            
-                            // Create entry in founder_bonus table
-                            FounderBonus::create([
-                                'creator_id' => $user->id,
-                                'qualification_date' => now()->toDateString(),
-                                'first_30d_earnings' => $first30DayEarnings,
-                                'bonus_amount' => FounderBonus::calculateBonusAmount($first30DayEarnings),
-                                'estimated_payout_date' => now()->addMonth()->startOfMonth()->addDays(6), // 7th of next month
-                                'payout_status' => FounderBonus::STATUS_PENDING,
-                            ]);
-                        });
-                        
-                        $qualifiedCount++;
-                        
-                        // Send congratulations email if enabled
-                        if (config('founder_bonus.features.email_notifications', true) && $user->notification_send == 1) {
-                            try {
-                                \App\EmailService::sendMarketingEmail($user, new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
-                            } catch (\Exception $e) {
-                                $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
-                            }
-                        }
-                        
-                    } catch (\Exception $e) {
-                        $errors[] = "Failed to qualify user {$user->id}: " . $e->getMessage();
-                    }
-                }
-            }
-            
+            (new \App\Jobs\CheckFounderQualifications())->handle();
+
+            $afterCount = FounderBonus::count();
+            $newQualified = $afterCount - $beforeCount;
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully qualified {$qualifiedCount} users as founders",
-                'qualified_count' => $qualifiedCount,
-                'errors' => $errors,
-                'total_checked' => $eligibleUsers->count(),
+                'message' => "Founder qualification check completed. New founders qualified: {$newQualified}",
+                'qualified_count' => $newQualified,
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to qualify winners: ' . $e->getMessage(),
+                'message' => 'Failed to run qualification check: ' . $e->getMessage(),
             ], 500);
         }
     }

@@ -64,30 +64,14 @@ class MembershipController extends Controller
     }
 
     /**
-     * On-platform content benefits that satisfy the "verifiable content deliverable"
-     * rule. Off-platform perks (Telegram, X, Insta, DM, video call) alone are not enough.
-     */
-    private const ON_PLATFORM_CONTENT_REWARDS = [
-        'monthly_content_bundle',
-        'weekly_content_bundle',
-    ];
-
-    /**
      * Stripe compliance: a membership tier must offer at least one on-platform
-     * content deliverable. Accepts the rewards value as an array or JSON string.
+     * content deliverable. Delegates to the single source of truth so the perk
+     * list (config/rewards.php → on_platform_perks) is enforced in one place —
+     * a local copy silently drifted out of sync with the config.
      */
     public static function hasOnPlatformContent($rewards): bool
     {
-        if (is_string($rewards)) {
-            $decoded = json_decode($rewards, true);
-            $rewards = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $rewards)));
-        }
-        if (! is_array($rewards)) {
-            return false;
-        }
-        $normalized = array_map(fn ($r) => trim((string) $r), $rewards);
-
-        return count(array_intersect($normalized, self::ON_PLATFORM_CONTENT_REWARDS)) > 0;
+        return RewardService::hasOnPlatformPerk($rewards);
     }
 
     /**

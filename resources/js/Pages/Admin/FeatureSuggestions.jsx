@@ -130,7 +130,7 @@ export default function FeatureSuggestions({ auth, suggestions, filters }) {
                 <StatusModal suggestion={editing} onClose={() => setEditing(null)} />
             )}
 
-            <div className="py-10 bg-gray-50 min-h-screen">
+            <div className="py-10 bg-gray-50 min-h-dvh">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
                     {/* Header */}

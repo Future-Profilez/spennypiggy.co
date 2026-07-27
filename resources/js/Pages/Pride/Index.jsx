@@ -43,7 +43,7 @@ export default function PrideLanding() {
     }, []);
 
     return (
-        <div className="pride-page min-h-screen bg-[#050505] text-white font-poppins selection:bg-[#FF007F] selection:text-white relative">
+        <div className="pride-page min-h-dvh bg-[#050505] text-white font-poppins selection:bg-[#FF007F] selection:text-white relative">
             <Head title="Pride - Spenny Piggy | Get Paid For It" />
 
             {/* Background Effects */}
@@ -273,7 +273,7 @@ export default function PrideLanding() {
             </div>
 
             {/* Sticky Mobile CTA */}
-            <div className={`fixed bottom-0 left-0 w-full p-4 bg-[#050505]/90 backdrop-blur-xl border-t border-[#FF007F]/30 z-50 transform transition-transform duration-500 md:hidden flex flex-col items-center justify-center shadow-[0_-10px_20px_rgba(255,0,127,0.15)] ${scrolled ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className={`fixed bottom-0 left-0 w-full p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#050505]/90 backdrop-blur-xl border-t border-[#FF007F]/30 z-50 transform transition-transform duration-500 md:hidden flex flex-col items-center justify-center shadow-[0_-10px_20px_rgba(255,0,127,0.15)] ${scrolled ? 'translate-y-0' : 'translate-y-full'}`}>
                 <p className="text-[10px] text-[#00F0FF] font-bold mb-1.5 uppercase tracking-widest text-center">Hot people deserve revenue streams</p>
                 <a href={getUTMLink('register')} className="w-full py-3 text-center font-black text-sm uppercase tracking-widest text-black bg-gradient-to-r from-[#FF007F] to-[#ff4da6] rounded-[30px]  shadow-[0_0_15px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">
                     Start Earning

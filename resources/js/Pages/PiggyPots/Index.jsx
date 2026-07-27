@@ -76,9 +76,10 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
         return {
             ...rest,
             ...rewardToPayload(reward),
-            // Kept in step with the reward's own description so the legacy
-            // column stays truthful for anything still reading it.
-            content_description: reward.description || rest.content_description || '',
+            // Mirror the reward's own description verbatim — a `|| rest...`
+            // fallback resent the old text whenever the creator cleared the
+            // "Extra detail" field on an edit.
+            content_description: reward.description || '',
         };
     });
 

@@ -428,7 +428,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
             </Modal>
 
             <div className='bg-white py-4'>
-                <div className='container mx-auto min-h-screen'>
+                <div className='container mx-auto min-h-dvh'>
                     <div className="py-8 px-4 sm:px-6 lg:px-8 ">
                         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Financial Hub</h1>
                         <p className="text-normal md:text-lg text-gray-600 mt-1">Real-time tax tracking and business insights.</p>

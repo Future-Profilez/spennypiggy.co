@@ -16,13 +16,19 @@ class MagicBellService
     public function __construct()
     {
         $this->client = new Client();
-        $this->apiKey = env('MAGICBELL_API_KEY');
-        $this->apiSecret = env('MAGICBELL_API_SECRET');
-        $this->apiUrl = env('MAGICBELL_API_URL', 'https://api.magicbell.com');
+        $this->apiKey = config('services.magicbell.key');
+        $this->apiSecret = config('services.magicbell.secret');
+        $this->apiUrl = config('services.magicbell.url', 'https://api.magicbell.com');
     }
 
     public function sendNotification($title, $content, $email)
     {
+        if (empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('MagicBellService::sendNotification: Invalid or missing recipient email', ['email' => $email, 'title' => $title]);
+
+            return false;
+        }
+
         $payload = [
             'notification' => [
                 'title' => $title,
@@ -33,24 +39,33 @@ class MagicBellService
             ]
         ];
         try {
+            if (empty($this->apiKey) || empty($this->apiSecret)) {
+                Log::error('MagicBellService::sendNotification: Missing MagicBell credentials');
+
+                return false;
+            }
+
             $response = Http::withHeaders([
                 'X-MAGICBELL-API-KEY' => $this->apiKey,
                 'X-MAGICBELL-API-SECRET' => $this->apiSecret,
                 'Accept' => 'application/json',
-            ])->post('https://api.magicbell.com/notifications', $payload);
-
-            // Log::info('MagicBell API response status: ' . $response->status());
-            // Log::info('MagicBell API response body: ' . $response->body());
+            ])->post($this->apiUrl . '/notifications', $payload);
 
             if ($response->successful()) {
-                Log::error('Notification sent successfully: ' . $response);
+                Log::info('MagicBell push notification sent successfully: ' . $title, ['email' => $email]);
                 return true;
             }
-            Log::error('Failed to send push notification: ' . $response->reason());
-            return true;
+
+            Log::error('Failed to send push notification', [
+                'status' => $response->status(),
+                'reason' => $response->reason(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
         } catch (\Exception $e) {
             Log::error('Error sending push notification: ' . $e->getMessage());
-            return true;
+            return false;
         }
     }
 }

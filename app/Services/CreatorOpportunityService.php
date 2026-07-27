@@ -60,18 +60,21 @@ class CreatorOpportunityService
     }
 
     /**
-     * How the creator's supporters spread across the platform VIP tiers, over
+     * How the creator's supporters spread across the platform engagement Levels, over
      * ALL of them (not just the displayed slice) — one batched lookup, so the
      * "tier mix" is honest rather than a sample of the top few.
      */
     private function tierDistribution(array $supporterIds): array
     {
+        // Mirror VipScoreService::TIERS — the engagement Level, not a spend tier.
+        // Renamed from gem names to Level 1-5 (24 July 2026) so the supporter badge
+        // stops colliding with the admin spend tier. Keep in step with that service.
         $meta = [
-            'Bronze' => ['color' => '#92400e', 'icon' => '🥉'],
-            'Silver' => ['color' => '#6b7280', 'icon' => '🥈'],
-            'Gold' => ['color' => '#f59e0b', 'icon' => '🥇'],
-            'Platinum' => ['color' => '#a855f7', 'icon' => '🏆'],
-            'Diamond' => ['color' => '#e879f9', 'icon' => '💎'],
+            'Level 1' => ['color' => '#9CA3AF', 'icon' => '①'],
+            'Level 2' => ['color' => '#60A5FA', 'icon' => '②'],
+            'Level 3' => ['color' => '#34D399', 'icon' => '③'],
+            'Level 4' => ['color' => '#FBBF24', 'icon' => '④'],
+            'Level 5' => ['color' => '#FF007F', 'icon' => '⑤'],
         ];
 
         $counts = array_fill_keys(array_keys($meta), 0);
@@ -98,7 +101,7 @@ class CreatorOpportunityService
 
     /**
      * Per-supporter lifetime picture: total spent, purchase count, first and
-     * last purchase, average order value — and a VIP tier for the top few.
+     * last purchase, average order value — and an engagement Level for the top few.
      */
     public function supporters(User $creator, string $currency = 'GBP')
     {
@@ -195,7 +198,7 @@ class CreatorOpportunityService
                 && $row['days_since_last_purchase'] >= self::AT_RISK_DAYS
                 && $row['purchases'] > 1;
 
-            // VIP tier is the supporter's platform-wide standing (same source as
+            // The engagement Level is the supporter's platform-wide standing (same source as
             // the public leaderboard) — enriching every supporter would be a
             // query each, so only the displayed slice gets it.
             $row['vip'] = ($index < self::VIP_ENRICH_LIMIT && $user)
@@ -292,8 +295,10 @@ class CreatorOpportunityService
         $alerts = [];
         $windowStart = now()->subDays($retention['window_days'] ?? 30);
 
+        // Level 4+ (engagement score ≥ 70) — filter on score, not the label, so a
+        // future rename of the levels can't silently break these alerts.
         $topTier = $supporters->filter(
-            fn ($s) => in_array($s['vip']['level'] ?? null, ['Platinum', 'Diamond'], true)
+            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 70
         );
 
         if ($topTier->isNotEmpty()) {
@@ -301,7 +306,7 @@ class CreatorOpportunityService
                 'key' => 'top_tier_supporters',
                 'severity' => 'good',
                 'title' => 'You have top-tier supporters',
-                'detail' => $topTier->count().' of your supporters are Platinum or Diamond on the platform.',
+                'detail' => $topTier->count().' of your supporters are Level 4 or 5 on the platform.',
             ];
         }
 
@@ -344,11 +349,11 @@ class CreatorOpportunityService
             ];
         }
 
-        // New Platinum supporter: a Platinum-tier supporter whose first purchase
-        // from this creator landed in the window. Distinct from the combined
-        // top-tier count above — this is a fresh arrival at the top of the ladder.
+        // Fresh arrival at the very top: a Level 5 supporter (score ≥ 90) whose
+        // first purchase from this creator landed in the window. Distinct from the
+        // combined top-tier (Level 4+) count above.
         $newPlatinum = $supporters->filter(
-            fn ($s) => ($s['vip']['level'] ?? null) === 'Platinum'
+            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 90
                 && ! empty($s['first_purchase'])
                 && Carbon::parse($s['first_purchase'])->gte($windowStart)
         );
@@ -357,8 +362,8 @@ class CreatorOpportunityService
             $alerts[] = [
                 'key' => 'new_platinum',
                 'severity' => 'good',
-                'title' => 'A new Platinum supporter',
-                'detail' => $newPlatinum->count().' Platinum-tier supporter(s) started buying from you this month.',
+                'title' => 'A new top-level supporter',
+                'detail' => $newPlatinum->count().' Level 5 supporter(s) started buying from you this month.',
             ];
         }
 
@@ -477,35 +482,35 @@ class CreatorOpportunityService
             ];
         }
 
-        // Contact the very top of the ladder. Platinum/Diamond is called out
-        // separately from a general VIP follow-up because they are the few
-        // supporters most worth a personal touch.
+        // Contact the very top of the ladder (Level 4+). Called out separately
+        // from a general follow-up because they are the few supporters most worth
+        // a personal touch.
         $platinumSupporter = $supporters->first(
-            fn ($s) => in_array($s['vip']['level'] ?? null, ['Platinum', 'Diamond'], true)
+            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 70
         );
 
         if ($platinumSupporter) {
             $actions[] = [
                 'key' => 'contact_platinum',
-                'title' => 'Contact your Platinum supporter',
+                'title' => 'Contact your top supporter',
                 'detail' => ($platinumSupporter['name'] ?? 'A supporter').' is '
-                    .($platinumSupporter['vip']['level'] ?? 'top-tier').' on the platform and has spent '
+                    .($platinumSupporter['vip']['level'] ?? 'top-level').' on the platform and has spent '
                     .number_format($platinumSupporter['lifetime_spent'], 2).' with you.',
                 'hint' => 'Consider reaching out through your own social channels, if appropriate.',
             ];
         }
 
-        // Follow up with a Gold-tier VIP who is still active — a nudge keeps them
-        // climbing toward Platinum.
+        // Follow up with a Level 3 supporter who is still active — a nudge keeps
+        // them climbing toward the top levels.
         $goldSupporter = $supporters->first(
-            fn ($s) => ($s['vip']['level'] ?? null) === 'Gold' && ! $s['at_risk']
+            fn ($s) => ((float) ($s['vip']['score'] ?? 0) >= 50 && (float) ($s['vip']['score'] ?? 0) < 70) && ! $s['at_risk']
         );
 
         if ($goldSupporter) {
             $actions[] = [
                 'key' => 'follow_up_vip',
                 'title' => 'Follow up with a VIP',
-                'detail' => ($goldSupporter['name'] ?? 'A supporter').' is a Gold-tier supporter across '
+                'detail' => ($goldSupporter['name'] ?? 'A supporter').' is a Level 3 supporter across '
                     .$goldSupporter['purchases'].' purchase(s).',
                 'hint' => 'Consider reaching out through your own social channels, if appropriate.',
             ];

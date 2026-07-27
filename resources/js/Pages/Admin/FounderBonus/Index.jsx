@@ -12,7 +12,7 @@ export default function AdminFounderBonusIndex({ auth, stats, recentBonuses }) {
         <AuthenticatedLayout auth={auth} user={auth.user}>
             <Head title="Admin - Founder Bonus Management" />
 
-            <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-dvh bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto space-y-8">
                     
                     {/* Header */}

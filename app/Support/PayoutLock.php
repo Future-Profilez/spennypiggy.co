@@ -68,6 +68,39 @@ class PayoutLock
     }
 
     /**
+     * Heartbeat: push the expiry forward while a run is still active.
+     *
+     * TTL is deliberately short so a CRASHED holder's lock is reclaimed quickly — but a long
+     * legitimate run (thousands of creators × a Stripe call each) can outlast the TTL, and if
+     * the lock expired mid-run a second run could steal it and double-pay. Calling this each
+     * iteration keeps a live run's lock fresh. Returns false if we no longer own the lock
+     * (it was stolen) — the caller MUST stop immediately, another run now holds it.
+     */
+    public static function extend(?string $token, ?string $name = null, int $ttl = self::TTL): bool
+    {
+        if (! $token) {
+            return false;
+        }
+
+        $name = $name ?: self::NAME;
+
+        try {
+            $updated = DB::table('payout_locks')
+                ->where('name', $name)
+                ->where('token', $token)
+                ->update(['expires_at' => time() + $ttl]);
+
+            return $updated === 1;
+        } catch (\Throwable $e) {
+            Log::warning('PayoutLock: extend failed: '.$e->getMessage());
+
+            // A transient failure to extend is not proof the lock was lost; let the run
+            // continue rather than abort a payout mid-flight on a hiccup.
+            return true;
+        }
+    }
+
+    /**
      * Release the lock only if we still own it (token match), so a run that overran its TTL
      * and was stolen cannot delete the new owner's lock.
      */

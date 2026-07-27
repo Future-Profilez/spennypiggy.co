@@ -20,7 +20,7 @@ export default function FounderBonus() {
         <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
-        <div className="bg-[#A2E4B8] min-h-screen font-sans text-gray-900 pb-12 md:pb-16 relative"> 
+        <div className="bg-[#A2E4B8] min-h-dvh font-sans text-gray-900 pb-12 md:pb-16 relative"> 
 
           <div className="relative z-1">
           <div className="containerbox mx-auto">

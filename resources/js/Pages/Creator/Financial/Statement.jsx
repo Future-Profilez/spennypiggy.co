@@ -25,7 +25,7 @@ export default function Statement({ summary, dates, profile, user }) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 text-[#0F172A] p-4 md:p-8 font-sans print:p-0 print:bg-white">
+        <div className="min-h-dvh bg-gray-50 text-[#0F172A] p-4 md:p-8 font-sans print:p-0 print:bg-white">
             <Head title={`Income Statement ${dates.label}`} />
             <style>{`
                 @media print {

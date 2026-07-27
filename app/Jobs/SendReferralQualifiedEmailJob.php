@@ -26,7 +26,7 @@ class SendReferralQualifiedEmailJob implements ShouldQueue
     {
         $user = $this->referral->referrer; // relationship required
 
-        if (!$user || !$user->email) {
+        if (! $user || ! $user->email) {
             return;
         }
 

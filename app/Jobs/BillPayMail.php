@@ -5,12 +5,10 @@ namespace App\Jobs;
 use App\EmailService;
 use App\Mail\BillMail;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class BillPayMail implements ShouldQueue
@@ -18,7 +16,9 @@ class BillPayMail implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $bill_pay;
+
     public $amountWithVat;
+
     /**
      * Create a new job instance.
      */
@@ -27,7 +27,6 @@ class BillPayMail implements ShouldQueue
         $this->bill_pay = $bill_pay;
         $this->amountWithVat = $amountWithVat;
     }
-
 
     /**
      * Execute the job.

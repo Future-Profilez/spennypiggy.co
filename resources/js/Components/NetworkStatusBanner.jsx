@@ -43,7 +43,7 @@ export default function NetworkStatusBanner() {
     const isOffline = status === 'offline';
 
     return (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999999] w-[90%] max-w-sm transition-all duration-300 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] left-1/2 -translate-x-1/2 z-[999999] w-[90%] max-w-sm transition-all duration-300 animate-in fade-in slide-in-from-top-4">
             <div className={`flex items-center justify-between px-4 py-2.5 rounded-[20px] backdrop-blur-xl border shadow-lg ${
                 isOffline 
                     ? 'bg-[#16161C]/95 border-amber-500/30 text-amber-300 shadow-amber-500/10' 

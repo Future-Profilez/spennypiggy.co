@@ -1,96 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { FaTimes, FaGift, FaStar, FaFire } from 'react-icons/fa';
-import { BsStars } from 'react-icons/bs';
-import { Link } from '@inertiajs/react';
+import React, { useState, useEffect } from "react";
+import { Link } from "@inertiajs/react";
+import { X, Crown, ArrowRight } from "lucide-react";
 
-export default function OfferAnnouncement({ 
-    onDismiss,
-    variant = 'default' // 'default', 'compact', 'gradient'
-}) {
+export default function OfferAnnouncement({ onDismiss }) {
     const [isVisible, setIsVisible] = useState(false);
-    const STORAGE_KEY = 'offerBannerDismissed';
-    const DISMISS_DURATION = 20 * 24 * 60 * 60 * 1000; // 20 days in milliseconds
+    const STORAGE_KEY = "offerBannerDismissed";
+    const DISMISS_DURATION = 20 * 24 * 60 * 60 * 1000; // 20 days
 
     useEffect(() => {
-        // Check if banner was previously dismissed
         const dismissedData = localStorage.getItem(STORAGE_KEY);
-        
+
         if (dismissedData) {
             const { timestamp } = JSON.parse(dismissedData);
             const now = new Date().getTime();
-            
-            // If 20 days haven't passed, keep banner hidden
+
             if (now - timestamp < DISMISS_DURATION) {
                 setIsVisible(false);
+
                 return;
             } else {
-                // 20 days have passed, remove the storage and show banner
                 localStorage.removeItem(STORAGE_KEY);
             }
         }
-        
-        // Show banner if not dismissed or 20 days have passed
+
         setIsVisible(true);
     }, []);
 
     const handleDismiss = () => {
-        const dismissData = {
-            timestamp: new Date().getTime()
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dismissData));
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ timestamp: new Date().getTime() }),
+        );
         setIsVisible(false);
         if (onDismiss) onDismiss();
     };
 
     if (!isVisible) return null;
 
-    return <>
+    // Founder is the platform's premium tier, so it wears black + gold — a
+    // deliberate contrast to the pink referral card sitting near it.
+    return (
+        <div className="relative overflow-hidden rounded-box border-2 border-black bg-[#12131A] text-white">
+            {/* A warm glow off the crown corner */}
+            <div
+                className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-[#FFD700]/20 blur-2xl"
+                aria-hidden="true"
+            />
 
-    
-    <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-[30px]    p-6 text-white bg-[#ff6b6b] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <button
+                type="button"
                 onClick={handleDismiss}
-                className="absolute !text-[20px] z-1 top-1 right-1 py-[3px] px-[10px] rounded-full hover:bg-white/20 transition-all"
+                aria-label="Dismiss founder offer"
+                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
             >
-                &times;
-        </button>
-        
-            {/* <div className="absolute inset-0 opacity-20">
-                <div className="absolute top-3 left-4 animate-bounce">
-                    <BsStars className="w-5 h-5" />
-                </div>
-                <div className="absolute top-6 right-6 animate-pulse">
-                    <FaGift className="w-6 h-6" />
-                </div>
-                <div className="absolute bottom-3 left-1/3 animate-bounce delay-300">
-                    <FaStar className="w-4 h-4" />
-                </div>
-                <div className="absolute bottom-6 right-1/4 animate-pulse delay-500">
-                    <FaFire className="w-5 h-5" />
-                </div>
-            </div> */}
+                <X size={15} strokeWidth={3} />
+            </button>
 
-            {/* Content */}
-            <div className="relative ">
-                <div className="sm:flex items-center mb-3">
-                    <div className="mb-3 sm:mb-0 p-3 flex justify-center items-center bg-white/20 rounded-[20px] sm:mr-3">
-                        <FaGift className="w-16 h-16 sm:w-12 sm:h-12" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold">Join the Founder Program! 👑 </h3>
-                        <p className="text-sm opacity-90">Don't miss out on this amazing deal</p>
-                    </div>
+            <div className="relative flex flex-col gap-4 p-5 pr-14 sm:flex-row sm:items-center sm:gap-6 sm:p-6 sm:pr-16">
+                {/* The reward figure is the hook */}
+                <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:gap-1 sm:border-r sm:border-white/20 sm:pr-6">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-[#FFD700] text-black sm:hidden">
+                        <Crown size={20} strokeWidth={2.5} />
+                    </span>
+                    <span className="hidden font-gulfs text-[38px] leading-none tracking-tight text-[#FFD700] sm:block">
+                        £2.5k
+                    </span>
+                    <span className="hidden text-[10px] font-black uppercase tracking-[0.18em] text-white/60 sm:block">
+                        in 30 days
+                    </span>
                 </div>
-                
-                <p className="text-normal opacity-95">
-                    Earn <span className="font-bold text-yellow-200">£2,500</span> in your first 30 days and  <span className="font-bold text-yellow-200"> get up to a 10% monthly bonus</span>! Exclusive founder badge, priority support & up to £1,000 monthly bonus.
-                </p>
-            </div>
-            <div className='mt-4'>
-                <Link href="/founder/bonus" className="cursor-pointer button bg-yellow-600 ">
-                     Learn More 
-                </Link>
+
+                <div className="min-w-0 flex-1">
+                    <h3 className="flex items-center gap-2 font-gulfs text-lg uppercase tracking-wide sm:text-xl">
+                        <Crown
+                            size={18}
+                            className="hidden text-[#FFD700] sm:block"
+                            strokeWidth={2.5}
+                        />
+                        Become a founder
+                    </h3>
+                    <p className="mt-1 text-[13px] font-medium leading-relaxed text-white/80">
+                        Earn{" "}
+                        <span className="font-bold text-[#FFD700]">£2,500</span>{" "}
+                        in your first 30 days for a founder badge, priority
+                        support, and up to a{" "}
+                        <span className="font-bold text-[#FFD700]">
+                            10% monthly bonus
+                        </span>
+                        .
+                    </p>
+
+                    <Link
+                        href="/founder/bonus"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#FFD700] px-4 py-2 text-[11px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5"
+                    >
+                        Learn more
+                        <ArrowRight size={13} strokeWidth={3} />
+                    </Link>
+                </div>
             </div>
         </div>
-        </>
+    );
 }

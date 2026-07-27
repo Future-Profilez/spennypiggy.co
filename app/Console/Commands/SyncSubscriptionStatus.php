@@ -87,7 +87,7 @@ class SyncSubscriptionStatus extends Command
 
         $this->info("🎯 Sync complete: {$updated} processed, {$errors} errors");
         // Expire old trial subscriptions
-        $expiredTrials = MonthlyCharge::where('status', 'paid')
+        $expiredTrials = MonthlyCharge::whereIn('status', ['paid', 'trialing', 'canceled'])
             ->whereNotNull('current_end_trial_date')
             ->whereDate('current_end_trial_date', '<', now())
             ->whereNull('current_end_subscription_date')

@@ -463,9 +463,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             {/* Creator Profile Section */}
                             <div className="bg-gray-50 rounded-box-sm p-5 flex items-center justify-between border-2 border-gray-100 mt-6">
                                 <div className="flex items-center gap-4">
-                                    <img 
-                                        src={task.creator.avatar_url || userphoto} 
-                                        alt={task.creator.name} 
+                                    <img
+                                        src={task.creator.avatar_url || userphoto}
+                                        alt={task.creator.name}
+                                        onError={(e) => { if (e.target.src !== userphoto) e.target.src = userphoto; }}
                                         className="w-14 h-14 rounded-full border-2 border-black object-cover"
                                     />
                                     <div>
@@ -704,7 +705,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button b"
+                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                             >
                                 Cancel
                             </button>

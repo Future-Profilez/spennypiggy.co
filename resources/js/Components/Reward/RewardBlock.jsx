@@ -83,7 +83,7 @@ export default function RewardBlock({
             )}
 
             {(reward.perks?.length > 0 || reward.post_access) && (
-                <div className="mt-5 border-t-[3px] border-dashed border-black pt-4">
+                <div className="pt-4">
                     <p className="mb-3 text-left text-[11px] font-black uppercase tracking-[0.14em]">
                         Every month, while you're subscribed
                     </p>

@@ -58,12 +58,18 @@ class VipScoreService
     }
 
     /** Tier thresholds, low → high. Colours/icons match the public leaderboard. */
+    // Engagement Level, NOT a spend tier. Renamed from gem names (Bronze…Diamond)
+    // to Level 1-5 on 24 July 2026 (client decision) so the supporter badge no
+    // longer shares words with the admin app's spend tier — a £150 supporter who
+    // buys often can be Level 5 here while sitting in the admin's Bronze band, and
+    // the two no longer look like a contradiction. Score thresholds are unchanged;
+    // only the labels/icons/colours moved. Level 5 is the top rung.
     private const TIERS = [
-        ['level' => 'Bronze',   'min' => 0,  'icon' => '🥉', 'color' => '#92400e'],
-        ['level' => 'Silver',   'min' => 30, 'icon' => '🥈', 'color' => '#6b7280'],
-        ['level' => 'Gold',     'min' => 50, 'icon' => '🥇', 'color' => '#f59e0b'],
-        ['level' => 'Platinum', 'min' => 70, 'icon' => '🏆', 'color' => '#a855f7'],
-        ['level' => 'Diamond',  'min' => 90, 'icon' => '💎', 'color' => '#e879f9'],
+        ['level' => 'Level 1', 'min' => 0,  'icon' => '①', 'color' => '#9CA3AF'],
+        ['level' => 'Level 2', 'min' => 30, 'icon' => '②', 'color' => '#60A5FA'],
+        ['level' => 'Level 3', 'min' => 50, 'icon' => '③', 'color' => '#34D399'],
+        ['level' => 'Level 4', 'min' => 70, 'icon' => '④', 'color' => '#FBBF24'],
+        ['level' => 'Level 5', 'min' => 90, 'icon' => '⑤', 'color' => '#FF007F'],
     ];
 
     /**

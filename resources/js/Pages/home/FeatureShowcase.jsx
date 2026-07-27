@@ -111,7 +111,7 @@ export default function FeatureShowcase() {
 
     return (
         <section ref={ref} style={{ height: `${FEATURES.length * 78}vh` }} className="relative bg-transparent">
-            <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+            <div className="sticky top-0 h-dvh flex items-center overflow-hidden">
                 <div className="container relative px-4 mx-auto grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
 
                     {/* progress rail */}

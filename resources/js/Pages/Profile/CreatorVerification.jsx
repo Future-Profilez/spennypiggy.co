@@ -310,6 +310,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         };
         document.addEventListener("visibilitychange", onVisible);
 
+        // Kept alive past the cap ON PURPOSE (it just no-ops): the visibility
+        // listener resets pollCount to 0 when the creator returns, and a live
+        // interval then resumes real polling on its next tick. Clearing it here
+        // would strand them on a single fetch-on-return with no heartbeat.
         const interval = setInterval(() => {
             if (document.hidden) return;
             if (pollCount.current >= 40) return;
@@ -516,14 +520,20 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             state:
                 creatorUser?.identity_status == 1
                     ? "done"
-                    : identityError
+                    : // identity_status 3 = fraud-flagged; the fraud webhook
+                      // branch sets the status but no error payload, so relying
+                      // on identityError alone left a flagged creator looking
+                      // like an ordinary "todo".
+                      creatorUser?.identity_status == 3 || identityError
                       ? "rejected"
                       : "todo",
             reason: identityError
                 ? `${(identityError.code || "").replaceAll("_", " ")}${
                       identityError.reason ? ` — ${identityError.reason}` : ""
                   }`.trim()
-                : null,
+                : creatorUser?.identity_status == 3
+                  ? "Your identity check didn’t pass our security review. Please contact support."
+                  : null,
             reviewNote: "Stripe usually decides within a few minutes.",
             locked: profileStatusLock != 2 || !hasSubscription,
             lockReason:
@@ -568,14 +578,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         )
         .reduce((sum, s) => sum + s.mins, 0);
 
-    // Four tiers: what needs you now, what we're reviewing, what's still locked,
-    // and what's finished. Collapsing the last three is what keeps this short.
-    const needsYou = steps.filter(
-        (s) => (s.state === "todo" || s.state === "rejected") && !s.locked,
-    );
-    const waiting = steps.filter((s) => s.state === "pending");
-    const upcoming = steps.filter((s) => s.state !== "done" && s.locked);
+    // Four MUTUALLY EXCLUSIVE tiers keyed off the four states, so a step lands
+    // in exactly one bucket:
+    //   done → completed · pending → waiting · rejected → needsYou (always, so
+    //   its reason is never hidden behind a bare "Locked" row) · todo → needsYou
+    //   when actionable, else upcoming.
+    // A pending step used to match both `waiting` and (locked) `upcoming` and
+    // rendered twice; keying on state fixes that.
     const completed = steps.filter((s) => s.state === "done");
+    const waiting = steps.filter((s) => s.state === "pending");
+    const needsYou = steps.filter(
+        (s) => s.state === "rejected" || (s.state === "todo" && !s.locked),
+    );
+    const upcoming = steps.filter((s) => s.state === "todo" && s.locked);
     const rejectedCount = needsYou.filter((s) => s.state === "rejected").length;
 
     return (

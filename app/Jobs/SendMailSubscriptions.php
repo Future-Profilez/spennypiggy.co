@@ -6,7 +6,6 @@ use App\EmailService;
 use App\Models\Subscription;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -33,7 +32,7 @@ class SendMailSubscriptions implements ShouldQueue
 
         foreach ($subs as $key => $value) {
 
-            if($value->user->notification_send == 1){
+            if ($value->user->notification_send == 1) {
                 EmailService::sendSubscriptionMail($value);
             }
         }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class CheckMediaModeration implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     /**
      * Rekognition moderation-label words that trigger a hold. Curated to the

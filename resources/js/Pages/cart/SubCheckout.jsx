@@ -376,13 +376,7 @@ export default function SubCheckout(props) {
             <div className={`px-0 pb-3 lg:px-2 bg-white py-12`}>
                 <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 ">
                     <div className="cartMain">
-                        <h2 className="pb-1 wishtitle">
-                            Wish Basket for {wish?.user?.name || " "}
-                            <Link className="text-violet-600" target="_blank"
-                                href={`/${wish?.user?.username || ""}`} >
-                                @{wish?.user?.username || ""}
-                            </Link>
-                        </h2>
+                        <h2 className="pb-1 wishtitle font-black uppercase">Checkout</h2>
                         <OrderContextCard
                             className="mb-4"
                             image={wish.perma_link}
@@ -413,7 +407,7 @@ export default function SubCheckout(props) {
                             <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-box   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
                                 <div className='prodcartbox items-center'>
                                     <div className='productimg'>
-                                        <img src={wish.perma_link || cartproductimg} alt='img' />
+                                        <img src={wish.perma_link || cartproductimg} alt={wish.wishname || "Product"} />
                                     </div>
                                     <div>
                                         <div className='cartProdTitle pl-3'>{wish.wishname}</div>
@@ -605,7 +599,7 @@ export default function SubCheckout(props) {
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button b"
+                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                             >
                                 Cancel
                             </button>

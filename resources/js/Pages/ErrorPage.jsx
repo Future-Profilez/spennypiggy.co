@@ -46,7 +46,7 @@ export default function ErrorPage(props) {
         <Guest auth={auth}>
             <Head title={'Sorry, we are doing some maintenance'}/>
             {status == 404 ? <Nocontent   /> : <>
-                <div className="h-screen py-[20px] flex items-center justify-center">
+                <div className="h-dvh py-[20px] flex items-center justify-center">
                     <div className="px-6 mb-28">
                         <div className="shadow-layout  inputs max-w-[600px] !shadow-[6px_6px_0px_rgba(0,0,0,0.9)] mx-auto  !border-2 border-black bg-white shadow-pink overflow-hidden">
                             <div className='py-4 px-6 flex  !border-b-[2px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>

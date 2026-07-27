@@ -35,19 +35,21 @@ class PostsController extends Controller
     /**
      * Validation rules shared by savePost/editPost.
      *
-     * A post must carry an image OR text — previously `image` was `required` outright,
-     * so a text-only update was impossible, while title/content were only required for
-     * type=blog (a type the UI never sends), meaning an image post could be saved with
-     * no title and no body at all.
+     * Every creator post must carry an image; the caption is optional. This is
+     * a deliberate content rule — a subscriber paying for a members-only feed
+     * should see content, not a wall of text-only status updates.
      */
     private function postRules(): array
     {
         return [
             'type' => ['required', 'string', Rule::in(self::ALLOWED_TYPES)],
             'for_module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
-            'image' => ['nullable', 'string', 'max:500', 'required_without:content'],
+            // Every creator post must carry an image — a members-only feed of
+            // text-only posts reads as an empty feed and gives a subscriber
+            // nothing to look at. The caption stays optional.
+            'image' => ['required', 'string', 'max:500'],
             'title' => ['nullable', 'string', 'max:150'],
-            'content' => ['nullable', 'string', 'max:5000', 'required_without:image'],
+            'content' => ['nullable', 'string', 'max:5000'],
             'ai_generated' => ['sometimes', 'boolean'],
         ];
     }
@@ -76,8 +78,7 @@ class PostsController extends Controller
         }
 
         $request->validate($this->postRules(), [
-            'content.required_without' => 'Add some text or choose an image for this post.',
-            'image.required_without' => 'Add some text or choose an image for this post.',
+            'image.required' => 'Add an image for this post.',
         ]);
 
         // NOTE: this endpoint is called with axios and the caller reads resp.data.status.
@@ -132,8 +133,7 @@ class PostsController extends Controller
         }
 
         $request->validate($this->postRules(), [
-            'content.required_without' => 'Add some text or choose an image for this post.',
-            'image.required_without' => 'Add some text or choose an image for this post.',
+            'image.required' => 'Add an image for this post.',
         ]);
 
         $post = Post::where('uuid', $uuid)->first();

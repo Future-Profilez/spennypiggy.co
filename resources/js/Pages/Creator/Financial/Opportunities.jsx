@@ -11,7 +11,7 @@ import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft } from 'l
  * The financial dashboard answers "what did I earn". This answers "what should
  * I do next" — who to thank, who is drifting, and what isn't published yet.
  * It reads as a leaderboard of the creator's supporters on purpose: the same
- * VIP-tier language the platform uses everywhere else.
+ * engagement-Level language the platform uses everywhere else.
  *
  * Every supporter suggestion is advisory: the platform never hands a creator a
  * supporter's contact details, and the copy says so.
@@ -132,7 +132,7 @@ export default function Opportunities({
         <AuthenticatedLayout>
             <Head title="Revenue Opportunities" />
 
-            <div className="min-h-screen bg-gray-50 py-6 md:py-10">
+            <div className="min-h-dvh bg-gray-50 py-6 md:py-10">
                 <div className="mx-auto max-w-4xl px-4 md:px-6">
                     {/* Header */}
                     <Link
@@ -341,7 +341,7 @@ export default function Opportunities({
                                                         <span
                                                             className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
                                                             style={{ backgroundColor: s.vip.color }}
-                                                            title={`Platform VIP tier: ${s.vip.level}`}
+                                                            title={`Engagement level: ${s.vip.level}`}
                                                         >
                                                             {s.vip.icon} {s.vip.level}
                                                         </span>

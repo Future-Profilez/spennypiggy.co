@@ -17,18 +17,21 @@ class ShopBuyed implements ShouldQueue
 
     /**
      * New Registered User
+     *
      * @var mixed
      */
     public $payment;
 
     /**
      * Is via Social
+     *
      * @var bool
      */
     public $anon;
 
     /**
      * Amount paid by user
+     *
      * @var mixed
      */
     public $amountUserPay;
@@ -50,9 +53,9 @@ class ShopBuyed implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param mixed $payment
-     * @param bool $anon
-     * @param mixed $amountUserPay
+     * @param  mixed  $payment
+     * @param  bool  $anon
+     * @param  mixed  $amountUserPay
      * @return void
      */
     public function __construct($payment, $anon, $amountUserPay)
@@ -70,8 +73,9 @@ class ShopBuyed implements ShouldQueue
     public function handle()
     {
         try {
-            if (!$this->payment) {
+            if (! $this->payment) {
                 Log::error('ShopBuyed Job: Payment data missing');
+
                 return;
             }
 
@@ -81,27 +85,30 @@ class ShopBuyed implements ShouldQueue
             $creator = $shop?->user;
             $creatorEmail = $creator?->email;
 
-            if (!$shop) {
+            if (! $shop) {
                 Log::warning('ShopBuyed Job: Shop not found', [
                     'shop_payment_id' => $this->payment->id ?? null,
                     'shop_id' => $this->payment->shop_id ?? null,
                 ]);
+
                 return;
             }
 
-            if (!$creator) {
+            if (! $creator) {
                 Log::warning('ShopBuyed Job: Creator not found', [
                     'shop_payment_id' => $this->payment->id ?? null,
                     'shop_id' => $shop->id ?? null,
                 ]);
+
                 return;
             }
 
-            if (!$creatorEmail) {
+            if (! $creatorEmail) {
                 Log::warning('ShopBuyed Job: Creator email missing', [
                     'shop_payment_id' => $this->payment->id ?? null,
                     'creator_id' => $creator->id ?? null,
                 ]);
+
                 return;
             }
 
@@ -133,7 +140,6 @@ class ShopBuyed implements ShouldQueue
     /**
      * Handle a job failure.
      *
-     * @param Throwable $exception
      * @return void
      */
     public function failed(Throwable $exception)

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\TipGoalsPayment;
 use App\Services\CertificateService;
 use Illuminate\Bus\Queueable;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class GenerateSupportCertificateJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesCriticalWork, SerializesModels;
 
     public $tipPayment;
 
@@ -35,29 +36,29 @@ class GenerateSupportCertificateJob implements ShouldQueue
                 'tip_payment_id' => $this->tipPayment->id,
                 'tip_payment_uuid' => $this->tipPayment->uuid,
                 'creator_id' => $this->tipPayment->creator_id,
-                'amount' => $this->tipPayment->amount
+                'amount' => $this->tipPayment->amount,
             ]);
 
-            $certificateService = new CertificateService();
+            $certificateService = new CertificateService;
             $certificateUrl = $certificateService->generateAndUploadSupportCertificate($this->tipPayment);
 
             if ($certificateUrl) {
                 $this->tipPayment->update(['certificate_url' => $certificateUrl]);
-                
+
                 Log::info('Support certificate generated and saved', [
                     'tip_payment_id' => $this->tipPayment->id,
-                    'certificate_url' => $certificateUrl
+                    'certificate_url' => $certificateUrl,
                 ]);
             } else {
                 Log::error('Failed to generate support certificate', [
-                    'tip_payment_id' => $this->tipPayment->id
+                    'tip_payment_id' => $this->tipPayment->id,
                 ]);
             }
         } catch (\Exception $e) {
             Log::error('Exception in GenerateSupportCertificateJob', [
                 'tip_payment_id' => $this->tipPayment->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

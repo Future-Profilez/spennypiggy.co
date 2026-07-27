@@ -295,7 +295,7 @@ export default function Board(props) {
     return (
         <Authenticated auth={auth && auth.user}>
             <Head title={"Leaderboard"} />
-            <div className="bg-white pt-4 min-h-screen">
+            <div className="bg-white pt-4 min-h-dvh">
                 <div className="containerbox pb-5 pt-2">
                     <h1 className="text-bl font-GillSans text-center xl:!text-left text-3xl lg:text-4xl my-6 uppercase text-black ">
                     Leaderboard

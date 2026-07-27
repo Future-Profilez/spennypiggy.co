@@ -29,9 +29,7 @@ class GenerateVideoPoster implements ShouldQueue
     /** Max poll re-dispatches before giving up. */
     private const MAX_POLLS = 6;
 
-    public function __construct(public string $sourceUuid)
-    {
-    }
+    public function __construct(public string $sourceUuid) {}
 
     public function handle(): void
     {
@@ -53,20 +51,22 @@ class GenerateVideoPoster implements ShouldQueue
             $token = $entry['token'] ?? null;
             $group = $entry['thumbnails_group_uuid'] ?? ($entry['uuid'] ?? null);
 
-            if (!$res['status'] || empty($token) || empty($group)) {
+            if (! $res['status'] || empty($token) || empty($group)) {
                 $row->update(['status' => 'failed']);
                 Log::warning("GenerateVideoPoster: conversion request failed for {$this->sourceUuid}", [
                     'code' => $res['code'] ?? null,
                 ]);
+
                 return;
             }
 
             $row->update([
                 'poster_token' => $token,
-                'poster_uuid'  => $group,
-                'status'       => 'processing',
+                'poster_uuid' => $group,
+                'status' => 'processing',
             ]);
             self::dispatch($this->sourceUuid)->delay(now()->addSeconds(15));
+
             return;
         }
 
@@ -76,9 +76,9 @@ class GenerateVideoPoster implements ShouldQueue
                 ->accept('application/vnd.uploadcare-v0.7+json')
                 ->contentType('application/json')
                 ->withHeaders([
-                    'Authorization' => 'Uploadcare.Simple ' . config('services.uploadcare.public') . ':' . config('services.uploadcare.secret'),
+                    'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
                 ])
-                ->get(config('services.uploadcare.host', 'https://api.uploadcare.com/') . "convert/video/status/{$row->poster_token}/");
+                ->get(config('services.uploadcare.host', 'https://api.uploadcare.com/')."convert/video/status/{$row->poster_token}/");
 
             if ($req->successful()) {
                 $res = $req->json();
@@ -87,22 +87,25 @@ class GenerateVideoPoster implements ShouldQueue
                 if (in_array($status, ['finished', 'success'], true)) {
                     // Only ready if we actually hold a poster UUID, else fail.
                     $row->update(['status' => empty($row->poster_uuid) ? 'failed' : 'ready']);
+
                     return;
                 }
 
                 if (in_array($status, ['failed', 'canceled', 'error'], true)) {
                     $row->update(['status' => 'failed']);
+
                     return;
                 }
             }
         } catch (\Exception $e) {
-            Log::warning("GenerateVideoPoster: status poll failed for {$this->sourceUuid}: " . $e->getMessage());
+            Log::warning("GenerateVideoPoster: status poll failed for {$this->sourceUuid}: ".$e->getMessage());
         }
 
         // Still processing — re-dispatch until we hit the cap.
         $row->increment('attempts');
         if ($row->attempts >= self::MAX_POLLS) {
             $row->update(['status' => 'failed']);
+
             return;
         }
         self::dispatch($this->sourceUuid)->delay(now()->addSeconds(20));

@@ -587,7 +587,7 @@ export default function TipInner({classes, idd}) {
               <button
                 type="button"
                 onClick={() => setShowStepUp(false)}
-                className="w-full main-button b"
+                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
               > Cancel
               </button>
               <button
@@ -648,7 +648,7 @@ export default function TipInner({classes, idd}) {
             {/* <button
               type="button"
               onClick={() => setShowConfirm(false)}
-              className="w-full main-button b"
+              className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             > Cancel
             </button> */}
             <button

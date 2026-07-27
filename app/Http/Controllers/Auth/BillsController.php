@@ -81,12 +81,6 @@ class BillsController extends Controller
 
     public function billSave(Request $request)
     {
-        // 🔴 DEBUGGING: Log that method was called
-        Log::info('🎯 billSave method called', [
-            'user_id' => Auth::id(),
-            'request_data' => $request->all(),
-        ]);
-
         // Default the reward headline from the listing name so a missing field
         // never blocks the save — the reward contract still gets a title.
         if (! filled($request->reward_title)) {
@@ -125,9 +119,6 @@ class BillsController extends Controller
         }
 
         $user = User::where('id', Auth::id())->first();
-
-        // 🔴 DEBUGGING: Log user found
-        Log::info('👤 User found', ['user_id' => $user->id ?? null]);
 
         // A listing cannot exist without a payment destination. createProduct()
         // takes a non-nullable string, so an unconnected creator would 500 on a

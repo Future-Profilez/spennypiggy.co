@@ -53,9 +53,9 @@ class ShopBuyedUser implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param mixed $payment
-     * @param string|null $url
-     * @param string|null $curr
+     * @param  mixed  $payment
+     * @param  string|null  $url
+     * @param  string|null  $curr
      * @return void
      */
     public function __construct($payment, $url, $curr)
@@ -65,11 +65,11 @@ class ShopBuyedUser implements ShouldQueue
         $this->curr = $curr;
 
         Log::info('SHOP MAIL DATA', [
-            'payment_id'      => $this->payment->id,
-            'amount'          => $this->payment->amount,
-            'total_paid'      => $this->payment->total_paid,
+            'payment_id' => $this->payment->id,
+            'amount' => $this->payment->amount,
+            'total_paid' => $this->payment->total_paid,
             'shipping_amount' => $this->payment->shipping_amount,
-            'vat_tax_amount'  => $this->payment->vat_tax_amount,
+            'vat_tax_amount' => $this->payment->vat_tax_amount,
         ]);
     }
 
@@ -82,8 +82,9 @@ class ShopBuyedUser implements ShouldQueue
     {
         try {
 
-            if (!$this->payment) {
+            if (! $this->payment) {
                 Log::error('ShopBuyedUser Job: Payment data missing');
+
                 return;
             }
 
@@ -94,11 +95,12 @@ class ShopBuyedUser implements ShouldQueue
 
             $buyerEmail = $this->payment->email ?? $this->payment->user?->email;
 
-            if (!$buyerEmail) {
+            if (! $buyerEmail) {
                 Log::warning('ShopBuyedUser Job: Buyer email missing', [
                     'shop_payment_id' => $this->payment->id ?? null,
                     'user_id' => $this->payment->user_id ?? null,
                 ]);
+
                 return;
             }
 
@@ -130,7 +132,6 @@ class ShopBuyedUser implements ShouldQueue
     /**
      * Handle a failed job.
      *
-     * @param Throwable $exception
      * @return void
      */
     public function failed(Throwable $exception)

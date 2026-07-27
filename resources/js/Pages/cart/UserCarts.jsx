@@ -784,15 +784,7 @@ export default function UserCarts(props) {
                     </div> */}
                 <div className="w-full">
                     <div className="cartMain">
-                        <h2 className="pb-1 wishtitle  ">
-                            Your Basket for {datas?.user?.name || ""}
-                            <Link
-                                className="text-violet-600"
-                                href={`/${datas?.user?.username || ""}`}
-                            >
-                                (@{datas?.user?.username || ""})
-                            </Link>
-                        </h2>
+                        <h2 className="pb-1 wishtitle font-black uppercase">Your basket</h2>
                         <OrderContextCard
                             className="mt-2 mb-4"
                             image={datas?.user?.avatar_url}
@@ -1130,7 +1122,7 @@ export default function UserCarts(props) {
                                     setShowStepUp(false);
                                     setSkipCaptcha(false);
                                 }}
-                                className="w-full main-button b"
+                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                             >
                                 Cancel
                             </button>

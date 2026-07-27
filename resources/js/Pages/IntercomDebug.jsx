@@ -7,7 +7,7 @@ export default function IntercomDebug({ scenarios, config, users }) {
         <>
             <Head title="Intercom Debug" />
             <IntercomProvider />
-            <div className="min-h-screen bg-gray-100 p-8">
+            <div className="min-h-dvh bg-gray-100 p-8">
                 <div className="max-w-6xl mx-auto">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">Intercom Debug Information</h1>
                     

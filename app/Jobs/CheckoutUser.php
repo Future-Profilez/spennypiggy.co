@@ -3,13 +3,8 @@
 namespace App\Jobs;
 
 use App\EmailService;
-use App\Models\AppService;
-use App\Models\AutoMessage;
-use App\Models\Follower;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -21,27 +16,33 @@ class CheckoutUser implements ShouldQueue
 
     /**
      * New Registered User
-     * @var \App\Models\User
+     *
+     * @var User
      */
     public $payment;
 
     /**
      * Is via Social
+     *
      * @var bool
      */
     public $anon;
 
     public $surprise;
+
     public $message;
+
     public $anonname;
+
     public $symbol;
+
     public $vat_amount;
 
     /**
      * Create a new job instance.
      *
-     * @param \App\Models\User $user
-     * @param bool $social = false
+     * @param  User  $user
+     * @param  bool  $social  = false
      * @return void
      */
     public function __construct($payment, $anon, $surprise, $message, $symbol, $vat_amount, $anonname = null)

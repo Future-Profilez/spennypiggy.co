@@ -120,7 +120,7 @@ export default function Edit({ auth, currencySymbol, task }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={titleText} />
-            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-screen font-public-sans">
+            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-dvh font-public-sans">
                 <div className="container">
                     <div className="mx-auto max-w-[900px]">
                         {/* Back Button */}
@@ -328,7 +328,16 @@ export default function Edit({ auth, currencySymbol, task }) {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <button
                                                 type="button"
-                                                onClick={() => setData("type", "timed")}
+                                                onClick={() =>
+                                                    setData((current) => ({
+                                                        ...current,
+                                                        type: "timed",
+                                                        reward:
+                                                            current.reward.type === "file"
+                                                                ? { ...current.reward, type: "message", file: null }
+                                                                : current.reward,
+                                                    }))
+                                                }
                                                 className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "timed" ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Clock size={20} /> Timed / Manual</div>
@@ -386,6 +395,11 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             onChange={(next) => setData("reward", next)}
                                             ctxName="task-deliverable"
                                             errors={errors}
+                                            allowedTypes={
+                                                data.type === "instant"
+                                                    ? undefined
+                                                    : ["message", "link"]
+                                            }
                                         />
                                     </div>
 

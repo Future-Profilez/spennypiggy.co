@@ -155,7 +155,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
   const [posterLoaded, setPosterLoaded] = useState(false);
 
   return (
-    <div className={`pb-4 ${videoLoading ? 'd-none' : '' } `}>
+    <div className={`${videoLoading ? 'd-none' : '' } `}>
       {intro ?
         <div className='relative'>
 

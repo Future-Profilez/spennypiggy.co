@@ -1,3 +1,50 @@
+import { useState } from "react";
+
+/**
+ * Creator avatar with a real fallback. imageSrc() turns a bare Uploadcare uuid
+ * into a CDN URL, but a deleted/invalid uuid still 404s — a null-only guard would
+ * then show the browser's broken-image icon. On load error we fall back to the
+ * initial-letter tile, so the WHO block is never broken.
+ */
+function Avatar({ src, name, size = "w-11 h-11" }) {
+    const [failed, setFailed] = useState(false);
+    const url = imageSrc(src);
+
+    if (url && !failed) {
+        return (
+            <img
+                src={url}
+                alt=""
+                onError={() => setFailed(true)}
+                className={`${size} rounded-full border-[3px] border-black object-cover shrink-0 bg-[#A2E4B8]`}
+            />
+        );
+    }
+
+    return (
+        <span className={`${size} rounded-full border-[3px] border-black bg-[#A2E4B8] flex items-center justify-center font-black shrink-0`}>
+            {(name || "?").charAt(0).toUpperCase()}
+        </span>
+    );
+}
+
+/** Item thumbnail that hides itself on load error instead of showing a broken icon. */
+function ItemThumb({ src, size = "w-14 h-14" }) {
+    const [failed, setFailed] = useState(false);
+    const url = imageSrc(src);
+
+    if (!url || failed) return null;
+
+    return (
+        <img
+            src={url}
+            alt=""
+            onError={() => setFailed(true)}
+            className={`${size} rounded-box-sm border-[3px] border-black object-cover shrink-0`}
+        />
+    );
+}
+
 /**
  * Checkout order summary, styled as the receipt the supporter is about to earn.
  * Shared by every payment page so all checkouts answer the same five questions,
@@ -38,9 +85,6 @@ export default function SummaryReceipt({
     renewalNote = null,
     children,
 }) {
-    const avatarSrc = imageSrc(creatorAvatar);
-    const itemImageSrc = imageSrc(image);
-
     return (
         <div className="relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
             <div className="bg-[#A2E4B8] border-b-[3px] border-black px-5 py-3">
@@ -51,17 +95,7 @@ export default function SummaryReceipt({
                 {/* WHO — the creator the money goes to */}
                 {creatorName && (
                     <div className="flex items-center gap-3 pb-4 mb-4 border-b-2 border-dashed border-black/15">
-                        {avatarSrc ? (
-                            <img
-                                src={avatarSrc}
-                                alt=""
-                                className="w-11 h-11 rounded-full border-[3px] border-black object-cover shrink-0"
-                            />
-                        ) : (
-                            <span className="w-11 h-11 rounded-full border-[3px] border-black bg-[#A2E4B8] flex items-center justify-center font-black text-lg shrink-0">
-                                {creatorName.charAt(0).toUpperCase()}
-                            </span>
-                        )}
+                        <Avatar src={creatorAvatar} name={creatorName} />
                         <div className="min-w-0">
                             <p className="font-black uppercase tracking-widest text-[10px] text-black/60 leading-none">
                                 {payingLabel}
@@ -83,13 +117,7 @@ export default function SummaryReceipt({
 
                 {/* WHAT — the item */}
                 <div className="flex items-start gap-3">
-                    {itemImageSrc && (
-                        <img
-                            src={itemImageSrc}
-                            alt=""
-                            className="w-14 h-14 rounded-box-sm border-[3px] border-black object-cover shrink-0"
-                        />
-                    )}
+                    <ItemThumb src={image} />
                     <div className="min-w-0">
                         {typeBadge && (
                             <span className="inline-block bg-black text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">
@@ -126,9 +154,9 @@ export default function SummaryReceipt({
 
                 {rows.length > 0 && (
                     <div className="mt-4 space-y-1.5">
-                        {rows.map((r) => (
+                        {rows.map((r, i) => (
                             <div
-                                key={r.label}
+                                key={`${i}-${r.label}`}
                                 className="flex justify-between text-[12px] font-bold text-black/70"
                             >
                                 <span>{r.label}</span>
@@ -257,24 +285,11 @@ export function OrderContextCard({
     whatYouGet = [],
     className = "",
 }) {
-    const avatarSrc = imageSrc(creatorAvatar);
-    const itemImageSrc = imageSrc(image);
-
     return (
         <div className={`bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 ${className}`}>
             {creatorName && (
                 <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-dashed border-black/15">
-                    {avatarSrc ? (
-                        <img
-                            src={avatarSrc}
-                            alt=""
-                            className="w-10 h-10 rounded-full border-[3px] border-black object-cover shrink-0"
-                        />
-                    ) : (
-                        <span className="w-10 h-10 rounded-full border-[3px] border-black bg-[#A2E4B8] flex items-center justify-center font-black shrink-0">
-                            {creatorName.charAt(0).toUpperCase()}
-                        </span>
-                    )}
+                    <Avatar src={creatorAvatar} name={creatorName} size="w-10 h-10" />
                     <div className="min-w-0">
                         <p className="font-black uppercase tracking-widest text-[10px] text-black/60 leading-none">
                             {payingLabel}
@@ -295,13 +310,7 @@ export function OrderContextCard({
             )}
 
             <div className="flex items-start gap-3">
-                {itemImageSrc && (
-                    <img
-                        src={itemImageSrc}
-                        alt=""
-                        className="w-12 h-12 rounded-box-sm border-[3px] border-black object-cover shrink-0"
-                    />
-                )}
+                <ItemThumb src={image} size="w-12 h-12" />
                 <div className="min-w-0">
                     {typeBadge && (
                         <span className="inline-block bg-black text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">

@@ -151,7 +151,7 @@ export function HorizontalPan({ children, className = "" }) {
       style={{ height: dist ? `calc(100vh + ${dist}px)` : "100vh" }}
       className="relative"
     >
-      <div className="sticky top-0 h-screen flex items-center overflow-hidden">
+      <div className="sticky top-0 h-dvh flex items-center overflow-hidden">
         <motion.div
           ref={trackRef}
           style={{ x, willChange: "transform" }}

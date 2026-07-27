@@ -4,7 +4,7 @@ import LegalLayout from "@/Layouts/LegalLayout";
 
 const css = `
   .cpp { --cpp-paper:#FBFAF8;--cpp-panel:#F4F0E8;--cpp-panel-2:#EFEAE0;--cpp-ink:#1B2230;--cpp-ink-soft:#434B5C;--cpp-ink-faint:#717889;--cpp-hair:#E5E0D6;--cpp-hair-strong:#D8D2C5;--cpp-rose:#A93E59;--cpp-rose-deep:#8A2F47;--cpp-rose-tint:#F7EBEE;--cpp-gold:#9A7B30;--cpp-maxw:880px;--cpp-r:14px; }
-  .cpp { color:var(--cpp-ink);font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh; }
+  .cpp { color:var(--cpp-ink);font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100dvh; }
   .cpp .cpp-wrap{ margin:0 auto;}
   .cpp .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cpp-rose);font-weight:500;margin:0 0 18px;}
   .cpp h1{font-family:"Fraunces",Georgia,serif;font-optical-sizing:auto;font-weight:500;font-size:clamp(34px,6.2vw,52px);line-height:1.04;letter-spacing:-.018em;margin:0 0 22px;color:var(--cpp-ink);}

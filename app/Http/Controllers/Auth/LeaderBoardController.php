@@ -2459,7 +2459,7 @@ class LeaderBoardController extends Controller
     }
 
     /**
-     * Determine VIP level based on VIP score
+     * Determine the engagement Level (1-5) from the engagement score.
      */
     private function getVipLevel($score)
     {

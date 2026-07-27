@@ -327,7 +327,7 @@ export default function Accountsetting(props) {
     return (
         <Authenticated user={user} auth={auth.user}>
             <Head title={"My Account"} />
-            <div className="min-h-screen bg-gray-200 py-6 md:py-16">
+            <div className="min-h-dvh bg-gray-200 py-6 md:py-16">
                 <div className="max-w-3xl mx-auto px-6 pt-8">
                     <div className="md:text-center mb-10">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">

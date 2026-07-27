@@ -138,7 +138,7 @@ class PiggyPotController extends Controller
         $data = $validator->validated();
         // Normalised in one place so a link is stored https-prefixed and a file
         // reward never keeps a leftover message body.
-        $data = array_merge($data, RewardService::columnsFrom($request->all()));
+        $data = array_merge($data, RewardService::columnsWithFile($request->all()));
         $data['user_id'] = Auth::id();
         $data['payment_methods_accepted'] = in_array($request->payment_methods_accepted, ['card', 'bank', 'both'], true) ? $request->payment_methods_accepted : 'both';
 
@@ -211,7 +211,7 @@ class PiggyPotController extends Controller
         }
 
         $data = $validator->validated();
-        $data = array_merge($data, RewardService::columnsFrom($request->all()));
+        $data = array_merge($data, RewardService::columnsWithFile($request->all()));
 
         // A held pot can only be released by admin approval (Content Review in
         // the admin app) — never by the creator re-submitting status=active.

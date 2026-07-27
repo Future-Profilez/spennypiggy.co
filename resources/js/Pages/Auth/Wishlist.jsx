@@ -370,9 +370,10 @@ export default function Wishlist(props) {
                     }
                 },
                 onError: (_err) => {
-                    console.error(_err);
+                    // `resp` does not exist in this closure — referencing it
+                    // threw a ReferenceError and swallowed the real validation
+                    // error. errorsHandling surfaces the actual field errors.
                     errorsHandling(_err);
-                    errorAlert(resp.props.flash?.success || "Added");
                 },
             });
         } else {

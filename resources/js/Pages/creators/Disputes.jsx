@@ -20,7 +20,7 @@ export default function Disputes() {
         <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
-        <div className="bg-[#A2E4B8] min-h-screen font-sans text-gray-900 pb-16 relative">
+        <div className="bg-[#A2E4B8] min-h-dvh font-sans text-gray-900 pb-16 relative">
 
             <div className='containerbox mx-auto'>
                <div className=" w-full mx-auto pt-12 md:pt-24 relative z-1">

@@ -12,7 +12,8 @@ import AddressForm from "../rye/AddressForm";
 
 export default function AddGift({
     item,
-    classes, text,
+    classes,
+    text,
     updateState,
     fetch_gifts,
     addressAdded,
@@ -108,9 +109,11 @@ export default function AddGift({
                 <CiGift color="var(--pink)" size="1.5rem" />
             </div>
             <div className="pl-3 text-left">
-                <h2 className="text-md font-normal font-GillSans uppercase">{text ? text :'Pick A Treat'}</h2>
+                <h2 className="text-md font-normal font-GillSans uppercase">
+                    {text ? text : "Pick A Treat"}
+                </h2>
                 <p className="text-sm font-poppins">
-                Add a treat link or URL from Amazon
+                    Add a treat link or URL from Amazon
                 </p>
             </div>
         </div>

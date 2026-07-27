@@ -42,7 +42,7 @@ export default function Redirecting() {
   return (
     <>
     <style>{`
-    .redirect-page{height:100vh;display:flex;align-items:center;justify-content:center;}
+    .redirect-page{height:100dvh;display:flex;align-items:center;justify-content:center;}
     .loader{width:30px;height:30px;position:relative;margin:auto;}
     .loader::before,.loader::after{content:"";position:absolute;}
     .loader-3::before,.loader-3::after{border-radius:50%;-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-timing-function:ease-in-out;animation-timing-function:ease-in-out;-webkit-animation-iteration-count:infinite;animation-iteration-count:infinite;}

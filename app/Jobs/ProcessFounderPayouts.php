@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -36,7 +37,7 @@ class ProcessFounderPayouts implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info('Starting founder payout processing for month: ' . now()->format('Y-m'));
+        Log::info('Starting founder payout processing for month: '.now()->format('Y-m'));
 
         // Process pending payouts for qualified founders
         $this->processPendingPayouts();
@@ -61,8 +62,8 @@ class ProcessFounderPayouts implements ShouldQueue
             try {
                 $this->processStripeTransfer($bonus);
             } catch (\Exception $e) {
-                Log::error("Failed to process payout for founder {$bonus->creator_id}: " . $e->getMessage());
-                
+                Log::error("Failed to process payout for founder {$bonus->creator_id}: ".$e->getMessage());
+
                 // Keep as pending for retry next time
                 // In production, you might want to implement retry logic or manual review
             }
@@ -77,23 +78,28 @@ class ProcessFounderPayouts implements ShouldQueue
         if (empty($bonus->creator?->account_id) || (int) ($bonus->creator?->stripe_details_submitted ?? 0) !== 1) {
             throw new \Exception('Creator Stripe account is not ready');
         }
-        if (!empty($bonus->creator?->payout_paused_at)) {
+        if (! empty($bonus->creator?->payout_paused_at)) {
             return;
         }
-        if (!empty($bonus->payout_record_uuid) || !empty($bonus->stripe_payout_id)) {
+        if (! empty($bonus->payout_record_uuid) || ! empty($bonus->stripe_payout_id)) {
             return;
         }
 
         $rates = Currency::rates();
-        if ($rates instanceof \Illuminate\Support\Collection) {
+        if ($rates instanceof Collection) {
             $rates = $rates->toArray();
         }
 
         $convert = function (float $amount, string $from, string $to) use ($rates): float {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
-            if ($from === $to) return $amount;
-            if (!isset($rates[$from]) || !isset($rates[$to])) return $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($rates[$from]) || ! isset($rates[$to])) {
+                return $amount;
+            }
+
             return ($amount / $rates[$from]) * $rates[$to];
         };
 
@@ -122,7 +128,7 @@ class ProcessFounderPayouts implements ShouldQueue
             'env' => (string) config('app.env'),
         ];
 
-        $transferDescription = 'Founder Bonus' . (!empty($bonus->creator->username) ? (' - ' . $bonus->creator->username) : '');
+        $transferDescription = 'Founder Bonus'.(! empty($bonus->creator->username) ? (' - '.$bonus->creator->username) : '');
 
         // Stripe calls happen OUTSIDE any DB transaction; idempotency keys keyed to the
         // bonus id make a concurrent or retried run return the same transfer/payout
@@ -133,7 +139,7 @@ class ProcessFounderPayouts implements ShouldQueue
             strtolower($currency),
             $metadataBase,
             $transferDescription,
-            'founder_transfer_' . $bonus->id
+            'founder_transfer_'.$bonus->id
         );
 
         StripeControl::ensureManualPayoutSchedule($bonus->creator->account_id, strtolower($currency));
@@ -145,13 +151,13 @@ class ProcessFounderPayouts implements ShouldQueue
             'metadata' => array_merge($metadataBase, [
                 'transfer_id' => (string) ($transfer->id ?? ''),
             ]),
-            'idempotency_key' => 'founder_payout_' . $bonus->id,
+            'idempotency_key' => 'founder_payout_'.$bonus->id,
         ], $bonus->creator->account_id);
 
         // Money has moved — commit the marks immediately in their own small transaction.
         DB::transaction(function () use ($bonus, $currency, $amountMinor, $transfer, $payout, &$notify) {
             $locked = FounderBonus::whereKey($bonus->id)->lockForUpdate()->with('creator')->first();
-            if (!$locked || !empty($locked->payout_record_uuid) || !empty($locked->stripe_payout_id)) {
+            if (! $locked || ! empty($locked->payout_record_uuid) || ! empty($locked->stripe_payout_id)) {
                 return; // another run already recorded this payout (same Stripe objects via idempotency)
             }
 
@@ -190,14 +196,14 @@ class ProcessFounderPayouts implements ShouldQueue
             ];
         });
 
-        if (!$notify || empty($notify['email'])) {
+        if (! $notify || empty($notify['email'])) {
             return;
         }
 
-        if (!$bonus->relationLoaded('creator') || !$bonus->creator) {
+        if (! $bonus->relationLoaded('creator') || ! $bonus->creator) {
             $bonus->load('creator');
         }
-        if (!$bonus->creator) {
+        if (! $bonus->creator) {
             return;
         }
 

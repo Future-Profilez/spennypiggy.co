@@ -14,7 +14,9 @@ class MembershipMail implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $mem;
+
     public $amountWithCurr;
+
     /**
      * Create a new job instance.
      */
@@ -29,7 +31,7 @@ class MembershipMail implements ShouldQueue
      */
     public function handle(): void
     {
-        if((isset($this->mem->membership->user) && $this->mem->membership->user->notification_send == 1) || (empty($this->mem->membership->user))){
+        if ((isset($this->mem->membership->user) && $this->mem->membership->user->notification_send == 1) || (empty($this->mem->membership->user))) {
             EmailService::sendMembershipMail($this->mem, $this->amountWithCurr);
         }
     }

@@ -24,7 +24,9 @@ const CAT = {
 const cat = (t) => CAT[t] || { label: t, color: "#71717A", icon: FileText };
 const tint = (hex, a = "1a") => hex + a; // 8-digit hex alpha
 
-const TIER_COLOR = { Bronze: "#B45309", Silver: "#71717A", Gold: "#D97706", Platinum: "#2563EB", Diamond: "#DB2777" };
+// Engagement Levels (renamed from gem names, 24 July 2026). The backend already
+// sends the colour on the status payload; this is only a fallback.
+const TIER_COLOR = { "Level 1": "#9CA3AF", "Level 2": "#60A5FA", "Level 3": "#34D399", "Level 4": "#FBBF24", "Level 5": "#FF007F" };
 
 const ACCENT = "#FF007F";
 const CARD = "bg-white border border-zinc-200/70 rounded-box shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
@@ -541,7 +543,7 @@ function Hero({ embedded, media, summary, money, reduce, status }) {
 }
 
 function SupporterStatus({ status, reduce }) {
-    const color = TIER_COLOR[status.level] || ACCENT;
+    const color = status.color || TIER_COLOR[status.level] || ACCENT;
     return (
         <div className="mt-7 max-w-md">
             <div className="flex items-center justify-between mb-2">
