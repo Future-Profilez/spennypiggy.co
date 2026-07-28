@@ -25,7 +25,9 @@ environments:
       - "php artisan optimize:clear"
       - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
-      - "npm run build"
+      # build:production = vite build + sw:build. Plain `npm run build` skips the
+      # service worker, so every deploy shipped the PWA without a fresh SW.
+      - "npm run build:production"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
       # - "rd /s /q node_modules"
@@ -63,7 +65,9 @@ environments:
       - "php artisan optimize:clear"
       - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
-      - "npm run build"
+      # build:production = vite build + sw:build. Plain `npm run build` skips the
+      # service worker, so every deploy shipped the PWA without a fresh SW.
+      - "npm run build:production"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
       - "php artisan config:clear"

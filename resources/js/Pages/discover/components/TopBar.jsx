@@ -178,7 +178,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                                 }}
                                                                 className="hover:bg-gray-50 px-3 py-2 rounded-[30px]    cursor-pointer flex items-center gap-3"
                                                             >
-                                                                <img src={s.image || 'https://via.placeholder.com/30'} className="w-8 h-8 rounded-[30px]   object-cover" />
+                                                                <img src={s.image || 'https://via.placeholder.com/30'} alt={s.text || ''} loading="lazy" className="w-8 h-8 rounded-[30px]   object-cover" />
                                                                 <div>
                                                                     <div className="text-sm font-medium text-gray-900">{s.text}</div>
                                                                     <div className="text-xs text-gray-500">{s.subtext}</div>

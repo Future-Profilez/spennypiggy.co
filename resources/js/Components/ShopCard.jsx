@@ -70,9 +70,9 @@ export default function ShopCard({
                 }
             }}
             onClick={() => router.visit(url)}
-            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 max-w-sm w-full h-full bg-white border-[3px] border-black rounded-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
+            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 self-start max-w-sm w-full bg-white border-[3px] border-black rounded-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col"
         >
-            <div className="p-3 md:p-4 h-full flex flex-col">
+            <div className="p-3 md:p-4 flex flex-col">
                 <div className="relative">
                     {item?.is_suspended == 1 && (
                         <div className="absolute top-2 left-5 right-5 bg-red-600 border-2 border-black z-10 text-white text-xs font-black p-2 rounded-box-sm text-center">
@@ -131,11 +131,17 @@ export default function ShopCard({
                                     MADE WITH AI
                                 </div>
                             )}
+                            {/* The reward the buyer gets back, overlaid on the
+                                bottom of the image. */}
+                            <RewardHint
+                                item={item}
+                                className="absolute bottom-2 left-2 right-2 z-10 !bg-emerald-50/95 backdrop-blur-sm"
+                            />
                         </div>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3 min-h-[94px]">
+                <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3">
                     <div className="flex items-center gap-2">
                         <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
                             {item?.name}
@@ -153,11 +159,10 @@ export default function ShopCard({
                     <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-2">
                         {item?.description}
                     </span>
-                    <RewardHint item={item} className="mt-1 max-w-full" />
                 </div>
 
-                <div className="mt-auto">
-                    <div className="mb-3 flex items-start justify-between min-h-[64px]">
+                <div className="mt-3">
+                    <div className="mb-3 flex items-start justify-between">
                         <div className="flex flex-col">
                             <h2 className="font-black text-lg sm:text-2xl text-black">
                                 {formatMultiPrice(

@@ -41,17 +41,50 @@ class SeoController extends Controller
      */
     public function robots()
     {
-        $siteUrl = config('app.url');
+        $siteUrl = rtrim(config('app.url'), '/');
+
+        // Keep this list in step with StaticPageSeoMiddleware's noindex rules.
+        // robots.txt stops the crawl; the meta tag stops the indexing — a URL that
+        // is only Disallow'd here can still be indexed from an external link, so
+        // anything that must never appear in results needs both.
+        $disallow = [
+            '/admin/',
+            '/api/',
+            '/dashboard',
+            '/account',
+            '/cart',
+            '/checkout',
+            '/thank-you',
+            '/my-purchases',
+            '/history',
+            '/settings',
+            '/subscriptions',
+            '/email-preferences',
+            '/unsubscribe/',
+            '/financial',
+            '/creator/',
+            '/emulate',
+            '/webhook',
+            '/debug*',
+            '/test*',
+            '/seed*',
+            '/dev/',
+        ];
+
         $content = "User-agent: *\n";
         $content .= "Allow: /\n\n";
-        $content .= "Disallow: /admin/\n";
-        $content .= "Disallow: /api/\n";
-        $content .= "Disallow: /dashboard/\n";
-        $content .= "Disallow: /account/\n";
-        $content .= "Disallow: /debug*\n";
-        $content .= "Disallow: /test*\n";
-        $content .= "Disallow: /seed*\n\n";
+        foreach ($disallow as $path) {
+            $content .= "Disallow: {$path}\n";
+        }
+        $content .= "\n";
+        // /sitemap.xml is the sitemap INDEX — it links the static, creator, wishlist
+        // and post sitemaps. The children are listed too so a crawler that only reads
+        // robots.txt still finds them.
         $content .= "Sitemap: {$siteUrl}/sitemap.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-static.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-creators.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-wishlists.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-posts.xml\n";
 
         // Create response with aggressive cache prevention
         $response = new Response($content, 200, [

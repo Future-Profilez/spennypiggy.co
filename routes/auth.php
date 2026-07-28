@@ -422,12 +422,18 @@ Route::middleware('auth')->group(function () {
 
         // Posts - accessible without subscription
         Route::prefix('post')->name('post.')->group(function () {
+            // Typeahead for @mentions in the composer. Throttled because it is a
+            // user-search endpoint: it must not become a way to enumerate accounts.
+            Route::get('mention-search', [PostsController::class, 'mentionSearch'])
+                ->middleware('throttle:30,1')
+                ->name('mention-search');
             Route::post('save', [PostsController::class, 'savePost'])->name('save');
             Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
             // POST, not GET — same reason as the shop routes above: a GET carries no CSRF
             // token, so an <img src=".../post/delete/{uuid}"> was enough to delete a
             // logged-in creator's post, and a link prefetch was enough to "like" one.
             Route::post('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+            Route::post('pin/{uuid}', [PostsController::class, 'togglePin'])->name('pin');
             Route::post('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
             Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
@@ -1107,6 +1113,10 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
 
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
 })->middleware('check.block')->name('wish.show');
+
+Route::get('/{username}/post/{slug}', [App\Http\Controllers\Auth\PostsController::class, 'showPostDetail'])
+    ->middleware('check.block')
+    ->name('post.show');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     ->middleware('check.block')

@@ -107,4 +107,14 @@ return [
         'token' => env('INTERNAL_SYNC_TOKEN'),
     ],
 
+    // Search Console site verification + GA4. Both are optional and render nothing
+    // when unset, so dev/local never pollutes the production property.
+    // GOOGLE_SITE_VERIFICATION is the token from the Search Console "HTML tag"
+    // method — without it the sitemap cannot be submitted and no ranking or
+    // impression data exists at all.
+    'google' => [
+        'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+        'analytics_id' => env('GOOGLE_ANALYTICS_ID'),
+    ],
+
 ];

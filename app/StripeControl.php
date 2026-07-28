@@ -192,6 +192,74 @@ class StripeControl
         }
     }
 
+    /**
+     * Everything needed to check that a creator actually received the listed
+     * price: what was charged, what Stripe really took, what the platform took,
+     * and which fee profile the supporter price was built from.
+     *
+     * One retrieve instead of several, because the caller walks a whole window
+     * of payments. Returns null when the charge cannot be read — never a zeroed
+     * array, which a caller would mistake for "Stripe took nothing".
+     *
+     * @return array{amount_minor:int,fee_minor:int,application_fee_minor:int,fee_profile:string,currency:string}|null
+     */
+    public static function getChargeFactsForPaymentIntent(string $paymentIntentId, ?string $connectedAccountId = null): ?array
+    {
+        self::setClient();
+
+        try {
+            $opts = [];
+            if (! empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $pi = self::$client->paymentIntents->retrieve(
+                $paymentIntentId,
+                ['expand' => ['charges.data.balance_transaction']],
+                $opts
+            );
+
+            $charge = $pi->charges->data[0] ?? null;
+
+            if (! $charge) {
+                return null;
+            }
+
+            $balanceTx = $charge->balance_transaction ?? null;
+
+            if (is_string($balanceTx)) {
+                $balanceTx = self::$client->balanceTransactions->retrieve($balanceTx, [], $opts);
+            }
+
+            if (! $balanceTx || ! isset($balanceTx->fee)) {
+                return null;
+            }
+
+            // The profile is recorded on the intent's metadata at checkout, and
+            // is the only reliable statement of which rates produced this
+            // supporter price — the risk-ledger `payments` table has no such
+            // column, so assuming "card" would silently mis-check every bank
+            // payment.
+            $profile = (string) ($pi->metadata->fee_profile ?? $charge->metadata->fee_profile ?? 'card');
+
+            return [
+                'amount_minor' => (int) ($charge->amount ?? 0),
+                'fee_minor' => (int) $balanceTx->fee,
+                'application_fee_minor' => (int) ($pi->application_fee_amount ?? 0),
+                'fee_profile' => $profile !== '' ? $profile : 'card',
+                'currency' => strtoupper((string) ($charge->currency ?? 'gbp')),
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Failed to fetch charge facts for payment intent', [
+                'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public static function getStripeFeeMinorForPaymentIntent(string $paymentIntentId, ?string $connectedAccountId = null): int
     {
         self::setClient();

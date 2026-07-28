@@ -2,72 +2,90 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use App\Models\User;
 use App\Models\WishItem;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class SitemapController extends Controller
 {
     /**
-     * Generate custom flat sitemap.xml as requested
+     * URLs per child sitemap. The protocol caps a sitemap at 50,000 URLs / 50MB;
+     * smaller chunks also keep each Lambda response fast.
+     */
+    public const CHUNK = 5000;
+
+    /**
+     * Generated sitemaps are cached. Every response used to be `no-store`, so each
+     * crawl re-ran the queries on Lambda.
+     */
+    public const CACHE_TTL = 3600;
+
+    /**
+     * Static + marketing pages. Login/register are deliberately absent — noindex.
+     */
+    public const STATIC_PAGES = [
+        ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
+        ['url' => '/discover', 'priority' => '0.9', 'changefreq' => 'daily'],
+        ['url' => '/creators', 'priority' => '0.9', 'changefreq' => 'weekly'],
+        ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
+        ['url' => '/creators/stripe-safe', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/creators/keep-100', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/creators/features', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/creators/disputes', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/creators/founder-bonus', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/how-spenny-piggy-works', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/founder-program', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/pricing', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/features', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/pride', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/giftstore', 'priority' => '0.7', 'changefreq' => 'monthly'],
+        ['url' => '/about', 'priority' => '0.6', 'changefreq' => 'monthly'],
+        ['url' => '/contact', 'priority' => '0.6', 'changefreq' => 'monthly'],
+        ['url' => '/terms-and-conditions', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/privacy-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/cookies-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/creator-agreement', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/supporter-terms', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/return-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/paid-tasks-terms', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/reserves-and-payments-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/mor-agreement', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/us-addendum', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/copyright-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/content-payment-policy', 'priority' => '0.4', 'changefreq' => 'yearly'],
+        ['url' => '/creator-supporter-contract', 'priority' => '0.4', 'changefreq' => 'yearly'],
+    ];
+
+    /**
+     * `/sitemap.xml` — the URL named in robots.txt and submitted to Search Console.
+     *
+     * It used to be a flat urlset of static pages only, while the creator, wishlist
+     * and post sitemaps sat at URLs that nothing linked to. None of the real content
+     * URLs were reachable through a sitemap at all. It is now the index itself, so
+     * every child is discoverable from the one submitted URL.
      */
     public function customSitemap()
     {
-        $pages = [
-            '/',
-            '/pricing',
-            '/features',
-            '/about',
-            '/contact',
-            '/terms-and-conditions',
-            '/privacy-policy',
-            '/cookies-policy',
-            '/creator-agreement',
-            '/supporter-terms',
-            '/return-policy',
-            '/paid-tasks-terms',
-            '/reserves-and-payments-policy',
-            '/mor-agreement',
-            '/us-addendum',
-            '/copyright-policy',
-            '/content-payment-policy',
-            '/how-spenny-piggy-works',
-            '/leaderboard',
-            '/discover',
-            '/creator-supporter-contract',
-            '/founder-program',
-            // Landing pages
-            '/creators',
-            '/creators/stripe-safe',
-            '/creators/keep-100',
-            '/creators/features',
-            '/creators/disputes',
-            '/creators/founder-bonus',
-            '/pride',
-            '/giftstore',
-        ];
+        return $this->index();
+    }
 
-        $content = '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-
-        foreach ($pages as $url) {
-            $content .= '
-  <url>
-    <loc>'.url($url).'</loc>
-    <lastmod>'.now()->toW3cString().'</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>'.($url === '/' ? '1.0' : '0.8').'</priority>
-  </url>';
+    /**
+     * `max('updated_at')` returns a raw string, not a Carbon instance — calling
+     * ->toW3cString() on it fatalled, so the whole sitemap index returned a 500
+     * and no sub-sitemap was ever discovered.
+     */
+    private function w3c($value): string
+    {
+        try {
+            return $value instanceof \DateTimeInterface
+                ? Carbon::instance($value)->toW3cString()
+                : Carbon::parse((string) $value)->toW3cString();
+        } catch (\Throwable $e) {
+            return now()->toW3cString();
         }
-
-        $content .= '
-</urlset>';
-
-        return response($content, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
     }
 
     /**
@@ -75,43 +93,48 @@ class SitemapController extends Controller
      */
     public function index()
     {
-        $staticLastmod = now();
-        try {
-            $creatorsLastmod = User::where('is_public_profile', 1)
-                ->where('suspended_account', 0)
-                ->max('updated_at') ?? $staticLastmod;
-        } catch (\Exception $e) {
-            $creatorsLastmod = $staticLastmod;
-        }
+        $content = Cache::remember('sitemap:index', self::CACHE_TTL, function () {
+            $now = now();
 
-        try {
-            $wishlistsLastmod = WishItem::where('is_approved', 1)->max('updated_at') ?? $staticLastmod;
-        } catch (\Exception $e) {
-            $wishlistsLastmod = $staticLastmod;
-        }
+            $entries = [
+                ['loc' => url('/seo/sitemap-static.xml'), 'lastmod' => $this->deployedAt()],
+            ];
 
-        $content = '<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>'.url('/seo/sitemap-static.xml').'</loc>
-    <lastmod>'.$staticLastmod->toW3cString().'</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>'.url('/seo/sitemap-creators.xml').'</loc>
-    <lastmod>'.$creatorsLastmod->toW3cString().'</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>'.url('/seo/sitemap-wishlists.xml').'</loc>
-    <lastmod>'.$wishlistsLastmod->toW3cString().'</lastmod>
-  </sitemap>
-</sitemapindex>';
+            $children = [
+                ['path' => '/seo/sitemap-creators.xml', 'query' => fn () => $this->creatorQuery()],
+                ['path' => '/seo/sitemap-wishlists.xml', 'query' => fn () => $this->wishQuery()],
+                ['path' => '/seo/sitemap-posts.xml', 'query' => fn () => $this->postQuery()],
+            ];
 
-        return response($content, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
+            foreach ($children as $child) {
+                $count = (int) ($this->safely(fn () => $child['query']()->count()) ?? 0);
+                $lastmod = $this->safely(fn () => $child['query']()->max('updated_at')) ?? $now;
+
+                // Always at least one chunk, so an empty table still publishes a
+                // valid (empty) child rather than dropping out of the index.
+                $chunks = max(1, (int) ceil($count / self::CHUNK));
+                for ($page = 1; $page <= $chunks; $page++) {
+                    $entries[] = [
+                        'loc' => url($child['path']).($page > 1 ? '?page='.$page : ''),
+                        'lastmod' => $lastmod,
+                    ];
+                }
+            }
+
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+                .'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+            foreach ($entries as $entry) {
+                $xml .= '  <sitemap>'."\n"
+                    .'    <loc>'.htmlspecialchars($entry['loc'], ENT_XML1).'</loc>'."\n"
+                    .'    <lastmod>'.$this->w3c($entry['lastmod']).'</lastmod>'."\n"
+                    .'  </sitemap>'."\n";
+            }
+
+            return $xml.'</sitemapindex>';
+        });
+
+        return $this->xml($content);
     }
 
     /**
@@ -119,36 +142,24 @@ class SitemapController extends Controller
      */
     public function static()
     {
-        $staticPages = [
-            ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
-            ['url' => '/discover', 'priority' => '0.9', 'changefreq' => 'daily'],
-            ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
-            ['url' => '/how-spenny-piggy-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
-            ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
-        ];
+        $content = Cache::remember('sitemap:static', self::CACHE_TTL, function () {
+            $urls = [];
+            foreach (self::STATIC_PAGES as $page) {
+                $urls[] = [
+                    'loc' => url($page['url']),
+                    // A static page has no per-row timestamp; the deploy is the closest
+                    // honest signal. now() on every request claims "changed just now"
+                    // forever, which Google learns to ignore.
+                    'lastmod' => $this->deployedAt(),
+                    'changefreq' => $page['changefreq'],
+                    'priority' => $page['priority'],
+                ];
+            }
 
-        $content = '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+            return $this->urlset($urls);
+        });
 
-        foreach ($staticPages as $page) {
-            $content .= '
-  <url>
-    <loc>'.url($page['url']).'</loc>
-    <lastmod>'.now()->toW3cString().'</lastmod>
-    <changefreq>'.$page['changefreq'].'</changefreq>
-    <priority>'.$page['priority'].'</priority>
-  </url>';
-        }
-
-        $content .= '
-</urlset>';
-
-        return response($content, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
+        return $this->xml($content);
     }
 
     /**
@@ -156,41 +167,34 @@ class SitemapController extends Controller
      */
     public function creators()
     {
-        // Removed caching to prevent issues
-        try {
-            $creators = User::where('is_public_profile', 1)
-                ->where('suspended_account', 0)
-                ->select('username', 'updated_at')
-                ->orderBy('updated_at', 'desc')
-                ->limit(1000) // Reduced limit for safety
-                ->get();
-        } catch (\Exception $e) {
-            // Fallback to empty collection if database query fails
-            $creators = collect();
-        }
+        $page = $this->page();
 
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        $content = Cache::remember('sitemap:creators:'.$page, self::CACHE_TTL, function () use ($page) {
+            $creators = $this->safely(fn () => $this->creatorQuery()
+                ->select('id', 'username', 'updated_at')
+                // Ordered by id, not updated_at: paging over a column that changes
+                // under you skips and repeats rows between chunks.
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get()) ?? collect();
 
-        foreach ($creators as $creator) {
-            $xml .= '
-  <url>
-    <loc>'.url('/'.$creator->username).'</loc>
-    <lastmod>'.$creator->updated_at->toW3cString().'</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>';
-        }
+            $urls = [];
+            foreach ($creators as $creator) {
+                if (empty($creator->username)) {
+                    continue;
+                }
+                $urls[] = [
+                    'loc' => url('/'.$creator->username),
+                    'lastmod' => $creator->updated_at,
+                    'changefreq' => 'weekly',
+                    'priority' => '0.8',
+                ];
+            }
 
-        $xml .= '
-</urlset>';
+            return $this->urlset($urls);
+        });
 
-        return response($xml, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
+        return $this->xml($content);
     }
 
     /**
@@ -198,41 +202,74 @@ class SitemapController extends Controller
      */
     public function wishlists()
     {
-        // Removed caching to prevent issues
-        try {
-            $wishlists = WishItem::where('is_approved', 1)
+        $page = $this->page();
+
+        $content = Cache::remember('sitemap:wishlists:'.$page, self::CACHE_TTL, function () use ($page) {
+            $wishlists = $this->safely(fn () => $this->wishQuery()
                 ->select('id', 'user_id', 'updated_at')
                 ->with('user:id,username')
-                ->orderBy('updated_at', 'desc')
-                ->limit(1000) // Reduced limit for safety
-                ->get();
-        } catch (\Exception $e) {
-            // Fallback to empty collection if database query fails
-            $wishlists = collect();
-        }
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get()) ?? collect();
 
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+            $urls = [];
+            foreach ($wishlists as $wishlist) {
+                // WishItem::user() scopes out suspended creators, so this is null for
+                // them — the old code dereferenced it and 500'd the whole sitemap.
+                if (empty($wishlist->user?->username)) {
+                    continue;
+                }
+                $urls[] = [
+                    'loc' => url('/'.$wishlist->user->username.'/wish/'.$wishlist->id),
+                    'lastmod' => $wishlist->updated_at,
+                    'changefreq' => 'weekly',
+                    'priority' => '0.6',
+                ];
+            }
 
-        foreach ($wishlists as $wishlist) {
-            $xml .= '
-  <url>
-    <loc>'.url('/'.$wishlist->user->username.'/wish/'.$wishlist->id).'</loc>
-    <lastmod>'.$wishlist->updated_at->toW3cString().'</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>';
-        }
+            return $this->urlset($urls);
+        });
 
-        $xml .= '
-</urlset>';
+        return $this->xml($content);
+    }
 
-        return response($xml, 200, [
-            'Content-Type' => 'application/xml',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-        ]);
+    /**
+     * Generate creator posts sitemap.
+     *
+     * Public posts only: a members/subscribers/supporters post renders as a
+     * locked teaser, so listing it would send crawlers to a page with nothing
+     * to index. Approval and profile visibility mirror the noindex rule in
+     * PostsController::applyPostDetailSeo — the two must agree.
+     */
+    public function posts()
+    {
+        $page = $this->page();
+
+        $content = Cache::remember('sitemap:posts:'.$page, self::CACHE_TTL, function () use ($page) {
+            $posts = $this->safely(fn () => $this->postQuery()
+                ->select('id', 'slug', 'user_id', 'updated_at')
+                ->with('user:id,username')
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get()) ?? collect();
+
+            $urls = [];
+            foreach ($posts as $post) {
+                if (empty($post->user?->username) || empty($post->slug)) {
+                    continue;
+                }
+                $urls[] = [
+                    'loc' => url('/'.$post->user->username.'/post/'.$post->slug),
+                    'lastmod' => $post->updated_at,
+                    'changefreq' => 'weekly',
+                    'priority' => '0.6',
+                ];
+            }
+
+            return $this->urlset($urls);
+        });
+
+        return $this->xml($content);
     }
 
     /**
@@ -241,12 +278,114 @@ class SitemapController extends Controller
      */
     public function clearCache()
     {
-        // Cache clearing disabled
+        Cache::forget('sitemap:index');
+        Cache::forget('sitemap:static');
+        for ($i = 1; $i <= 50; $i++) {
+            Cache::forget('sitemap:creators:'.$i);
+            Cache::forget('sitemap:wishlists:'.$i);
+            Cache::forget('sitemap:posts:'.$i);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Sitemap cache cleared successfully',
             'timestamp' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * ⚠️ This filtered on `users.is_public_profile`, a column that does not exist.
+     * The query threw, the catch swallowed it, and the creator sitemap returned an
+     * empty urlset on every request — silently, for as long as it has existed. Every
+     * creator profile on the platform was missing from the sitemap.
+     *
+     * `role` 1 = creator, 0 = fan (see the domain model). A fan has no public profile
+     * worth indexing, and a suspended account must not be crawled at all.
+     */
+    private function creatorQuery()
+    {
+        return User::query()
+            ->where('role', 1)
+            ->where('suspended_account', 0)
+            ->whereNotNull('username');
+    }
+
+    private function wishQuery()
+    {
+        $query = WishItem::query()->where('is_approved', 1);
+
+        // is_suspended arrived later than this table; a database without it must
+        // still produce a sitemap rather than a 500.
+        if (Schema::hasColumn('wish_items', 'is_suspended')) {
+            $query->where('is_suspended', 0);
+        }
+
+        return $query;
+    }
+
+    private function postQuery()
+    {
+        return Post::query()
+            ->where('approved', 1)
+            ->where('for_module', 'public')
+            ->whereNotNull('slug')
+            // Same `is_public_profile` trap as creatorQuery() — the column does not
+            // exist, so this whereHas threw and the post sitemap was always empty.
+            ->whereHas('user', fn ($q) => $q->where('role', 1)->where('suspended_account', 0));
+    }
+
+    private function page(): int
+    {
+        return max(1, (int) request()->query('page', 1));
+    }
+
+    /**
+     * A sitemap must never 500 — Search Console drops a broken one wholesale.
+     */
+    private function safely(callable $fn)
+    {
+        try {
+            return $fn();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function deployedAt(): Carbon
+    {
+        $manifest = public_path('build/manifest.json');
+        if (is_file($manifest)) {
+            return Carbon::createFromTimestamp(filemtime($manifest));
+        }
+
+        return now()->startOfDay();
+    }
+
+    /**
+     * @param  array<int,array{loc:string,lastmod:mixed,changefreq:string,priority:string}>  $urls
+     */
+    private function urlset(array $urls): string
+    {
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+            .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+        foreach ($urls as $url) {
+            $xml .= '  <url>'."\n"
+                .'    <loc>'.htmlspecialchars($url['loc'], ENT_XML1).'</loc>'."\n"
+                .'    <lastmod>'.$this->w3c($url['lastmod']).'</lastmod>'."\n"
+                .'    <changefreq>'.$url['changefreq'].'</changefreq>'."\n"
+                .'    <priority>'.$url['priority'].'</priority>'."\n"
+                .'  </url>'."\n";
+        }
+
+        return $xml.'</urlset>';
+    }
+
+    private function xml(string $content)
+    {
+        return response($content, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Cache-Control' => 'public, max-age='.self::CACHE_TTL,
         ]);
     }
 }

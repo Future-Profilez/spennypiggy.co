@@ -1,4 +1,5 @@
 import { Suspense, lazy, useMemo, useState } from "react";
+import { Gift } from "lucide-react";
 import AddMoreTile from "@/Components/AddMoreTile";
 import Nocontent from "@/includes/Nocontent";
 import ItemBadges from "@/Components/ItemBadges";
@@ -121,6 +122,28 @@ export default function PiggyPotsGrid({
                                 <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">
                                     {pot.description}
                                 </p>
+                                {/* What the supporter gets back for funding the goal. */}
+                                {(pot.reward_title ||
+                                    pot.reward_description ||
+                                    pot.content_description ||
+                                    pot.content_file) && (
+                                    <div className="mt-2 flex items-center gap-1.5 rounded-[20px] border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5">
+                                        <Gift
+                                            size={13}
+                                            strokeWidth={2.5}
+                                            className="shrink-0 text-emerald-600"
+                                        />
+                                        <span className="truncate text-[11px] font-bold leading-tight text-emerald-700">
+                                            <span className="text-emerald-600/80">
+                                                You get:
+                                            </span>{" "}
+                                            {pot.reward_title ||
+                                                pot.reward_description ||
+                                                pot.content_description ||
+                                                "Exclusive content"}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="mt-3 flex justify-between items-center flex-shrink-0">
                                     <span className="text-xs font-black text-gray-600 uppercase tracking-wider">
                                         Progress

@@ -20,6 +20,7 @@ use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\SeoTemplateService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\TwitterAuthService;
@@ -399,11 +400,21 @@ class AuthenticatedSessionController extends Controller
         };
         $data = $getData();
 
+        // Both of these used to render with HTTP 200. To a crawler a 200 means
+        // "this URL is a real page", so every unknown or suspended username was
+        // indexed as a soft-404 and kept being re-crawled. The status code is the
+        // only signal that removes it.
         if (($data['__page'] ?? null) === 'NotFound') {
-            return Inertia::render('NotFound');
+            SeoMeta::setRobots('noindex,follow');
+
+            return Inertia::render('NotFound')->toResponse(request())->setStatusCode(404);
         }
         if (($data['__page'] ?? null) === 'Suspanded') {
-            return Inertia::render('Suspanded');
+            SeoMeta::setRobots('noindex,follow');
+
+            // 410 Gone, not 404: the profile existed and was withdrawn, and Google
+            // drops a 410 from the index faster than a 404.
+            return Inertia::render('Suspanded')->toResponse(request())->setStatusCode(410);
         }
         $pageName = $data['__page'] ?? 'Dashboard';
         unset($data['__page']);
@@ -645,19 +656,22 @@ class AuthenticatedSessionController extends Controller
             ? "{$wish->wishname} — {$user->name} | Spenny Piggy"
             : "{$user->name} — Spenny Piggy";
 
+        // Descriptions are what Google prints in the result — they are a Stripe-facing
+        // surface and follow the content-first rules (a purchase of creator content,
+        // never a gift/tip/donation). SeoTemplateService owns the wording.
         $description = $isWishPage && $wish
-            ? (($wish->description ? trim((string) $wish->description).' ' : '')."Support {$user->name} on Spenny Piggy. Send gifts, join memberships, and explore wishlists.")
-            : "Support {$user->name} on Spenny Piggy. Explore wishlists, memberships, paid tasks, and tips — all in one creator platform.";
+            ? SeoTemplateService::getWishItemDescription($user, $wish)
+            : SeoTemplateService::getCreatorDescription($user);
 
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
-        $keywords = "{$user->name}, {$user->username}, creator, memberships, wishlists, paid tasks, tips, Spenny Piggy";
+        $keywords = "{$user->name}, {$user->username}, creator, exclusive content, memberships, paid requests, Spenny Piggy";
         if (! empty($user->creator_category)) {
             $keywords .= ", {$user->creator_category}";
         }
         if ($isWishPage && $wish) {
-            $keywords = "{$wish->wishname}, gift, wishlist, {$user->name}, {$user->username}, Spenny Piggy";
+            $keywords = "{$wish->wishname}, exclusive content, {$user->name}, {$user->username}, Spenny Piggy";
             if (! empty($wish->category)) {
                 $keywords .= ", {$wish->category}";
             }
@@ -667,6 +681,19 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::setCanonical($canonicalUrl);
         SeoMeta::setOgData($isWishPage ? 'product' : 'profile', $title, $description, $image, $canonicalUrl);
         SeoMeta::setTwitterCard('summary_large_image', $title, $description, $image);
+
+        // One English site — self-referencing hreflang only (see setHreflangTags).
+        SeoTemplateService::setHreflangTags(request()->path());
+
+        // Structured data. Both generators existed but were never called from
+        // anywhere, so a creator profile carried no Person markup and a wish page —
+        // the only per-item public URL on the platform — carried no Product/Offer,
+        // which is what a commerce result needs to show price and availability.
+        if ($isWishPage && $wish) {
+            SeoMeta::addJsonLd(SeoTemplateService::generateProductSchema($wish, $user));
+        } else {
+            SeoMeta::addJsonLd(SeoTemplateService::generatePersonSchema($user));
+        }
 
         $breadcrumbs = [
             ['name' => 'Home', 'url' => url('/')],

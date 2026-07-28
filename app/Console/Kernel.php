@@ -70,6 +70,15 @@ class Kernel extends ConsoleKernel
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
         $schedule->command('app:sync-exchange-rate')->hourly()->withoutOverlapping(4);
 
+        // Verifies the promise the pricing model rests on — that the creator
+        // received exactly the listed price. The supporter's price is grossed
+        // up from an ESTIMATE of Stripe's fee, and any shortfall against the
+        // real fee comes out of the creator's net silently. Nothing compared
+        // the two until this ran, so a leak could persist indefinitely.
+        $schedule->command('payments:verify-creator-net --days=2')
+            ->dailyAt('06:30')
+            ->withoutOverlapping();
+
         // Process SLA Refunds
         $schedule->command('app:process-sla-refunds')
             ->hourly()
@@ -165,6 +174,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('11:30')
             ->withoutOverlapping();
 
+        // Safety net for dropped payment webhooks: replay bank/SEPA/ACH sales whose
+        // async_payment_succeeded event never arrived, so no sale is silently lost.
+        $schedule->command('payments:sweep-stuck')
+            ->dailyAt('12:00')
+            ->withoutOverlapping();
+
         // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence
         $schedule->command('app:enforce-posting-cadence')
             ->dailyAt('11:00')
@@ -183,6 +198,13 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('milestones:notify')
             ->dailyAt('08:15')
+            ->withoutOverlapping(10);
+
+        // Post mentions fire on approval, not on save — the approval happens in
+        // the admin app, so this poll is what closes the loop across the two
+        // codebases. Frequent, because "you were tagged" is stale within hours.
+        $schedule->command('mentions:notify')
+            ->everyTenMinutes()
             ->withoutOverlapping(10);
 
         $schedule->command('whale:retention-alerts')

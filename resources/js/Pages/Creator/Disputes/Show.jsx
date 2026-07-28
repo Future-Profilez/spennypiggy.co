@@ -96,7 +96,7 @@ export default function DisputeShow({ auth, dispute }) {
                                     <div className="flex items-center gap-4 mb-6">
                                         <div className="w-14 h-14 rounded-[30px]  bg-gray-800 border border-gray-700 overflow-hidden">
                                             {dispute.payment.supporter.avatar ? (
-                                                <img src={dispute.payment.supporter.avatar} className="w-full h-full object-cover" />
+                                                <img src={dispute.payment.supporter.avatar} alt={dispute.payment.supporter.name || ''} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-600">
                                                     {dispute.payment.supporter.name[0]}

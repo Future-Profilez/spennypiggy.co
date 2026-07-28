@@ -937,9 +937,9 @@ export default function Dashboard(props) {
                             </div>
 
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
-                            <div className="profileLayout grid grid-cols-1 items-start gap-4 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+                            <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
                                 {/* Sticky sidebar: capped to viewport + own scroll, so the lower cards stay reachable */}
-                                <aside className="flex min-w-0 flex-col gap-4 -mt-[68px] pt-[68px] sm:-mt-[76px] sm:pt-[76px] md:mt-0 md:pt-0 md:sticky md:top-[111px]">
+                                <aside className="flex min-w-0 flex-col gap-4 -mt-[68px] pt-[68px] sm:-mt-[76px] sm:pt-[76px] lg:mt-0 lg:pt-0 lg:sticky lg:top-[111px]">
                                     <Userprofile
                                         blockedByI={blockedByMe}
                                         IsloggedIn={IsloggedIn}

@@ -18,6 +18,11 @@ class Dispute extends Model
         'payment_id',
         'creator_id',
         'stripe_dispute_id',
+        // Stripe's own references, stored even when the Payment row does not
+        // exist yet — a dispute event can arrive before the payment is recorded,
+        // and without these the evidence pack has nothing to resolve against.
+        'stripe_payment_intent_id',
+        'stripe_charge_id',
         'amount',
         'currency',
         'reason',

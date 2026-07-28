@@ -80,26 +80,29 @@ class ReconcileFastStartBonusPayouts extends Command
                 $expectedEarningsMinor += (int) round($convert($net, $from, $currency) * 100);
             }
 
+            $previousClawbackMinor = (int) ($row->clawback_minor ?? 0);
             $expectedBonusMinor = (int) round($expectedEarningsMinor * FastStartBonusPayout::resolveRate($expectedEarningsMinor));
             $alreadyPaidBonusMinor = (int) ($row->bonus_minor ?? 0);
 
             $clawbackMinor = max(0, $alreadyPaidBonusMinor - $expectedBonusMinor);
+            $clawbackDelta = max(0, $clawbackMinor - $previousClawbackMinor);
+
             $row->expected_earnings_minor = $expectedEarningsMinor;
             $row->expected_bonus_minor = $expectedBonusMinor;
             $row->clawback_minor = $clawbackMinor;
 
             if ($dryRun) {
-                $this->line($row->creator_uuid.' paid='.$alreadyPaidBonusMinor.' expected='.$expectedBonusMinor.' clawback='.$clawbackMinor.' '.$currency);
+                $this->line($row->creator_uuid.' paid='.$alreadyPaidBonusMinor.' expected='.$expectedBonusMinor.' clawback='.$clawbackMinor.' delta='.$clawbackDelta.' '.$currency);
                 $processed++;
 
                 continue;
             }
 
-            DB::transaction(function () use ($row, $creator, $clawbackMinor, $currency) {
+            DB::transaction(function () use ($row, $creator, $clawbackDelta, $currency) {
                 $row->reconciled_at = now();
                 $row->save();
 
-                if ($clawbackMinor <= 0) {
+                if ($clawbackDelta <= 0) {
                     return;
                 }
 
@@ -113,7 +116,7 @@ class ReconcileFastStartBonusPayouts extends Command
                     'is_overridden' => false,
                 ]);
 
-                $metric->negative_balance_minor = (int) ($metric->negative_balance_minor ?? 0) + $clawbackMinor;
+                $metric->negative_balance_minor = (int) ($metric->negative_balance_minor ?? 0) + $clawbackDelta;
                 $metric->save();
 
                 AuditLog::create([
@@ -124,7 +127,8 @@ class ReconcileFastStartBonusPayouts extends Command
                         'fast_start_bonus_payout_id' => (string) $row->id,
                         'paid_bonus_minor' => (int) ($row->bonus_minor ?? 0),
                         'expected_bonus_minor' => (int) ($row->expected_bonus_minor ?? 0),
-                        'clawback_minor' => (int) $clawbackMinor,
+                        'clawback_minor' => (int) $row->clawback_minor,
+                        'clawback_delta_minor' => (int) $clawbackDelta,
                         'currency' => strtolower($currency),
                     ],
                 ]);

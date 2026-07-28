@@ -10,9 +10,12 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostCommentReplies;
 use App\Models\PostLike;
+use App\Models\PostSlugHistory;
 use App\Models\User;
+use App\SeoMeta;
 use App\Services\CreatorActivityService;
 use App\Services\ModerationService;
+use App\Services\PostMentionService;
 use App\Services\UserProfileService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class PostsController extends Controller
 {
@@ -30,24 +34,18 @@ class PostsController extends Controller
     private const ALLOWED_MODULES = ['public', 'membership', 'subscription', 'support'];
 
     /** Post kinds a creator may submit. */
-    private const ALLOWED_TYPES = ['image', 'blog'];
+    private const ALLOWED_TYPES = ['image', 'video', 'blog', 'media'];
 
     /**
      * Validation rules shared by savePost/editPost.
-     *
-     * Every creator post must carry an image; the caption is optional. This is
-     * a deliberate content rule — a subscriber paying for a members-only feed
-     * should see content, not a wall of text-only status updates.
      */
     private function postRules(): array
     {
         return [
             'type' => ['required', 'string', Rule::in(self::ALLOWED_TYPES)],
             'for_module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
-            // Every creator post must carry an image — a members-only feed of
-            // text-only posts reads as an empty feed and gives a subscriber
-            // nothing to look at. The caption stays optional.
-            'image' => ['required', 'string', 'max:500'],
+            'image' => ['required_without:media', 'nullable', 'string', 'max:500'],
+            'media' => ['sometimes', 'nullable', 'array'],
             'title' => ['nullable', 'string', 'max:150'],
             'content' => ['nullable', 'string', 'max:5000'],
             'ai_generated' => ['sometimes', 'boolean'],
@@ -78,7 +76,7 @@ class PostsController extends Controller
         }
 
         $request->validate($this->postRules(), [
-            'image.required' => 'Add an image for this post.',
+            'image.required_without' => 'Add an image or video for this post.',
         ]);
 
         // NOTE: this endpoint is called with axios and the caller reads resp.data.status.
@@ -109,8 +107,13 @@ class PostsController extends Controller
             'title' => $request->title ?: null,
             'content' => $request->content ?: null,
             'image' => $request->image ?: null,
+            'media' => $request->media ?: null,
             'ai_generated' => $request->boolean('ai_generated'),
         ]);
+
+        // Resolve @handles into real creators. Nobody is told yet — mentions are
+        // notified once the post is approved (see mentions:notify).
+        app(PostMentionService::class)->sync($post);
 
         // Clear activity cache to ensure real-time updates
         app(CreatorActivityService::class)->clearActivityCache(Auth::user());
@@ -133,7 +136,7 @@ class PostsController extends Controller
         }
 
         $request->validate($this->postRules(), [
-            'image.required' => 'Add an image for this post.',
+            'image.required_without' => 'Add an image or video for this post.',
         ]);
 
         $post = Post::where('uuid', $uuid)->first();
@@ -174,13 +177,34 @@ class PostsController extends Controller
             ], 422);
         }
 
+        $previousTitle = (string) $post->title;
+        $previousSlug = (string) $post->slug;
+
         $post->type = $request->type;
         $post->for_module = $request->for_module;
         $post->title = $request->title ?: null;
         $post->content = $request->content ?: null;
         $post->image = $request->image ?: null;
+        $post->media = $request->media ?: null;
         $post->ai_generated = $request->boolean('ai_generated');
         $post->approved = 0;
+
+        // A retitled post gets a URL that matches its new title. The old slug is
+        // kept in post_slug_history so every link already shared — and everything
+        // already indexed — redirects instead of 404ing.
+        if (trim((string) $post->title) !== trim($previousTitle)) {
+            $newSlug = Post::generateUniqueSlug($post->title ?: 'post', $post->id);
+
+            if ($newSlug !== $previousSlug) {
+                $post->slug = $newSlug;
+
+                PostSlugHistory::firstOrCreate(['slug' => $previousSlug], ['post_id' => $post->id]);
+                // The new slug may itself be a retired one from an earlier edit;
+                // leaving that row would redirect the live URL to itself.
+                PostSlugHistory::where('slug', $newSlug)->delete();
+            }
+        }
+
         $post->save();
 
         $logs = Logs::where('edited_post_id', $post->id)->where('status', 'pending')->first();
@@ -188,6 +212,10 @@ class PostsController extends Controller
             $logs->status = 'updated';
             $logs->save();
         }
+
+        // Re-resolve mentions: handles the creator removed drop out (while still
+        // unnotified), new ones are added and notified on the next approval.
+        app(PostMentionService::class)->sync($post);
 
         // An edit changes the approved-content count the payment gate reads, so the same
         // caches savePost clears must be cleared here too.
@@ -199,6 +227,10 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Post updated. It will be re-checked before going live again.',
+            // The caller is often standing on the post's own page — it needs the
+            // new address to swap into the URL bar.
+            'slug' => $post->slug,
+            'url' => rtrim(config('app.url'), '/').'/'.$user->username.'/post/'.$post->slug,
         ]);
     }
 
@@ -682,6 +714,257 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Reply removed successfully.',
+        ]);
+    }
+
+    public function showPostDetail(string $username, string $slug)
+    {
+        $creator = User::where('username', $username)->where('suspended_account', 0)->firstOrFail();
+
+        $post = Post::where('user_id', $creator->id)
+            ->where('slug', $slug)
+            ->first();
+
+        // A slug this creator used before an edit: redirect permanently rather
+        // than 404, so shared links and indexed URLs survive a retitle.
+        if (! $post) {
+            $retired = PostSlugHistory::where('slug', $slug)->first();
+            $current = $retired
+                ? Post::where('id', $retired->post_id)->where('user_id', $creator->id)->first()
+                : null;
+
+            if ($current) {
+                return redirect()->route('post.show', [
+                    'username' => $creator->username,
+                    'slug' => $current->slug,
+                ], 301);
+            }
+
+            abort(404);
+        }
+
+        // Check if creator viewing or if it's approved
+        if (! Auth::check() || Auth::id() !== $creator->id) {
+            if ($post->approved != 1) {
+                abort(404);
+            }
+        }
+
+        // Apply access control (is_lock, content strip)
+        $profileService = app(UserProfileService::class);
+        $post = $profileService->checkPostAccessAndLockStatus($post, $creator->id);
+
+        // Load comment counts, likes etc.
+        $post->load(['user', 'mentionedUsers']);
+
+        $this->applyPostDetailSeo($post, $creator);
+
+        return Inertia::render('feed/PostDetail', [
+            'post' => $post,
+            'creator' => $creator,
+            'isOwner' => Auth::check() && Auth::id() === $creator->id,
+            'IsloggedIn' => Auth::check() && Auth::user()->username === $creator->username,
+        ]);
+    }
+
+    /**
+     * SEO for a single post page.
+     *
+     * Meta is rendered server-side (SeoMeta -> app.blade.php) because link
+     * unfurlers — Twitter/X, Facebook, WhatsApp, Slack, iMessage — never run
+     * the page's JavaScript, so an Inertia <Head> would leave every shared
+     * post with the generic site card.
+     *
+     * The post passed in has already been through
+     * UserProfileService::checkPostAccessAndLockStatus(), which nulls `content`
+     * and `image` on a locked post. That is what the meta is built from, so
+     * paid content can never leak through a description or an og:image.
+     */
+    private function applyPostDetailSeo(Post $post, User $creator): void
+    {
+        $url = rtrim(config('app.url'), '/').'/'.$creator->username.'/post/'.$post->slug;
+        $isLocked = empty($post->content) && empty($post->image) && $post->for_module !== 'public';
+
+        $audienceNoun = [
+            'membership' => 'members',
+            'subscription' => 'subscribers',
+            'support' => 'supporters',
+        ][$post->for_module] ?? null;
+
+        $title = Str::limit(trim((string) $post->title) ?: 'Post', 65, '');
+        $pageTitle = $title.' — '.$creator->name.' on Spenny Piggy';
+
+        if ($isLocked && $audienceNoun) {
+            $description = "{$creator->name} published this for {$audienceNoun} on Spenny Piggy. Unlock it to see the full post.";
+        } else {
+            $description = trim(preg_replace('/\s+/', ' ', strip_tags((string) $post->content)));
+            $description = $description !== ''
+                ? Str::limit($description, 155)
+                : "{$title} — a post by {$creator->name} on Spenny Piggy.";
+        }
+
+        // A post awaiting moderation, or one on a hidden profile, is reachable
+        // by its owner but must never enter the index.
+        $indexable = (int) $post->approved === 1
+            && (int) ($creator->is_public_profile ?? 1) === 1
+            && (int) $creator->suspended_account === 0;
+
+        SeoMeta::setRobots(
+            $indexable
+                ? 'index,follow,max-image-preview:large,max-snippet:-1'
+                : 'noindex,follow'
+        );
+        SeoMeta::addTag('title', $pageTitle);
+        SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
+        SeoMeta::addTag('meta', ['name' => 'author', 'content' => $creator->name]);
+        SeoMeta::setCanonical($url);
+
+        // A locked post falls back to the creator's avatar: its own image is the
+        // thing being sold.
+        $image = ! $isLocked && $post->image_url
+            ? $post->image_url
+            : ($creator->avatar_url ?: url('/og-image.png'));
+
+        SeoMeta::setOgData('article', $pageTitle, $description, $image, $url);
+        SeoMeta::addTag('meta', ['property' => 'og:site_name', 'content' => 'Spenny Piggy']);
+        SeoMeta::addTag('meta', ['property' => 'og:image:alt', 'content' => $title]);
+        SeoMeta::addTag('meta', ['property' => 'article:author', 'content' => rtrim(config('app.url'), '/').'/'.$creator->username]);
+        if ($post->created_at) {
+            SeoMeta::addTag('meta', ['property' => 'article:published_time', 'content' => $post->created_at->toIso8601String()]);
+        }
+        if ($post->updated_at) {
+            SeoMeta::addTag('meta', ['property' => 'article:modified_time', 'content' => $post->updated_at->toIso8601String()]);
+        }
+
+        SeoMeta::setTwitterCard('summary_large_image', $pageTitle, $description, $image);
+        SeoMeta::addTag('meta', ['name' => 'twitter:site', 'content' => '@spennypiggy']);
+
+        $jsonLd = [
+            '@context' => 'https://schema.org',
+            '@type' => 'SocialMediaPosting',
+            'headline' => $title,
+            'url' => $url,
+            'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $url],
+            'description' => $description,
+            'image' => $image,
+            'author' => [
+                '@type' => 'Person',
+                'name' => $creator->name,
+                'alternateName' => '@'.$creator->username,
+                'url' => rtrim(config('app.url'), '/').'/'.$creator->username,
+            ],
+            'publisher' => [
+                '@type' => 'Organization',
+                'name' => 'Spenny Piggy',
+                'url' => rtrim(config('app.url'), '/'),
+            ],
+            'interactionStatistic' => [
+                [
+                    '@type' => 'InteractionCounter',
+                    'interactionType' => 'https://schema.org/LikeAction',
+                    'userInteractionCount' => (int) $post->likes_count,
+                ],
+                [
+                    '@type' => 'InteractionCounter',
+                    'interactionType' => 'https://schema.org/CommentAction',
+                    'userInteractionCount' => (int) $post->comments_count,
+                ],
+            ],
+        ];
+
+        if ($post->created_at) {
+            $jsonLd['datePublished'] = $post->created_at->toIso8601String();
+        }
+        if ($post->updated_at) {
+            $jsonLd['dateModified'] = $post->updated_at->toIso8601String();
+        }
+
+        // Google's paywalled-content markup: declaring the gate is what keeps a
+        // teaser page from reading as cloaking. `.paywalled-content` is the
+        // wrapper around the locked panel in feed/PostDetail.jsx.
+        if ($isLocked) {
+            $jsonLd['isAccessibleForFree'] = false;
+            $jsonLd['hasPart'] = [
+                '@type' => 'WebPageElement',
+                'isAccessibleForFree' => false,
+                'cssSelector' => '.paywalled-content',
+            ];
+        } else {
+            $jsonLd['isAccessibleForFree'] = true;
+        }
+
+        SeoMeta::addJsonLd($jsonLd);
+
+        SeoMeta::addBreadcrumbJsonLd([
+            ['name' => 'Spenny Piggy', 'url' => rtrim(config('app.url'), '/')],
+            ['name' => $creator->name, 'url' => rtrim(config('app.url'), '/').'/'.$creator->username],
+            ['name' => $title, 'url' => $url],
+        ]);
+    }
+
+    /**
+     * Typeahead for the composer's @mention field.
+     *
+     * Creators only (role 1): a fan has no public creator page, so tagging one
+     * would produce a link to nowhere. Requires at least one character so the
+     * endpoint can never be used to page through the whole user table.
+     */
+    public function mentionSearch(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($term) < 1) {
+            return response()->json(['users' => []]);
+        }
+
+        $users = User::query()
+            ->where('role', 1)
+            ->where('suspended_account', 0)
+            ->where('id', '!=', Auth::id())
+            ->where(function ($q) use ($term) {
+                $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
+                $q->where('username', 'like', $like)->orWhere('name', 'like', $like);
+            })
+            ->select('id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier')
+            // Exact prefix matches first — typing "spen" should put @spenny_piggy
+            // above a creator whose bio-name merely contains it.
+            ->orderByRaw('CASE WHEN username LIKE ? THEN 0 ELSE 1 END', [$term.'%'])
+            ->orderBy('username')
+            ->limit(8)
+            ->get()
+            ->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'avatar_url' => $u->avatar_url,
+            ]);
+
+        return response()->json(['users' => $users]);
+    }
+
+    public function togglePin($uuid)
+    {
+        $post = Post::where('uuid', $uuid)->first();
+        if (empty($post)) {
+            return response()->json(['status' => false, 'msg' => 'Post not found.'], 404);
+        }
+        if ((int) $post->user_id !== (int) Auth::id()) {
+            return response()->json(['status' => false, 'msg' => 'Unauthorized.'], 403);
+        }
+
+        // Toggle pin status
+        $post->is_pinned = ! $post->is_pinned;
+        $post->save();
+
+        // Clear caches
+        app(CreatorActivityService::class)->clearActivityCache(Auth::user());
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+        return response()->json([
+            'status' => true,
+            'is_pinned' => $post->is_pinned,
+            'msg' => $post->is_pinned ? 'Post pinned successfully.' : 'Post unpinned successfully.',
         ]);
     }
 }

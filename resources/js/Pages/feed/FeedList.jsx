@@ -141,7 +141,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
     }
 
     return (
-        <div className="max-feed m-auto">
+        <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4">
             {displayPosts && displayPosts.length > 5 && (
                 <PostFilterTabs
                     filters={FILTER_OPTIONS}
@@ -157,6 +157,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                         <Post
                             key={`post-${post.uuid || post.id || i}`}
                             item={post}
+                            isProfileView={true}
                         />
                     ))}
                     {hasMore && (

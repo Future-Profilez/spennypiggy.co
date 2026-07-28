@@ -59,6 +59,14 @@ return [
         'application/x-zip-compressed',
         'application/x-rar-compressed',
         'application/vnd.rar',
+        // Extensions too — some OS pickers and Uploadcare's native input filter
+        // on extension, not the reported MIME.
+        '.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.bmp', '.svg',
+        '.mp4', '.webm', '.mov', '.m4v', '.avi', '.mkv',
+        '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac',
+        '.pdf', '.doc', '.docx', '.rtf', '.txt', '.odt',
+        '.xls', '.xlsx', '.ppt', '.pptx', '.epub',
+        '.zip', '.rar', '.7z', '.tar', '.gz',
     ],
 
     /** 2 GB — Uploadcare's per-file ceiling on the current plan. */
