@@ -19,7 +19,9 @@ class IdentityVerificationSuccess extends Mailable
 
     public function build()
     {
-        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+        // config(), not env(): env() returns null once the config cache is built,
+        // which Vapor does on every deploy.
+        return $this->from(config('mail.from.address', 'noreply@spennypiggy.co'), config('mail.from.name', 'Spenny Piggy'))
             ->subject('Identity Verification Successful')
             ->view('email.identity_success')
             ->with(['user' => $this->user]);

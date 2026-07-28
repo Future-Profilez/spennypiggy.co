@@ -4429,13 +4429,6 @@ class StripeController extends Controller
             if (! $user) {
                 return response()->json(['error' => 'User not found.'], 404);
             }
-            if ($user->identity_admin_status == 2) {
-                // $appUrl = config('app.url');
-                // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                $user->identity_admin_status = 0;
-                // }
-                $user->save();
-            }
             // Create Passport-Only Stripe Identity Verification Session
             $session = VerificationSession::create([
                 'type' => 'document',
@@ -4455,9 +4448,26 @@ class StripeController extends Controller
                 'return_url' => route('user.show', $user->username),
             ]);
 
-            // Update user with verification session ID
+            // Update user with verification session ID. Everything below is
+            // written only AFTER Stripe accepted the session — clearing the
+            // previous rejection first meant a failed Stripe call wiped the
+            // reason the creator still needed to read.
             $user->stripe_user_id = $session->id;
             $user->identity_verification_error = null;
+
+            // A previous admin rejection is cleared now that a fresh check is
+            // genuinely under way, so the item leaves the admin queue as
+            // "awaiting result" rather than staying rejected.
+            if ($user->identity_admin_status == 2) {
+                $user->identity_admin_status = 0;
+            }
+
+            // 2 = check submitted, waiting on Stripe's webhook. Without it the
+            // creator returns from Stripe to a screen still saying "Verify
+            // identity" and starts a second (billable) session.
+            if ((int) $user->identity_status !== 1) {
+                $user->identity_status = 2;
+            }
 
             // Skip verification in dev environment
             if (env('APP_ENV') !== 'production') {

@@ -70,6 +70,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
+use App\Support\IdentityFailureReason;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -241,7 +242,12 @@ class StripeWebhookController extends Controller
         try {
             switch ($type) {
                 // --- Identity Verification Events ---
-                // case 'identity.verification_session.requires_input':
+                // `requires_input` is the ONLY event Stripe sends when a check
+                // fails. With it unhandled, a rejected creator got no email, no
+                // stored reason, and a profile that still read "Verify identity"
+                // as if they had never tried. Do not comment it out again.
+                case 'identity.verification_session.requires_input':
+                case 'identity.verification_session.canceled':
                 case 'identity.verification_session.verified':
                     $this->processIdentityVerification($event);
                     break;
@@ -412,6 +418,10 @@ class StripeWebhookController extends Controller
         switch ($type) {
             case 'identity.verification_session.requires_input':
                 $this->handleRequiresInputEvent($session);
+                break;
+
+            case 'identity.verification_session.canceled':
+                $this->handleCanceledEvent($session);
                 break;
 
             case 'identity.verification_session.verified':
@@ -778,13 +788,16 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * Handle the 'requires_input' event
+     * Resolve the creator a verification session belongs to.
+     *
+     * `stripe_user_id` holds the latest session id, so it goes stale the moment
+     * a creator starts a second attempt — the metadata carries the user id on
+     * every session we create and is the reliable fallback.
      */
-    private function handleRequiresInputEvent($session)
+    private function resolveIdentityUser($session): ?User
     {
         $user = User::where('stripe_user_id', $session->id)->first();
 
-        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
         if (! $user && ! empty($session->metadata->user_id)) {
             $user = User::find($session->metadata->user_id);
             if ($user) {
@@ -798,35 +811,99 @@ class StripeWebhookController extends Controller
             }
         }
 
-        if ($user) {
-            $isFraudulent = $this->checkForFraud($session);
+        return $user;
+    }
 
-            $errorPayload = $session->last_error ? json_encode($session->last_error) : json_encode([
-                'code' => 'requires_input',
-                'reason' => 'Additional information is required to complete verification.',
-            ]);
+    /**
+     * Mark a check as failed and tell the creator why, on every channel.
+     *
+     * The stored payload carries the creator-facing wording (see
+     * IdentityFailureReason), so the email and the profile page render the same
+     * explanation without either of them re-deriving it from a raw Stripe code.
+     */
+    private function failIdentityCheck(User $user, string $code, ?string $rawReason, bool $isFraudulent = false): void
+    {
+        $payload = IdentityFailureReason::payload(
+            $isFraudulent ? 'fraud_suspected' : $code,
+            $rawReason
+        );
 
-            $user->update([
-                'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
-                'identity_verification_error' => $errorPayload,
-                'identity_verification_details' => null,
-                'identity_verified_at' => null,
-            ]);
+        $user->update([
+            'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
+            'identity_verification_error' => $payload,
+            'identity_verification_details' => null,
+            'identity_verified_at' => null,
+        ]);
 
-            $emailType = $isFraudulent ? 'fraud' : 'failed';
-            SendIdentityVerificationEmail::dispatch($user, $emailType);
+        SendIdentityVerificationEmail::dispatch($user, $isFraudulent ? 'fraud' : 'failed');
 
-            $err = $session->last_error ?? null;
-            $code = data_get($err, 'code', 'requires_input');
-            $reason = data_get($err, 'reason', 'Additional information is required to complete verification.');
-            Helpers::sendNotification(
-                'Identity verification rejected ❌',
-                "Reason: {$reason} (code: {$code})",
-                $user->email
-            );
-        } else {
+        $explained = IdentityFailureReason::explain($payload);
+
+        Helpers::sendNotification(
+            'Identity verification failed ❌',
+            $explained['title'].' — open your profile to try again.',
+            $user->email
+        );
+
+        Log::info('Identity check failed', [
+            'user_id' => $user->id,
+            'code' => $explained['code'],
+            'fraud' => $isFraudulent,
+        ]);
+    }
+
+    /**
+     * Handle the 'requires_input' event — Stripe's failure event.
+     */
+    private function handleRequiresInputEvent($session)
+    {
+        $user = $this->resolveIdentityUser($session);
+
+        if (! $user) {
             Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+
+            return;
         }
+
+        $err = $session->last_error ?? null;
+
+        $this->failIdentityCheck(
+            $user,
+            (string) data_get($err, 'code', 'requires_input'),
+            data_get($err, 'reason'),
+            $this->checkForFraud($session)
+        );
+    }
+
+    /**
+     * Handle the 'canceled' event.
+     *
+     * A cancelled session verifies nothing, so the creator must be moved off the
+     * "under review" state — otherwise they sit waiting on a check that will
+     * never return a result.
+     */
+    private function handleCanceledEvent($session)
+    {
+        $user = $this->resolveIdentityUser($session);
+
+        if (! $user) {
+            Log::error('User not found for canceled verification session', ['session_id' => $session->id]);
+
+            return;
+        }
+
+        // Never overwrite a completed verification with a cancellation — a stale
+        // session for an already-verified creator would otherwise un-verify them.
+        if ((int) $user->identity_status === 1) {
+            Log::info('Ignoring canceled identity session for an already-verified creator', [
+                'user_id' => $user->id,
+                'session_id' => $session->id,
+            ]);
+
+            return;
+        }
+
+        $this->failIdentityCheck($user, 'session_canceled', data_get($session, 'last_error.reason'));
     }
 
     /**
@@ -834,43 +911,16 @@ class StripeWebhookController extends Controller
      */
     private function handleVerifiedEvent($session)
     {
-        $user = User::where('stripe_user_id', $session->id)->first();
-
-        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
-        if (! $user && ! empty($session->metadata->user_id)) {
-            $user = User::find($session->metadata->user_id);
-            if ($user) {
-                // Re-sync the session ID so future webhooks resolve correctly
-                $user->stripe_user_id = $session->id;
-                $user->save();
-                Log::info('Identity webhook: resolved user via metadata.user_id fallback', [
-                    'user_id' => $user->id,
-                    'session_id' => $session->id,
-                ]);
-            }
-        }
+        $user = $this->resolveIdentityUser($session);
 
         if ($user) {
             $docType = data_get($session, 'verified_outputs.document.type') ?: data_get($session, 'last_verification_report.document.type');
 
             if ($docType && strtolower($docType) !== 'passport') {
-                $error = [
-                    'code' => 'document_type_not_allowed',
-                    'reason' => 'Only passports are accepted for identity verification.',
-                ];
-
-                $user->update([
-                    'identity_status' => 0, // Failed per policy
-                    'identity_verified_at' => null,
-                    'identity_verification_error' => json_encode($error),
-                    'identity_verification_details' => null,
-                ]);
-
-                SendIdentityVerificationEmail::dispatch($user, 'failed');
-                Helpers::sendNotification(
-                    'Identity verification rejected ❌',
-                    'Reason: Only passports are accepted for identity verification.',
-                    $user->email
+                $this->failIdentityCheck(
+                    $user,
+                    'document_type_not_allowed',
+                    'Only passports are accepted for identity verification.'
                 );
 
                 return;
@@ -878,21 +928,25 @@ class StripeWebhookController extends Controller
 
             $isFraudulent = $this->checkForFraud($session);
 
-            $updateData = [
-                'identity_status' => $isFraudulent ? 3 : 1, // 3 = Fraud, 1 = Verified
-                'identity_verified_at' => $isFraudulent ? null : now(),
-                'identity_verification_details' => null,
-            ];
+            if ($isFraudulent) {
+                $this->failIdentityCheck($user, 'fraud_suspected', null, true);
 
-            if (! $isFraudulent) {
-                $updateData['identity_admin_status'] = 1;
-                $updateData['identity_admin_reviewed_at'] = now();
+                return;
             }
 
-            $user->update($updateData);
+            $user->update([
+                'identity_status' => 1, // Verified
+                'identity_verified_at' => now(),
+                'identity_verification_details' => null,
+                // A passed check clears the previous failure — otherwise the
+                // profile keeps rendering the old rejection reason next to a
+                // green "verified" tick.
+                'identity_verification_error' => null,
+                'identity_admin_status' => 1,
+                'identity_admin_reviewed_at' => now(),
+            ]);
 
-            $emailType = $isFraudulent ? 'fraud' : 'success';
-            SendIdentityVerificationEmail::dispatch($user, $emailType);
+            SendIdentityVerificationEmail::dispatch($user, 'success');
 
             // Request redaction of verification session to avoid storing sensitive images at Stripe
             try {
@@ -906,19 +960,11 @@ class StripeWebhookController extends Controller
                 ]);
             }
 
-            if ($isFraudulent) {
-                Helpers::sendNotification(
-                    'Identity verification rejected ❌',
-                    'Reason: Verification checks did not pass or suspected fraud.',
-                    $user->email
-                );
-            } else {
-                Helpers::sendNotification(
-                    'Identity verification successful ✅',
-                    'Your identity has been verified successfully.',
-                    $user->email
-                );
-            }
+            Helpers::sendNotification(
+                'Identity verification successful ✅',
+                'Your identity has been verified successfully.',
+                $user->email
+            );
         } else {
             Log::error('User not found for verified verification session', ['session_id' => $session->id]);
         }

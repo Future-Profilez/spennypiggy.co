@@ -3,6 +3,7 @@ import axios from "axios";
 import { useState, useEffect, useRef } from "react";
 import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
+import { parseIdentityError } from "@/utils/identityError";
 
 // One status vocabulary for the whole checklist, so a step never says "Approved"
 // in one shape and "Verified" in another. Mint = done, amber = in review,
@@ -128,6 +129,31 @@ function ActionCard({ step }) {
                         {step.reason ||
                             "Our team asked for a change. Update it and submit again."}
                     </p>
+
+                    {step.note && (
+                        <p className="mt-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-box-sm p-2">
+                            <span className="font-bold">Note from our team: </span>
+                            {step.note}
+                        </p>
+                    )}
+
+                    {/* The fix, not just the verdict — an ID check that comes
+                        back with only a code leaves the creator guessing. */}
+                    {step.fixSteps?.length > 0 && (
+                        <ol className="mt-2 space-y-1">
+                            {step.fixSteps.map((s, i) => (
+                                <li
+                                    key={i}
+                                    className="flex items-start gap-2 text-[13px] text-gray-700"
+                                >
+                                    <span className="font-bold text-red-500">
+                                        {i + 1}.
+                                    </span>
+                                    <span>{s}</span>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
                 </div>
             )}
 
@@ -327,13 +353,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         };
     }, [onboardingComplete]);
 
-    const identityError = (() => {
-        try {
-            return JSON.parse(creatorUser?.identity_verification_error);
-        } catch {
-            return null;
-        }
-    })();
+    // Resolved server-side (App\Support\IdentityFailureReason) so this page and
+    // the failure email say the same thing.
+    const identityError = parseIdentityError(
+        creatorUser?.identity_verification_error,
+    );
 
     // "Submit for review" stays locked until socials, photo and bio are APPROVED
     // and the trial is active. Name what's still outstanding — a bare "Locked"
@@ -517,23 +541,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 "A quick selfie on your phone",
                 "Handled securely by Stripe; we never see your documents",
             ],
+            // identity_status: 1 = verified · 2 = submitted, waiting on Stripe ·
+            // 3 = flagged by the security review · 0 = failed. A submitted check
+            // used to fall through to "todo", so a creator returning from Stripe
+            // was invited to start a second (billable) session.
             state:
                 creatorUser?.identity_status == 1
                     ? "done"
-                    : // identity_status 3 = fraud-flagged; the fraud webhook
-                      // branch sets the status but no error payload, so relying
-                      // on identityError alone left a flagged creator looking
-                      // like an ordinary "todo".
-                      creatorUser?.identity_status == 3 || identityError
+                    : creatorUser?.identity_status == 3 || identityError
                       ? "rejected"
-                      : "todo",
+                      : creatorUser?.identity_status == 2
+                        ? "pending"
+                        : "todo",
             reason: identityError
-                ? `${(identityError.code || "").replaceAll("_", " ")}${
-                      identityError.reason ? ` — ${identityError.reason}` : ""
-                  }`.trim()
+                ? `${identityError.title} — ${identityError.whatHappened}`
                 : creatorUser?.identity_status == 3
                   ? "Your identity check didn’t pass our security review. Please contact support."
                   : null,
+            // The steps that actually fix it, straight from the stored payload.
+            fixSteps: identityError?.whatToDo || [],
+            note: identityError?.note || null,
             reviewNote: "Stripe usually decides within a few minutes.",
             locked: profileStatusLock != 2 || !hasSubscription,
             lockReason:
@@ -542,7 +569,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     : "Needs an active trial or subscription.",
             action: (
                 <Link className={primaryBtn} href="/stripe/identity-verification">
-                    {identityError ? "Try verification again" : "Verify identity"}
+                    {identityError
+                        ? "Try verification again"
+                        : creatorUser?.identity_status == 2
+                          ? "Check status"
+                          : "Verify identity"}
                 </Link>
             ),
         },
