@@ -93,13 +93,6 @@ export default function PiggyPotsGrid({
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         alt={pot.title}
                                     />
-                                    {/* <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <div className="w-16 h-10 bg-[#FF007F] rounded-full border-[3px] border-black flex items-center justify-center">
-                                            <span className="text-black font-black text-3xl mb-1">
-                                                +
-                                            </span>
-                                        </div>
-                                    </div> */}
                                 </div>
                                 <ItemBadges
                                     createdAt={pot?.created_at}
@@ -109,6 +102,22 @@ export default function PiggyPotsGrid({
                                 <h3 className="font-black text-xl uppercase tracking-wide text-black line-clamp-1">
                                     {pot.title}
                                 </h3>
+
+                                {/* --- ADDED: PENDING REVIEW MESSAGE --- */}
+                                {pot?.status === "moderation_hold" && (
+                                    <div className="mt-2 mb-2 bg-[#FFF3D6] border-[2px] border-[#E6B84D] rounded-lg p-2.5 flex items-start gap-2">
+                                        <span className="text-[#E6B84D] text-sm font-bold">
+                                            ⏳
+                                        </span>
+                                        <p className="text-[#5C4A1E] text-xs font-bold leading-tight">
+                                            Waiting for review — it goes live
+                                            once our team has checked it.
+                                            Nothing for you to do.
+                                        </p>
+                                    </div>
+                                )}
+                                {/* ----------------------------------- */}
+
                                 <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">
                                     {pot.description}
                                 </p>
@@ -180,9 +189,6 @@ export default function PiggyPotsGrid({
                 <Popup
                     action={!!activePiggyPot}
                     space="6"
-                    // classes="hidden"
-                    // modalclass=""
-                    // hidecontrols={true}
                     onHide={() => setActivePiggyPot(null)}
                 >
                     {activePiggyPot && (

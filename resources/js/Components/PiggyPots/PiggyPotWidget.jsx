@@ -16,8 +16,6 @@ import { OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import confetti from "canvas-confetti";
 
-// Server-side limits (Helpers::priceWithinLimits, GBP-equivalent) — mirrored here
-// so the supporter is told before they reach Stripe, not after.
 const MIN_AMOUNT = 4.99;
 const MAX_AMOUNT = 500;
 
@@ -57,11 +55,6 @@ export default function PiggyPotWidget({
         cf_turnstile_response: "",
     });
 
-    // Stable identity — the pot widget re-renders on every price-preview poll, and an
-    // inline onVerify re-triggered Turnstile's render effect (deps include the callback),
-    // remounting the Cloudflare widget dozens of times per session.
-    // Declared AFTER useForm: the deps array reads`setData`, which hits a TDZ error
-    // if this useCallback sits above the useForm that defines it.
     const onTurnstileVerify = useCallback(
         (token) => {
             setData("cf_turnstile_response", token || "");
@@ -70,9 +63,6 @@ export default function PiggyPotWidget({
         [setData],
     );
 
-    // Everything the supporter sees is priced in the POT's currency, because
-    // that is the currency the amount is charged in. Converting for display
-    // while posting the raw number made the shown price differ from the charge.
     const potCurrency = (
         featuredPot.currency ||
         global_currency ||
@@ -138,17 +128,16 @@ export default function PiggyPotWidget({
     const statusLabel = isComplete
         ? "Completed"
         : featuredPot?.status || "active";
-    // One accent only (DESIGN.md): states are told apart by weight, not by inventing
-    // hues. Completed reads as closed (ink), active as live (brand mint).
+
     const statusBadgeClass = isComplete
         ? "bg-black text-white"
         : statusLabel === "active"
           ? "bg-[#A2E4B8] text-black"
           : statusLabel === "moderation_hold"
-            ? "bg-black/10 text-black"
-            : "bg-black/10 text-black";
+            ? "bg-orange-400 text-white"
+            : "bg-gray-200 text-gray-800";
 
-    const [step, setStep] = useState(1); // 1: Amount, 2: Details, 3: Terms & Pay
+    const [step, setStep] = useState(1);
 
     const selectPreset = (val) => {
         setAmount(String(val));
@@ -267,8 +256,6 @@ export default function PiggyPotWidget({
         }
     };
 
-    // What the supporter is actually charged (listed price grossed up by fees).
-    // Fetched here so the total is shown even when the bank selector is hidden.
     useEffect(() => {
         if (step !== 3 || !data.amount) {
             return;
@@ -325,9 +312,7 @@ export default function PiggyPotWidget({
     const primaryOn =
         "bg-[#FF007F] text-white hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none";
     const primaryOff = "bg-pink-200 text-pink-900 cursor-not-allowed";
-    // The one checkout field recipe. This widget used to carry its own (3px border,
-    // 52px, focus:ring-0, Tailwind pink-500 instead of the brand pink) — a fifth
-    // form vocabulary on the payment surfaces.
+
     const fieldBase = fieldClass;
     const labelBase =
         "block font-black text-[11px] uppercase tracking-widest text-black/70 mb-1.5";
@@ -347,87 +332,102 @@ export default function PiggyPotWidget({
             <div
                 className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-8"}`}
             >
-                {/* Row layout: cover left, everything else right (stacks on small phones) */}
-                <div className="md:flex md:items-start md:gap-6">
-                    <div className="w-full relative md:w-[280px] lg:w-[320px] md:shrink-0">
-                        <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
-                            🎯 CONTENT GOAL
-                        </div>
-                        <div className="w-full h-40 sm:h-48 md:h-56 bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
-                            <img
-                                src={
-                                    featuredPot.cover_media ||
-                                    "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"
-                                }
-                                alt={
-                                    featuredPot.title
-                                        ? `Cover art for ${featuredPot.title}`
-                                        : "Content cover"
-                                }
-                                className="w-full h-full object-cover opacity-90"
-                            />
-                        </div>
+                {/* Cover Image - Full width at top */}
+                <div className="w-full relative mb-4">
+                    <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
+                        🎯 CONTENT GOAL
                     </div>
-
-                    <div className="w-full min-w-0 md:flex-1 flex flex-col justify-center">
-                        <h2 className="font-anton text-2xl md:text-3xl mt-3 md:mt-0 uppercase text-black tracking-wide">
-                            {featuredPot.title}
-                        </h2>
-                        {featuredPot.description && (
-                            <p className="text-sm md:text-base text-black/60 mb-3 line-clamp-3">
-                                {featuredPot.description}
-                            </p>
-                        )}
-
-                        {/* The deliverable — what the supporter actually receives. */}
-                        {(featuredPot.content_description ||
-                            featuredPot.content_file) && (
-                            <div className="mb-4 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-3">
-                                <p className="font-black text-xs uppercase tracking-widest text-black">
-                                    What you unlock
-                                </p>
-                                <p className="font-bold text-sm text-black mt-1">
-                                    {featuredPot.content_description ||
-                                        "Exclusive content, delivered instantly after purchase."}
-                                </p>
-                            </div>
-                        )}
+                    <div className="w-full h-48 sm:h-56 md:h-64 bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
+                        <img
+                            src={
+                                featuredPot.cover_media ||
+                                "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"
+                            }
+                            alt={
+                                featuredPot.title
+                                    ? `Cover art for ${featuredPot.title}`
+                                    : "Content cover"
+                            }
+                            className="w-full h-full object-cover opacity-90"
+                        />
+                        {/* Status badge on image */}
+                        <div className="absolute bottom-4 left-4 z-10">
+                            <span
+                                className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}
+                            >
+                                {isComplete
+                                    ? "✓ COMPLETED"
+                                    : statusLabel === "moderation_hold"
+                                      ? "MODERATION_HOLD"
+                                      : statusLabel}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Progress + purchase area — full width under the row */}
-                <div className="w-full mt-4">
-                    <div className="flex justify-between items-end mb-2">
-                        <div className="font-bold text-black/60 text-xs md:text-sm uppercase tracking-widest">
-                            Target: {fmt(targetAmount)}
-                        </div>
-                        <div className="font-black text-[#FF007F] text-sm md:text-lg uppercase tracking-widest">
-                            Progress: {fmt(raisedAmount)}
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center mb-2 gap-3">
-                        <div className="font-bold text-black/60 text-xs md:text-sm uppercase tracking-widest">
-                            Remaining: {fmt(remainingAmount)}
-                        </div>
-                        <div
-                            className={`font-black text-xs md:text-sm uppercase tracking-widest px-3 py-1 rounded-full border-[3px] border-black  ${statusBadgeClass}`}
-                        >
-                            {isComplete ? "✓ COMPLETED" : statusLabel}
-                        </div>
-                    </div>
+                {/* Content Info */}
+                <div className="w-full">
+                    <h2 className="font-anton text-2xl md:text-3xl text-black tracking-wide">
+                        {featuredPot.title}
+                    </h2>
+                    {featuredPot.description && (
+                        <p className="text-sm md:text-base text-black/60 mb-3 line-clamp-3">
+                            {featuredPot.description}
+                        </p>
+                    )}
 
-                    <div
-                        className="w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden mb-6 shadow-[inset_0_2px_0_rgba(0,0,0,0.1)]"
-                        role="progressbar"
-                        aria-valuenow={Math.round(progressPercent)}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label="Content goal progress"
-                    >
-                        <div
-                            className={`${isComplete ? "bg-[#A2E4B8]" : "bg-[#FF007F]"} h-full transition-all duration-1000 ease-out`}
-                            style={{ width: `${progressPercent}%` }}
-                        ></div>
+                    {/* The deliverable */}
+                    {(featuredPot.content_description ||
+                        featuredPot.content_file) && (
+                        <div className="mb-4 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-3">
+                            <p className="font-black text-xs uppercase tracking-widest text-black">
+                                What you unlock
+                            </p>
+                            <p className="font-bold text-sm text-black mt-1">
+                                {featuredPot.content_description ||
+                                    "Exclusive content, delivered instantly after purchase."}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Progress Section - Clean design matching screenshot */}
+                <div className="w-full mt-4">
+                    <div className="bg-[#f8f6f2] rounded-[16px] p-5 mb-4 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">
+                                    CONTENT GOAL
+                                </p>
+                                <p className="font-black text-2xl text-black mt-1">
+                                    {fmt(targetAmount)}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">
+                                    PROGRESS
+                                </p>
+                                <p className="font-black text-2xl text-pink-500 mt-1">
+                                    {fmt(raisedAmount)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs font-bold text-gray-600">
+                                REMAINING:
+                            </p>
+                            <p className="text-xs font-black text-pink-500">
+                                {fmt(Math.max(0, remainingAmount))}
+                            </p>
+                        </div>
+
+                        <div className="w-full bg-gray-200 rounded-full h-3 border-2 border-black overflow-hidden mt-2">
+                            <div
+                                className={`${isComplete ? "bg-[#A2E4B8]" : "bg-pink-500"} h-full rounded-full transition-all duration-500`}
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
                     </div>
 
                     {!isCreator && !isClosed && (
@@ -784,8 +784,6 @@ export default function PiggyPotWidget({
                             <button
                                 type="button"
                                 onClick={handleContribute}
-                                // totalCharged == null means the price preview failed or is still
-                                // loading — never let the buyer pay without seeing the amount.
                                 disabled={
                                     loading ||
                                     !data.digital_waiver ||
