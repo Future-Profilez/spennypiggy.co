@@ -33,6 +33,7 @@ export const REWARD_TYPES = [
 ];
 
 export const REWARD_ACCEPT = [
+    // MIME types — the primary filter.
     "image/*",
     "video/*",
     "audio/*",
@@ -50,6 +51,15 @@ export const REWARD_ACCEPT = [
     "application/x-zip-compressed",
     "application/x-rar-compressed",
     "application/vnd.rar",
+    // Extensions too — some OS file pickers and the Uploadcare native input
+    // filter on extension rather than the reported MIME, so a .zip/.docx that
+    // reports application/octet-stream still shows up.
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".heic", ".bmp", ".svg",
+    ".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv",
+    ".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac",
+    ".pdf", ".doc", ".docx", ".rtf", ".txt", ".odt",
+    ".xls", ".xlsx", ".ppt", ".pptx", ".epub",
+    ".zip", ".rar", ".7z", ".tar", ".gz",
 ].join(",");
 
 /** Thumbnails and cover images — never the paid deliverable. */

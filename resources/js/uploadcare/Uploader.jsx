@@ -193,6 +193,9 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
 
   return (
     <>
+      {/* img-only is spread conditionally below: on a web component React renders
+          `img-only={false}` as the attribute img-only="false", which Uploadcare
+          reads as PRESENT → image-only, silently blocking docs/zips/videos. */}
       <lr-config
         ctx-name={ctxName}
         pubkey="af0e7b54d1432d098e25"
@@ -207,7 +210,7 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
         source-list="local,url,camera,dropbox"
         done-activity={false}
         show-empty-list={false}
-        img-only={imgonly}
+        {...(imgonly ? { "img-only": true } : {})}
         remove-copyright
         max-concurrent-requests={4}
         multipart-max-attempts={3}
