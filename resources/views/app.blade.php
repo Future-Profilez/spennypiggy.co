@@ -139,7 +139,11 @@
         @endif
     </script>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+    {{-- maximum-scale/user-scalable=no blocked pinch-zoom, which fails the Lighthouse
+         accessibility audit (and the SEO score that reads it) and locks out anyone who
+         needs to zoom. viewport-fit=cover is what the PWA safe-area insets need and is
+         kept; the zoom lock was never required for it. --}}
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @inject('preloadService', 'App\Services\ResourcePreloadService')
@@ -170,6 +174,10 @@
     {{-- Basic performance hints --}}
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    @if(config('services.google.site_verification'))
+        <meta name="google-site-verification" content="{{ config('services.google.site_verification') }}">
+    @endif
 
     {!! \App\SeoMeta::render() !!}
 
@@ -328,9 +336,12 @@
             if (isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
                 document.addEventListener('DOMContentLoaded', function() {
                     // Fix iOS PWA viewport issues
+                    // Re-assert viewport-fit=cover for the iOS standalone shell only.
+                    // It must match the tag in <head> — re-adding user-scalable=no here
+                    // put the zoom lock straight back on the installed app.
                     const viewport = document.querySelector('meta[name="viewport"]');
                     if (viewport) {
-                        viewport.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+                        viewport.content = 'width=device-width,initial-scale=1,viewport-fit=cover';
                     }
                 });
             }
@@ -460,6 +471,23 @@
             html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
         }
     </style>
+    {{-- GA4. Renders nothing when GOOGLE_ANALYTICS_ID is unset, so local and dev
+         never write into the production property. Loaded async and placed last in
+         <head> so it never blocks first paint. --}}
+    @if(config('services.google.analytics_id'))
+        {{-- Inline @php(...) is NOT usable in this project's Blade setup: it compiles
+             to a bare `<?php(...)` with no closing tag and silently swallows the rest
+             of the template (every page 500s with "expecting endif"). Call config()
+             directly, or use a full @php ... @endphp block. --}}
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', @json(config('services.google.analytics_id')));
+        </script>
+    @endif
+
     @inertiaHead
 </head>
 

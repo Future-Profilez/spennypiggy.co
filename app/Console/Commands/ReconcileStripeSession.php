@@ -7,8 +7,11 @@ use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\PiggyPotContribution;
 use App\Models\ShopPayment;
+use App\Models\StripePaymentDetail;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
+use App\Models\WishItem;
+use App\Models\WishItemSubscription;
 use App\StripeControl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -73,9 +76,15 @@ class ReconcileStripeSession extends Command
             return self::SUCCESS;
         }
 
-        app(StripeWebhookController::class)->completeBySessionLookup($session);
+        // Run the FULL async-settlement path (maps the risk-ledger Payment, syncs the
+        // FinancialTransaction by payment intent, creates the deliverable, and marks the product
+        // row paid) — not just the deliverable step. This is what the dropped webhook would have
+        // done; every processor is idempotent, so re-running is safe.
+        app(StripeWebhookController::class)->handleAsyncPaymentSucceeded($session);
 
-        $this->info('Fulfilment replayed. Deliverable, notification and email should now be queued.');
+        $this->info('Fulfilment replayed. Deliverable, ledger, notification and email should now be queued.');
+        $this->line('If the ledger FT is still missing (some wish flows sync separately), run:');
+        $this->line('  php artisan finance:sync-transactions --user_id=<creator_user_id>');
         $this->line('Reminder: emails only send with a queue worker running.');
 
         return self::SUCCESS;
@@ -157,6 +166,18 @@ class ReconcileStripeSession extends Command
 
         if ($row = TaskPurchase::where('stripe_session_id', $sid)->first()) {
             return ['Task purchase', $row, $row->creator->account_id ?? null];
+        }
+
+        // Wish (one-time) — its account lives on the wished item's creator.
+        if ($row = WishItemSubscription::where('session_id', $sid)->first()) {
+            $account = optional(WishItem::find($row->wish_item_id))->user->account_id ?? null;
+
+            return ['Wish subscription', $row, $account];
+        }
+
+        // Cart/basket wish (StripePaymentDetail). owner_id is the creator.
+        if ($row = StripePaymentDetail::where('session_id', $sid)->first()) {
+            return ['Wish / checkout (StripePaymentDetail)', $row, $row->owner->account_id ?? null];
         }
 
         return ['', null, null];

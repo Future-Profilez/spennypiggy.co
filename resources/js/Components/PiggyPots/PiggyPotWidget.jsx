@@ -379,17 +379,29 @@ export default function PiggyPotWidget({
                             </p>
                         )}
 
-                        {/* The deliverable — what the supporter actually receives. */}
-                        {(featuredPot.content_description ||
+                        {/* The deliverable — what the supporter actually gets
+                            back for funding the goal. Prefers the unified reward
+                            fields, falls back to the legacy content description. */}
+                        {(featuredPot.reward_title ||
+                            featuredPot.reward_description ||
+                            featuredPot.content_description ||
                             featuredPot.content_file) && (
                             <div className="mb-4 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-3">
                                 <p className="font-black text-xs uppercase tracking-widest text-black">
-                                    What you unlock
+                                    You get in return
                                 </p>
                                 <p className="font-bold text-sm text-black mt-1">
-                                    {featuredPot.content_description ||
+                                    {featuredPot.reward_title ||
+                                        featuredPot.reward_description ||
+                                        featuredPot.content_description ||
                                         "Exclusive content, delivered instantly after purchase."}
                                 </p>
+                                {featuredPot.reward_title &&
+                                    featuredPot.reward_description && (
+                                        <p className="text-xs font-medium text-black/70 mt-0.5">
+                                            {featuredPot.reward_description}
+                                        </p>
+                                    )}
                             </div>
                         )}
                     </div>

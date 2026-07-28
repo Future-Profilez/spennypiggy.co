@@ -52,7 +52,7 @@ export default function PostLoadingSkeleton({ count = 3 }) {
     ));
 
     return (
-        <div className="max-feed m-auto">
+        <div className="w-full m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4">
             {skeletonItems}
         </div>
     );

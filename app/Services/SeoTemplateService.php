@@ -4,6 +4,15 @@ namespace App\Services;
 
 use App\SeoMeta;
 
+/**
+ * Titles, descriptions and structured data for the dynamic pages (creator profiles,
+ * wish pages, discover).
+ *
+ * ⚠️ Everything this class emits is a Stripe-facing surface — it is what Google
+ * prints in a search result and what a shared link previews as. The content-first
+ * rules apply in full: a page sells creator CONTENT. Never "gift", "tip",
+ * "donation", "tribute", "fundraise" or a bill/expense.
+ */
 class SeoTemplateService
 {
     /**
@@ -23,7 +32,7 @@ class SeoTemplateService
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
-        $keywords = "{$creator->name}, {$creator->username}, creator, memberships, wishlists, SpennyPiggy";
+        $keywords = "{$creator->name}, {$creator->username}, creator, exclusive content, memberships, Spenny Piggy";
         if (! empty($creator->creator_category)) {
             $keywords .= ", {$creator->creator_category}";
         }
@@ -65,7 +74,7 @@ class SeoTemplateService
         SeoMeta::addTag('title', $title);
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
-        $keywords = "{$wishItem->wishname}, gift, wishlist, {$creator->name}, {$creator->username}, SpennyPiggy";
+        $keywords = "{$wishItem->wishname}, exclusive content, {$creator->name}, {$creator->username}, Spenny Piggy";
         if ($wishItem->category) {
             $keywords .= ", {$wishItem->category}";
         }
@@ -97,8 +106,8 @@ class SeoTemplateService
             : 'Discover Amazing Creators – SpennyPiggy';
 
         $description = $filter
-            ? 'Explore talented '.$filter.' creators on SpennyPiggy. Support their work with gifts, memberships, and more.'
-            : 'Discover amazing creators on SpennyPiggy. Support their work, browse wishlists, and join exclusive memberships.';
+            ? 'Explore '.$filter.' creators on Spenny Piggy. Buy their exclusive content, memberships and paid requests.'
+            : 'Discover creators on Spenny Piggy. Buy exclusive content, join memberships and unlock creator-made rewards.';
 
         $canonicalUrl = SeoMeta::getPageCanonical('discover');
 
@@ -127,7 +136,7 @@ class SeoTemplateService
      */
     public static function getCreatorTitle($creator)
     {
-        $title = $creator->name.' | SpennyPiggy - Creator Profile';
+        $title = $creator->name.' — Exclusive Content | Spenny Piggy';
 
         return static::validateTitle($title);
     }
@@ -140,11 +149,11 @@ class SeoTemplateService
      */
     public static function getCreatorDescription($creator)
     {
-        $desc = 'Support '.$creator->name.' on SpennyPiggy. ';
-        $desc .= 'Browse their wishlist, join memberships, and send financial gifts safely.';
+        $desc = 'Buy exclusive content from '.$creator->name.' on Spenny Piggy. ';
+        $desc .= 'Memberships, one-off unlocks and paid requests — delivered by the creator.';
 
         if ($creator->bio) {
-            $desc = $creator->bio.' | '.$desc;
+            $desc = trim((string) $creator->bio).' | '.$desc;
         }
 
         return static::validateDescription($desc);
@@ -159,7 +168,7 @@ class SeoTemplateService
      */
     public static function getWishItemTitle($creator, $wishItem)
     {
-        $title = $wishItem->wishname.' - '.$creator->name.' | SpennyPiggy';
+        $title = $wishItem->wishname.' — '.$creator->name.' | Spenny Piggy';
 
         return static::validateTitle($title);
     }
@@ -173,13 +182,17 @@ class SeoTemplateService
      */
     public static function getWishItemDescription($creator, $wishItem)
     {
-        $desc = 'Gift "'.$wishItem->wishname.'" to '.$creator->name.' on SpennyPiggy. ';
+        $desc = 'Unlock "'.$wishItem->wishname.'" from '.$creator->name.' on Spenny Piggy. ';
 
-        if ($wishItem->description) {
-            $desc .= $wishItem->description.' ';
+        // WishItem has no `description` column — the buyer-facing blurb is
+        // reward_description (the reward contract). Reading ->description gave
+        // null on every row, so this sentence never appeared.
+        $blurb = $wishItem->reward_description ?? null;
+        if (! empty($blurb)) {
+            $desc .= trim((string) $blurb).' ';
         }
 
-        $desc .= 'Safe gifting platform with 100% secure payments.';
+        $desc .= 'Secure checkout, content delivered by the creator.';
 
         return static::validateDescription($desc);
     }
@@ -240,20 +253,28 @@ class SeoTemplateService
             ],
         ];
 
-        if ($wishItem->description) {
-            $schema['description'] = $wishItem->description;
+        // `description` and `image_url` are not columns on WishItem — reading them
+        // silently produced a Product with neither, which Google drops as incomplete.
+        $description = $wishItem->reward_description ?? $wishItem->reward_title ?? null;
+        if (! empty($description)) {
+            $schema['description'] = trim((string) $description);
         }
 
-        if ($wishItem->image_url) {
-            $schema['image'] = $wishItem->image_url;
+        if (! empty($wishItem->thumbnail)) {
+            $schema['image'] = 'https://ucarecdn.com/'.$wishItem->thumbnail.'/-/format/jpeg/';
+        }
+
+        if (! empty($wishItem->category)) {
+            $schema['category'] = $wishItem->category;
         }
 
         if ($wishItem->price && $wishItem->currency) {
             $schema['offers'] = [
                 '@type' => 'Offer',
-                'price' => $wishItem->price,
-                'priceCurrency' => $wishItem->currency,
+                'price' => number_format((float) $wishItem->price, 2, '.', ''),
+                'priceCurrency' => strtoupper((string) $wishItem->currency),
                 'availability' => 'https://schema.org/InStock',
+                'url' => $schema['url'],
                 'seller' => [
                     '@type' => 'Person',
                     'name' => $creator->name,
@@ -337,19 +358,21 @@ class SeoTemplateService
      * @param  string  $currentPath
      * @return void
      */
+    /**
+     * Self-referencing hreflang.
+     *
+     * ⚠️ This used to point en-GB at `uk.spennypiggy.co`, a host that does not exist.
+     * An hreflang to a dead URL is worse than none — Google drops the whole cluster
+     * and the annotation is ignored for every page in it. There is one English site,
+     * so it declares itself and x-default; add a real locale here only when a real
+     * localised host exists.
+     */
     public static function setHreflangTags($currentPath)
     {
-        $baseUrl = config('app.url');
-        $ukUrl = str_replace('https://spennypiggy.co', 'https://uk.spennypiggy.co', $baseUrl);
+        $href = rtrim(config('app.url'), '/').'/'.ltrim((string) $currentPath, '/');
+        $href = rtrim($href, '/') ?: rtrim(config('app.url'), '/');
 
-        // US/International version (default)
-        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'en', 'href' => $baseUrl.$currentPath]);
-        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'en-US', 'href' => $baseUrl.$currentPath]);
-
-        // UK version
-        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'en-GB', 'href' => $ukUrl.$currentPath]);
-
-        // Default fallback
-        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'x-default', 'href' => $baseUrl.$currentPath]);
+        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'en', 'href' => $href]);
+        SeoMeta::addTag('link', ['rel' => 'alternate', 'hreflang' => 'x-default', 'href' => $href]);
     }
 }

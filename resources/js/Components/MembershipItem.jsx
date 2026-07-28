@@ -7,6 +7,7 @@ import EditMembership from "@/Pages/membership/EditMembership";
 import { Menu, Transition } from "@headlessui/react";
 import RemoveMembership from "@/Pages/membership/RemoveMembership";
 import { useAlerts } from "@/Components/Alerts";
+import RewardHint from "@/Pages/discover/components/RewardHint";
 
 const rewards_lists = [
     { title: "Green Circle Insta", value: "green_circle_insta" },
@@ -266,6 +267,10 @@ export default function MembershipItem({
                         <h4 className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-gray-500">
                             What you get
                         </h4>
+                        {/* The instant welcome reward — distinct from the ongoing
+                            perks below, so a buyer sees they get something the
+                            moment they join, not only over time. */}
+                        <RewardHint item={item} className="mb-3 max-w-full" />
                         <ul className="space-y-2.5">
                             {rewards && rewards.length > 0 ? (
                                 visibleRewards.map((r, i) => (

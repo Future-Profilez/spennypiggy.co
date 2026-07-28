@@ -11,13 +11,22 @@ use Illuminate\Support\Facades\Request;
 class SeoMeta
 {
     /**
+     * Fallback <title> for any page that does not set its own.
+     *
+     * It is a Stripe-facing surface: this string is what Google prints in the search
+     * result and what a social card shows, so it obeys the content-first rules — it
+     * describes buying creator content, never a gift, tip, donation or bill.
+     */
+    public const DEFAULT_TITLE = 'Spenny Piggy | Creator Content, Memberships & Exclusive Purchases';
+
+    /**
      * Dynamic SEO Tags structured as
      * tagType => tagProps[...props]
      *
      * @var array
      */
     protected static $tags = [
-        'title' => 'Spennypiggy | Financial Gifts, Exclusive Content & Memberships',
+        'title' => self::DEFAULT_TITLE,
     ];
 
     /**
@@ -249,7 +258,7 @@ class SeoMeta
     public static function clear(): void
     {
         static::$tags = [
-            'title' => 'Spennypiggy | Financial Gifts, Exclusive Content & Memberships',
+            'title' => self::DEFAULT_TITLE,
         ];
     }
 

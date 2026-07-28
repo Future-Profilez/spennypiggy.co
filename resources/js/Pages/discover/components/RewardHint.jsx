@@ -20,7 +20,14 @@ export default function RewardHint({ item, className = '' }) {
     if (!item) return null;
     const type = item.reward_type;
     const desc = (item.reward_description || '').trim();
-    const label = desc || TYPE_LABEL[type];
+    // A sellable item always carries a reward_title (backfilled for legacy
+    // rows). When the creator gave no description and no explicit type, still
+    // reassure the buyer they get something back rather than showing nothing.
+    // A physical shop product's deliverable is the parcel, not digital content,
+    // so it gets no generic "exclusive content" fallback.
+    const isPhysical = item.type === 'physical';
+    const hasReward = !isPhysical && ('reward_title' in item || 'reward_type' in item);
+    const label = desc || TYPE_LABEL[type] || (hasReward ? 'Exclusive content' : null);
     if (!label) return null;
 
     return (

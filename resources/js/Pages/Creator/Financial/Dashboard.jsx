@@ -1372,7 +1372,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                 <tr key={s.supporter_id} className="hover:bg-gray-50 transition-colors">
                                                                     <td className="px-6 py-4 text-sm flex items-center gap-3">
                                                                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                                                                            {s.supporter?.avatar_url ? <img src={s.supporter.avatar_url} className="w-full h-full object-cover" /> : <span className="text-normal font-bold text-gray-400">{s.supporter?.name?.[0] ?? '?'}</span>}
+                                                                            {s.supporter?.avatar_url ? <img src={s.supporter.avatar_url} alt={s.supporter?.name || ''} className="w-full h-full object-cover" /> : <span className="text-normal font-bold text-gray-400">{s.supporter?.name?.[0] ?? '?'}</span>}
                                                                         </div>
                                                                         <div><div className="text-gray-900 font-medium">{s.supporter?.name ?? 'Guest'}</div><div className="text-[14px] text-gray-500">@{s.supporter?.username ?? 'guest'}</div></div>
                                                                     </td>

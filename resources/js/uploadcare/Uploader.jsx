@@ -6,7 +6,7 @@ import { useAlerts } from "@/Components/Alerts";
 import axios from "axios"; 
 LR.registerBlocks(LR); 
 
-const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
+const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true, multiple = false }, ref) => {
   const { successAlert, errorAlert } = useAlerts();
   const [files, setFiles] = useState([]);
   const [checkIsUploading, setCheckIsUploading] = useState(false);
@@ -125,13 +125,10 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
   }, [ctxName, uploadStartTime]);
 
   const checkAdult = async (d) => {
-    const f = d[0];
-    const type = f?.contentInfo?.mime?.type;
-    const fileuid = f?.uuid;
-    
-    // Extract complete file metadata
-    const fileMetadata = {
-      uuid: fileuid,
+    if (!d || d.length === 0) return;
+
+    const filesToScan = d.map(f => ({
+      uuid: f?.uuid,
       mimeType: f?.contentInfo?.mime?.type || '',
       mimeSubtype: f?.contentInfo?.mime?.subtype || '',
       name: f?.originalFilename || f?.name || 'File',
@@ -139,31 +136,35 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
       isImage: f?.isImage || false,
       isVideo: (f?.contentInfo?.mime?.type === 'video') || false,
       isAudio: (f?.contentInfo?.mime?.type === 'audio') || false,
-      url: f?.cdnUrl || `https://ucarecdn.com/${fileuid}/`
-    };
+      url: f?.cdnUrl || `https://ucarecdn.com/${f?.uuid}/`
+    }));
 
-    if (fileuid && type === 'image') {
+    const imagesToScan = filesToScan.filter(f => f.uuid && f.mimeType === 'image');
+
+    if (imagesToScan.length > 0) {
       setScanning(true);
       try {
-        const resp = await axios.get(`/scanning/check-adult-content/${fileuid}`);
+        const scanPromises = imagesToScan.map(img => axios.get(`/scanning/check-adult-content/${img.uuid}`));
+        const responses = await Promise.all(scanPromises);
         setTimeout(() => setScanning(false), 100);
 
-        if (resp.data.status) {
-          successAlert("File has been scanned !!");
-          sendFile(fileMetadata); // Pass the full metadata
+        const flagged = responses.find(resp => !resp.data.status);
+        if (flagged) {
+          errorAlert(flagged.data.msg || "One of the files failed adult content policy.");
+          handleResetUploader();
+        } else {
+          successAlert("Files uploaded and scanned successfully!");
+          sendFile(multiple ? filesToScan : filesToScan[0]);
           setFiles(d);
           controller.current.abort();
-        } else {
-          errorAlert(resp.data.msg);
-          handleResetUploader();
         }
       } catch (err) {
         setTimeout(() => setScanning(false), 2000);
-        sendFile(fileMetadata);
+        sendFile(multiple ? filesToScan : filesToScan[0]);
         setFiles(d);
       }
     } else {
-      sendFile(fileMetadata); // Pass the full metadata
+      sendFile(multiple ? filesToScan : filesToScan[0]);
       setFiles(d);
     }
   };
@@ -195,9 +196,9 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
       <lr-config
         ctx-name={ctxName}
         pubkey="af0e7b54d1432d098e25"
-        multiple={false}
+        multiple={multiple}
         darkmode={false}
-        thumb-size={500} inputAcceptTypes={accept || "image/*,video/mp4,video/webm"}
+        thumb-size={500} inputAcceptTypes={accept || "image/*,video/*"}
         confirm-upload={false}
         store
         accept={accept || "image/*,video/*"}

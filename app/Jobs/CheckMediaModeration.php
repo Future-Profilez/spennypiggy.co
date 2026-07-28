@@ -4,13 +4,13 @@ namespace App\Jobs;
 
 use App\Jobs\Concerns\RetriesCriticalWork;
 use App\Models\User;
+use App\Services\RekognitionModeration;
 use App\Support\ModerationNotice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
@@ -39,13 +39,13 @@ class CheckMediaModeration implements ShouldQueue
      * "your content contains nudity" — while missing the label Rekognition
      * actually returns for the thing it is meant to catch.
      */
-    public const REST_WORDS = [
-        'Nudity', 'Sexual', 'Porn', 'Explicit', 'Gore', 'Graphic Violence',
-        'Visually Disturbing', 'Hate Symbol', 'Self-Injury', 'Self Injury',
-    ];
+    public const REST_WORDS = RekognitionModeration::REST_WORDS;
 
     /** Minimum Rekognition confidence (%) before a label counts — cuts false positives. */
-    public const MIN_CONFIDENCE = 80.0;
+    public const MIN_CONFIDENCE = RekognitionModeration::MIN_CONFIDENCE;
+
+    /** How long to wait for a verdict before holding the content unscanned. */
+    private const SCAN_WAIT_SECONDS = 20;
 
     /**
      * The asset keys a scan may be dispatched for, and how each reads in a
@@ -108,11 +108,12 @@ class CheckMediaModeration implements ShouldQueue
         }
 
         // Callers pass media in mixed formats: bare UUID (tasks), full CDN URL
-        // "https://ucarecdn.com/<uuid>/" (piggy pot cover), or UUID with CDN ops
-        // "<uuid>/-/preview/" (shop image). The Uploadcare REST API only accepts
-        // the bare UUID — anything else 404s every poll, and the fail-closed
-        // fallback then holds perfectly innocent content. Normalize first.
-        if (! preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $this->mediaUuid, $m)) {
+        // (piggy pot cover), or UUID with CDN ops (shop image). The Uploadcare
+        // REST API only accepts the bare UUID — anything else 404s every poll,
+        // and the fail-closed fallback then holds perfectly innocent content.
+        $uuid = RekognitionModeration::uuidFrom($this->mediaUuid);
+
+        if ($uuid === null) {
             Log::warning('CheckMediaModeration: no UUID found in media reference — flagging for manual review', [
                 'model' => $this->modelClass,
                 'id' => $this->modelId,
@@ -122,12 +123,6 @@ class CheckMediaModeration implements ShouldQueue
 
             return;
         }
-        $this->mediaUuid = strtolower($m[0]);
-
-        $headers = [
-            'Accept' => 'application/vnd.uploadcare-v0.7+json',
-            'Authorization' => 'Uploadcare.Simple '.config('services.uploadcare.public').':'.config('services.uploadcare.secret'),
-        ];
 
         // Rekognition's moderation labels only apply to images. A PDF, zip,
         // document or video returns nothing, which the fail-closed branch below
@@ -135,10 +130,9 @@ class CheckMediaModeration implements ShouldQueue
         // be stuck waiting for a scan that can never produce an answer. These
         // items are still created unapproved and reviewed by a human, so
         // passing here does not put them live unseen.
-        $isImage = $this->isImage($headers);
+        $isImage = RekognitionModeration::isImage($uuid);
 
         if ($isImage === null) {
-            // The file could not be read at all — treat as unverified.
             Log::warning('Uploadcare file info unavailable — flagging for manual review', [
                 'model' => $this->modelClass,
                 'id' => $this->modelId,
@@ -152,43 +146,16 @@ class CheckMediaModeration implements ShouldQueue
             return;
         }
 
-        // Kick off the Rekognition add-on. Processing is asynchronous, so the
-        // moderation labels are not available on the immediate read — poll the
-        // file's appdata until they appear (or we give up after a few tries).
-        Http::withHeaders($headers + ['Content-Type' => 'application/json'])
-            ->post('https://api.uploadcare.com/addons/aws_rekognition_detect_moderation_labels/execute/', [
-                'target' => $this->mediaUuid,
-            ]);
+        // ⚠️ Waits for the scan to REPORT DONE. Reading the labels straight
+        // after executing the add-on returns an empty array, which this job
+        // used to accept as "scanned, nothing found" and break its poll loop on
+        // the first read — so explicit images passed whenever Rekognition had
+        // not finished yet.
+        $labels = RekognitionModeration::labels($uuid, self::SCAN_WAIT_SECONDS);
 
-        $tags = null;
-        for ($attempt = 0; $attempt < 5; $attempt++) {
-            sleep(3);
-
-            $response = Http::withHeaders($headers)
-                ->get('https://api.uploadcare.com/files/'.$this->mediaUuid.'/?include=appdata');
-
-            if (! $response->successful()) {
-                Log::error('Uploadcare moderation check failed', [
-                    'model' => $this->modelClass,
-                    'id' => $this->modelId,
-                    'status' => $response->status(),
-                ]);
-
-                continue;
-            }
-
-            $labels = $response->json('appdata.aws_rekognition_detect_moderation_labels.data.ModerationLabels');
-            if (is_array($labels)) {
-                $tags = $labels;
-                break;
-            }
-        }
-
-        if (! is_array($tags)) {
-            // Fail CLOSED: if we never got a verdict (API error / Rekognition timeout),
-            // flag the content for manual review rather than leaving monetised content
-            // live unscanned.
-            Log::warning('Moderation labels unavailable after polling — flagging for manual review', [
+        if ($labels === null) {
+            // Fail CLOSED: no verdict means unverified, not safe.
+            Log::warning('Moderation labels unavailable — flagging for manual review', [
                 'model' => $this->modelClass,
                 'id' => $this->modelId,
             ]);
@@ -197,49 +164,9 @@ class CheckMediaModeration implements ShouldQueue
             return;
         }
 
-        // A restricted label only holds the content when Rekognition is confident
-        // (>= MIN_CONFIDENCE). Match case-insensitively against the full label name
-        // (labels can be multi-word, e.g. "Explicit Nudity", "Graphic Violence").
-        foreach ($tags as $tag) {
-            $label = $tag['Name'] ?? '';
-            $confidence = (float) ($tag['Confidence'] ?? 0);
-            if ($confidence < self::MIN_CONFIDENCE) {
-                continue;
-            }
-            foreach (self::REST_WORDS as $word) {
-                if (stripos($label, $word) !== false) {
-                    $this->flag($label);
-
-                    return;
-                }
-            }
+        if ($restricted = RekognitionModeration::restrictedLabel($labels)) {
+            $this->flag($restricted);
         }
-    }
-
-    /**
-     * Is the stored file an image? null when the file could not be read.
-     *
-     * Uploadcare reports `is_image` on the file object; the MIME type is used
-     * as a fallback for older records where that flag is absent.
-     */
-    private function isImage(array $headers): ?bool
-    {
-        $response = Http::withHeaders($headers)
-            ->get('https://api.uploadcare.com/files/'.$this->mediaUuid.'/');
-
-        if (! $response->successful()) {
-            return null;
-        }
-
-        $isImage = $response->json('is_image');
-
-        if (is_bool($isImage)) {
-            return $isImage;
-        }
-
-        $mime = (string) ($response->json('mime_type') ?? $response->json('content_info.mime.mime') ?? '');
-
-        return $mime !== '' ? str_starts_with(strtolower($mime), 'image/') : null;
     }
 
     private function flag(string $reasonLabel = ''): void

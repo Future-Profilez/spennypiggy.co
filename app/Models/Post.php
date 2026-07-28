@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
 
 class Post extends Model
@@ -20,11 +21,14 @@ class Post extends Model
         'title',
         'content',
         'image',
+        'media',
         'ai_generated',
         'status',
         'approved',
         'approved_at',
         'can_delete_until',
+        'slug',
+        'is_pinned',
     ];
 
     protected $hidden = [
@@ -36,6 +40,8 @@ class Post extends Model
         'approved_at' => 'datetime',
         'can_delete_until' => 'datetime',
         'ai_generated' => 'boolean',
+        'is_pinned' => 'boolean',
+        'media' => 'array',
     ];
 
     protected $appends = [
@@ -49,12 +55,57 @@ class Post extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(function ($w) {
+            $w->uuid = Uuid::uuid4();
+            if (empty($w->slug)) {
+                $w->slug = static::generateUniqueSlug($w->title ?: 'post');
+            }
+        });
+    }
+
+    /**
+     * @param  int|null  $ignoreId  Post to exclude from the uniqueness check — a
+     *                              retitled post must not collide with its own
+     *                              current slug and end up as "my-post-1".
+     */
+    public static function generateUniqueSlug($title, $ignoreId = null)
+    {
+        $slug = Str::slug($title);
+        if (empty($slug)) {
+            $slug = 'post';
+        }
+        $originalSlug = $slug;
+        $count = 1;
+        while (static::where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()
+        ) {
+            $slug = $originalSlug.'-'.$count;
+            $count++;
+        }
+
+        return $slug;
     }
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
+    }
+
+    public function mentions()
+    {
+        return $this->hasMany(PostMention::class);
+    }
+
+    /**
+     * The creators this post mentions. Rendered as links in the post body — a
+     * handle that is not in here stays plain text, so `@notarealname` never
+     * becomes a dead link.
+     */
+    public function mentionedUsers()
+    {
+        return $this->belongsToMany(User::class, 'post_mentions', 'post_id', 'user_id')
+            ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_approved', 'users.avatar_cdn_modifier');
     }
 
     public function getImageUrlAttribute()

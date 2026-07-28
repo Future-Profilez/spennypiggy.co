@@ -153,7 +153,7 @@ class UserProfileService
         if (! $isOwner) {
             $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason'])
+        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description'])
             ->latest();
 
         $cacheKey = 'user_tasks_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -177,6 +177,9 @@ class UserProfileService
             'user_id',
             'uuid',
             'wishname',
+            'reward_title',
+            'reward_type',
+            'reward_description',
             'price',
             'currency',
             'thumbnail',
@@ -222,6 +225,9 @@ class UserProfileService
             'uuid',
             'name',
             'level',
+            'reward_title',
+            'reward_type',
+            'reward_description',
             'price',
             'currency',
             'thumbnail',
@@ -258,6 +264,9 @@ class UserProfileService
             'user_id',
             'uuid',
             'name',
+            'reward_title',
+            'reward_type',
+            'reward_description',
             'price',
             'currency',
             'period',
@@ -302,6 +311,9 @@ class UserProfileService
                 'user_id',
                 'uuid',
                 'name',
+                'reward_title',
+                'reward_type',
+                'reward_description',
                 'price',
                 'currency',
                 'image',
@@ -338,12 +350,22 @@ class UserProfileService
      */
     private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
     {
+        // The card needs every column it renders or acts on: without `slug` the
+        // post link falls back to the uuid, without `is_pinned` the owner menu
+        // shows the wrong pin label, and without `for_module` the lock/audience
+        // badge cannot be resolved.
         $query = Post::select([
             'id',
             'uuid',
             'user_id',
+            'slug',
+            'title',
             'content',
             'image',
+            'media',
+            'type',
+            'for_module',
+            'is_pinned',
             'approved',
             'created_at',
         ])->where('user_id', $userId);
@@ -359,6 +381,10 @@ class UserProfileService
             'likes' => fn ($q) => $q->where('status', 1),
             'comments' => fn ($q) => $q->where('is_approved', 1)->orWhere('user_id', $viewerId),
         ]);
+
+        // Mentions travel with the post: the renderer links only handles that
+        // resolved to a real creator, so it needs the list, not just the text.
+        $query->with('mentionedUsers');
 
         // Check if current user liked
         if ($viewerId) {
@@ -413,6 +439,134 @@ class UserProfileService
         return $this->executePostsQuery($userId, $module, $perPage, $page);
     }
 
+    /**
+     * Check access control and apply is_lock to a single post
+     */
+    /**
+     * Hide a locked post's paid content, but say how much of it there is.
+     *
+     * ⚠️ `media` was NOT being stripped — only `content` and `image` were — so
+     * every locked multi-image post shipped the Uploadcare uuids of the paid
+     * photos in its payload, and anyone could open them straight off the CDN.
+     *
+     * What replaces them is a count: "3 photos · 1 video" tells a visitor what
+     * they would be buying, which is the whole job of the locked screen, without
+     * handing over a single file.
+     */
+    public static function stripLockedMedia(Post $post): void
+    {
+        $items = is_array($post->media) ? $post->media : [];
+
+        if (empty($items) && ! empty($post->image)) {
+            $items = [['isVideo' => $post->type === 'video']];
+        }
+
+        $videos = 0;
+        foreach ($items as $item) {
+            $isVideo = ($item['isVideo'] ?? false)
+                || str_starts_with((string) ($item['mimeType'] ?? ''), 'video');
+            if ($isVideo) {
+                $videos++;
+            }
+        }
+
+        $post->content = null;
+        $post->image = null;
+        $post->media = null;
+
+        $post->setAttribute('locked_image_count', max(0, count($items) - $videos));
+        $post->setAttribute('locked_video_count', $videos);
+    }
+
+    public function checkPostAccessAndLockStatus(Post $post, int $userId)
+    {
+        $currentUser = Auth::user();
+        $isOwner = $currentUser && $currentUser->id === $userId;
+
+        // Get user's active subscriptions for this creator if not the owner
+        $hasActiveSubscription = false;
+        $hasMembership = false;
+        $hasBill = false;
+        $hasSupport = false;
+
+        if ($currentUser && ! $isOwner) {
+            // Check active wish item subscriptions
+            $hasActiveSubscription = WishItemSubscription::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+                ->whereHas('wish_item', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('stripe_status', 'active')
+                ->where(function ($q) {
+                    $q->where(function ($recurring) {
+                        $recurring->where('recurring_for', 'continue')
+                            ->where('upcoming_payment', '>=', Carbon::now());
+                    })->orWhere(function ($onetime) {
+                        $onetime->where('recurring_for', 'onetime')
+                            ->where('created_at', '>=', Carbon::now()->subDays(30));
+                    });
+                })
+                ->exists();
+
+            // Check active memberships
+            $hasMembership = MembershipPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+                ->whereHas('membership', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('upcoming_payment', '>=', Carbon::now())
+                ->exists();
+
+            // Check active bills
+            $hasBill = BillPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+                ->whereHas('bill', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->where('status', 'paid')
+                ->where('upcoming_payment', '>=', Carbon::now())
+                ->exists();
+
+            // Check support/tip payments
+            $hasSupport = TipGoalsPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+                ->where('creator_id', $userId)
+                ->where('status', 'paid')
+                ->exists();
+        }
+
+        if ($isOwner) {
+            $post->is_lock = 0;
+        } else {
+            switch ($post->for_module) {
+                case 'subscription':
+                    $post->is_lock = ($hasActiveSubscription || $hasBill) ? 0 : 1;
+                    break;
+                case 'membership':
+                    $post->is_lock = $hasMembership ? 0 : 1;
+                    break;
+                case 'support':
+                    $post->is_lock = $hasSupport ? 0 : 1;
+                    break;
+                default:
+                    $post->is_lock = 0;
+                    break;
+            }
+
+            if ($post->is_lock == 1) {
+                self::stripLockedMedia($post);
+            }
+        }
+
+        return $post;
+    }
+
     private function executePostsQuery($userId, $module, $perPage, $page)
     {
         // Don't cache paginated results to ensure fresh data
@@ -436,6 +590,10 @@ class UserProfileService
             'comments' => fn ($q) => $q->where('is_approved', 1)->orWhere('user_id', $viewerId),
         ]);
 
+        // Mentions travel with the post: the renderer links only handles that
+        // resolved to a real creator, so it needs the list, not just the text.
+        $query->with('mentionedUsers');
+
         // Check if current user liked
         if ($viewerId) {
             $query->withExists([
@@ -443,7 +601,7 @@ class UserProfileService
             ]);
         }
 
-        $posts = $query->latest()->paginate($perPage, ['*'], 'page', $page);
+        $posts = $query->orderBy('is_pinned', 'desc')->latest()->paginate($perPage, ['*'], 'page', $page);
 
         // Check subscription access for each post
         $currentUser = Auth::user();
@@ -535,8 +693,7 @@ class UserProfileService
                 // A locked post must not leak its premium content/media to a non-entitled
                 // viewer — strip the body + image so only the lock state is exposed.
                 if ($post->is_lock == 1) {
-                    $post->content = null;
-                    $post->image = null;
+                    self::stripLockedMedia($post);
                 }
             }
 

@@ -561,11 +561,29 @@ Route::get('/creator/dispute-packs/{disputeId}/{fileName}', function (Request $r
     }
 
     $fileName = basename($fileName);
+
+    /*
+    | ⚠️ This reads the ADMIN app's storage over a sibling-directory path, which only
+    | resolves when both apps sit in one folder on one machine. In production they are
+    | two separate Vapor deployments with their own ephemeral Lambda filesystems, so
+    | this path does not exist and the creator's emailed link cannot work.
+    |
+    | The admin's own "Download" button no longer depends on this — it streams the ZIP
+    | back in the same request (see Admin\CreatorDisputePackController::download).
+    | Fixing the *emailed* link needs shared storage (an S3 disk both apps can write to
+    | and read from), because that link is opened hours or days later.
+    */
     $adminStoragePath = base_path('../admin.spennypiggy.co/storage/app/dispute-packs/');
     $path = $adminStoragePath.$fileName;
 
     if (! File::exists($path)) {
-        abort(Response::HTTP_NOT_FOUND, 'Dispute pack not found.');
+        \Illuminate\Support\Facades\Log::warning('Dispute pack download failed: file not reachable from this app', [
+            'file' => $fileName,
+            'looked_in' => $adminStoragePath,
+            'hint' => 'Expected on a shared filesystem. On Vapor the two apps do not share storage — this needs an S3 disk.',
+        ]);
+
+        abort(Response::HTTP_NOT_FOUND, 'This dispute pack is no longer available. Ask an admin to re-send it.');
     }
 
     return response()->download($path, $fileName);
@@ -706,6 +724,7 @@ Route::withoutMiddleware([])->group(function () {
     Route::get('/app-sitemap-pages', [SitemapController::class, 'static'])->name('app.sitemap.static');
     Route::get('/app-sitemap-users', [SitemapController::class, 'creators'])->name('app.sitemap.creators');
     Route::get('/app-sitemap-items', [SitemapController::class, 'wishlists'])->name('app.sitemap.wishlists');
+    Route::get('/app-sitemap-posts', [SitemapController::class, 'posts'])->name('app.sitemap.posts');
 
     // Inline robots.txt that bypasses all file systems
     Route::get('/dynamic-robots', function () {
@@ -751,6 +770,10 @@ Route::withoutMiddleware([])->group(function () {
         $content .= '  </sitemap>'."\n";
         $content .= '  <sitemap>'."\n";
         $content .= '    <loc>'.$siteUrl.'/dynamic-sitemap-items</loc>'."\n";
+        $content .= '    <lastmod>'.now()->toW3cString().'</lastmod>'."\n";
+        $content .= '  </sitemap>'."\n";
+        $content .= '  <sitemap>'."\n";
+        $content .= '    <loc>'.$siteUrl.'/dynamic-sitemap-posts</loc>'."\n";
         $content .= '    <lastmod>'.now()->toW3cString().'</lastmod>'."\n";
         $content .= '  </sitemap>'."\n";
         $content .= '</sitemapindex>'."\n";
@@ -808,6 +831,7 @@ Route::withoutMiddleware([])->group(function () {
 
     Route::get('/dynamic-sitemap-users', [SitemapController::class, 'creators'])->name('dynamic.sitemap.users');
     Route::get('/dynamic-sitemap-items', [SitemapController::class, 'wishlists'])->name('dynamic.sitemap.items');
+    Route::get('/dynamic-sitemap-posts', [SitemapController::class, 'posts'])->name('dynamic.sitemap.posts');
 
     // SEO Status Page
     Route::get('/seo-status', function () {
@@ -842,6 +866,7 @@ Route::get('/sitemap.xml', [SitemapController::class, 'customSitemap'])->name('s
 Route::get('/seo/sitemap-static.xml', [SitemapController::class, 'static'])->name('sitemap.static.redirect');
 Route::get('/seo/sitemap-creators.xml', [SitemapController::class, 'creators'])->name('sitemap.creators.redirect');
 Route::get('/seo/sitemap-wishlists.xml', [SitemapController::class, 'wishlists'])->name('sitemap.wishlists.redirect');
+Route::get('/seo/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts.redirect');
 
 // SEO Cache management route (for post-deployment cache clearing)
 Route::get('/seo/clear-cache', [SitemapController::class, 'clearCache'])->name('seo.clear.cache');

@@ -9,6 +9,7 @@ use App\Models\RyeProduct;
 use App\Models\User;
 use App\Models\WishCategory;
 use App\SeoMeta;
+use App\Services\SeoTemplateService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use Carbon\Carbon;
@@ -325,19 +326,16 @@ class OptimizedProfileController extends Controller
      */
     private function setSeoMetaTags($user, string $username): void
     {
-        $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
-
-        SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
-        SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:description', 'content' => 'Send tributes, adopt bills & more. Safe for Spicy Creators who receive 100% payouts!']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image', 'content' => $image]);
-        SeoMeta::addTag('meta', ['property' => 'twitter:site', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:creator', 'content' => '@spennypiggy']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:alt', 'content' => 'Financial Gifts,Donations & Memberships']);
-        SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
-        SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
-        SeoMeta::addTag('link', ['rel' => 'canonical', 'href' => "https://spennypiggy.co/{$username}"]);
+        // ⚠️ No route resolves to this controller — the live profile is served by
+        // AuthenticatedSessionController::getUserProfile. Kept in step anyway,
+        // because the copy it used to emit ("Financial Gifts, Donations",
+        // "Send tributes, adopt bills") is exactly the vocabulary the content-first
+        // compliance rules ban, and meta tags are printed publicly in search results.
+        // If this is ever wired up, delegate rather than growing a second copy.
+        SeoTemplateService::setCreatorMeta($user);
+        SeoMeta::addTag('meta', ['name' => 'twitter:site', 'content' => '@spennypiggy']);
+        SeoMeta::addTag('meta', ['name' => 'twitter:creator', 'content' => '@spennypiggy']);
+        SeoMeta::setCanonical(SeoMeta::getPageCanonical('user.show', ['username' => $username]));
     }
 
     /**

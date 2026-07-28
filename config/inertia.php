@@ -21,7 +21,13 @@ return [
 
     'ssr' => [
 
-        'enabled' => env('INERTIA_SSR_ENABLED', true),
+        // Defaults to FALSE. Lambda cannot host the long-running Node process an
+        // Inertia SSR server needs, and the deploy never built bootstrap/ssr/ssr.js,
+        // so with `true` every request tried to reach an SSR server that does not
+        // exist. Turning it on requires an external SSR host (see
+        // docs/Vapor_Inertia_SSR_Guide.md) — set INERTIA_SSR_ENABLED=true and
+        // SSR_URL only once that host is actually running.
+        'enabled' => env('INERTIA_SSR_ENABLED', false),
 
         'url' => env('SSR_URL', env('INERTIA_SSR_URL', 'http://127.0.0.1:13714')),
 

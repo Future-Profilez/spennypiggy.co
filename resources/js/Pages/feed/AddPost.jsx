@@ -9,6 +9,9 @@ import { useAlerts } from "@/Components/Alerts";
 import { FaPenNib } from "react-icons/fa6";
 import ImageGenerationWithAI from "@/Components/ImageGenerationWithAI";
 import { router, usePage } from "@inertiajs/react";
+import MentionTextarea from "@/Components/MentionTextarea";
+import PostMediaCarousel from "@/Components/PostMediaCarousel";
+import { formatPostContent } from "./Post";
 
 const TITLE_MAX = 150;
 const CONTENT_MAX = 5000;
@@ -77,22 +80,28 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
         }
     };
     const { errorsHandling } = useAlerts();
-    const [rewardImage, setRewardImage] = useState(item?.image || "");
+    const [mediaList, setMediaList] = useState([]);
     const [isAiImage, setIsAiImage] = useState(false);
 
     const uploaderRef = useRef();
     const resetUploader = () => uploaderRef.current?.reset?.();
 
     const getAIImage = (e) => {
-        setRewardImage(
-            e.uuid +
-                "/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/",
-        );
-        setIsAiImage(e.url);
+        const aiImg = {
+            uuid: e.uuid + "/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/",
+            mimeType: 'image/jpeg',
+            isImage: true,
+            isVideo: false,
+            name: 'AI Generated Image',
+            url: e.url
+        };
+        setMediaList((prev) => [...prev, aiImg]);
+        setIsAiImage(true);
     };
 
-    const getfile = async (data) => {
-        setRewardImage(data?.uuid);
+    const getfile = async (files) => {
+        const fileArray = Array.isArray(files) ? files : [files];
+        setMediaList((prev) => [...prev, ...fileArray]);
         setIsAiImage(false);
     };
 
@@ -111,7 +120,21 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                 title: item?.title || "",
                 content: item?.content || "",
             });
-            setRewardImage(item?.image || "");
+            if (item.media && Array.isArray(item.media)) {
+                setMediaList(item.media);
+            } else if (item.image) {
+                setMediaList([{
+                    uuid: item.image,
+                    mimeType: item.type === 'video' ? 'video/mp4' : 'image/jpeg',
+                    isImage: item.type !== 'video',
+                    isVideo: item.type === 'video',
+                    name: 'File'
+                }]);
+            } else {
+                setMediaList([]);
+            }
+        } else {
+            setMediaList([]);
         }
     }, [item]);
 
@@ -163,14 +186,14 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
     // Every post needs an image — a members-only feed is meant to give
     // subscribers something to look at, not a wall of text. The caption is
     // optional.
-    const hasImage = !!rewardImage;
-    const canSubmit = hasImage;
+    const hasMedia = mediaList.length > 0;
+    const canSubmit = hasMedia;
 
     const submitPost = (e) => {
         e && e.preventDefault();
 
-        if (!hasImage) {
-            toast.error("Add an image before posting.");
+        if (!hasMedia) {
+            toast.error("Add at least one image or video before posting.");
             return false;
         }
 
@@ -180,13 +203,19 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                 ...data,
                 title: data.title.trim(),
                 content: data.content.trim(),
-                image: rewardImage || null,
-                type: hasImage ? "image" : "blog",
+                image: mediaList[0]?.uuid || null,
+                media: mediaList,
+                type: mediaList.some(m => m.isVideo) ? "video" : "image",
                 ai_generated: isAiImage ? 1 : item?.ai_generated ? 1 : 0,
             })
             .then((resp) => {
                 if (resp.data.status) {
-                    setRewardImage("");
+                    // `setRewardImage` was left behind by an earlier refactor and no
+                    // longer exists, so this whole success block threw a
+                    // ReferenceError on every save. The throw landed in .catch(),
+                    // which showed a generic error and left the modal open — the post
+                    // HAD saved (the server answered 200), so it looked like "update
+                    // works but the popup never closes".
                     setIsAiImage(false);
                     setData({
                         for_module: data.for_module,
@@ -201,15 +230,38 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                     finishClose();
                     window.dispatchEvent(new Event("closeAddOptions"));
 
-                    router.visit(
-                        route("user.show", {
-                            username: auth.user.username,
-                            page: "feed",
-                        }),
-                        {
-                            preserveScroll: true,
-                        },
-                    );
+                    // An edit must stay where the creator was — the post detail
+                    // page edits too, and sending them to the profile feed read
+                    // as "the modal is stuck and the page jumped".
+                    if (isEdit) {
+                        // Retitling changes the post's slug. On the post's own
+                        // page that makes the address in the bar stale, so move
+                        // to the new one (replace: the old URL is the same post,
+                        // it does not deserve its own history entry).
+                        const nextSlug = resp.data.slug;
+                        const onThisPost =
+                            typeof window !== "undefined" &&
+                            window.location.pathname.includes("/post/");
+
+                        if (onThisPost && nextSlug && !window.location.pathname.endsWith(`/post/${nextSlug}`)) {
+                            router.visit(
+                                `/${item?.user?.username || auth.user.username}/post/${nextSlug}`,
+                                { replace: true, preserveScroll: true },
+                            );
+                        } else {
+                            router.reload({ preserveScroll: true });
+                        }
+                    } else {
+                        router.visit(
+                            route("user.show", {
+                                username: auth.user.username,
+                                page: "feed",
+                            }),
+                            {
+                                preserveScroll: true,
+                            },
+                        );
+                    }
                 } else {
                     toast.error(resp.data.msg);
                 }
@@ -250,7 +302,7 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
         <Popup
             modalclass=""
             space="6"
-            size="md"
+            size="xl"
             action={modalAction}
             onHide={controlled ? onClose : undefined}
             classes={`w-full addop bg-white rounded-box py-2 px-3 ${classes}`}
@@ -292,59 +344,58 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                 </div>
             )}
 
-            {/* Live preview — see the card before it goes to the review queue. */}
+            {/* Live preview — the same card the audience will see: same frame,
+                same badge position, same carousel, same body formatting. The old
+                preview stacked every image full-width in a grid, so a five-image
+                post looked nothing like the one that got published. */}
             {showPreview ? (
-                <div className="mt-4 post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black ">
-                    <div className="flex items-center gap-2 mb-3">
+                <div className="mt-4 post-wrap bg-[#fdfbf7] rounded-box p-4 border-[3px] border-black">
+                    <div className="flex items-center gap-3 mb-3">
                         <img
-                            src={
-                                auth?.user?.avatar_url || "/assets/siteicon.png"
-                            }
+                            src={auth?.user?.avatar_url || "/assets/siteicon.png"}
                             alt=""
-                            className="w-10 h-10 rounded-full border-[3px] border-black object-cover"
+                            className="author-img w-[46px] h-[46px] rounded-full border-[3px] border-black object-cover"
                         />
-                        <div>
-                            <p className="font-black capitalize tracking-wide leading-tight">
+                        <div className="min-w-0">
+                            <p className="font-black capitalize tracking-wider leading-tight truncate">
                                 {auth?.user?.name || "You"}
                             </p>
-                            <p className="text-xs text-gray-600 font-bold">
-                                Just now
-                            </p>
+                            <p className="text-xs text-gray-600 font-bold">Just now</p>
                         </div>
                     </div>
-                    {previewImageUrl(rewardImage, isAiImage, item) ? (
-                        <div className="relative border-[3px] border-black rounded-box-sm overflow-hidden mb-3">
-                            <span className="bg-[#A2E4B8] border-[3px] border-black  font-black absolute z-10 py-1.5 px-3 top-2 right-2 uppercase text-xs text-black rounded-box-sm">
+
+                    {mediaList.length > 0 ? (
+                        <div className="post-images relative w-full border-[3px] border-black rounded-box-sm overflow-hidden">
+                            <span className="bg-[#A2E4B8] border-[3px] border-black font-black absolute z-10 py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-box-sm">
                                 {AUDIENCE_BADGE[data.for_module]}
                             </span>
-                            <img
-                                src={previewImageUrl(
-                                    rewardImage,
-                                    isAiImage,
-                                    item,
-                                )}
-                                alt="Preview"
-                                className="w-full max-h-[320px] object-cover"
+                            <PostMediaCarousel
+                                items={mediaList}
+                                posterFallback={auth?.user?.avatar_url}
+                                heightClass="h-[240px] md:h-[300px]"
+                                rounded=""
                             />
                         </div>
                     ) : (
-                        <span className="inline-block bg-[#A2E4B8] border-[3px] border-black  font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm mb-3">
+                        <span className="inline-block bg-[#A2E4B8] border-[3px] border-black font-black py-1.5 px-3 uppercase text-xs text-black rounded-box-sm">
                             {AUDIENCE_BADGE[data.for_module]}
                         </span>
                     )}
+
                     {data.title.trim() ? (
-                        <p className="font-black text-lg uppercase tracking-wide">
+                        <p className="text-black font-black mt-4 mb-2 uppercase tracking-wide">
                             {data.title.trim()}
                         </p>
                     ) : null}
                     {data.content.trim() ? (
-                        <p className="text-gray-800 font-bold whitespace-pre-line mt-1">
-                            {data.content.trim()}
+                        <p className="text-gray-800 font-normal mt-2 text-sm md:text-base leading-relaxed whitespace-pre-line">
+                            {formatPostContent(data.content.trim())}
                         </p>
                     ) : null}
-                    <p className="text-xs text-gray-500 mt-3">
-                        This is a preview — your post is checked before your
-                        audience sees it.
+
+                    <p className="text-xs text-gray-500 mt-4">
+                        Preview only — your post is checked before your audience sees it.
+                        Tagged creators are notified once it goes live.
                     </p>
                 </div>
             ) : null}
@@ -367,7 +418,7 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                 </div>
 
                 <div className="mt-4">
-                    <textarea
+                    <MentionTextarea
                         onChange={handleInput}
                         value={data.content}
                         name="content"
@@ -375,40 +426,64 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                         placeholder="Say something..."
                         className="text-lg border-gray-300 border h-[150px] w-full rounded-box-sm px-3 py-3 focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                     />
-                    {data.content.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-1 text-right">
-                            {data.content.length}/{CONTENT_MAX}
+                    <div className="mt-1 flex items-start justify-between gap-3">
+                        <p className="text-xs text-gray-500">
+                            Type <span className="font-bold text-[#FF007F]">@</span> to tag a
+                            creator — they get a notification and their name links to their
+                            page. Links you paste become clickable.
                         </p>
-                    )}
+                        {data.content.length > 0 && (
+                            <span className="shrink-0 text-xs text-gray-500">
+                                {data.content.length}/{CONTENT_MAX}
+                            </span>
+                        )}
+                    </div>
+
                 </div>
 
-                <div className="chhoseimage mt-4 pt-2">
+                <div className="choosemedia mt-4 pt-2">
                     <p className="mb-2 font-bold text-black">
-                        Add an image <span className="text-[#FF007F]">*</span>
+                        Add images or videos <span className="text-[#FF007F]">*</span>
                     </p>
 
-                    {isEdit && item?.image_url && !isAiImage ? (
-                        <>
-                            <div className="default-wish-img border relative mb-1 rounded-box-sm overflow-hidden">
-                                <img
-                                    src={item.image_url}
-                                    alt="Current post"
-                                    className="max-w-full h-auto"
-                                />
-                            </div>
-                            <h2 className="w-full my-2 text-center">Or</h2>
-                        </>
-                    ) : null}
-
-                    {isAiImage ? (
-                        <div className="default-wish-img border relative mb-2 rounded-box-sm overflow-hidden">
-                            <img
-                                src={isAiImage}
-                                alt="AI generated"
-                                className="max-w-full h-auto"
-                            />
+                    {mediaList.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                            {mediaList.map((media, idx) => {
+                                const url = media.uuid.startsWith('http') 
+                                    ? media.uuid 
+                                    : `https://ucarecdn.com/${media.uuid}/-/preview/200x200/`;
+                                return (
+                                    <div key={idx} className="relative border-2 border-black rounded-box-sm overflow-hidden aspect-square bg-gray-100 flex items-center justify-center group">
+                                        {media.isVideo ? (
+                                            <video 
+                                                src={media.uuid.startsWith('http') ? media.uuid : `https://ucarecdn.com/${media.uuid}/`} 
+                                                className="w-full h-full object-cover" 
+                                                muted 
+                                                preload="metadata"
+                                            />
+                                        ) : (
+                                            <img 
+                                                src={url} 
+                                                alt={media.name || "Media"} 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setMediaList((prev) => prev.filter((_, i) => i !== idx))}
+                                            className="absolute top-1 right-1 bg-red-600 border border-black hover:bg-red-800 text-white rounded-full p-1 leading-none text-xs font-black shadow-md min-w-[24px] min-h-[24px]"
+                                            title="Remove media"
+                                        >
+                                            ✕
+                                        </button>
+                                        <span className="absolute bottom-1 left-1 bg-black text-white text-[9px] px-1.5 py-0.5 rounded-box-sm">
+                                            {media.isVideo ? "📹 VIDEO" : "🖼️ IMAGE"}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ) : null}
+                    )}
 
                     <div className="relative">
                         <GlobalUploader
@@ -416,8 +491,9 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                             ref={uploaderRef}
                             view={false}
                             type="minimal"
-                            imgonly={true}
-                            accept="image/*"
+                            imgonly={false}
+                            multiple={true}
+                            accept="image/*,video/*"
                             sendFile={getfile}
                             options={st.post}
                         />
@@ -428,20 +504,6 @@ export default function AddPost({ item, text, classes, isEdit, title, open, onCl
                             />
                         </div>
                     </div>
-
-                    {hasImage && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setRewardImage("");
-                                setIsAiImage(false);
-                                resetUploader();
-                            }}
-                            className="mt-2 text-sm text-gray-600 underline min-h-[44px]"
-                        >
-                            Remove image
-                        </button>
-                    )}
                 </div>
 
                 <p className="text-grey-500 mb-1 mt-4">Choose audience</p>

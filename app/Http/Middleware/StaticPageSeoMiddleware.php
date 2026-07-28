@@ -19,6 +19,11 @@ class StaticPageSeoMiddleware
         $image = url('/og-image.png');
 
         SeoMeta::setRobots('index,follow');
+
+        // A page only belongs in the index if a stranger arriving from a search
+        // result gets something useful. Everything below is either signed-in-only,
+        // a step inside a purchase, or a one-off token URL — indexing it wastes
+        // crawl budget and puts a personal page in front of the wrong person.
         $noIndexExact = [
             'login',
             'register',
@@ -26,9 +31,44 @@ class StaticPageSeoMiddleware
             'verification',
             'account',
             'dashboard',
+            'cart',
+            'checkout',
+            'thank-you',
+            'my-purchases',
+            'history',
+            'settings',
+            'subscriptions',
+            'email-preferences',
+            'notifications',
+            'support',
+            'refer-and-earn',
         ];
-        if (in_array($path, $noIndexExact, true) || Str::startsWith($path, ['reset-password/', 'admin/', 'debug', 'test'])) {
+        $noIndexPrefixes = [
+            'reset-password/',
+            'admin/',
+            'debug',
+            'test',
+            'checkout/',
+            'cart/',
+            'financial',
+            'creator/',
+            'my-purchases',
+            'unsubscribe/',
+            'emulate',
+            'webhook',
+            'seo/',
+            'dev/',
+        ];
+        if (in_array($path, $noIndexExact, true) || Str::startsWith($path, $noIndexPrefixes)) {
             SeoMeta::setRobots('noindex,follow');
+        }
+
+        // The leaderboard is the same board six times over (daily … all time).
+        // Only the default is worth indexing; the rest point their canonical at it
+        // so the ranking signals land on one URL instead of splitting six ways.
+        if (Str::startsWith($path, 'leaderboard/')) {
+            SeoMeta::setRobots('noindex,follow');
+            SeoMeta::setCanonical(url('/leaderboard'));
         }
 
         $seoData = [

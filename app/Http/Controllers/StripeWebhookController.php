@@ -1881,6 +1881,12 @@ class StripeWebhookController extends Controller
                 ['stripe_dispute_id' => $dispute->id],
                 [
                     'payment_id' => $payment ? $payment->id : null,
+                    // Keep Stripe's own references even when the Payment row does not
+                    // exist yet (Stripe delivers dispute events before
+                    // checkout.session.completed). Without these the link is lost for
+                    // good and the evidence pack for that dispute is empty.
+                    'stripe_payment_intent_id' => $paymentIntentId,
+                    'stripe_charge_id' => $dispute->charge ?? null,
                     'creator_id' => $creatorId,
                     'amount' => $dispute->amount,
                     'currency' => $dispute->currency,
@@ -3431,10 +3437,78 @@ class StripeWebhookController extends Controller
             return;
         }
 
+        // Wish (one-time). processWishItemDeliverable reads wish_id/creator_id/user_id from
+        // METADATA, but an async settlement whose session carried no session-level metadata (the
+        // pre-fix bank-payment case) arrives here with an empty metadata object — which would
+        // silently create nothing. Reconstruct the routing metadata from the wish payment row
+        // itself so the deliverable is still created. Covers both wish flows:
+        //   - one-time wishItemSubscribe → WishItemSubscription
+        //   - cart/basket wish           → StripePaymentDetail
+        $wishMeta = $this->reconstructWishMetadata($session);
+        if ($wishMeta !== null) {
+            Log::info('Async settlement: routed to wish by session lookup', ['session_id' => $sid]);
+            $this->processWishItemDeliverable($session, $wishMeta);
+
+            return;
+        }
+
         Log::warning('Async settlement: no payment row matched this session', ['session_id' => $sid]);
     }
 
-    private function handleAsyncPaymentSucceeded($session)
+    /**
+     * Build the metadata processWishItemDeliverable needs for a wish session, preferring the
+     * session's own metadata and falling back to the wish payment row when it is empty. Returns
+     * null when this session is not a wish purchase.
+     */
+    private function reconstructWishMetadata($session): ?object
+    {
+        $sid = $session->id;
+        $meta = (array) ($session->metadata ?? []);
+
+        $sub = WishItemSubscription::where('session_id', $sid)->first();
+        if ($sub) {
+            $wish = WishItem::find($sub->wish_item_id);
+
+            return (object) array_merge([
+                'wish_id' => (string) $sub->wish_item_id,
+                'wishlist_item_id' => (string) $sub->wish_item_id,
+                'creator_id' => (string) ($wish->user_id ?? ''),
+                'user_id' => (string) ($sub->user_id ?? ''),
+                'deliverable_type' => 'media_bundle',
+                'product_type' => 'wish_onetime',
+                'certificate' => 'true',
+                'anonymous' => (string) ($sub->anonymous ?? 0),
+            ], $meta);
+        }
+
+        $detail = StripePaymentDetail::where('session_id', $sid)->first();
+        if ($detail) {
+            // Cart/basket wish: the item link lives on the payment items or the detail metadata.
+            $detailMeta = is_array($detail->metadata) ? $detail->metadata : (array) json_decode((string) $detail->metadata, true);
+            $wishId = $detailMeta['wish_id']
+                ?? optional($detail->items()->first())->wish_item_id
+                ?? null;
+
+            if ($wishId) {
+                $wish = WishItem::find($wishId);
+
+                return (object) array_merge([
+                    'wish_id' => (string) $wishId,
+                    'wishlist_item_id' => (string) $wishId,
+                    'creator_id' => (string) ($wish->user_id ?? $detail->owner_id ?? ''),
+                    'user_id' => (string) ($detail->user_id ?? ''),
+                    'deliverable_type' => 'media_bundle',
+                    'product_type' => 'wish',
+                    'certificate' => 'true',
+                    'anonymous' => (string) ($detail->anonymous ?? 0),
+                ], $meta);
+            }
+        }
+
+        return null;
+    }
+
+    public function handleAsyncPaymentSucceeded($session)
     {
         Log::info('Processing async payment succeeded', ['session_id' => $session->id]);
 
@@ -3517,6 +3591,16 @@ class StripeWebhookController extends Controller
             $tipPay->status = 'paid';
             $tipPay->save();
             Log::info('Updated TipGoalsPayment status to paid (async settlement)', ['id' => $tipPay->id]);
+        }
+
+        // Wish / checkout (StripePaymentDetail). Marking it paid is what lets
+        // finance:sync-transactions build the ledger FinancialTransaction for the
+        // wish — without it, a settled bank wish stays '?' and is never synced.
+        $detail = StripePaymentDetail::where('session_id', $session->id)->first();
+        if ($detail && $detail->payment_status !== 'paid') {
+            $detail->payment_status = 'paid';
+            $detail->save();
+            Log::info('Updated StripePaymentDetail status to paid (async settlement)', ['id' => $detail->id]);
         }
 
         // Settled money with no fulfilment is the one outcome that must not be
