@@ -1048,14 +1048,14 @@ class BillsController extends Controller
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
 
                 // Dispatch content delivery email if bill has content file
-                if (! empty($bill_pay->bill->content_file)) {
-                    BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
-                    Log::info('BillsController: Content delivery email dispatched for bill payment', [
-                        'bill_payment_id' => $bill_pay->id,
-                        'bill_id' => $bill_pay->bill->id,
-                        'has_content_file' => ! empty($bill_pay->bill->content_file),
-                    ]);
-                }
+                // if (! empty($bill_pay->bill->content_file)) {
+                //     BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
+                //     Log::info('BillsController: Content delivery email dispatched for bill payment', [
+                //         'bill_payment_id' => $bill_pay->id,
+                //         'bill_id' => $bill_pay->bill->id,
+                //         'has_content_file' => ! empty($bill_pay->bill->content_file),
+                //     ]);
+                // }
 
                 // Notification setup
                 $username = $bill_pay->anonymous ? 'Anonymous user' : ($bill_pay->guest_name ?? 'Anonymous user');
