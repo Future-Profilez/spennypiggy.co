@@ -57,6 +57,7 @@ use App\Models\User;
 use App\Models\UserCart;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
+use App\Support\PresetCovers;
 use Carbon\Carbon;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -66,6 +67,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -577,7 +579,7 @@ Route::get('/creator/dispute-packs/{disputeId}/{fileName}', function (Request $r
     $path = $adminStoragePath.$fileName;
 
     if (! File::exists($path)) {
-        \Illuminate\Support\Facades\Log::warning('Dispute pack download failed: file not reachable from this app', [
+        Log::warning('Dispute pack download failed: file not reachable from this app', [
             'file' => $fileName,
             'looked_in' => $adminStoragePath,
             'hint' => 'Expected on a shared filesystem. On Vapor the two apps do not share storage — this needs an S3 disk.',
@@ -880,6 +882,19 @@ Route::get('/ping', function () {
 })->name('ping');
 Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
+
+// The cover picker's catalogue. Fetched when the picker opens rather than
+// shared on every page: it is a static list behind a button, and shipping it
+// with every response is 2.5KB nobody asked for.
+//
+// ⚠️ MUST stay above the auth.php require: that file ends with the
+// `/{username}/{page?}` profile catch-all, and Laravel matches in registration
+// order — a single-segment path declared after it is read as a username and
+// answered with the profile 404, never reaching this closure.
+Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker())
+    ->header('Cache-Control', 'public, max-age=3600'))
+    ->middleware(['auth', 'throttle:30,1'])
+    ->name('cover-banners');
 
 // require __DIR__.'/auth.php'; // moved below founder routes
 

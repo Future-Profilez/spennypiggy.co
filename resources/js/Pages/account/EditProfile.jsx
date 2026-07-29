@@ -13,6 +13,7 @@ import axios from "axios";
 import { Switch } from "@headlessui/react";
 import { Link } from "@inertiajs/react";
 import ManagePasskey from "@/Components/ManagePasskey";
+import CoverBannerPicker from "@/Components/CoverBannerPicker";
 
 export default function EditProfile({
     profilepage,
@@ -234,32 +235,6 @@ export default function EditProfile({
             cdnUrlModifiers: e?.cdnUrlModifiers || null,
         });
         setCoverUploadingStart(false);
-    };
-
-    const preApprovedCovers = [
-        "0139dcd1-f9c5-47ac-b6f9-3baac6f48d06",
-        "21de57a2-c786-4a5a-b7e4-2edcdb61fc42",
-        "6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2",
-        "fcdb1692-d64d-4de8-b7af-5e0556cdf6e8",
-        "40aaf556-fa59-4f8e-b482-e49726026499",
-        "a2cad976-2480-4c77-baa3-cb5df3cdc0d6",
-        "b81b3097-5c4c-4f48-aaf0-3687bc928a18",
-        "32c130a9-37e6-4934-8d72-a83a5d8bdaa6",
-        "e71ed424-f17a-47d9-b0e7-3e5eca4e51cb",
-        "dc1021e2-41a4-4dfa-8379-b27fb7e3834e",
-        "175e706f-ae6a-4920-a131-bf90502084f8",
-        "c8011ca9-9b00-4f8f-b919-3cf837e3037c",
-        "1ebf10dd-1891-4288-b461-5e3fcd3b43d3",
-        "c3b7ff7a-719a-452a-ba8f-d074d916b395",
-        "133b057f-f069-4ea4-82e4-ba9184d721cd",
-    ];
-
-    const selectPreApprovedCover = (uuid) => {
-        getCoverUID({
-            uuid: uuid,
-            cdnUrl: `https://ucarecdn.com/${uuid}/`,
-            cdnUrlModifiers: null,
-        });
     };
 
     const [username, setUsername] = useState(user?.username);
@@ -545,28 +520,10 @@ export default function EditProfile({
                             }
                         />
 
-                        <div className="mt-8">
-                            <h3 className="font-gulfs uppercase text-lg mb-4 text-center">
-                                Or Choose a Pre-approved Cover
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                {preApprovedCovers.map((uuid) => (
-                                    <div
-                                        key={uuid}
-                                        onClick={() =>
-                                            selectPreApprovedCover(uuid)
-                                        }
-                                        className="cursor-pointer border-4 border-transparent hover:border-[#FF007F] rounded-[15px] overflow-hidden transition-all hover:scale-105 shadow-sm"
-                                    >
-                                        <img
-                                            src={`https://ucarecdn.com/${uuid}/-/preview/-/scale_crop/400x200/`}
-                                            alt="Cover option"
-                                            className="w-full h-auto object-cover aspect-[2/1]"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <CoverBannerPicker
+                            selected={data?.cover?.uuid ?? user?.cover}
+                            onSelect={getCoverUID}
+                        />
                     </div>
                 ) : (
                     ""
