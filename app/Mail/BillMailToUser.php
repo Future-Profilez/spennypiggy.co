@@ -40,7 +40,6 @@ class BillMailToUser extends Mailable
     {
         try {
             $subject = 'Bill Granted on Spenny Piggy!';
-
             return $this->view('email.bill_checkout_to_user')
                 ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
