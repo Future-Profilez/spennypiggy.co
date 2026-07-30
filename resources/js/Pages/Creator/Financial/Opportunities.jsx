@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
-import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft, ShoppingCart } from 'lucide-react';
+import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft, ShoppingCart, BarChart3 } from 'lucide-react';
 
 /**
  * Revenue Opportunity Centre.
@@ -101,6 +101,43 @@ const RemindButton = ({ supporterId }) => {
     );
 };
 
+/**
+ * One side of the listings comparison. Each row names the problem rather than leaving
+ * the creator to infer it from three numbers — "seen but not clicked through" and
+ * "nobody is finding it" need opposite fixes.
+ */
+const ListingColumn = ({ title, rows = [], empty, accent }) => (
+    <div className="rounded-[20px] border border-gray-200 bg-white p-4">
+        <div className="mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
+            <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-500">{title}</h3>
+        </div>
+
+        {rows.length === 0 ? (
+            <p className="text-sm text-gray-500">{empty}</p>
+        ) : (
+            <ul className="space-y-2.5">
+                {rows.map((row) => (
+                    <li key={`${row.type}-${row.id}`} className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="truncate text-sm font-bold text-gray-900">{row.title}</div>
+                            <div className="text-xs text-gray-500">{row.diagnosis}</div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                            <div className="font-anton text-lg leading-none text-gray-900">
+                                {row.sold > 0 ? row.sold : row.viewers}
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                {row.sold > 0 ? "sold" : "saw it"}
+                            </div>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        )}
+    </div>
+);
+
 const RetentionStat = ({ label, value, hint, accent }) => (
     <div className="rounded-[20px] border border-gray-200 bg-white p-4">
         <div className="h-1 w-8 rounded-full" style={{ backgroundColor: accent }} />
@@ -117,6 +154,7 @@ export default function Opportunities({
     retention = {},
     alerts = [],
     abandoned = {},
+    listings = {},
     actions = [],
     totals = {},
 }) {
@@ -340,6 +378,39 @@ export default function Opportunities({
                                 A listing that collects these is usually priced or described in a way that loses
                                 people at the last step. We never share who they were.
                             </p>
+                        </section>
+                    )}
+
+                    {/*
+                        Which listings are working. The per-item line on the shop
+                        dashboard answers "how is THIS one doing"; this answers the
+                        question that only appears when you look at everything at once —
+                        which listing deserves promotion, and which is quietly doing
+                        nothing. Comparing eight cards by eye will not surface it.
+                    */}
+                    {(listings.working?.length > 0 || listings.stuck?.length > 0) && (
+                        <section className="mt-8">
+                            <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
+                                <BarChart3 size={18} className="text-[#FF007F]" /> Which listings are working
+                            </h2>
+                            <p className="mb-3 text-sm text-gray-500">
+                                Last {listings.window_days ?? 30} days, across your shop and paid tasks.
+                            </p>
+
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ListingColumn
+                                    title="Selling"
+                                    empty="Nothing has sold in this window yet."
+                                    rows={listings.working}
+                                    accent="#05EFB8"
+                                />
+                                <ListingColumn
+                                    title="Not selling"
+                                    empty="Nothing stuck — everything with traffic is converting."
+                                    rows={listings.stuck}
+                                    accent="#f59e0b"
+                                />
+                            </div>
                         </section>
                     )}
 

@@ -167,6 +167,13 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->withoutOverlapping();
 
+        // Per-listing view counters. One row per listing per day per source, so this
+        // grows with the catalogue rather than with traffic — slow, but unbounded
+        // without a prune.
+        $schedule->command('item-views:prune')
+            ->dailyAt('03:50')
+            ->withoutOverlapping();
+
         // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
         // that puts stock back bypasses Eloquent events (the refund handler's
         // ->increment(), the creator edit's ->update(), and the admin app, which shares

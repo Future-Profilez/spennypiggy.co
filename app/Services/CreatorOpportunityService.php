@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Helpers;
 use App\Models\AbandonedCheckout;
 use App\Models\FinancialTransaction;
+use App\Models\Shop;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Carbon;
@@ -39,6 +41,9 @@ class CreatorOpportunityService
     /** Rows listed individually under the abandoned-checkout headline figures. */
     private const ABANDONED_LIST_LIMIT = 8;
 
+    /** Listings examined per type for the performance panel. Only 5 a side are shown. */
+    private const LISTING_SCAN_LIMIT = 60;
+
     public function __construct(private VipScoreService $vip) {}
 
     /** Everything the Opportunity Centre renders, in one call. */
@@ -55,6 +60,7 @@ class CreatorOpportunityService
             'retention' => $retention,
             'alerts' => $alerts,
             'abandoned' => $this->abandonedCheckouts($creator, $currency),
+            'listings' => $this->listingPerformance($creator),
             'actions' => $this->suggestedActions($creator, $supporters, $retention),
             'totals' => [
                 'supporters' => $supporters->count(),
@@ -133,6 +139,114 @@ class CreatorOpportunityService
             // when nothing was started — "no data" and "nobody bought" are different.
             'recovery_rate' => $total > 0 ? round(($recovered / $total) * 100, 1) : null,
         ] + ['items' => $items];
+    }
+
+    /**
+     * Which listings are working, and which are not — ranked.
+     *
+     * The per-item line on the shop dashboard answers "how is THIS one doing". This
+     * answers the question that only appears when you look at everything at once:
+     * which listing deserves more attention, and which one is quietly doing nothing.
+     * A creator comparing eight cards by eye will not spot it.
+     *
+     * Two lists, because the two ends need opposite actions:
+     *  - **working** — worth more of the creator's promotion
+     *  - **stuck** — seen and not bought, or not seen at all; each with its own fix
+     */
+    public function listingPerformance(User $creator): array
+    {
+        $funnels = app(ItemFunnelService::class);
+
+        $rows = [];
+
+        foreach ([['shop', Shop::class, 'name'], ['task', Task::class, 'title']] as [$type, $model, $titleColumn]) {
+            // ⚠️ Capped. Only ten rows are ever rendered, and without a limit a creator
+            // with a large catalogue pulled every listing and computed a full funnel
+            // for each — five queries per type over hundreds of rows — to then slice to
+            // five. Newest first, because a listing nobody has touched in years is not
+            // what this panel is for.
+            $query = $model::query()->where($type === 'shop' ? 'user_id' : 'creator_id', $creator->id);
+
+            if ($type === 'shop') {
+                $query->where('approved', 1)->where('status', 1)->where('is_suspended', 0);
+            } else {
+                $query->where('is_approved', 1)->where('is_suspended', 0);
+            }
+
+            $items = $query->select('id', $titleColumn)
+                ->latest('id')
+                ->limit(self::LISTING_SCAN_LIMIT)
+                ->get();
+
+            if ($items->isEmpty()) {
+                continue;
+            }
+
+            $data = $funnels->forItems($type, $items->pluck('id')->all());
+
+            foreach ($items as $item) {
+                $funnel = $data[$item->id] ?? null;
+
+                if (! $funnel) {
+                    continue;
+                }
+
+                $rows[] = [
+                    'type' => $type,
+                    'id' => $item->id,
+                    'title' => (string) $item->{$titleColumn},
+                    'viewers' => $funnel['viewers'],
+                    'started' => $funnel['started'],
+                    'sold' => $funnel['sold'],
+                    'view_state' => $funnel['view_state'],
+                    'view_to_sale' => $funnel['view_to_sale'],
+                    // Names the problem, so the panel does not make the creator work it
+                    // out from three numbers.
+                    'diagnosis' => $this->listingDiagnosis($funnel),
+                ];
+            }
+        }
+
+        $working = array_values(array_filter($rows, fn ($r) => $r['sold'] > 0));
+        usort($working, fn ($a, $b) => $b['sold'] <=> $a['sold']);
+
+        // Only listings we can actually say something about. A listing with no sales
+        // AND no view data is not "stuck" — it is unmeasured, and telling a creator to
+        // fix it would be guessing.
+        $stuck = array_values(array_filter(
+            $rows,
+            fn ($r) => $r['sold'] === 0 && $r['view_state'] !== 'unknown'
+        ));
+        usort($stuck, fn ($a, $b) => $b['viewers'] <=> $a['viewers']);
+
+        return [
+            'window_days' => ItemFunnelService::WINDOW_DAYS,
+            'working' => array_slice($working, 0, 5),
+            'stuck' => array_slice($stuck, 0, 5),
+            'total' => count($rows),
+        ];
+    }
+
+    /** One sentence naming what is wrong with a listing, or what is right. */
+    private function listingDiagnosis(array $funnel): string
+    {
+        if ($funnel['sold'] > 0) {
+            return 'Selling';
+        }
+
+        if ($funnel['view_state'] === 'none') {
+            return 'Nobody is finding it — share the link';
+        }
+
+        if ($funnel['started'] > 0) {
+            return 'Reached checkout and stopped — check the total at payment';
+        }
+
+        if (($funnel['viewers'] ?? 0) >= 10) {
+            return 'Seen but not clicked through — usually price or description';
+        }
+
+        return 'Not enough traffic yet to tell';
     }
 
     /** Listing name behind an abandoned checkout, or null when it was a basket. */
@@ -633,7 +747,7 @@ class CreatorOpportunityService
 
         // Promote an existing wishlist — distinct from "add a wishlist item"
         // below, which is for creators who have never published one.
-        if (WishItem::where('user_id', $creator->id)->exists()) {
+        if (WishItem::where('user_id', $creator->id)->where('is_approved', 1)->exists()) {
             $actions[] = [
                 'key' => 'promote_wishlist',
                 'title' => 'Promote your wishlist',

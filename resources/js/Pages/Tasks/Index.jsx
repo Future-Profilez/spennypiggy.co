@@ -3,6 +3,7 @@ import Guest from "@/Layouts/GuestLayout";
 import { useState, useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
 import Nocontent from "../../includes/Nocontent";
+import ItemFunnelLine from "@/Components/ItemFunnelLine";
 
 const Countdown = ({ createdAt, hours }) => {
     if (!createdAt || !hours) return null;
@@ -539,6 +540,16 @@ export default function Index({
                                                                         task.description
                                                                     }
                                                                 </p>
+
+                                                                {/* Views were already being counted on the
+                                                                    task page with nowhere to be seen — the
+                                                                    data was accumulating where nobody could
+                                                                    read it. */}
+                                                                <ItemFunnelLine
+                                                                    funnel={task.funnel}
+                                                                    className="mb-2 max-w-md"
+                                                                />
+
                                                                 <div className="flex flex-wrap items-center gap-2 mb-2">
                                                                     <span
                                                                         className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusBadgeColor}`}

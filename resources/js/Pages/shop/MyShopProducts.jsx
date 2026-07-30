@@ -3,24 +3,51 @@ import {Fragment, useState, useRef} from "react";
 import axios from 'axios';
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from "@animateicons/react/lucide";
+import { Share2, Check, ArrowUpRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AddItem from './AddItem';
 import Nocontent from '@/includes/Nocontent';
 import { WaitingCount } from '@/Components/WaitlistButton';
+import ItemFunnelLine from '@/Components/ItemFunnelLine';
 import PriceFormat from '@/includes/PriceFormat';
 
 const ProductCardSkeleton = () => (
-   <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden p-3 md:p-4 animate-pulse">
-      <div className="h-[130px] sm:h-[160px] w-full bg-gray-200 rounded-box-sm border border-black" />
-      <div className="h-4 bg-gray-200 rounded-box-sm mt-4 w-3/4" />
-      <div className="h-3 bg-gray-200 rounded-box-sm mt-2 w-full" />
-      <div className="flex items-center justify-between mt-4">
-         <div className="h-6 bg-gray-200 rounded-box-sm w-20" />
-         <div className="h-6 bg-gray-200 rounded-full w-16" />
+   <div className="overflow-hidden rounded-box border-[3px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-pulse">
+      <div className="aspect-[16/10] w-full border-b-[3px] border-black bg-gray-200" />
+      <div className="p-4">
+         <div className="h-4 w-3/4 rounded-full bg-gray-200" />
+         <div className="mt-2 h-3 w-full rounded-full bg-gray-200" />
+         <div className="mt-5 h-8 w-28 rounded-box-sm bg-gray-200" />
+         <div className="mt-4 h-14 w-full rounded-box-sm bg-gray-200" />
+         <div className="mt-4 h-11 w-full rounded-box-sm bg-gray-200" />
       </div>
-      <div className="h-11 bg-gray-200 rounded-box-sm mt-4 w-full" />
    </div>
 );
+
+/**
+ * One status, one place — a full-width strip under the image.
+ *
+ * These used to float over the product photo, which hid the exact thing an admin
+ * (or the creator) needs to look at while it is under review, and stacked into each
+ * other when a listing was both unapproved and edited.
+ */
+const StatusStrip = ({ tone, label, detail }) => {
+   const tones = {
+      danger: 'bg-red-600 text-white',
+      warn: 'bg-yellow-300 text-black',
+      muted: 'bg-gray-900 text-white',
+      note: 'bg-red-50 text-red-700',
+   };
+
+   return (
+      <div className={`border-b-[3px] border-black px-4 py-2 ${tones[tone]}`}>
+         <p className="text-[11px] font-black uppercase leading-tight tracking-wide">{label}</p>
+         {detail && (
+            <p className="mt-0.5 text-[11px] font-medium normal-case leading-snug opacity-90">{detail}</p>
+         )}
+      </div>
+   );
+};
 
 export default function MyShopProducts({lists, loading, update}) {
    const { formatMultiPrice } = PriceFormat();
@@ -108,209 +135,243 @@ export default function MyShopProducts({lists, loading, update}) {
                         const isDeactivated = Number(s?.status) === 0;
                         const shippingDetails = getShippingDetails(s);
                         const isPending = pendingId === s.uuid;
+                        const isCopied = copiedId === s.uuid;
+                        const itemUrl = `/shop/item/${slug(s.name)}/${s.uuid}`;
+
+                        const tracked = s.slot_limitation !== null && s.slot_limitation !== undefined;
+                        const stockLeft = tracked ? Number(s.slot_limitation) : null;
+                        const soldCount = Number(s.total_sold) || 0;
+                        const soldOut = tracked && stockLeft <= 0;
+
+                        /* The funnel says a listing is not being seen; Share is what fixes
+                           that. Light the button up so the diagnosis and the cure are one
+                           gesture apart instead of buried in the overflow menu. */
+                        const needsSharing = s.funnel?.view_state === 'none';
 
                         return (
                         <article
                            key={s.uuid}
-                           className={`relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
+                           /* flex-col on the ARTICLE with a mt-auto footer: cards in a row
+                              end level and every Edit button lands on the same line. The old
+                              markup put mt-auto inside a non-flex child, so it did nothing
+                              and short listings left a gap under their button. */
+                           className={`relative flex h-full flex-col overflow-hidden rounded-box border-[2px] border-black bg-white  transition-transform hover:translate-x-[-2px] hover:translate-y-[-2px] ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
                         >
-                           <div className="p-3 md:p-4">
-                                 <div className="relative">
-                                    {/* Status Badges/Messages */}
-                                    {s.is_suspended == 1 && (
-                                       <div className="absolute top-2 left-5 right-5 bg-red-600 border-2 border-black z-10 text-white text-xs font-black p-2 rounded-box-sm text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                             Suspended
-                                             {/* Rendered inline, not on hover — on touch the reason was unreachable. */}
-                                             {s.suspend_reason && (
-                                                <div className="mt-1 font-bold text-[10px] leading-snug normal-case">
-                                                   Reason: {s.suspend_reason}
-                                                </div>
-                                             )}
-                                       </div>
-                                    )}
-                                    {s.approved == 0 && s.is_suspended != 1 && (
-                                       <div className="absolute top-2 left-5 right-5 bg-yellow-300 border-2 border-black z-10 text-black text-xs font-black p-2 rounded-box-sm text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                             Waiting for approval
-                                             {s.moderation_reason && (
-                                                <div className="mt-1 font-bold text-[10px] leading-snug normal-case">
-                                                   {s.moderation_reason}
-                                                </div>
-                                             )}
-                                       </div>
-                                    )}
-                                    {isDeactivated && s.is_suspended != 1 && (
-                                       <div className="absolute top-2 left-5 right-5 bg-gray-800 border-2 border-black z-10 text-white text-xs font-black p-2 rounded-box-sm text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                             Deactivated
-                                       </div>
-                                    )}
-                                    {s.edited_status == 0 && s.edited_reason && (
-                                       <div className="absolute top-12 left-5 right-5 bg-red-100 border-2 border-red-500 z-10 text-red-700 text-xs font-black p-2 rounded-box-sm text-center shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]">
-                                             Admin requested changes: {s.edited_reason}
-                                       </div>
-                                    )}
+                           {/* Media bleeds to the card edge. One rule under it replaces the
+                               old border-inside-a-border-inside-a-border stack. */}
+                           <Link
+                              href={s.perma_link ? itemUrl : '#'}
+                              className="group/img relative block aspect-[16/10] overflow-hidden border-b-[1px]  !border-t-[0px]  !border-r-[0px]  !border-l-[0px] border-black bg-gray-100"
+                           >
+                              <span className={`absolute left-3 top-3 z-[5] rounded-full border-2 border-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${s.type === 'physical' ? 'bg-blue-300' : 'bg-[#A2E4B8]'}`}>
+                                 {s.type === 'physical' ? 'Physical' : 'Digital'}
+                              </span>
 
-                                    <Link
-                                       href={s.perma_link ? `/shop/item/${slug(s.name)}/${s.uuid}` : '#'}
-                                       className="block border border-black rounded-box-sm overflow-hidden relative group/img"
+                              <img
+                                 className="h-full w-full object-cover transition-transform duration-500 group-hover/img:scale-105"
+                                 src={s.perma_link}
+                                 alt={s.name}
+                                 onError={(e) => {
+                                    e.target.style.backgroundColor = '#f3f4f6';
+                                    e.target.style.display = 'flex';
+                                    e.target.style.alignItems = 'center';
+                                    e.target.style.justifyContent = 'center';
+                                    e.target.innerHTML = '🛍️';
+                                 }}
+                              />
+
+                              {s.ai_generated == 1 && (
+                                 <span className="absolute bottom-3 left-3 rounded-full bg-[#FF007F] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
+                                    Made with AI
+                                 </span>
+                              )}
+
+                              {/* Always visible — hover is not available on touch. Quiet:
+                                  it is a way out of the card, not an action on it. */}
+                              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-black">
+                                 View <ArrowUpRight size={11} strokeWidth={3} />
+                              </span>
+                           </Link>
+
+                           {s.is_suspended == 1 && (
+                              <StatusStrip tone="danger" label="Suspended" detail={s.suspend_reason} />
+                           )}
+                           {s.approved == 0 && s.is_suspended != 1 && (
+                              <StatusStrip tone="warn" label="Waiting for approval" detail={s.moderation_reason} />
+                           )}
+                           {isDeactivated && s.is_suspended != 1 && (
+                              <StatusStrip tone="muted" label="Deactivated" detail="Hidden from your profile until you turn it back on." />
+                           )}
+                           {s.edited_status == 0 && s.edited_reason && (
+                              <StatusStrip tone="note" label="Admin requested changes" detail={s.edited_reason} />
+                           )}
+
+                           <div className="flex flex-1 flex-col p-4">
+                              <div className="flex items-start justify-between gap-1">
+                                 <h3 className="pt-1.5 text-base font-black uppercase leading-tight tracking-wide text-black line-clamp-2 sm:text-lg">
+                                    {s.name}
+                                 </h3>
+
+                                 <Menu as="div" className="relative -mr-2 -mt-1 shrink-0 text-left">
+                                    <Menu.Button
+                                       aria-label={`Actions for ${s.name}`}
+                                       disabled={isPending}
+                                       className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50"
                                     >
-                                       <span className={`absolute top-2 left-2 text-[13px] px-3 py-1 rounded-box-sm border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${s.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
-                                             {s.type === 'physical' ? 'Physical' : 'Digital'}
-                                       </span>
+                                       <EllipsisVerticalIcon size={22} color="#000" />
+                                    </Menu.Button>
 
-                                       <img
-                                             className="object-cover h-[130px] sm:h-[160px] w-full group-hover/img:scale-105 transition-transform duration-500"
-                                             src={s.perma_link}
-                                             alt={s.name}
-                                             onError={(e) => {
-                                                e.target.style.backgroundColor = '#f3f4f6';
-                                                e.target.style.display = 'flex';
-                                                e.target.style.alignItems = 'center';
-                                                e.target.style.justifyContent = 'center';
-                                                e.target.innerHTML = '🛍️';
-                                             }}
-                                       />
-
-                                       {s.ai_generated == 1 && (
-                                             <div className="absolute bottom-2 left-2 z-1 bg-[#FF007F] border-2 border-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-box-sm px-2 py-1 text-[10px] text-black">
-                                                MADE WITH AI
-                                             </div>
-                                       )}
-
-                                       {/* Always visible on touch; hover only enlarges it on pointer devices. */}
-                                       <span className="absolute bottom-2 right-2 bg-white border-2 border-black px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">View Detail</span>
-                                    </Link>
-                                 </div>
-
-                                 <div className="flex flex-col gap-1 mt-2 sm:mt-4 mb-3">
-                                    <div className='flex items-center justify-between gap-2'>
-                                       <h2 className="text-sm line-clamp-1 sm:text-lg font-black text-black uppercase tracking-wide">
-                                             {s.name}
-                                       </h2>
-
-                                       <div className='relative'>
-                                             <Menu as="div" className="relative inline-block text-left">
-                                                <Menu.Button
-                                                   aria-label={`Actions for ${s.name}`}
+                                    <Transition
+                                       as={Fragment}
+                                       enter="transition ease-out duration-100"
+                                       enterFrom="transform opacity-0 scale-95"
+                                       enterTo="transform opacity-100 scale-100"
+                                       leave="transition ease-in duration-75"
+                                       leaveFrom="transform opacity-100 scale-100"
+                                       leaveTo="transform opacity-0 scale-95"
+                                    >
+                                       <Menu.Items className="absolute right-0 top-full z-40 mt-1 w-44 origin-top-right rounded-box border-2 border-black bg-white p-2 focus:outline-none">
+                                          <Menu.Item>
+                                             {({ active }) => (
+                                                <button
+                                                   className={menuItemClass(active)}
+                                                   onClick={() => handleCopy(s.uuid, `${window.location.origin}${itemUrl}`)}
+                                                >
+                                                   {isCopied ? "Copied" : "Copy link"}
+                                                </button>
+                                             )}
+                                          </Menu.Item>
+                                          <Menu.Item>
+                                             {({ active }) => (
+                                                <button
+                                                   className={menuItemClass(active)}
+                                                   onClick={() => editButtonRefs.current[s.uuid]?.querySelector('button')?.click()}
+                                                >
+                                                   Edit
+                                                </button>
+                                             )}
+                                          </Menu.Item>
+                                          <Menu.Item>
+                                             {({ active }) => (
+                                                <button
                                                    disabled={isPending}
-                                                   className="inline-flex items-center justify-center rounded-full h-11 w-11 text-sm font-medium hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50"
+                                                   className={menuItemClass(active)}
+                                                   onClick={() => toggleActive(s)}
                                                 >
-                                                   <EllipsisVerticalIcon size={24} color="#000" />
-                                                </Menu.Button>
+                                                   {s.status == 1 ? 'Deactivate' : 'Activate'}
+                                                </button>
+                                             )}
+                                          </Menu.Item>
+                                          <Menu.Item>
+                                             {({ active }) => (
+                                                <button
+                                                   disabled={isPending}
+                                                   className={`${menuItemClass(active)} text-red-700`}
+                                                   onClick={() => deleteItem(s)}
+                                                >
+                                                   Delete
+                                                </button>
+                                             )}
+                                          </Menu.Item>
+                                       </Menu.Items>
+                                    </Transition>
+                                 </Menu>
+                              </div>
 
-                                                <Transition
-                                                   as={Fragment}
-                                                   enter="transition ease-out duration-100"
-                                                   enterFrom="transform opacity-0 scale-95"
-                                                   enterTo="transform opacity-100 scale-100"
-                                                   leave="transition ease-in duration-75"
-                                                   leaveFrom="transform opacity-100 scale-100"
-                                                   leaveTo="transform opacity-0 scale-95"
-                                                >
-                                                   <Menu.Items className="p-2 absolute right-0 top-full mt-1 w-44 origin-top-right divide-y divide-gray-100 rounded-box bg-white border-2 border-black focus:outline-none z-40">
-                                                         <div className="px-1 py-1">
-                                                            <Menu.Item>
-                                                               {({ active }) => (
-                                                                     <button
-                                                                        className={menuItemClass(active)}
-                                                                        onClick={() => handleCopy(s.uuid, `${window.location.origin}/shop/item/${slug(s.name)}/${s.uuid}`)}
-                                                                     >
-                                                                        {copiedId === s.uuid ? "Copied" : "Copy Link"}
-                                                                     </button>
-                                                               )}
-                                                            </Menu.Item>
-                                                            <Menu.Item>
-                                                               {({ active }) => (
-                                                                     <button
-                                                                        className={menuItemClass(active)}
-                                                                        onClick={() => editButtonRefs.current[s.uuid]?.querySelector('button')?.click()}
-                                                                     >
-                                                                        Edit
-                                                                     </button>
-                                                               )}
-                                                            </Menu.Item>
-                                                            <Menu.Item>
-                                                               {({ active }) => (
-                                                                     <button
-                                                                        disabled={isPending}
-                                                                        className={menuItemClass(active)}
-                                                                        onClick={() => deleteItem(s)}
-                                                                     >
-                                                                        Delete
-                                                                     </button>
-                                                               )}
-                                                            </Menu.Item>
-                                                            <Menu.Item>
-                                                               {({ active }) => (
-                                                                     <button
-                                                                        disabled={isPending}
-                                                                        className={menuItemClass(active)}
-                                                                        onClick={() => toggleActive(s)}
-                                                                     >
-                                                                        {s.status == 1 ? 'Deactivate' : 'Activate'}
-                                                                     </button>
-                                                               )}
-                                                            </Menu.Item>
-                                                         </div>
-                                                   </Menu.Items>
-                                                </Transition>
-                                             </Menu>
-                                       </div>
-                                    </div>
-                                    <span className="text-[13px] sm:text-normal font-bold text-gray-700 line-clamp-1">
-                                       {s.description}
+                              {s.description && (
+                                 <p className="mt-1 text-[13px] leading-snug text-gray-600 line-clamp-2">
+                                    {s.description}
+                                 </p>
+                              )}
+
+                              {/* One hero per card: the price. Everything under it is
+                                  instrumentation and is set at half its weight. */}
+                              <div className="mt-4 flex items-end justify-between gap-3">
+                                 <p className="text-3xl font-black leading-none tabular-nums text-black sm:text-[2rem]">
+                                    {formatMultiPrice(s.price, s.currency)}
+                                 </p>
+
+                                 {/*
+                                    `slot_limitation` is REMAINING stock, so the total is
+                                    sold + remaining. A brand-new listing has neither, and
+                                    the old markup printed "0/0 Sold" — a fraction of
+                                    nothing, which reads as a bug. Say nothing instead:
+                                    the funnel below already reports zero sales.
+                                 */}
+                                 {tracked ? (
+                                    <span
+                                       className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${soldOut ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}`}
+                                       title={`${soldCount} sold, ${Math.max(0, stockLeft)} left`}
+                                    >
+                                       {soldOut ? 'Sold out' : `${stockLeft} left`}
                                     </span>
+                                 ) : soldCount > 0 ? (
+                                    <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-gray-500">
+                                       {soldCount} sold
+                                    </span>
+                                 ) : null}
+                              </div>
+
+                              {/* Seen → checkout → sold. Answers "is this not being
+                                  found, or found and not convincing?" — two problems
+                                  that looked identical before. */}
+                              <ItemFunnelLine funnel={s.funnel} className="mt-3" />
+
+                              {soldOut && (
+                                 <div className='mt-3 flex flex-wrap items-center justify-between gap-2 rounded-box-sm bg-red-50 px-3 py-2'>
+                                    <span className='text-[11px] font-black uppercase leading-tight tracking-wide text-red-700'>Raise the limit to keep selling</span>
+                                    {/* The demand the creator could not see before. This number is
+                                        the whole reason the waitlist exists on the supply side. */}
+                                    <WaitingCount count={Number(s.waiting_count || 0)} />
                                  </div>
+                              )}
 
-                                 <div className="mb-4 flex flex-col gap-1">
-                                    <div className="flex items-center justify-between">
-                                       <h2 className="font-black text-lg sm:text-2xl text-black">
-                                             {formatMultiPrice(s.price, s.currency)}
-                                       </h2>
-                                       {/* `slot_limitation` is REMAINING stock, so total = sold + remaining. */}
-                                       <span className="text-sm font-black text-black bg-gray-100 px-3 py-1 rounded-full border border-black">
-                                             {s.slot_limitation !== null && s.slot_limitation !== undefined
-                                                ? `${s.total_sold}/${Number(s.total_sold) + Number(s.slot_limitation)} Sold`
-                                                : `${s.total_sold} Sold`
-                                             }
-                                       </span>
-                                    </div>
-
-                                    {s.slot_limitation !== null && s.slot_limitation !== undefined && Number(s.slot_limitation) <= 0 && (
-                                       <div className='flex flex-wrap items-center gap-2'>
-                                          <span className='text-[11px] font-black uppercase text-red-600'>Sold out — raise the stock limit to sell more</span>
-                                          {/* The demand the creator could not see before. This number is
-                                              the whole reason the waitlist exists on the supply side. */}
-                                          <WaitingCount count={Number(s.waiting_count || 0)} />
+                              {s.type === 'physical' && shippingDetails && (
+                                 <dl className='mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px]'>
+                                    {shippingDetails.domestic && (
+                                       <div className="flex items-baseline gap-1.5">
+                                          <dt className="font-black uppercase tracking-wide text-gray-400">Domestic</dt>
+                                          <dd className="font-bold tabular-nums text-gray-700">{shippingDetails.domestic}</dd>
                                        </div>
                                     )}
-
-                                    {s.type === 'physical' && shippingDetails && (
-                                       <div className='flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 font-bold uppercase'>
-                                             {shippingDetails.domestic && (
-                                                <span>Domestic: {shippingDetails.domestic}</span>
-                                             )}
-                                             {shippingDetails.worldwide && (
-                                                <span>Worldwide: {shippingDetails.worldwide}</span>
-                                             )}
+                                    {shippingDetails.worldwide && (
+                                       <div className="flex items-baseline gap-1.5">
+                                          <dt className="font-black uppercase tracking-wide text-gray-400">Worldwide</dt>
+                                          <dd className="font-bold tabular-nums text-gray-700">{shippingDetails.worldwide}</dd>
                                        </div>
                                     )}
+                                 </dl>
+                              )}
+
+                              <div className="mt-auto flex items-center gap-2 pt-5">
+                                 {/* One AddItem per card. The menu's Edit clicks this same button —
+                                     a second hidden copy doubled every category request on this tab. */}
+                                 <div className="flex-1" ref={(el) => editButtonRefs.current[s.uuid] = el}>
+                                    <AddItem
+                                       update={update}
+                                       classes="block w-full cursor-pointer rounded-box-sm border-2 border-black bg-blue-300 px-4 py-3 min-h-[44px] text-center text-sm font-black uppercase tracking-wide text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:bg-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                                       pre_title={s.name} title="Edit item"
+                                       pre_description={s.description}
+                                       pre_price={s.price}
+                                       product_type={s.type}
+                                       item={s} isEdit={true}
+                                    />
                                  </div>
 
-                                 <div className="flex items-center gap-2 mt-auto">
-                                    {/* One AddItem per card. The menu's Edit clicks this same button —
-                                        a second hidden copy doubled every category request on this tab. */}
-                                    <div className="flex-grow" ref={(el) => editButtonRefs.current[s.uuid] = el}>
-                                       <AddItem
-                                             update={update}
-                                             classes="w-full font-black cursor-pointer bg-blue-300 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase text-center block"
-                                             pre_title={s.name} title="Edit Item"
-                                             pre_description={s.description}
-                                             pre_price={s.price}
-                                             product_type={s.type}
-                                             item={s} isEdit={true}
-                                       />
-                                    </div>
-                                 </div>
+                                 <button
+                                    type="button"
+                                    onClick={() => handleCopy(s.uuid, `${window.location.origin}${itemUrl}`)}
+                                    aria-label={`Copy the link to ${s.name}`}
+                                    title="Copy the link to this listing"
+                                    className={`inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+                                       isCopied ? 'bg-[#A2E4B8] text-black'
+                                       : needsSharing ? 'bg-[#FF007F] text-white hover:bg-[#e00070]'
+                                       : 'bg-white text-black hover:bg-gray-100'
+                                    }`}
+                                 >
+                                    {isCopied ? <Check size={18} strokeWidth={3} /> : <Share2 size={17} strokeWidth={2.6} />}
+                                 </button>
+                              </div>
                            </div>
                         </article>
                         );

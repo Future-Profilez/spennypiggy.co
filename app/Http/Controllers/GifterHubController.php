@@ -141,12 +141,12 @@ class GifterHubController extends Controller
         // or a sold-out flag can't be acted on — the buyer has to open each item to
         // find out whether buying is still possible.
         $resolve = [
-            'wish' => fn ($i) => [$i->wishname, $i->user, $i->price, $i->is_approved ? null : 'Under review'],
+            'wish' => fn ($i) => [$i->wishname, $i->user, $i->price, (int) $i->is_approved === 1 ? null : ((int) $i->is_approved === 2 ? 'Rejected' : 'Under review')],
             'shop' => fn ($i) => [$i->name, $i->user, $i->price, $this->shopUnavailable($i)],
             'membership' => fn ($i) => [$i->level, $i->user, $i->price, $i->approved ? null : 'Under review'],
             'bill' => fn ($i) => [$i->name, $i->user, $i->price, $i->approved ? null : 'Under review'],
             'piggypot' => fn ($i) => [$i->title, $i->user, null, $i->status === 'moderation_hold' ? 'Under review' : null],
-            'task' => fn ($i) => [$i->title, $i->creator, $i->price, $i->is_approved ? null : 'Under review'],
+            'task' => fn ($i) => [$i->title, $i->creator, $i->price, (int) $i->is_approved === 1 ? null : ((int) $i->is_approved === 2 ? 'Rejected' : 'Under review')],
         ];
 
         $out = [];

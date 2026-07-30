@@ -85,6 +85,8 @@ class SeoController extends Controller
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-creators.xml\n";
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-wishlists.xml\n";
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-posts.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-shop-items.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-tasks.xml\n";
 
         // Create response with aggressive cache prevention
         $response = new Response($content, 200, [

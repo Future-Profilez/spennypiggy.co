@@ -1,5 +1,5 @@
 import PriceFormat from "@/includes/PriceFormat";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
@@ -73,9 +73,27 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         (vatPercentage / 100);
 
     return (
-        <div className="flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black">
+        // The whole card opens the task, matching ShopCard. Only the title was
+        // clickable before, so a tap anywhere else — the description, the price, the
+        // image area — did nothing at all, which reads as a broken card.
+        <div
+            role="link"
+            tabIndex={0}
+            aria-label={task.title}
+            onClick={() => router.visit(url)}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.visit(url);
+                }
+            }}
+            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black"
+        >
             <Link
                 href={url}
+                // The card already navigates; without this the inner link fires a
+                // second visit to the same URL.
+                onClick={(e) => e.stopPropagation()}
                 className="text-lg sm:text-xl text-black line-clamp-1 font-black capitalize tracking-wide"
             >
                 {task.title}
@@ -161,6 +179,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     {!IsloggedIn ? (
                         <Link
                             href={`/task/${task.uuid}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="shrink-0 whitespace-nowrap text-xs sm:text-sm inline-block px-4 py-2.5 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-box-sm hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                         >
                             {task.type === "instant"
