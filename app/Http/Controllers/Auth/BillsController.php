@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Rules\NoExpenseOrBrandName;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
 use App\Services\ItemTextModeration;
@@ -905,6 +906,21 @@ class BillsController extends Controller
                     // 'price_id' => $priceId,
                     // 'customer_id' => $customer_id ?? null,
                 ]);
+
+                // Recovery tracking. Swallows its own errors — a missed reminder costs one
+                // email, a thrown exception here would cost the sale. Recurring checkouts
+                // are card-only, so the fee profile is always 'card'.
+                AbandonedCheckoutService::record(
+                    $session,
+                    'bill',
+                    $bill->user,
+                    $bill->id,
+                    $user->id ?? null,
+                    $sub->guest_email ?? null,
+                    (int) ($session->amount_total ?? round($finalTotalAmount * $multiplier)),
+                    $session->currency ?? $chargeCurrency,
+                    'card'
+                );
 
                 try {
                     Payment::firstOrCreate(

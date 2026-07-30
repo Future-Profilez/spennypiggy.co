@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
-import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft } from 'lucide-react';
+import { Users, TrendingUp, AlertTriangle, Sparkles, Send, ChevronLeft, ShoppingCart } from 'lucide-react';
 
 /**
  * Revenue Opportunity Centre.
@@ -116,6 +116,7 @@ export default function Opportunities({
     tiers = [],
     retention = {},
     alerts = [],
+    abandoned = {},
     actions = [],
     totals = {},
 }) {
@@ -268,6 +269,78 @@ export default function Opportunities({
                                 );
                             })}
                         </div>
+                    )}
+
+                    {/*
+                        Abandoned checkouts — the only demand-side signal on this page.
+                        Deliberately NOT gated on hasSupporters: a creator with no sales
+                        yet is exactly who needs to know people reached their payment
+                        screen and stopped.
+
+                        No supporter is named here, ever. An abandoned checkout is a
+                        weaker relationship than a purchase, not a stronger one.
+                    */}
+                    {(abandoned.count > 0 || abandoned.recovered > 0) && (
+                        <section className="mt-8">
+                            <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
+                                <ShoppingCart size={18} className="text-[#FF007F]" /> Stopped at checkout
+                            </h2>
+                            <p className="mb-3 text-sm text-gray-500">
+                                People who reached your payment screen in the last {abandoned.window_days ?? 30} days
+                                and did not finish. We email them a reminder automatically.
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                                <RetentionStat
+                                    label="Did not finish"
+                                    value={abandoned.count ?? 0}
+                                    hint={money(abandoned.value, currency) + ' not taken'}
+                                    accent="#f59e0b"
+                                />
+                                <RetentionStat
+                                    label="Came back"
+                                    value={abandoned.recovered ?? 0}
+                                    hint="Finished after a reminder"
+                                    accent="#05EFB8"
+                                />
+                                <RetentionStat
+                                    label="Completion rate"
+                                    /* null means nobody started a checkout at all — which is
+                                       not the same as nobody completing one. */
+                                    value={abandoned.recovery_rate === null ? '—' : `${abandoned.recovery_rate}%`}
+                                    hint="Of checkouts started"
+                                    accent="#FF007F"
+                                />
+                            </div>
+
+                            {abandoned.items?.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                    {abandoned.items.map((it) => (
+                                        <div
+                                            key={it.id}
+                                            className="flex items-center justify-between gap-3 rounded-box-sm border border-gray-200 bg-white p-3"
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="truncate font-bold text-gray-900">
+                                                    {it.title || `Your ${it.label}`}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {it.reminded ? 'Reminder sent' : 'Reminder queued'}
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 font-anton text-lg text-gray-900">
+                                                {money(it.amount, currency)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <p className="mt-3 text-xs italic text-gray-500">
+                                A listing that collects these is usually priced or described in a way that loses
+                                people at the last step. We never share who they were.
+                            </p>
+                        </section>
                     )}
 
                     {/* Suggested actions */}

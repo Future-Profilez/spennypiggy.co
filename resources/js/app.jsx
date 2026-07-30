@@ -221,6 +221,43 @@ class GlobalErrorBoundary extends React.Component {
 }
 
 
+// A deploy replaces every hashed asset, so a tab open across one asks the CDN for
+// a chunk that no longer exists and Vite throws "Unable to preload CSS for ...".
+// The page is simply stale — reload it to pick up the new manifest.
+//
+// The guard is a TIMESTAMP, not a one-shot flag. An earlier version cleared its
+// flag on Inertia's `navigate` event, which also fires on the initial page load —
+// so a reload immediately re-armed itself and an asset that was genuinely gone
+// (purged CDN, bad deploy) would reload the page forever. A cooldown cannot loop:
+// a second failure inside the window is left alone, and a failure long afterwards
+// is a new stale-deploy event that deserves its own reload.
+const PRELOAD_RELOAD_KEY = 'spenny_preload_reloaded_at';
+const PRELOAD_RELOAD_COOLDOWN_MS = 60_000;
+
+// preventDefault() is called ONLY on the path that actually reloads. Vite's helper
+// is `dispatchEvent(e); if (!e.defaultPrevented) throw err` — so preventing the
+// default suppresses the error entirely. Doing that and then returning early would
+// leave the user on a wedged page with no ErrorBoundary and no Sentry event, which
+// is worse than the crash it replaced.
+window.addEventListener('vite:preloadError', (event) => {
+    try {
+        const last = Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY)) || 0;
+
+        if (Date.now() - last < PRELOAD_RELOAD_COOLDOWN_MS) {
+            return;
+        }
+
+        sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(Date.now()));
+    } catch (e) {
+        // Private mode / storage disabled — no cooldown available, so let the error
+        // through rather than risk a reload we cannot rate-limit.
+        return;
+    }
+
+    event.preventDefault();
+    window.location.reload();
+});
+
 createInertiaApp({
     title: (title) =>
         `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,

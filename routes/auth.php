@@ -55,7 +55,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
 
@@ -999,11 +998,10 @@ Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
 })->name('promotion-terms');
 
-Route::get('/files/{filename}', function (string $filename) {
-    $fullPath = asset($filename);
-
-    return Storage::response($fullPath);
-});
+// Removed: GET /files/{filename}. It passed asset($filename) — a full URL — to
+// Storage::response(), which resolved the default S3 disk with no bucket
+// configured and threw a 500 on every hit. Nothing linked to it; the only
+// traffic was bot scans for /files/index.php. A 404 is the correct answer.
 
 Route::get('recent-gifters/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
 Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'topGiftersAllTime'])->name('leaderboard.stars');
@@ -1114,7 +1112,7 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
 })->middleware('check.block')->name('wish.show');
 
-Route::get('/{username}/post/{slug}', [App\Http\Controllers\Auth\PostsController::class, 'showPostDetail'])
+Route::get('/{username}/post/{slug}', [PostsController::class, 'showPostDetail'])
     ->middleware('check.block')
     ->name('post.show');
 

@@ -27,17 +27,44 @@ class Kernel extends ConsoleKernel
                 // Write to default cache for diagnostics
                 Cache::put('scheduler_heartbeat', time(), 600);
 
-                // Dispatch a closure to the queue to verify the queue worker is running
-                dispatch(function () {
-                    Cache::put('queue_worker_heartbeat', time(), 600);
-                });
-
                 // Explicitly write to dynamodb store if available - DISABLED
                 if (config('cache.stores.dynamodb')) {
                     // \Illuminate\Support\Facades\Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', now()->toDateTimeString(), 600);
                 }
             } catch (\Throwable $e) {
                 Log::error('Scheduler heartbeat failed to write cache', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            /*
+             * Queue-worker probe — deliberately OUTSIDE the block above.
+             *
+             * On the database queue driver, dispatch() writes to `jobs`, so when the DB is
+             * unreachable this throw used to be caught by the scheduler's own catch and
+             * reported as "Scheduler heartbeat failed to write cache" every single minute —
+             * blaming the cache write that had already succeeded, and burying the real cause.
+             *
+             * It is also re-probed only once the last probe has gone stale rather than every
+             * minute: the previous form queued a closure per minute forever, so a stopped
+             * worker left a growing pile of identical jobs that all ran (and could time out)
+             * the moment it came back.
+             */
+            try {
+                $lastProbe = Cache::get('queue_worker_heartbeat');
+
+                if (! $lastProbe || (time() - (int) $lastProbe) > 300) {
+                    // No ->onQueue() here on purpose. Locally the database connection's queue IS
+                    // named "default", but on Vapor QUEUE_CONNECTION is sqs and SQS_QUEUE holds a
+                    // full queue URL — naming a queue would push the probe to a queue nothing
+                    // consumes, so the heartbeat would read as a permanently dead worker in
+                    // production. Let each connection use its own configured queue.
+                    dispatch(function () {
+                        Cache::put('queue_worker_heartbeat', time(), 600);
+                    });
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Queue worker heartbeat probe could not be dispatched', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -180,6 +207,23 @@ class Kernel extends ConsoleKernel
             ->dailyAt('12:00')
             ->withoutOverlapping();
 
+        // Abandoned checkout recovery. HOURLY, not daily: the first reminder is worth
+        // most about an hour after the tab was closed, and a Stripe Checkout session
+        // only lives ~24 hours, so a daily pass would mostly send dead links.
+        //
+        // Offset to :20 so it never runs alongside payments:sweep-stuck — the sweep
+        // replays fulfilment for dropped webhooks, and chasing a supporter before it
+        // has run risks telling someone who paid that they did not.
+        //
+        // On local/testing it runs every minute instead, so a shortened
+        // CHECKOUT_RECOVERY_SCHEDULE_MINUTES (e.g. `1,2`) can actually be observed —
+        // an hourly tick would make a one-minute schedule untestable.
+        $recovery = $schedule->command('checkout:recover')->withoutOverlapping(10);
+
+        app()->environment('local', 'testing')
+            ? $recovery->everyMinute()
+            : $recovery->hourlyAt(20);
+
         // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence
         $schedule->command('app:enforce-posting-cadence')
             ->dailyAt('11:00')
@@ -219,8 +263,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:30')
             ->withoutOverlapping();
 
-        // Platform Diagnostics — runs daily, emails alert on failure/warning
-        $schedule->command('diagnostics:run')
+        // Platform Diagnostics — runs daily, emails alert on failure/warning.
+        // Deliberately NOT --deep: the deep checks create a real Stripe Connect account and a
+        // real PaymentIntent, and a scheduled job must not mint one of each every night.
+        // --prune drops recorded runs past the retention window so the history cannot grow
+        // without bound.
+        $schedule->command('diagnostics:run --prune')
             ->daily()
             ->withoutOverlapping(10)
             ->runInBackground();
@@ -231,6 +279,13 @@ class Kernel extends ConsoleKernel
         // $schedule->command('crm:sync-creator-stages')
         //          ->everyThirtyMinutes()
         //          ->withoutOverlapping();
+
+        // Web Vitals samples are one row per metric per page view and nothing ever
+        // removed one. The dashboard reads 30 days at most, so anything older is a
+        // per-visitor record we keep for no reader.
+        $schedule->command('web-vitals:prune')
+            ->dailyAt('03:45')
+            ->withoutOverlapping();
 
         // Social matching is NOT stage syncing: it only fills the
         // social_match_suggested_* columns the admin dashboard reads, and it

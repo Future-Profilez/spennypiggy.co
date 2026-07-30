@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Bills;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
+use App\Models\DiagnosticRun;
 use App\Models\FinancialTransaction;
 use App\Models\Follow;
 use App\Models\Membership;
@@ -15,15 +16,18 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
+use App\Services\Diagnostics\DiagnosticsRunner;
 use App\Services\IntercomService;
 use App\Services\MagicBellService;
 use App\StripeControl;
+use App\Support\LogFingerprint;
 use App\Uploadcare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class SystemDiagnosticsController extends Controller
@@ -43,58 +47,84 @@ class SystemDiagnosticsController extends Controller
     /**
      * Run all diagnostics tests and return results.
      */
-    public function run()
+    /**
+     * Every check, as a thunk so the runner controls WHETHER each one executes — a standard run
+     * skips the two that create real objects at Stripe, and `--only` runs a single check without
+     * paying for the other thirty-one.
+     *
+     * @return array<string,callable():array>
+     */
+    public function checks(): array
     {
-        $results = [
-            'routes_syntax' => $this->testRoutesAndSyntax(),
-            'database' => $this->testDatabase(),
-            'cache' => $this->testCache(),
-            'signup_flow' => $this->testSignupFlow(),
-            'wish_items' => $this->testWishItems(),
-            'bills' => $this->testBills(),
-            'memberships' => $this->testMemberships(),
-            'shop_items' => $this->testShopItems(),
-            'tasks' => $this->testTasks(),
-            'cart_flow' => $this->testCartFlow(),
-            'social_flow' => $this->testSocialFlow(),
-            'profile_update' => $this->testProfileUpdate(),
-            'search_engine' => $this->testSearchEngine(),
-            'stripe_id_flow' => $this->testStripeIdFlow(),
-            'stripe_payments' => $this->testStripePayments(),
-            'email' => $this->testEmail(),
-            'push_notifications' => $this->testPushNotifications(),
-            'uploadcare' => $this->testUploadcare(),
-            'intercom' => $this->testIntercom(),
-            'queue_health' => $this->testQueueHealth(),
-            'recent_errors' => $this->testRecentErrorLog(),
-            'financial_integrity' => $this->testFinancialIntegrity(),
-            'referral_system' => $this->testReferralSystem(),
-            'storage_permissions' => $this->testStoragePermissions(),
-            'disk_space' => $this->testDiskSpace(),
-            'env_variables' => $this->testEnvironmentVariables(),
-            'stripe_webhook' => $this->testStripeWebhookConfig(),
-            'scheduled_tasks' => $this->testScheduledTasks(),
-            'pending_migrations' => $this->testPendingMigrations(),
-            'app_response_time' => $this->testAppResponseTime(),
-            'stuck_payouts' => $this->testStuckPayouts(),
-            'termly_consent' => $this->testTermlyConsent(),
+        return [
+            'routes_syntax' => fn () => $this->testRoutesAndSyntax(),
+            'database' => fn () => $this->testDatabase(),
+            'cache' => fn () => $this->testCache(),
+            'signup_flow' => fn () => $this->testSignupFlow(),
+            'wish_items' => fn () => $this->testWishItems(),
+            'bills' => fn () => $this->testBills(),
+            'memberships' => fn () => $this->testMemberships(),
+            'shop_items' => fn () => $this->testShopItems(),
+            'tasks' => fn () => $this->testTasks(),
+            'cart_flow' => fn () => $this->testCartFlow(),
+            'social_flow' => fn () => $this->testSocialFlow(),
+            'profile_update' => fn () => $this->testProfileUpdate(),
+            'search_engine' => fn () => $this->testSearchEngine(),
+            'stripe_id_flow' => fn () => $this->testStripeIdFlow(),
+            'stripe_payments' => fn () => $this->testStripePayments(),
+            'email' => fn () => $this->testEmail(),
+            'push_notifications' => fn () => $this->testPushNotifications(),
+            'uploadcare' => fn () => $this->testUploadcare(),
+            'intercom' => fn () => $this->testIntercom(),
+            'queue_health' => fn () => $this->testQueueHealth(),
+            'recent_errors' => fn () => $this->testRecentErrorLog(),
+            'financial_integrity' => fn () => $this->testFinancialIntegrity(),
+            'referral_system' => fn () => $this->testReferralSystem(),
+            'storage_permissions' => fn () => $this->testStoragePermissions(),
+            'disk_space' => fn () => $this->testDiskSpace(),
+            'env_variables' => fn () => $this->testEnvironmentVariables(),
+            'stripe_webhook' => fn () => $this->testStripeWebhookConfig(),
+            'scheduled_tasks' => fn () => $this->testScheduledTasks(),
+            'pending_migrations' => fn () => $this->testPendingMigrations(),
+            'app_response_time' => fn () => $this->testAppResponseTime(),
+            'stuck_payouts' => fn () => $this->testStuckPayouts(),
+            'termly_consent' => fn () => $this->testTermlyConsent(),
         ];
+    }
 
-        $overallStatus = 'passed';
-        foreach ($results as $result) {
-            if ($result['status'] === 'failed') {
-                $overallStatus = 'failed';
-                break;
-            } elseif ($result['status'] === 'warning') {
-                $overallStatus = 'warning';
-            }
+    public function run(Request $request)
+    {
+        // Deep run is opt-in: the Stripe checks create a real Connect Express account and a real
+        // PaymentIntent, which is not something a page should do every time it is opened.
+        $deep = $request->boolean('deep');
+
+        $only = array_values(array_filter(
+            (array) $request->input('only', []),
+            fn ($k) => is_string($k) && array_key_exists($k, $this->checks())
+        ));
+
+        $payload = (new DiagnosticsRunner($this->checks()))->run([
+            'deep' => $deep,
+            'only' => $only !== [] ? $only : null,
+            'trigger' => 'manual',
+        ]);
+
+        return response()->json($payload);
+    }
+
+    /** Recent runs, for the trend strip on the page. */
+    public function history(Request $request)
+    {
+        if (! Schema::hasTable('diagnostic_runs')) {
+            return response()->json(['runs' => []]);
         }
 
-        return response()->json([
-            'status' => $overallStatus,
-            'results' => $results,
-            'timestamp' => now()->toDateTimeString(),
-        ]);
+        $runs = DiagnosticRun::query()
+            ->latest('id')
+            ->limit(min(50, max(1, (int) $request->input('limit', 20))))
+            ->get(['id', 'status', 'deep', 'passed_count', 'warning_count', 'failed_count', 'skipped_count', 'duration_ms', 'created_at']);
+
+        return response()->json(['runs' => $runs]);
     }
 
     private function testRoutesAndSyntax()
@@ -921,26 +951,32 @@ class SystemDiagnosticsController extends Controller
                 }
             }
 
-            // Deduplicate similar errors (keep unique first 100 chars)
-            $unique = [];
-            $seen = [];
-            foreach ($errorLines as $err) {
-                $key = substr($err, 0, 100);
-                if (! in_array($key, $seen)) {
-                    $seen[] = $key;
-                    $unique[] = $err;
-                }
-            }
-            $unique = array_slice($unique, -20); // last 20 unique errors
+            /*
+             * Group by SIGNATURE, not by the first 100 characters.
+             *
+             * Those first 100 characters begin with the timestamp, so the same fault logged three
+             * minutes apart counted as three distinct errors — "11 unique errors" was really a
+             * handful repeating, with no indication which one was happening constantly.
+             *
+             * LogFingerprint also redacts. These lines were previously printed verbatim, carrying
+             * Stripe key fragments, payment intent and customer ids, buyer email addresses and
+             * entire serialized queue payloads onto the page.
+             */
+            $groups = LogFingerprint::group($errorLines, 15);
 
             $time = round((microtime(true) - $start) * 1000, 2);
-            $errorCount = count($unique);
+            $distinct = count($groups);
+            $total = array_sum(array_column($groups, 'count'));
 
-            if ($errorCount > 0) {
+            if ($distinct > 0) {
                 return [
                     'status' => 'failed',
-                    'message' => "{$errorCount} unique error(s) found in logs (last 24 hours). Review below.",
-                    'errors' => $unique,
+                    'message' => "{$distinct} distinct error signature(s) across {$total} log line(s) in the last 24 hours.",
+                    'errors' => array_map(
+                        static fn ($g) => sprintf('×%d  %s', $g['count'], $g['message']),
+                        $groups
+                    ),
+                    'meta' => ['groups' => $groups],
                     'time_ms' => $time,
                 ];
             }
@@ -961,36 +997,51 @@ class SystemDiagnosticsController extends Controller
         try {
             $start = microtime(true);
             $issues = [];
+            $ids = [];
+
+            /*
+             * Each finding names the ROWS, not just a count. "2 transaction(s) have amount
+             * calculation mismatch" cost a hand-written tinker query to turn into something
+             * actionable; the check already knows which rows they are, so it says so.
+             *
+             * `pluck` is capped so a systemic fault reports a sample rather than dumping the
+             * whole ledger into an HTTP response.
+             */
+            $sample = static fn ($query) => $query->limit(25)->pluck('id')->all();
 
             // Check for negative net_amount
-            $negativeNet = FinancialTransaction::where('net_amount', '<', 0)->count();
-            if ($negativeNet > 0) {
-                $issues[] = "{$negativeNet} transaction(s) have negative net_amount.";
+            $negativeIds = $sample(FinancialTransaction::where('net_amount', '<', 0)->orderBy('id'));
+            if ($negativeIds !== []) {
+                $issues[] = count($negativeIds).' transaction(s) have negative net_amount: #'.implode(', #', $negativeIds);
+                $ids = array_merge($ids, $negativeIds);
             }
 
             // Check for math mismatch: gross should >= net + fees (allow £0.01 rounding)
-            $mathMismatch = FinancialTransaction::whereRaw(
+            $mismatchIds = $sample(FinancialTransaction::whereRaw(
                 'ABS(gross_amount - (net_amount + platform_fee + stripe_fee + vat_amount)) > 0.02'
-            )->count();
-            if ($mathMismatch > 0) {
-                $issues[] = "{$mathMismatch} transaction(s) have amount calculation mismatch (gross ≠ net + fees).";
+            )->orderBy('id'));
+            if ($mismatchIds !== []) {
+                $issues[] = count($mismatchIds).' transaction(s) have amount calculation mismatch (gross ≠ net + fees): #'.implode(', #', $mismatchIds);
+                $ids = array_merge($ids, $mismatchIds);
             }
 
             // Check for held reserve with zero reserve_amount
-            $badReserve = FinancialTransaction::where('reserve_status', 'held')
+            $badReserveIds = $sample(FinancialTransaction::where('reserve_status', 'held')
                 ->where(function ($q) {
                     $q->whereNull('reserve_amount')->orWhere('reserve_amount', '<=', 0);
-                })->count();
-            if ($badReserve > 0) {
-                $issues[] = "{$badReserve} transaction(s) marked 'held' reserve but have no reserve_amount.";
+                })->orderBy('id'));
+            if ($badReserveIds !== []) {
+                $issues[] = count($badReserveIds)." transaction(s) marked 'held' reserve but have no reserve_amount: #".implode(', #', $badReserveIds);
+                $ids = array_merge($ids, $badReserveIds);
             }
 
             // Check for pending transactions older than 7 days
-            $stalePending = FinancialTransaction::where('status', 'pending')
+            $stalePendingIds = $sample(FinancialTransaction::where('status', 'pending')
                 ->where('created_at', '<', now()->subDays(7))
-                ->count();
-            if ($stalePending > 0) {
-                $issues[] = "{$stalePending} transaction(s) have been 'pending' for more than 7 days.";
+                ->orderBy('id'));
+            if ($stalePendingIds !== []) {
+                $issues[] = count($stalePendingIds)." transaction(s) have been 'pending' for more than 7 days: #".implode(', #', $stalePendingIds);
+                $ids = array_merge($ids, $stalePendingIds);
             }
 
             $time = round((microtime(true) - $start) * 1000, 2);
@@ -1001,6 +1052,7 @@ class SystemDiagnosticsController extends Controller
                     'status' => 'failed',
                     'message' => "Financial integrity issues found in {$totalTx} total transactions.",
                     'errors' => $issues,
+                    'ids' => array_values(array_unique($ids)),
                     'time_ms' => $time,
                 ];
             }
@@ -1026,19 +1078,19 @@ class SystemDiagnosticsController extends Controller
             $activeCodes = ReferralCode::where('is_active', 1)->count();
 
             // Check for referrals stuck in PAYOUT_REQUESTED for > 14 days (admin forgot to approve)
-            $stuckPayouts = CreatorReferral::where('status', 'PAYOUT_REQUESTED')
+            $stuckIds = CreatorReferral::where('status', 'PAYOUT_REQUESTED')
                 ->where('updated_at', '<', now()->subDays(14))
-                ->count();
-            if ($stuckPayouts > 0) {
-                $issues[] = "{$stuckPayouts} referral(s) stuck in PAYOUT_REQUESTED for over 14 days — admin review needed.";
+                ->orderBy('id')->limit(25)->pluck('id')->all();
+            if ($stuckIds !== []) {
+                $issues[] = count($stuckIds).' referral(s) stuck in PAYOUT_REQUESTED for over 14 days — admin review needed: #'.implode(', #', $stuckIds);
             }
 
             // Check for PENDING payouts older than 7 days
-            $oldPendingPayouts = CreatorReferralPayout::where('status', 'PENDING')
+            $oldPayoutIds = CreatorReferralPayout::where('status', 'PENDING')
                 ->where('requested_at', '<', now()->subDays(7))
-                ->count();
-            if ($oldPendingPayouts > 0) {
-                $issues[] = "{$oldPendingPayouts} payout request(s) pending for over 7 days without admin action.";
+                ->orderBy('id')->limit(25)->pluck('id')->all();
+            if ($oldPayoutIds !== []) {
+                $issues[] = count($oldPayoutIds).' payout request(s) pending for over 7 days without admin action: #'.implode(', #', $oldPayoutIds);
             }
 
             // Check referral config
@@ -1338,6 +1390,20 @@ class SystemDiagnosticsController extends Controller
 
             if (empty($appUrl)) {
                 return ['status' => 'warning', 'message' => 'APP_URL is not configured.', 'time_ms' => 0];
+            }
+
+            /*
+             * `php artisan serve` runs PHP's built-in server, which is SINGLE-THREADED. This
+             * request is holding its only worker, so an HTTP call back to ourselves can never be
+             * answered — it always spends the full timeout and always reports "critically slow",
+             * a guaranteed red result that says nothing about the app. Skip it there instead.
+             */
+            if (php_sapi_name() === 'cli-server') {
+                return [
+                    'status' => 'warning',
+                    'message' => 'Skipped: the built-in server (php artisan serve) is single-threaded, so it cannot answer a request it is already busy serving. Run this check against a real web server.',
+                    'time_ms' => 0,
+                ];
             }
 
             $pingUrl = rtrim($appUrl, '/').'/ping';

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AbandonedCheckout;
 use App\Models\EmailPreferenceLog;
 use App\Models\User;
+use App\Services\AbandonedCheckoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
@@ -21,6 +23,7 @@ class EmailPreferenceController extends Controller
         'product_updates_enabled',
         'creator_updates_enabled',
         'reactivation_emails_enabled',
+        'abandoned_checkout_emails_enabled',
         'push_notifications_enabled',
     ];
 
@@ -212,9 +215,56 @@ class EmailPreferenceController extends Controller
             'product_updates_enabled' => 'product updates',
             'creator_updates_enabled' => 'creator updates',
             'reactivation_emails_enabled' => 'reminder emails',
+            'abandoned_checkout_emails_enabled' => 'unfinished purchase reminders',
             'push_notifications_enabled' => 'push notifications',
             default => 'marketing emails',
         };
+    }
+
+    /**
+     * Guest opt-out from abandoned-checkout reminders.
+     *
+     * A guest has no account, so there is no preference column to flip and the normal
+     * unsubscribe route (which needs a user id) cannot serve them. Their opt-out is
+     * recorded against the email address itself, which is the only identifier we hold.
+     *
+     * No login, signed URL only — exactly like the marketing unsubscribe.
+     */
+    public function stopCheckoutReminders(Request $request, $checkoutId)
+    {
+        if (! $request->hasValidSignature()) {
+            Log::warning('EmailPreferenceController@stopCheckoutReminders: Invalid signature', [
+                'abandoned_checkout_id' => $checkoutId,
+            ]);
+
+            return redirect('/')->with('error', 'Invalid or expired link. Please contact support if you need help.');
+        }
+
+        $checkout = AbandonedCheckout::find($checkoutId);
+
+        if (! $checkout || empty($checkout->guest_email)) {
+            return redirect('/')->with('error', 'Invalid link.');
+        }
+
+        app(AbandonedCheckoutService::class)->suppressGuest($checkout->guest_email);
+
+        return redirect('/')->with('success', 'You will not receive any more reminders about unfinished purchases.');
+    }
+
+    /**
+     * Signed opt-out link for a guest's abandoned-checkout reminder.
+     *
+     * 30 days rather than the 24 hours the marketing links use — this email is about
+     * one specific purchase and may sit unread for a while, and a dead unsubscribe
+     * link is worse than no link at all.
+     */
+    public static function generateCheckoutReminderOptOut(int $checkoutId): string
+    {
+        return URL::temporarySignedRoute(
+            'checkout-reminders.stop',
+            now()->addDays(30),
+            ['checkout' => $checkoutId]
+        );
     }
 
     /**

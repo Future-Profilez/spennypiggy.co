@@ -19,6 +19,7 @@ use App\Models\UserCart;
 use App\Models\UserPayment;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -504,6 +505,20 @@ class CheckoutController extends Controller
             $stripePaymentDetail->save();
 
             $stripePaymentDetail->refresh();
+
+            // Recovery tracking. Swallows its own errors — a missed reminder costs one
+            // email, a thrown exception here would cost the sale.
+            AbandonedCheckoutService::record(
+                $sessionCreate,
+                'wish',
+                $owner,
+                null,
+                Auth::id(),
+                $stripePaymentDetail->guest_email,
+                (int) ($sessionCreate->amount_total ?? 0),
+                $sessionCreate->currency ?? null,
+                $methodResolution['fee_profile'] ?? null
+            );
 
             return Inertia::location($sessionCreate->url);
         } catch (\Throwable $th) {
@@ -1083,8 +1098,12 @@ class CheckoutController extends Controller
                         })
                         ->update(['payment_status' => 'processing', 'updated_at' => Carbon::now()]);
 
-                    return redirect(route('user.show', [$existingPayment->owner->username ?? ($getdata[0]->owner->username ?? '')]))
-                        ->with('success', 'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.');
+                    return $this->checkoutRedirect(
+                        $existingPayment->owner ?? null,
+                        $getdata ?? null,
+                        'success',
+                        'Payment received — your bank payment is processing. Your content unlocks as soon as it clears.'
+                    );
                 }
             }
 
@@ -1248,7 +1267,7 @@ class CheckoutController extends Controller
                     if (! $symbol) {
                         Log::error('Currency not found for ISO: '.strtoupper($currencyValue));
 
-                        return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
+                        return $this->checkoutRedirect($stripeid->owner ?? null, $getdata ?? null, 'error', 'Currency configuration error. Please contact support.');
                     }
 
                     // NOTE: per-line fee/VAT are computed at charge time via the
@@ -1338,7 +1357,11 @@ class CheckoutController extends Controller
                         'metadata' => json_encode([
                             'wish_item_id' => $dd->wish_item_id,
                             'quantity' => $dd->quantity,
-                            'creator_net_amount' => $dd->amount - $dd->tax, // Simple calculation as tax is stored per item
+                            // By design net_to_creator == listed price (fees are
+                            // grossed up ON TOP of it). $dd->tax holds the fee
+                            // markup, not a deduction — subtracting it understated
+                            // (sometimes negative) every creator earnings figure.
+                            'creator_net_amount' => (float) $dd->amount,
                             'message' => $dd->message,
                             'anonymous' => $dd->anonymous ?? false,
                         ]),
@@ -1429,8 +1452,30 @@ class CheckoutController extends Controller
                 return redirect(route('thank-you', $thankYouParams))->with('success', 'Payment Successful.');
             }
 
-            return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
+            return $this->checkoutRedirect($stripeid->owner ?? null, $getdata ?? null, 'error', 'Something went wrong!');
         }
+    }
+
+    /**
+     * Redirect back to the creator after checkout, resolving the username safely.
+     *
+     * $getdata is legitimately an empty collection on several paths (a guest whose
+     * device id no longer matches, a session already processed), so indexing
+     * $getdata[0] threw "Undefined array key 0" on a live checkout and turned a
+     * recoverable redirect into a 500. Fall back to the homepage rather than
+     * building route('user.show') with an empty username.
+     */
+    private function checkoutRedirect($owner, $getdata, string $level, string $message)
+    {
+        $username = $owner->username ?? null;
+
+        if (! $username && $getdata) {
+            $username = optional(optional(collect($getdata)->first())->owner)->username;
+        }
+
+        $target = $username ? route('user.show', [$username]) : route('home');
+
+        return redirect($target)->with($level, $message);
     }
 
     public function cancelCheckout($id)

@@ -39,7 +39,7 @@ const fonts = [
 ];
 
 // Common characters for a typical website
-const BASIC_LATIN = 'U+0020-#FF007F'; // Basic Latin
+const BASIC_LATIN = 'U+0020-007F'; // Basic Latin
 const LATIN_1 = 'U+00A0-00FF'; // Latin-1 Supplement  
 const LATIN_EXTENDED_A = 'U+0100-017F'; // Latin Extended-A
 const COMMON_PUNCTUATION = 'U+2010-2027'; // Common punctuation

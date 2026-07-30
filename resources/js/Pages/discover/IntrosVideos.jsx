@@ -1,216 +1,188 @@
-import { lazy } from "react";
+import { useState, useEffect, useRef } from 'react';
 import { Link } from '@inertiajs/react';
-import { useState } from 'react';
 import axios from 'axios';
-import { useEffect } from 'react';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/pagination";
-
-const LoadingScreen = lazy(() => import('@/includes/LoadingScreen'));
-const Nocontent = lazy(() => import('@/includes/Nocontent'));
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
 import { trackSearchClick } from "@/includes/Analytics";
-import { RiVerifiedBadgeFill } from "react-icons/ri";
+import { RiVerifiedBadgeFill, RiPlayFill } from "react-icons/ri";
 
-export default function IntroVideos(props) {
-
-    const { intros: initialIntros, onSeeMore, showAll } = props;
+/**
+ * Intro videos rail. Two perf rules:
+ *  - The fetch is deferred until the section scrolls near the viewport (it sits
+ *    below the fold), so it never competes with the initial Discover load.
+ *  - Posters come from the server's non-blocking accessor (avatar fallback while
+ *    a poster warms on the queue) — no synchronous Uploadcare call per row.
+ */
+export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll }) {
     const [intros, setIntros] = useState(initialIntros || []);
-    const [displayedIntros, setDisplayedIntros] = useState([]);
-    const [order, setorder] = useState('new');
-    const [gender, setgender] = useState('all');
-    const [loading, setloading] = useState(!initialIntros);
+    const [displayed, setDisplayed] = useState([]);
+    const [order, setOrder] = useState('new');
+    const [loading, setLoading] = useState(true);
+    const [visible, setVisible] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
-    const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+    const sectionRef = useRef(null);
+    const fetchedKey = useRef(null);
 
-    const fetch_videos = () => {
-        if (initialIntros && initialIntros.length > 0 && order === 'new' && gender === 'all') {
-            setloading(false);
+    // Reveal → only render/fetch when the rail is near the viewport.
+    useEffect(() => {
+        const el = sectionRef.current;
+        if (!el || visible) return;
+        const io = new IntersectionObserver((entries) => {
+            if (entries[0]?.isIntersecting) {
+                setVisible(true);
+                io.disconnect();
+            }
+        }, { rootMargin: '300px' });
+        io.observe(el);
+        return () => io.disconnect();
+    }, [visible]);
+
+    // Fetch once visible (and on order change). Server-provided intros seed the default view.
+    useEffect(() => {
+        if (!visible) return;
+        if (initialIntros?.length && order === 'new' && fetchedKey.current === null) {
+            setIntros(initialIntros);
+            setLoading(false);
+            fetchedKey.current = order;
             return;
         }
-        setloading(true);
+        if (fetchedKey.current === order) return;
+        setLoading(true);
         setErrorMsg(null);
-        axios.get(`/discover/creators/${order}/${gender}`).then((resp) => {
-            if (resp.data && resp.data.intro && resp.data.intro.data) {
-                setIntros(resp.data.intro.data);
-            } else {
-                setErrorMsg("Invalid data structure: " + JSON.stringify(resp.data).substring(0, 100));
-            }
-            setloading(false);
-        }).catch((_err) => {
-            console.error("error", _err);
-            setErrorMsg("Fetch failed: " + _err.message);
-            setloading(false);
-        });
-    }
+        axios.get(`/discover/creators/${order}/all`)
+            .then((resp) => {
+                const data = resp?.data?.intro?.data;
+                if (Array.isArray(data)) setIntros(data);
+                else setErrorMsg('Could not load intro videos.');
+                setLoading(false);
+                fetchedKey.current = order;
+            })
+            .catch(() => {
+                setErrorMsg('Could not load intro videos. Try again.');
+                setLoading(false);
+            });
+    }, [visible, order]);
 
     useEffect(() => {
-        const handleResize = () => setWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(()=>{
-      fetch_videos();
-    },[order, gender]);
-
-    useEffect(() => {
-        if (intros && intros.length > 0) {
-            if (showAll) {
-                setDisplayedIntros(intros);
-            } else {
-                const shuffled = [...intros].sort(() => 0.5 - Math.random());
-                setDisplayedIntros(shuffled.slice(0, 9));
-            }
-        } else {
-            setDisplayedIntros([]);
-        }
+        if (!intros?.length) return setDisplayed([]);
+        setDisplayed(showAll ? intros : intros.slice(0, 8));
     }, [intros, showAll]);
 
-    const Switch = () => {
-        return <div className='flex mb-3 sm:mb-0 items-center gap-2' >
-        <button onClick={()=>setorder('new')} className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${order == 'new' ? 'bg-pink text-white' : 'bg-white text-gray-700 border border-gray-200'}`} >Newest</button>
-        <button onClick={()=>setorder('old')} className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${order == 'old' ? 'bg-pink text-white' : 'bg-white text-gray-700 border border-gray-200'}`} >Oldest</button>
-    </div>
-    }
+    const hasContent = displayed.length > 0;
 
-    const ProfileIntro = ({ data, text, poster }) => {
-    return <>
-      <Popup space="0" size="md"  classes={`w-full h-full`}
-        text={text} >
-            <div className='video-payer-pop' >
-              <video playsInline poster={poster} controlsList='nodownload' preload="none" autoPlay={false} controls src={data && data.perma_link} />
-            </div>
-        </Popup>
-      </>
-    }
-
-    const Intro = ({w}) => {
-      const [imgLoaded, setImgLoaded] = useState(false);
-      const [videoError, setVideoError] = useState(false);
-      const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
-      const avatar = (w && w?.user && w?.user?.avatar_url) || userphoto;
-      const poster = (w && w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
-      const introVideo = w && w?.perma_link ? w.perma_link : null;
-
-      const handlePreviewTimeUpdate = (e) => {
-        const v = e.currentTarget;
-        if (v.currentTime >= 3) {
-          v.pause();
-        }
-      };
-
-      return  <div className="relative rounded-[30px]   h-[230px] md:h-[230px] overflow-hidden border-2 border-black bg-[#f3f4f6] group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"> 
-        <ProfileIntro data={w} poster={poster} text={
-          <>
-            <div className="h-full relative bg-gray-200">
-              {/* Thumbnail is the poster/avatar image only — no video bytes load
-                  on the grid. The real intro plays in the click-through popup. */}
-              <img
-                alt={"image"}
-                height={360}
-                src={poster}
-                onLoad={() => setImgLoaded(true)}
-                onError={(e) => {
-                  // Broken poster (e.g. raw video URL) -> creator profile image -> site icon.
-                  if (e.target.src !== avatar && avatar !== userphoto) {
-                    e.target.src = avatar;
-                  } else if (e.target.src !== userphoto) {
-                    e.target.src = userphoto;
-                  }
-                  setImgLoaded(true);
-                }}
-                className={`w-full !h-full object-cover transition-all duration-500 group-hover:scale-[1.05] ${!imgLoaded ? 'opacity-0' : 'opacity-100'}`}
-                width={260}
-              />
-              {!imgLoaded && (
-                  <div className="absolute inset-0 bg-gray-300 animate-pulse z-10" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70 z-20"></div>
-              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px]  z-30">
-                Intro Video
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center z-30">
-                <div className="transform transition-transform duration-300 group-hover:scale-105">
-                  <svg className="h-10 w-10" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="32" cy="32" r="32" fill="#FF007F"/>
-                    <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </>
-        } />
-        <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-30 text-white pointer-events-none">
-          {w && w.user && w.user.username ? (
-            <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block pointer-events-auto">
-              <p className="text-base !line-clamp-1 md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
-                {w.user.name}
-                {/* {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''} */}
-              </p>
-              <p className="text-base mt-0 opacity-90">@{w.user.username}</p>
-            </Link>
-          ) : (
-            <div>
-              <p className="text-lg font-GillSans uppercase mb-0">{(w && w.user && w.user.name) || 'Unknown User'}</p>
-              <p className="text-base mt-0 text-gray-300">@unavailable</p>
-            </div>
-          )}
-        </div>
-      </div>
-    }
-
-    return <>
-        <div className={`filters flex flex-wrap items-center justify-between w-full mb-4 ${intros && intros.length < 1 ? '!hidden' : ''}`} >
-            <h2 className='text-2xl text-gray-900 font-gulfs uppercase'>Intro Videos</h2>
-            {/* <div className='flex gap-1 mt-3 items-center' >
-              <button onClick={()=>setorder('new')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${order == 'new' ? '!bg-blue-600 text-white' : ''}`} >Newest</button>
-              <button onClick={()=>setorder('old')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${order == 'old' ? '!bg-blue-600 text-white' : ''}`} >Oldest</button>
-              <button onClick={(e)=> setgender('he')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'he' ? '!bg-blue-600 text-white' : ''}`} >He</button>
-              <button onClick={(e)=> setgender('she')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'she' ? '!bg-blue-600 text-white' : ''}`} >She</button>
-              <button onClick={(e)=> setgender('they')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'they' ? '!bg-blue-600 text-white' : ''}`} >They</button>
-            </div> */}
-            
-        </div>
-
-        <div className='' >
-          {errorMsg && <div className="text-red-500 bg-red-100 p-4 rounded mb-4">{errorMsg}</div>}
-          {loading ?
-          <div className='w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
-              {Array(9).fill(0).map((_, i) => (
-                  <div key={`intro-skeleton-${i}`} className="h-[230px] md:h-[270px] bg-gray-200/40 animate-ping border-2 border-black rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
-              ))}
-          </div>
-          :
-          <>
-            {displayedIntros && displayedIntros.length ?
-            <>
-                <div className=' w-full grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6'>
-                    {displayedIntros.map((w, i)=> (
-                        <Intro key={i} w={w} />
+    return (
+        <section ref={sectionRef} className="!pb-[40px]">
+            <div className={`mb-5 flex items-center justify-between ${!hasContent && !loading ? 'hidden' : ''}`}>
+                <h2 className="font-anton text-2xl md:text-3xl uppercase tracking-wide text-black">Intro Videos</h2>
+                <div className="flex gap-1.5">
+                    {['new', 'old'].map((o) => (
+                        <button
+                            key={o}
+                            onClick={() => setOrder(o)}
+                            className={`rounded-[20px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                                order === o
+                                    ? 'bg-[#FF007F] text-white shadow-[0_6px_20px_-6px_rgba(255,0,127,0.7)]'
+                                    : 'bg-white text-black/60 border border-black/10 hover:text-black'
+                            }`}
+                        >
+                            {o === 'new' ? 'Newest' : 'Oldest'}
+                        </button>
                     ))}
                 </div>
-                {!showAll && intros && intros.length > 9 && (
-                    <div className="mt-8 flex justify-center">
-                        <button 
-                            onClick={onSeeMore}
-                            className="bg-white border-2 border-black text-black hover:bg-black hover:text-white px-8 py-3 rounded-full font-bold text-sm md:text-base uppercase tracking-wider transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
-                        >
-                            See More
-                        </button>
+            </div>
+
+            {errorMsg && (
+                <div className="mb-4 rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                    {errorMsg}
+                </div>
+            )}
+
+            {loading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {Array(8).fill(0).map((_, i) => <IntroSkeleton key={`intro-sk-${i}`} />)}
+                </div>
+            ) : hasContent ? (
+                <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {displayed.map((w, i) => <IntroCard key={w.id || i} w={w} />)}
                     </div>
-                )}
-            </>
-            : <div className='my-5' >
-              {/* <Nocontent text={'New Creators are on their way! Start exploring now!'} /> */}
-            </div> }
-          </>}
+                    {!showAll && intros.length > 8 && (
+                        <div className="mt-7 flex justify-center">
+                            <button
+                                onClick={onSeeMore}
+                                className="rounded-[20px] bg-[#FF007F] px-7 py-2.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_30px_-6px_rgba(255,0,127,0.6)] transition-all hover:bg-[#ff1a8c] hover:shadow-[0_10px_40px_-6px_rgba(255,0,127,0.75)]"
+                            >
+                                See more
+                            </button>
+                        </div>
+                    )}
+                </>
+            ) : null}
+        </section>
+    );
+}
 
-      </div>
-    </>
+function IntroSkeleton() {
+    return (
+        <div className="aspect-[3/4] animate-pulse rounded-[30px] border border-black/[0.06] bg-black/[0.05]">
+            <div className="flex h-full items-center justify-center">
+                <div className="h-14 w-14 rounded-full bg-black/10" />
+            </div>
+        </div>
+    );
+}
 
+function IntroCard({ w }) {
+    const [imgLoaded, setImgLoaded] = useState(false);
+    const verified = w?.user?.role === 1 && w?.user?.profile_status_lock === 2;
+    const avatar = w?.user?.avatar_url || userphoto;
+    const poster = (w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
+
+    return (
+        <div className="group relative aspect-[3/4] overflow-hidden rounded-[30px] border border-white/10 bg-[#16161C] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 hover:shadow-[0_18px_44px_-14px_rgba(255,0,127,0.4)]">
+            <Popup space="0" size="md" classes="w-full h-full" text={
+                <div className="relative h-full w-full">
+                    {!imgLoaded && <div className="absolute inset-0 z-10 animate-pulse bg-white/5" />}
+                    <img
+                        alt={w?.user?.name || 'Intro video'}
+                        src={poster}
+                        loading="lazy"
+                        decoding="async"
+                        onLoad={() => setImgLoaded(true)}
+                        onError={(e) => {
+                            if (e.target.src !== avatar && avatar !== userphoto) e.target.src = avatar;
+                            else if (e.target.src !== userphoto) e.target.src = userphoto;
+                            setImgLoaded(true);
+                        }}
+                        className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F]/25 to-transparent" aria-hidden />
+                    <span className="absolute left-3 top-3 rounded-[20px] border border-white/15 bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                        Intro
+                    </span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FF007F] text-white shadow-[0_8px_24px_-4px_rgba(255,0,127,0.7)] transition-transform duration-300 group-hover:scale-110">
+                            <RiPlayFill size={26} className="ml-0.5" />
+                        </div>
+                    </div>
+                </div>
+            } />
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4">
+                {w?.user?.username ? (
+                    <Link
+                        href={`/${w.user.username}`}
+                        onClick={() => trackSearchClick(w.user.id, w.user.username)}
+                        className="pointer-events-auto block"
+                    >
+                        <p className="flex items-center gap-1 truncate font-anton text-base uppercase tracking-wide text-white group-hover:text-[#FF9ecb] transition-colors">
+                            <span className="truncate">{w.user.name}</span>
+                            {verified && <RiVerifiedBadgeFill className="shrink-0 text-[#3BA3FF]" size={14} />}
+                        </p>
+                        <p className="truncate text-xs font-medium text-white/60">@{w.user.username}</p>
+                    </Link>
+                ) : null}
+            </div>
+        </div>
+    );
 }

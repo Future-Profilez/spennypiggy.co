@@ -137,6 +137,10 @@ export default function PiggyPotWidget({
             ? "bg-orange-400 text-white"
             : "bg-gray-200 text-gray-800";
 
+    // Side-by-side on the profile, where the card has the full column width.
+    // The popup is narrow — it stays stacked.
+    const row = !inPopup;
+
     const [step, setStep] = useState(1);
 
     const selectPreset = (val) => {
@@ -330,480 +334,510 @@ export default function PiggyPotWidget({
     return (
         <div className="w-full flex mb-2 relative z-10">
             <div
-                className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-8"}`}
+                className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-7"}`}
             >
-                {/* Cover Image - Full width at top */}
-                <div className="w-full relative mb-4">
-                    <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
-                        🎯 CONTENT GOAL
-                    </div>
-                    <div className="w-full h-48 sm:h-56 md:h-64 bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]">
-                        <img
-                            src={
-                                featuredPot.cover_media ||
-                                "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"
-                            }
-                            alt={
-                                featuredPot.title
-                                    ? `Cover art for ${featuredPot.title}`
-                                    : "Content cover"
-                            }
-                            className="w-full h-full object-cover opacity-90"
-                        />
-                        {/* Status badge on image */}
-                        <div className="absolute bottom-4 left-4 z-10">
-                            <span
-                                className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}
-                            >
-                                {isComplete
-                                    ? "✓ COMPLETED"
-                                    : statusLabel === "moderation_hold"
-                                      ? "MODERATION_HOLD"
-                                      : statusLabel}
-                            </span>
+                <div
+                    className={`grid items-start gap-5 ${row ? "md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-7" : ""}`}
+                >
+                    {/* Cover rail */}
+                    <div className="relative md:h-full">
+                        <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
+                            🎯 CONTENT GOAL
                         </div>
-                    </div>
-                </div>
-
-                {/* Content Info */}
-                <div className="w-full">
-                    <h2 className="font-anton text-2xl md:text-3xl text-black tracking-wide">
-                        {featuredPot.title}
-                    </h2>
-                    {featuredPot.description && (
-                        <p className="text-sm md:text-base text-black/60 mb-3 line-clamp-3">
-                            {featuredPot.description}
-                        </p>
-                    )}
-
-                    {/* The deliverable */}
-                    {(featuredPot.content_description ||
-                        featuredPot.content_file) && (
-                        <div className="mb-4 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-3">
-                            <p className="font-black text-xs uppercase tracking-widest text-black">
-                                What you unlock
-                            </p>
-                            <p className="font-bold text-sm text-black mt-1">
-                                {featuredPot.content_description ||
-                                    "Exclusive content, delivered instantly after purchase."}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Progress Section - Clean design matching screenshot */}
-                <div className="w-full mt-4">
-                    <div className="bg-[#f8f6f2] rounded-[16px] p-5 mb-4 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">
-                                    CONTENT GOAL
-                                </p>
-                                <p className="font-black text-2xl text-black mt-1">
-                                    {fmt(targetAmount)}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">
-                                    PROGRESS
-                                </p>
-                                <p className="font-black text-2xl text-pink-500 mt-1">
-                                    {fmt(raisedAmount)}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-1">
-                            <p className="text-xs font-bold text-gray-600">
-                                REMAINING:
-                            </p>
-                            <p className="text-xs font-black text-pink-500">
-                                {fmt(Math.max(0, remainingAmount))}
-                            </p>
-                        </div>
-
-                        <div className="w-full bg-gray-200 rounded-full h-3 border-2 border-black overflow-hidden mt-2">
-                            <div
-                                className={`${isComplete ? "bg-[#A2E4B8]" : "bg-pink-500"} h-full rounded-full transition-all duration-500`}
-                                style={{ width: `${progressPercent}%` }}
+                        <div
+                            className={`w-full h-48 sm:h-56 ${row ? "md:h-full md:min-h-[19rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
+                        >
+                            <img
+                                src={
+                                    featuredPot.cover_media ||
+                                    "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"
+                                }
+                                alt={
+                                    featuredPot.title
+                                        ? `Cover art for ${featuredPot.title}`
+                                        : "Content cover"
+                                }
+                                className="w-full h-full object-cover opacity-90"
                             />
+                            {/* Status badge on image */}
+                            <div className="absolute bottom-4 left-4 z-10">
+                                <span
+                                    className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}
+                                >
+                                    {isComplete
+                                        ? "✓ COMPLETED"
+                                        : statusLabel === "moderation_hold"
+                                          ? "MODERATION HOLD"
+                                          : statusLabel}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    {!isCreator && !isClosed && (
-                        <p className="text-[11px] font-black uppercase tracking-widest text-black/60 mb-2">
-                            Step {step} of 3 ·{" "}
-                            {step === 1
-                                ? "Choose amount"
-                                : step === 2
-                                  ? "Your details"
-                                  : "Payment"}
-                        </p>
-                    )}
+                    {/* Everything the buyer reads and acts on */}
+                    <div className="min-w-0">
+                        <h2 className="font-anton text-2xl md:text-[2rem] leading-tight text-black tracking-wide">
+                            {featuredPot.title}
+                        </h2>
+                        {featuredPot.description && (
+                            <p className="text-sm md:text-[0.95rem] text-black/60 mt-1 line-clamp-2">
+                                {featuredPot.description}
+                            </p>
+                        )}
 
-                    {step === 1 &&
-                        (isCreator ? (
-                            <div className="animate-fade-in space-y-4 rounded-box border-[3px] border-black p-6 bg-gray-50">
-                                <p className="text-black/80 text-base font-bold">
-                                    You are the creator of this content.
-                                    Creators cannot purchase their own content.
+                        {/* The deliverable */}
+                        {(featuredPot.content_description ||
+                            featuredPot.content_file) && (
+                            <div className="mt-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-2.5 flex items-baseline gap-2 flex-wrap">
+                                <p className="font-black text-[11px] uppercase tracking-widest text-black shrink-0">
+                                    You unlock
                                 </p>
-                                <Link
-                                    href={route("piggy-pots.index")}
-                                    className="inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] text-black font-black uppercase tracking-widest hover:bg-[#A2E4B8]"
-                                >
-                                    Edit Piggy Pot
-                                </Link>
+                                <p className="font-bold text-sm text-black min-w-0">
+                                    {featuredPot.content_description ||
+                                        "Exclusive content, delivered instantly after purchase."}
+                                </p>
                             </div>
-                        ) : isClosed ? (
-                            <div className="animate-fade-in rounded-box border-[3px] border-black p-6 bg-gray-50">
-                                <p className="font-black text-sm uppercase tracking-widest text-black">
-                                    Not available
-                                </p>
-                                <p className="text-black/60 text-sm font-bold mt-1">
-                                    {closedReason}
-                                </p>
-                                {(featuredPot.creator?.username ||
-                                    user?.username) && (
-                                    <Link
-                                        href={route("user.show", {
-                                            username:
-                                                featuredPot.creator?.username ||
-                                                user?.username,
-                                        })}
-                                        className="mt-4 inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-white text-black font-black uppercase tracking-widest hover:bg-gray-50"
+                        )}
+
+                        {/* Progress — a coin meter: 20 segments, filled left to right */}
+                        <div className="mt-3 rounded-box-sm border-[3px] border-black bg-[#f8f6f2] px-4 py-3">
+                            <div className="flex items-baseline justify-between gap-3">
+                                <p className="font-anton text-xl text-black leading-none">
+                                    <span
+                                        className={
+                                            isComplete
+                                                ? "text-[#0f8f52]"
+                                                : "text-[#FF007F]"
+                                        }
                                     >
-                                        See other content
-                                    </Link>
-                                )}
+                                        {fmt(raisedAmount)}
+                                    </span>
+                                    <span className="text-black/40 text-sm font-bold">
+                                        {" "}
+                                        of {fmt(targetAmount)}
+                                    </span>
+                                </p>
+                                <p className="font-black text-[11px] uppercase tracking-widest text-black/60 shrink-0">
+                                    {Math.round(progressPercent)}% funded
+                                </p>
                             </div>
-                        ) : (
-                            <div className="animate-fade-in">
-                                <div className="flex flex-wrap gap-2 md:gap-3 mb-4">
-                                    {presetAmounts.map((val) => {
-                                        const disabled = val > maxAllowed;
-                                        return (
-                                            <button
-                                                key={val}
-                                                type="button"
-                                                onClick={() =>
-                                                    selectPreset(val)
-                                                }
-                                                disabled={disabled}
-                                                aria-pressed={
-                                                    selectegTag === val
-                                                }
-                                                className={`flex-1 min-w-[72px] min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-1 active:translate-x-1 active:shadow-none" : "bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none"}`}
+
+                            <div
+                                className="mt-2 flex gap-[3px] rounded-full border-[3px] border-black bg-white p-[3px] h-5"
+                                role="progressbar"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={Math.round(progressPercent)}
+                                aria-label="Goal progress"
+                            >
+                                {Array.from({ length: 20 }).map((_, i) => (
+                                    <span
+                                        key={i}
+                                        className={`flex-1 rounded-[2px] transition-colors duration-300 ${
+                                            i < Math.round(progressPercent / 5)
+                                                ? isComplete
+                                                    ? "bg-[#A2E4B8]"
+                                                    : "bg-[#FF007F]"
+                                                : "bg-black/[0.08]"
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+
+                            <p className="mt-2 text-[11px] font-black uppercase tracking-widest text-black/60">
+                                {isComplete
+                                    ? "Goal reached"
+                                    : `${fmt(remainingAmount)} left`}
+                            </p>
+                        </div>
+
+                        {!isCreator && !isClosed && (
+                            <p className="text-[11px] font-black uppercase tracking-widest text-black/60 mt-4 mb-2">
+                                Step {step} of 3 ·{" "}
+                                {step === 1
+                                    ? "Choose amount"
+                                    : step === 2
+                                      ? "Your details"
+                                      : "Payment"}
+                            </p>
+                        )}
+
+                        {step === 1 &&
+                            (isCreator ? (
+                                <div className="animate-fade-in space-y-4 rounded-box border-[3px] border-black p-6 bg-gray-50">
+                                    <p className="text-black/80 text-base font-bold">
+                                        You are the creator of this content.
+                                        Creators cannot purchase their own
+                                        content.
+                                    </p>
+                                    <Link
+                                        href={route("piggy-pots.index")}
+                                        className="inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] text-black font-black uppercase tracking-widest hover:bg-[#A2E4B8]"
+                                    >
+                                        Edit Piggy Pot
+                                    </Link>
+                                </div>
+                            ) : isClosed ? (
+                                <div className="animate-fade-in rounded-box border-[3px] border-black p-6 bg-gray-50">
+                                    <p className="font-black text-sm uppercase tracking-widest text-black">
+                                        Not available
+                                    </p>
+                                    <p className="text-black/60 text-sm font-bold mt-1">
+                                        {closedReason}
+                                    </p>
+                                    {(featuredPot.creator?.username ||
+                                        user?.username) && (
+                                        <Link
+                                            href={route("user.show", {
+                                                username:
+                                                    featuredPot.creator
+                                                        ?.username ||
+                                                    user?.username,
+                                            })}
+                                            className="mt-4 inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-white text-black font-black uppercase tracking-widest hover:bg-gray-50"
+                                        >
+                                            See other content
+                                        </Link>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="animate-fade-in">
+                                    <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
+                                        {presetAmounts.map((val) => {
+                                            const disabled = val > maxAllowed;
+                                            return (
+                                                <button
+                                                    key={val}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        selectPreset(val)
+                                                    }
+                                                    disabled={disabled}
+                                                    aria-pressed={
+                                                        selectegTag === val
+                                                    }
+                                                    className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-1 active:translate-x-1 active:shadow-none" : "bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none"}`}
+                                                >
+                                                    {fmt(val)}
+                                                </button>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setselectegTag("custom");
+                                                setAmount("");
+                                                setData("amount", "");
+                                            }}
+                                            aria-pressed={
+                                                selectegTag === "custom"
+                                            }
+                                            className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-gray-50"}`}
+                                        >
+                                            CUSTOM
+                                        </button>
+                                    </div>
+
+                                    {selectegTag === "custom" && (
+                                        <div className="mb-4 animate-fade-in">
+                                            <label
+                                                htmlFor="pp-amount"
+                                                className={labelBase}
                                             >
-                                                {fmt(val)}
-                                            </button>
-                                        );
-                                    })}
+                                                Amount ({potCurrency})
+                                            </label>
+                                            <input
+                                                id="pp-amount"
+                                                className={`${fieldBase} text-lg ${fieldErrors.amount ? "border-red-600" : ""}`}
+                                                value={amount}
+                                                onChange={handleCustomAmount}
+                                                type="number"
+                                                inputMode="decimal"
+                                                min={MIN_AMOUNT}
+                                                max={maxAllowed}
+                                                step="0.01"
+                                                aria-describedby="pp-amount-help"
+                                                placeholder={`${MIN_AMOUNT}`}
+                                            />
+                                            <p
+                                                id="pp-amount-help"
+                                                className="text-xs font-bold text-black/60 mt-1 px-1"
+                                            >
+                                                {fmt(MIN_AMOUNT)} –{" "}
+                                                {fmt(maxAllowed)}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <FieldError name="amount" />
+
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setselectegTag("custom");
-                                            setAmount("");
-                                            setData("amount", "");
-                                        }}
-                                        aria-pressed={selectegTag === "custom"}
-                                        className={`px-4 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-gray-50"}`}
+                                        onClick={handleNextStep}
+                                        disabled={!amount}
+                                        className={`${primaryBtn} mt-2 ${!amount ? primaryOff : primaryOn}`}
                                     >
-                                        CUSTOM
+                                        Unlock Content
+                                    </button>
+                                </div>
+                            ))}
+
+                        {step === 2 && (
+                            <div className="flex flex-col gap-3 animate-fade-in">
+                                <div className="flex justify-between items-center mb-1">
+                                    <h4 className="font-black text-sm uppercase">
+                                        Your Details
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(1)}
+                                        className="text-xs font-bold text-black/60 hover:text-black underline py-2 px-1"
+                                    >
+                                        Back to amount
                                     </button>
                                 </div>
 
-                                {selectegTag === "custom" && (
-                                    <div className="mb-4 animate-fade-in">
-                                        <label
-                                            htmlFor="pp-amount"
-                                            className={labelBase}
-                                        >
-                                            Amount ({potCurrency})
-                                        </label>
-                                        <input
-                                            id="pp-amount"
-                                            className={`${fieldBase} text-lg ${fieldErrors.amount ? "border-red-600" : ""}`}
-                                            value={amount}
-                                            onChange={handleCustomAmount}
-                                            type="number"
-                                            inputMode="decimal"
-                                            min={MIN_AMOUNT}
-                                            max={maxAllowed}
-                                            step="0.01"
-                                            aria-describedby="pp-amount-help"
-                                            placeholder={`${MIN_AMOUNT}`}
-                                        />
-                                        <p
-                                            id="pp-amount-help"
-                                            className="text-xs font-bold text-black/60 mt-1 px-1"
-                                        >
-                                            {fmt(MIN_AMOUNT)} –{" "}
-                                            {fmt(maxAllowed)}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <label
+                                        htmlFor="pp-message"
+                                        className={labelBase}
+                                    >
+                                        Note to the creator (optional)
+                                    </label>
+                                    <textarea
+                                        id="pp-message"
+                                        className={`${fieldBase} min-h-[88px]`}
+                                        value={data.message}
+                                        onChange={(e) =>
+                                            setData("message", e.target.value)
+                                        }
+                                        placeholder="Say something to the creator."
+                                    />
+                                </div>
+
+                                {!auth?.user && (
+                                    <>
+                                        <div>
+                                            <label
+                                                htmlFor="pp-name"
+                                                className={labelBase}
+                                            >
+                                                Display name
+                                            </label>
+                                            <input
+                                                id="pp-name"
+                                                className={`${fieldBase} ${fieldErrors.name ? "border-red-600" : ""}`}
+                                                value={data.name}
+                                                onChange={(e) => {
+                                                    setData(
+                                                        "name",
+                                                        e.target.value,
+                                                    );
+                                                    setFieldErrors((err) => ({
+                                                        ...err,
+                                                        name: null,
+                                                    }));
+                                                }}
+                                                type="text"
+                                                autoComplete="nickname"
+                                                placeholder="How the creator sees you"
+                                            />
+                                            <FieldError name="name" />
+                                        </div>
+                                        <div>
+                                            <label
+                                                htmlFor="pp-email"
+                                                className={labelBase}
+                                            >
+                                                Email
+                                            </label>
+                                            <input
+                                                id="pp-email"
+                                                className={`${fieldBase} ${fieldErrors.email ? "border-red-600" : ""}`}
+                                                value={data.email}
+                                                onChange={(e) => {
+                                                    setData(
+                                                        "email",
+                                                        e.target.value,
+                                                    );
+                                                    setFieldErrors((err) => ({
+                                                        ...err,
+                                                        email: null,
+                                                    }));
+                                                }}
+                                                type="email"
+                                                autoComplete="email"
+                                                inputMode="email"
+                                                aria-describedby="pp-email-help"
+                                                placeholder="you@example.com"
+                                            />
+                                            <FieldError name="email" />
+                                            <p
+                                                id="pp-email-help"
+                                                className="text-xs text-black/60 mt-1 font-bold px-1"
+                                            >
+                                                Your content and receipt are
+                                                sent here. Never shown to the
+                                                creator.
+                                            </p>
+                                        </div>
+                                    </>
                                 )}
 
-                                <FieldError name="amount" />
+                                {featuredPot.allow_anonymous && (
+                                    <label className="flex items-center cursor-pointer gap-3 px-1 py-2 min-h-[44px]">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only"
+                                                checked={!!data.anonymous}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "anonymous",
+                                                        e.target.checked
+                                                            ? 1
+                                                            : 0,
+                                                    )
+                                                }
+                                            />
+                                            <div
+                                                className={`block w-11 h-7 rounded-full border-[3px] border-black transition-colors ${data.anonymous ? "bg-pink-500" : "bg-gray-300"}`}
+                                            ></div>
+                                            <div
+                                                className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full border-[3px] border-black transition-transform ${data.anonymous ? "transform translate-x-4" : ""}`}
+                                            ></div>
+                                        </div>
+                                        <span className="font-bold text-sm">
+                                            Hide my name from the public list
+                                        </span>
+                                    </label>
+                                )}
 
                                 <button
                                     type="button"
                                     onClick={handleNextStep}
-                                    disabled={!amount}
-                                    className={`${primaryBtn} mt-2 ${!amount ? primaryOff : primaryOn}`}
+                                    className={`${primaryBtn} mt-2 ${primaryOn}`}
                                 >
-                                    Unlock Content
+                                    Continue
                                 </button>
                             </div>
-                        ))}
+                        )}
 
-                    {step === 2 && (
-                        <div className="flex flex-col gap-3 animate-fade-in">
-                            <div className="flex justify-between items-center mb-1">
-                                <h4 className="font-black text-sm uppercase">
-                                    Your Details
-                                </h4>
-                                <button
-                                    type="button"
-                                    onClick={() => setStep(1)}
-                                    className="text-xs font-bold text-black/60 hover:text-black underline py-2 px-1"
-                                >
-                                    Back to amount
-                                </button>
-                            </div>
+                        {step === 3 && (
+                            <div className="flex flex-col animate-fade-in">
+                                <div className="flex justify-between items-center pb-3">
+                                    <h4 className="font-black text-lg uppercase">
+                                        Final Step
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(2)}
+                                        className="text-xs font-bold text-black/60 hover:text-black underline py-2 px-1"
+                                    >
+                                        Back
+                                    </button>
+                                </div>
 
-                            <div>
-                                <label
-                                    htmlFor="pp-message"
-                                    className={labelBase}
-                                >
-                                    Note to the creator (optional)
-                                </label>
-                                <textarea
-                                    id="pp-message"
-                                    className={`${fieldBase} min-h-[88px]`}
-                                    value={data.message}
-                                    onChange={(e) =>
-                                        setData("message", e.target.value)
+                                <OrderContextCard
+                                    className="mb-3"
+                                    image={featuredPot.cover_media}
+                                    typeBadge="Piggy Pot"
+                                    itemTitle={featuredPot.title}
+                                    itemSub={
+                                        featuredPot.content_description ||
+                                        featuredPot.description
                                     }
-                                    placeholder="Say something to the creator."
+                                    payingLabel="You're unlocking from"
+                                    creatorName={user?.name}
+                                    creatorUsername={user?.username}
+                                    creatorAvatar={user?.avatar_url}
+                                    whatYouGet={[
+                                        ...rewardLines(featuredPot),
+                                        "Access to this pot's content after payment",
+                                        "Your purchase counts toward the creator's goal",
+                                        "A one-time payment — nothing recurring",
+                                    ]}
                                 />
-                            </div>
 
-                            {!auth?.user && (
-                                <>
-                                    <div>
-                                        <label
-                                            htmlFor="pp-name"
-                                            className={labelBase}
-                                        >
-                                            Display name
-                                        </label>
-                                        <input
-                                            id="pp-name"
-                                            className={`${fieldBase} ${fieldErrors.name ? "border-red-600" : ""}`}
-                                            value={data.name}
-                                            onChange={(e) => {
-                                                setData("name", e.target.value);
-                                                setFieldErrors((err) => ({
-                                                    ...err,
-                                                    name: null,
-                                                }));
-                                            }}
-                                            type="text"
-                                            autoComplete="nickname"
-                                            placeholder="How the creator sees you"
-                                        />
-                                        <FieldError name="name" />
+                                <div className="rounded-box-sm border-[3px] border-black bg-gray-50 p-4 mb-3">
+                                    <div className="flex justify-between items-center font-bold text-sm text-black/60">
+                                        <span>Creator receives</span>
+                                        <span>{fmt(data.amount)}</span>
                                     </div>
-                                    <div>
-                                        <label
-                                            htmlFor="pp-email"
-                                            className={labelBase}
-                                        >
-                                            Email
-                                        </label>
-                                        <input
-                                            id="pp-email"
-                                            className={`${fieldBase} ${fieldErrors.email ? "border-red-600" : ""}`}
-                                            value={data.email}
-                                            onChange={(e) => {
-                                                setData(
-                                                    "email",
-                                                    e.target.value,
-                                                );
-                                                setFieldErrors((err) => ({
-                                                    ...err,
-                                                    email: null,
-                                                }));
-                                            }}
-                                            type="email"
-                                            autoComplete="email"
-                                            inputMode="email"
-                                            aria-describedby="pp-email-help"
-                                            placeholder="you@example.com"
-                                        />
-                                        <FieldError name="email" />
-                                        <p
-                                            id="pp-email-help"
-                                            className="text-xs text-black/60 mt-1 font-bold px-1"
-                                        >
-                                            Your content and receipt are sent
-                                            here. Never shown to the creator.
-                                        </p>
+                                    <div className="flex justify-between items-center font-black text-lg mt-2 pt-2 border-t-[3px] border-black">
+                                        <span>You pay</span>
+                                        <span className="text-[#FF007F]">
+                                            {totalCharged != null
+                                                ? fmt(totalCharged)
+                                                : "Calculating…"}
+                                        </span>
                                     </div>
-                                </>
-                            )}
+                                    <p className="text-[11px] font-bold text-black/60 mt-2">
+                                        Includes payment processing and platform
+                                        fees.
+                                    </p>
+                                </div>
 
-                            {featuredPot.allow_anonymous && (
-                                <label className="flex items-center cursor-pointer gap-3 px-1 py-2 min-h-[44px]">
-                                    <div className="relative">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={!!data.anonymous}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "anonymous",
-                                                    e.target.checked ? 1 : 0,
-                                                )
-                                            }
+                                <PaymentMethodSelector
+                                    amount={parseFloat(data.amount) || 0}
+                                    currency={potCurrency}
+                                    email={data.email || auth?.user?.email}
+                                    value={data.payment_method}
+                                    onChange={(m) =>
+                                        setData("payment_method", m)
+                                    }
+                                    onPrices={setPrices}
+                                    className="mb-2"
+                                />
+
+                                <CheckoutLegalTerms
+                                    onAgreeChange={(checked) => {
+                                        setData("agree", checked);
+                                        setData("digital_waiver", checked);
+                                        setFieldErrors((err) => ({
+                                            ...err,
+                                            waiver: null,
+                                        }));
+                                    }}
+                                />
+
+                                <FieldError name="waiver" />
+
+                                {turnstileSiteKey ? (
+                                    <div className="flex justify-center my-3">
+                                        <Turnstile
+                                            ref={turnstileRef}
+                                            size="normal"
+                                            theme="light"
+                                            onVerify={onTurnstileVerify}
                                         />
-                                        <div
-                                            className={`block w-11 h-7 rounded-full border-[3px] border-black transition-colors ${data.anonymous ? "bg-pink-500" : "bg-gray-300"}`}
-                                        ></div>
-                                        <div
-                                            className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full border-[3px] border-black transition-transform ${data.anonymous ? "transform translate-x-4" : ""}`}
-                                        ></div>
                                     </div>
-                                    <span className="font-bold text-sm">
-                                        Hide my name from the public list
-                                    </span>
-                                </label>
-                            )}
+                                ) : null}
 
-                            <button
-                                type="button"
-                                onClick={handleNextStep}
-                                className={`${primaryBtn} mt-2 ${primaryOn}`}
-                            >
-                                Continue
-                            </button>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="flex flex-col animate-fade-in">
-                            <div className="flex justify-between items-center pb-3">
-                                <h4 className="font-black text-lg uppercase">
-                                    Final Step
-                                </h4>
                                 <button
                                     type="button"
-                                    onClick={() => setStep(2)}
-                                    className="text-xs font-bold text-black/60 hover:text-black underline py-2 px-1"
+                                    onClick={handleContribute}
+                                    disabled={
+                                        loading ||
+                                        !data.digital_waiver ||
+                                        totalCharged == null ||
+                                        (turnstileSiteKey && !verified)
+                                    }
+                                    aria-busy={loading}
+                                    className={`${primaryBtn} ${!data.digital_waiver || loading || totalCharged == null || (turnstileSiteKey && !verified) ? primaryOff : primaryOn}`}
                                 >
-                                    Back
+                                    {loading
+                                        ? "Processing…"
+                                        : totalCharged == null
+                                          ? "Calculating…"
+                                          : "Unlock content"}
                                 </button>
-                            </div>
-
-                            <OrderContextCard
-                                className="mb-3"
-                                image={featuredPot.cover_media}
-                                typeBadge="Piggy Pot"
-                                itemTitle={featuredPot.title}
-                                itemSub={
-                                    featuredPot.content_description ||
-                                    featuredPot.description
-                                }
-                                payingLabel="You're unlocking from"
-                                creatorName={user?.name}
-                                creatorUsername={user?.username}
-                                creatorAvatar={user?.avatar_url}
-                                whatYouGet={[
-                                    ...rewardLines(featuredPot),
-                                    "Access to this pot's content after payment",
-                                    "Your purchase counts toward the creator's goal",
-                                    "A one-time payment — nothing recurring",
-                                ]}
-                            />
-
-                            <div className="rounded-box-sm border-[3px] border-black bg-gray-50 p-4 mb-3">
-                                <div className="flex justify-between items-center font-bold text-sm text-black/60">
-                                    <span>Creator receives</span>
-                                    <span>{fmt(data.amount)}</span>
+                                <div className="mt-2 text-center text-xs font-bold text-black/60">
+                                    🔒 Secured via Stripe
                                 </div>
-                                <div className="flex justify-between items-center font-black text-lg mt-2 pt-2 border-t-[3px] border-black">
-                                    <span>You pay</span>
-                                    <span className="text-[#FF007F]">
-                                        {totalCharged != null
-                                            ? fmt(totalCharged)
-                                            : "Calculating…"}
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-bold text-black/60 mt-2">
-                                    Includes payment processing and platform
-                                    fees.
-                                </p>
                             </div>
-
-                            <PaymentMethodSelector
-                                amount={parseFloat(data.amount) || 0}
-                                currency={potCurrency}
-                                email={data.email || auth?.user?.email}
-                                value={data.payment_method}
-                                onChange={(m) => setData("payment_method", m)}
-                                onPrices={setPrices}
-                                className="mb-2"
-                            />
-
-                            <CheckoutLegalTerms
-                                onAgreeChange={(checked) => {
-                                    setData("agree", checked);
-                                    setData("digital_waiver", checked);
-                                    setFieldErrors((err) => ({
-                                        ...err,
-                                        waiver: null,
-                                    }));
-                                }}
-                            />
-
-                            <FieldError name="waiver" />
-
-                            {turnstileSiteKey ? (
-                                <div className="flex justify-center my-3">
-                                    <Turnstile
-                                        ref={turnstileRef}
-                                        size="normal"
-                                        theme="light"
-                                        onVerify={onTurnstileVerify}
-                                    />
-                                </div>
-                            ) : null}
-
-                            <button
-                                type="button"
-                                onClick={handleContribute}
-                                disabled={
-                                    loading ||
-                                    !data.digital_waiver ||
-                                    totalCharged == null ||
-                                    (turnstileSiteKey && !verified)
-                                }
-                                aria-busy={loading}
-                                className={`${primaryBtn} ${!data.digital_waiver || loading || totalCharged == null || (turnstileSiteKey && !verified) ? primaryOff : primaryOn}`}
-                            >
-                                {loading
-                                    ? "Processing…"
-                                    : totalCharged == null
-                                      ? "Calculating…"
-                                      : "Unlock content"}
-                            </button>
-                            <div className="mt-2 text-center text-xs font-bold text-black/60">
-                                🔒 Secured via Stripe
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

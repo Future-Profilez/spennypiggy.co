@@ -87,8 +87,10 @@
                                         <td style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#666666;font-weight:600;padding:12px 0 0 0;">
                                             💰 Amount
                                         </td>
+                                        {{-- $purchase->amount is what THIS order was charged for; $task->price
+                                             is the listing's live price and changes when the creator edits it. --}}
                                         <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:24px;color:#FF007F;font-weight:800;padding:12px 0 0 0;">
-                                            {{ $currencySymbol }}{{ $task->price }}
+                                            {{ $currencySymbol }}{{ number_format((float) ($purchase->amount ?? $task->price), 2) }}
                                         </td>
                                     </tr>
                                 </table>

@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
@@ -1025,6 +1026,21 @@ class MembershipController extends Controller
                     'customer_id' => $customer_id,
                 ]);
 
+                // Recovery tracking. Swallows its own errors — a missed reminder costs one
+                // email, a thrown exception here would cost the sale. Recurring checkouts
+                // are card-only, so the fee profile is always 'card'.
+                AbandonedCheckoutService::record(
+                    $session,
+                    'membership',
+                    $membership->user,
+                    $membership->id,
+                    $user->id ?? null,
+                    $sub->guest_email ?? null,
+                    (int) ($session->amount_total ?? round($finalTotalAmount * $multiplier)),
+                    $session->currency ?? $chargeCurrency,
+                    'card'
+                );
+
                 try {
                     Payment::firstOrCreate(
                         ['stripe_session_id' => $session->id],
@@ -1135,18 +1151,23 @@ class MembershipController extends Controller
                 // Update GMV for creator
                 Helpers::addGmv($mem->membership->user_id, (float) $mem->amount, $mem->membership->user->default_currency);
 
+                // Creator's "you got paid" email goes out for EVERY paid
+                // membership — a one-time monthly buyer pays real money too.
+                // The old else-only dispatch meant onetime+monthly purchases
+                // produced no earnings notification for the creator at all.
+                $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
+
+                $total_amount = $mem->membership->price + $mem->vat_tax_amount;
+
+                // Calculate creator net amount
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency);
+                $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
+
+                MembershipMail::dispatch($mem, $creatorNetAmount);
+
                 if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
+                    // Non-renewing: stop the Stripe subscription at period end.
                     SubscriptionCancelAtEnd::dispatch($mem);
-                } else {
-                    $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
-
-                    $total_amount = $mem->membership->price + $mem->vat_tax_amount;
-
-                    // Calculate creator net amount
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency);
-                    $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
-
-                    MembershipMail::dispatch($mem, $creatorNetAmount);
                 }
 
                 // this job is for creator

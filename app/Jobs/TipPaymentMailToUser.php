@@ -125,7 +125,14 @@ class TipPaymentMailToUser implements ShouldQueue
                 }
             }
 
-            $deliverable = Deliverable::create([
+            // firstOrCreate keyed per-tip: this job is dispatched by BOTH the
+            // redirect and the webhook path, and a plain create() here produced a
+            // second deliverable (and a second certificate) whenever both ran.
+            $deliverable = Deliverable::firstOrCreate([
+                'product_type' => 'support_payment',
+                'deliverable_type' => 'access',
+                'session_id' => $this->tipPayment->session_id,
+            ], [
                 'uuid' => Str::uuid(),
                 'product_id' => 'supporter_access_'.$this->tipPayment->creator_id, // Supporter access to creator
                 'item_id' => $this->tipPayment->tip_goal_id, // Reference tip goal if exists

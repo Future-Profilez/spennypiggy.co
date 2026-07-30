@@ -41,6 +41,7 @@ use App\Models\WishItemSubscription;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -1933,6 +1934,21 @@ class StripeController extends Controller
 
                 Helpers::applyDigitalWaiver($stripeid, (bool) request()->digital_waiver);
                 $stripeid->save();
+
+                // Recovery tracking. An anonymous basket often has no email of its own —
+                // the row is still recorded so the abandonment is counted, and it simply
+                // closes as unrecoverable when there is nobody to write to.
+                AbandonedCheckoutService::record(
+                    $callbackData,
+                    'wish',
+                    $creator,
+                    null,
+                    null,
+                    request()->query('email'),
+                    (int) ($callbackData->amount_total ?? 0),
+                    $callbackData->currency ?? null,
+                    $methodResolution['fee_profile'] ?? null
+                );
                 $stripeid->refresh();
 
                 return Inertia::location($sessioncreate->url);
@@ -2421,7 +2437,12 @@ class StripeController extends Controller
                         'wish_id' => (string) $wish->id,
                         'deliverable_type' => $reccure === 'onetime' ? 'media_bundle' : 'access',
                         'certificate' => 'true',
-                        'product_type' => $reccure === 'onetime' ? 'wish_onetime' : 'wish_subscription',
+                        // ⚠️ MUST stay 'wish_item_subscription' — it is the key the
+                        // customer.subscription.updated webhook routes on. The old
+                        // 'wish_subscription' value here silently overrode the
+                        // correct base value from buildStripeMetadata (extras win
+                        // in the merge), so renewal cycle bookkeeping never ran.
+                        'product_type' => 'wish_item_subscription',
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
                         'creator_net_amount' => (string) $creatorNetAmount,
@@ -2449,6 +2470,20 @@ class StripeController extends Controller
                 // Create session on CONNECTED account
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, current(compact('force3DS')), $wish->user->username);
                 $sub->update(['session_id' => $session->id]);
+
+                // Recovery tracking. Swallows its own errors — a missed reminder costs one
+                // email, a thrown exception here would cost the sale.
+                AbandonedCheckoutService::record(
+                    $session,
+                    'wish_subscription',
+                    $wish->user,
+                    $wish->id,
+                    Auth::id(),
+                    $sub->guest_email ?? null,
+                    (int) ($session->amount_total ?? 0),
+                    $session->currency ?? null,
+                    $methodResolution['fee_profile'] ?? null
+                );
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {
@@ -2760,21 +2795,16 @@ class StripeController extends Controller
                             $platformFee = 0;
                         }
 
-                        FinancialTransaction::updateOrCreate(
-                            ['stripe_payment_intent_id' => $paymentIntentId],
-                            [
-                                'user_id' => $sub->wish_item->user->id,
-                                'type' => 'wish_subscription',
-                                'fee_profile' => $sub->fee_profile ?? 'card',
-                                'amount' => $sub->amount,
-                                'currency' => strtoupper($sub->currency),
-                                'status' => 'completed',
-                                'stripe_fee' => $stripeFee,
-                                'platform_fee' => $platformFee,
-                                'net_amount' => $sub->amount,
-                                'metadata' => json_encode(['wish_item_id' => $sub->wish_item->id]),
-                            ]
-                        );
+                        // NO inline FinancialTransaction here — deliberately.
+                        // The old write keyed on stripe_payment_intent_id and set
+                        // 'amount'/'metadata', none of which are FT columns, so it
+                        // threw on every call (swallowed below) and never created
+                        // anything. The REAL ledger row comes from
+                        // finance:sync-transactions → syncWishes(), keyed on the
+                        // StripePaymentItems row that createStripePaymentForSubscription
+                        // just created — fee-profile and reserve aware. Writing a
+                        // second FT here (keyed differently) would double-count
+                        // the same charge.
                     }
                 } catch (Exception $e) {
                     Log::error('Failed to create Payment/FinancialTransaction record for wish subscription: '.$e->getMessage());
@@ -3675,6 +3705,20 @@ class StripeController extends Controller
                 $session = StripeControl::createCheckoutSession($payload, $creator->account_id, false, $creator->username);
                 $pay->update(['session_id' => $session->id]);
 
+                // Recovery tracking. Swallows its own errors — a missed reminder costs one
+                // email, a thrown exception here would cost the sale.
+                AbandonedCheckoutService::record(
+                    $session,
+                    'tip',
+                    $creator,
+                    $goal?->id,
+                    Auth::id(),
+                    $pay->guest_email ?? null,
+                    (int) ($session->amount_total ?? 0),
+                    $session->currency ?? null,
+                    $methodResolution['fee_profile'] ?? null
+                );
+
                 try {
                     Payment::create([
                         'creator_id' => $creator->uuid,
@@ -3767,17 +3811,34 @@ class StripeController extends Controller
                 // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
 
-                // Push to creator — the mail above is consent-gated, but every other
-                // flow (shop/task/pot) also pushes, and tip was the only one that didn't.
+                // NOTE: creator/buyer pushes are sent ONCE, further down in the
+                // "TIP JAR PWA" block (they carry the paid amount). A second pair
+                // here double-pushed both parties on every tip.
+
+                // Flip the risk-ledger Payment row like every other redirect
+                // handler does (pot/shop/task). Without it a redirect-first tip
+                // stayed 'initiated' forever, which silently excluded it from
+                // referral-GMV recalculation and risk spend windows.
                 try {
-                    $supporterName = $tip_pay->anonymous ? 'A supporter' : ($tip_pay->user->name ?? $tip_pay->guest_name ?? 'A supporter');
-                    Helpers::sendNotification(
-                        'New Support Payment! 💰',
-                        $supporterName.' purchased your exclusive content.',
-                        $tip_pay->creator->email
-                    );
+                    $payment = Payment::where('stripe_session_id', $session->id)->first();
+                    $newStatus = 'succeeded';
+                    if (
+                        $payment &&
+                        (
+                            $payment->status === 'review_hold' ||
+                            (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes)) ||
+                            (is_string($payment->reason_codes) && str_contains($payment->reason_codes, 'MARK_REVIEW_HOLD'))
+                        )
+                    ) {
+                        $newStatus = 'review_hold';
+                    }
+
+                    Payment::where('stripe_session_id', $session->id)->update([
+                        'stripe_payment_intent_id' => $session->payment_intent,
+                        'status' => $newStatus,
+                    ]);
                 } catch (Exception $e) {
-                    Log::error('Tip creator push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
+                    Log::error('Tip risk-ledger status flip failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
                 }
 
                 $creatorNet = (float) $tip_pay->amount;
@@ -3837,19 +3898,8 @@ class StripeController extends Controller
                 // Process supporter deliverable, certificate, and email (replaces TipJarMailToUser)
                 TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
 
-                // Push to the buyer too (shop parity) — guests have no push identity, so email presence gates it.
-                try {
-                    $buyerEmail = $tip_pay->user->email ?? $tip_pay->guest_email ?? null;
-                    if ($buyerEmail) {
-                        Helpers::sendNotification(
-                            'Purchase Confirmed! ✨',
-                            'Your content from '.($tip_pay->creator->name ?? 'the creator').' is unlocked.',
-                            $buyerEmail
-                        );
-                    }
-                } catch (Exception $e) {
-                    Log::error('Tip buyer push failed', ['tip_id' => $tip_pay->id, 'error' => $e->getMessage()]);
-                }
+                // Buyer push is sent once in the "TIP JAR PWA" block below (with
+                // the paid amount) — a second one here double-pushed every tip.
 
                 // Generate thank you post for creator's feed
                 CreateThankYouPostJob::dispatch($tip_pay);
@@ -3924,7 +3974,8 @@ class StripeController extends Controller
                 $amountWithcurrency = $symbolStr.number_format($totalPaidAmount, 2);
 
                 $title = "🏅 You've unlocked a new badge!";
-                $content = "You just tipped {$amountWithcurrency} to $CreatorName. Thanks for supporting them!.";
+                // Content-first copy: never "tipped" on a payment-facing surface.
+                $content = "You just paid {$amountWithcurrency} for exclusive content from $CreatorName. Thanks for supporting them!";
                 $email = $tip_pay->guest_email ?? $tip_pay->user->email;
 
                 Helpers::sendNotification($title, $content, $email);

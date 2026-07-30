@@ -28,6 +28,7 @@ Only two radius values across the product:
 | Verified tick | `#3BA3FF` |
 
 - **One accent only: pink `#FF007F`.** No yellow. Use pink for active states, CTAs, highlights.
+- **Exception — semantic green.** The reward hint ("🎁 You get: …", `RewardHint.jsx`) uses emerald (`emerald-50` bg / `emerald-600` border / `emerald-700` text). It signals a positive "you receive something", not an interactive accent, so it is deliberately outside the pink rule.
 
 ## Typography
 - Display / headlines: **Anton** (`font-anton`), uppercase, tight tracking.

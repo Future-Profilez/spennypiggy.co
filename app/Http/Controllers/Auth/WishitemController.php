@@ -996,7 +996,10 @@ class WishitemController extends Controller
                 return [
                     'id' => $intro->id,
                     'uuid' => $intro->uuid,
-                    'poster_url' => $intro->poster_url,
+                    // Non-blocking: returns the stored poster instantly or null + warms it on
+                    // the queue. The blocking `poster_url` accessor made a 3s Uploadcare call
+                    // PER intro (up to 30/page) — the cause of the slow section load.
+                    'poster_url' => $intro->posterUrlNonBlocking(),
                     'perma_link' => $intro->perma_link,
                     'user' => [
                         'id' => $intro->user->id,

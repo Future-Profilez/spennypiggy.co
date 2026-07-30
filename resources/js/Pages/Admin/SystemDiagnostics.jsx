@@ -1,248 +1,335 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-export default function SystemDiagnostics({ auth, app_version, php_version, laravel_version }) {
-    const [running, setRunning] = useState(false);
-    const [results, setResults] = useState(null);
-    const [overallStatus, setOverallStatus] = useState(null);
-    const [lastRun, setLastRun] = useState(null);
+/*
+ * The old page printed 32 rows in a flat list with every label hardcoded in the markup, so a
+ * critical failure ("no queue worker — nobody is being paid") rendered exactly like a warning
+ * ("disk 76% full") and the reader had to know the system to tell them apart.
+ *
+ * This one answers three questions in order: what is broken, is it worse than last time, and what
+ * do I do about it. Labels, grouping, severity and remediation all come from the server's
+ * CheckCatalog — adding a check no longer means editing this file.
+ */
 
-    const runDiagnostics = async () => {
-        setRunning(true);
-        setResults(null);
-        setOverallStatus(null);
-        
-        const toastId = toast.loading('Running system diagnostics...');
-        
-        try {
-            const response = await axios.post('/admin/system-diagnostics/run');
-            setResults(response.data.results);
-            setOverallStatus(response.data.status);
-            setLastRun(response.data.timestamp);
-            
-            if (response.data.status === 'passed') {
-                toast.success('All systems operational!', { id: toastId });
-            } else if (response.data.status === 'warning') {
-                toast.success('Diagnostics completed with warnings.', { id: toastId });
-            } else {
-                toast.error('System diagnostics failed!', { id: toastId });
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to run diagnostics. Check server logs.', { id: toastId });
-            setOverallStatus('error');
-        } finally {
-            setRunning(false);
-        }
-    };
+const STATUS = {
+    failed: { dot: 'bg-red-500', text: 'text-red-700', ring: 'ring-red-200', tint: 'bg-red-50', label: 'Failed' },
+    warning: { dot: 'bg-amber-500', text: 'text-amber-700', ring: 'ring-amber-200', tint: 'bg-amber-50', label: 'Warning' },
+    passed: { dot: 'bg-emerald-500', text: 'text-emerald-700', ring: 'ring-emerald-200', tint: 'bg-white', label: 'Passed' },
+    // Skipped is deliberately grey, never green — a check that did not run tells you nothing,
+    // and showing it as a pass is how a broken probe reads as a healthy system.
+    skipped: { dot: 'bg-gray-400', text: 'text-gray-600', ring: 'ring-gray-200', tint: 'bg-gray-50', label: 'Skipped' },
+};
 
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'passed':
-                return (
-                    <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                );
-            case 'failed':
-                return (
-                    <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                );
-            case 'warning':
-                return (
-                    <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                );
-            default:
-                return (
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                );
-        }
-    };
+const DELTA = {
+    new: { label: 'New', className: 'bg-red-100 text-red-800' },
+    worse: { label: 'Worse', className: 'bg-red-100 text-red-800' },
+    resolved: { label: 'Resolved', className: 'bg-emerald-100 text-emerald-800' },
+    improved: { label: 'Improved', className: 'bg-emerald-100 text-emerald-800' },
+};
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'passed': return 'bg-green-50 text-green-700 border-green-200';
-            case 'failed': return 'bg-red-50 text-red-700 border-red-200';
-            case 'warning': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-            default: return 'bg-gray-50 text-gray-700 border-gray-200';
-        }
-    };
+const statusOf = (s) => STATUS[s] ?? STATUS.skipped;
 
-    const DiagnosticRow = ({ title, result, errors = [] }) => {
-        if (!result) return null;
-        return (
-            <li className={`px-6 py-5 border-l-4 ${result.status === 'passed' ? 'border-green-500 bg-white' : result.status === 'failed' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'}`}>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center w-full">
-                        <div className="flex-shrink-0 mr-4">
-                            {getStatusIcon(result.status)}
-                        </div>
-                        <div className="flex-1">
-                            <h4 className="text-base font-semibold text-gray-900">{title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{result.message}</p>
-                            
-                            {errors && errors.length > 0 && (
-                                <div className="mt-3 bg-red-100 p-3 rounded-md border border-red-200">
-                                    <h5 className="text-xs font-bold text-red-800 mb-2 uppercase tracking-wider">Error Details:</h5>
-                                    <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
-                                        {errors.map((err, i) => (
-                                            <li key={i}>{err}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
+function Chip({ children, className = '' }) {
+    return (
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${className}`}>
+            {children}
+        </span>
+    );
+}
+
+function CountTile({ label, value, tone }) {
+    return (
+        <div className={`rounded-box-sm px-4 py-3 ring-1 ring-inset ${tone}`}>
+            <div className="text-2xl font-semibold tabular-nums leading-none">{value}</div>
+            <div className="mt-1 text-[11px] font-medium uppercase tracking-wider opacity-70">{label}</div>
+        </div>
+    );
+}
+
+function CheckCard({ result }) {
+    const [open, setOpen] = useState(false);
+    const s = statusOf(result.status);
+    const delta = DELTA[result.delta];
+    const hasDetail = (result.details?.length ?? 0) > 0 || result.remediation;
+
+    return (
+        <div className={`rounded-box-sm ring-1 ring-inset ${s.ring} ${s.tint} overflow-hidden`}>
+            <div className="flex flex-wrap items-start gap-3 p-4">
+                <span className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ${s.dot}`} aria-hidden="true" />
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-semibold text-gray-900">{result.label}</h4>
+
+                        {result.status !== 'passed' && result.severity === 'critical' && (
+                            <Chip className="bg-red-600 text-white">Critical</Chip>
+                        )}
+                        {delta && <Chip className={delta.className}>{delta.label}</Chip>}
                     </div>
-                    {result.time_ms && (
-                        <div className="ml-4 flex-shrink-0 text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                            {result.time_ms}ms
+
+                    <p className="mt-1 break-words text-sm text-gray-600">{result.message}</p>
+
+                    {result.ids?.length > 0 && (
+                        <p className="mt-1.5 font-mono text-[11px] text-gray-500">
+                            ids: {result.ids.join(', ')}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex flex-shrink-0 items-center gap-2">
+                    <span className="font-mono text-[11px] tabular-nums text-gray-400">
+                        {Math.round(result.time_ms)}ms
+                    </span>
+                    {hasDetail && (
+                        <button
+                            type="button"
+                            onClick={() => setOpen((v) => !v)}
+                            aria-expanded={open}
+                            className="min-h-[36px] rounded-box-sm px-2.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-white"
+                        >
+                            {open ? 'Hide' : 'Details'}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {open && hasDetail && (
+                <div className="border-t border-black/5 bg-white/70 px-4 py-3">
+                    {result.details?.length > 0 && (
+                        <ul className="space-y-1.5">
+                            {result.details.map((d, i) => (
+                                <li key={i} className="break-words font-mono text-[11px] leading-relaxed text-gray-700">
+                                    {d}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    {result.remediation && (
+                        <div className="mt-3 rounded-box-sm bg-gray-900 px-3 py-2.5">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                What to do
+                            </div>
+                            <p className="mt-1 break-words text-xs leading-relaxed text-gray-100">
+                                {result.remediation}
+                            </p>
                         </div>
                     )}
                 </div>
-            </li>
-        );
-    };
+            )}
+        </div>
+    );
+}
+
+export default function SystemDiagnostics({ auth, app_version, php_version, laravel_version }) {
+    const [running, setRunning] = useState(false);
+    const [report, setReport] = useState(null);
+    const [deep, setDeep] = useState(false);
+    const [problemsOnly, setProblemsOnly] = useState(true);
+
+    const runDiagnostics = useCallback(async () => {
+        if (running) return; // re-entrancy guard: a double tap fired two full sweeps
+
+        setRunning(true);
+        const toastId = toast.loading(deep ? 'Running deep diagnostics…' : 'Running diagnostics…');
+
+        try {
+            const { data } = await axios.post('/admin/system-diagnostics/run', { deep });
+            setReport(data);
+
+            const { failed = 0, warning = 0, critical = 0 } = data.counts ?? {};
+
+            if (data.status === 'passed') {
+                toast.success('All checks healthy.', { id: toastId });
+            } else if (critical > 0) {
+                toast.error(`${critical} critical issue${critical === 1 ? '' : 's'}.`, { id: toastId });
+            } else {
+                toast(`${failed} failed, ${warning} warning.`, { id: toastId, icon: '⚠️' });
+            }
+        } catch (error) {
+            const message =
+                error?.response?.status === 429
+                    ? 'Rate limited — wait a moment before running again.'
+                    : error?.response?.data?.message || 'Could not run diagnostics. Check the server logs.';
+            toast.error(message, { id: toastId });
+        } finally {
+            setRunning(false);
+        }
+    }, [running, deep]);
+
+    const copySummary = useCallback(async () => {
+        if (!report?.summary_text) return;
+
+        try {
+            await navigator.clipboard.writeText(report.summary_text);
+            toast.success('Summary copied.');
+        } catch {
+            toast.error('Could not copy — select the text instead.');
+        }
+    }, [report]);
+
+    // Group for display, preserving the server's severity ordering within each group.
+    const grouped = useMemo(() => {
+        if (!report?.results) return [];
+
+        const visible = problemsOnly
+            ? report.results.filter((r) => r.status === 'failed' || r.status === 'warning')
+            : report.results;
+
+        const order = report.group_order ?? [];
+        const buckets = new Map(order.map((g) => [g, []]));
+
+        visible.forEach((r) => {
+            if (!buckets.has(r.group)) buckets.set(r.group, []);
+            buckets.get(r.group).push(r);
+        });
+
+        return [...buckets.entries()].filter(([, rows]) => rows.length > 0);
+    }, [report, problemsOnly]);
+
+    const counts = report?.counts ?? {};
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">System Diagnostics</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">System Diagnostics</h2>}
         >
             <Head title="System Diagnostics" />
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    
-                    {/* Header Card */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                        <div className="p-6 bg-white border-b border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">Health Check Dashboard</h3>
+            <div className="min-h-dvh bg-gray-50 py-8 pb-28">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                    {/* Controls */}
+                    <div className="rounded-box bg-white p-5 ring-1 ring-inset ring-black/[0.08]">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <h3 className="text-base font-semibold text-gray-900">Health check</h3>
                                 <p className="mt-1 text-sm text-gray-500">
-                                    Run complete end-to-end tests for core platform functionalities including sign-up flow, Stripe Connect ID verification, and Payments.
+                                    {app_version} · PHP {php_version} · Laravel {laravel_version}
                                 </p>
                             </div>
-                            <div>
-                                <button
-                                    onClick={runDiagnostics}
-                                    disabled={running}
-                                    className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${running ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {running ? (
-                                        <>
-                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Running Diagnostics...
-                                        </>
-                                    ) : (
-                                        'Run Full Diagnostics'
-                                    )}
-                                </button>
-                            </div>
+
+                            <button
+                                onClick={runDiagnostics}
+                                disabled={running}
+                                className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm bg-gray-900 px-5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                            >
+                                {running && (
+                                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                )}
+                                {running ? 'Running…' : 'Run diagnostics'}
+                            </button>
                         </div>
+
+                        <label className="mt-4 flex cursor-pointer items-start gap-3">
+                            <input
+                                type="checkbox"
+                                checked={deep}
+                                onChange={(e) => setDeep(e.target.checked)}
+                                className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                            />
+                            <span className="text-xs leading-relaxed text-gray-600">
+                                <span className="font-semibold text-gray-800">Deep run</span> — also test Stripe
+                                Connect onboarding and payments. These create a{' '}
+                                <strong>real Connect account and a real PaymentIntent</strong>, so they are skipped
+                                on a normal run.
+                            </span>
+                        </label>
                     </div>
 
-                    {/* Environment Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 flex items-center justify-between border-l-4 border-blue-500">
-                            <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">App Version</p>
-                                <p className="text-lg font-medium text-gray-900">{app_version}</p>
-                            </div>
-                        </div>
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 flex items-center justify-between border-l-4 border-indigo-500">
-                            <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">PHP Version</p>
-                                <p className="text-lg font-medium text-gray-900">{php_version}</p>
-                            </div>
-                        </div>
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 flex items-center justify-between border-l-4 border-red-500">
-                            <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Laravel</p>
-                                <p className="text-lg font-medium text-gray-900">{laravel_version}</p>
-                            </div>
-                        </div>
-                    </div>
+                    {report && (
+                        <>
+                            {/* Summary */}
+                            <div className="mt-6 rounded-box bg-white p-5 ring-1 ring-inset ring-black/[0.08]">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className={`h-3 w-3 rounded-full ${statusOf(report.status).dot}`} />
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            {report.status === 'passed'
+                                                ? 'All checks healthy'
+                                                : counts.critical > 0
+                                                  ? `${counts.critical} critical issue${counts.critical === 1 ? '' : 's'}`
+                                                  : 'Issues detected'}
+                                        </span>
+                                        <Chip className="bg-gray-900 text-white uppercase">{report.environment}</Chip>
+                                        {report.deep && <Chip className="bg-indigo-100 text-indigo-800">Deep</Chip>}
+                                    </div>
 
-                    {/* Results Area */}
-                    {overallStatus && (
-                        <div className={`mb-6 p-4 rounded-md border ${overallStatus === 'passed' ? 'bg-green-50 border-green-200' : overallStatus === 'warning' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    {getStatusIcon(overallStatus)}
+                                    <button
+                                        onClick={copySummary}
+                                        className="min-h-[36px] rounded-box-sm px-3 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                                    >
+                                        Copy summary
+                                    </button>
                                 </div>
-                                <div className="ml-3">
-                                    <h3 className={`text-sm font-medium ${overallStatus === 'passed' ? 'text-green-800' : overallStatus === 'warning' ? 'text-yellow-800' : 'text-red-800'}`}>
-                                        {overallStatus === 'passed' ? 'All Systems Operational' : overallStatus === 'warning' ? 'Systems Operational with Warnings' : 'System Issues Detected'}
-                                    </h3>
-                                    <p className={`text-sm mt-1 ${overallStatus === 'passed' ? 'text-green-700' : overallStatus === 'warning' ? 'text-yellow-700' : 'text-red-700'}`}>
-                                        Last run: {lastRun}
+
+                                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                    <CountTile label="Failed" value={counts.failed ?? 0} tone="ring-red-200 text-red-700" />
+                                    <CountTile label="Warning" value={counts.warning ?? 0} tone="ring-amber-200 text-amber-700" />
+                                    <CountTile label="Passed" value={counts.passed ?? 0} tone="ring-emerald-200 text-emerald-700" />
+                                    <CountTile label="Skipped" value={counts.skipped ?? 0} tone="ring-gray-200 text-gray-600" />
+                                </div>
+
+                                <p className="mt-3 text-xs text-gray-500">
+                                    {report.timestamp} · {(report.duration_ms / 1000).toFixed(1)}s
+                                    {report.previous_run_at
+                                        ? ` · compared against ${report.previous_run_at}`
+                                        : ' · no previous run to compare against yet'}
+                                </p>
+                            </div>
+
+                            {/* Filter */}
+                            <div className="mt-6 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-gray-900">Results</h3>
+                                <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={problemsOnly}
+                                        onChange={(e) => setProblemsOnly(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    Problems only
+                                </label>
+                            </div>
+
+                            {grouped.length === 0 ? (
+                                <div className="mt-3 rounded-box bg-white p-8 text-center ring-1 ring-inset ring-black/[0.08]">
+                                    <p className="text-sm font-medium text-gray-900">Nothing needs attention.</p>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Untick “Problems only” to see every check.
                                     </p>
                                 </div>
-                            </div>
-                        </div>
+                            ) : (
+                                grouped.map(([group, rows]) => (
+                                    <section key={group} className="mt-5">
+                                        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                                            {group}
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {rows.map((r) => (
+                                                <CheckCard key={r.key} result={r} />
+                                            ))}
+                                        </div>
+                                    </section>
+                                ))
+                            )}
+                        </>
                     )}
 
-                    {results && (
-                        <div className="bg-white shadow-lg overflow-hidden sm:rounded-lg border border-gray-200">
-                            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-                                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                    Detailed Diagnostic Report
-                                </h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Individual component test results are listed below.
-                                </p>
-                            </div>
-                            <ul className="divide-y divide-gray-200">
-                                
-                                <DiagnosticRow title="Code Syntax & Routes Integrity" result={results.routes_syntax} errors={results.routes_syntax?.errors} />
-                                <DiagnosticRow title="Database Connectivity" result={results.database} />
-                                <DiagnosticRow title="Cache / Redis" result={results.cache} />
-                                <DiagnosticRow title="User Sign Up Flow" result={results.signup_flow} />
-                                <DiagnosticRow title="Wish Items (Add/Edit/Delete)" result={results.wish_items} />
-                                <DiagnosticRow title="Bills (Add/Edit/Delete)" result={results.bills} />
-                                <DiagnosticRow title="Memberships (Add/Edit/Delete)" result={results.memberships} />
-                                <DiagnosticRow title="Shop Items (Add/Edit/Delete)" result={results.shop_items} />
-                                <DiagnosticRow title="Tasks (Add/Edit/Delete)" result={results.tasks} />
-                                <DiagnosticRow title="Add to Cart Flow" result={results.cart_flow} />
-                                <DiagnosticRow title="Social Flow (Follow/Unfollow)" result={results.social_flow} />
-                                <DiagnosticRow title="Profile Management (Update Bio/Name/Media)" result={results.profile_update} />
-                                <DiagnosticRow title="Platform Search Engine" result={results.search_engine} />
-                                <DiagnosticRow title="Stripe Connect & ID Verification" result={results.stripe_id_flow} />
-                                <DiagnosticRow title="Stripe Payments Processing" result={results.stripe_payments} />
-                                <DiagnosticRow title="Email Service" result={results.email} />
-                                <DiagnosticRow title="Push Notifications (MagicBell)" result={results.push_notifications} />
-                                <DiagnosticRow title="Image Hosting (Uploadcare)" result={results.uploadcare} />
-                                <DiagnosticRow title="Support Chat (Intercom)" result={results.intercom} />
-                                <DiagnosticRow title="Queue Health (Failed Jobs)" result={results.queue_health} errors={results.queue_health?.errors} />
-                                <DiagnosticRow title="Recent Error Log (Last 24h)" result={results.recent_errors} errors={results.recent_errors?.errors} />
-                                <DiagnosticRow title="Financial Data Integrity" result={results.financial_integrity} errors={results.financial_integrity?.errors} />
-                                <DiagnosticRow title="Referral & Earn System" result={results.referral_system} errors={results.referral_system?.errors} />
-                                <DiagnosticRow title="Storage Permissions" result={results.storage_permissions} errors={results.storage_permissions?.errors} />
-                                <DiagnosticRow title="Disk Space" result={results.disk_space} />
-                                <DiagnosticRow title="Environment Variables" result={results.env_variables} errors={results.env_variables?.errors} />
-                                <DiagnosticRow title="Stripe Webhook Config" result={results.stripe_webhook} errors={results.stripe_webhook?.errors} />
-                                <DiagnosticRow title="Scheduled Tasks / Cron" result={results.scheduled_tasks} errors={results.scheduled_tasks?.errors} />
-                                <DiagnosticRow title="Pending Database Migrations" result={results.pending_migrations} errors={results.pending_migrations?.errors} />
-                                <DiagnosticRow title="App Homepage Response Time" result={results.app_response_time} />
-                                <DiagnosticRow title="Stuck Payouts & Blocked Reserves" result={results.stuck_payouts} errors={results.stuck_payouts?.errors} />
-                                <DiagnosticRow title="Termly Consent Test" result={results.termly_consent} errors={results.termly_consent?.errors} />
-
-                            </ul>
+                    {!report && !running && (
+                        <div className="mt-6 rounded-box bg-white p-10 text-center ring-1 ring-inset ring-black/[0.08]">
+                            <p className="text-sm font-medium text-gray-900">No run yet</p>
+                            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-gray-500">
+                                Each run is recorded, so the next one can tell you what changed rather than just what
+                                is currently true.
+                            </p>
                         </div>
                     )}
-
                 </div>
             </div>
         </AuthenticatedLayout>

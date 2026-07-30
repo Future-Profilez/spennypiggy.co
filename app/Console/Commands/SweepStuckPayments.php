@@ -7,6 +7,7 @@ use App\Models\FinancialTransaction;
 use App\Models\PiggyPotContribution;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
+use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\WishItem;
@@ -87,7 +88,17 @@ class SweepStuckPayments extends Command
                 $sid = $row->{$sessionCol};
 
                 // Already has a ledger FT? Then it fulfilled — skip.
-                $ft = FinancialTransaction::where('source_type', $model)->where('source_id', $row->id)->first();
+                // Wish/cart FTs are keyed on StripePaymentItems, never on the
+                // StripePaymentDetail row itself — check via the item ids or the
+                // guard never matches and every fulfilled cart is re-swept daily.
+                if ($model === StripePaymentDetail::class) {
+                    $itemIds = StripePaymentItems::where('stripe_payment_detail_id', $row->id)->pluck('id');
+                    $ft = $itemIds->isNotEmpty()
+                        ? FinancialTransaction::where('source_type', StripePaymentItems::class)->whereIn('source_id', $itemIds)->first()
+                        : null;
+                } else {
+                    $ft = FinancialTransaction::where('source_type', $model)->where('source_id', $row->id)->first();
+                }
                 if ($ft) {
                     continue;
                 }

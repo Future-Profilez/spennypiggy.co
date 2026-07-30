@@ -26,6 +26,7 @@ use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -1283,6 +1284,20 @@ class ShopsController extends Controller
 
             $shopPaymentDetail->session_id = $sessionCreate->id;
             $shopPaymentDetail->save();
+
+            // Recovery tracking. Swallows its own errors — a missed reminder costs one
+            // email, a thrown exception here would cost the sale.
+            AbandonedCheckoutService::record(
+                $sessionCreate,
+                'shop',
+                $shop->user,
+                $shop->id,
+                $shopPaymentDetail->user_id,
+                $shopPaymentDetail->email ?? null,
+                (int) ($sessionCreate->amount_total ?? 0),
+                $sessionCreate->currency ?? null,
+                $methodResolution['fee_profile'] ?? null
+            );
 
             try {
                 Payment::firstOrCreate(

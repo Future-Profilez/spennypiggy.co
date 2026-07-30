@@ -16,6 +16,7 @@ use App\Http\Middleware\HandleCorsForAssets;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\IpTracker;
 use App\Http\Middleware\LocalOnly;
+use App\Http\Middleware\NormalizeDuplicateSlashes;
 use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -57,6 +58,11 @@ class Kernel extends HttpKernel
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
         TrustProxies::class,
+        // Must sit AFTER TrustProxies: it issues a redirect, and the URL generator
+        // reads the scheme off the request. Before TrustProxies the forwarded
+        // X-Forwarded-Proto is not trusted yet, so an https request behind
+        // CloudFront would be redirected to http.
+        NormalizeDuplicateSlashes::class,
         HandleCors::class,
         HandleCorsForAssets::class,
         PreventRequestsDuringMaintenance::class,
