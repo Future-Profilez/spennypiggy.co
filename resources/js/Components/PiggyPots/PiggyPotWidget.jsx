@@ -141,6 +141,11 @@ export default function PiggyPotWidget({
     // The popup is narrow — it stays stacked.
     const row = !inPopup;
 
+    // The creator's own pot and a closed one have no purchase flow — just a
+    // notice. It reads better full width UNDER the cover+content row than
+    // squeezed into the right column.
+    const noticeBelow = isCreator || isClosed;
+
     const [step, setStep] = useState(1);
 
     const selectPreset = (val) => {
@@ -337,7 +342,7 @@ export default function PiggyPotWidget({
                 className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-7"}`}
             >
                 <div
-                    className={`grid items-start gap-5 ${row && !isClosed ? "md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-7" : ""}`}
+                    className={`grid items-start gap-5 ${row ? "md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-7" : ""}`}
                 >
                     {/* Cover rail — self-start so a tall form never stretches the cover */}
                     <div className="relative md:self-start">
@@ -345,7 +350,7 @@ export default function PiggyPotWidget({
                             🎯 CONTENT GOAL
                         </div>
                         <div
-                            className={`w-full h-48 sm:h-56 ${row && !isClosed ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
+                            className={`w-full h-48 sm:h-56 ${row ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
                         >
                             <img
                                 src={
@@ -462,47 +467,7 @@ export default function PiggyPotWidget({
                             </p>
                         )}
 
-                        {step === 1 &&
-                            (isCreator ? (
-                                <div className="animate-fade-in space-y-4 rounded-box border-[3px] border-black p-6 bg-gray-50">
-                                    <p className="text-black/80 text-base font-bold">
-                                        You are the creator of this content.
-                                        Creators cannot purchase their own
-                                        content.
-                                    </p>
-                                    <Link
-                                        href={route("piggy-pots.index")}
-                                        className="inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] text-black font-black uppercase tracking-widest hover:bg-[#A2E4B8]"
-                                    >
-                                        Edit Piggy Pot
-                                    </Link>
-                                </div>
-                            ) : isClosed ? (
-                                <div className="animate-fade-in flex flex-col gap-3 rounded-box border-[3px] border-black bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0">
-                                        <p className="font-black text-sm uppercase tracking-widest text-black">
-                                            Not available
-                                        </p>
-                                        <p className="text-black/60 text-sm font-bold mt-1">
-                                            {closedReason}
-                                        </p>
-                                    </div>
-                                    {(featuredPot.creator?.username ||
-                                        user?.username) && (
-                                        <Link
-                                            href={route("user.show", {
-                                                username:
-                                                    featuredPot.creator
-                                                        ?.username ||
-                                                    user?.username,
-                                            })}
-                                            className="inline-flex shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-gray-100"
-                                        >
-                                            See other content
-                                        </Link>
-                                    )}
-                                </div>
-                            ) : (
+                        {step === 1 && !noticeBelow && (
                                 <div className="animate-fade-in">
                                     <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
                                         {presetAmounts.map((val) => {
@@ -582,7 +547,7 @@ export default function PiggyPotWidget({
                                         Unlock Content
                                     </button>
                                 </div>
-                            ))}
+                            )}
 
                         {step === 2 && (
                             <div className="flex flex-col gap-3 animate-fade-in">
@@ -841,6 +806,51 @@ export default function PiggyPotWidget({
                         )}
                     </div>
                 </div>
+
+                {/* No purchase flow for the owner or a closed pot — the notice spans
+                    the full card under the cover+content row instead of squeezing
+                    into the right column. */}
+                {isCreator ? (
+                    <div className="animate-fade-in mt-5 flex flex-col gap-3 rounded-box border-[3px] border-black bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                            <p className="font-black text-sm uppercase tracking-widest text-black">
+                                Your content
+                            </p>
+                            <p className="text-black/60 text-sm font-bold mt-1">
+                                Creators can&apos;t purchase their own content.
+                            </p>
+                        </div>
+                        <Link
+                            href={route("piggy-pots.index")}
+                            className="inline-flex shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-[#A2E4B8] px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-[#8fdcaa]"
+                        >
+                            Edit Piggy Pot
+                        </Link>
+                    </div>
+                ) : isClosed ? (
+                    <div className="animate-fade-in mt-5 flex flex-col gap-3 rounded-box border-[3px] border-black bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                            <p className="font-black text-sm uppercase tracking-widest text-black">
+                                Not available
+                            </p>
+                            <p className="text-black/60 text-sm font-bold mt-1">
+                                {closedReason}
+                            </p>
+                        </div>
+                        {(featuredPot.creator?.username || user?.username) && (
+                            <Link
+                                href={route("user.show", {
+                                    username:
+                                        featuredPot.creator?.username ||
+                                        user?.username,
+                                })}
+                                className="inline-flex shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-gray-100"
+                            >
+                                See other content
+                            </Link>
+                        )}
+                    </div>
+                ) : null}
             </div>
         </div>
     );

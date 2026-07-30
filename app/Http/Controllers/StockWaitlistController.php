@@ -27,7 +27,11 @@ class StockWaitlistController extends Controller
 
         // Bot gate — self-gating, a no-op when no Turnstile secret is configured.
         // Same treatment as the other endpoints a logged-out visitor can POST to.
-        $this->ensureTurnstileVerified($request);
+        // We only enforce Turnstile for logged-out guest users to ensure they are human,
+        // while logged-in users are already authenticated and verified.
+        if (! Auth::check()) {
+            $this->ensureTurnstileVerified($request);
+        }
 
         $shop = Shop::where('uuid', $validated['shop_uuid'])->first();
 

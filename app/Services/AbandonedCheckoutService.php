@@ -225,19 +225,29 @@ class AbandonedCheckoutService
      */
     public function dueForReminder(int $limit = 100): Collection
     {
-        $maxReminders = count(self::schedule());
+        $schedule = self::schedule();
+        $guestMax = self::guestMaxReminders();
 
         return AbandonedCheckout::query()
             ->open()
-            ->where('reminder_count', '<', $maxReminders)
+            ->where(function ($query) use ($schedule, $guestMax) {
+                foreach ($schedule as $index => $minutes) {
+                    $query->orWhere(function ($q) use ($index, $minutes, $guestMax) {
+                        $q->where('reminder_count', $index)
+                          ->where('created_at', '<=', now()->subMinutes($minutes));
+                        
+                        if ($index >= $guestMax) {
+                            $q->whereNotNull('user_id');
+                        }
+                    });
+                }
+            })
             // Ignore anything older than the longest Stripe session lifetime plus slack —
             // the link is dead and re-chasing ancient rows forever is noise.
             ->where('created_at', '>=', now()->subDays(max(1, (int) config('checkout_recovery.lookback_days', 3))))
             ->orderBy('created_at')
             ->limit($limit)
-            ->get()
-            ->filter(fn (AbandonedCheckout $row) => $this->isDue($row))
-            ->values();
+            ->get();
     }
 
     /**

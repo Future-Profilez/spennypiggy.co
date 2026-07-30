@@ -34,8 +34,14 @@ class NotifyStockRestocks extends Command
         $dryRun = (bool) $this->option('dry-run');
         $max = max(1, (int) $this->option('max'));
 
-        // Only items somebody is actually waiting for.
+        // Only items somebody is actually waiting for, and that are currently in stock.
+        // Selecting only in-stock items avoids starvation where old, permanently sold-out
+        // items occupy the entire limit and prevent checking newly restocked ones.
         $shopIds = StockWaitlist::waiting()
+            ->whereHas('shop', function ($query) {
+                $query->whereNotNull('slot_limitation')
+                      ->where('slot_limitation', '>', 0);
+            })
             ->select('shop_id')
             ->distinct()
             ->limit($max)

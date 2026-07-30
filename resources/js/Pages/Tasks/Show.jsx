@@ -10,10 +10,11 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
+import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
-export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
+export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
     const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
@@ -355,9 +356,15 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             <Head title={task.title} />
             <div className="bg-white px-4 py-8 min-h-dvh">
                 <div className="max-w-3xl mx-auto">
-                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
-                        &larr; Back to Dashboard
-                    </Link>
+                    <div className="mb-6 flex items-center justify-between gap-3">
+                        <Link href={route('task.dashboard')} className="inline-block text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
+                            &larr; Back to Dashboard
+                        </Link>
+
+                        {/* Only once it is publicly viewable — sharing a link that
+                            404s for everyone but the creator helps nobody. */}
+                        {task.is_approved && <ShareButton share={share} />}
+                    </div>
 
                     <div className="">
                         
