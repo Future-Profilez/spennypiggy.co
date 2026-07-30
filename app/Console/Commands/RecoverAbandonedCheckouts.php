@@ -201,7 +201,7 @@ class RecoverAbandonedCheckouts extends Command
             return;
         }
 
-        Mail::to($row->guest_email)->send(new AbandonedCheckoutReminder(...$mailArgs));
+        Mail::to($row->guest_email)->queue(new AbandonedCheckoutReminder(...$mailArgs));
     }
 
     /** The listing's own name, whichever column the module happens to use. */

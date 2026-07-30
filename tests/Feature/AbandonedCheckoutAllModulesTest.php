@@ -195,7 +195,7 @@ class AbandonedCheckoutAllModulesTest extends TestCase
 
         $this->artisan('checkout:recover')->assertSuccessful();
 
-        Mail::assertSent(AbandonedCheckoutReminder::class, 1);
+        Mail::assertQueued(AbandonedCheckoutReminder::class, 1);
         $this->assertSame(1, $row->fresh()->reminder_count, "[{$productType}] the reminder was not claimed.");
     }
 

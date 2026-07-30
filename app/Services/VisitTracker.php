@@ -34,6 +34,12 @@ class VisitTracker
         'tiktok', 'youtube', 'linkedin', 'whatsapp', 'telegram',
         'snapchat', 'discord', 'pinterest', 'twitch', 'threads',
         'referral', 'creator_invite', 'email', 'other',
+        // A creator sharing one of their own listings from the in-app share sheet.
+        // Distinct from `creator_invite` (which recruits a creator) — this one sells
+        // a specific item. Written by ItemShareService::SHARE_SOURCE; the list is
+        // fixed on purpose, so a source missing from here is silently counted as
+        // `direct` and the whole share channel disappears from the funnels.
+        'creator_share',
     ];
 
     /** Page kinds. The two funnels start in different places. */

@@ -31,6 +31,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
@@ -839,6 +840,15 @@ class ShopsController extends Controller
                 'default_currency', 'vat_amount_percentage', 'suspended_account',
             ]);
         }
+
+        // Server-side link preview. SSR is off, so an unfurler only ever sees the
+        // server-rendered <head> — without this a shared item link showed the generic
+        // site card instead of the product. Only for a listing the public can open.
+        if ($shop->approved && $shop->status && ! $shop->is_suspended) {
+            ItemShareService::applySeo($shop, 'shop', $shop->user);
+        }
+
+        $shop->share = ItemShareService::payloadFor($shop, 'shop', $shop->user);
 
         // Waitlist state for THIS viewer. Safe here because this page is not cached —
         // the profile/discover payloads are shared across viewers, so `is_waiting`

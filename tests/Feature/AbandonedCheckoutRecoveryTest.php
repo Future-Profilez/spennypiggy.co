@@ -269,11 +269,11 @@ class AbandonedCheckoutRecoveryTest extends TestCase
         $this->openShopCheckout(['created_at' => now()->subHours(2)]);
 
         $this->artisan('checkout:recover')->assertSuccessful();
-        Mail::assertSent(AbandonedCheckoutReminder::class, 1);
+        Mail::assertQueued(AbandonedCheckoutReminder::class, 1);
 
         // Second run: the claim already moved, and a guest gets only one reminder.
         $this->artisan('checkout:recover')->assertSuccessful();
-        Mail::assertSent(AbandonedCheckoutReminder::class, 1);
+        Mail::assertQueued(AbandonedCheckoutReminder::class, 1);
     }
 
     public function test_dry_run_sends_nothing_and_claims_nothing(): void

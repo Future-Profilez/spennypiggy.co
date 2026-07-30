@@ -24,6 +24,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
@@ -352,8 +353,17 @@ class TaskController extends Controller
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($task->creator->account_id);
 
+        // Server-side link preview. SSR is off, so an unfurler only ever sees the
+        // server-rendered <head> — without this a shared task link showed the generic
+        // site card. An unapproved task already 404s above for everyone but its creator,
+        // so reaching here means the page is publicly viewable.
+        if ($task->is_approved) {
+            ItemShareService::applySeo($task, 'task', $task->creator);
+        }
+
         return Inertia::render('Tasks/Show', [
             'task' => $task,
+            'share' => ItemShareService::payloadFor($task, 'task', $task->creator),
             'purchase' => $purchase,
             'purchaseHistory' => $purchaseHistory,
             'isCreator' => Auth::id() === $task->creator_id,

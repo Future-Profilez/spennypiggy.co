@@ -11,6 +11,7 @@ import {
 } from "@animateicons/react/lucide";
 import { Rss, Percent } from "lucide-react";
 import WaitlistButton from "@/Components/WaitlistButton";
+import ShareButton from "@/Components/ShareButton";
 import axios from "axios";
 
 export default function ShopDetailItem(props) {
@@ -31,7 +32,10 @@ export default function ShopDetailItem(props) {
         (auth && auth.user && auth.user.username) ==
             (shop && shop.user && shop && shop.user.username),
     );
-    const url = window.location.href;
+    // Prefer the server-built share link: it is canonical (no session_id or stray
+    // query on it) and carries the utm source, so a share the creator sends is
+    // attributable instead of landing in the funnels as `direct`.
+    const url = shop?.share?.url || window.location.href;
     const [open, setOpen] = useState();
 
     useEffect(() => {
@@ -43,10 +47,10 @@ export default function ShopDetailItem(props) {
         }
     }, []);
 
-    const instashare = () => {
-        const shareUrl = `https://www.instagram.com/?url=${encodeURIComponent(url)}&amp;text=${encodeURIComponent(shop.name)}`;
-        window.open(shareUrl, "_blank");
-    };
+    // NOTE: the Instagram "share" that used to live here opened
+    // `instagram.com/?url=…`, which shares nothing — Instagram has no URL-share
+    // endpoint. It was removed rather than fixed, because there is nothing to fix.
+    // The share sheet below covers Instagram properly on a phone.
     const fbShare = () => {
         const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&amp;quote=${encodeURIComponent(shop.name)}`;
         window.open(shareUrl, "_blank", "noopener,noreferrer");
@@ -338,9 +342,15 @@ export default function ShopDetailItem(props) {
                                 )}
 
                                 <div className="w-full">
+                                    {/* The OS share sheet — on a phone this is where
+                                        sharing actually happens, and it covers apps
+                                        (Instagram, Messages, Signal) that have no
+                                        web share URL at all. */}
+                                    <ShareButton share={shop?.share} className="mb-4 mt-4" />
+
                                     <div className="mb-1 mt-4 font-medium text-gray-500">
                                         Social
-                                    </div> 
+                                    </div>
                                     <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
                                         <li>
                                             <a
@@ -356,22 +366,6 @@ export default function ShopDetailItem(props) {
                                                     duration={1.5}
                                                 />
                                             </a>
-                                        </li>
-
-                                        <li>
-                                            <button
-                                                type="button"
-                                                onClick={instashare}
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/insta"
-                                                aria-label="Instagram"
-                                                onMouseEnter={() => instaRef.current?.startAnimation()}
-                                            >
-                                                <InstagramIcon 
-                                                    ref={instaRef}
-                                                    size={28} 
-                                                    duration={1.5}
-                                                />
-                                            </button>
                                         </li>
 
                                         <li>
