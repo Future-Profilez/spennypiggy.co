@@ -167,6 +167,15 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->withoutOverlapping();
 
+        // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
+        // that puts stock back bypasses Eloquent events (the refund handler's
+        // ->increment(), the creator edit's ->update(), and the admin app, which shares
+        // the database and runs none of this code), so a model observer would never
+        // have fired. The immediate checkRestock() calls only make it faster.
+        $schedule->command('waitlist:notify-restock')
+            ->everyTenMinutes()
+            ->withoutOverlapping(10);
+
         $schedule->command('app:send-shop-order-reminder-email')
             ->everyThreeHours()
             ->withoutOverlapping(10);

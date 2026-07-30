@@ -337,15 +337,15 @@ export default function PiggyPotWidget({
                 className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-7"}`}
             >
                 <div
-                    className={`grid items-start gap-5 ${row ? "md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-7" : ""}`}
+                    className={`grid items-start gap-5 ${row && !isClosed ? "md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] md:gap-7" : ""}`}
                 >
-                    {/* Cover rail */}
-                    <div className="relative md:h-full">
+                    {/* Cover rail — self-start so a tall form never stretches the cover */}
+                    <div className="relative md:self-start">
                         <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
                             🎯 CONTENT GOAL
                         </div>
                         <div
-                            className={`w-full h-48 sm:h-56 ${row ? "md:h-full md:min-h-[19rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
+                            className={`w-full h-48 sm:h-56 ${row && !isClosed ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
                         >
                             <img
                                 src={
@@ -478,13 +478,15 @@ export default function PiggyPotWidget({
                                     </Link>
                                 </div>
                             ) : isClosed ? (
-                                <div className="animate-fade-in rounded-box border-[3px] border-black p-6 bg-gray-50">
-                                    <p className="font-black text-sm uppercase tracking-widest text-black">
-                                        Not available
-                                    </p>
-                                    <p className="text-black/60 text-sm font-bold mt-1">
-                                        {closedReason}
-                                    </p>
+                                <div className="animate-fade-in flex flex-col gap-3 rounded-box border-[3px] border-black bg-gray-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                        <p className="font-black text-sm uppercase tracking-widest text-black">
+                                            Not available
+                                        </p>
+                                        <p className="text-black/60 text-sm font-bold mt-1">
+                                            {closedReason}
+                                        </p>
+                                    </div>
                                     {(featuredPot.creator?.username ||
                                         user?.username) && (
                                         <Link
@@ -494,7 +496,7 @@ export default function PiggyPotWidget({
                                                         ?.username ||
                                                     user?.username,
                                             })}
-                                            className="mt-4 inline-flex w-full min-h-[48px] items-center justify-center py-3 rounded-box-sm border-[3px] border-black bg-white text-black font-black uppercase tracking-widest hover:bg-gray-50"
+                                            className="inline-flex shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-gray-100"
                                         >
                                             See other content
                                         </Link>

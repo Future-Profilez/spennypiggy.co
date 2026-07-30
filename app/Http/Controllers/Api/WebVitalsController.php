@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -215,7 +217,7 @@ class WebVitalsController extends Controller
      * function here: it is (rank-1)/(n-1), which reports 96 as the p95 of 1..100.)
      * The result is an observed measurement rather than an interpolated one.
      */
-    private function percentilesByMetric($query)
+    private function percentilesByMetric(Builder $query): Collection
     {
         $ranked = (clone $query)
             ->select('metric_name', 'value')

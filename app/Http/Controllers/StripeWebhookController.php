@@ -68,6 +68,7 @@ use App\Services\Risk\IdentityRollupService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
+use App\Services\StockWaitlistService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
@@ -4228,6 +4229,11 @@ class StripeWebhookController extends Controller
             if ($wasPaid && $shopPayment->shop && $shopPayment->shop->slot_limitation !== null) {
                 Shop::where('id', $shopPayment->shop_id)
                     ->increment('slot_limitation', max(1, (int) $shopPayment->quantity));
+
+                // A refund putting the last unit back IS a restock. This ->increment()
+                // is a query-builder call and fires no model events, so nothing would
+                // notice it otherwise. Never throws — the sweep covers it either way.
+                app(StockWaitlistService::class)->checkRestock($shopPayment->shop_id);
             }
 
             // …and take the order off the creator's fulfilment queue.

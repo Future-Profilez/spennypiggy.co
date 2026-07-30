@@ -36,6 +36,11 @@ const CATEGORIES = [
         description: 'A reminder when you start a purchase and do not complete it, with a link back to your checkout.',
     },
     {
+        key: 'restock_emails_enabled',
+        title: 'Back in stock',
+        description: 'When an item you asked about becomes available again.',
+    },
+    {
         key: 'push_notifications_enabled',
         title: 'Push & in-app notifications',
         description: 'Alerts on your device and in the notification bell. Does not affect email.',

@@ -46,6 +46,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\StockWaitlistController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscriptionsController;
 use App\Http\Controllers\SubscriptionSyncController;
@@ -488,6 +489,19 @@ Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscrib
 // the route above, so a stale link redirects home rather than showing a bare 403.
 Route::get('/checkout-reminders/stop/{checkout}', [EmailPreferenceController::class, 'stopCheckoutReminders'])
     ->name('checkout-reminders.stop');
+
+// Sold-out waitlist. Public on purpose: making someone create an account on a sold-out
+// page throws away the demand this exists to capture. Throttled, and `join` carries the
+// same Turnstile gate as the other endpoints a logged-out visitor can POST to.
+Route::post('/waitlist/join', [StockWaitlistController::class, 'join'])
+    ->middleware('throttle:20,1')
+    ->name('waitlist.join');
+Route::post('/waitlist/leave', [StockWaitlistController::class, 'leave'])
+    ->middleware('throttle:20,1')
+    ->name('waitlist.leave');
+// Signature checked in the controller so a stale link redirects home rather than 403ing.
+Route::get('/waitlist/stop/{waitlist}', [StockWaitlistController::class, 'leaveViaLink'])
+    ->name('waitlist.leave-link');
 
 // Select Default Currency
 Route::get('/currency/{c}', function (Request $request, $c) {

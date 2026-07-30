@@ -154,7 +154,15 @@ export default function AddItem(props) {
                     return;
                 }
                 // Thumbnail is marked required in the UI but was never checked.
-                if (!thumb && !(isEdit && item?.image)) {
+                //
+                // ⚠️ Check `perma_link`, NOT `image`: the raw uuid column is in the Shop
+                // model's $hidden list and never reaches the frontend, so `item.image`
+                // is always undefined. Editing a listing that already had a thumbnail —
+                // one the form was rendering right above this check — was refused with
+                // "Please add a thumbnail image" and could not be saved at all.
+                const existingThumb = item?.perma_link || item?.image_url || item?.image;
+
+                if (!thumb && !(isEdit && existingThumb)) {
                     errorAlert("Please add a thumbnail image");
                     return;
                 }

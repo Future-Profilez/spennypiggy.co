@@ -24,6 +24,7 @@ class EmailPreferenceController extends Controller
         'creator_updates_enabled',
         'reactivation_emails_enabled',
         'abandoned_checkout_emails_enabled',
+        'restock_emails_enabled',
         'push_notifications_enabled',
     ];
 
@@ -216,6 +217,7 @@ class EmailPreferenceController extends Controller
             'creator_updates_enabled' => 'creator updates',
             'reactivation_emails_enabled' => 'reminder emails',
             'abandoned_checkout_emails_enabled' => 'unfinished purchase reminders',
+            'restock_emails_enabled' => 'back-in-stock notices',
             'push_notifications_enabled' => 'push notifications',
             default => 'marketing emails',
         };

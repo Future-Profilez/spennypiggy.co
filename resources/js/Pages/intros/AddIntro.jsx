@@ -10,7 +10,6 @@ import wishlistbannerimg from "../../../assets/img/wishlistbannerimg.png";
 import { useRef } from 'react';
 import { useMemo } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { Maximize } from 'lucide-react';
 
 export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatus}){
 
@@ -159,53 +158,113 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
       {intro ?
         <div className='relative'>
 
-          {/* Video card — rendered as div, NOT inside a button (video inside button = invalid HTML, breaks Edge autoplay) */}
-          <div className='relative'>
-            {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white'>Remove</button> : ''}
+          {/* Intro video — framed like a viewfinder: the creator recording themselves,
+              a moment you're invited to press play on. One affordance, one accent. */}
+          <style>{`
+            @keyframes introBreathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }
+            @keyframes introRing { 0% { transform: scale(1); opacity:.5 } 100% { transform: scale(1.7); opacity:0 } }
+            .intro-frame:hover .intro-poster { transform: scale(1.04) }
+            .intro-frame:hover .intro-bracket-tl { transform: translate(4px, 4px) }
+            .intro-frame:hover .intro-bracket-tr { transform: translate(-4px, 4px) }
+            .intro-frame:hover .intro-bracket-bl { transform: translate(4px, -4px) }
+            .intro-frame:hover .intro-bracket-br { transform: translate(-4px, -4px) }
+            .intro-frame:hover .intro-play { transform: scale(1.08) }
+            @media (prefers-reduced-motion: reduce) {
+              .intro-play-pulse, .intro-play-ring { animation: none !important }
+              .intro-frame:hover .intro-poster { transform: none }
+            }
+          `}</style>
 
-            <div
-              className='isintro relative border-black  !rounded-[20px] md:!rounded-[30px]  cursor-pointer overflow-hidden bg-[#f3f4f6]'
-              onClick={() => setClose(true)}
-            >
-              {!posterLoaded && (
-                  <div className="absolute inset-0 bg-white/50 animate-pulse z-[5]" />
-              )}
-              <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
-                Intro video
-              </div>
+          <div
+            className="intro-frame group relative cursor-pointer overflow-hidden rounded-box-sm bg-[#0B0B0F] md:rounded-box"
+            onClick={() => setClose(true)}
+            role="button"
+            tabIndex={0}
+            aria-label={`Play ${user?.name || "creator"}'s intro video`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setClose(true);
+              }
+            }}
+          >
+            {!posterLoaded && (
+              <div className="absolute inset-0 z-[5] animate-pulse bg-white/10" />
+            )}
 
-              {/* Static poster only — real video plays in the popup on click.
-                  Poster -> creator avatar -> banner. No autoplay, no bytes loaded. */}
-              <img
-                src={posterUrl}
-                alt="Intro video"
-                onLoad={() => setPosterLoaded(true)}
-                onError={(e) => {
-                  const fallback = user?.avatar_url || wishlistbannerimg;
-                  if (e.target.src !== fallback) e.target.src = fallback;
-                  setPosterLoaded(true);
-                }}
-                className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px] max-h-[300px] block'
-              />
+            {/* Poster — the frozen frame. Quiet zoom on hover, cheap transform. */}
+            <img
+              src={posterUrl}
+              alt=""
+              onLoad={() => setPosterLoaded(true)}
+              onError={(e) => {
+                const fallback = user?.avatar_url || wishlistbannerimg;
+                if (e.target.src !== fallback) e.target.src = fallback;
+                setPosterLoaded(true);
+              }}
+              className="intro-poster block max-h-[340px] w-full object-cover !min-h-[220px] transition-transform duration-[600ms] ease-out md:!min-h-[280px] lg:!min-h-[320px]"
+            />
 
-              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
-                    <polygon points="5,3 19,12 5,21" />
+            {/* Cinematic scrim so the label + name read against any frame */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
+
+            {/* Viewfinder brackets — the signature: you're framing a person. Pull in on hover. */}
+            <span className="intro-bracket-tl pointer-events-none absolute left-3 top-3 h-6 w-6 rounded-tl-[6px] border-l-2 border-t-2 border-[#FF007F] transition-transform duration-300" />
+            <span className="intro-bracket-tr pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-tr-[6px] border-r-2 border-t-2 border-[#FF007F] transition-transform duration-300" />
+            <span className="intro-bracket-bl pointer-events-none absolute bottom-3 left-3 h-6 w-6 rounded-bl-[6px] border-b-2 border-l-2 border-[#FF007F] transition-transform duration-300" />
+            <span className="intro-bracket-br pointer-events-none absolute bottom-3 right-3 h-6 w-6 rounded-br-[6px] border-b-2 border-r-2 border-[#FF007F] transition-transform duration-300" />
+
+            {/* Top-left label — one, not an eyebrow scaffold */}
+            <div className="absolute left-6 top-6 z-10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/90">
+              <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-[#FF007F]" />
+              Intro
+            </div>
+
+            {/* The single invitation — a breathing pink play with an emitted ring */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center">
+              <div className="relative">
+                <span className="intro-play-ring intro-play-pulse absolute inset-0 rounded-full bg-[#FF007F]" style={{ animation: "introRing 2.2s ease-out infinite" }} />
+                <div
+                  className="intro-play intro-play-pulse relative flex h-16 w-16 items-center justify-center rounded-full bg-[#FF007F] text-white shadow-[0_8px_30px_rgba(255,0,127,0.45)] transition-transform duration-300"
+                  style={{ animation: "introBreathe 2.6s ease-in-out infinite" }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6,4 20,12 6,20" />
                   </svg>
                 </div>
               </div>
-
-              <div className='absolute bottom-4 right-4 z-10 bg-[#FF007F] p-2 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-black hover:scale-110 transition-transform'>
-                <Maximize size={20} strokeWidth={3} />
-              </div>
-
-              {IsloggedIn && intro && intro.approved !== 1 ?
-                <div className='text-sm mb-0 alert bg-black text-yellow-400 w-full absolute z-1 bottom-0 left-0 rounded p-2 px-3'>
-                  Profile intro video is waiting for approval. Currently only you can see this intro.
-                </div>
-              : ''}
             </div>
+
+            {/* Bottom-left — who this is, and what pressing play gets you */}
+            <div className="absolute bottom-5 left-6 z-10">
+              <div className="font-gulfs text-lg uppercase leading-none tracking-wide text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
+                Meet {user?.name}
+              </div>
+              <div className="mt-1 text-[11px] font-semibold text-white/70">
+                A 15-second hello
+              </div>
+            </div>
+
+            {/* Owner: remove, tucked out of the way */}
+            {IsloggedIn && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeVideo();
+                }}
+                className="absolute right-5 top-5 z-30 flex h-8 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+              >
+                Remove
+              </button>
+            )}
+
+            {IsloggedIn && intro && intro.approved !== 1 ? (
+              <div className="absolute inset-x-0 bottom-0 z-20 bg-black/80 px-6 py-2.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                In review — only you can see this until it's approved.
+              </div>
+            ) : (
+              ""
+            )}
           </div>
 
           {/* Popup trigger button is hidden — open/close controlled via action prop */}

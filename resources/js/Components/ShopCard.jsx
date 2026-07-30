@@ -2,6 +2,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import AddItem from "@/Pages/shop/AddItem";
 import RewardHint from "@/Pages/discover/components/RewardHint";
+import WaitlistButton from "@/Components/WaitlistButton";
 
 export default function ShopCard({
     item,
@@ -208,17 +209,24 @@ export default function ShopCard({
                                 IsloggedIn={IsloggedIn}
                             />
                         </div>
+                    ) : isSoldOut ? (
+                        /* A sold-out card used to end here with a dead grey button —
+                           every visitor after the last sale simply left, and the
+                           creator never learned the demand existed. */
+                        <WaitlistButton
+                            shopUuid={item?.uuid}
+                            initialWaiting={item?.is_waiting}
+                            isGuest={!auth?.user}
+                        />
                     ) : (
                         <button
-                            disabled={isSoldOut}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (isSoldOut) return;
                                 router.visit(url);
                             }}
-                            className={`font-black border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm text-black text-sm sm:text-base uppercase ${isSoldOut ? "bg-gray-200 cursor-not-allowed opacity-70" : "bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer"} focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all`}
+                            className="font-black border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm text-black text-sm sm:text-base uppercase bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
                         >
-                            {isSoldOut ? "Sold out" : "Buy Now"}
+                            Buy Now
                         </button>
                     )}
                 </div>

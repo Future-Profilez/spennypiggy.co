@@ -6,6 +6,7 @@ import { EllipsisVerticalIcon } from "@animateicons/react/lucide";
 import toast from 'react-hot-toast';
 import AddItem from './AddItem';
 import Nocontent from '@/includes/Nocontent';
+import { WaitingCount } from '@/Components/WaitlistButton';
 import PriceFormat from '@/includes/PriceFormat';
 
 const ProductCardSkeleton = () => (
@@ -275,7 +276,12 @@ export default function MyShopProducts({lists, loading, update}) {
                                     </div>
 
                                     {s.slot_limitation !== null && s.slot_limitation !== undefined && Number(s.slot_limitation) <= 0 && (
-                                       <span className='text-[11px] font-black uppercase text-red-600'>Sold out — raise the stock limit to sell more</span>
+                                       <div className='flex flex-wrap items-center gap-2'>
+                                          <span className='text-[11px] font-black uppercase text-red-600'>Sold out — raise the stock limit to sell more</span>
+                                          {/* The demand the creator could not see before. This number is
+                                              the whole reason the waitlist exists on the supply side. */}
+                                          <WaitingCount count={Number(s.waiting_count || 0)} />
+                                       </div>
                                     )}
 
                                     {s.type === 'physical' && shippingDetails && (
