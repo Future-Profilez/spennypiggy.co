@@ -632,8 +632,11 @@ class SyncFinancialTransactions extends Command
                 $vat = $this->calculateVatIfMissing($amount, $purchase->vat_amount, $purchase->creator);
 
                 $currency = strtoupper($purchase->currency ?? ($purchase->task?->currency ?? 'GBP'));
-                $adminFee = (float) Helpers::administrationFeeInCurrency($currency);
-                $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
+                // TaskPurchase.platform_fee already includes the admin fee — it is
+                // recorded as finalTotal - creatorTransfer, and the pricing engine
+                // bakes the admin fee into the application fee. Adding it again
+                // inflated gross_amount/platform_fee on every task ledger row.
+                $platformFee = (float) ($purchase->platform_fee ?? 0);
                 $stripeFee = 0;
                 $gross = $purchase->total_paid && $purchase->total_paid > 0
                     ? (float) $purchase->total_paid

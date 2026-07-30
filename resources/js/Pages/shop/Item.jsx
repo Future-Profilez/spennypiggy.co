@@ -10,6 +10,7 @@ import {
     FacebookIcon 
 } from "@animateicons/react/lucide";
 import { Rss, Percent } from "lucide-react";
+import WaitlistButton from "@/Components/WaitlistButton";
 import axios from "axios";
 
 export default function ShopDetailItem(props) {
@@ -518,9 +519,14 @@ export default function ShopDetailItem(props) {
                                         <>
                                             {shop.slot_limitation != null &&
                                             Number(shop.slot_limitation) <= 0 ? (
-                                                <button className="btn-pink sm disabled w-full sm:w-auto">
-                                                    SOLD
-                                                </button>
+                                                /* A dead "SOLD" button was the end of the road for
+                                                   every visitor who arrived after the last sale. */
+                                                <WaitlistButton
+                                                    shopUuid={shop.uuid}
+                                                    initialWaiting={shop.is_waiting}
+                                                    isGuest={!auth?.user}
+                                                    className="w-full sm:w-auto sm:min-w-[220px]"
+                                                />
                                             ) : (
                                                 <>
                                                     <BuyShopItem

@@ -8,11 +8,11 @@ import { useAlerts } from "@/Components/Alerts";
 import UpdateAvatar from "./UpdateAvatar";
 import LoaderButton from "@/Components/LoaderButton";
 import spennypiggy from "../../../assets/img/logo.png";
-import socialbg from "../../../assets/social-bg.png";
 import axios from "axios";
 import { Switch } from "@headlessui/react";
 import { Link } from "@inertiajs/react";
 import ManagePasskey from "@/Components/ManagePasskey";
+import CoverBannerPicker from "@/Components/CoverBannerPicker";
 
 export default function EditProfile({
     profilepage,
@@ -22,13 +22,6 @@ export default function EditProfile({
     updateProfileSteps,
     global_currency,
 }) {
-    // utils/checkName.js
-    function hasFullName(name) {
-        if (!name || typeof name !== "string") return false;
-        const parts = name.trim().split(/\s+/);
-        return parts.length > 1;
-    }
-
     // SSR Guard for usePage().props
     const pageProps = usePage().props;
     const auth = pageProps.auth;
@@ -81,63 +74,96 @@ export default function EditProfile({
         // container.style.top = '0';
         // container.style.zIndex = '-1';
         document.body.appendChild(container);
+        const cardName = (data?.name || user?.name || "").trim();
+        const cardUsername = data?.username || user?.username || "";
+
+        // The chip answers "what do I get" — the old card said nothing about it.
+        const rawCats = data?.creator_category;
+        const catList = Array.isArray(rawCats)
+            ? rawCats
+            : typeof rawCats === "string" && rawCats
+              ? (() => {
+                    try {
+                        const parsed = JSON.parse(rawCats);
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch {
+                        return [];
+                    }
+                })()
+              : [];
+        const cardCategory = catList.length
+            ? catList.slice(0, 3).join(" · ")
+            : "Exclusive content";
+
+        const esc = (s) =>
+            String(s).replace(
+                /[&<>"']/g,
+                (c) =>
+                    ({
+                        "&": "&amp;",
+                        "<": "&lt;",
+                        ">": "&gt;",
+                        '"': "&quot;",
+                        "'": "&#39;",
+                    })[c],
+            );
+
+        // Authored at 600 x 337.5 and captured at scale 2, so the exported PNG is
+        // 1200 x 675.
+        //
+        // Everything is laid out with flex. The previous version pinned "is now on"
+        // and the logo to hardcoded offsets (top:180px; left:210px), so nothing could
+        // move without moving everything, and a long name broke mid-word.
+        //
+        // The arc pattern is drawn with plain divs rather than social-bg.png: the
+        // artwork was covered in gift boxes and a money bag, which is the framing the
+        // content-first compliance rules removed from every other surface — and this
+        // is the most-shared asset the platform produces.
+        const arc = (r, alpha) =>
+            `<div style="position:absolute;width:${r * 2}px;height:${r * 2}px;left:${620 - r}px;top:${352 - r}px;border-radius:50%;background:rgba(255,255,255,${alpha});"></div>`;
+
         container.innerHTML = `
-            <div 
+            <div
                 id="card-to-capture"
-                style=" position:relative;margin:300px 0;display:flex;align-items:center;padding:24px;width:600px;height:337.5px;color:white;box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;"
-                >
-                <img 
-                    src="${socialbg}" 
-                    alt="Background"
-                    crossorigin="anonymous"
-                    style=" width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:-1;"
-                />
+                style="position:relative;margin:300px 0;width:600px;height:337.5px;color:#fff;overflow:hidden;font-family:'CeraGR',system-ui,sans-serif;background:linear-gradient(118deg,#8C0F45 0%,#C21367 46%,#FF2E93 100%);"
+            >
+                ${arc(280, 0.05)}${arc(215, 0.05)}${arc(150, 0.05)}${arc(88, 0.05)}
+                <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.13) 1.2px,transparent 1.3px);background-size:17px 17px;"></div>
 
-                <div
-                    style=" position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.2) 3px,transparent 3px);background-size:30px 30px;"
-                ></div>
+                <div style="position:absolute;inset:0;z-index:2;padding:27px 32px;display:flex;flex-direction:column;justify-content:center;">
 
-                <div style="position:absolute; top:72px; left:24px; color:#fde047; font-size:36px;">✨</div>
-                <div style="position:absolute; bottom:16px; right:112px; color:#22d3ee; font-size:24px;">⭐</div>
-                <div style="position:absolute; top:72px; right:80px; color:#22d3ee; font-size:30px;">💰</div>
-
-                <div style="width:100%; position:relative; z-index:2;">
-
-                    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
-
-                    <div
-                        style=" width:112px;height:112px;border-radius:50%;border:2px solid #00ff5e;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,0.5);" >
-                        <img
-                        src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
-                        alt="Profile"
-                        crossorigin="anonymous"
-                        style=" width:100%;height:100%;object-fit:cover;" />
+                    <div style="display:flex;align-items:center;gap:19px;">
+                        <div style="width:108px;height:108px;flex:none;border-radius:50%;padding:4px;background:linear-gradient(150deg,#A2E4B8,#E6EA7B 62%,#A2E4B8);box-shadow:0 9px 20px rgba(0,0,0,0.42);">
+                            <img
+                                src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
+                                alt="Profile"
+                                crossorigin="anonymous"
+                                style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;"
+                            />
+                        </div>
+                        <div style="min-width:0;flex:1;">
+                            <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:0.9;text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
+                            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">
+                                <span style="width:5px;height:5px;border-radius:50%;background:#0B2B1A;display:block;"></span>${esc(cardCategory)}
+                            </div>
+                        </div>
                     </div>
 
-                    <div style="padding-left:12px;">
-                        <h1
-                        style=" max-width:200px;margin-top:-20px;padding-bottom:8px;text-transform:uppercase;font-size:30px;text-align:left;word-break:${!hasFullName(data?.name || user?.name) ? "break-all" : "break-word"} ; line-height:30px;   font-family: 'gulfs' ; letter-spacing: 1px; text-shadow:0.5px 0.5px #000000 !important; " >
-                        ${data?.name || user?.name}
-                        </h1>
-                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+                        <span style="font-size:16.5px;color:rgba(255,255,255,0.92);">is now on</span>
+                        <img src="${spennypiggy}" alt="Spenny Piggy" crossorigin="anonymous" style="height:30px;width:auto;display:block;" />
                     </div>
 
-                    <p
-                        style=" position:absolute;top:180px;left:210px;font-size:20px;font-weight:bold;max-width:100px;" >
-                        is now on
-                    </p>
-                    <img
-                    src="${spennypiggy}"
-                    alt="Logo"
-                    crossorigin="anonymous"
-                    style=" position:absolute;top:190px;left:310px;max-width:100px;object-fit:cover;"
-                    />  
-                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; letter-spacing:1px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${data?.username || user?.username}</div></div>
+                    <div style="display:flex;align-items:stretch;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
+                        <div style="background:#0B0B0C;color:#fff;display:flex;align-items:center;padding:0 13px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
+                        <div style="flex:1;background:#fff;color:#0B0B0C;display:flex;align-items:center;padding:11px 8px 11px 15px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
+                        <div style="background:#fff;display:flex;align-items:center;padding:0 13px 0 3px;">
+                            <img src="${spennypiggy}" alt="" crossorigin="anonymous" style="height:19px;width:auto;display:block;" />
+                        </div>
+                    </div>
                 </div>
-                </div>
-
+            </div>
         `;
-        // background:linear-gradient(to right,#9b0039,#9b0039b6);
 
         const card = container.querySelector("#card-to-capture");
         const images = card.querySelectorAll("img");
@@ -157,6 +183,29 @@ export default function EditProfile({
                 });
             }),
         );
+
+        // The name is set in 'gulfs'. Measuring it before that face has loaded gives
+        // fallback-font widths, so the fitter would size against the wrong metrics.
+        if (document.fonts?.ready) {
+            try {
+                await document.fonts.ready;
+            } catch {
+                // Font loading is best-effort — never block the card on it.
+            }
+        }
+
+        // Shrink to fit rather than truncate. A card that ends in an ellipsis, or
+        // splits a name mid-word the way the old `word-break:break-all` did, is worse
+        // than a slightly smaller name. Two lines max, then step the size down.
+        const nameEl = card.querySelector("#card-name");
+        if (nameEl) {
+            const maxHeight = 2 * 43 * 0.9; // two lines at the starting size
+            let size = 43;
+            while (size > 20 && nameEl.scrollHeight > maxHeight) {
+                size -= 2;
+                nameEl.style.fontSize = `${size}px`;
+            }
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -234,32 +283,6 @@ export default function EditProfile({
             cdnUrlModifiers: e?.cdnUrlModifiers || null,
         });
         setCoverUploadingStart(false);
-    };
-
-    const preApprovedCovers = [
-        "0139dcd1-f9c5-47ac-b6f9-3baac6f48d06",
-        "21de57a2-c786-4a5a-b7e4-2edcdb61fc42",
-        "6aac4e1d-9af8-4ad2-9aee-a0d9d383dac2",
-        "fcdb1692-d64d-4de8-b7af-5e0556cdf6e8",
-        "40aaf556-fa59-4f8e-b482-e49726026499",
-        "a2cad976-2480-4c77-baa3-cb5df3cdc0d6",
-        "b81b3097-5c4c-4f48-aaf0-3687bc928a18",
-        "32c130a9-37e6-4934-8d72-a83a5d8bdaa6",
-        "e71ed424-f17a-47d9-b0e7-3e5eca4e51cb",
-        "dc1021e2-41a4-4dfa-8379-b27fb7e3834e",
-        "175e706f-ae6a-4920-a131-bf90502084f8",
-        "c8011ca9-9b00-4f8f-b919-3cf837e3037c",
-        "1ebf10dd-1891-4288-b461-5e3fcd3b43d3",
-        "c3b7ff7a-719a-452a-ba8f-d074d916b395",
-        "133b057f-f069-4ea4-82e4-ba9184d721cd",
-    ];
-
-    const selectPreApprovedCover = (uuid) => {
-        getCoverUID({
-            uuid: uuid,
-            cdnUrl: `https://ucarecdn.com/${uuid}/`,
-            cdnUrlModifiers: null,
-        });
     };
 
     const [username, setUsername] = useState(user?.username);
@@ -545,28 +568,10 @@ export default function EditProfile({
                             }
                         />
 
-                        <div className="mt-8">
-                            <h3 className="font-gulfs uppercase text-lg mb-4 text-center">
-                                Or Choose a Pre-approved Cover
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                {preApprovedCovers.map((uuid) => (
-                                    <div
-                                        key={uuid}
-                                        onClick={() =>
-                                            selectPreApprovedCover(uuid)
-                                        }
-                                        className="cursor-pointer border-4 border-transparent hover:border-[#FF007F] rounded-[15px] overflow-hidden transition-all hover:scale-105 shadow-sm"
-                                    >
-                                        <img
-                                            src={`https://ucarecdn.com/${uuid}/-/preview/-/scale_crop/400x200/`}
-                                            alt="Cover option"
-                                            className="w-full h-auto object-cover aspect-[2/1]"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <CoverBannerPicker
+                            selected={data?.cover?.uuid ?? user?.cover}
+                            onSelect={getCoverUID}
+                        />
                     </div>
                 ) : (
                     ""

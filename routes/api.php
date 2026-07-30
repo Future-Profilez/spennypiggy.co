@@ -40,9 +40,20 @@ Route::middleware('web')->group(function () {
 
 // Web Vitals Analytics & Monitoring
 Route::prefix('analytics')->group(function () {
-    Route::post('/web-vitals', [WebVitalsController::class, 'store']);
-    Route::get('/web-vitals', [WebVitalsController::class, 'index']);
-    Route::get('/web-vitals/trends', [WebVitalsController::class, 'trends']);
+    // Collection is necessarily open — it is beacon traffic from every visitor,
+    // signed-in or not — but it is a public write, so it is rate limited.
+    Route::post('/web-vitals', [WebVitalsController::class, 'store'])
+        ->middleware('throttle:60,1');
+
+    // The read endpoints are an internal performance dashboard. They were public,
+    // unauthenticated and unthrottled: each one sorts the whole matching window to
+    // compute percentiles, so anyone could load the database from a script. They
+    // need the session, hence the 'web' group ('auth' cannot see a session in the
+    // stateless api group).
+    Route::middleware(['web', 'auth', 'admin', 'throttle:30,1'])->group(function () {
+        Route::get('/web-vitals', [WebVitalsController::class, 'index']);
+        Route::get('/web-vitals/trends', [WebVitalsController::class, 'trends']);
+    });
 });
 
 // Performance Alerts (for monitoring services)

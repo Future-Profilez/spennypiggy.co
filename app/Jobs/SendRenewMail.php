@@ -30,11 +30,12 @@ class SendRenewMail implements ShouldQueue
     public function handle(): void
     {
         try {
-            if (! empty($this->array['notification'])) {
-                EmailService::sendRenewMail($this->array, $this->type, $this->module);
-            } else {
-                Log::info('🔕 Notification disabled. Skipping email.');
-            }
+            // A renewal receipt is TRANSACTIONAL — the supporter was charged real
+            // money and must be told, exactly like the first-purchase receipt
+            // (BillPayToUser), which had this same notification_send gate removed.
+            // Gating it meant anyone with notifications off learned about
+            // recurring charges only from their bank statement.
+            EmailService::sendRenewMail($this->array, $this->type, $this->module);
         } catch (\Exception $e) {
             Log::error('❌ SendRenewMail Error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

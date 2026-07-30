@@ -67,7 +67,10 @@
                                             @if (!empty($creator['username']))
                                             <div style="font-family:'Outfit',Arial,sans-serif;font-size:13px;
                                                         color:#9A9A9A;line-height:18px;">
-                                                &commat;{{ $creator['username'] }}
+                                                {{-- &#64; not &commat;: the named entity is
+                                                     HTML5-only and several mail clients print it
+                                                     as literal text. --}}
+                                                &#64;{{ $creator['username'] }}
                                             </div>
                                             @endif
                                         </td>

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Support\IdentityFailureReason;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -19,9 +20,21 @@ class IdentityVerificationFailed extends Mailable
 
     public function build()
     {
-        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
-            ->subject('Identity Verification Failed')
+        // The failure copy is resolved once, server-side, and shared with the
+        // profile page — the creator reads the same words in both places.
+        $failure = IdentityFailureReason::explain($this->user->identity_verification_error);
+
+        return $this->from(
+            config('mail.from.address', 'noreply@spennypiggy.co'),
+            config('mail.from.name', 'Spenny Piggy')
+        )
+            ->subject($failure['title'] ?? 'Your identity check didn’t go through')
             ->view('email.identity_failed')
-            ->with(['user' => $this->user]);
+            ->with([
+                'user' => $this->user,
+                'failure' => $failure,
+                'retryUrl' => rtrim(config('app.url'), '/').'/stripe/identity-verification',
+                'supportEmail' => config('support.contact_email'),
+            ]);
     }
 }

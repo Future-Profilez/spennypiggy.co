@@ -19,6 +19,7 @@ use App\Jobs\SendRenewMail;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
 use App\Jobs\SubscribedMail;
+use App\Jobs\TipJarPurchased;
 use App\Jobs\TipPaymentMailToUser;
 use App\Jobs\UpdateSupportPaymentStripeMetadata;
 use App\Jobs\WishSubscriptionMailToUser;
@@ -60,16 +61,19 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Services\AbandonedCheckoutService;
 use App\Services\ActivityLogger;
 use App\Services\DiscoveryService;
 use App\Services\Risk\IdentityRollupService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
+use App\Services\StockWaitlistService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
+use App\Support\IdentityFailureReason;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -241,26 +245,41 @@ class StripeWebhookController extends Controller
         try {
             switch ($type) {
                 // --- Identity Verification Events ---
-                // case 'identity.verification_session.requires_input':
+                // `requires_input` is the ONLY event Stripe sends when a check
+                // fails. With it unhandled, a rejected creator got no email, no
+                // stored reason, and a profile that still read "Verify identity"
+                // as if they had never tried. Do not comment it out again.
+                case 'identity.verification_session.requires_input':
+                case 'identity.verification_session.canceled':
                 case 'identity.verification_session.verified':
                     $this->processIdentityVerification($event);
                     break;
 
                     // --- Payment & Subscription Events ---
                 case 'checkout.session.completed':
+                    // The supporter finished the flow — close the recovery row before
+                    // fulfilment runs, so a reminder can never overtake a completed
+                    // checkout. True even when payment_status is still 'unpaid' (a bank
+                    // debit in flight): they paid, they are simply waiting on the bank.
+                    AbandonedCheckoutService::markRecovered($data->id ?? null);
                     $this->handleCheckoutSessionCompleted($data, $metadata);
                     $this->handleSupportPaymentDeliverableReady($data, $metadata);
                     break;
 
                 case 'checkout.session.async_payment_succeeded':
+                    AbandonedCheckoutService::markRecovered($data->id ?? null);
                     $this->handleAsyncPaymentSucceeded($data);
                     break;
 
                 case 'checkout.session.async_payment_failed':
+                    // The session is spent and cannot be resumed, so there is nothing
+                    // to send them back to.
+                    AbandonedCheckoutService::markClosed($data->id ?? null, 'failed');
                     $this->handleAsyncPaymentFailed($data);
                     break;
 
                 case 'checkout.session.expired':
+                    AbandonedCheckoutService::markClosed($data->id ?? null, 'expired');
                     $this->handleCheckoutSessionExpired($data);
                     break;
 
@@ -412,6 +431,10 @@ class StripeWebhookController extends Controller
         switch ($type) {
             case 'identity.verification_session.requires_input':
                 $this->handleRequiresInputEvent($session);
+                break;
+
+            case 'identity.verification_session.canceled':
+                $this->handleCanceledEvent($session);
                 break;
 
             case 'identity.verification_session.verified':
@@ -778,13 +801,16 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * Handle the 'requires_input' event
+     * Resolve the creator a verification session belongs to.
+     *
+     * `stripe_user_id` holds the latest session id, so it goes stale the moment
+     * a creator starts a second attempt — the metadata carries the user id on
+     * every session we create and is the reliable fallback.
      */
-    private function handleRequiresInputEvent($session)
+    private function resolveIdentityUser($session): ?User
     {
         $user = User::where('stripe_user_id', $session->id)->first();
 
-        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
         if (! $user && ! empty($session->metadata->user_id)) {
             $user = User::find($session->metadata->user_id);
             if ($user) {
@@ -798,35 +824,99 @@ class StripeWebhookController extends Controller
             }
         }
 
-        if ($user) {
-            $isFraudulent = $this->checkForFraud($session);
+        return $user;
+    }
 
-            $errorPayload = $session->last_error ? json_encode($session->last_error) : json_encode([
-                'code' => 'requires_input',
-                'reason' => 'Additional information is required to complete verification.',
-            ]);
+    /**
+     * Mark a check as failed and tell the creator why, on every channel.
+     *
+     * The stored payload carries the creator-facing wording (see
+     * IdentityFailureReason), so the email and the profile page render the same
+     * explanation without either of them re-deriving it from a raw Stripe code.
+     */
+    private function failIdentityCheck(User $user, string $code, ?string $rawReason, bool $isFraudulent = false): void
+    {
+        $payload = IdentityFailureReason::payload(
+            $isFraudulent ? 'fraud_suspected' : $code,
+            $rawReason
+        );
 
-            $user->update([
-                'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
-                'identity_verification_error' => $errorPayload,
-                'identity_verification_details' => null,
-                'identity_verified_at' => null,
-            ]);
+        $user->update([
+            'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
+            'identity_verification_error' => $payload,
+            'identity_verification_details' => null,
+            'identity_verified_at' => null,
+        ]);
 
-            $emailType = $isFraudulent ? 'fraud' : 'failed';
-            SendIdentityVerificationEmail::dispatch($user, $emailType);
+        SendIdentityVerificationEmail::dispatch($user, $isFraudulent ? 'fraud' : 'failed');
 
-            $err = $session->last_error ?? null;
-            $code = data_get($err, 'code', 'requires_input');
-            $reason = data_get($err, 'reason', 'Additional information is required to complete verification.');
-            Helpers::sendNotification(
-                'Identity verification rejected ❌',
-                "Reason: {$reason} (code: {$code})",
-                $user->email
-            );
-        } else {
+        $explained = IdentityFailureReason::explain($payload);
+
+        Helpers::sendNotification(
+            'Identity verification failed ❌',
+            $explained['title'].' — open your profile to try again.',
+            $user->email
+        );
+
+        Log::info('Identity check failed', [
+            'user_id' => $user->id,
+            'code' => $explained['code'],
+            'fraud' => $isFraudulent,
+        ]);
+    }
+
+    /**
+     * Handle the 'requires_input' event — Stripe's failure event.
+     */
+    private function handleRequiresInputEvent($session)
+    {
+        $user = $this->resolveIdentityUser($session);
+
+        if (! $user) {
             Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+
+            return;
         }
+
+        $err = $session->last_error ?? null;
+
+        $this->failIdentityCheck(
+            $user,
+            (string) data_get($err, 'code', 'requires_input'),
+            data_get($err, 'reason'),
+            $this->checkForFraud($session)
+        );
+    }
+
+    /**
+     * Handle the 'canceled' event.
+     *
+     * A cancelled session verifies nothing, so the creator must be moved off the
+     * "under review" state — otherwise they sit waiting on a check that will
+     * never return a result.
+     */
+    private function handleCanceledEvent($session)
+    {
+        $user = $this->resolveIdentityUser($session);
+
+        if (! $user) {
+            Log::error('User not found for canceled verification session', ['session_id' => $session->id]);
+
+            return;
+        }
+
+        // Never overwrite a completed verification with a cancellation — a stale
+        // session for an already-verified creator would otherwise un-verify them.
+        if ((int) $user->identity_status === 1) {
+            Log::info('Ignoring canceled identity session for an already-verified creator', [
+                'user_id' => $user->id,
+                'session_id' => $session->id,
+            ]);
+
+            return;
+        }
+
+        $this->failIdentityCheck($user, 'session_canceled', data_get($session, 'last_error.reason'));
     }
 
     /**
@@ -834,43 +924,16 @@ class StripeWebhookController extends Controller
      */
     private function handleVerifiedEvent($session)
     {
-        $user = User::where('stripe_user_id', $session->id)->first();
-
-        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
-        if (! $user && ! empty($session->metadata->user_id)) {
-            $user = User::find($session->metadata->user_id);
-            if ($user) {
-                // Re-sync the session ID so future webhooks resolve correctly
-                $user->stripe_user_id = $session->id;
-                $user->save();
-                Log::info('Identity webhook: resolved user via metadata.user_id fallback', [
-                    'user_id' => $user->id,
-                    'session_id' => $session->id,
-                ]);
-            }
-        }
+        $user = $this->resolveIdentityUser($session);
 
         if ($user) {
             $docType = data_get($session, 'verified_outputs.document.type') ?: data_get($session, 'last_verification_report.document.type');
 
             if ($docType && strtolower($docType) !== 'passport') {
-                $error = [
-                    'code' => 'document_type_not_allowed',
-                    'reason' => 'Only passports are accepted for identity verification.',
-                ];
-
-                $user->update([
-                    'identity_status' => 0, // Failed per policy
-                    'identity_verified_at' => null,
-                    'identity_verification_error' => json_encode($error),
-                    'identity_verification_details' => null,
-                ]);
-
-                SendIdentityVerificationEmail::dispatch($user, 'failed');
-                Helpers::sendNotification(
-                    'Identity verification rejected ❌',
-                    'Reason: Only passports are accepted for identity verification.',
-                    $user->email
+                $this->failIdentityCheck(
+                    $user,
+                    'document_type_not_allowed',
+                    'Only passports are accepted for identity verification.'
                 );
 
                 return;
@@ -878,21 +941,25 @@ class StripeWebhookController extends Controller
 
             $isFraudulent = $this->checkForFraud($session);
 
-            $updateData = [
-                'identity_status' => $isFraudulent ? 3 : 1, // 3 = Fraud, 1 = Verified
-                'identity_verified_at' => $isFraudulent ? null : now(),
-                'identity_verification_details' => null,
-            ];
+            if ($isFraudulent) {
+                $this->failIdentityCheck($user, 'fraud_suspected', null, true);
 
-            if (! $isFraudulent) {
-                $updateData['identity_admin_status'] = 1;
-                $updateData['identity_admin_reviewed_at'] = now();
+                return;
             }
 
-            $user->update($updateData);
+            $user->update([
+                'identity_status' => 1, // Verified
+                'identity_verified_at' => now(),
+                'identity_verification_details' => null,
+                // A passed check clears the previous failure — otherwise the
+                // profile keeps rendering the old rejection reason next to a
+                // green "verified" tick.
+                'identity_verification_error' => null,
+                'identity_admin_status' => 1,
+                'identity_admin_reviewed_at' => now(),
+            ]);
 
-            $emailType = $isFraudulent ? 'fraud' : 'success';
-            SendIdentityVerificationEmail::dispatch($user, $emailType);
+            SendIdentityVerificationEmail::dispatch($user, 'success');
 
             // Request redaction of verification session to avoid storing sensitive images at Stripe
             try {
@@ -906,19 +973,11 @@ class StripeWebhookController extends Controller
                 ]);
             }
 
-            if ($isFraudulent) {
-                Helpers::sendNotification(
-                    'Identity verification rejected ❌',
-                    'Reason: Verification checks did not pass or suspected fraud.',
-                    $user->email
-                );
-            } else {
-                Helpers::sendNotification(
-                    'Identity verification successful ✅',
-                    'Your identity has been verified successfully.',
-                    $user->email
-                );
-            }
+            Helpers::sendNotification(
+                'Identity verification successful ✅',
+                'Your identity has been verified successfully.',
+                $user->email
+            );
         } else {
             Log::error('User not found for verified verification session', ['session_id' => $session->id]);
         }
@@ -1274,14 +1333,22 @@ class StripeWebhookController extends Controller
 
             $symbol = Helpers::getCurrency($pay->currency ?? 'GBP');
             $supporterName = $pay->is_anonymous ? 'Anonymous' : ($pay->user?->name ?: ($pay->guest_name ?: 'A supporter'));
-            $sendCreator = empty($pay->creator_notified_at);
-            $sendSupporter = empty($pay->supporter_notified_at);
+
+            // Atomic claims, exactly like the redirect handler. Reading the flags
+            // off the in-memory $pay races the redirect: both read NULL, both
+            // send, and the final $pay->save() below used to write the stale
+            // NULLs back over the redirect's claim — re-arming a third send.
+            $sendCreator = PiggyPotContribution::where('id', $pay->id)
+                ->whereNull('creator_notified_at')
+                ->update(['creator_notified_at' => now()]) > 0;
+            $sendSupporter = PiggyPotContribution::where('id', $pay->id)
+                ->whereNull('supporter_notified_at')
+                ->update(['supporter_notified_at' => now()]) > 0;
 
             if ($sendCreator && $pay->creator?->email) {
                 $title = '🐷 New content purchase!';
                 $content = "{$supporterName} purchased {$pay->piggyPot?->title} for {$symbol}".number_format((float) $pay->amount, 2).'.';
                 Helpers::sendNotification($title, $content, $pay->creator->email);
-                $pay->creator_notified_at = now();
             }
 
             $supporterEmail = $pay->user?->email ?: $pay->guest_email;
@@ -1292,14 +1359,16 @@ class StripeWebhookController extends Controller
                     $content .= ' Exclusive content unlocked.';
                 }
                 Helpers::sendNotification($title, $content, $supporterEmail);
-                $pay->supporter_notified_at = now();
             }
 
             if ($sendCreator || $sendSupporter) {
                 PiggyPotContributionMailToUser::dispatch($pay->id, $sendCreator, $sendSupporter);
             }
 
-            $pay->save();
+            // Status/payment_intent were already persisted above; the claims were
+            // written atomically. Refresh only, so the stale in-memory NULLs can
+            // never be saved back over the claim timestamps.
+            $pay->refresh();
         } else {
             $pay->save();
         }
@@ -1357,6 +1426,112 @@ class StripeWebhookController extends Controller
                 'stripe_payment_intent_id' => $session->payment_intent,
                 'status' => $newStatus,
             ]);
+        } catch (\Throwable $e) {
+        }
+
+        // Full fulfilment, mirroring the redirect handler (handleTipJarPayment).
+        // This path used to be a stub — buyer mail + thank-you post only — so a
+        // tip settling via webhook (SEPA/ACH, or a buyer who closed the tab) got
+        // no creator email, no pushes, no ledger row and no GMV until the
+        // half-hourly sync. The deliverable uses the SAME firstOrCreate key as
+        // the redirect, so whichever path runs second skips everything.
+        $deliverable = Deliverable::firstOrCreate(
+            [
+                'product_type' => 'support_payment',
+                'item_id' => $tip->id,
+            ],
+            [
+                'uuid' => (string) Str::uuid(),
+                'product_id' => 'support_payment_'.$tip->id,
+                'creator_id' => $tip->creator_id,
+                'gifter_id' => $tip->user_id,
+                'session_id' => $tip->session_id,
+                'payment_intent_id' => $session->payment_intent ?? null,
+                'deliverable_type' => 'support',
+                'transaction_amount' => $tip->amount,
+                'customer_email' => $tip->guest_email ?? ($tip->user->email ?? null),
+                'customer_name' => $tip->guest_name ?? ($tip->user->name ?? 'Anonymous'),
+                'payment_currency' => strtoupper($tip->currency ?? 'GBP'),
+                'anonymous' => $tip->anonymous ?? false,
+                'message' => $tip->message,
+                'metadata' => json_encode([
+                    'support_payment_id' => $tip->id,
+                    'creator_id' => $tip->creator_id,
+                    'tip_goal_id' => $tip->tip_goal_id,
+                    'creator_net_amount' => (float) $tip->amount,
+                    'anonymous' => $tip->anonymous,
+                ]),
+            ]
+        );
+
+        if (! $deliverable->wasRecentlyCreated) {
+            return;
+        }
+
+        ProcessWishItemDeliverable::dispatch($deliverable);
+
+        // Goal progress counts each tip exactly once — only the path that
+        // created the deliverable increments it (same rule as the redirect).
+        try {
+            if ($tip->tipGoal) {
+                $tip->tipGoal->fullfilled += $tip->amount;
+                $tip->tipGoal->save();
+            }
+        } catch (\Throwable $e) {
+            Log::error('Tip goal increment failed (webhook): '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        $symbolStr = Currency::where('iso', strtoupper($tip->currency ?? 'GBP'))->value('symbol') ?? '£';
+
+        try {
+            TipJarPurchased::dispatch($tip, $symbolStr);
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch TipJarPurchased from webhook: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        try {
+            $creatorName = ucfirst($tip->creator->name ?? 'A Creator');
+            $amountStr = $symbolStr.number_format((float) $tip->amount, 2);
+            if (! empty($tip->creator->email)) {
+                Helpers::sendNotification('New Support Payment! 💰', 'You received '.$amountStr.' from a supporter.', $tip->creator->email);
+            }
+            $buyerEmail = $tip->guest_email ?? ($tip->user->email ?? null);
+            if ($buyerEmail) {
+                Helpers::sendNotification('Purchase Confirmed! ✨', 'Your support payment to '.$creatorName.' is confirmed.', $buyerEmail);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Tip webhook push failed: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        try {
+            $listed = (float) $tip->amount + (float) ($tip->vat_amount ?? 0);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, strtoupper($tip->currency ?? 'GBP'), 0, $tip->fee_profile ?? 'card');
+            $gross = $tip->total_paid && $tip->total_paid > 0 ? (float) $tip->total_paid : $breakdown['total_supporter_pays'];
+
+            FinancialTransaction::updateOrCreate(
+                ['source_type' => TipGoalsPayment::class, 'source_id' => $tip->id],
+                [
+                    'user_id' => $tip->creator_id,
+                    'supporter_id' => $tip->user_id,
+                    'type' => 'income',
+                    'gross_amount' => $gross,
+                    'fee_profile' => $tip->fee_profile ?? 'card',
+                    'platform_fee' => $breakdown['application_fee'],
+                    'stripe_fee' => $breakdown['stripe_fee'],
+                    'vat_amount' => (float) ($tip->vat_amount ?? 0),
+                    'net_amount' => (float) $tip->amount,
+                    'currency' => strtoupper($tip->currency ?? 'GBP'),
+                    'status' => 'completed',
+                    'description' => 'Tip / Support',
+                    'transaction_date' => $tip->created_at,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to sync tip FT from webhook: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        try {
+            Helpers::addGmv($tip->creator_id, (float) $tip->amount, $tip->currency);
         } catch (\Throwable $e) {
         }
 
@@ -1580,6 +1755,9 @@ class StripeWebhookController extends Controller
                 'payment_intent_id' => $paymentIntentId,
                 'charge_id' => $chargeId,
                 'amount' => $amount,
+                // Buyer's ACTUAL charge (gross incl. VAT + fee gross-up) — mirrors
+                // createTaskPurchaseSync; this column was never written before.
+                'total_paid' => (float) ($session->amount_total ?? 0) / $multiplier,
                 'currency' => $currency,
                 'status' => $initialStatus,
                 'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -1755,6 +1933,15 @@ class StripeWebhookController extends Controller
 
             $creator = User::find($purchase->creator_id);
             $supporter = $purchase->supporter_id ? User::find($purchase->supporter_id) : null;
+
+            // Referral GMV — shop and pot webhooks already recalc it; tasks never
+            // did, so a referred creator selling only Paid Tasks could never
+            // cross the referral qualification bar.
+            try {
+                Helpers::addGmv($purchase->creator_id, (float) $purchase->amount, $purchase->currency);
+            } catch (\Throwable $e) {
+                Log::warning('Task GMV recalc failed: '.$e->getMessage(), ['purchase_id' => $purchase->id]);
+            }
 
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
@@ -2338,8 +2525,14 @@ class StripeWebhookController extends Controller
             'uuid' => $subs->uuid,
             'notification' => $subs->user->notification_send ?? 0,
             'trial_end' => $subs->upcoming_payment ?? null,
-            'amount' => $subs->amount ?? null,
+            // Receipt must show what was actually charged (listed + VAT) and the
+            // date THIS renewal happened — the template read a 'renew_on' key
+            // nothing ever set, so it always printed "today" at render time.
+            'amount' => (float) ($subs->amount ?? 0) + (float) ($subs->vat_tax_amount ?? 0),
+            'renew_on' => now()->toDateTimeString(),
             'currency' => $subs->currency ?? 'GBP',
+            'reward_item_type' => 'bill',
+            'reward_item_id' => $subs->bills_id,
         ];
 
         $subs->status = 'ended';
@@ -2404,6 +2597,20 @@ class StripeWebhookController extends Controller
 
         SendRenewMail::dispatch($array, 'renew', 'bill');
 
+        // Renewal push — first purchase notifies both parties, so a renewal
+        // (an equally real charge) must too; email alone was silent in-app.
+        try {
+            $billName = $newSubs->bill->name ?? 'your subscription';
+            if (! empty($array['email'])) {
+                Helpers::sendNotification('Subscription Renewed ✅', 'Your subscription "'.$billName.'" has renewed.', $array['email']);
+            }
+            if (! empty($newSubs->bill->user->email)) {
+                Helpers::sendNotification('Subscription Renewed 💰', '"'.$billName.'" renewed — you have been paid.', $newSubs->bill->user->email);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Bill renewal push failed: '.$e->getMessage());
+        }
+
         // Dispatch content delivery email if bill has content file
         if (! empty($newSubs->bill->content_file)) {
             // Get currency symbol for email
@@ -2456,8 +2663,14 @@ class StripeWebhookController extends Controller
             'uuid' => $subs->uuid,
             'notification' => $subs->user->notification_send ?? 0,
             'trial_end' => $subs->upcoming_payment ?? null,
-            'amount' => $subs->amount ?? null,
+            // Receipt must show what was actually charged (listed + VAT) and the
+            // date THIS renewal happened — the template read a 'renew_on' key
+            // nothing ever set, so it always printed "today" at render time.
+            'amount' => (float) ($subs->amount ?? 0) + (float) ($subs->vat_tax_amount ?? 0),
+            'renew_on' => now()->toDateTimeString(),
             'currency' => $subs->currency ?? 'GBP',
+            'reward_item_type' => 'membership',
+            'reward_item_id' => $subs->membership_id,
         ];
 
         Log::info(json_encode($array));
@@ -2523,6 +2736,19 @@ class StripeWebhookController extends Controller
         }
 
         SendRenewMail::dispatch($array, 'renew', 'membership');
+
+        // Renewal push — mirror the bill branch: both parties, every cycle.
+        try {
+            $membershipName = $newSubs->membership->level ?? 'your membership';
+            if (! empty($array['email'])) {
+                Helpers::sendNotification('Membership Renewed ✅', 'Your membership "'.$membershipName.'" has renewed.', $array['email']);
+            }
+            if (! empty($newSubs->membership->user->email)) {
+                Helpers::sendNotification('Membership Renewed 💰', '"'.$membershipName.'" renewed — you have been paid.', $newSubs->membership->user->email);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Membership renewal push failed: '.$e->getMessage());
+        }
 
         Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
     }
@@ -2815,8 +3041,11 @@ class StripeWebhookController extends Controller
                     $currency = Currency::where('iso', strtoupper($billPayment->currency ?? 'gbp'))->first();
                     $currencySymbol = $currency ? $currency->symbol : '£';
 
-                    $total_amount = ($data->amount_paid ?? 0) / 100;
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $billPayment->currency);
+                    // Gross-up takes the LISTED price (net ≈ input). Stripe's
+                    // amount_paid is the already-grossed-up charge — feeding it
+                    // back in overstated the creator's net on every renewal.
+                    $listed = (float) $billPayment->amount + (float) ($billPayment->vat_tax_amount ?? 0);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $billPayment->currency, 0, $billPayment->fee_profile ?? 'card');
                     $creatorNet = $breakdown['net_to_creator'];
                     $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -2881,8 +3110,10 @@ class StripeWebhookController extends Controller
                         $currency = Currency::where('iso', strtoupper($membershipPayment->currency ?? 'gbp'))->first();
                         $currencySymbol = $currency ? $currency->symbol : '£';
 
-                        $total_amount = ($data->amount_paid ?? 0) / 100;
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $membershipPayment->currency);
+                        // Same rule as the bill branch: feed the LISTED price,
+                        // never Stripe's grossed-up amount_paid.
+                        $listed = (float) $membershipPayment->amount + (float) ($membershipPayment->vat_tax_amount ?? 0);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $membershipPayment->currency, 0, $membershipPayment->fee_profile ?? 'card');
                         $creatorNet = $breakdown['net_to_creator'];
                         $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -2941,6 +3172,51 @@ class StripeWebhookController extends Controller
                 'wish_item_id' => $wishSubscription->wish_item->id,
                 'invoice_id' => $invoiceData->id,
             ]);
+
+            // Ledger: every paid renewal cycle must produce an income row, whether
+            // or not the wish has content to deliver. One SPD+SPI pair per invoice
+            // (keyed on the invoice id, so a webhook retry can't double it) —
+            // finance:sync-transactions' syncWishes() then builds the
+            // FinancialTransaction with the full fee/reserve treatment. Without
+            // this, month 2+ charges never reached the ledger or payouts at all.
+            try {
+                $isZeroDecimal = Helpers::isZeroDecimalCurrency($invoiceData->currency ?? $wishSubscription->currency);
+                $paidTotal = ($invoiceData->amount_paid ?? 0) > 0
+                    ? ($isZeroDecimal ? (float) $invoiceData->amount_paid : (float) $invoiceData->amount_paid / 100)
+                    : (float) $wishSubscription->total_paid;
+
+                $renewalDetail = StripePaymentDetail::firstOrCreate(
+                    ['session_id' => 'invoice_'.$invoiceData->id],
+                    [
+                        'stripe_payment_intent_id' => $invoiceData->payment_intent ?? null,
+                        'user_id' => $wishSubscription->user_id,
+                        'owner_id' => $wishSubscription->wish_item->user_id,
+                        'amount_total' => $paidTotal,
+                        'currency' => strtoupper($invoiceData->currency ?? $wishSubscription->currency ?? 'GBP'),
+                        'payment_status' => 'paid',
+                        'guest_email' => $wishSubscription->guest_email,
+                        'name' => $wishSubscription->guest_name,
+                        'fee_profile' => $wishSubscription->fee_profile ?? 'card',
+                    ]
+                );
+
+                if ($renewalDetail->wasRecentlyCreated) {
+                    StripePaymentItems::create([
+                        'uuid' => Str::uuid(),
+                        'stripe_payment_detail_id' => $renewalDetail->id,
+                        'wish_item_id' => $wishSubscription->wish_item->id,
+                        'amount' => $wishSubscription->amount,
+                        'total_paid' => $paidTotal,
+                        'vat_amount' => $wishSubscription->vat_tax_amount ?? 0,
+                        'quantity' => 1,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed to record wish renewal in ledger sources', [
+                    'invoice_id' => $invoiceData->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // Check if wish item has content to deliver
             // (skip if invoice.payment_succeeded already created one for this same invoice).
@@ -3033,14 +3309,14 @@ class StripeWebhookController extends Controller
                     true // is_renewal = true for subscription payments
                 );
 
-                // Notify Creator about the payment with Net amount
+                // Notify Creator about the payment with Net amount.
+                // ⚠️ The gross-up formula takes the LISTED price and returns
+                // net ≈ that input. Feeding it Stripe's amount_paid (already
+                // grossed-up, fees included) reported a "net" ~20-25% higher
+                // than what actually lands in the creator's balance.
                 try {
-                    $total_amount = ($invoiceData->amount_paid ?? 0) / 100; // Stripe amount is in cents
-                    if ($total_amount <= 0) {
-                        $total_amount = $wishSubscription->amount;
-                    }
-
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
+                    $listed = (float) $wishSubscription->amount + (float) ($wishSubscription->vat_tax_amount ?? 0);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
                     $creatorNet = $breakdown['net_to_creator'];
                     $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -3109,8 +3385,14 @@ class StripeWebhookController extends Controller
             'uuid' => $subs->uuid,
             'notification' => $subs->user->notification_send ?? 0,
             'trial_end' => $subs->upcoming_payment ?? null,
-            'amount' => $subs->amount ?? null,
+            // Receipt must show what was actually charged (listed + VAT) and the
+            // date THIS renewal happened — the template read a 'renew_on' key
+            // nothing ever set, so it always printed "today" at render time.
+            'amount' => (float) ($subs->amount ?? 0) + (float) ($subs->vat_tax_amount ?? 0),
+            'renew_on' => now()->toDateTimeString(),
             'currency' => $subs->currency ?? 'GBP',
+            'reward_item_type' => 'wish',
+            'reward_item_id' => $subs->wish_item_id,
         ];
 
         $wish_subscription->status = 'ended';
@@ -3593,14 +3875,23 @@ class StripeWebhookController extends Controller
             Log::info('Updated TipGoalsPayment status to paid (async settlement)', ['id' => $tipPay->id]);
         }
 
-        // Wish / checkout (StripePaymentDetail). Marking it paid is what lets
-        // finance:sync-transactions build the ledger FinancialTransaction for the
-        // wish — without it, a settled bank wish stays '?' and is never synced.
+        // Wish / checkout (StripePaymentDetail). ⚠️ 'paid' is the CLAIM value that
+        // successCheckout's atomic guard keys on — flipping it here for a row the
+        // redirect has NOT yet fulfilled (no StripePaymentItems) makes the redirect
+        // see "already claimed" and silently skip items/deliverables/mails forever.
+        // Only mark paid when the items exist (fulfilment already happened);
+        // otherwise record settlement as 'processing', which the claim guard still
+        // matches, so the redirect can complete the cart normally.
         $detail = StripePaymentDetail::where('session_id', $session->id)->first();
         if ($detail && $detail->payment_status !== 'paid') {
-            $detail->payment_status = 'paid';
+            $hasItems = StripePaymentItems::where('stripe_payment_detail_id', $detail->id)->exists();
+            $detail->payment_status = $hasItems ? 'paid' : 'processing';
             $detail->save();
-            Log::info('Updated StripePaymentDetail status to paid (async settlement)', ['id' => $detail->id]);
+            Log::info('Updated StripePaymentDetail status (async settlement)', [
+                'id' => $detail->id,
+                'status' => $detail->payment_status,
+                'has_items' => $hasItems,
+            ]);
         }
 
         // Settled money with no fulfilment is the one outcome that must not be
@@ -3938,6 +4229,11 @@ class StripeWebhookController extends Controller
             if ($wasPaid && $shopPayment->shop && $shopPayment->shop->slot_limitation !== null) {
                 Shop::where('id', $shopPayment->shop_id)
                     ->increment('slot_limitation', max(1, (int) $shopPayment->quantity));
+
+                // A refund putting the last unit back IS a restock. This ->increment()
+                // is a query-builder call and fires no model events, so nothing would
+                // notice it otherwise. Never throws — the sweep covers it either way.
+                app(StockWaitlistService::class)->checkRestock($shopPayment->shop_id);
             }
 
             // …and take the order off the creator's fulfilment queue.
@@ -4627,13 +4923,22 @@ class StripeWebhookController extends Controller
 
                 Log::info('StripeWebhookController: Processing shop payment via webhook', ['payment_id' => $paymentId]);
 
-                // 1. Decrement stock if applicable
+                // 1. Decrement stock if applicable — by the PURCHASED QUANTITY and
+                // atomically (same pattern as the redirect handler). The old form
+                // always removed exactly 1 whatever the quantity, and its
+                // check-then-act let two racing webhooks both take the last unit.
                 $shop = $shopPayment->shop;
                 if ($shop->slot_limitation !== null) {
-                    if ($shop->slot_limitation > 0) {
-                        $shop->decrement('slot_limitation');
-                    } else {
-                        Log::warning('Shop item sold out during webhook processing', ['shop_id' => $shop->id]);
+                    $purchasedQuantity = max(1, (int) ($shopPayment->quantity ?? 1));
+                    $claimed = Shop::where('id', $shop->id)
+                        ->where('slot_limitation', '>=', $purchasedQuantity)
+                        ->decrement('slot_limitation', $purchasedQuantity);
+                    if ($claimed === 0) {
+                        Log::warning('Shop item oversold during webhook processing', [
+                            'shop_id' => $shop->id,
+                            'quantity' => $purchasedQuantity,
+                            'remaining' => $shop->slot_limitation,
+                        ]);
                     }
                 }
 

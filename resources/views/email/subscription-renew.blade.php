@@ -118,6 +118,15 @@ $badgeEmoji = [
                     Thank you for continuing your journey with Spenny Piggy! 🐷 Your subscription keeps all your premium features active without interruption.
                 </td>
             </tr>
+            @if(!empty($rewardItem))
+            <tr>
+                <td style="padding:0 0 22px 0;">
+                    {{-- The renewal charge buys the same reward as the first purchase —
+                         the receipt must say what the supporter is paying for. --}}
+                    @include('email.reward-block', ['rewardItem' => $rewardItem, 'rewardShowFile' => true])
+                </td>
+            </tr>
+            @endif
             <tr>
                 <td style="padding:0 0 22px 0;">
                     @include('email.digital-content-notice')

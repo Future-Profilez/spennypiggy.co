@@ -46,6 +46,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\StockWaitlistController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscriptionsController;
 use App\Http\Controllers\SubscriptionSyncController;
@@ -57,6 +58,7 @@ use App\Models\User;
 use App\Models\UserCart;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
+use App\Support\PresetCovers;
 use Carbon\Carbon;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -66,6 +68,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -480,6 +483,26 @@ Route::middleware('auth')->group(function () {
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
 
+// Guest opt-out from abandoned-checkout reminders. A guest has no account, so the
+// route above (which needs a user id) cannot serve them — the opt-out is recorded
+// against the email address instead. Signature validated in the controller, same as
+// the route above, so a stale link redirects home rather than showing a bare 403.
+Route::get('/checkout-reminders/stop/{checkout}', [EmailPreferenceController::class, 'stopCheckoutReminders'])
+    ->name('checkout-reminders.stop');
+
+// Sold-out waitlist. Public on purpose: making someone create an account on a sold-out
+// page throws away the demand this exists to capture. Throttled, and `join` carries the
+// same Turnstile gate as the other endpoints a logged-out visitor can POST to.
+Route::post('/waitlist/join', [StockWaitlistController::class, 'join'])
+    ->middleware('throttle:20,1')
+    ->name('waitlist.join');
+Route::post('/waitlist/leave', [StockWaitlistController::class, 'leave'])
+    ->middleware('throttle:20,1')
+    ->name('waitlist.leave');
+// Signature checked in the controller so a stale link redirects home rather than 403ing.
+Route::get('/waitlist/stop/{waitlist}', [StockWaitlistController::class, 'leaveViaLink'])
+    ->name('waitlist.leave-link');
+
 // Select Default Currency
 Route::get('/currency/{c}', function (Request $request, $c) {
     if (in_array($c, ['USD', 'GBP', 'EUR', 'INR', 'AUD', 'JPY', 'HKD', 'CAD', 'CHF', 'SEK', 'NZD'])) {
@@ -577,7 +600,7 @@ Route::get('/creator/dispute-packs/{disputeId}/{fileName}', function (Request $r
     $path = $adminStoragePath.$fileName;
 
     if (! File::exists($path)) {
-        \Illuminate\Support\Facades\Log::warning('Dispute pack download failed: file not reachable from this app', [
+        Log::warning('Dispute pack download failed: file not reachable from this app', [
             'file' => $fileName,
             'looked_in' => $adminStoragePath,
             'hint' => 'Expected on a shared filesystem. On Vapor the two apps do not share storage — this needs an S3 disk.',
@@ -881,6 +904,19 @@ Route::get('/ping', function () {
 Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
 
+// The cover picker's catalogue. Fetched when the picker opens rather than
+// shared on every page: it is a static list behind a button, and shipping it
+// with every response is 2.5KB nobody asked for.
+//
+// ⚠️ MUST stay above the auth.php require: that file ends with the
+// `/{username}/{page?}` profile catch-all, and Laravel matches in registration
+// order — a single-segment path declared after it is read as a username and
+// answered with the profile 404, never reaching this closure.
+Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker())
+    ->header('Cache-Control', 'public, max-age=3600'))
+    ->middleware(['auth', 'throttle:30,1'])
+    ->name('cover-banners');
+
 // require __DIR__.'/auth.php'; // moved below founder routes
 
 // Debug routes for wish creation issue.
@@ -944,19 +980,32 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 });
 
 /*
-| System Diagnostics — admin only.
+| System Diagnostics.
 |
-| The guard was previously written as a commented-out group with the routes left
-| registered OUTSIDE it, so the comment claimed a protection that did not exist.
-| Anonymously reachable, it returned the last ERROR/CRITICAL lines of the
-| application log (payment intent ids, buyer emails, stack traces), platform
-| financial integrity counts, and which secrets are configured — and its Stripe
-| test path creates a real Connect Express account on every run.
+| Open (no auth) on local/testing so the page can be used while developing.
+|
+| Everywhere else it stays behind auth+admin: it returns the last ERROR/CRITICAL
+| lines of the application log (payment intent ids, buyer emails, stack traces),
+| platform financial integrity counts, and which secrets are configured — and its
+| Stripe test path creates a real Connect Express account on every run. Note the
+| deployed `development` environment is a publicly reachable host, so it is NOT
+| on the open list.
 */
-Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+$systemDiagnosticsRoutes = function () {
     Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-    Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])->name('admin.system-diagnostics.run');
-});
+    // Throttled: a deep run creates a real Stripe Connect Express account and a real
+    // PaymentIntent, and the whole sweep is ~10s of work.
+    Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
+        ->middleware('throttle:10,1')
+        ->name('admin.system-diagnostics.run');
+    Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])->name('admin.system-diagnostics.history');
+};
+
+if (app()->environment('local', 'testing')) {
+    $systemDiagnosticsRoutes();
+} else {
+    Route::middleware(['auth', 'verified', 'admin'])->group($systemDiagnosticsRoutes);
+}
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 // Sentry smoke test — anyone could write an event into the production Sentry project.

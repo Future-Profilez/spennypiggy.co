@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -102,35 +104,39 @@ class WebVitalsController extends Controller
             $query->where('url', 'like', "%{$url}%");
         }
 
-        // Get aggregated data
-        $metrics = $query->select([
+        // Get aggregated data.
+        $metrics = (clone $query)->select([
             'metric_name',
             DB::raw('AVG(value) as avg_value'),
-            DB::raw('PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) as p50'),
-            DB::raw('PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY value) as p75'),
-            DB::raw('PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY value) as p90'),
-            DB::raw('PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY value) as p95'),
             DB::raw('COUNT(*) as sample_count'),
-            DB::raw('SUM(CASE WHEN rating = "good" THEN 1 ELSE 0 END) as good_count'),
-            DB::raw('SUM(CASE WHEN rating = "needs-improvement" THEN 1 ELSE 0 END) as needs_improvement_count'),
-            DB::raw('SUM(CASE WHEN rating = "poor" THEN 1 ELSE 0 END) as poor_count'),
+            DB::raw("SUM(CASE WHEN rating = 'good' THEN 1 ELSE 0 END) as good_count"),
+            DB::raw("SUM(CASE WHEN rating = 'needs-improvement' THEN 1 ELSE 0 END) as needs_improvement_count"),
+            DB::raw("SUM(CASE WHEN rating = 'poor' THEN 1 ELSE 0 END) as poor_count"),
         ])
             ->groupBy('metric_name')
             ->get();
 
+        $percentiles = $this->percentilesByMetric($query);
+
         // Calculate performance scores
-        $performanceScores = $metrics->mapWithKeys(function ($metric) {
-            $total = $metric->sample_count;
+        $performanceScores = $metrics->mapWithKeys(function ($metric) use ($percentiles) {
+            $total = (int) $metric->sample_count;
+
+            if ($total === 0) {
+                return [];
+            }
+
             $goodPercent = ($metric->good_count / $total) * 100;
             $needsImprovementPercent = ($metric->needs_improvement_count / $total) * 100;
             $poorPercent = ($metric->poor_count / $total) * 100;
+            $p = $percentiles[$metric->metric_name] ?? null;
 
             return [$metric->metric_name => [
                 'avg_value' => round($metric->avg_value, 2),
-                'p50' => round($metric->p50, 2),
-                'p75' => round($metric->p75, 2),
-                'p90' => round($metric->p90, 2),
-                'p95' => round($metric->p95, 2),
+                'p50' => round((float) ($p->p50 ?? 0), 2),
+                'p75' => round((float) ($p->p75 ?? 0), 2),
+                'p90' => round((float) ($p->p90 ?? 0), 2),
+                'p95' => round((float) ($p->p95 ?? 0), 2),
                 'sample_count' => $metric->sample_count,
                 'distribution' => [
                     'good' => round($goodPercent, 1),
@@ -156,36 +162,100 @@ class WebVitalsController extends Controller
         $metric = $request->get('metric', 'LCP');
         $timeframe = $request->get('timeframe', '7d');
 
-        $interval = match ($timeframe) {
-            '24h' => '1 hour',
-            '7d' => '4 hours',
-            '30d' => '1 day',
-            default => '4 hours'
+        $bucket = $this->trendBucketExpression($timeframe);
+
+        $since = match ($timeframe) {
+            '24h' => now()->subDay(),
+            '30d' => now()->subMonth(),
+            default => now()->subWeek(),
         };
 
-        $trends = DB::table('web_vitals_metrics')
-            ->select([
-                DB::raw("DATE_TRUNC('{$interval}', created_at) as time_bucket"),
-                DB::raw('AVG(value) as avg_value'),
-                DB::raw('PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY value) as p95'),
-                DB::raw('COUNT(*) as sample_count'),
-            ])
+        $rows = DB::table('web_vitals_metrics')
+            ->selectRaw("{$bucket} as time_bucket")
+            ->addSelect('value')
+            ->selectRaw("CUME_DIST() OVER (PARTITION BY {$bucket} ORDER BY value) as cd")
             ->where('metric_name', $metric)
-            ->where('created_at', '>=', match ($timeframe) {
-                '24h' => now()->subDay(),
-                '7d' => now()->subWeek(),
-                '30d' => now()->subMonth(),
-                default => now()->subWeek()
-            })
+            ->where('created_at', '>=', $since);
+
+        $trends = DB::query()
+            ->fromSub($rows, 't')
+            ->select('time_bucket')
+            ->selectRaw('AVG(value) as avg_value')
+            ->selectRaw('COUNT(*) as sample_count')
+            ->selectRaw('COALESCE(MIN(CASE WHEN cd >= 0.95 THEN value END), MAX(value)) as p95')
             ->groupBy('time_bucket')
             ->orderBy('time_bucket')
-            ->get();
+            ->get()
+            ->map(fn ($row) => [
+                'time_bucket' => $row->time_bucket,
+                'avg_value' => round((float) $row->avg_value, 2),
+                'p95' => round((float) $row->p95, 2),
+                'sample_count' => (int) $row->sample_count,
+            ])
+            ->values();
 
         return response()->json([
             'metric' => $metric,
             'timeframe' => $timeframe,
             'trends' => $trends,
         ]);
+    }
+
+    /**
+     * Exact percentiles per metric, computed by the database.
+     *
+     * `PERCENTILE_CONT ... WITHIN GROUP` is Postgres-only syntax — MySQL rejects it
+     * with SQLSTATE[42000] 1064, which is what threw on every call to this endpoint.
+     * The replacement must not be "pull the values and do it in PHP" either: an
+     * `ORDER BY value LIMIT n` takes the SMALLEST n rows, so any capped sample
+     * silently reports a p95 drawn from the bottom of the distribution.
+     *
+     * CUME_DIST() is supported by both MySQL 8 and SQLite 3.28+, reads the whole
+     * filtered set, and never lands the raw rows in PHP memory. It gives the
+     * fraction of rows at or below each value, so the smallest value whose CUME_DIST
+     * reaches p IS the nearest-rank pth percentile. (PERCENT_RANK is the wrong
+     * function here: it is (rank-1)/(n-1), which reports 96 as the p95 of 1..100.)
+     * The result is an observed measurement rather than an interpolated one.
+     */
+    private function percentilesByMetric(Builder $query): Collection
+    {
+        $ranked = (clone $query)
+            ->select('metric_name', 'value')
+            ->selectRaw('CUME_DIST() OVER (PARTITION BY metric_name ORDER BY value) as cd');
+
+        return DB::query()
+            ->fromSub($ranked, 't')
+            ->select('metric_name')
+            ->selectRaw('COALESCE(MIN(CASE WHEN cd >= 0.50 THEN value END), MAX(value)) as p50')
+            ->selectRaw('COALESCE(MIN(CASE WHEN cd >= 0.75 THEN value END), MAX(value)) as p75')
+            ->selectRaw('COALESCE(MIN(CASE WHEN cd >= 0.90 THEN value END), MAX(value)) as p90')
+            ->selectRaw('COALESCE(MIN(CASE WHEN cd >= 0.95 THEN value END), MAX(value)) as p95')
+            ->groupBy('metric_name')
+            ->get()
+            ->keyBy('metric_name');
+    }
+
+    /**
+     * The SQL expression that buckets a row into its trend interval.
+     *
+     * MySQL has no DATE_TRUNC, and the test suite runs on SQLite, so the expression
+     * is per-driver. It is built from a fixed match — never from request input.
+     */
+    private function trendBucketExpression(string $timeframe): string
+    {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return match ($timeframe) {
+                '24h' => "strftime('%Y-%m-%d %H:00:00', created_at)",
+                '30d' => "strftime('%Y-%m-%d 00:00:00', created_at)",
+                default => "strftime('%Y-%m-%d ', created_at) || printf('%02d', (CAST(strftime('%H', created_at) AS INTEGER) / 4) * 4) || ':00:00'",
+            };
+        }
+
+        return match ($timeframe) {
+            '24h' => "DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')",
+            '30d' => "DATE_FORMAT(created_at, '%Y-%m-%d 00:00:00')",
+            default => "DATE_FORMAT(DATE_SUB(created_at, INTERVAL MOD(HOUR(created_at), 4) HOUR), '%Y-%m-%d %H:00:00')",
+        };
     }
 
     /**

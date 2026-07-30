@@ -1539,6 +1539,19 @@ class StripeControl
 
     public static function ensureManualPayoutSchedule(string $connectedAccountId, string $currency = 'GBP'): bool
     {
+        // A connected account id is always `acct_…`. `users.account_id` has been seen holding a
+        // CUSTOMER id (`cus_…`) instead, and every caller then spent a Stripe round trip to be
+        // told the key "does not have access to account 'cus_…'" — an ERROR-level line that reads
+        // like a revoked key when it is really a malformed column. Reject it here, once, for all
+        // seven callers rather than letting each one log the wrong diagnosis.
+        if (! str_starts_with($connectedAccountId, 'acct_')) {
+            Log::warning('Skipped manual payout schedule: value is not a connected account id', [
+                'account_id' => $connectedAccountId,
+            ]);
+
+            return false;
+        }
+
         $client = self::getClientForCurrency($currency);
 
         try {

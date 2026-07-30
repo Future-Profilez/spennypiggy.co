@@ -62,7 +62,10 @@ class PayoutService
                     $detailQuery->orWhere('session_id', $payment->stripe_session_id);
                 }
                 if ($payment->stripe_payment_intent_id) {
-                    $detailQuery->orWhere('session_id', $payment->stripe_payment_intent_id);
+                    // A webhook-created fallback Payment row carries only the
+                    // payment-intent id. SPD has its own stripe_payment_intent_id
+                    // column — matching the PI against session_id never hit.
+                    $detailQuery->orWhere('stripe_payment_intent_id', $payment->stripe_payment_intent_id);
                 }
                 $detailIds = $detailQuery->pluck('id');
                 if ($detailIds->isEmpty()) {

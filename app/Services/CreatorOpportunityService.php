@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Helpers;
+use App\Models\AbandonedCheckout;
 use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Models\WishItem;
@@ -32,6 +33,12 @@ class CreatorOpportunityService
     /** VIP lookups are a query each, so only the top slice gets enriched. */
     private const VIP_ENRICH_LIMIT = 10;
 
+    /** How far back the abandoned-checkout panel looks. */
+    private const ABANDONED_WINDOW_DAYS = 30;
+
+    /** Rows listed individually under the abandoned-checkout headline figures. */
+    private const ABANDONED_LIST_LIMIT = 8;
+
     public function __construct(private VipScoreService $vip) {}
 
     /** Everything the Opportunity Centre renders, in one call. */
@@ -47,6 +54,7 @@ class CreatorOpportunityService
             'tiers' => $this->tierDistribution($supporters->pluck('supporter_id')->all()),
             'retention' => $retention,
             'alerts' => $alerts,
+            'abandoned' => $this->abandonedCheckouts($creator, $currency),
             'actions' => $this->suggestedActions($creator, $supporters, $retention),
             'totals' => [
                 'supporters' => $supporters->count(),
@@ -57,6 +65,98 @@ class CreatorOpportunityService
                     : round((float) $supporters->sum('lifetime_spent') / $supporters->count(), 2),
             ],
         ];
+    }
+
+    /**
+     * Checkouts opened against this creator's listings and never completed.
+     *
+     * The only demand-side signal the creator gets: someone wanted this, reached the
+     * payment screen, and stopped. A listing that collects abandonments is usually
+     * priced wrong or described badly — that is actionable in a way "you earned £X"
+     * is not.
+     *
+     * ⚠️ **No supporter identity leaves this method.** Not the email, not a name, not
+     * a user id — the platform never hands a creator a supporter's contact details,
+     * and an abandoned checkout is a weaker relationship than a completed purchase,
+     * not a stronger one. Counts, amounts and the listing only.
+     */
+    public function abandonedCheckouts(User $creator, string $currency = 'GBP'): array
+    {
+        $since = now()->subDays(self::ABANDONED_WINDOW_DAYS);
+
+        $rows = AbandonedCheckout::query()
+            ->where('creator_id', $creator->id)
+            ->where('created_at', '>=', $since)
+            ->whereNull('recovered_at')
+            // Anything still open is either in flight or waiting on its reminder;
+            // 'expired' and 'unrecoverable' are genuinely lost. Both count as
+            // "did not buy". A row closed 'paid' is excluded by recovered_at.
+            ->orderByDesc('created_at')
+            ->get(['id', 'product_type', 'item_id', 'amount_minor', 'currency', 'created_at', 'reminder_count']);
+
+        $recovered = AbandonedCheckout::where('creator_id', $creator->id)
+            ->where('created_at', '>=', $since)
+            ->whereNotNull('recovered_at')
+            ->count();
+
+        $value = 0.0;
+        $items = [];
+
+        foreach ($rows as $row) {
+            $from = strtoupper($row->currency ?: 'GBP');
+            $amount = (float) $row->amount_minor / 100;
+            $converted = $from === $currency ? $amount : (float) Helpers::priceFormat($from, $amount, $currency);
+
+            $value += $converted;
+
+            if (count($items) < self::ABANDONED_LIST_LIMIT) {
+                $items[] = [
+                    'id' => $row->id,
+                    'type' => $row->product_type,
+                    'label' => AbandonedCheckoutService::moduleLabel($row->product_type),
+                    'title' => $this->abandonedItemTitle($row),
+                    'amount' => round($converted, 2),
+                    'reminded' => (int) $row->reminder_count > 0,
+                    'when' => optional($row->created_at)->toDateTimeString(),
+                ];
+            }
+        }
+
+        $total = $rows->count() + $recovered;
+
+        return [
+            'window_days' => self::ABANDONED_WINDOW_DAYS,
+            'count' => $rows->count(),
+            'value' => round($value, 2),
+            'recovered' => $recovered,
+            // Share of started checkouts that went on to complete. Null rather than 0
+            // when nothing was started — "no data" and "nobody bought" are different.
+            'recovery_rate' => $total > 0 ? round(($recovered / $total) * 100, 1) : null,
+        ] + ['items' => $items];
+    }
+
+    /** Listing name behind an abandoned checkout, or null when it was a basket. */
+    private function abandonedItemTitle(AbandonedCheckout $row): ?string
+    {
+        try {
+            $item = app(AbandonedCheckoutService::class)->itemFor($row);
+
+            if (! $item) {
+                return null;
+            }
+
+            foreach (['wishname', 'name', 'title'] as $column) {
+                $value = trim((string) ($item->{$column} ?? ''));
+
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**

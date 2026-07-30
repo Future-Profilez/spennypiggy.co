@@ -26,6 +26,7 @@ use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -34,6 +35,7 @@ use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\RiskService;
+use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Traits\RiskEnforcement;
@@ -85,6 +87,15 @@ class ShopsController extends Controller
         // theirs through the order screens.
         if ($isOwner) {
             $shops->each->withDeliverable();
+
+            // How many people are waiting for each sold-out item — the demand the
+            // creator could not see before. ONE grouped query for the whole list,
+            // never one per row.
+            $counts = app(StockWaitlistService::class)->waitingCounts($shops->pluck('id')->all());
+
+            $shops->each(function ($shop) use ($counts) {
+                $shop->waiting_count = (int) ($counts[$shop->id] ?? 0);
+            });
         }
 
         return response()->json([
@@ -569,6 +580,11 @@ class ShopsController extends Controller
 
             $shop->refresh();
 
+            // The creator may have just put stock back. Both update branches above are
+            // query-builder mass updates, which fire no model events, so nothing else
+            // would notice. Never throws; the scheduled sweep covers it regardless.
+            app(StockWaitlistService::class)->checkRestock($shop->id);
+
             // An edit could swap in new media, so re-run the SFW gate — previously
             // only creation was scanned, making edit a way around moderation.
             if (! empty($request->image) && $request->image !== $oldImage) {
@@ -823,6 +839,13 @@ class ShopsController extends Controller
                 'default_currency', 'vat_amount_percentage', 'suspended_account',
             ]);
         }
+
+        // Waitlist state for THIS viewer. Safe here because this page is not cached —
+        // the profile/discover payloads are shared across viewers, so `is_waiting`
+        // deliberately never goes into those.
+        $waitlist = app(StockWaitlistService::class);
+        $shop->waiting_count = $waitlist->waitingCount($shop->id);
+        $shop->is_waiting = $waitlist->isWaiting($shop, Auth::user());
 
         return Inertia::render('shop/Item', [
             'shop' => $shop,
@@ -1283,6 +1306,20 @@ class ShopsController extends Controller
 
             $shopPaymentDetail->session_id = $sessionCreate->id;
             $shopPaymentDetail->save();
+
+            // Recovery tracking. Swallows its own errors — a missed reminder costs one
+            // email, a thrown exception here would cost the sale.
+            AbandonedCheckoutService::record(
+                $sessionCreate,
+                'shop',
+                $shop->user,
+                $shop->id,
+                $shopPaymentDetail->user_id,
+                $shopPaymentDetail->email ?? null,
+                (int) ($sessionCreate->amount_total ?? 0),
+                $sessionCreate->currency ?? null,
+                $methodResolution['fee_profile'] ?? null
+            );
 
             try {
                 Payment::firstOrCreate(

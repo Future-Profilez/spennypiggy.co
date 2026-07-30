@@ -19,6 +19,7 @@ use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -670,6 +671,21 @@ class TaskController extends Controller
 
         $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $creator->username);
 
+        // Recovery tracking. Swallows its own errors — a missed reminder costs one
+        // email, a thrown exception here would cost the sale. A Paid Task writes no
+        // TaskPurchase row until fulfilment, so this is the only record of the attempt.
+        AbandonedCheckoutService::record(
+            $session,
+            'task',
+            $creator,
+            $task->id,
+            $user->id,
+            $user->email ?? null,
+            (int) ($session->amount_total ?? 0),
+            $session->currency ?? null,
+            $methodResolution['fee_profile'] ?? null
+        );
+
         try {
             $payment = Payment::firstOrCreate(
                 ['stripe_session_id' => $session->id],
@@ -889,6 +905,12 @@ class TaskController extends Controller
                 'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
                 'charge_id' => $chargeId,
                 'amount' => $amount,
+                // What the buyer ACTUALLY paid (gross, incl. VAT + fee gross-up).
+                // This column was never written, so every downstream
+                // total_paid ?: amount fallback understated the buyer's spend.
+                'total_paid' => Helpers::isZeroDecimalCurrency($session->currency ?? $currency)
+                    ? (float) ($session->amount_total ?? 0)
+                    : (float) ($session->amount_total ?? 0) / 100,
                 'currency' => $currency,
                 'status' => 'paid', // Always paid in sync handler (and especially for local dev)
                 'payment_type' => $metadata->payment_type ?? 'STANDARD',

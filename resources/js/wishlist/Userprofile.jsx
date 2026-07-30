@@ -307,7 +307,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                         isInitiallyFollowing={
                                                             follow_status
                                                         }
-                                                        classes="w-full uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-2 border-black px-3 py-3 transition-colors hover:bg-gray-100 disabled:opacity-60"
+                                                        classes="w-full uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-2 border-black px-3 py-3 transition-opacity hover:opacity-90 disabled:opacity-60"
                                                     />
                                                 </Suspense>
                                                 {user &&
