@@ -141,18 +141,20 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
     }
 
     return (
-        <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4">
+        <>
             {displayPosts && displayPosts.length > 5 && (
-                <PostFilterTabs
-                    filters={FILTER_OPTIONS}
-                    activeFilter={filter}
-                    onFilterChange={handleFilterChange}
-                    disabled={isLoading}
-                />
+                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4"> 
+                    <PostFilterTabs
+                        filters={FILTER_OPTIONS}
+                        activeFilter={filter}
+                        onFilterChange={handleFilterChange}
+                        disabled={isLoading}
+                    />
+                </div>
             )}
 
             {displayPosts.length > 0 ? (
-                <>
+                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4"> 
                     {displayPosts.map((post, i) => (
                         <Post
                             key={`post-${post.uuid || post.id || i}`}
@@ -175,7 +177,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                             )}
                         </div>
                     )}
-                </>
+                </div>
             ) : (
                 <PostEmptyState
                     filter={filter}
@@ -183,7 +185,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                     username={user?.name}
                 />
             )}
-        </div>
+        </>
     );
 }
 

@@ -8,6 +8,7 @@ use App\Models\Shop;
 use App\Models\ShopPayment;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\CreatorOpportunityService;
 use App\Services\ItemFunnelService;
 use App\Services\ItemViewTracker;
 use App\Services\VisitTracker;
@@ -477,7 +478,7 @@ class ItemFunnelTest extends TestCase
         $this->viewRow($approvedShop, views: 1, unique: 1);
         $this->viewRow($approvedShop, date: now()->subDays(40)->toDateString()); // to cover window
 
-        $opps = app(\App\Services\CreatorOpportunityService::class)->listingPerformance($creator);
+        $opps = app(CreatorOpportunityService::class)->listingPerformance($creator);
 
         // Stuck listings list should contain the approved task and approved shop, but NOT the others.
         $stuckTitles = collect($opps['stuck'])->pluck('title')->all();

@@ -890,7 +890,11 @@ export default function TermsOfService(props) {
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">21.  Creator Subscription and Platform Fees</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed">21.1  Account fees</p>
                         <p className="mb-4 text-gray-700 leading-relaxed">21.1.1  Creators may be required to pay a recurring subscription fee to maintain access to Platform features and payment processing infrastructure.</p>
-                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.2  Failure to pay such fees may result in suspension of account functionality.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.2  A payment method is required when a Creator account is set up, but no subscription fee is charged until the Creator completes their first sale on the Platform. If a Creator never completes a sale, no subscription fee becomes payable.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.3  The recurring subscription begins on the date of the Creator's first completed sale and is billed monthly from that date until cancelled. A sale that is subsequently refunded or charged back does not reverse a subscription that has already begun.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.4  A Creator who has previously completed a sale on the Platform and who cancels and later re-subscribes will be charged from the date they re-subscribe. The fee-free period applies only to Creators who have not yet made a sale.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.5  Creators may cancel at any time. No cancellation fee or exit charge is applied.</p>
+                        <p className="mb-4 text-gray-700 leading-relaxed">21.1.6  Failure to pay such fees may result in suspension of account functionality.</p>
 
                         <h2 className="text-xl font-black text-gray-900 mt-10 mb-4">22.  Reporting Content</h2>
                         <p className="mb-4 text-gray-700 leading-relaxed">22.1  User reporting</p>

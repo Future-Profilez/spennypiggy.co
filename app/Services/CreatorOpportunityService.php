@@ -56,7 +56,8 @@ class CreatorOpportunityService
         return [
             'currency' => $currency,
             'supporters' => $supporters->take(self::VIP_ENRICH_LIMIT)->values()->all(),
-            'tiers' => $this->tierDistribution($supporters->pluck('supporter_id')->all()),
+            'tiers' => $this->tierDistribution($supporters),
+            'revenue_by_type' => $this->revenueByType($creator, $currency),
             'retention' => $retention,
             'alerts' => $alerts,
             'abandoned' => $this->abandonedCheckouts($creator, $currency),
@@ -278,7 +279,7 @@ class CreatorOpportunityService
      * ALL of them (not just the displayed slice) — one batched lookup, so the
      * "tier mix" is honest rather than a sample of the top few.
      */
-    private function tierDistribution(array $supporterIds): array
+    private function tierDistribution($supporters): array
     {
         // Mirror VipScoreService::TIERS — the engagement Level, not a spend tier.
         // Renamed from gem names to Level 1-5 (24 July 2026) so the supporter badge
@@ -293,12 +294,12 @@ class CreatorOpportunityService
 
         $counts = array_fill_keys(array_keys($meta), 0);
 
-        if (! empty($supporterIds)) {
-            foreach ($this->vip->badgesFor($supporterIds) as $badge) {
-                $level = $badge['level'] ?? null;
-                if (isset($counts[$level])) {
-                    $counts[$level]++;
-                }
+        // Counted from the already-enriched supporter set — every supporter now
+        // carries its engagement Level, so no second VIP lookup is needed.
+        foreach ($supporters as $row) {
+            $level = $row['vip']['level'] ?? null;
+            if (isset($counts[$level])) {
+                $counts[$level]++;
             }
         }
 
@@ -309,6 +310,68 @@ class CreatorOpportunityService
                 'color' => $m['color'],
                 'icon' => $m['icon'],
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Where the money comes from, split by feature — Memberships, Bills, Wishes,
+     * Tasks, Shop, Piggy Pot, Tips. Grouped from the income ledger by source_type,
+     * summed net + VAT, converted per currency (a raw cross-currency SUM would add
+     * pounds to yen). Every feature is returned even at zero, so a creator can see
+     * what they are NOT selling — that is itself an opportunity.
+     */
+    private function revenueByType(User $creator, string $currency): array
+    {
+        // class basename → [display label, colour, icon]. Matches the dashboard's
+        // "Income by Type" widget so the two screens agree.
+        $map = [
+            'MembershipPayment' => ['Memberships', '#8b5cf6', '⭐'],
+            'BillPayment' => ['Bills', '#3b82f6', '📄'],
+            'StripePaymentItems' => ['Wishes', '#05EFB8', '🛒'],
+            'WishItemSubscription' => ['Wishes', '#05EFB8', '🛒'],
+            'TaskPurchase' => ['Tasks', '#f59e0b', '✅'],
+            'ShopPayment' => ['Shop', '#f97316', '🛍️'],
+            'PiggyPotContribution' => ['Piggy Pot', '#ec4899', '🐷'],
+            'TipGoalsPayment' => ['Tips', '#FF007F', '🔓'],
+        ];
+
+        // Seed every feature at zero, in display order.
+        $totals = [];
+        foreach ($map as [$label, $color, $icon]) {
+            $totals[$label] ??= ['label' => $label, 'total' => 0.0, 'count' => 0, 'color' => $color, 'icon' => $icon];
+        }
+
+        $rows = FinancialTransaction::query()
+            ->where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+            ->select(
+                'source_type',
+                'currency',
+                DB::raw('SUM(net_amount + COALESCE(vat_amount, 0)) as total'),
+                DB::raw('COUNT(*) as cnt'),
+            )
+            ->groupBy('source_type', 'currency')
+            ->get();
+
+        foreach ($rows as $row) {
+            $class = class_basename($row->source_type);
+            if (! isset($map[$class])) {
+                continue;
+            }
+
+            $label = $map[$class][0];
+            $from = strtoupper($row->currency ?: 'GBP');
+            $amount = (float) $row->total;
+            $converted = $from === $currency ? $amount : (float) Helpers::priceFormat($from, $amount, $currency);
+
+            $totals[$label]['total'] += $converted;
+            $totals[$label]['count'] += (int) $row->cnt;
+        }
+
+        return collect($totals)
+            ->map(fn ($t) => ['label' => $t['label'], 'total' => round($t['total'], 2), 'count' => $t['count'], 'color' => $t['color'], 'icon' => $t['icon']])
             ->values()
             ->all();
     }
@@ -385,14 +448,17 @@ class CreatorOpportunityService
             ->sortByDesc('lifetime_spent')
             ->values();
 
-        // Names/avatars for the slice we'll actually display.
+        // Names/avatars only for the slice we actually display — loading every
+        // supporter's user row would be wasteful, and only the top rows render.
         $topIds = $collection->take(self::VIP_ENRICH_LIMIT)->pluck('supporter_id')->all();
         $users = User::whereIn('id', $topIds)->get(['id', 'name', 'username', 'avatar'])->keyBy('id');
 
-        // One pass for the whole displayed slice. Calling for() inside the map
-        // ran the six source queries per supporter — ten supporters meant
-        // ninety queries on a single page load.
-        $badges = $this->vip->badgesFor($topIds);
+        // Engagement Level for EVERY supporter, in ONE batched call (six source
+        // queries total, regardless of count — not per supporter). Enriching all
+        // of them lets the tier mix and the Platinum/VIP alerts see the whole set,
+        // not just the top ten by spend — a high-engagement Platinum can rank low
+        // on lifetime spend and would otherwise be missed.
+        $badges = $this->vip->badgesFor($collection->pluck('supporter_id')->all());
 
         return $collection->map(function ($row, $index) use ($users, $currency, $badges) {
             $user = $users->get($row['supporter_id']);
@@ -412,12 +478,7 @@ class CreatorOpportunityService
                 && $row['days_since_last_purchase'] >= self::AT_RISK_DAYS
                 && $row['purchases'] > 1;
 
-            // The engagement Level is the supporter's platform-wide standing (same source as
-            // the public leaderboard) — enriching every supporter would be a
-            // query each, so only the displayed slice gets it.
-            $row['vip'] = ($index < self::VIP_ENRICH_LIMIT && $user)
-                ? ($badges[$row['supporter_id']] ?? null)
-                : null;
+            $row['vip'] = $badges[$row['supporter_id']] ?? null;
 
             return $row;
         });

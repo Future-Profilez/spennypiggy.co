@@ -50,8 +50,10 @@ use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
+use App\Services\SubscriptionActivationService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -473,12 +475,17 @@ class StripeController extends Controller
             return redirect(route('user.show', $user->username))->with('error', 'Stripe Account already connected!');
         }
 
-        // Require: approved profile, Stripe identity verified
+        // Require an approved profile only.
+        //
+        // ⚠️ Identity verification deliberately comes AFTER Connect (31 July 2026).
+        // Stripe Identity bills the platform per check, and this gate meant we paid
+        // for every creator who got as far as an approved profile. Connect onboarding
+        // demands bank details and runs Stripe's own KYC, so anyone who completes it
+        // has already proved they are serious — running the paid check on that much
+        // smaller set is what saves the fee. Identity is enforced instead at the point
+        // a creator tries to LIST something (EnsureIdentityVerifiedForListings).
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
-        }
-        if (($user->identity_status ?? 0) != 1) {
-            return redirect(route('user.show', $user->username))->with('error', 'Please complete Stripe identity verification first.');
         }
 
         // Check if MoR consent exists in the database
@@ -710,12 +717,17 @@ class StripeController extends Controller
             }
         }
 
-        // Require: approved profile, Stripe identity verified
+        // Require an approved profile only.
+        //
+        // ⚠️ Identity verification deliberately comes AFTER Connect (31 July 2026).
+        // Stripe Identity bills the platform per check, and this gate meant we paid
+        // for every creator who got as far as an approved profile. Connect onboarding
+        // demands bank details and runs Stripe's own KYC, so anyone who completes it
+        // has already proved they are serious — running the paid check on that much
+        // smaller set is what saves the fee. Identity is enforced instead at the point
+        // a creator tries to LIST something (EnsureIdentityVerifiedForListings).
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
-        }
-        if (($user->identity_status ?? 0) != 1) {
-            return redirect(route('user.show', $user->username))->with('error', 'Please complete Stripe identity verification first.');
         }
 
         // Log MoR consent verification
@@ -4092,6 +4104,19 @@ class StripeController extends Controller
             return back()->with('error', 'Subscription not allowed for this user.');
         }
 
+        // ⚠️ The waiver used to be stamped `now()` on every row with the comment
+        // "Auto-confirm since it's not required to be clicked" — the platform was
+        // recording a consent the creator had never given. It is the record that
+        // the creator agreed to immediate access in exchange for their statutory
+        // cancellation right, so it has to come from an actual tick.
+        $request->validate([
+            'digital_waiver' => ['accepted'],
+        ], [
+            'digital_waiver.accepted' => 'Please confirm you understand your subscription terms before continuing.',
+        ]);
+
+        $waiverText = SubscriptionPlan::waiverText();
+
         // Prevent duplicate subscriptions: sync status from Stripe first (robust search by id and email across accounts)
         try {
             $stripeSub = $this->userProfileService->syncUserSubscription($user);
@@ -4240,12 +4265,13 @@ class StripeController extends Controller
         }
 
         $currency = strtolower($request->cookie('currency', 'GBP'));
-        $price = 8.99;
 
-        // Calculate VAT (20%) on top of the base price, same as the previous 4+VAT logic
-        $vatRate = 20;
-        $tax = round($price * $vatRate / 100, 2);
-        $finalTotalAmount = $price + $tax;
+        // Price, VAT and the creator-facing wording all come from
+        // config/creator_subscription.php via SubscriptionPlan. They used to be
+        // hard-coded here and retyped on eleven other surfaces.
+        $price = SubscriptionPlan::price();
+        $tax = SubscriptionPlan::vat();
+        $finalTotalAmount = SubscriptionPlan::total();
 
         // A stored customer can be missing or deleted on Stripe (deleted test data, or a
         // key rotated to a different Stripe account). Checkout rejects both, so re-create.
@@ -4281,7 +4307,18 @@ class StripeController extends Controller
             'currency' => 'GBP',
             'amount' => $price,
             'tax' => $tax,
-            'digital_waiver_confirmed_at' => now(), // Auto-confirm since it's not required to be clicked
+            // ⚠️ handleMandatorySubscription refuses to process anything whose
+            // status is not exactly 'initiated'. The column is nullable with no
+            // default, so a row created without this was NULL — the redirect
+            // handler answered "Subscription already processed!" every single
+            // time and never recorded stripe_id, leaving the webhook as the only
+            // path that ever completed a subscription.
+            'status' => 'initiated',
+            // Stamped from the creator's own tick, and the exact wording they were
+            // shown is stored alongside it — a timestamp with no record of what was
+            // agreed to proves nothing later.
+            'digital_waiver_confirmed_at' => now(),
+            'digital_waiver_text' => $waiverText,
         ]);
 
         $amount = $finalTotalAmount;
@@ -4296,11 +4333,27 @@ class StripeController extends Controller
             $unit_amount = round(Helpers::priceFormat('GBP', $amount, $currency) * $multiplier);
         }
 
-        // Determine if user has already used a free trial for the mandatory platform subscription
-        $hasUsedTrial = MonthlyCharge::where('user_id', $user->id)
-            ->whereNotNull('current_start_trial_date')
-            ->exists();
-        $trial_period_days = $hasUsedTrial ? 0 : 3;
+        // How long before Stripe starts billing.
+        //
+        // Client decision (31 July 2026): nothing is charged until the creator's
+        // first sale. The subscription is parked on a long trial and
+        // SubscriptionActivationService ends it the moment a sale lands.
+        //
+        // ⚠️ The free period is gated on "has this creator ever SOLD", not on
+        // "has this creator used a trial". The old `$hasUsedTrial` test charged a
+        // returning creator immediately even though they had never earned a
+        // penny — which is precisely the objection this change exists to remove.
+        // A creator who HAS sold before is billed straight away on their return.
+        if (SubscriptionPlan::freeUntilFirstSale()) {
+            $trial_period_days = app(SubscriptionActivationService::class)->hasEverMadeSale($user)
+                ? 0
+                : SubscriptionPlan::freePeriodDays();
+        } else {
+            $hasUsedTrial = MonthlyCharge::where('user_id', $user->id)
+                ->whereNotNull('current_start_trial_date')
+                ->exists();
+            $trial_period_days = $hasUsedTrial ? 0 : SubscriptionPlan::legacyTrialDays();
+        }
 
         $payload = [
             'mode' => 'subscription',
@@ -4310,8 +4363,15 @@ class StripeController extends Controller
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => 'Platform Charge: SpennyPiggy (Total value including all fees)',
-                        'description' => 'Monthly platform charge for SpennyPiggy features',
+                        // This is the last thing a creator reads before handing
+                        // over their card, so it has to carry the promise too —
+                        // an unqualified "monthly platform charge" here reads as
+                        // "you are about to be billed", which is the objection
+                        // the whole change removes.
+                        'name' => SubscriptionPlan::copy('checkout_name'),
+                        'description' => SubscriptionPlan::freeUntilFirstSale()
+                            ? SubscriptionPlan::copy('checkout_description')
+                            : 'Monthly platform charge for SpennyPiggy features',
                     ],
                     'unit_amount' => $unit_amount, // Ensure integer
                     'recurring' => [

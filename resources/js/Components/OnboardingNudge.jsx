@@ -2,76 +2,77 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 
 /**
- * A slim "you're not finished setting up" bar for creators who still can't be
- * paid. The full checklist lives on the dashboard, so a creator who wanders off
- * mid-setup had nothing reminding them — this carries the remaining count with
- * them and links straight back.
+ * A slim bar carrying whatever the creator's current journey step is.
  *
- * Self-gating: renders nothing for fans, for fully set-up creators, on the
- * dashboard itself (the checklist is already there), or once dismissed.
+ * ⚠️ It derives NOTHING itself. It used to read `stripe_details_submitted`,
+ * `avatar_approved`, `identity_status` and friends and count "steps left" from them — a
+ * second implementation of the journey that could, and did, disagree with the dashboard
+ * card. Everything here now comes from `auth.journey`, the same payload the card and the
+ * onboarding email render, so the three cannot contradict each other.
+ *
+ * Self-gating: nothing for fans, nothing once the journey is finished, nothing on the
+ * dashboard (the card is already there and saying the same thing), nothing once dismissed.
  */
-const DISMISS_KEY = "spenny_onboarding_nudge_dismissed";
+const dismissKey = (step) => `spenny_journey_bar_dismissed:${step}`;
 
 export default function OnboardingNudge() {
     const { auth } = usePage().props;
     const currentComponent = usePage().component;
+
+    const journey = auth?.journey ?? null;
+    const step = journey?.key ?? null;
+
     const [dismissed, setDismissed] = useState(() => {
-        if (typeof window === "undefined") return false;
+        if (typeof window === "undefined" || !step) return false;
         try {
-            return sessionStorage.getItem(DISMISS_KEY) === "1";
+            return sessionStorage.getItem(dismissKey(step)) === "1";
         } catch {
             return false;
         }
     });
 
-    const u = auth?.user;
-    if (!u || u.role != 1) return null;
-    if (u.stripe_details_submitted == 1) return null; // fully set up
-    if (dismissed) return null;
-    // The dashboard already shows the full checklist — don't say it twice.
-    if (currentComponent === "Dashboard") return null;
-
-    // Count only what the shared props can see. Socials aren't in the lean auth
-    // payload, so this is deliberately an approximation for a nudge — the
-    // dashboard checklist remains the source of truth.
-    const remaining = [
-        u.avatar_approved != 1,
-        u.bio_approved != 1,
-        !(u.subscription_status === 1 || u.subscription_status === 2),
-        u.profile_status_lock != 2,
-        u.identity_status != 1,
-        u.stripe_details_submitted != 1,
-    ].filter(Boolean).length;
+    // The dashboard card already occupies this creator's attention with the same message.
+    if (!journey || dismissed || currentComponent === "Dashboard") return null;
 
     const dismiss = () => {
         setDismissed(true);
         try {
-            sessionStorage.setItem(DISMISS_KEY, "1");
+            sessionStorage.setItem(dismissKey(step), "1");
         } catch {
-            /* private mode — dismiss for this render only */
+            /* private mode — dismissed for this render only */
         }
     };
 
+    // While the work is with an admin there is nowhere to send them, so the bar states the
+    // position and offers no action. Asking for a click here would be asking them to redo
+    // something they have already submitted.
+    const waiting = journey.awaiting_review === true;
+    const href = waiting
+        ? null
+        : journey.route
+            ? route(journey.route, journey.params ?? {})
+            : route("dashboard");
+
+    const Body = (
+        <span className="flex min-w-0 items-center gap-2 text-white">
+            <span className="text-base leading-none">🐷</span>
+            <span className="truncate text-sm font-bold">{journey.title}</span>
+            {! waiting && (
+                <span className="hidden shrink-0 text-sm underline sm:inline">
+                    {journey.cta}
+                </span>
+            )}
+        </span>
+    );
+
     return (
-        <div className="bg-[#FF007F] text-white">
-            <div className="containerbox mx-auto px-4 py-2 flex items-center justify-between gap-3">
-                <Link
-                    href={route("dashboard")}
-                    className="flex items-center gap-2 min-w-0 text-white"
-                >
-                    <span className="text-base leading-none">🐷</span>
-                    <span className="text-sm font-bold truncate">
-                        {remaining} step{remaining === 1 ? "" : "s"} left before
-                        you can get paid
-                    </span>
-                    <span className="hidden sm:inline text-sm underline shrink-0">
-                        Finish setup
-                    </span>
-                </Link>
+        <div className={waiting ? "bg-neutral-800 text-white" : "bg-[#FF007F] text-white"}>
+            <div className="containerbox mx-auto flex items-center justify-between gap-3 px-4 py-2">
+                {href ? <Link href={href}>{Body}</Link> : Body}
                 <button
                     onClick={dismiss}
-                    aria-label="Hide setup reminder"
-                    className="shrink-0 w-8 h-8 grid place-items-center rounded-full hover:bg-white/20 text-white text-lg leading-none"
+                    aria-label="Hide this reminder"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg leading-none text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
                 >
                     ×
                 </button>

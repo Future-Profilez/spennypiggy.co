@@ -142,7 +142,10 @@ const StatusRow = ({ charge, index }) => {
                 </span>
 
                 {charge.status === 'trialing' ? (
-                    <span className="block !mt-2 text-blue-600">Free Trial</span>
+                    // A parked free period, not a countdown — nothing is charged
+                    // until the creator's first sale, so "Free Trial" (which reads
+                    // as "expiring soon") would be the wrong thing to say.
+                    <span className="block !mt-2 text-blue-600">No charge</span>
                 ) : (
                     <span className="block !mt-2 text-black">
                         {charge.currency || '£'} {parseFloat(charge.amount || 0).toFixed(2)}

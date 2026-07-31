@@ -49,6 +49,8 @@ use App\Models\User;
 use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\DiscoveryService;
+use App\Services\SubscriptionActivationService;
+use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -367,16 +369,21 @@ Route::middleware('auth')->group(function () {
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
-    // Content creation routes - NO subscription requirements
+    // Content creation routes - NO subscription requirements.
+    //
+    // ⚠️ `identityBeforeListing` is on the CREATE endpoints only, never on edit or
+    // delete. Identity moved to sit after Stripe Connect (31 July 2026); blocking
+    // edits too would strand a creator who listed before the change with items they
+    // can neither sell nor take down.
     Route::middleware(['mustHaveToVerify'])->group(function () {
         // Wish item routes - accessible without subscription
-        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
+        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->middleware('identityBeforeListing')->name('save_wish_item');
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
         Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
 
         // Bills - accessible without subscription
         Route::prefix('bill')->name('bill.')->group(function () {
-            Route::post('save', [BillsController::class, 'billSave'])->name('save');
+            Route::post('save', [BillsController::class, 'billSave'])->middleware('identityBeforeListing')->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
             Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout.auth');
@@ -385,7 +392,7 @@ Route::middleware('auth')->group(function () {
 
         // Memberships - accessible without subscription
         Route::prefix('membership')->name('membership.')->group(function () {
-            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->middleware('identityBeforeListing')->name('save');
             Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
 
@@ -404,13 +411,13 @@ Route::middleware('auth')->group(function () {
 
         // Piggy Pots
         Route::get('/piggy-pots', [PiggyPotController::class, 'index'])->name('piggy-pots.index');
-        Route::post('/piggy-pots', [PiggyPotController::class, 'store'])->name('piggy-pots.store');
+        Route::post('/piggy-pots', [PiggyPotController::class, 'store'])->middleware('identityBeforeListing')->name('piggy-pots.store');
         Route::post('/piggy-pots/{id}', [PiggyPotController::class, 'update'])->name('piggy-pots.update');
         Route::delete('/piggy-pots/{id}', [PiggyPotController::class, 'destroy'])->name('piggy-pots.destroy');
 
         // Shop items - accessible without subscription
         Route::prefix('shop')->group(function () {
-            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
+            Route::post('/add', [ShopsController::class, 'addShopItems'])->middleware('identityBeforeListing')->name('add-shop');
             Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
             Route::post('/add/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
             // POST, not GET: a GET carries no CSRF token, so `<img src=".../shop/delete/{uuid}">`
@@ -705,7 +712,10 @@ Route::middleware('auth')->group(function () {
 
             Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout.auth');
 
-            Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name('mandatory.checkout');
+            // POST, not GET: this records the creator's digital-content waiver, and a
+            // consent that can be triggered by following a link is not consent. The
+            // POST also carries a CSRF token, which a GET does not.
+            Route::post('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name('mandatory.checkout');
 
             Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
 
@@ -748,6 +758,15 @@ Route::middleware('auth')->group(function () {
 
                 return Inertia::render('Profile/ActivateSubscription', [
                     'monthly_charges' => $monthlyCharges,
+                    // Price and the "no charge until your first sale" wording come
+                    // from config, never from the JSX — the same figure is printed
+                    // on eleven other surfaces.
+                    'subscriptionPlan' => SubscriptionPlan::forFrontend(),
+                    // A creator who has already sold is billed the moment they
+                    // subscribe, so the screen must not promise them a free period.
+                    'hasMadeSale' => $user
+                        ? app(SubscriptionActivationService::class)->hasEverMadeSale($user)
+                        : false,
                 ]);
             })->name('activate-subscription');
 
@@ -1081,7 +1100,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(function () {
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
-    Route::post('/', [TaskController::class, 'store'])->name('store');
+    Route::post('/', [TaskController::class, 'store'])->middleware('identityBeforeListing')->name('store');
     Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');

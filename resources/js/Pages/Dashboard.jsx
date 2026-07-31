@@ -63,6 +63,7 @@ import {
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
+import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
 import AddGift from "./feed/AddGift";
 import { CiGift } from "react-icons/ci";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
@@ -381,7 +382,27 @@ export default function Dashboard(props) {
     }, []);
 
     const Toggle = () => {
-        const [showAdd, setShowAdd] = useState(false);
+        // ⚠️ The `?add=` intent is read ONCE, during render, and then handed down as a prop.
+        // It used to be re-parsed from window.location by every consumer while this effect
+        // stripped the query string on mount — and AddItem is lazy-loaded, so its chunk
+        // resolved AFTER the strip and read nothing. That is why `?add=digital` opened only
+        // the generic chooser and the dashboard card's three options were indistinguishable.
+        // One read, passed explicitly; do not add a second window.location parse.
+        const [addIntent] = useState(() => {
+            if (typeof window === "undefined") return null;
+            return new URLSearchParams(window.location.search).get("add");
+        });
+        const [showAdd, setShowAdd] = useState(
+            () => addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
+        );
+        const [wishOptions, setWishOptions] = useState(() => addIntent === "wish");
+
+        // `?add=post` opens the composer DIRECTLY, deliberately not via `showAdd`. The
+        // AddPost inside the chooser would need the chooser open behind it, which is the
+        // stacked-modal problem `?add=digital` already had — the creator closes the composer
+        // and lands on a menu they never asked for.
+        const [postOpen, setPostOpen] = useState(() => addIntent === "post");
+
         useEffect(() => {
             if (!showAdd) return;
             const prev = document.body.style.overflow;
@@ -405,6 +426,15 @@ export default function Dashboard(props) {
 
             window.addEventListener("toggleAddOptions", handleToggleEvent);
             window.addEventListener("closeAddOptions", handleCloseEvent);
+
+            if (addIntent === "task") {
+                window.location.href = route("task.create");
+            } else if (addIntent) {
+                // Safe to strip now: every consumer took its value from `addIntent` during
+                // render, so nothing downstream still needs the query string.
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             return () => {
                 window.removeEventListener(
                     "toggleAddOptions",
@@ -428,10 +458,15 @@ export default function Dashboard(props) {
             };
         }, [showAdd]);
 
-        const [wishOptions, setWishOptions] = useState(false);
-
         return (
             <>
+                {/* Journey step "Publish your first post" lands here. Rendered outside the
+                    chooser so closing it returns the creator to the dashboard, not to a menu. */}
+                {postOpen && (
+                    <Suspense fallback={null}>
+                        <AddPost open={postOpen} onClose={() => setPostOpen(false)} />
+                    </Suspense>
+                )}
                 {IsloggedIn ? (
                     <>
                         <div
@@ -669,6 +704,7 @@ export default function Dashboard(props) {
                                                                       <AddItem
                                                                           classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           product_type="digital_products"
+                                                                          addIntent={addIntent}
                                                                       />
                                                                       <AddPost classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                                       {/* <AddGift
@@ -937,7 +973,7 @@ export default function Dashboard(props) {
                             </div>
 
                             {/* Profile layout: identity rail (left) · cover + content (center) · overview rail (right, xl) */}
-                            <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[330px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+                            <div className="profileLayout grid grid-cols-1 items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
                                 {/* Sticky sidebar: capped to viewport + own scroll, so the lower cards stay reachable */}
                                 <aside className="flex min-w-0 flex-col gap-4 -mt-[68px] pt-[68px] sm:-mt-[76px] sm:pt-[76px] lg:mt-0 lg:pt-0 lg:sticky lg:top-[111px]">
                                     <Userprofile
@@ -945,6 +981,26 @@ export default function Dashboard(props) {
                                         IsloggedIn={IsloggedIn}
                                         payoutAction={creatorPayoutAction}
                                     />
+                                    {/* Their own introduction. Moved out of the About tab and
+                                        into this rail (31 July 2026): it is part of who the
+                                        creator IS, which is what this column answers, and in the
+                                        centre column it pushed the actual content down the page.
+                                        Renders for the owner always, and for visitors only once
+                                        approved — same rule it carried before the move. */}
+                                    {(IsloggedIn || user?.intro?.approved == 1) && (
+                                        <Suspense
+                                            fallback={
+                                                <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
+                                            }
+                                        >
+                                            <AddIntro
+                                                uuid={user?.id || null}
+                                                IsloggedIn={IsloggedIn}
+                                                user={user}
+                                            />
+                                        </Suspense>
+                                    )}
+
                                     <div className="hidden md:block">
                                         <ProfileRightRail
                                             IsloggedIn={IsloggedIn}
@@ -1069,6 +1125,20 @@ export default function Dashboard(props) {
                                                                         >
                                                                             {/* About tab: single-column flow — intro, status, highlights, posts */}
                                                                             <div className="flex flex-col gap-4 about-sec self-start w-full">
+                                                                                {/* ⚠️ First thing in the creator's own About tab, above the founder and
+                                                                                    referral promos. This is the single "what do I do next" instruction;
+                                                                                    below a promo it stops reading as an instruction.
+
+                                                                                    Gated on IsloggedIn (viewer IS the profile owner) ONLY — deliberately
+                                                                                    NOT on UserStripeConnected, which is where it used to sit. Three of the
+                                                                                    six journey steps come BEFORE Stripe, so that gate hid the card from
+                                                                                    every creator still on profile, identity or payouts — 26 of the 45 with
+                                                                                    a card to show, and the ones needing it most. The component self-gates
+                                                                                    on auth.journey and disappears once the journey is done. */}
+                                                                                {IsloggedIn && (
+                                                                                    <CreatorJourneyCard />
+                                                                                )}
+
                                                                                 {/* Owner-only promos: founder offer + referral, at the top of their own tab */}
                                                                                 {props.founderData
                                                                                     ?.isEligible &&
@@ -1114,36 +1184,6 @@ export default function Dashboard(props) {
                                                                                     {
                                                                                         profileSummaryBand
                                                                                     }
-                                                                                </div>
-
-                                                                                {/* Their own introduction, straight after what they wrote */}
-                                                                                <div>
-                                                                                            {IsloggedIn ||
-                                                                                            user
-                                                                                                ?.intro
-                                                                                                ?.approved ==
-                                                                                                1 ? (
-                                                                                                <Suspense
-                                                                                                    fallback={
-                                                                                                        <div className="h-40 bg-gray-100 rounded-3xl animate-pulse border-3 border-black"></div>
-                                                                                                    }
-                                                                                                >
-                                                                                                    <AddIntro
-                                                                                                        uuid={
-                                                                                                            user?.id ||
-                                                                                                            null
-                                                                                                        }
-                                                                                                        IsloggedIn={
-                                                                                                            IsloggedIn
-                                                                                                        }
-                                                                                                        user={
-                                                                                                            user
-                                                                                                        }
-                                                                                                    />
-                                                                                                </Suspense>
-                                                                                            ) : (
-                                                                                                ""
-                                                                                            )}
                                                                                 </div>
 
                                                                                 {/* The creator's pinned goal, right under who they are */}
@@ -1569,26 +1609,28 @@ export default function Dashboard(props) {
                                                                                     {IsloggedIn &&
                                                                                     UserStripeConnected ==
                                                                                         1 ? (
-                                                                                        <Suspense
-                                                                                            fallback={
-                                                                                                <div className="mb-4">
-                                                                                                    Loading
-                                                                                                    steps...
-                                                                                                </div>
-                                                                                            }
-                                                                                        >
-                                                                                            <ProfileSteps
-                                                                                                sLinks={
-                                                                                                    sLinks
+                                                                                        <>
+                                                                                            <Suspense
+                                                                                                fallback={
+                                                                                                    <div className="mb-4">
+                                                                                                        Loading
+                                                                                                        steps...
+                                                                                                    </div>
                                                                                                 }
-                                                                                                user={
-                                                                                                    user
-                                                                                                }
-                                                                                                IsloggedIn={
-                                                                                                    IsloggedIn
-                                                                                                }
-                                                                                            />
-                                                                                        </Suspense>
+                                                                                            >
+                                                                                                <ProfileSteps
+                                                                                                    sLinks={
+                                                                                                        sLinks
+                                                                                                    }
+                                                                                                    user={
+                                                                                                        user
+                                                                                                    }
+                                                                                                    IsloggedIn={
+                                                                                                        IsloggedIn
+                                                                                                    }
+                                                                                                />
+                                                                                            </Suspense>
+                                                                                        </>
                                                                                     ) : (
                                                                                         ""
                                                                                     )}

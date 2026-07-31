@@ -85,6 +85,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'identity_admin_reviewed_at' => 'datetime',
         'stripe_connected_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',
+        'content_posting_warned_at' => 'datetime',
+        // Written by CreatorJourneyService, read by the admin app's onboarding drip.
+        'journey_step_at' => 'datetime',
+        'journey_completed_at' => 'datetime',
         'founder_missed_at' => 'datetime',
         'terms_accepted_at' => 'datetime',
         'creator_email_receipt_acknowledged_at' => 'datetime',
@@ -355,7 +359,15 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
             $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
 
-            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+            // ⚠️ An 'initiated' row is a checkout that was STARTED, not one that
+            // completed — the trial dates are written before the creator is sent
+            // to Stripe. Counting it as an ongoing trial meant abandoning the
+            // Stripe page still granted payment eligibility for the length of the
+            // trial. That was a 3-day hole; under free-until-first-sale the trial
+            // is parked years out, so it would have become a permanent one.
+            $isTrialOngoing = $trialEndCarbon
+                && $now->lessThan($trialEndCarbon)
+                && $subscription->status !== 'initiated';
             // Check subscription status from MonthlyCharge table instead of is_subscribed column
             // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
             $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);

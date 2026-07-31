@@ -9,7 +9,6 @@ use App\Models\FinancialTransaction;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -25,7 +24,7 @@ class ReconcileFastStartBonusPayoutsTest extends TestCase
             'name' => 'Pound Sterling',
             'conversion_rate' => 1,
             'ISOdigits' => 2,
-            'symbol' => '£'
+            'symbol' => '£',
         ]);
     }
 
@@ -36,7 +35,7 @@ class ReconcileFastStartBonusPayoutsTest extends TestCase
             'default_currency' => 'GBP',
             'stripe_connected_at' => now()->subDays(40),
             'stripe_details_submitted' => 1,
-            'account_id' => 'acct_' . Str::random(10),
+            'account_id' => 'acct_'.Str::random(10),
         ], $attrs));
     }
 
