@@ -92,7 +92,12 @@ class Kernel extends ConsoleKernel
                     'error' => $e->getMessage(),
                 ]);
             }
-        })->everyMinute()->withoutOverlapping();
+            // ⚠️ name() is REQUIRED before withoutOverlapping() on a closure task. Laravel's
+            // CallbackEvent throws a LogicException without it, and that exception is raised
+            // while the schedule is being BUILT — so it does not disable this one entry, it
+            // takes down every scheduled task in the application, silently. Verify any change
+            // here with `php artisan schedule:list`, which is where it surfaces.
+        })->name('scheduler-heartbeat')->everyMinute()->withoutOverlapping();
 
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
 
