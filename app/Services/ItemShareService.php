@@ -30,9 +30,9 @@ class ItemShareService
     /**
      * Per-type field mapping.
      *
-     * `image` names the column, `image_is_url` says whether it already holds a full CDN
-     * URL (task) or a bare Uploadcare uuid (shop) — getting that backwards produces a
-     * double-prefixed URL and a broken card everywhere the link is posted.
+     * `image` only names the column. What that column HOLDS varies — Task stores a full
+     * CDN URL, Shop stores a uuid that may or may not already carry operations — so
+     * imageFor() normalises whatever it finds rather than trusting a per-type flag.
      */
     private const TYPES = [
         'shop' => [
@@ -40,7 +40,6 @@ class ItemShareService
             'title' => 'name',
             'description' => 'description',
             'image' => 'image',
-            'image_is_url' => false,
             'noun' => 'item',
         ],
         'task' => [
@@ -48,7 +47,6 @@ class ItemShareService
             'title' => 'title',
             'description' => 'description',
             'image' => 'media_url',
-            'image_is_url' => true,
             'noun' => 'creator service',
         ],
     ];
@@ -113,7 +111,15 @@ class ItemShareService
             return null;
         }
 
-        $uuid = $config['image_is_url'] ? self::uuidFromUrl($raw) : $raw;
+        // ⚠️ Always extract the uuid, whatever shape the column happens to hold.
+        //
+        // Task stores a full CDN URL and Shop stores a "bare" uuid — except a Shop image
+        // can ALSO arrive with operations already appended (`<uuid>/-/crop/…/-/preview/`).
+        // Treating that as a plain uuid and concatenating produced
+        // `…/-/preview//-/scale_crop/…` — a double slash, a crop chained onto a crop, and
+        // a preview image that is wrong or dead. Normalising to the uuid first is the only
+        // shape that is correct for every stored variant.
+        $uuid = self::uuidFromUrl($raw);
 
         if (! $uuid) {
             // A non-Uploadcare absolute URL is used as-is; anything else is unusable.
@@ -123,7 +129,10 @@ class ItemShareService
         return "https://ucarecdn.com/{$uuid}/-/scale_crop/1200x630/center/-/format/jpeg/-/quality/smart/";
     }
 
-    /** Pull the uuid out of a stored CDN URL, which may already carry operations. */
+    /**
+     * Pull the uuid out of whatever the column holds — a bare uuid, a full CDN URL, or
+     * a uuid that already carries operations.
+     */
     private static function uuidFromUrl(string $value): ?string
     {
         if (preg_match('/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $value, $m)) {

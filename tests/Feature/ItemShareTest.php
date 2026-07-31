@@ -127,6 +127,26 @@ class ItemShareTest extends TestCase
         $this->assertStringStartsWith('https://ucarecdn.com/aaaaaaaa-', $image);
     }
 
+    public function test_a_shop_image_that_already_carries_operations_is_normalised(): void
+    {
+        $creator = $this->creator();
+
+        // Found on real data: `shops.image` is not always a bare uuid — it can arrive
+        // with operations already appended. Concatenating onto that produced
+        // `…/-/preview//-/scale_crop/…` — a double slash and a crop chained onto a crop.
+        $shop = $this->shop($creator, [
+            'image' => '3f5c29cf-26a9-4ba2-95b8-400fc0e62688/-/crop/810x662/276,76/-/preview/',
+        ]);
+
+        $image = ItemShareService::imageFor($shop, 'shop');
+
+        $this->assertSame(
+            'https://ucarecdn.com/3f5c29cf-26a9-4ba2-95b8-400fc0e62688/-/scale_crop/1200x630/center/-/format/jpeg/-/quality/smart/',
+            $image
+        );
+        $this->assertStringNotContainsString('//-/', $image);
+    }
+
     public function test_a_stored_cdn_url_is_not_double_prefixed(): void
     {
         $creator = $this->creator();
@@ -180,6 +200,68 @@ class ItemShareTest extends TestCase
         $this->assertFalse(ItemShareService::supports('membership'));
         $this->assertNull(ItemShareService::shareUrl($shop, 'membership'));
         $this->assertSame([], ItemShareService::metaFor($shop, 'membership', $creator));
+    }
+
+    public function test_the_sitemap_lists_buyable_items_and_hides_the_rest(): void
+    {
+        $creator = $this->creator();
+        $live = $this->shop($creator);
+        $unapproved = $this->shop($creator, ['approved' => 0, 'name' => 'Hidden Item']);
+
+        $xml = $this->get('/seo/sitemap-shop-items.xml')->assertOk()->getContent();
+
+        $this->assertStringContainsString($live->uuid, $xml);
+        // An unapproved listing 404s for the public — submitting it sends crawlers
+        // to a dead page.
+        $this->assertStringNotContainsString($unapproved->uuid, $xml);
+    }
+
+    public function test_the_sitemap_index_and_robots_both_name_the_new_children(): void
+    {
+        // robots.txt stops the crawl, the index makes the URLs discoverable. A child
+        // listed in neither is unreachable — which is how the creator, wishlist and
+        // post sitemaps sat unread before.
+        $index = $this->get('/sitemap.xml')->assertOk()->getContent();
+        $robots = $this->get('/robots.txt')->assertOk()->getContent();
+
+        foreach (['sitemap-shop-items.xml', 'sitemap-tasks.xml'] as $child) {
+            $this->assertStringContainsString($child, $index);
+            $this->assertStringContainsString($child, $robots);
+        }
+    }
+
+    public function test_the_tasks_sitemap_lists_approved_tasks_and_hides_unapproved_ones(): void
+    {
+        $creator = $this->creator();
+        $live = Task::create([
+            'uuid' => (string) Str::uuid(),
+            'creator_id' => $creator->id,
+            'title' => 'Live Task',
+            'description' => 'A live custom service.',
+            'price' => 10,
+            'currency' => 'gbp',
+            'category' => 'text',
+            'type' => 'custom',
+            'status' => 'active',
+            'is_approved' => true,
+        ]);
+        $unapproved = Task::create([
+            'uuid' => (string) Str::uuid(),
+            'creator_id' => $creator->id,
+            'title' => 'Hidden Task',
+            'description' => 'An unapproved custom service.',
+            'price' => 15,
+            'currency' => 'gbp',
+            'category' => 'text',
+            'type' => 'custom',
+            'status' => 'active',
+            'is_approved' => false,
+        ]);
+
+        $xml = $this->get('/seo/sitemap-tasks.xml')->assertOk()->getContent();
+
+        $this->assertStringContainsString($live->uuid, $xml);
+        $this->assertStringNotContainsString($unapproved->uuid, $xml);
     }
 
     public function test_an_item_with_no_image_yields_no_image_rather_than_a_broken_url(): void

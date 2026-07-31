@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\Shop;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class SitemapController extends Controller
 {
@@ -104,6 +107,8 @@ class SitemapController extends Controller
                 ['path' => '/seo/sitemap-creators.xml', 'query' => fn () => $this->creatorQuery()],
                 ['path' => '/seo/sitemap-wishlists.xml', 'query' => fn () => $this->wishQuery()],
                 ['path' => '/seo/sitemap-posts.xml', 'query' => fn () => $this->postQuery()],
+                ['path' => '/seo/sitemap-shop-items.xml', 'query' => fn () => $this->shopQuery()],
+                ['path' => '/seo/sitemap-tasks.xml', 'query' => fn () => $this->taskQuery()],
             ];
 
             foreach ($children as $child) {
@@ -234,6 +239,81 @@ class SitemapController extends Controller
     }
 
     /**
+     * Shop listings that anyone can open.
+     *
+     * They only became worth submitting once they carried real meta — before
+     * ItemShareService these pages had no title, description or image of their own,
+     * so an indexed one was a blank entry.
+     */
+    public function shopItems()
+    {
+        $page = $this->page();
+
+        $content = Cache::remember('sitemap:shop-items:'.$page, self::CACHE_TTL, function () use ($page) {
+            $items = $this->safely(fn () => $this->shopQuery()
+                ->select('id', 'uuid', 'name', 'updated_at')
+                // Ordered by id, never updated_at: paging over a column that changes
+                // under you skips and repeats rows.
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get()) ?? collect();
+
+            $urls = [];
+            foreach ($items as $item) {
+                if (empty($item->uuid)) {
+                    continue;
+                }
+
+                $urls[] = [
+                    'loc' => route('single-shop-list', [
+                        'slug' => Str::slug((string) $item->name) ?: 'item',
+                        'uuid' => $item->uuid,
+                    ]),
+                    'lastmod' => $item->updated_at,
+                    'changefreq' => 'weekly',
+                    'priority' => '0.6',
+                ];
+            }
+
+            return $this->urlset($urls);
+        });
+
+        return $this->xml($content);
+    }
+
+    /** Paid tasks that anyone can open. */
+    public function tasks()
+    {
+        $page = $this->page();
+
+        $content = Cache::remember('sitemap:tasks:'.$page, self::CACHE_TTL, function () use ($page) {
+            $tasks = $this->safely(fn () => $this->taskQuery()
+                ->select('id', 'uuid', 'updated_at')
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get()) ?? collect();
+
+            $urls = [];
+            foreach ($tasks as $task) {
+                if (empty($task->uuid)) {
+                    continue;
+                }
+
+                $urls[] = [
+                    'loc' => route('task.show', ['uuid' => $task->uuid]),
+                    'lastmod' => $task->updated_at,
+                    'changefreq' => 'weekly',
+                    'priority' => '0.6',
+                ];
+            }
+
+            return $this->urlset($urls);
+        });
+
+        return $this->xml($content);
+    }
+
+    /**
      * Generate creator posts sitemap.
      *
      * Public posts only: a members/subscribers/supporters post renders as a
@@ -284,6 +364,8 @@ class SitemapController extends Controller
             Cache::forget('sitemap:creators:'.$i);
             Cache::forget('sitemap:wishlists:'.$i);
             Cache::forget('sitemap:posts:'.$i);
+            Cache::forget('sitemap:shop-items:'.$i);
+            Cache::forget('sitemap:tasks:'.$i);
         }
 
         return response()->json([
@@ -317,6 +399,46 @@ class SitemapController extends Controller
         // is_suspended arrived later than this table; a database without it must
         // still produce a sitemap rather than a 500.
         if (Schema::hasColumn('wish_items', 'is_suspended')) {
+            $query->where('is_suspended', 0);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Publicly buyable shop listings.
+     *
+     * ⚠️ `status` has no migration — it exists on the deployed database and not on a
+     * freshly migrated one (see TASKS). Guarding it keeps the sitemap working on both
+     * rather than throwing into `safely()` and silently publishing an empty urlset,
+     * which is indistinguishable from "this creator sells nothing".
+     */
+    private function shopQuery()
+    {
+        $query = Shop::query()
+            ->where('approved', 1)
+            ->whereHas('user', fn ($q) => $q->where('role', 1)->where('suspended_account', 0));
+
+        foreach (['status' => 1, 'is_suspended' => 0] as $column => $value) {
+            if (Schema::hasColumn('shops', $column)) {
+                $query->where($column, $value);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Publicly viewable paid tasks. An unapproved task 404s for everyone but its
+     * creator, so listing one would send crawlers to a dead page.
+     */
+    private function taskQuery()
+    {
+        $query = Task::query()
+            ->where('is_approved', 1)
+            ->whereHas('creator', fn ($q) => $q->where('role', 1)->where('suspended_account', 0));
+
+        if (Schema::hasColumn('tasks', 'is_suspended')) {
             $query->where('is_suspended', 0);
         }
 

@@ -51,47 +51,18 @@ class SeoTemplateService
         SeoMeta::addJsonLd($personSchema);
     }
 
-    /**
-     * Generate SEO meta tags for wishlist pages
+    /*
+     * REMOVED (30 July 2026): setWishlistMeta().
      *
-     * @param  object  $creator
-     * @param  object  $wishItem
-     * @return void
+     * It had zero callers and could not have worked if it had gained one: it
+     * canonicalised against a route named `wish.show`, which does not exist — there is
+     * no standalone wish page. The "wish page" IS the creator profile, and its meta is
+     * built by AuthenticatedSessionController::setSeoMetaTags, which calls
+     * getWishItemDescription() and generateProductSchema() from here directly.
+     *
+     * Left as a note rather than deleted silently, because "there is a method for this"
+     * is exactly what would send the next person down the same dead end.
      */
-    public static function setWishlistMeta($creator, $wishItem)
-    {
-        $title = static::getWishItemTitle($creator, $wishItem);
-        $description = static::getWishItemDescription($creator, $wishItem);
-        $image = ! empty($wishItem->thumbnail)
-            ? "https://ucarecdn.com/{$wishItem->thumbnail}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/"
-            : static::getDefaultImage();
-        $canonicalUrl = SeoMeta::getPageCanonical('wish.show', [
-            'username' => $creator->username,
-            'id' => $wishItem->id,
-        ]);
-
-        // Set basic meta
-        SeoMeta::addTag('title', $title);
-        SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
-
-        $keywords = "{$wishItem->wishname}, exclusive content, {$creator->name}, {$creator->username}, Spenny Piggy";
-        if ($wishItem->category) {
-            $keywords .= ", {$wishItem->category}";
-        }
-        SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
-
-        SeoMeta::setCanonical($canonicalUrl);
-
-        // Set OpenGraph
-        SeoMeta::setOgData('product', $title, $description, $image, $canonicalUrl);
-
-        // Set Twitter Card
-        SeoMeta::setTwitterCard('summary_large_image', $title, $description, $image);
-
-        // Add structured data for Product
-        $productSchema = static::generateProductSchema($wishItem, $creator);
-        SeoMeta::addJsonLd($productSchema);
-    }
 
     /**
      * Generate SEO meta tags for discover page

@@ -24,8 +24,10 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemFunnelService;
 use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
+use App\Services\ItemViewTracker;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -73,6 +75,24 @@ class TaskController extends Controller
             ->with(['task.creator'])
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Seen → reached checkout → sold, for the creator's own tasks. Views were
+        // already being counted on the task page and had nowhere to be seen, so the
+        // data was accumulating where nobody could read it.
+        //
+        // ⚠️ APPROVED tasks only. An unapproved task's page 404s for everyone but its
+        // creator, so it has no views by definition — and the funnel would have told
+        // them "nobody found this, share the link" about something they cannot share.
+        // Advice that cannot be followed is worse than none.
+        $live = $tasks->filter(fn ($task) => (int) $task->is_approved === 1);
+
+        $funnels = $live->isEmpty()
+            ? []
+            : app(ItemFunnelService::class)->forItems('task', $live->pluck('id')->all());
+
+        $tasks->each(function ($task) use ($funnels) {
+            $task->funnel = $funnels[$task->id] ?? null;
+        });
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
@@ -324,7 +344,7 @@ class TaskController extends Controller
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
 
         // Visibility Check: Only Creator can see unapproved tasks
-        if (! $task->is_approved && Auth::id() !== $task->creator_id) {
+        if ((int) $task->is_approved !== 1 && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 
@@ -353,11 +373,15 @@ class TaskController extends Controller
 
         $card_capabilities = StripeControl::hasCardPaymentsCapability($task->creator->account_id);
 
+        // Count the view. An unapproved task already 404s above for everyone but its
+        // creator, so reaching here means the page is publicly viewable.
+        app(ItemViewTracker::class)->record(request(), 'task', $task->id, $task->creator_id);
+
         // Server-side link preview. SSR is off, so an unfurler only ever sees the
         // server-rendered <head> — without this a shared task link showed the generic
         // site card. An unapproved task already 404s above for everyone but its creator,
         // so reaching here means the page is publicly viewable.
-        if ($task->is_approved) {
+        if ((int) $task->is_approved === 1) {
             ItemShareService::applySeo($task, 'task', $task->creator);
         }
 
@@ -448,7 +472,7 @@ class TaskController extends Controller
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
         // Prevent purchasing unapproved tasks
-        if (! $task->is_approved && Auth::id() !== $task->creator_id) {
+        if ((int) $task->is_approved !== 1 && Auth::id() !== $task->creator_id) {
             abort(404);
         }
 

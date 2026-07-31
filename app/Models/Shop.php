@@ -46,6 +46,7 @@ class Shop extends Model
         'status',
         'edited_reason',
         'edited_status',
+        'is_suspended',
         // New social engagement fields
         'supporter_count',
         'gift_frequency',

@@ -4,29 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import PriceFormat from "../../includes/PriceFormat";
 import BuyShopItem from "./BuyShopItem";
 import { 
-    ChevronLeftIcon, 
-    TwitterIcon, 
-    InstagramIcon, 
-    FacebookIcon 
+    ChevronLeftIcon 
 } from "@animateicons/react/lucide";
-import { Rss, Percent } from "lucide-react";
+import { Percent } from "lucide-react";
 import WaitlistButton from "@/Components/WaitlistButton";
 import ShareButton from "@/Components/ShareButton";
 import axios from "axios";
 
 export default function ShopDetailItem(props) {
-    const twitterRef = useRef(null);
-    const instaRef = useRef(null);
-    const fbRef = useRef(null);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            twitterRef.current?.startAnimation?.();
-            setTimeout(() => instaRef.current?.startAnimation?.(), 500);
-            setTimeout(() => fbRef.current?.startAnimation?.(), 1000);
-        }, 8000);
-        return () => clearInterval(interval);
-    }, []);
     const { vat_percent, auth, user, shop, card_capabilities } = props;
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) ==
@@ -47,18 +32,6 @@ export default function ShopDetailItem(props) {
         }
     }, []);
 
-    // NOTE: the Instagram "share" that used to live here opened
-    // `instagram.com/?url=…`, which shares nothing — Instagram has no URL-share
-    // endpoint. It was removed rather than fixed, because there is nothing to fix.
-    // The share sheet below covers Instagram properly on a phone.
-    const fbShare = () => {
-        const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&amp;quote=${encodeURIComponent(shop.name)}`;
-        window.open(shareUrl, "_blank", "noopener,noreferrer");
-    };
-    const rssShare = () => {
-        const shareUrl = `https://feedly.com/i/subscription/feed/${encodeURIComponent(url)}`;
-        window.open(shareUrl, "_blank", "noopener,noreferrer");
-    };
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
 
     const isOwner = Number(auth?.user?.id) === Number(shop?.user_id);
@@ -268,9 +241,13 @@ export default function ShopDetailItem(props) {
                                 </div>
 
                                 <div className="flex items-center gap-3 pt-4 pb-3">
-                                    <h2 className="font-GillSans uppercase text-3xl">
+                                    {/* h1, not h2: this is the page's subject. The whole page
+                                        had no h1 at all, which weakens it in search even with
+                                        correct OpenGraph — the task page already gets this
+                                        right. Styling is unchanged. */}
+                                    <h1 className="font-GillSans uppercase text-3xl">
                                         {shop.name}
-                                    </h2>
+                                    </h1>
                                     <span className={`px-3 py-1 rounded-box-sm border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                         {shop.type === 'physical' ? 'Physical' : 'Digital'}
                                     </span>
@@ -347,54 +324,6 @@ export default function ShopDetailItem(props) {
                                         (Instagram, Messages, Signal) that have no
                                         web share URL at all. */}
                                     <ShareButton share={shop?.share} className="mb-4 mt-4" />
-
-                                    <div className="mb-1 mt-4 font-medium text-gray-500">
-                                        Social
-                                    </div>
-                                    <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
-                                        <li>
-                                            <a
-                                                href={`https://twitter.com/intent/tweet?url=${url}`}
-                                                target="_blank"
-                                                className=" break-words text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/twitter"
-                                                aria-label="Twitter"
-                                                onMouseEnter={() => twitterRef.current?.startAnimation()}
-                                            >
-                                                <TwitterIcon 
-                                                    ref={twitterRef}
-                                                    size={28} 
-                                                    duration={1.5}
-                                                />
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <button
-                                                type="button"
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] group/fb"
-                                                aria-label="Facebook"
-                                                onClick={fbShare}
-                                                onMouseEnter={() => fbRef.current?.startAnimation()}
-                                            >
-                                                <FacebookIcon 
-                                                    ref={fbRef}
-                                                    size={28} 
-                                                    duration={1.5}
-                                                />
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <button
-                                                type="button"
-                                                className="cursor-pointer text-gray-500 inline-flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]"
-                                                aria-label="RSS"
-                                                onClick={rssShare}
-                                            >
-                                                <Rss size={28} />
-                                            </button>
-                                        </li>
-                                    </ul>
                                 </div>
 
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 /**
  * Share a single listing.
@@ -20,6 +21,7 @@ import { Share2, Copy, Check } from "lucide-react";
 export default function ShareButton({ share, label = "Share", className = "" }) {
     const [copied, setCopied] = useState(false);
     const [open, setOpen] = useState(false);
+    const [showQr, setShowQr] = useState(false);
 
     const url = share?.url;
     const caption = share?.caption || share?.title || "";
@@ -80,15 +82,45 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
 
     return (
         <div className={`relative ${className}`} onClick={stop}>
-            <button
-                type="button"
-                onClick={nativeShare}
-                className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-box-sm border-2 border-black bg-white px-4 py-2 text-sm font-black uppercase text-black transition-all hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-                aria-label={label}
-            >
-                <Share2 size={16} strokeWidth={2.6} />
-                {label}
-            </button>
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={nativeShare}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-box-sm border-2 border-black bg-white px-4 py-2 text-sm font-black uppercase text-black transition-all hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                    aria-label={label}
+                >
+                    <Share2 size={16} strokeWidth={2.6} />
+                    {label}
+                </button>
+
+                {/* Its own control rather than a menu row: the QR is for getting the
+                    link off a desktop screen and onto a phone, or handing it over in
+                    person — and on mobile the menu never opens, because the OS share
+                    sheet takes over. */}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        stop(e);
+                        setShowQr((v) => !v);
+                    }}
+                    aria-expanded={showQr}
+                    aria-label={showQr ? "Hide QR code" : "Show QR code"}
+                    className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-box-sm border-2 border-black bg-white text-black transition-all hover:bg-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                >
+                    <QrCode size={18} strokeWidth={2.4} />
+                </button>
+            </div>
+
+            {showQr && (
+                <div className="mt-2 inline-block rounded-box border-2 border-black bg-white p-3">
+                    {/* White background is not decoration — a scanner needs the quiet
+                        zone and the contrast to read the code at all. */}
+                    <QRCodeSVG value={url} size={148} level="M" marginSize={2} />
+                    <p className="mt-2 max-w-[148px] text-center text-[11px] font-bold text-zinc-500">
+                        Scan to open
+                    </p>
+                </div>
+            )}
 
             {/* Fallback list, only on browsers with no share sheet. */}
             {open && (

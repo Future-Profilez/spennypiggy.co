@@ -31,8 +31,10 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\ItemFunnelService;
 use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
+use App\Services\ItemViewTracker;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\RiskService;
@@ -94,8 +96,14 @@ class ShopsController extends Controller
             // never one per row.
             $counts = app(StockWaitlistService::class)->waitingCounts($shops->pluck('id')->all());
 
-            $shops->each(function ($shop) use ($counts) {
+            // Seen → started checkout → sold, for the whole list in a fixed number of
+            // queries. Owner only: it is their own performance data, and nobody else
+            // has any business seeing how a listing is doing.
+            $funnels = app(ItemFunnelService::class)->forItems('shop', $shops->pluck('id')->all());
+
+            $shops->each(function ($shop) use ($counts, $funnels) {
                 $shop->waiting_count = (int) ($counts[$shop->id] ?? 0);
+                $shop->funnel = $funnels[$shop->id] ?? null;
             });
         }
 
@@ -840,6 +848,11 @@ class ShopsController extends Controller
                 'default_currency', 'vat_amount_percentage', 'suspended_account',
             ]);
         }
+
+        // Count the view. Runs after the visibility checks above, so a listing nobody
+        // may open is never counted. The creator's own views are excluded inside the
+        // tracker, and it never throws — analytics must not be why a page fails.
+        app(ItemViewTracker::class)->record(request(), 'shop', $shop->id, $shop->user_id);
 
         // Server-side link preview. SSR is off, so an unfurler only ever sees the
         // server-rendered <head> — without this a shared item link showed the generic

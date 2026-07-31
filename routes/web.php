@@ -890,6 +890,8 @@ Route::get('/seo/sitemap-static.xml', [SitemapController::class, 'static'])->nam
 Route::get('/seo/sitemap-creators.xml', [SitemapController::class, 'creators'])->name('sitemap.creators.redirect');
 Route::get('/seo/sitemap-wishlists.xml', [SitemapController::class, 'wishlists'])->name('sitemap.wishlists.redirect');
 Route::get('/seo/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts.redirect');
+Route::get('/seo/sitemap-shop-items.xml', [SitemapController::class, 'shopItems'])->name('sitemap.shop-items.redirect');
+Route::get('/seo/sitemap-tasks.xml', [SitemapController::class, 'tasks'])->name('sitemap.tasks.redirect');
 
 // SEO Cache management route (for post-deployment cache clearing)
 Route::get('/seo/clear-cache', [SitemapController::class, 'clearCache'])->name('seo.clear.cache');
