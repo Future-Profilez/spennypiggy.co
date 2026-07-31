@@ -10,7 +10,6 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 /**
  * "Is this creator set up but selling nothing?"
@@ -130,26 +129,6 @@ class CreatorSetupService
     public function needsFirstListingFast(User $creator): bool
     {
         return $this->candidateQuery()->whereKey($creator->id)->exists();
-    }
-
-    /**
-     * Creators eligible for a nudge, oldest connection first.
-     *
-     * ⚠️ Ordered deliberately. The command caps how many it processes, and an unordered
-     * `get()` meant the same arbitrary slice could be examined every run while creators
-     * further down were never reached — a silent delivery hole that grows with the table.
-     *
-     * The `whereDoesntHave`-style exclusion is done in SQL rather than by loading every
-     * creator and filtering in PHP, which cost one query per table per creator.
-     *
-     * @return Collection<int, User>
-     */
-    public function firstListingCandidates(int $limit = 100): Collection
-    {
-        return $this->candidateQuery()
-            ->orderByRaw('COALESCE(stripe_connected_at, created_at) asc')
-            ->limit(max(1, $limit))
-            ->get();
     }
 
     /**

@@ -5,6 +5,7 @@ import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
 import { parseIdentityError } from "@/utils/identityError";
 
+import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
 // One status vocabulary for the whole checklist, so a step never says "Approved"
 // in one shape and "Verified" in another. Mint = done, amber = in review,
 // red = needs a fix, gray = not started / locked.
@@ -95,12 +96,16 @@ function MilestoneRail({ milestones, activeIndex }) {
 // "fix it now" path, so a rejection is never a dead end.
 function ActionCard({ step }) {
     const isRejected = step.state === "rejected";
+    // No offset shadow on these cards. A checklist is a stack of near-identical rows, and
+    // giving every one the same heavy drop makes the list read as noise rather than as
+    // steps — the border already separates them. Rejection stays distinguished by colour,
+    // which is the only difference that matters here.
     return (
         <div
             className={`rounded-box border-[3px] p-4 mb-3 ${
                 isRejected
-                    ? "border-red-500 bg-red-50/40 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]"
-                    : "border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    ? "border-red-500 bg-red-50/40"
+                    : "border-black bg-white"
             }`}
         >
             <div className="flex items-start justify-between gap-3">
@@ -366,7 +371,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         !isSocialApproved && "socials",
         avatarStatus != 1 && "photo",
         bioStatus != 1 && "bio",
-        !hasSubscription && "free trial",
+        !hasSubscription && "payment method",
     ].filter(Boolean);
     const listItems = (items) =>
         items.length > 1
@@ -475,19 +480,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         },
         {
             key: "trial",
-            label: "Free trial",
-            title: "Start your free trial",
+            label: "Payment method",
+            title: "Add your card",
             mins: 1,
             description:
-                "3 days free, then £8.99 + VAT a month. Needed before we can verify you.",
+                `${SUBSCRIPTION_COPY.promise} — then ${PRICE_FORMATTED} + VAT a month. Needed before we can verify you.`,
             hint: [
-                "Free for 3 days — nothing charged until it ends",
+                SUBSCRIPTION_COPY.reassurance,
                 "Cancel any time from your account settings",
             ],
             state: hasSubscription ? "done" : "todo",
             action: (
                 <Link className={primaryBtn} href="/activate-subscription">
-                    Start free trial
+                    Add your card
                 </Link>
             ),
         },

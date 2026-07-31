@@ -214,18 +214,30 @@ class FirstListingNudgeTest extends TestCase
         $this->assertTrue($service->needsFirstListing($creator));
     }
 
-    public function test_shared_inertia_prop_matches_needs_first_listing(): void
+    /**
+     * The shared prop is `auth.journey` — `auth.needs_first_listing` was retired once the
+     * journey answered the same question and more, and it cost its own query on every
+     * Inertia navigation to say less.
+     */
+    public function test_the_shared_journey_prop_reflects_the_first_listing_step(): void
     {
-        $creator = $this->creator();
+        // ⚠️ The journey gates on MORE than the retired prop did: it checks an approved
+        // profile and a verified identity before it ever reaches the listing step. A creator
+        // who has only connected Stripe sits on `profile`, not `first_listing`.
+        $creator = $this->creator([
+            'avatar' => 'uuid',
+            'avatar_approved' => 1,
+            'bio' => 'Hello',
+            'bio_approved' => 1,
+            'identity_status' => 1,
+        ]);
 
-        // Acting as creator, get dashboard. The shared prop should be true.
         $this->actingAs($creator)
             ->followingRedirects()
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->where('auth.needs_first_listing', true));
+            ->assertInertia(fn ($page) => $page->where('auth.journey.key', 'first_listing'));
 
-        // Now create a wish item
         WishItem::create([
             'user_id' => $creator->id,
             'wishname' => 'Wish list',
@@ -234,12 +246,12 @@ class FirstListingNudgeTest extends TestCase
             'subscription' => 0,
         ]);
 
-        // Shared prop should now be false.
+        // Publishing moves them off the step; the card and the bar follow the same payload.
         $this->actingAs($creator)
             ->followingRedirects()
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->where('auth.needs_first_listing', false));
+            ->assertInertia(fn ($page) => $page->where('auth.journey.key', 'first_post'));
     }
 
     public function test_console_command_nudge_progression_at_day_3_and_10(): void
