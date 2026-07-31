@@ -9,6 +9,8 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
+use App\Services\CreatorJourneyService;
+use App\Services\CreatorSetupService;
 use App\Services\IntercomService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -169,6 +171,24 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'subscriber_only_posts_count' => $subscriber_only_posts_count,
                 'member_only_posts_count' => $member_only_posts_count,
+                // Read on every Inertia navigation, so it uses the single-query form. The
+                // role guard stays as a cheap early-out for the majority of visitors, who
+                // are not creators; the service checks it again for anything else.
+                'needs_first_listing' => $user && (int) $user->role === 1
+                    ? app(CreatorSetupService::class)->needsFirstListingFast($user)
+                    : false,
+
+                // The single "what do I do next" answer, rendered by every creator-facing
+                // surface so none of them can contradict another. Null once the journey is
+                // finished — from then on CreatorOpportunityService owns that question.
+                //
+                // Cost is bounded and falls in the creator's favour: currentStep() stops at
+                // the first unfinished step, and the early ones (profile, identity, payouts)
+                // are plain column reads costing no query at all — which is where most
+                // creators are.
+                'journey' => $user && (int) $user->role === 1
+                    ? app(CreatorJourneyService::class)->nextStep($user)
+                    : null,
             ],
             'follow_status' => $follow_status,
             'cart_count' => $cart_count,

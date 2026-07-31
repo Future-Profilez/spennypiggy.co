@@ -2,9 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -28,14 +28,14 @@ return new class extends Migration
                 $slug = 'post';
             }
             $originalSlug = $slug;
-            
+
             // Loop until we find a unique slug
             $count = 1;
             while (DB::table('posts')->where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $count;
+                $slug = $originalSlug.'-'.$count;
                 $count++;
             }
-            
+
             DB::table('posts')->where('id', $post->id)->update(['slug' => $slug]);
         }
     }

@@ -151,6 +151,7 @@ export default function Opportunities({
     currency = 'GBP',
     supporters = [],
     tiers = [],
+    revenue_by_type = [],
     retention = {},
     alerts = [],
     abandoned = {},
@@ -166,6 +167,10 @@ export default function Opportunities({
     // Tier bar segments — only tiers anyone actually sits in.
     const tierPresent = tiers.filter((t) => t.count > 0);
     const tierTotal = tierPresent.reduce((sum, t) => sum + t.count, 0) || 1;
+
+    // Revenue-by-feature total, for the share bars.
+    const revenueTotal = revenue_by_type.reduce((sum, r) => sum + Number(r.total || 0), 0);
+    const revenueRows = [...revenue_by_type].sort((a, b) => Number(b.total || 0) - Number(a.total || 0));
 
     return (
         <AuthenticatedLayout>
@@ -254,6 +259,46 @@ export default function Opportunities({
                                         <span className="tabular-nums text-gray-900">{t.count}</span>
                                     </span>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Revenue by feature — where the money actually comes from. */}
+                    {hasSupporters && revenueTotal > 0 && (
+                        <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
+                            <div className="mb-4 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                                <BarChart3 size={15} className="text-[#FF007F]" /> Revenue by type
+                            </div>
+                            <div className="space-y-3">
+                                {revenueRows.map((r) => {
+                                    const pct = revenueTotal > 0 ? (Number(r.total || 0) / revenueTotal) * 100 : 0;
+                                    return (
+                                        <div key={r.label}>
+                                            <div className="mb-1 flex items-center justify-between gap-2">
+                                                <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                                    <span aria-hidden>{r.icon}</span> {r.label}
+                                                </span>
+                                                <span className="tabular-nums text-sm font-bold text-gray-900">
+                                                    {money(r.total, currency)}
+                                                </span>
+                                            </div>
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-700"
+                                                    style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: r.color }}
+                                                />
+                                            </div>
+                                            <div className="mt-1 flex items-center justify-between">
+                                                <span className="text-[11px] text-gray-400">
+                                                    {r.count} payment{r.count === 1 ? '' : 's'}
+                                                </span>
+                                                <span className="text-[11px] font-bold" style={{ color: r.color }}>
+                                                    {pct.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -461,7 +506,12 @@ export default function Opportunities({
                             <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
                                 <Users size={18} className="text-[#FF007F]" /> Top supporters
                             </h2>
-                            <p className="mb-3 text-sm text-gray-500">Ranked by lifetime spend with you.</p>
+                            <p className="mb-3 text-sm text-gray-500">
+                                Ranked by lifetime spend with you.
+                                {(totals.supporters ?? 0) > supporters.length && (
+                                    <> Showing your top {supporters.length} of {totals.supporters}.</>
+                                )}
+                            </p>
 
                             <div className="space-y-2.5">
                                 {supporters.map((s, i) => (

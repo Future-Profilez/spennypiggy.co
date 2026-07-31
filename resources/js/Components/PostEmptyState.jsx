@@ -40,7 +40,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
     };
 
     return (
-        <div className="max-feed m-auto">
+        <div className="smax-feed w-full m-auto">
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                 {/* Empty state icon */}
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">

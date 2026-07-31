@@ -40,7 +40,7 @@ class NotifyStockRestocks extends Command
         $shopIds = StockWaitlist::waiting()
             ->whereHas('shop', function ($query) {
                 $query->whereNotNull('slot_limitation')
-                      ->where('slot_limitation', '>', 0);
+                    ->where('slot_limitation', '>', 0);
             })
             ->select('shop_id')
             ->distinct()

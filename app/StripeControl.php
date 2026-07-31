@@ -1437,6 +1437,50 @@ class StripeControl
     }
 
     /**
+     * End a subscription's trial immediately, so Stripe bills now and anchors the
+     * monthly cycle to this moment.
+     *
+     * Used by SubscriptionActivationService when a creator makes their first sale:
+     * the platform subscription is parked on a long trial at sign-up (Stripe has no
+     * infinite trial — trial_end is always a timestamp) and this is what converts it
+     * into a paying subscription.
+     *
+     * ⚠️ This CHARGES the creator. Pass an idempotency key — a retried or re-run
+     * activation must not be able to raise a second invoice. Stripe scopes the key
+     * to the request, so the same key returns the original result rather than
+     * billing again.
+     *
+     * The platform subscription lives on the platform account, not a connected one,
+     * so there is no stripe_account option here.
+     *
+     * @param  string  $sub_id  Stripe subscription ID
+     * @return Throwable|Subscription
+     */
+    public static function endSubscriptionTrial($sub_id, ?string $idempotencyKey = null)
+    {
+        self::setClient();
+        try {
+            $options = $idempotencyKey ? ['idempotency_key' => (string) $idempotencyKey] : [];
+
+            return self::$client->subscriptions->update($sub_id, [
+                'trial_end' => 'now',
+                // Bill for the new period straight away rather than rolling the
+                // charge into a future invoice — the creator has just earned, and
+                // this is the moment the subscription was promised to start.
+                'proration_behavior' => 'none',
+            ], $options);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Pause a subscription's billing (no new invoices) — used when a creator falls below
      * the min posting cadence. Reversible via resumeSubscription(). behavior 'void' means
      * invoices during the pause are voided rather than collected later.

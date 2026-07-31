@@ -7,6 +7,7 @@ use App\Jobs\CheckFounderQualifications;
 use App\Jobs\ProcessFounderMonthlyBonuses;
 use App\Jobs\ProcessFounderPayouts;
 use App\Jobs\SendMailSubscriptions;
+use App\Services\AbandonedCheckoutService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Cache;
@@ -45,15 +46,38 @@ class Kernel extends ConsoleKernel
              * reported as "Scheduler heartbeat failed to write cache" every single minute —
              * blaming the cache write that had already succeeded, and burying the real cause.
              *
-             * It is also re-probed only once the last probe has gone stale rather than every
-             * minute: the previous form queued a closure per minute forever, so a stopped
-             * worker left a growing pile of identical jobs that all ran (and could time out)
-             * the moment it came back.
+             * Rate-limiting lives on the DISPATCH, not on the probe's own result — see the
+             * note inside. An earlier form guarded only on `queue_worker_heartbeat`, which
+             * the probe itself writes, so a stopped worker never advanced it and the closure
+             * was queued every minute forever: a growing pile of identical jobs that all ran
+             * (and could time out) the moment the worker came back.
              */
             try {
                 $lastProbe = Cache::get('queue_worker_heartbeat');
 
-                if (! $lastProbe || (time() - (int) $lastProbe) > 300) {
+                // ⚠️ Rate-limited on when a probe was last SENT, not on when one last RAN.
+                //
+                // `queue_worker_heartbeat` is written by the probe itself, so it only
+                // advances while a worker is alive. Guarding on it alone meant that with
+                // `schedule:work` up and `queue:work` down the condition was true every
+                // single minute — the closure was queued, never executed, the key never
+                // written, and the jobs table gained a row a minute indefinitely. Reported
+                // by a developer whose local queue was filling up; it is inert on a machine
+                // with a worker, which is why it went unnoticed.
+                //
+                // Tracking the dispatch separately caps a dead worker at one probe per
+                // window (288 a day instead of 1,440) while leaving the healthy path
+                // unchanged.
+                $lastSend = Cache::get('queue_worker_probe_sent');
+
+                $probeStale = ! $lastProbe || (time() - (int) $lastProbe) > 300;
+                $sendStale = ! $lastSend || (time() - (int) $lastSend) > 300;
+
+                if ($probeStale && $sendStale) {
+                    // Marked BEFORE dispatching: if the write happened after, a dispatch that
+                    // threw would leave no record and the next minute would try again.
+                    Cache::put('queue_worker_probe_sent', time(), 600);
+
                     // No ->onQueue() here on purpose. Locally the database connection's queue IS
                     // named "default", but on Vapor QUEUE_CONNECTION is sqs and SQS_QUEUE holds a
                     // full queue URL — naming a queue would push the probe to a queue nothing
@@ -68,7 +92,7 @@ class Kernel extends ConsoleKernel
                     'error' => $e->getMessage(),
                 ]);
             }
-        })->everyMinute();
+        })->everyMinute()->withoutOverlapping();
 
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
 
@@ -174,6 +198,34 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:50')
             ->withoutOverlapping();
 
+        // Nudge creators who completed Stripe connect setup but have no listings.
+        $schedule->command('creators:nudge-first-listing')
+            ->daily()
+            ->withoutOverlapping();
+
+        // Recompute where each creator has got to. This must run BEFORE the admin app's
+        // onboarding drip (10:00 and 20:00) reads `users.journey_step`, or the drip coaches
+        // creators on a step they finished yesterday. Hourly rather than daily because the
+        // signals it reads change all day — a listing published at noon should not leave the
+        // creator being told to publish one until tomorrow.
+        $schedule->command('journey:sync')
+            ->hourly()
+            ->withoutOverlapping();
+
+        // Start the platform subscription for creators who have made their first sale
+        // (client decision, 31 July 2026: nothing is charged before a creator earns).
+        //
+        // Every fifteen minutes rather than hourly: this is the moment a creator was
+        // promised billing would begin, and their dashboard says "free until your first
+        // sale" until it runs. A sweep, not a model event — the paths that complete a
+        // sale write through query builders and webhooks that fire no Eloquent events.
+        //
+        // Safe to overlap-guard aggressively: the activation claim is an atomic UPDATE,
+        // so a second runner cannot double-bill even if one slips through.
+        $schedule->command('subscription:activate-on-sale')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping(15);
+
         // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
         // that puts stock back bypasses Eloquent events (the refund handler's
         // ->increment(), the creator edit's ->update(), and the admin app, which shares
@@ -231,12 +283,18 @@ class Kernel extends ConsoleKernel
         // replays fulfilment for dropped webhooks, and chasing a supporter before it
         // has run risks telling someone who paid that they did not.
         //
-        // On local/testing it runs every minute instead, so a shortened
-        // CHECKOUT_RECOVERY_SCHEDULE_MINUTES (e.g. `1,2`) can actually be observed —
-        // an hourly tick would make a one-minute schedule untestable.
+        // ⚠️ The every-minute tick is for OBSERVING a deliberately shortened
+        // CHECKOUT_RECOVERY_SCHEDULE_MINUTES (e.g. `1,2`), and it now requires that the
+        // schedule actually IS short. It used to fire every minute on any local machine,
+        // which meant every developer who had never touched that variable — and whose
+        // reminders were an hour away regardless — still ran the command 1,440 times a day
+        // for nothing. A fast tick that outlives the reason for it is just noise on
+        // somebody else's machine.
+        $recoveryIsShort = min(AbandonedCheckoutService::schedule()) < 60;
+
         $recovery = $schedule->command('checkout:recover')->withoutOverlapping(10);
 
-        app()->environment('local', 'testing')
+        app()->environment('local', 'testing') && $recoveryIsShort
             ? $recovery->everyMinute()
             : $recovery->hourlyAt(20);
 

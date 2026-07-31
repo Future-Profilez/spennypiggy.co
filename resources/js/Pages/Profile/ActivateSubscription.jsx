@@ -1,6 +1,7 @@
 import LoaderButton from '@/Components/LoaderButton';
+import { subscriptionPlan } from '@/constants/creatorSubscription';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function ActivateSubscription(props) {
@@ -21,6 +22,10 @@ export default function ActivateSubscription(props) {
     const isResumeFlow = hasMonthlyChargeRecord && !isActive && !isTrial;
 
     const [loading, setLoading] = useState(false);
+    const [waiverAccepted, setWaiverAccepted] = useState(false);
+    const [waiverError, setWaiverError] = useState('');
+
+    const plan = subscriptionPlan(props.subscriptionPlan);
 
     const buttonAction = () => {
         if (isActive || isTrial) {
@@ -28,32 +33,60 @@ export default function ActivateSubscription(props) {
             return;
         }
 
+        // Re-entrancy guard: the disabled re-render alone loses the double-tap
+        // race, and this creates a Stripe Checkout session.
+        if (loading) return;
+
+        if (!waiverAccepted) {
+            setWaiverError('Please confirm you understand the terms before continuing.');
+            return;
+        }
+
         setLoading(true);
-        window.location.href = route('mandatory.checkout');
+        setWaiverError('');
+
+        // POST, not a link: this records the creator's consent, so it must carry
+        // a CSRF token and it must not be something a URL alone can trigger.
+        router.post(route('mandatory.checkout'), { digital_waiver: true }, {
+            onError: (errors) => {
+                setLoading(false);
+                setWaiverError(
+                    Object.values(errors ?? {}).flat()[0] ||
+                        'We could not start your subscription. Please try again.',
+                );
+            },
+            onFinish: () => setLoading(false),
+        });
     };
+
+    // A creator who has already sold starts billing the moment they subscribe —
+    // the free period is tied to "have you earned", not to "have you subscribed
+    // before". Promising them a free run here would be a lie the checkout then
+    // contradicts, so every branch below reads this rather than `isFirstTime`.
+    const freeRun = plan.free_until_first_sale && !props.hasMadeSale;
 
     const heroTitle = isActive
         ? 'Your subscription is active'
         : isTrial
-            ? 'Your free trial is active'
-            : isFirstTime
-                ? 'Start your 3-day free trial'
+            ? (freeRun ? "You won't be charged until your first sale" : 'Your free period is active')
+            : freeRun
+                ? 'Start selling — no charge until your first sale'
                 : 'Resume your creator subscription';
 
     const heroDescription = isActive
         ? 'Your creator tools are already active. Manage your plan and payments from your dashboard.'
         : isTrial
-            ? 'Your 3-day free trial is running. Enjoy creator tools today and check payment details anytime.'
-            : isFirstTime
-                ? 'Try every creator tool free for 3 days. Cancel anytime before the trial ends and you pay nothing.'
-                : 'Your creator plan has ended. Resume now to keep accepting support and keep creator features active.';
+            ? `Your creator tools are live. Nothing is charged until you make your first sale — then it's ${plan.price_formatted} + VAT a month.`
+            : freeRun
+                ? `${plan.promise_long} ${plan.reassurance}`
+                : `Your creator plan has ended. Resume now to keep accepting support and keep creator features active. Billing restarts at ${plan.price_formatted} + VAT per month.`;
 
     const buttonLabel = isActive
         ? 'Go to Dashboard'
         : isTrial
-            ? 'Continue Trial'
-            : isFirstTime
-                ? 'Start free trial'
+            ? 'Go to Dashboard'
+            : freeRun
+                ? 'Add card and start selling'
                 : 'Resume Subscription';
 
     const features = isActive
@@ -64,38 +97,39 @@ export default function ActivateSubscription(props) {
         ]
         : isTrial
             ? [
-                'Your free trial is active right now',
-                'No charge until trial ends',
-                'Subscription renews at £8.99 + VAT / month after trial',
+                'Your creator tools are active right now',
+                'Nothing is charged until your first sale',
+                `${plan.price_formatted} + VAT / month once you have sold`,
             ]
-            : isFirstTime
+            : freeRun
                 ? [
                     'Sell content, memberships and services',
                     'Accept payments from supporters worldwide',
-                    'No charge today — cancel anytime during the trial',
+                    plan.reassurance,
                 ]
                 : [
                     'Resume creator tools and keep accepting support',
-                    'Your plan renews at £8.99 + VAT / month',
-                    'No free trial is available if you already used it',
-                    'Cancel anytime after activation',
+                    `Your plan renews at ${plan.price_formatted} + VAT / month`,
+                    'Billing starts immediately — you have sold on SpennyPiggy before',
+                    'Cancel anytime',
                 ];
 
-    const billingCopy = isResumeFlow
-        ? 'Your subscription will resume at £8.99 + VAT per month.'
-        : 'No charge today. Trial ends before your first payment.';
+    const billingCopy = freeRun
+        ? `Nothing is charged today. Your first payment of ${plan.price_formatted} + VAT is taken after your first sale.`
+        : `Your subscription will be charged at ${plan.price_formatted} + VAT per month.`;
 
-    const legalCopy = isResumeFlow
-        ? 'By clicking "Resume Subscription", you agree to SpennyPiggy recurring billing at £8.99 + VAT per month.'
-        : 'By clicking "Start free trial", you agree to SpennyPiggy Terms of Service. No charge until your 3-day free trial ends.';
+    const legalCopy = freeRun
+        ? `By continuing you agree to SpennyPiggy Terms of Service. No charge until you make your first sale, then ${plan.price_formatted} + VAT per month.`
+        : `By continuing you agree to SpennyPiggy recurring billing at ${plan.price_formatted} + VAT per month.`;
 
     // The signature element: a 3-step billing timeline that answers "when am I
-    // actually charged?" at a glance. Only meaningful for trial-based flows.
-    const showTimeline = isFirstTime || isTrial;
+    // actually charged?" at a glance. It is the clearest statement of the whole
+    // policy, so it renders for anyone who has a free period ahead of them.
+    const showTimeline = freeRun || isTrial;
     const timelineSteps = [
-        { label: 'Today', detail: isTrial ? 'Trial running' : 'Trial starts', amount: '£0.00', accent: true },
-        { label: 'Day 3', detail: 'Trial ends', amount: null, accent: false },
-        { label: 'After', detail: 'Plan renews monthly', amount: '£8.99 + VAT', accent: false },
+        { label: 'Today', detail: 'Card added', amount: '£0.00', accent: true },
+        { label: 'Until you sell', detail: 'Still nothing to pay', amount: '£0.00', accent: false },
+        { label: 'First sale', detail: 'Subscription starts', amount: `${plan.price_formatted} + VAT`, accent: false },
     ];
 
     return (
@@ -134,7 +168,7 @@ export default function ActivateSubscription(props) {
                                     <div className="mb-6">
                                         <p className="text-gray-600 text-xs font-bold uppercase tracking-widest mb-2">Order Summary</p>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl font-black text-black">£8.99</span>
+                                            <span className="text-4xl font-black text-black">{plan.price_formatted}</span>
                                             <span className="text-gray-600 font-bold">+ VAT / month</span>
                                         </div>
                                     </div>
@@ -166,11 +200,11 @@ export default function ActivateSubscription(props) {
                                         <div className="space-y-3 mb-6">
                                             <div className="flex justify-between font-bold text-gray-700 text-sm">
                                                 <span>Due Today</span>
-                                                <span className="text-[#FF007F]">{isResumeFlow ? '£10.79' : '£0.00'}</span>
+                                                <span className="text-[#FF007F]">{freeRun ? '£0.00' : plan.total_formatted}</span>
                                             </div>
                                             <div className="flex justify-between font-bold text-gray-700 text-sm">
                                                 <span>Monthly Total</span>
-                                                <span className="text-black">£10.79</span>
+                                                <span className="text-black">{plan.total_formatted}</span>
                                             </div>
                                         </div>
                                     )}
@@ -178,6 +212,33 @@ export default function ActivateSubscription(props) {
                                     <p className="text-sm text-gray-700 font-medium">
                                         {billingCopy}
                                     </p>
+
+                                    {/* The consent record. It used to be stamped server-side with
+                                        the comment "not required to be clicked" — a consent nobody
+                                        gave. The exact wording shown here is what gets stored. */}
+                                    {!isActive && !isTrial && (
+                                        <div className="mt-5">
+                                            <label className="flex items-start gap-3 cursor-pointer rounded-box-sm border-[3px] border-black bg-white p-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={waiverAccepted}
+                                                    onChange={(e) => {
+                                                        setWaiverAccepted(e.target.checked);
+                                                        if (e.target.checked) setWaiverError('');
+                                                    }}
+                                                    className="mt-0.5 h-5 w-5 flex-shrink-0 rounded border-2 border-black text-[#FF007F] focus:ring-[#FF007F]"
+                                                />
+                                                <span className="text-[12px] leading-relaxed font-medium text-gray-800">
+                                                    {plan.waiver}
+                                                </span>
+                                            </label>
+                                            {waiverError && (
+                                                <p role="alert" className="mt-2 text-[12px] font-bold text-[#B3261E]">
+                                                    {waiverError}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Desktop CTA — mobile uses the sticky bar below */}
                                     <div className="mt-6 hidden lg:block">
@@ -210,11 +271,14 @@ export default function ActivateSubscription(props) {
                                     </h3>
                                     <p className="text-gray-700 text-base md:text-lg leading-relaxed font-medium">
                                         {isActive && 'Your creator plan is active. Use the dashboard to manage payments, content, and billing settings.'}
-                                        {(isTrial || isFirstTime) && (
-                                            <>Start your journey with a <span className="text-[#FF007F] font-bold">3-day free trial</span>. After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.</>
+                                        {freeRun && (
+                                            <>Add your card today and pay <span className="text-[#FF007F] font-bold">nothing</span> until you make your first sale. From then on your plan is <span className="text-black font-bold">{plan.price_formatted} + VAT / month</span>.</>
                                         )}
-                                        {isResumeFlow && (
-                                            <>Resume your creator subscription at <span className="text-black font-bold">£8.99 + VAT / month</span>. Free trial is not available again if you have already used it.</>
+                                        {!freeRun && isTrial && (
+                                            <>Your creator tools are live and nothing has been charged. Billing starts at <span className="text-black font-bold">{plan.price_formatted} + VAT / month</span> once you make a sale.</>
+                                        )}
+                                        {isResumeFlow && !freeRun && (
+                                            <>Resume your creator subscription at <span className="text-black font-bold">{plan.price_formatted} + VAT / month</span>. You have sold on SpennyPiggy before, so billing starts straight away.</>
                                         )}
                                     </p>
                                 </div>
@@ -235,13 +299,13 @@ export default function ActivateSubscription(props) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-4 md:p-5 rounded-box-sm bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Plan Price</p>
-                                        <p className="text-black font-black text-lg md:text-xl">£8.99 + VAT</p>
+                                        <p className="text-black font-black text-lg md:text-xl">{plan.price_formatted} + VAT</p>
                                         <p className="text-gray-600 text-xs mt-1 font-medium italic">Monthly recurring rate</p>
                                     </div>
                                     <div className="p-4 md:p-5 rounded-box-sm bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Status</p>
-                                        <p className="text-black font-black text-lg md:text-xl">{isActive ? 'Active' : isTrial ? 'Trial' : isFirstTime ? 'New' : 'Expired'}</p>
-                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">{isFirstTime ? 'Free trial available' : isResumeFlow ? 'Resume your subscription' : '3-day free trial'}</p>
+                                        <p className="text-black font-black text-lg md:text-xl">{isActive ? 'Active' : isTrial ? 'Free' : isFirstTime ? 'New' : 'Expired'}</p>
+                                        <p className="text-gray-600 text-xs mt-1 font-medium italic">{freeRun ? 'Free until your first sale' : isResumeFlow ? 'Resume your subscription' : 'Billing active'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -255,8 +319,8 @@ export default function ActivateSubscription(props) {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t-[3px] border-black px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-3 max-w-xl mx-auto">
                     <div className="flex-shrink-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 leading-none mb-1">{isResumeFlow ? 'Due today' : 'Today'}</p>
-                        <p className="text-xl font-black text-black leading-none">{isResumeFlow ? '£10.79' : '£0.00'}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 leading-none mb-1">{freeRun ? 'Today' : 'Due today'}</p>
+                        <p className="text-xl font-black text-black leading-none">{freeRun ? '£0.00' : plan.total_formatted}</p>
                     </div>
                     <LoaderButton
                         onClick={buttonAction}

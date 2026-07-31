@@ -234,8 +234,8 @@ class AbandonedCheckoutService
                 foreach ($schedule as $index => $minutes) {
                     $query->orWhere(function ($q) use ($index, $minutes, $guestMax) {
                         $q->where('reminder_count', $index)
-                          ->where('created_at', '<=', now()->subMinutes($minutes));
-                        
+                            ->where('created_at', '<=', now()->subMinutes($minutes));
+
                         if ($index >= $guestMax) {
                             $q->whereNotNull('user_id');
                         }

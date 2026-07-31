@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\RecordUserLogin;
 use App\Models\Bills;
 use App\Models\Membership;
 use App\Models\PiggyPot;
@@ -12,6 +13,7 @@ use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Observers\ActivityObserver;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -27,6 +29,12 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+        // Records user sign-ins into the shared login_logs table. Until this
+        // existed the table held admin logins only, and the admin panel's
+        // "inactive N months" segments read it as "nobody has ever signed in".
+        Login::class => [
+            RecordUserLogin::class,
         ],
     ];
 

@@ -3,6 +3,7 @@ import Guest from '@/Layouts/GuestLayout';
 import CreatorGuideLinks from './components/CreatorGuideLinks';
 import { Check, ArrowRight, Star, Shield, Zap, Lock, AlertTriangle, Gift, DollarSign } from 'lucide-react';
 
+import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
 export default function Index() {
   return (
     <>
@@ -35,10 +36,10 @@ export default function Index() {
                     </p>
                     <div className="mt-6 flex flex-col sm:flex-row gap-3 items-start">
                       <Link href="/register" className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-sm md:text-base py-3 px-6 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all">
-                        <span>Start Free Creator Trial</span>
+                        <span>Start Selling — It's Free</span>
                         <ArrowRight />
                       </Link>
-                      <span className="text-xs md:text-sm font-medium text-gray-700">3 days free • £8.99 + VAT / month after • Cancel anytime</span>
+                      <span className="text-xs md:text-sm font-medium text-gray-700">{SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime</span>
                     </div>
                   </div>
                 </div>
@@ -226,11 +227,11 @@ export default function Index() {
                   href="/register"
                   className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-base py-3 px-8 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all"
                 >
-                  <span>Start Free Creator Trial</span>
+                  <span>Start Selling — It's Free</span>
                   <ArrowRight />
                 </Link>
                 <div className="mt-2 text-sm font-medium text-gray-700">
-                  3 days free • £8.99 + VAT / month after • Live support included
+                  {SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime
                 </div>
               </div>
 

@@ -25,6 +25,15 @@ class PostingCadenceService
 
     public const MIN_POSTS = 3;
 
+    /**
+     * Days a creator gets between being TOLD their posts are low and collection pausing.
+     *
+     * ⚠️ Enforcement exists for Stripe compliance — a membership must deliver content — and
+     * three days costs that nothing. Income stopping with no notice costs the creator a lot,
+     * and before this there was no gap at all: the run that noticed also paused.
+     */
+    public const WARNING_DAYS = 3;
+
     /** Post.for_module values that count as paid member content. */
     private const GATED_MODULES = ['membership', 'subscription'];
 
@@ -32,7 +41,15 @@ class PostingCadenceService
      * Post.type values that are system/auto-generated (shoutouts, support thank-you posts)
      * and must NOT count toward the creator's posting cadence — only genuine content does.
      */
-    private const SYSTEM_TYPES = ['support_thanks'];
+    /**
+     * Posts the PLATFORM writes on the creator's behalf (the thank-you post created on a
+     * purchase), not posts the creator wrote.
+     *
+     * Public because `CreatorJourneyService` needs the same answer for its "have you posted
+     * yet" step — a second copy of this list would let the journey credit a creator for a
+     * post they never wrote, which is exactly the wrong-advice failure it exists to prevent.
+     */
+    public const SYSTEM_TYPES = ['support_thanks'];
 
     /**
      * Count a creator's genuine, approved member-content posts in the rolling window.

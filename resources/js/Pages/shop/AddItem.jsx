@@ -47,7 +47,13 @@ export default function AddItem(props) {
         isEdit,
     } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const [open, setOpen] = useState(false);
+    // The dashboard reads `?add=` once and hands it down. This component is lazy-loaded, so
+    // parsing window.location here raced the dashboard's own history.replaceState and
+    // usually lost — see the note in Dashboard.jsx.
+    const addIntent = props.addIntent ?? null;
+    const [open, setOpen] = useState(
+        () => addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
+    );
 
     useEffect(() => {
         if (open) {
@@ -102,12 +108,18 @@ export default function AddItem(props) {
         const [step, setStep] = useState(1);
         const [physical, setPhysical] = useState(() => {
             if (isEdit) return item?.type === 'physical' ? 'physical' : 'Digital Products';
+            if (addIntent === "physical") return "physical";
+            if (addIntent === "shop" || addIntent === "digital") return "Digital Products";
             return product_type === 'physical' ? 'physical' : 'Digital Products';
         });
 
         const [checkboxes, setCheckboxes] = useState([]);
         const [shopItem, setShopItem] = useState({
-            type: isEdit ? item?.type : (product_type || "Digital Products"),
+            type: isEdit ? item?.type : (() => {
+                if (addIntent === "physical") return "physical";
+                if (addIntent === "shop" || addIntent === "digital") return "Digital Products";
+                return product_type === 'physical' ? 'physical' : 'Digital Products';
+            })(),
             name: item?.name || pre_title || "",
             description: item?.description || pre_description || "",
             price: item?.price || pre_price || "",

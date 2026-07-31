@@ -10,6 +10,7 @@ use App\Http\Middleware\CheckUserBlock;
 use App\Http\Middleware\EncryptCookies;
 use App\Http\Middleware\EnforceEmulationTimeBox;
 use App\Http\Middleware\EnsureCsrfCookie;
+use App\Http\Middleware\EnsureIdentityVerifiedForListings;
 use App\Http\Middleware\EnsureRyeEnabled;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleCorsForAssets;
@@ -129,6 +130,7 @@ class Kernel extends HttpKernel
         'verified' => EnsureEmailIsVerified::class,
         'mustHaveToVerify' => UserEmailVerify::class,
         'mustCompletedStripeIdentity' => CheckStripeIdentityVerification::class,
+        'identityBeforeListing' => EnsureIdentityVerifiedForListings::class,
         'mustCompletedCardVerification' => CheckGifterCardVerification::class,
         'rye.enabled' => EnsureRyeEnabled::class,
         'membership' => RequireActiveMembership::class,

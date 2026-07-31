@@ -6,6 +6,7 @@ import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
 import FadeIn from '@/Components/animations/FadeIn';
 import WordReveal from '@/Components/animations/WordReveal';
 import Magnetic from '@/Components/animations/Magnetic';
+import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
 import {
   motion,
   AnimatePresence,
@@ -323,10 +324,19 @@ export default function Hero({auth}) {
                       <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[11px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full shadow-[0_8px_24px_-6px_rgba(255,0,127,0.5)]">It's Free</span>
                     </div>
 
+                    {/* The promise, not a footnote. "No charge until your first
+                        sale" is the single strongest thing this page can say to a
+                        creator, and it spent its life set in 11px grey under the
+                        fold as an asterisk. */}
+                    <p className="flex items-center justify-center lg:justify-start gap-2 text-center lg:text-left max-w-[520px] font-gulfs uppercase tracking-[0.12em] text-[13px] xl:text-[15px] text-white">
+                      <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-[#05EFB8] flex-shrink-0"></span>
+                      {SUBSCRIPTION_COPY.promise}
+                    </p>
+
                     <TrustBox />
 
                     <p className="uppercase text-center lg:text-left max-w-[520px] text-gray-400 font-poppins text-[11px] xl:text-[12px] tracking-wider">
-                      *3 days free trial, then a monthly £8.99 + VAT payment covers Stripe fees and compliance costs.
+                      *{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs.
                     </p>
                   </div>
                 </FadeIn>

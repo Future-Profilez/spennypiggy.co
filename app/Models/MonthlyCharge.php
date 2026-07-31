@@ -22,6 +22,7 @@ class MonthlyCharge extends Model
         'amount',
         'tax',
         'status',
+        'first_sale_activated_at',
         'cancelled_at',
         'current_start_trial_date',
         'current_end_trial_date',
@@ -38,6 +39,7 @@ class MonthlyCharge extends Model
         'current_start_trial_date' => 'date',
         'current_end_trial_date' => 'date',
         'upcoming_payment' => 'datetime',
+        'first_sale_activated_at' => 'datetime',
     ];
 
     public static function boot()

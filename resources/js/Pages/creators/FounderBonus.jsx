@@ -3,6 +3,7 @@ import Guest from '@/Layouts/GuestLayout';
 import CreatorGuideLinks from './components/CreatorGuideLinks';
 import { ArrowRight, Star, Award, AlertCircle, Clock } from 'lucide-react';
 
+import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
 export default function FounderBonus() {
   return (
     <>
@@ -37,11 +38,11 @@ export default function FounderBonus() {
                  
                  <div className="flex flex-col items-center justify-center gap-3">
                     <Link href="/register" className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-sm md:text-base py-3 px-6 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all">
-                      <span>Start Free Creator Trial</span>
+                      <span>Start Selling — It's Free</span>
                       <ArrowRight />
                     </Link>
                     <div className="text-xs md:text-sm font-medium text-gray-700">
-                      3 days free • £8.99 + VAT / month after • Cancel anytime
+                      {SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime
                     </div>
                  </div>
                </div>

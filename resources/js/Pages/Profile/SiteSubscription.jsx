@@ -1,6 +1,9 @@
 import { Link, usePage } from "@inertiajs/react";
 
-const PRICE = "£8.99 + VAT / month";
+import { subscriptionPlan } from "@/constants/creatorSubscription";
+
+const PLAN = subscriptionPlan();
+const PRICE = PLAN.active_price_line;
 
 export default function SiteSubscription({
     children,
@@ -125,20 +128,24 @@ export default function SiteSubscription({
             cta: null,
         },
         TRIAL_ACTIVE: {
-            badge: "Free trial",
+            badge: "No charge yet",
             badgeClass: "bg-[#BFD8FF] text-black",
             meterFill: "bg-[#BFD8FF]",
-            headline: "Free trial running",
-            dateLabel: "Trial ends",
+            headline: PLAN.promise,
+            // ⚠️ Not "Trial ends". Under the free-until-first-sale policy the
+            // parked trial date is an implementation detail Stripe needs, not a
+            // deadline the creator has — showing it as one would tell them they
+            // are about to be charged when they are not.
+            dateLabel: null,
             cta: null,
         },
         TRIAL_EXPIRED: {
             badge: "Trial ended",
             badgeClass: "bg-[#FFD166] text-black",
             meterFill: "bg-[#FFD166]",
-            headline: "Free trial ended",
+            headline: "Subscription needs attention",
             dateLabel: "Ended",
-            cta: "Subscribe now — £8.99/month",
+            cta: `Subscribe now — ${PLAN.price_formatted}/month`,
         },
         SUBSCRIPTION_EXPIRED: {
             badge: "Expired",
@@ -146,15 +153,15 @@ export default function SiteSubscription({
             meterFill: "bg-[#FF3B30]",
             headline: "Subscription expired",
             dateLabel: "Expired",
-            cta: "Renew subscription — £8.99/month",
+            cta: `Renew subscription — ${PLAN.price_formatted}/month`,
         },
         DEFAULT: {
             badge: "Not started",
             badgeClass: "bg-white text-black",
             meterFill: "bg-black",
-            headline: "Start your 3-day free trial",
+            headline: PLAN.promise,
             dateLabel: null,
-            cta: "Start free trial",
+            cta: "Add card and start selling",
         },
     };
 
@@ -164,10 +171,10 @@ export default function SiteSubscription({
         SUBSCRIPTION_ACTIVE: isCancelled
             ? `Auto-renewal is off. Access ends after ${formatDate(endDate)}.`
             : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in this billing period.`,
-        TRIAL_ACTIVE: `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in your trial.`,
-        TRIAL_EXPIRED: `Ended ${daysOverdue} ${daysOverdue === 1 ? "day" : "days"} ago. Subscribe to keep your creator tools.`,
+        TRIAL_ACTIVE: `Nothing is charged until you make your first sale. Then ${PRICE}.`,
+        TRIAL_EXPIRED: "Subscribe to keep your creator tools active.",
         SUBSCRIPTION_EXPIRED: `Overdue by ${daysOverdue} ${daysOverdue === 1 ? "day" : "days"}. Renew to regain access.`,
-        DEFAULT: "Unlock creator tools and start accepting payments.",
+        DEFAULT: PLAN.promise_long,
     }[scenario];
 
     /*
@@ -244,7 +251,7 @@ export default function SiteSubscription({
                                 onBefore={() =>
                                     confirm(
                                         scenario === "TRIAL_ACTIVE"
-                                            ? "Turn off auto-renewal? Your trial keeps running until it ends, then access stops."
+                                            ? "Turn off auto-renewal? Your creator tools stay active until the current period ends."
                                             : "Turn off auto-renewal? You keep access until the end of the current period.",
                                     )
                                 }
