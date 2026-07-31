@@ -7,34 +7,85 @@ use Illuminate\Support\Facades\Process;
 
 class GitPush extends Command
 {
-    protected $signature = 'git:push {message=Update code}';
+    /**
+     * Usage:
+     *
+     * php artisan git:push
+     * php artisan git:push "Fixed checkout bug"
+     * php artisan git:push "Fixed checkout bug" dev
+     * php artisan git:push "Merge latest changes" master
+     */
+    protected $signature = 'git:push
+                            {message? : Commit message}
+                            {branch? : Branch name (default: prem)}';
 
-    protected $description = 'Run git status, add, commit and push';
+    protected $description = 'Automatically add, commit and push changes to Git';
 
     public function handle()
     {
+        $branch = $this->argument('branch') ?: 'prem';
+        $message = $this->argument('message');
+
+        if (!$message) {
+            $message = $this->ask('Enter commit message', 'Update code');
+        }
+
+        $this->newLine();
+        $this->info("Checking git status...");
+
+        $status = Process::path(base_path())->run('git status --porcelain');
+
+        if (!$status->successful()) {
+            $this->error($status->errorOutput());
+
+            return self::FAILURE;
+        }
+
+        if (trim($status->output()) === '') {
+            $this->warn('Working tree is clean.');
+            $this->info('Nothing to commit.');
+
+            return self::SUCCESS;
+        }
+
+        $this->newLine();
+        $this->line($status->output());
+
+        if (!$this->confirm("Push these changes to '{$branch}' branch?", true)) {
+            $this->warn('Operation cancelled.');
+
+            return self::SUCCESS;
+        }
+
         $commands = [
-            'git status',
             'git add .',
-            'git commit -m "' . addslashes($this->argument('message')) . '"',
-            'git push origin prem',
+            'git commit -m "' . addslashes($message) . '"',
+            "git push origin {$branch}",
         ];
 
         foreach ($commands as $command) {
-            $this->info("Running: {$command}");
+
+            $this->newLine();
+            $this->info("> {$command}");
 
             $result = Process::path(base_path())->run($command);
 
-            $this->line($result->output());
+            if ($result->output()) {
+                $this->line($result->output());
+            }
 
-            if (! $result->successful()) {
+            if (!$result->successful()) {
                 $this->error($result->errorOutput());
 
                 return self::FAILURE;
             }
         }
 
-        $this->info('Git push completed successfully.');
+        $this->newLine();
+        $this->info('====================================');
+        $this->info("Successfully pushed to '{$branch}'");
+        $this->info("Commit Message: {$message}");
+        $this->info('====================================');
 
         return self::SUCCESS;
     }
