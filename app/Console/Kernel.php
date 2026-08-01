@@ -209,6 +209,11 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:50')
             ->withoutOverlapping();
 
+        // Prune membership offer dismissals older than the dismissal window.
+        $schedule->command('membership-offer:prune-dismissals')
+            ->dailyAt('03:55')
+            ->withoutOverlapping();
+
         // Nudge creators who completed Stripe connect setup but have no listings.
         $schedule->command('creators:nudge-first-listing')
             ->daily()

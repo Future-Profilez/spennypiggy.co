@@ -22,13 +22,28 @@
         $offerCreator = \App\Models\User::where('username', $creatorUsername)->first();
     }
 
+    $buyerModel = $buyer ?? null;
+    $buyerEmailAddress = $buyerEmail ?? null;
+
     $offer = $offerCreator
         ? app(\App\Services\MembershipUpsellService::class)
-            ->for($offerCreator, $buyer ?? null, $buyerEmail ?? null)
+            ->for($offerCreator, $buyerModel, $buyerEmailAddress)
         : null;
 
     $offerPrice = $offer
         ? rtrim(rtrim(number_format((float) $offer['price'], 2), '0'), '.')
+        : null;
+
+    $dismissUrl = $offer && $offerCreator
+        ? \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'membership-offer.dismiss-link',
+            now()->addDays(\App\Services\MembershipUpsellService::DISMISSAL_DAYS),
+            [
+                'creator_id' => $offerCreator->id,
+                'user_id' => $buyerModel?->id,
+                'email' => $buyerEmailAddress ?: $buyerModel?->email,
+            ]
+        )
         : null;
 @endphp
 
@@ -52,13 +67,16 @@
 
                         <a href="{{ $offer['checkout_url'] }}" target="_blank"
                            style="display:inline-block;background:#FF007F;color:#FFFFFF;font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:14px;text-decoration:none;padding:12px 24px;border-radius:14px;border:3px solid #000000;">
-                            Join for {{ strtoupper($offer['currency']) === 'GBP' ? '£' : '' }}{{ $offerPrice }}/mo
+                            Join for {{ $offer['symbol'] }}{{ $offerPrice }}/mo
                         </a>
 
                         {{-- Stated plainly. A recurring charge someone feels eased into is a
                              chargeback, not a member. --}}
                         <p style="margin:12px 0 0 0;font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#8A8A8A;">
                             Cancel any time.
+                            @if ($dismissUrl)
+                                &bull; <a href="{{ $dismissUrl }}" target="_blank" style="color:#FF007F;text-decoration:underline;">No thanks</a>
+                            @endif
                         </p>
                     </td>
                 </tr>

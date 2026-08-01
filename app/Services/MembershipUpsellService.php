@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Currency;
 use App\Models\Membership;
 use App\Models\MembershipOfferDismissal;
 use App\Models\MembershipPayment;
@@ -50,6 +51,14 @@ class MembershipUpsellService
         }
 
         try {
+            // ⚠️ The TIER being approved is not enough — the CREATOR has to be able to take the
+            // money. A suspended creator's tier can still be `approved = 1`, and Stripe cannot
+            // charge for someone who never finished Connect, so the buyer would reach checkout
+            // and fail there with no idea why.
+            if (! $this->creatorCanSell($creator)) {
+                return null;
+            }
+
             // A creator who never published a membership has nothing to offer, and pretending
             // otherwise sends the buyer to a dead page.
             $membership = $this->cheapestBuyable($creator);
@@ -76,6 +85,14 @@ class MembershipUpsellService
                 'level' => (string) $membership->level,
                 'price' => (float) $membership->price,
                 'currency' => (string) ($membership->currency ?: 'gbp'),
+                // ⚠️ The email had `currency === 'GBP' ? '£' : ''`, so a USD tier rendered as
+                // "Join for 10/mo" — no symbol, no code, no way to know what it costs.
+                'symbol' => $this->symbolFor((string) ($membership->currency ?: 'gbp')),
+                // ⚠️ Memberships are one of the four checkouts that force login, so a guest
+                // clicking "Join" is bounced to a login page. Saying so on the card turns a
+                // surprise into an expected step. Guest checkout IS allowed on Piggy Pot and
+                // Wishes, which is exactly how a guest reaches this offer.
+                'requires_account' => ! $viewer && ! $this->accountExistsFor($viewerEmail),
                 'title' => $membership->reward_title,
                 'description' => $membership->reward_description,
                 'thumbnail' => $membership->thumbnail,
@@ -91,6 +108,41 @@ class MembershipUpsellService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * Can this creator actually take the money?
+     *
+     * Suspension and an unfinished Stripe Connect both mean the checkout fails after the buyer
+     * has committed, which is worse than never offering.
+     */
+    private function creatorCanSell(User $creator): bool
+    {
+        return (int) ($creator->suspended_account ?? 0) !== 1
+            && (int) ($creator->stripe_details_submitted ?? 0) === 1;
+    }
+
+    /** Does an account already exist for this email? Decides whether to warn about signing up. */
+    private function accountExistsFor(?string $email): bool
+    {
+        return $email ? User::where('email', $email)->exists() : false;
+    }
+
+    /**
+     * The currency's own symbol, falling back to the ISO code — never to nothing.
+     *
+     * Reuses the `currencies` table the rest of the platform formats from rather than a second
+     * hardcoded map.
+     */
+    private function symbolFor(string $currency): string
+    {
+        $iso = strtoupper($currency);
+
+        try {
+            return (string) (Currency::symbols()[$iso] ?? $iso.' ');
+        } catch (\Throwable $e) {
+            return $iso.' ';
         }
     }
 

@@ -38,6 +38,7 @@ use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\FeatureSuggestionController;
 use App\Http\Controllers\GuestSupportTicketController;
+use App\Http\Controllers\ThankYouController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MagicBellProxyController;
 use App\Http\Controllers\NotificationController;
@@ -497,6 +498,10 @@ Route::middleware('auth')->group(function () {
 // bare 403 — friendlier for users clicking a stale link from an old email.
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
+
+// Dismiss membership offer via signed link in email
+Route::get('/membership-offer/dismiss-link', [ThankYouController::class, 'dismissMembershipOfferViaLink'])
+    ->name('membership-offer.dismiss-link');
 
 // Guest opt-out from abandoned-checkout reminders. A guest has no account, so the
 // route above (which needs a user id) cannot serve them — the opt-out is recorded

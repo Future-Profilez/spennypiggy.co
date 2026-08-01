@@ -297,9 +297,9 @@
                 </td>
             </tr>
 
-            {{-- One-off buyer: offer the creator's membership. Silent unless there is one. --}}
             @include('email.membership-offer', [
-                'creatorUsername' => $creatorUsername,
+                'creator' => $data->shop->user ?? null,
+                'buyer' => $data->user ?? null,
                 'buyerEmail' => $deliverable->customer_email ?? null,
             ])
 

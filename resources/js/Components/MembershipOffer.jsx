@@ -17,7 +17,7 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
 
     if (!offer || dismissed) return null;
 
-    const price = formatPrice(offer.price, offer.currency);
+    const price = formatPrice(offer.price, offer.currency, offer.symbol);
     const name = creatorName || "this creator";
 
     // Hidden immediately, recorded in the background. A refusal that waits on a round trip
@@ -70,6 +70,17 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
                         Cancel any time
                     </span>
 
+                    {/* ⚠️ Memberships are one of the four checkouts that force login, so a guest
+                        pressing Join is bounced to a login page. Saying so here turns a surprise
+                        into an expected step — guest checkout IS allowed on Piggy Pot and Wishes,
+                        which is exactly how a guest reaches this offer. */}
+                    {offer.requires_account && (
+                        <span className="w-full text-xs font-bold text-neutral-500">
+                            You'll create an account first — a membership needs one so it can be
+                            renewed and cancelled.
+                        </span>
+                    )}
+
                     {/* Says "not now" without shouting it. Recorded per creator, so refusing
                         one does not silence another. */}
                     <button
@@ -85,9 +96,16 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
     );
 }
 
-function formatPrice(amount, currency) {
+function formatPrice(amount, currency, symbol) {
     const value = Number(amount) || 0;
     const code = String(currency || "GBP").toUpperCase();
+    const decimals = Number.isInteger(value) ? 0 : 2;
+
+    // The server resolves the symbol from the `currencies` table the rest of the platform
+    // formats from. Prefer it over guessing from a locale.
+    if (symbol) {
+        return `${symbol}${value.toFixed(decimals)}`;
+    }
 
     try {
         return new Intl.NumberFormat("en-GB", {

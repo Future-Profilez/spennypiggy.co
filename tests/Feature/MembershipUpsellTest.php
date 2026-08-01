@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Membership;
+use App\Models\MembershipOfferDismissal;
 use App\Models\MembershipPayment;
 use App\Models\User;
 use App\Services\MembershipUpsellService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -43,9 +46,14 @@ class MembershipUpsellTest extends TestCase
         $this->upsell = app(MembershipUpsellService::class);
     }
 
-    private function creator(): User
+    /** A creator who can actually take money — suspension and Connect are both checked now. */
+    private function creator(array $overrides = []): User
     {
-        return User::factory()->create(['role' => 1, 'suspended_account' => 0]);
+        return User::factory()->create(array_merge([
+            'role' => 1,
+            'suspended_account' => 0,
+            'stripe_details_submitted' => 1,
+        ], $overrides));
     }
 
     private function membership(User $creator, array $overrides = []): Membership
@@ -281,5 +289,162 @@ class MembershipUpsellTest extends TestCase
         // Past it: they are a candidate again.
         $this->travel(2)->days();
         $this->assertNotNull($this->upsell->for($creator, $buyer));
+    }
+
+    public function test_dismiss_membership_offer_via_signed_link_success(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator);
+        $buyer = User::factory()->create(['role' => 0]);
+
+        $url = URL::temporarySignedRoute(
+            'membership-offer.dismiss-link',
+            now()->addDays(90),
+            [
+                'creator_id' => $creator->id,
+                'user_id' => $buyer->id,
+                'email' => $buyer->email,
+            ]
+        );
+
+        // Offer is currently visible
+        $this->assertNotNull($this->upsell->for($creator, $buyer));
+
+        // Click the signed link
+        $response = $this->get($url);
+
+        // Should redirect to home with success message
+        $response->assertRedirect('/');
+        $response->assertSessionHas('success');
+
+        // Offer is now dismissed
+        $this->assertNull($this->upsell->for($creator, $buyer));
+    }
+
+    public function test_dismiss_membership_offer_via_signed_link_invalid_signature(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator);
+        $buyer = User::factory()->create(['role' => 0]);
+
+        $url = route('membership-offer.dismiss-link', [
+            'creator_id' => $creator->id,
+            'user_id' => $buyer->id,
+            'email' => $buyer->email,
+        ]); // Not signed!
+
+        // Hit unsigned url
+        $response = $this->get($url);
+
+        $response->assertRedirect('/');
+        $response->assertSessionHas('error', 'Invalid or expired link.');
+
+        // Offer should still be visible
+        $this->assertNotNull($this->upsell->for($creator, $buyer));
+    }
+
+    public function test_prune_membership_offer_dismissals_artisan_command(): void
+    {
+        $creator = $this->creator();
+        $buyer = User::factory()->create(['role' => 0]);
+
+        // Create one fresh dismissal (within 90 days)
+        $this->upsell->dismiss($creator, $buyer);
+
+        // Create one stale dismissal (older than 90 days)
+        MembershipOfferDismissal::create([
+            'creator_id' => $creator->id,
+            'user_id' => User::factory()->create(['role' => 0])->id,
+            'email' => 'stale@example.com',
+            'dismissed_at' => now()->subDays(MembershipUpsellService::DISMISSAL_DAYS + 5),
+        ]);
+
+        $this->assertDatabaseCount('membership_offer_dismissals', 2);
+
+        // Run command
+        $this->artisan('membership-offer:prune-dismissals')
+            ->expectsOutput('Deleted 1 membership offer dismissal(s) older than 90 days.')
+            ->assertExitCode(0);
+
+        // Stale dismissal should be deleted, fresh one should remain
+        $this->assertDatabaseCount('membership_offer_dismissals', 1);
+        $this->assertDatabaseMissing('membership_offer_dismissals', ['email' => 'stale@example.com']);
+    }
+
+    public function test_controller_wiring_on_thank_you_page(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator);
+
+        // Hit the thankyou controller as a guest
+        $response = $this->get(route('thank-you', ['username' => $creator->username]).'?type=wish&item_id=123');
+
+        $response->assertOk();
+        // Check Inertia response contains membership_offer
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('membership_offer')
+            ->where('membership_offer.level', 'bronze')
+        );
+    }
+
+    public function test_controller_wiring_suppressed_for_membership_purchase(): void
+    {
+        $creator = $this->creator();
+        $membership = $this->membership($creator);
+
+        // When a membership is purchased, the offer is suppressed
+        $response = $this->get(route('thank-you', ['username' => $creator->username]).'?type=monthly_subscription&item_id='.$membership->uuid);
+
+        $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('membership_offer', null)
+        );
+    }
+
+    /** ⚠️ An approved TIER on a creator who cannot take money still fails at checkout. */
+    public function test_a_creator_who_cannot_take_money_is_never_offered(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator);
+
+        $this->assertNotNull($this->upsell->for($creator));
+
+        // ⚠️ forceFill, not update(): `suspended_account` is NOT in User::$fillable, so
+        // update() discards it silently and the test would pass against unchanged data.
+        $creator->forceFill(['suspended_account' => 1])->saveQuietly();
+        $this->assertNull($this->upsell->for($creator->fresh()));
+
+        $creator->forceFill(['suspended_account' => 0, 'stripe_details_submitted' => 0])->saveQuietly();
+        $this->assertNull($this->upsell->for($creator->fresh()), 'Connect unfinished — checkout would fail');
+    }
+
+    /** ⚠️ "Join for 10/mo" with no symbol tells the buyer nothing about what they will pay. */
+    public function test_every_currency_renders_with_something_in_front_of_the_price(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator, ['currency' => 'USD']);
+
+        $offer = $this->upsell->for($creator);
+
+        $this->assertNotEmpty($offer['symbol'], 'a price must never render bare');
+        $this->assertNotSame('', trim($offer['symbol']));
+    }
+
+    /**
+     * Memberships force login, so a guest pressing "Join" is bounced. The card has to say so
+     * before the price does.
+     */
+    public function test_a_guest_is_told_an_account_is_needed(): void
+    {
+        $creator = $this->creator();
+        $this->membership($creator);
+
+        $this->assertTrue($this->upsell->for($creator)['requires_account']);
+
+        $buyer = User::factory()->create(['role' => 0]);
+        $this->assertFalse($this->upsell->for($creator, $buyer)['requires_account']);
+
+        // Known email with an account behind it — no warning needed.
+        $this->assertFalse($this->upsell->for($creator, null, $buyer->email)['requires_account']);
     }
 }

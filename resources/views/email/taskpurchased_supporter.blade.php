@@ -152,7 +152,7 @@ $displayAmount = $supporterPaid > 0 ? $supporterPaid : $creatorAmount;
             @include('email.reward-block', ['rewardItem' => $task])
 
             {{-- One-off buyer: offer the creator's membership. Silent unless there is one. --}}
-            @include('email.membership-offer', ['creatorUsername' => $creatorUsername, 'buyer' => $supporter ?? null])
+            @include('email.membership-offer', ['creator' => $task->creator ?? null, 'buyer' => $supporter ?? null])
 
             <tr>
                 <td style="padding: 0 0 22px 0; font-family:'Outfit',Arial,sans-serif; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">

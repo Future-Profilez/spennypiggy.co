@@ -157,7 +157,7 @@
             ])
 
             {{-- One-off buyer: offer the creator's membership. Silent unless there is one. --}}
-            @include('email.membership-offer', ['creatorUsername' => $creatorUsername, 'buyer' => $pay->user ?? null])
+            @include('email.membership-offer', ['creator' => $pay->creator ?? null, 'buyer' => $pay->user ?? null, 'buyerEmail' => $pay->guest_email ?? null])
 
             @if(!empty($thankYouUrl))
             <tr>

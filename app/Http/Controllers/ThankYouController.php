@@ -228,4 +228,33 @@ class ThankYouController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
+
+    /**
+     * "Don't offer me this creator's membership again."
+     *
+     * Signed link from email receipt. No authentication required to click, signature
+     * verified in the controller. On success, redirects home with a success message.
+     */
+    public function dismissMembershipOfferViaLink(Request $request)
+    {
+        if (! $request->hasValidSignature()) {
+            return redirect('/')->with('error', 'Invalid or expired link.');
+        }
+
+        $creatorId = $request->query('creator_id');
+        $userId = $request->query('user_id');
+        $email = $request->query('email');
+
+        $creator = User::find($creatorId);
+
+        if (! $creator) {
+            return redirect('/')->with('error', 'Creator not found.');
+        }
+
+        $viewer = $userId ? User::find($userId) : null;
+
+        app(MembershipUpsellService::class)->dismiss($creator, $viewer, $email);
+
+        return redirect('/')->with('success', 'You have successfully opted out of this creator\'s membership offers.');
+    }
 }
