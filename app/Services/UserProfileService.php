@@ -1661,7 +1661,17 @@ class UserProfileService
         }
 
         // 3. If we still have nothing, handle the un-subscribed state
-        if ($user->is_subscribed) {
+        // ⚠️ Under setup-mode checkout a creator legitimately has NO Stripe
+        // subscription until their first sale — only a saved card. `subscription:sync`
+        // runs every 15 minutes, so without this it would strip that creator's
+        // subscribed flag on the next tick, every tick.
+        $awaitingFirstSale = MonthlyCharge::where('user_id', $user->id)
+            ->whereIn('status', ['trialing', 'trial_ending'])
+            ->whereNull('first_sale_activated_at')
+            ->whereNotNull('stripe_payment_method')
+            ->exists();
+
+        if ($user->is_subscribed && ! $awaitingFirstSale) {
             $user->is_subscribed = 0;
             $user->save();
         }

@@ -539,13 +539,17 @@ export default function Header({ classMagicword }) {
                                     )}
                                 </>
 
-                                <NavLinkWithIcon
-                                    href={route("blocked.users")}
-                                    onClick={toggleClass}
-                                    icon={UserX}
-                                    label="Blocked User List"
-                                    activeColor="hover:bg-[#b892ff]"
-                                />
+                                {auth?.user?.username ? (
+                                    <NavLinkWithIcon
+                                        href={route("blocked.users")}
+                                        onClick={toggleClass}
+                                        icon={UserX}
+                                        label="Blocked User List"
+                                        activeColor="hover:bg-[#b892ff]"
+                                    />
+                                ) : (
+                                    ""
+                                )}
                                 {auth?.user?.username ? (
                                     ""
                                 ) : (

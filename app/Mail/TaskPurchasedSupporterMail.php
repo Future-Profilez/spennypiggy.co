@@ -26,6 +26,13 @@ class TaskPurchasedSupporterMail extends Mailable
 
     public function build()
     {
+        if (! $this->task->relationLoaded('creator')) {
+            $this->task->load(['creator']);
+        }
+        if ($this->purchase && ! $this->purchase->relationLoaded('supporter')) {
+            $this->purchase->load(['supporter']);
+        }
+
         $subject = 'Task Purchase Confirmation: '.$this->task->title;
 
         $currencySymbol = Currency::where('ISO', $this->task->currency)->value('symbol') ?? '$';

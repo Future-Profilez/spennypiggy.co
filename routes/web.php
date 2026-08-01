@@ -51,6 +51,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\SubscriptionsController;
 use App\Http\Controllers\SubscriptionSyncController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\ThankYouController;
 use App\Http\Controllers\VideoPosterController;
 use App\Models\FeatureSuggestion;
 use App\Models\FounderBonus;
@@ -497,6 +498,10 @@ Route::middleware('auth')->group(function () {
 // bare 403 — friendlier for users clicking a stale link from an old email.
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
+
+// Dismiss membership offer via signed link in email
+Route::get('/membership-offer/dismiss-link', [ThankYouController::class, 'dismissMembershipOfferViaLink'])
+    ->name('membership-offer.dismiss-link');
 
 // Guest opt-out from abandoned-checkout reminders. A guest has no account, so the
 // route above (which needs a user id) cannot serve them — the opt-out is recorded

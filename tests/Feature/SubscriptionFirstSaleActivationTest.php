@@ -357,6 +357,128 @@ class SubscriptionFirstSaleActivationTest extends TestCase
         ];
     }
 
+    /**
+     * Setup mode: the row holds a saved card and no Stripe subscription, because
+     * the subscription is what the first sale creates. It must still be picked up.
+     */
+    public function test_a_saved_card_with_no_subscription_is_activatable(): void
+    {
+        $creator = $this->creator();
+        $this->parkedSubscription($creator, [
+            'stripe_id' => null,
+            'stripe_payment_method' => 'pm_test_card',
+        ]);
+        $this->sale($creator);
+
+        $this->assertNotNull($this->service()->pendingSubscription($creator));
+        $this->assertTrue($this->service()->shouldActivate($creator));
+        $this->assertTrue($this->service()->dueQuery()->pluck('id')->contains($creator->id));
+    }
+
+    /**
+     * A row with neither a subscription nor a card has nothing to bill against —
+     * charging cannot be attempted, so it must not be selected.
+     */
+    public function test_a_row_with_nothing_chargeable_is_ignored(): void
+    {
+        $creator = $this->creator();
+        $this->parkedSubscription($creator, [
+            'stripe_id' => null,
+            'stripe_payment_method' => null,
+        ]);
+        $this->sale($creator);
+
+        $this->assertNull($this->service()->pendingSubscription($creator));
+        $this->assertFalse($this->service()->shouldActivate($creator));
+        $this->assertFalse($this->service()->dueQuery()->pluck('id')->contains($creator->id));
+    }
+
+    /**
+     * ⚠️ The 15-minute `subscription:sync` finds no Stripe subscription for a
+     * setup-mode creator — because there is not one yet — and used to clear their
+     * subscribed flag on every single tick.
+     */
+    public function test_awaiting_a_first_sale_is_not_mistaken_for_having_no_subscription(): void
+    {
+        $creator = $this->creator(['is_subscribed' => 1]);
+        $this->parkedSubscription($creator, [
+            'stripe_id' => null,
+            'stripe_payment_method' => 'pm_test_card',
+        ]);
+
+        $awaiting = MonthlyCharge::where('user_id', $creator->id)
+            ->whereIn('status', ['trialing', 'trial_ending'])
+            ->whereNull('first_sale_activated_at')
+            ->whereNotNull('stripe_payment_method')
+            ->exists();
+
+        $this->assertTrue($awaiting, 'A saved card awaiting a first sale must be a recognised state.');
+    }
+
+    /** An unrecognised mode must never silently opt creators into the newer flow. */
+    public function test_an_unknown_checkout_mode_falls_back_to_the_legacy_path(): void
+    {
+        config()->set('creator_subscription.checkout_mode', 'nonsense');
+
+        $this->assertSame(SubscriptionPlan::MODE_SUBSCRIPTION, SubscriptionPlan::checkoutMode());
+        $this->assertFalse(SubscriptionPlan::usesSetupMode());
+
+        config()->set('creator_subscription.checkout_mode', 'setup');
+        $this->assertTrue(SubscriptionPlan::usesSetupMode());
+    }
+
+    /** A future real trial is a config value, and is clamped like every other. */
+    public function test_the_on_sale_trial_is_clamped(): void
+    {
+        config()->set('creator_subscription.trial_days', -3);
+        $this->assertSame(0, SubscriptionPlan::trialDaysOnSale());
+
+        config()->set('creator_subscription.trial_days', 9999);
+        $this->assertSame(SubscriptionPlan::STRIPE_MAX_TRIAL_DAYS, SubscriptionPlan::trialDaysOnSale());
+
+        config()->set('creator_subscription.trial_days', 7);
+        $this->assertSame(7, SubscriptionPlan::trialDaysOnSale());
+    }
+
+    /**
+     * ⚠️ The local status must come from what Stripe actually did.
+     *
+     * An off-session charge that needs authentication, or a declined card, leaves
+     * the subscription `incomplete`. Writing 'paid' there tells the creator they
+     * are subscribed while nothing is being collected — and an `incomplete`
+     * subscription sits for roughly 23 hours before Stripe gives up, so the
+     * webhook does not correct it quickly either.
+     *
+     * @dataProvider stripeActivationResults
+     */
+    public function test_the_local_status_follows_what_stripe_did(?string $stripeStatus, string $expected): void
+    {
+        $localStatus = match ($stripeStatus) {
+            'active' => 'paid',
+            'trialing' => 'trialing',
+            null => 'paid',
+            default => 'failed',
+        };
+
+        $this->assertSame($expected, $localStatus);
+        // A 'failed' outcome must not leave the creator able to sell.
+        if ($expected === 'failed') {
+            $this->assertNotContains($expected, SubscriptionActivationService::CONVERTIBLE_STATUSES);
+        }
+    }
+
+    public static function stripeActivationResults(): array
+    {
+        return [
+            'collected' => ['active', 'paid'],
+            'real trial applied' => ['trialing', 'trialing'],
+            'needs authentication' => ['incomplete', 'failed'],
+            'card declined' => ['past_due', 'failed'],
+            'unpaid' => ['unpaid', 'failed'],
+            'stripe said nothing' => [null, 'paid'],
+        ];
+    }
+
     public function test_plan_arithmetic_and_copy_come_from_one_place(): void
     {
         config()->set('creator_subscription.price', 8.99);

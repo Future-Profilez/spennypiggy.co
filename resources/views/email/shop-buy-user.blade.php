@@ -297,6 +297,12 @@
                 </td>
             </tr>
 
+            @include('email.membership-offer', [
+                'creator' => $data->shop->user ?? null,
+                'buyer' => $data->user ?? null,
+                'buyerEmail' => $deliverable->customer_email ?? null,
+            ])
+
         </table>
     </td>
 </tr>

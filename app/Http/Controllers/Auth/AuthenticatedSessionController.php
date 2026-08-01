@@ -61,9 +61,24 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): Response
     {
+        // Same fail-closed rule as the register side, through the one implementation.
+        $google2faPending = session('google_2fa_pending');
+        $google2faEmail = null;
+
+        if (GoogleController::pendingIsValid($google2faPending)) {
+            $google2faEmail = $google2faPending['email'];
+        } elseif ($google2faPending !== null) {
+            session()->forget('google_2fa_pending');
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            // Renders the Google button only when both credentials are configured — a button
+            // that can only answer "not available right now" is worse than no button.
+            'googleEnabled' => filled(config('services.google.client_id'))
+                && filled(config('services.google.client_secret')),
+            'google2faPendingEmail' => $google2faEmail,
         ]);
     }
 
@@ -1043,6 +1058,30 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($valid) {
+            // Check if this is a Google 2FA login pending in session
+            $google2faPending = $request->session()->get('google_2fa_pending');
+            $google2faEmail = null;
+
+            if (GoogleController::pendingIsValid($google2faPending)) {
+                $google2faEmail = $google2faPending['email'];
+            } elseif ($google2faPending !== null) {
+                $request->session()->forget('google_2fa_pending');
+            }
+
+            if ($google2faEmail && strtolower(trim($google2faEmail)) === strtolower(trim($email))) {
+                Auth::login($user, true);
+
+                $request->session()->forget('google_2fa_pending');
+                $request->session()->regenerate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'status' => true,
+                    'redirect_url' => $this->getRedirectUrl($user),
+                    'message' => 'Logged in successfully.',
+                ]);
+            }
+
             // $request->authenticate();
             $credentials = [
                 'email' => $email,
