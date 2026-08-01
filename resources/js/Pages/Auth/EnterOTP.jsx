@@ -1,5 +1,5 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm, usePage } from "@inertiajs/react";
+import { Head, useForm, usePage, router } from "@inertiajs/react";
 import { useState } from "react";
 import axios from "axios";
 import { useRef } from "react";
@@ -74,7 +74,7 @@ function base64urlToUint8Array(base64url) {
     return bytes;
 }
 
-export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
+export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }) {
     const [open, setOpen] = useState(false);
     useEffect(() => {
         if (action === "open") {
@@ -93,6 +93,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
     });
+    const { google2faPendingEmail = null } = usePage().props;
 
     const inputRefs = useRef([]);
     const [backup, setBackup] = useState(false);
@@ -221,7 +222,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
 
     return (
         <>
-            <Popup space="2 md:p-4" action={open} modalclass="" text={<></>}>
+            <Popup space="2 md:p-4" action={open} modalclass="" text={<></>} onHide={onHide}>
                 <div className=" text-center py-10">
                     <header className="mb-8">
                         <h1 className="text-2xl font-bold mb-1">
@@ -317,6 +318,20 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
                                     </button>
                                 </div>
                             </>
+                        )}
+
+                        {google2faPendingEmail && (
+                            <div className="mt-4 border-t border-gray-200 pt-4 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        router.post(route("auth.google.cancel", { target: "login" }));
+                                    }}
+                                    className="text-xs font-bold text-red-600 hover:underline shrink-0"
+                                >
+                                    Cancel and sign in as someone else
+                                </button>
+                            </div>
                         )}
 
                         {hasPasskey && (

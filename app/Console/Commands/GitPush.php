@@ -26,16 +26,16 @@ class GitPush extends Command
         $branch = $this->argument('branch') ?: 'prem';
         $message = $this->argument('message');
 
-        if (!$message) {
+        if (! $message) {
             $message = $this->ask('Enter commit message', 'Update code');
         }
 
         $this->newLine();
-        $this->info("Checking git status...");
+        $this->info('Checking git status...');
 
         $status = Process::path(base_path())->run('git status --porcelain');
 
-        if (!$status->successful()) {
+        if (! $status->successful()) {
             $this->error($status->errorOutput());
 
             return self::FAILURE;
@@ -51,7 +51,7 @@ class GitPush extends Command
         $this->newLine();
         $this->line($status->output());
 
-        if (!$this->confirm("Push these changes to '{$branch}' branch?", true)) {
+        if (! $this->confirm("Push these changes to '{$branch}' branch?", true)) {
             $this->warn('Operation cancelled.');
 
             return self::SUCCESS;
@@ -59,7 +59,7 @@ class GitPush extends Command
 
         $commands = [
             'git add .',
-            'git commit -m "' . addslashes($message) . '"',
+            'git commit -m "'.addslashes($message).'"',
             "git push origin {$branch}",
         ];
 
@@ -74,7 +74,7 @@ class GitPush extends Command
                 $this->line($result->output());
             }
 
-            if (!$result->successful()) {
+            if (! $result->successful()) {
                 $this->error($result->errorOutput());
 
                 return self::FAILURE;

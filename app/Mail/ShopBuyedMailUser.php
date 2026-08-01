@@ -39,8 +39,8 @@ class ShopBuyedMailUser extends Mailable
     public function build()
     {
         // Ensure relationships are loaded if this is being handled in the queue
-        if (! $this->data->relationLoaded('shop.user')) {
-            $this->data->load(['shop.user']);
+        if (! $this->data->relationLoaded('shop.user') || ! $this->data->relationLoaded('user')) {
+            $this->data->load(['shop.user', 'user']);
         }
 
         $creatorName = $this->data->shop?->user?->name ?? 'a creator';

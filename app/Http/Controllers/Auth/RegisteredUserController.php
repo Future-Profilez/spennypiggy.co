@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -65,7 +66,37 @@ class RegisteredUserController extends Controller
         //         return Inertia::location("https://uk.spennypiggy.co/register");
         //     }
         // }
-        return Inertia::render('Auth/Register');
+        // Fails closed: an entry with no readable `expires_at` is treated as expired, not as
+        // "no deadline". Reading `! empty($entry['expires_at'])` as the outer condition let such
+        // an entry skip the check entirely — which is exactly what an older deploy leaves behind.
+        $google = $request->session()->get(GoogleController::SESSION_KEY);
+
+        if ($google !== null && ! GoogleController::pendingIsValid($google)) {
+            $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
+            $google = null;
+        }
+
+        return Inertia::render('Auth/Register', [
+            // Present only when the person arrived through Google. The page pre-fills the name,
+            // shows the email as settled rather than as a field, and drops the password step.
+            //
+            // Only what the screen needs to render is sent — never `google_id`, and the address
+            // is display-only: `store()` reads the authoritative copy from the session, so
+            // editing this in the browser changes nothing.
+            'googleProfile' => is_array($google) && ! empty($google['email'])
+                ? [
+                    'email' => $google['email'],
+                    'name' => $google['name'] ?? null,
+                    'avatar' => $google['avatar'] ?? null,
+                ]
+                : null,
+            // Campaign tags that were on the URL before the round trip to Google.
+            'googleUtm' => (object) $request->session()->get('google_signup_utm', []),
+            // The button renders only when both credentials are configured, so an environment
+            // without them shows the email form alone rather than a control that cannot work.
+            'googleEnabled' => filled(config('services.google.client_id'))
+                && filled(config('services.google.client_secret')),
+        ]);
     }
 
     public function validateRegistration(Request $request)
@@ -81,10 +112,6 @@ class RegisteredUserController extends Controller
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
             'country' => ['sometimes', 'required', 'string'],
-            'street_address' => ['sometimes', 'required', 'string', 'min:20'],
-            'city' => ['sometimes', 'required', 'string'],
-            'state' => ['sometimes', 'required', 'string'],
-            'postal_code' => ['sometimes', 'required', 'string', 'max:20'],
         ], $messages);
 
         $validator->after(function ($validator) use ($request) {
@@ -115,6 +142,39 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+        /* =========================GOOGLE SIGN-UP========================== */
+        // A Google sign-up posts this same form and passes every gate below it. The only
+        // differences are handled here.
+        //
+        // 🚨 The email is taken from the SESSION, never from the request. The session copy was
+        // written by `GoogleController` only after Google reported the address verified; the
+        // request copy is whatever the browser sent. Trusting the request would let anyone with
+        // a Google session POST somebody else's address and receive an account already marked
+        // email-verified on it.
+        // Fails closed: an entry with no readable `expires_at` is treated as expired, not as
+        // "no deadline". Reading `! empty($entry['expires_at'])` as the outer condition let such
+        // an entry skip the check entirely — which is exactly what an older deploy leaves behind.
+        $google = $request->session()->get(GoogleController::SESSION_KEY);
+
+        if ($google !== null && ! GoogleController::pendingIsValid($google)) {
+            $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
+            $google = null;
+        }
+
+        if (is_array($google) && ! empty($google['email'])) {
+            $request->merge([
+                'email' => $google['email'],
+                // There is no password to post. One is generated so the column (NOT NULL) is
+                // satisfied and the row cannot be signed into by guessing an empty value; the
+                // person can set a real one later through forgot-password, which also gives
+                // them a second way in if they ever lose the Google account.
+                'password' => $generatedPassword = Str::random(48),
+                'password_confirmation' => $generatedPassword,
+            ]);
+        } else {
+            $google = null;
+        }
+
         /* =========================BASIC VALIDATION========================== */
         $messages = [
             'username.regex' => 'The username must only contain letters, numbers, periods (.), and underscores (_).',
@@ -135,7 +195,10 @@ class RegisteredUserController extends Controller
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
         ], $messages);
 
-        if (config('app.url') === 'https://spennypiggy.co') {
+        // Turnstile is skipped on the Google path, and ONLY this one. Google's own sign-in is the
+        // bot gate there, and the form never rendered a widget for the person to solve — every
+        // other check below still runs.
+        if (! $google && config('app.url') === 'https://spennypiggy.co') {
             $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
             if (! empty($turnstileSecret)) {
                 $request->validate([
@@ -157,14 +220,17 @@ class RegisteredUserController extends Controller
             }
         }
 
-        /* =========================FAN ADDRESS VALIDATION========================== */
+        /* =========================SUPPORTER COUNTRY========================== */
+        // Only the country is asked for at signup — it sets the display
+        // currency. The billing address is NOT collected here: `successCheckout`
+        // already writes the card-verified address from Stripe into
+        // `gifter_addresses` at the first purchase, so asking for a
+        // hand-typed copy up front collected worse data at the point where it
+        // cost the most sign-ups. The old rules also required a street address
+        // of at least 20 characters, which a genuine short address fails.
         if ($request->role == 0) {
             $request->validate([
                 'country' => 'required|string',
-                'street_address' => 'required|string|min:20',
-                'city' => 'required|string',
-                'state' => 'required|string',
-                'postal_code' => 'required|string|max:20',
             ]);
         }
 
@@ -199,13 +265,19 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================EMAIL DOMAIN CHECK========================== */
-        $domain = strtolower(explode('@', $request->email)[1] ?? '');
-        $allowedDomains = AllowedDomain::pluck('name')->toArray();
+        // Skipped on the Google path. The allowlist exists to keep unreachable and throwaway
+        // addresses out; Google has already proved this one receives mail. Enforcing it there
+        // would also reject every Google Workspace address — the list holds six domains — so the
+        // button would refuse a large share of the people it is meant to let in.
+        if (! $google) {
+            $domain = strtolower(explode('@', $request->email)[1] ?? '');
+            $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
-        if (! in_array($domain, $allowedDomains)) {
-            throw ValidationException::withMessages([
-                'email' => 'Invalid Email Id.',
-            ]);
+            if (! in_array($domain, $allowedDomains)) {
+                throw ValidationException::withMessages([
+                    'email' => 'Invalid Email Id.',
+                ]);
+            }
         }
 
         /* =========================BLOCKED CONTENT CHECK========================== */
@@ -244,7 +316,6 @@ class RegisteredUserController extends Controller
 
         $user = User::create([
             'uuid' => Uuid::uuid4()->toString(),
-            'tfa_key' => $secret,
             'name' => $request->name,
             'email' => $request->email,
             'username' => strtolower($request->username),
@@ -258,8 +329,6 @@ class RegisteredUserController extends Controller
             'creator_email_receipt_acknowledged_at' => $request->role == 1 ? now() : null,
             'bio_approved' => 0,
             'profile_status_lock' => 0,
-            'cover' => $assignedCover,
-            'cover_approved' => 1,
             // Fall back to the first-touch source cookie set by TrackSiteVisit.
             // Without it, anyone who arrived from Reddit, browsed, and signed up
             // later from a clean URL was recorded as "direct" — which is why
@@ -277,6 +346,26 @@ class RegisteredUserController extends Controller
             'utm_medium' => $request->input('utm_medium'),
             'utm_campaign' => $request->input('utm_campaign'),
         ]);
+
+        // ⚠️ Set AFTER create, not inside it. These columns are not in the model's
+        // `$fillable`, so passing them to `User::create()` is silently dropped.
+        // We use forceFill to bypass the fillable guard.
+        $user->forceFill([
+            'tfa_key' => $secret,
+            'cover' => $assignedCover,
+            'cover_approved' => 1,
+        ]);
+
+        if ($google) {
+            // Google has already proved the address receives mail, so asking the person to
+            // click a link in it proves nothing twice.
+            $user->forceFill([
+                'email_verified_at' => now(),
+                'google_id' => $google['google_id'] ?? null,
+            ]);
+        }
+
+        $user->save();
 
         Auth::login($user);
 
@@ -307,13 +396,12 @@ class RegisteredUserController extends Controller
         }
 
         if ($request->role == 0) {
+            // Country only. The rest of the row is filled by
+            // `successCheckout`'s `updateOrCreate` from Stripe's
+            // `customer_details.address` on the first purchase.
             GifterAddress::create([
                 'user_id' => $user->id,
                 'country' => $request->country,
-                'street_address' => $request->street_address,
-                'city' => $request->city,
-                'state' => $request->state,
-                'postal_code' => $request->postal_code,
             ]);
         }
 
@@ -336,6 +424,10 @@ class RegisteredUserController extends Controller
         /* =========================SEND WELCOME EMAIL========================== */
         WelcomeUser::dispatch($user);
         LinkUserToCrmCreator::dispatch($user->id, $request->input('crm_invite_token'));
+
+        // The verified profile has been spent. Leaving it in the session would let a second POST
+        // to /register create another account carrying the same Google-verified email flag.
+        $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {

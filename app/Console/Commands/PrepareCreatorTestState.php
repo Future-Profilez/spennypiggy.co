@@ -7,6 +7,7 @@ use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use App\Services\SubscriptionActivationService;
+use App\StripeControl;
 use App\Support\SubscriptionPlan;
 use Illuminate\Console\Command;
 
@@ -83,6 +84,15 @@ class PrepareCreatorTestState extends Command
             }
         }
 
+        // ⚠️ Cancel on STRIPE first, not just locally.
+        //
+        // UserProfileService::syncUserSubscription searches Stripe by customer id
+        // and by email, so a subscription left alive there is found again on the
+        // next checkout attempt and the flow returns "Your subscription was
+        // synchronized" without ever reaching the new checkout. Deleting the local
+        // row alone makes the account look reset while it is not.
+        $this->cancelOnStripe($creator);
+
         // Every state starts from a clean slate so a previous run cannot leak into
         // the next one — a leftover monthly_charges row is the difference between
         // "free period" and "already billing".
@@ -148,6 +158,34 @@ class PrepareCreatorTestState extends Command
         $this->report($creator->fresh());
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Cancel any platform subscription this creator has on Stripe.
+     *
+     * Test-only, and deliberately noisy about failures rather than silent: an
+     * account that looks reset but is not wastes far more time than an error here.
+     */
+    private function cancelOnStripe(User $creator): void
+    {
+        $ids = MonthlyCharge::where('user_id', $creator->id)
+            ->whereNotNull('stripe_id')
+            ->pluck('stripe_id')
+            ->unique()
+            ->filter(fn ($id) => str_starts_with((string) $id, 'sub_'))
+            // Rows this command itself created carry a fake id that Stripe has
+            // never heard of.
+            ->reject(fn ($id) => str_contains((string) $id, 'localtest'));
+
+        foreach ($ids as $id) {
+            try {
+                StripeControl::cancelSubscription($id, false);
+                $this->line("  cancelled {$id} on Stripe");
+            } catch (\Throwable $e) {
+                // Already gone is the common case and is fine.
+                $this->warn("  could not cancel {$id}: {$e->getMessage()}");
+            }
+        }
     }
 
     private function parkSubscription(User $creator): null

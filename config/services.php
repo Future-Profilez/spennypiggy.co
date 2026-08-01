@@ -112,9 +112,19 @@ return [
     // GOOGLE_SITE_VERIFICATION is the token from the Search Console "HTML tag"
     // method — without it the sitemap cannot be submitted and no ranking or
     // impression data exists at all.
+    // `client_id`/`client_secret`/`redirect` are Socialite's own keys and must keep these
+    // names. The button only renders when both credentials are present, so an environment
+    // without them shows the password form alone rather than a control that cannot work.
+    //
+    // `redirect` is absolute and built from APP_URL so it matches the URI registered in the
+    // Google Cloud console exactly — Google compares the string, and a trailing slash or a
+    // http/https mismatch is answered with `redirect_uri_mismatch`, not a warning.
     'google' => [
         'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
         'analytics_id' => env('GOOGLE_ANALYTICS_ID'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => rtrim((string) env('APP_URL'), '/').'/auth/google/callback',
     ],
 
     // Who gets the `diagnostics:run` alert. Comma-separated. Previously two personal addresses

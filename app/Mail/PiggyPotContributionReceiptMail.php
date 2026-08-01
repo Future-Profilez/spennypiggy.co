@@ -25,6 +25,10 @@ class PiggyPotContributionReceiptMail extends Mailable
 
     public function build()
     {
+        if (! $this->pay->relationLoaded('creator') || ! $this->pay->relationLoaded('user')) {
+            $this->pay->load(['creator', 'user']);
+        }
+
         return $this->view('email.piggy-pot-receipt')
             ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject('Piggy Pot Contribution Confirmed');
