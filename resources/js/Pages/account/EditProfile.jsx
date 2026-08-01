@@ -152,8 +152,10 @@ export default function EditProfile({
                     }
                 })()
               : [];
+        // Two categories, not three. Three joined with " · " runs the pill to the
+        // card's right edge and the 10px uppercase text reads as a cramped strip.
         const cardCategory = catList.length
-            ? catList.slice(0, 3).join(" · ")
+            ? catList.slice(0, 2).join(" · ")
             : "Exclusive content";
 
         const esc = (s) =>
@@ -193,32 +195,42 @@ export default function EditProfile({
 
                 <div style="position:absolute;inset:0;z-index:2;padding:27px 32px;display:flex;flex-direction:column;justify-content:center;">
 
-                    <div style="display:flex;align-items:center;gap:19px;">
-                        <div style="width:108px;height:108px;flex:none;border-radius:50%;padding:4px;background:linear-gradient(150deg,#A2E4B8,#E6EA7B 62%,#A2E4B8);box-shadow:0 9px 20px rgba(0,0,0,0.42);">
-                            <img
-                                src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
-                                alt="Profile"
-                                crossorigin="anonymous"
-                                style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;"
-                            />
+                    <!--
+                        This row is a table, not a flex row, and that is load-bearing.
+                        html2canvas mis-places a flex child sized by \`flex:1\` + \`gap\`:
+                        measured on the exported PNG the name was drawn ~53px LEFT of
+                        its column and overlapped the avatar, while the pill beneath it
+                        — same parent — landed correctly. A fixed table layout gives
+                        both children the same deterministic box, and \`table-layout:fixed\`
+                        means the name can never widen the cell and push itself out.
+                    -->
+                    <div style="display:table;width:100%;table-layout:fixed;">
+                        <div style="display:table-cell;width:127px;vertical-align:middle;">
+                            <div style="width:108px;height:108px;border-radius:50%;padding:4px;background:linear-gradient(150deg,#A2E4B8,#E6EA7B 62%,#A2E4B8);box-shadow:0 9px 20px rgba(0,0,0,0.42);">
+                                <img
+                                    src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
+                                    alt="Profile"
+                                    crossorigin="anonymous"
+                                    style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;"
+                                />
+                            </div>
                         </div>
-                        <div style="min-width:0;flex:1;">
+                        <div style="display:table-cell;vertical-align:middle;overflow:hidden;">
                             <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:0.9;text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
-                            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">
-                                <span style="width:5px;height:5px;border-radius:50%;background:#0B2B1A;display:block;"></span>${esc(cardCategory)}
+                            <div style="display:inline-block;margin-top:10px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
+                                <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#0B2B1A;margin-right:6px;vertical-align:middle;"></span><span style="vertical-align:middle;">${esc(cardCategory)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-                        <span style="font-size:16.5px;color:rgba(255,255,255,0.92);">is now on</span>
-                        <img src="${spennypiggy}" alt="Spenny Piggy" crossorigin="anonymous" style="height:30px;width:auto;display:block;" />
-                    </div>
+                    <div style="margin-top:12px;">
+                        <span style="font-size:16.5px;color:rgba(255,255,255,0.92);vertical-align:middle;">is now on</span><img src="${spennypiggy}" alt="Spenny Piggy" crossorigin="anonymous" style="height:30px;width:auto;display:inline-block;vertical-align:middle;margin-left:10px;" /></div>
 
-                    <div style="display:flex;align-items:stretch;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
-                        <div style="background:#0B0B0C;color:#fff;display:flex;align-items:center;padding:0 13px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
-                        <div style="flex:1;background:#fff;color:#0B0B0C;display:flex;align-items:center;padding:11px 8px 11px 15px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
-                        <div style="background:#fff;display:flex;align-items:center;padding:0 13px 0 3px;">
+                    <!-- Table for the same reason as the row above: no flex:1. -->
+                    <div style="display:table;width:100%;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
+                        <div style="display:table-cell;width:62px;background:#0B0B0C;color:#fff;vertical-align:middle;text-align:center;padding:0 13px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
+                        <div style="display:table-cell;background:#fff;color:#0B0B0C;vertical-align:middle;padding:11px 8px 11px 15px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
+                        <div style="display:table-cell;width:82px;background:#fff;vertical-align:middle;padding:0 13px 0 3px;">
                             <img src="${spennypiggy}" alt="" crossorigin="anonymous" style="height:19px;width:auto;display:block;" />
                         </div>
                     </div>
