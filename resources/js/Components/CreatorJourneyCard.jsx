@@ -110,7 +110,7 @@ export default function CreatorJourneyCard() {
             {/* Nothing to click while the work is ours — offering a button here would be
                 asking them to redo what they have already submitted. */}
             {waiting ? null : step === "first_listing" ? (
-                <ThreeWays onPick={go} username={auth?.user?.username} />
+                <ThreeWays onPick={go} />
             ) : step === "first_sale" && profileUrl ? (
                 <ShareButton
                     label={journey.cta}
@@ -137,14 +137,14 @@ export default function CreatorJourneyCard() {
  * sells decides which form they need, and picking for them is how they end up abandoning a
  * form that did not fit.
  */
-function ThreeWays({ onPick, username }) {
+function ThreeWays({ onPick }) {
     const options = [
         {
             emoji: "📁",
             title: "Sell a file",
             body: "A photo set, audio track, PDF, or video. Fastest to set up.",
             recommended: true,
-            go: () => onPick("shop-list", username),
+            go: () => onPick("shop", { type: "add" }),
         },
         {
             emoji: "📝",
@@ -156,7 +156,7 @@ function ThreeWays({ onPick, username }) {
             emoji: "📦",
             title: "Sell physical",
             body: "A print, merch, or physical goods. We collect shipping details.",
-            go: () => onPick("shop-list", username),
+            go: () => onPick("shop", { type: "add" }),
         },
     ];
 
