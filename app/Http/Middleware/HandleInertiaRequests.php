@@ -123,6 +123,7 @@ class HandleInertiaRequests extends Middleware
                 'grace_period_ends_at' => $user->grace_period_ends_at,
                 'is_in_grace_period' => $user->is_in_grace_period,
                 'financial_profile' => $user->financialProfile,
+                'date_of_birth' => $user->date_of_birth,
             ];
 
             // If the user is an admin or we are on a specific route that needs more, we could add them,

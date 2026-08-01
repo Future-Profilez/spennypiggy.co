@@ -22,9 +22,36 @@ export default function EditProfile({
     updateProfileSteps,
     global_currency,
 }) {
+
+
+    console.log("user", user);
+
     // SSR Guard for usePage().props
     const pageProps = usePage().props;
     const auth = pageProps.auth;
+
+    const profileUser = {
+        ...(auth?.user ?? {}),
+        ...(user ?? {}),
+        date_of_birth: user?.date_of_birth ?? auth?.user?.date_of_birth,
+        creator_category: user?.creator_category ?? auth?.user?.creator_category,
+        country: user?.country ?? auth?.user?.country,
+        min_surprise_amount: user?.min_surprise_amount ?? auth?.user?.min_surprise_amount,
+        social_handle: user?.social_handle ?? auth?.user?.social_handle,
+    };
+
+    const formatDate = (value) => {
+        if (!value) {
+            return "";
+        }
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return "";
+        }
+
+        return parsed.toISOString().slice(0, 10);
+    };
 
     // SSR Guard for window usage
     const isSSR = typeof window === "undefined";
@@ -43,25 +70,59 @@ export default function EditProfile({
     }, [socialFile]);
 
     const { data, setData, post, processing, errors } = useForm({
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        bio: user?.bio || "",
+        name: profileUser.name,
+        username: profileUser.username,
+        email: profileUser.email,
+        bio: profileUser?.bio || "",
         avatar: null,
         cover: null,
-        gender: user?.gender || "he",
-        date_of_birth: user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : "",
-        creator_category: user?.creator_category
-            ? typeof user.creator_category === "string"
-                ? JSON.parse(user.creator_category)
-                : user.creator_category
+        gender: profileUser?.gender || "he",
+        date_of_birth: formatDate(profileUser?.date_of_birth),
+        creator_category: profileUser?.creator_category
+            ? typeof profileUser.creator_category === "string"
+                ? JSON.parse(profileUser.creator_category)
+                : profileUser.creator_category
             : [],
-        country: user?.country || "",
+        country: profileUser?.country || "",
         social_image: null,
-        min_surprise_amount: user?.min_surprise_amount || 5,
-        social_handle: user?.social_handle || "",
+        min_surprise_amount: profileUser?.min_surprise_amount || 5,
+        social_handle: profileUser?.social_handle || "",
         profilepage: profilepage || false,
     });
+
+    useEffect(() => {
+        setData("name", profileUser.name);
+        setData("username", profileUser.username);
+        setData("email", profileUser.email);
+        setData("bio", profileUser?.bio || "");
+        setData("gender", profileUser?.gender || "he");
+        setData(
+            "date_of_birth",
+            formatDate(profileUser?.date_of_birth),
+        );
+        setData(
+            "creator_category",
+            profileUser?.creator_category
+                ? typeof profileUser.creator_category === "string"
+                    ? JSON.parse(profileUser.creator_category)
+                    : profileUser.creator_category
+                : [],
+        );
+        setData("country", profileUser?.country || "");
+        setData("min_surprise_amount", profileUser?.min_surprise_amount || 5);
+        setData("social_handle", profileUser?.social_handle || "");
+    }, [
+        profileUser.name,
+        profileUser.username,
+        profileUser.email,
+        profileUser.bio,
+        profileUser.gender,
+        profileUser.date_of_birth,
+        profileUser.creator_category,
+        profileUser.country,
+        profileUser.min_surprise_amount,
+        profileUser.social_handle,
+    ]);
 
     const [loading, setLoading] = useState(processing);
     const generateCardAndUpload = async (avataruid, load) => {
@@ -678,18 +739,18 @@ export default function EditProfile({
                                         <div className="relative">
                                             <select
                                                 className="
-                w-full
-                border border-gray-300
-                px-4 py-3 pr-12
-                rounded-[15px]
-                focus:outline-none
-                focus:border-[#FF007F]
-                focus:ring-1
-                focus:ring-pink-500
-                bg-white
-                appearance-none
-                cursor-pointer
-            "
+                                                    w-full
+                                                    border border-gray-300
+                                                    px-4 py-3 pr-12
+                                                    rounded-[15px]
+                                                    focus:outline-none
+                                                    focus:border-[#FF007F]
+                                                    focus:ring-1
+                                                    focus:ring-pink-500
+                                                    bg-white
+                                                    appearance-none
+                                                    cursor-pointer
+                                                "
                                                 value={data.gender}
                                                 onChange={(e) =>
                                                     setData(
