@@ -297,6 +297,12 @@
                 </td>
             </tr>
 
+            {{-- One-off buyer: offer the creator's membership. Silent unless there is one. --}}
+            @include('email.membership-offer', [
+                'creatorUsername' => $creatorUsername,
+                'buyerEmail' => $deliverable->customer_email ?? null,
+            ])
+
         </table>
     </td>
 </tr>

@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Services\MembershipUpsellService;
 use App\Services\RewardService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -124,6 +125,19 @@ class ThankYouController extends Controller
             'source_id' => $request->query('source_id'),
             'reward' => $reward,
             'reward_locked' => $locked,
+
+            // The buyer has just paid this creator, which is the likeliest moment they will
+            // pay them again — and this page offered nothing at all until now. A one-off sale
+            // earns one commission; a membership earns one every month.
+            //
+            // ⚠️ Never upsell a membership to someone who just bought a membership. The
+            // service also refuses when the creator has none published, and when the viewer
+            // is already subscribed. Guests are offered it too: it is a public listing, and
+            // the only check we cannot run for them is one that would exclude, never one
+            // that would expose.
+            'membership_offer' => $item instanceof Membership
+                ? null
+                : app(MembershipUpsellService::class)->for($owner, $request->user()),
             // Distinguishes "your bank is still confirming" from "we could not
             // confirm this is your purchase" — different copy, different fix.
             'awaiting_settlement' => $reward ? ($entitled && ! $settled) : false,
@@ -188,5 +202,30 @@ class ThankYouController extends Controller
         return $model::where('uuid', $identifier)
             ->when(ctype_digit((string) $identifier), fn ($q) => $q->orWhere('id', (int) $identifier))
             ->first();
+    }
+
+    /**
+     * "Don't offer me this creator's membership again."
+     *
+     * ⚠️ Signed-in only, and the identity comes from the session — never from the request.
+     * Accepting an email from the body would let anyone silence the offer for somebody else
+     * by guessing their address. A guest sees the thank-you page once and then never again,
+     * so they lose nothing by not having this.
+     */
+    public function dismissMembershipOffer(Request $request)
+    {
+        $viewer = $request->user();
+
+        if (! $viewer) {
+            return response()->json(['status' => 'ignored'], 200);
+        }
+
+        $creator = User::where('username', $request->input('creator_username'))->first();
+
+        if ($creator) {
+            app(MembershipUpsellService::class)->dismiss($creator, $viewer);
+        }
+
+        return response()->json(['status' => 'ok']);
     }
 }

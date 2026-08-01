@@ -156,6 +156,9 @@
                 'rewardShowFile' => true,
             ])
 
+            {{-- One-off buyer: offer the creator's membership. Silent unless there is one. --}}
+            @include('email.membership-offer', ['creatorUsername' => $creatorUsername, 'buyer' => $pay->user ?? null])
+
             @if(!empty($thankYouUrl))
             <tr>
                 <td align="center" style="padding:0 0 12px 0;text-align:center;">

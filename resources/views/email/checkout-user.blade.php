@@ -397,6 +397,16 @@
                 </td>
             </tr>
 
+            {{-- One-off buyer: offer the creator's membership. Silent unless there is one.
+                 ⚠️ A cart can span several creators; this offers the FIRST deliverable's
+                 creator only. Advertising every creator in one basket would be a list of
+                 adverts, not a next step. --}}
+            @php($offerDeliverable = collect($allDeliverables ?? [])->first())
+            @include('email.membership-offer', [
+                'creator' => optional($offerDeliverable)->creator,
+                'buyerEmail' => optional($offerDeliverable)->customer_email,
+            ])
+
         </table>
     </td>
 </tr>
