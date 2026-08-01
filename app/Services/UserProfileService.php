@@ -1678,13 +1678,22 @@ class UserProfileService
 
         // Also update any local MonthlyCharge record for this user that thinks it's active
         // since Stripe has confirmed there is no active subscription whatsoever.
-        MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
-            ->update([
-                'status' => 'expired',
-                'upcoming_payment' => null,
-                'updated_at' => now(),
-            ]);
+        //
+        // ⚠️ The same guard as above, and it is NOT optional. Under setup-mode
+        // checkout a creator has a saved card and no Stripe subscription until
+        // their first sale, so this sweep — every 15 minutes — found "no
+        // subscription" and expired the row. The creator was then told to add a
+        // card they had already added. Guarding only the is_subscribed flag above
+        // and not this write left exactly that bug.
+        if (! $awaitingFirstSale) {
+            MonthlyCharge::where('user_id', $user->id)
+                ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
+                ->update([
+                    'status' => 'expired',
+                    'upcoming_payment' => null,
+                    'updated_at' => now(),
+                ]);
+        }
 
         return null;
     }

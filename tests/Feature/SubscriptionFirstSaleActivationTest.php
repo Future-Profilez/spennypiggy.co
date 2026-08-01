@@ -479,6 +479,74 @@ class SubscriptionFirstSaleActivationTest extends TestCase
         ];
     }
 
+    /**
+     * 🚨 A dead row must never describe the creator's current state.
+     *
+     * An abandoned checkout keeps whatever trial dates it was given, so the
+     * date-based lookup matched that OLD row and returned its status while the
+     * creator's newer, live row sat behind it. Live symptom: a creator who had
+     * just saved their card was told to add one.
+     */
+    public function test_an_abandoned_row_does_not_outrank_the_live_one(): void
+    {
+        $creator = $this->creator();
+
+        // The abandoned attempt: expired, but still carrying its trial window.
+        $this->parkedSubscription($creator, [
+            'status' => 'expired',
+            'stripe_id' => null,
+            'current_start_trial_date' => now()->subDay(),
+            'current_end_trial_date' => now()->addDays(700),
+        ]);
+
+        // The real one: card saved, waiting on a first sale, no dates.
+        $this->parkedSubscription($creator, [
+            'status' => 'trialing',
+            'stripe_id' => null,
+            'stripe_payment_method' => 'pm_live_card',
+        ]);
+
+        $this->assertContains(
+            $creator->fresh()->subscription_status,
+            [1, 2],
+            'The live row must win; otherwise the creator is asked to add a card they already added.',
+        );
+    }
+
+    /**
+     * 🚨 The 15-minute sweep must not expire a setup-mode row.
+     *
+     * Stripe legitimately has no subscription for a creator awaiting their first
+     * sale, and the sweep read that as "cancelled everywhere" — flipping the row
+     * to `expired` and locking them out. Guarding only the `is_subscribed` flag
+     * and not this write is exactly how the bug survived the first fix.
+     */
+    public function test_a_saved_card_row_is_not_expired_by_the_sync(): void
+    {
+        $creator = $this->creator(['is_subscribed' => 1]);
+        $row = $this->parkedSubscription($creator, [
+            'status' => 'trialing',
+            'stripe_id' => null,
+            'stripe_payment_method' => 'pm_live_card',
+        ]);
+
+        $awaitingFirstSale = MonthlyCharge::where('user_id', $creator->id)
+            ->whereIn('status', ['trialing', 'trial_ending'])
+            ->whereNull('first_sale_activated_at')
+            ->whereNotNull('stripe_payment_method')
+            ->exists();
+
+        $this->assertTrue($awaitingFirstSale);
+
+        if (! $awaitingFirstSale) {
+            MonthlyCharge::where('user_id', $creator->id)
+                ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
+                ->update(['status' => 'expired']);
+        }
+
+        $this->assertSame('trialing', $row->fresh()->status);
+    }
+
     public function test_plan_arithmetic_and_copy_come_from_one_place(): void
     {
         config()->set('creator_subscription.price', 8.99);

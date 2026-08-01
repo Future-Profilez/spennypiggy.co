@@ -324,6 +324,14 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             // Find the currently active subscription period (same logic as account route)
             $now = Carbon::now();
             $subscription = MonthlyCharge::where('user_id', $this->id)
+                // ⚠️ A dead row must never describe the creator's current state.
+                // An abandoned checkout ('initiated') and a written-off period
+                // ('expired') both keep whatever trial dates they were given, so
+                // the date match below found an OLD one and returned its status
+                // while a newer, live row sat behind it — the creator was asked to
+                // add a card they had already added. `latest('id')` only orders
+                // WITHIN whatever this matches, so it cannot save us here.
+                ->whereNotIn('status', ['initiated', 'expired'])
                 ->where(function ($query) use ($now) {
                     $query->where(function ($q) use ($now) {
                         // Active subscription period

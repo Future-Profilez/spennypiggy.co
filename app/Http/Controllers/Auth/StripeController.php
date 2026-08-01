@@ -4468,8 +4468,12 @@ class StripeController extends Controller
             $updateData = [
                 'session_id' => $session->id,
             ];
-            // Persist trial dates only if trial is actually applied
-            if ($trial_period_days > 0) {
+            // Persist trial dates only if a trial is actually applied.
+            //
+            // ⚠️ Never in setup mode: no subscription is created, so there is no
+            // trial for these dates to describe. Writing them anyway left a row
+            // claiming a two-year trial window that nothing on Stripe backed.
+            if (! SubscriptionPlan::usesSetupMode() && $trial_period_days > 0) {
                 $updateData['current_start_trial_date'] = now();
                 $updateData['current_end_trial_date'] = now()->addDays($trial_period_days);
             }
@@ -4548,6 +4552,24 @@ class StripeController extends Controller
 
                     $user->is_subscribed = 1;
                     $user->save();
+
+                    // A creator who has already sold is billed the moment they add
+                    // a card — they are past the free period by definition, so
+                    // making them wait for the 15-minute sweep would leave them
+                    // reading "nothing charged yet" about a charge that is simply
+                    // late. Failure is not fatal: the sweep is still the guarantee.
+                    $activation = app(SubscriptionActivationService::class);
+
+                    if ($activation->hasEverMadeSale($user)) {
+                        try {
+                            $activation->activate($user, subscription: $sub->fresh());
+
+                            return to_route('user.show', ['username' => $user->username])
+                                ->with('success', 'Your card is saved and your subscription is active.');
+                        } catch (Exception $e) {
+                            Log::warning('StripeController: immediate activation failed, leaving it to the sweep: '.$e->getMessage());
+                        }
+                    }
 
                     return to_route('user.show', ['username' => $user->username])
                         ->with('success', 'Your card is saved. Nothing is charged until your first sale.');
