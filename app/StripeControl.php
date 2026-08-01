@@ -1464,6 +1464,37 @@ class StripeControl
     }
 
     /**
+     * The one Stripe Product every creator's platform subscription bills against.
+     *
+     * ⚠️ `subscriptions->create()` does NOT accept an inline `price_data.product_data`
+     * — that is a Checkout convenience, and passing it fails with "Received unknown
+     * parameter: items[0][price_data][product_data]". A subscription needs a real
+     * product id.
+     *
+     * The id is deterministic, so this is create-or-reuse with no configuration to
+     * set up per environment: Stripe rejects a duplicate id, which is the signal
+     * that it already exists.
+     */
+    public const PLATFORM_PRODUCT_ID = 'spennypiggy_creator_subscription';
+
+    public static function platformSubscriptionProductId(string $name): string
+    {
+        self::setClient();
+
+        try {
+            self::$client->products->create([
+                'id' => self::PLATFORM_PRODUCT_ID,
+                'name' => $name,
+            ]);
+        } catch (\Throwable $e) {
+            // Already there — the normal case after the first ever activation.
+            // Anything else surfaces when the subscription create fails.
+        }
+
+        return self::PLATFORM_PRODUCT_ID;
+    }
+
+    /**
      * Create the platform subscription for a creator whose card is already saved.
      *
      * The setup-mode counterpart to endSubscriptionTrial(): under that flow no
@@ -1498,7 +1529,9 @@ class StripeControl
                 'items' => [[
                     'price_data' => [
                         'currency' => strtolower($currency),
-                        'product_data' => ['name' => $productName],
+                        // A product ID, never inline product_data — see
+                        // platformSubscriptionProductId().
+                        'product' => self::platformSubscriptionProductId($productName),
                         'unit_amount' => $unitAmountMinor,
                         'recurring' => ['interval' => 'month', 'interval_count' => 1],
                     ],

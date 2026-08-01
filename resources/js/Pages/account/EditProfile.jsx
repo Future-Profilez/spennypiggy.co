@@ -182,6 +182,11 @@ export default function EditProfile({
         // artwork was covered in gift boxes and a money bag, which is the framing the
         // content-first compliance rules removed from every other surface — and this
         // is the most-shared asset the platform produces.
+        // Shared by the markup and the shrink-to-fit loop below — if the two ever
+        // disagree the fitter measures against a line box the card does not use.
+        const NAME_FONT_SIZE = 43;
+        const NAME_LINE_HEIGHT = 1.02;
+
         const arc = (r, alpha) =>
             `<div style="position:absolute;width:${r * 2}px;height:${r * 2}px;left:${620 - r}px;top:${352 - r}px;border-radius:50%;background:rgba(255,255,255,${alpha});"></div>`;
 
@@ -216,8 +221,17 @@ export default function EditProfile({
                             </div>
                         </div>
                         <div style="display:table-cell;vertical-align:middle;overflow:hidden;">
-                            <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:0.9;text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
-                            <div style="display:inline-block;margin-top:10px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
+                            <!--
+                                The gap under the name is 26px of margin for ~14px of
+                                VISIBLE space: measured on the raster, \`gulfs\` ink runs
+                                about 12px past the bottom of its own line box, so the
+                                CSS gap and the optical gap are not the same number.
+                                At the original 10px the pill sat on the letters; at 14
+                                it still read as touching (2px of daylight).
+                                line-height must also stay >= 1 for the same reason.
+                            -->
+                            <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:${NAME_LINE_HEIGHT};text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
+                            <div style="display:inline-block;margin-top:26px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
                                 <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#0B2B1A;margin-right:6px;vertical-align:middle;"></span><span style="vertical-align:middle;">${esc(cardCategory)}</span>
                             </div>
                         </div>
@@ -272,8 +286,8 @@ export default function EditProfile({
         // than a slightly smaller name. Two lines max, then step the size down.
         const nameEl = card.querySelector("#card-name");
         if (nameEl) {
-            const maxHeight = 2 * 43 * 0.9; // two lines at the starting size
-            let size = 43;
+            const maxHeight = 2 * NAME_FONT_SIZE * NAME_LINE_HEIGHT; // two lines at the starting size
+            let size = NAME_FONT_SIZE;
             while (size > 20 && nameEl.scrollHeight > maxHeight) {
                 size -= 2;
                 nameEl.style.fontSize = `${size}px`;

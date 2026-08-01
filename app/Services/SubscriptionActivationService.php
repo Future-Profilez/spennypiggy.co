@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\MonthlySubscribedJob;
 use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\StripeControl;
@@ -126,11 +127,16 @@ class SubscriptionActivationService
         // bill the same subscription again under a different idempotency key.
         // Claim by Stripe subscription id where there is one; a setup-mode row has
         // none yet, so its own id is the only thing that identifies it.
-        $claimQuery = $subscription->stripe_id
+        // ⚠️ A fresh builder every time. Eloquent query builders are MUTABLE, so
+        // reusing one meant the claim's `whereNull('first_sale_activated_at')`
+        // stayed attached — and the release below then matched nothing, because by
+        // then the column was set. A failed activation kept its claim forever and
+        // the creator was never billed. Silent, and only visible in the DB.
+        $claimScope = fn () => $subscription->stripe_id
             ? MonthlyCharge::where('stripe_id', $subscription->stripe_id)
             : MonthlyCharge::where('id', $subscription->id);
 
-        $claimed = $claimQuery
+        $claimed = $claimScope()
             ->whereNull('first_sale_activated_at')
             ->update(['first_sale_activated_at' => now()]);
 
@@ -175,7 +181,7 @@ class SubscriptionActivationService
             // Release the claim so the next sweep retries. Leaving it set would
             // mark the creator as activated while Stripe still has them on a
             // trial — they would sell for months and never be billed.
-            $claimQuery->update(['first_sale_activated_at' => null]);
+            $claimScope()->update(['first_sale_activated_at' => null]);
 
             Log::error('SubscriptionActivationService: failed to end trial on first sale', [
                 'creator_id' => $creator->id,
@@ -198,9 +204,7 @@ class SubscriptionActivationService
         // the creator's dashboard is not still saying "free until your first
         // sale" in the seconds before that webhook lands. Applied to every row
         // for this Stripe subscription, matching the claim above.
-        $statusQuery = $subscription->stripe_id
-            ? MonthlyCharge::where('stripe_id', $subscription->stripe_id)
-            : MonthlyCharge::where('id', $subscription->id);
+        $statusQuery = $claimScope();
 
         // ⚠️ Derive the local status from what Stripe actually did, never assume
         // 'paid'. An off-session charge that needs authentication, or a declined
@@ -222,6 +226,49 @@ class SubscriptionActivationService
 
         $statusQuery->whereIn('status', self::CONVERTIBLE_STATUSES)
             ->update(['status' => $localStatus]);
+
+        // ⚠️ Tell the creator. Money left their card — silence there is how a
+        // charge becomes a support ticket or a chargeback.
+        //
+        // MonthlySubscribedJob has carried a 'success' branch all along and
+        // NOTHING ever dispatched it: only 'failure' was wired, so the "your
+        // subscription is active" email had a template, a mailable and a job, and
+        // was never sent by anything.
+        if ($localStatus !== 'failed') {
+            try {
+                MonthlySubscribedJob::dispatch($creator->email, $subscription->fresh(), 'success');
+
+                // Bell + push alongside it. $marketing = false: this is a billing
+                // notice about money already taken, and there is no version of it a
+                // creator may opt out of.
+                NotificationDispatcher::queue(
+                    $creator,
+                    'subscription_started',
+                    // ⚠️ 'trialing' means a real on-sale trial was applied and
+                    // NOTHING was charged. Telling that creator their card has been
+                    // billed is a message they would go and check their statement
+                    // against. Latent today (trialDaysOnSale() is 0) and wrong the
+                    // day it is not.
+                    $localStatus === 'trialing'
+                        ? [
+                            'title' => 'Your subscription has started',
+                            'body' => 'You made your first sale. Nothing has been charged yet — your free days start now, then '.SubscriptionPlan::formatted().' + VAT a month.',
+                        ]
+                        : [
+                            'title' => 'Your subscription is active',
+                            'body' => 'You made your first sale, so your '.SubscriptionPlan::formatted().' + VAT monthly subscription has started.',
+                        ],
+                    NotificationDispatcher::ALL_CHANNELS,
+                    false,
+                );
+            } catch (\Throwable $e) {
+                // Never fatal: the money has already moved, and a failed
+                // notification must not make the activation look failed.
+                Log::warning('SubscriptionActivationService: could not notify on activation: '.$e->getMessage(), [
+                    'creator_id' => $creator->id,
+                ]);
+            }
+        }
 
         if ($localStatus === 'failed') {
             Log::warning('SubscriptionActivationService: Stripe did not collect on activation', [

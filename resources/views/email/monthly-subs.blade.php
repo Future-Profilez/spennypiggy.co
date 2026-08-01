@@ -24,7 +24,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
                            line-height:30px;padding:0 0 10px 0;text-align:center;">
-                    Payment <span style="color:#8C52FF;">{{ ucfirst($sub->status) }}</span> 💳
+                    Subscription <span style="color:#8C52FF;">Active</span> 💳
                 </td>
             </tr>
 
@@ -33,8 +33,13 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    Hello <strong style="color:#8C52FF;">{{ ucwords($sub->name) }}</strong>!<br><br>
-                    Your payment for monthly subscription is <strong style="color:#1A1A1A;">{{ $sub->status }}</strong> on Spenny Piggy.
+                    Hello <strong style="color:#8C52FF;">{{ ucwords($sub->name ?? 'there') }}</strong>!<br><br>
+                    {{-- ⚠️ Never print the raw DB status. `monthly_charges.status` is an
+                         internal enum, and each billing period gets its own row — the row
+                         that started this subscription is marked 'ended' the moment the
+                         paid period row is created, so this line read "Your payment for
+                         monthly subscription is ended" in a subscription-started email. --}}
+                    Your creator subscription is now active on Spenny Piggy.
                 </td>
             </tr>
 
@@ -43,11 +48,8 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
                            line-height:20px;padding:0 0 22px 0;text-align:center;">
-                    @if($sub->status == 'successful' || $sub->status == 'completed')
-                        Thank you for your continued support! Your subscription helps creators achieve their dreams. ✨
-                    @else
-                        Don't worry — you can update your payment method anytime. Visit your account to manage your subscriptions.
-                    @endif
+                    Thank you — your subscription keeps your creator tools running. You can
+                    manage or cancel it any time from your account settings.
                 </td>
             </tr>
 
