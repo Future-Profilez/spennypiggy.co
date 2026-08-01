@@ -535,12 +535,40 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         {
+            key: "stripe",
+            label: "Payouts",
+            title: "Connect payments",
+            mins: 3,
+            description:
+                "Connect Stripe so supporters can pay you and money reaches your bank.",
+            hint: [
+                "Your country and bank details",
+                "Takes about 3 minutes on Stripe, then you come straight back",
+            ],
+            state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
+            // ⚠️ Connect comes BEFORE identity (31 July 2026). Stripe Identity
+            // bills the platform per check, so it was moved behind Connect — which
+            // costs us nothing and already demands bank details plus Stripe's own
+            // KYC. Locking Connect on identity would restore the old order and
+            // contradict the dashboard journey card, which reads the new one.
+            locked: profileStatusLock != 2 || !hasSubscription,
+            lockReason:
+                profileStatusLock != 2
+                    ? "Unlocks once your profile is approved."
+                    : "Needs an active subscription.",
+            action: (
+                <Link className={primaryBtn} href="/stripe/authorize">
+                    Connect with Stripe
+                </Link>
+            ),
+        },
+        {
             key: "identity",
             label: "Verify ID",
             title: "Verify your identity",
             mins: 3,
             description:
-                "A quick ID check by Stripe. This unlocks payments on your account.",
+                "A quick ID check by Stripe. You need this before you can list anything for sale.",
             hint: [
                 "A government photo ID — passports only",
                 "A quick selfie on your phone",
@@ -567,11 +595,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             fixSteps: identityError?.whatToDo || [],
             note: identityError?.note || null,
             reviewNote: "Stripe usually decides within a few minutes.",
-            locked: profileStatusLock != 2 || !hasSubscription,
-            lockReason:
-                profileStatusLock != 2
-                    ? "Unlocks once your profile is approved."
-                    : "Needs an active subscription.",
+            locked: creatorUser?.stripe_details_submitted != 1,
+            lockReason: "Unlocks once your payouts are connected.",
             action: (
                 <Link className={primaryBtn} href="/stripe/identity-verification">
                     {identityError
@@ -579,26 +604,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         : creatorUser?.identity_status == 2
                           ? "Check status"
                           : "Verify identity"}
-                </Link>
-            ),
-        },
-        {
-            key: "stripe",
-            label: "Get paid",
-            title: "Connect payments",
-            mins: 3,
-            description:
-                "Connect Stripe so supporters can pay you and money reaches your bank.",
-            hint: [
-                "Your country and bank details",
-                "Takes about 3 minutes on Stripe, then you come straight back",
-            ],
-            state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
-            locked: creatorUser?.identity_status != 1,
-            lockReason: "Unlocks once your identity is verified.",
-            action: (
-                <Link className={primaryBtn} href="/stripe/authorize">
-                    Connect with Stripe
                 </Link>
             ),
         },
