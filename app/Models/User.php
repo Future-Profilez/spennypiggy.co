@@ -67,6 +67,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'utm_source',
         'utm_medium',
         'utm_campaign',
+        'google_id',
     ];
 
     protected $hidden = [

@@ -64,6 +64,11 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            // Renders the Google button only when both credentials are configured — a button
+            // that can only answer "not available right now" is worse than no button.
+            'googleEnabled' => filled(config('services.google.client_id'))
+                && filled(config('services.google.client_secret')),
+            'google2faPendingEmail' => session('google_2fa_pending_email'),
         ]);
     }
 
@@ -1043,6 +1048,23 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($valid) {
+            // Check if this is a Google 2FA login pending in session
+            $google2faEmail = $request->session()->get('google_2fa_pending_email');
+
+            if ($google2faEmail && strtolower(trim($google2faEmail)) === strtolower(trim($email))) {
+                Auth::login($user, $request->boolean('remember'));
+
+                $request->session()->forget('google_2fa_pending_email');
+                $request->session()->regenerate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'status' => true,
+                    'redirect_url' => $this->getRedirectUrl($user),
+                    'message' => 'Logged in successfully.',
+                ]);
+            }
+
             // $request->authenticate();
             $credentials = [
                 'email' => $email,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
+import GoogleButton, { AuthDivider } from "@/Components/GoogleButton";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from "@/Components/Alerts";
@@ -64,7 +65,7 @@ function formatCredentialForServer(credential) {
     return formatted;
 }
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, googleEnabled = false, google2faPendingEmail = null }) {
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get("redirect");
     const redirectmessage = urlParams.get("message");
@@ -86,6 +87,13 @@ export default function Login({ status, canResetPassword }) {
     useEffect(() => {
         setLoading(processing);
     }, [processing]);
+
+    useEffect(() => {
+        if (google2faPendingEmail) {
+            setData("email", google2faPendingEmail);
+            setOpen("open");
+        }
+    }, [google2faPendingEmail]);
 
     // Prime CSRF cookie when component mounts
     useEffect(() => {
@@ -642,6 +650,16 @@ export default function Login({ status, canResetPassword }) {
                                         {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
                                     </LoaderButton>
                                 </div>
+
+                                {/* Below the password form, not above it: most people arriving
+                                    here already have a password. `tone="light"` because this
+                                    card is white, unlike the register page. */}
+                                {googleEnabled && (
+                                    <div>
+                                        <AuthDivider tone="light" />
+                                        <GoogleButton enabled />
+                                    </div>
+                                )}
 
                                 {/* Smart Passkey Button */}
                                 {isWebAuthnSupported() && (

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LeaderBoardController;
 use App\Http\Controllers\Auth\MembershipController;
 use App\Http\Controllers\Auth\MyController;
@@ -71,6 +72,21 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
     Route::post('register', [RegisteredUserController::class, 'store']);
+
+    // Sign in / sign up with Google. The callback NEVER creates a user — a new person is sent
+    // back to `register` with their verified profile in the session, so the account is still
+    // created by `store()` and still passes every gate it enforces.
+    //
+    // Throttled because both ends are unauthenticated and the callback does a database lookup
+    // plus an outbound token exchange per hit.
+    Route::get('auth/google', [GoogleController::class, 'redirect'])
+        ->middleware('throttle:20,1')
+        ->name('auth.google');
+    Route::get('auth/google/callback', [GoogleController::class, 'callback'])
+        ->middleware('throttle:20,1')
+        ->name('auth.google.callback');
+    Route::post('auth/google/cancel', [GoogleController::class, 'cancel'])
+        ->name('auth.google.cancel');
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
     Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
@@ -1148,6 +1164,13 @@ Route::prefix('wish')->name('wish.')->group(function () {
 // row — it used to travel through the query string alongside it.
 Route::get('payment/thankyou/{username}', [ThankYouController::class, 'show'])
     ->name('thank-you');
+
+// "Don't offer me this creator's membership again." Signed-in only and identity comes from
+// the session — taking an email from the body would let anyone silence the offer for someone
+// else. Throttled because it is a public-ish write.
+Route::post('membership-offer/dismiss', [ThankYouController::class, 'dismissMembershipOffer'])
+    ->middleware('throttle:20,1')
+    ->name('membership-offer.dismiss');
 
 Route::prefix('membership')->name('membership.')->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware('mustCompletedCardVerification');

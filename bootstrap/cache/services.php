@@ -31,23 +31,24 @@
     27 => 'Laravel\\Breeze\\BreezeServiceProvider',
     28 => 'Laravel\\Sail\\SailServiceProvider',
     29 => 'Laravel\\Sanctum\\SanctumServiceProvider',
-    30 => 'Laravel\\Tinker\\TinkerServiceProvider',
-    31 => 'Laravel\\Vapor\\VaporServiceProvider',
-    32 => 'Carbon\\Laravel\\ServiceProvider',
-    33 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
-    34 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    35 => 'PragmaRX\\Google2FALaravel\\ServiceProvider',
-    36 => 'Sentry\\Laravel\\ServiceProvider',
-    37 => 'Sentry\\Laravel\\Tracing\\ServiceProvider',
-    38 => 'LaravelPWA\\Providers\\LaravelPWAServiceProvider',
-    39 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
-    40 => 'Tightenco\\Ziggy\\ZiggyServiceProvider',
-    41 => 'App\\Providers\\AppServiceProvider',
-    42 => 'App\\Providers\\AuthServiceProvider',
-    43 => 'App\\Providers\\EventServiceProvider',
-    44 => 'App\\Providers\\RouteServiceProvider',
-    45 => 'App\\Providers\\PerformanceServiceProvider',
-    46 => 'Intervention\\Image\\ImageServiceProvider',
+    30 => 'Laravel\\Socialite\\SocialiteServiceProvider',
+    31 => 'Laravel\\Tinker\\TinkerServiceProvider',
+    32 => 'Laravel\\Vapor\\VaporServiceProvider',
+    33 => 'Carbon\\Laravel\\ServiceProvider',
+    34 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    35 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    36 => 'PragmaRX\\Google2FALaravel\\ServiceProvider',
+    37 => 'Sentry\\Laravel\\ServiceProvider',
+    38 => 'Sentry\\Laravel\\Tracing\\ServiceProvider',
+    39 => 'LaravelPWA\\Providers\\LaravelPWAServiceProvider',
+    40 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
+    41 => 'Tightenco\\Ziggy\\ZiggyServiceProvider',
+    42 => 'App\\Providers\\AppServiceProvider',
+    43 => 'App\\Providers\\AuthServiceProvider',
+    44 => 'App\\Providers\\EventServiceProvider',
+    45 => 'App\\Providers\\RouteServiceProvider',
+    46 => 'App\\Providers\\PerformanceServiceProvider',
+    47 => 'Intervention\\Image\\ImageServiceProvider',
   ),
   'eager' => 
   array (
@@ -228,6 +229,7 @@
     'Laravel\\Breeze\\Console\\InstallCommand' => 'Laravel\\Breeze\\BreezeServiceProvider',
     'Laravel\\Sail\\Console\\InstallCommand' => 'Laravel\\Sail\\SailServiceProvider',
     'Laravel\\Sail\\Console\\PublishCommand' => 'Laravel\\Sail\\SailServiceProvider',
+    'Laravel\\Socialite\\Contracts\\Factory' => 'Laravel\\Socialite\\SocialiteServiceProvider',
     'command.tinker' => 'Laravel\\Tinker\\TinkerServiceProvider',
   ),
   'when' => 
@@ -272,6 +274,9 @@
     array (
     ),
     'Laravel\\Sail\\SailServiceProvider' => 
+    array (
+    ),
+    'Laravel\\Socialite\\SocialiteServiceProvider' => 
     array (
     ),
     'Laravel\\Tinker\\TinkerServiceProvider' => 
