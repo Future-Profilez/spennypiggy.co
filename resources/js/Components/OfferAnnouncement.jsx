@@ -59,7 +59,7 @@ export default function OfferAnnouncement({ onDismiss }) {
             <div className="relative flex flex-col gap-4 p-5 pr-14 sm:flex-row sm:items-center sm:gap-6 sm:p-6 sm:pr-16">
                 {/* The reward figure is the hook */}
                 <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:gap-1 sm:border-r sm:border-white/20 sm:pr-6">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-[#FFD700] text-black sm:hidden">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-[#FFD700] text-black">
                         <Crown size={20} strokeWidth={2.5} />
                     </span>
                     <span className="hidden font-gulfs text-[38px] leading-none tracking-tight text-[#FFD700] sm:block">
@@ -72,11 +72,7 @@ export default function OfferAnnouncement({ onDismiss }) {
 
                 <div className="min-w-0 flex-1">
                     <h3 className="flex items-center gap-2 font-gulfs text-lg uppercase tracking-wide sm:text-xl">
-                        <Crown
-                            size={18}
-                            className="hidden text-[#FFD700] sm:block"
-                            strokeWidth={2.5}
-                        />
+                        
                         Become a founder
                     </h3>
                     <p className="mt-1 text-[13px] font-medium leading-relaxed text-white/80">

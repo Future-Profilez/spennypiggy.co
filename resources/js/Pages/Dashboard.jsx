@@ -1250,7 +1250,7 @@ export default function Dashboard(props) {
                                                                                                 activityStatus={
                                                                                                     activityStatus
                                                                                                 }
-                                                                                                className="mb-4"
+                                                                                                className=""
                                                                                             />
                                                                                         </Suspense>
                                                                                     )}
@@ -1651,22 +1651,19 @@ export default function Dashboard(props) {
                                                                                                 null
                                                                                             }
                                                                                         >
-                                                                                            <TipInner
-                                                                                                classes={`mb-4`}
-                                                                                            />
+                                                                                            <TipInner classes="" />
                                                                                         </Suspense>
                                                                                     ) : (
                                                                                         ""
                                                                                     )}
-                                                                                    {/* Overview / membership promo / top supporters — About tab slice; highlights + quick actions live in the left sidebar */}
-                                                                                    <div className="mb-4">
+                                                                                    {/* Membership promo — About tab slice; highlights + quick actions live in the left sidebar */}
+                                                                                    <div>
                                                                                         <ProfileRightRail
                                                                                             IsloggedIn={
                                                                                                 IsloggedIn
                                                                                             }
                                                                                             sections={[
                                                                                                 "membership",
-                                                                                                "supporters",
                                                                                             ]}
                                                                                         />
                                                                                         {IsloggedIn && (

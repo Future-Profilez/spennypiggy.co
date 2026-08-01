@@ -35,6 +35,21 @@ class CreatorMetric extends Model
         'dispute_rate_30d' => 'decimal:3',
         'refund_rate_30d' => 'decimal:3',
         'top_buyer_percent' => 'decimal:3',
+        'is_overridden' => 'boolean',
+    ];
+
+    /**
+     * Column defaults must be mirrored here.
+     *
+     * A DB default is NOT applied to a just-created in-memory model, so a row
+     * made by firstOrCreate() came back with risk_level = NULL. evaluateRisk()
+     * then compared NULL against the computed 'low' and treated the first ever
+     * evaluation as a level CHANGE, emailing "Restrictions Lifted" to brand new
+     * creators who had never been restricted.
+     */
+    protected $attributes = [
+        'risk_level' => 'low',
+        'is_overridden' => false,
     ];
 
     public function creator()

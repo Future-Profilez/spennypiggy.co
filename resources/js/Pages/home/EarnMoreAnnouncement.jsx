@@ -117,7 +117,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             href="/register"
                             className="relative inline-flex items-center gap-3 bg-black text-white font-black text-base md:text-lg py-3 px-7 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
                         >
-                            <span>Start Free Creator Trial</span>
+                            <span>Start Selling for Free</span>
                             <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                         </Magnetic>

@@ -45,10 +45,10 @@ const shortDate = (value) =>
 // Rank badge for the leaderboard — the top three get a medal tint, the rest a number.
 const rankStyle = (i) =>
     [
-        'bg-[#f59e0b] text-white',
-        'bg-gray-300 text-gray-800',
+        'bg-[#f59e0b] text-gray-900', // gold — dark text (white-on-amber fails AA)
+        'bg-gray-300 text-gray-900',
         'bg-[#b45309] text-white',
-    ][i] ?? 'bg-gray-100 text-gray-500';
+    ][i] ?? 'bg-gray-100 text-gray-700';
 
 /**
  * "Send platform reminder" on an at-risk supporter.
@@ -75,29 +75,37 @@ const RemindButton = ({ supporterId }) => {
         }
     };
 
-    if (state === 'sent' || state === 'blocked') {
+    // Sent is final; blocked is often transient (rate limit, network) so it stays
+    // retryable. Both outcomes are announced to assistive tech via aria-live.
+    if (state === 'sent') {
         return (
             <span
-                className={`inline-flex items-center gap-1 rounded-[20px] px-3 py-2 text-[12px] font-bold ${
-                    state === 'sent' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                }`}
-                title={note || ''}
+                role="status"
+                aria-live="polite"
+                className="inline-flex items-center gap-1 rounded-[20px] bg-green-100 px-3 py-2 text-[12px] font-bold text-green-800"
             >
-                {state === 'sent' ? '✓ Reminder sent' : note}
+                ✓ Reminder sent
             </span>
         );
     }
 
     return (
-        <button
-            onClick={send}
-            disabled={state === 'busy'}
-            title="The platform sends its standard reminder with your name on it — once per quiet spell, and only if the supporter allows reminders."
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[20px] border-2 border-[#FF007F] px-4 py-2 text-[12px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
-        >
-            <Send size={13} />
-            {state === 'busy' ? 'Sending…' : 'Send platform reminder'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+            <button
+                onClick={send}
+                disabled={state === 'busy'}
+                title="The platform sends its standard reminder with your name on it — once per quiet spell, and only if the supporter allows reminders."
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[20px] border-2 border-[#FF007F] px-4 py-2 text-[12px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
+            >
+                <Send size={13} />
+                {state === 'busy' ? 'Sending…' : state === 'blocked' ? 'Try again' : 'Send platform reminder'}
+            </button>
+            {state === 'blocked' && note && (
+                <span role="status" aria-live="polite" className="text-[12px] font-medium text-gray-600">
+                    {note}
+                </span>
+            )}
+        </div>
     );
 };
 
@@ -210,9 +218,9 @@ export default function Opportunities({
 
                                     <div className="mt-5 grid grid-cols-3 gap-3">
                                         {[
-                                            { label: 'Lifetime', value: money(totals.lifetime_value, currency), tint: 'text-[#05EFB8]' },
-                                            { label: 'This month', value: money(totals.monthly_value, currency), tint: 'text-[#FF007F]' },
-                                            { label: 'Avg / supporter', value: money(totals.average_supporter_value, currency), tint: 'text-white' },
+                                            { label: 'Lifetime', value: moneyShort(totals.lifetime_value, currency), tint: 'text-[#05EFB8]' },
+                                            { label: 'This month', value: moneyShort(totals.monthly_value, currency), tint: 'text-[#FF007F]' },
+                                            { label: 'Avg / supporter', value: moneyShort(totals.average_supporter_value, currency), tint: 'text-white' },
                                         ].map((s) => (
                                             <div key={s.label} className="rounded-[20px] bg-white/5 p-3 ring-1 ring-white/10">
                                                 <div className={`font-anton text-xl leading-none tabular-nums ${s.tint}`}>{s.value}</div>
@@ -236,9 +244,9 @@ export default function Opportunities({
                     {/* Tier distribution — where your supporters sit on the platform ladder. */}
                     {hasSupporters && tierPresent.length > 0 && (
                         <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
-                            <div className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
                                 Supporter tiers
-                            </div>
+                            </h2>
                             <div className="flex h-4 w-full overflow-hidden rounded-full">
                                 {tierPresent.map((t) => (
                                     <div
@@ -263,12 +271,14 @@ export default function Opportunities({
                         </div>
                     )}
 
-                    {/* Revenue by feature — where the money actually comes from. */}
-                    {hasSupporters && revenueTotal > 0 && (
+                    {/* Revenue by feature — where the money actually comes from.
+                        Gated on revenue, NOT hasSupporters: guest/anonymous checkouts
+                        (Piggy Pot / Wish) earn money without a supporter_id. */}
+                    {revenueTotal > 0 && (
                         <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
-                            <div className="mb-4 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                            <h2 className="mb-4 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
                                 <BarChart3 size={15} className="text-[#FF007F]" /> Revenue by type
-                            </div>
+                            </h2>
                             <div className="space-y-3">
                                 {revenueRows.map((r) => {
                                     const pct = revenueTotal > 0 ? (Number(r.total || 0) / revenueTotal) * 100 : 0;
@@ -284,7 +294,7 @@ export default function Opportunities({
                                             </div>
                                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                                                 <div
-                                                    className="h-full rounded-full transition-all duration-700"
+                                                    className="h-full rounded-full transition-all duration-700 motion-reduce:transition-none"
                                                     style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: r.color }}
                                                 />
                                             </div>
@@ -292,7 +302,7 @@ export default function Opportunities({
                                                 <span className="text-[11px] text-gray-400">
                                                     {r.count} payment{r.count === 1 ? '' : 's'}
                                                 </span>
-                                                <span className="text-[11px] font-bold" style={{ color: r.color }}>
+                                                <span className="text-[11px] font-bold text-gray-500">
                                                     {pct.toFixed(1)}%
                                                 </span>
                                             </div>
@@ -491,10 +501,11 @@ export default function Opportunities({
                             <h2 className="mb-3 text-lg font-bold text-gray-900">
                                 Supporter movement · last {retention.window_days ?? 30} days
                             </h2>
-                            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                                 <RetentionStat label="New" value={retention.new ?? 0} hint="First ever purchase" accent="#05EFB8" />
                                 <RetentionStat label="Returning" value={retention.returning ?? 0} hint="Bought before too" accent="#FF007F" />
                                 <RetentionStat label="Reactivated" value={retention.reactivated ?? 0} hint="Back after 60+ days" accent="#a855f7" />
+                                <RetentionStat label="Cooling" value={retention.cooling ?? 0} hint="Quiet 30–60 days" accent="#f59e0b" />
                                 <RetentionStat label="Lost" value={retention.lost ?? 0} hint="Silent 60+ days" accent="#9ca3af" />
                             </div>
                         </section>
@@ -533,8 +544,8 @@ export default function Opportunities({
                                                     <span className="truncate font-bold text-gray-900">{s.name || 'Supporter'}</span>
                                                     {s.vip?.level && (
                                                         <span
-                                                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
-                                                            style={{ backgroundColor: s.vip.color }}
+                                                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold text-gray-900"
+                                                            style={{ backgroundColor: `${s.vip.color}22`, borderColor: s.vip.color }}
                                                             title={`Engagement level: ${s.vip.level}`}
                                                         >
                                                             {s.vip.icon} {s.vip.level}
@@ -550,7 +561,9 @@ export default function Opportunities({
                                                     {s.purchases} purchase{s.purchases === 1 ? '' : 's'} ·{' '}
                                                     {money(s.average_order_value, currency)} avg
                                                     {s.days_since_last_purchase !== null && (
-                                                        <> · {s.days_since_last_purchase}d ago</>
+                                                        <span title={s.last_purchase ? `Last purchase: ${shortDate(s.last_purchase)}` : ''}>
+                                                            {' '}· {s.days_since_last_purchase}d ago
+                                                        </span>
                                                     )}
                                                     {s.first_purchase && (
                                                         <span className="hidden sm:inline"> · since {shortDate(s.first_purchase)}</span>

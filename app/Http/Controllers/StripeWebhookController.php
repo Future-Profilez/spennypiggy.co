@@ -510,7 +510,6 @@ class StripeWebhookController extends Controller
 
         // Latest DB row for this subscription
         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)
-            ->whereIn('status', ['trialing', 'active', 'paid'])
             ->orderByDesc('updated_at')
             ->first();
 
@@ -523,8 +522,15 @@ class StripeWebhookController extends Controller
 
         /* ================= Handle different event types ================= */
 
-        // TRIAL STARTED
+        // TRIAL STARTED / WILL END
         if ($eventType === 'customer.subscription.trial_will_end' || ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')) {
+            if ($eventType === 'customer.subscription.trial_will_end' && $subs) {
+                $subs->status = 'trial_ending';
+                $subs->save();
+
+                return;
+            }
+
             // Check duplicate
             $trialExists = MonthlyCharge::where('stripe_id', $subscriptionId)
                 ->whereNotNull('current_start_trial_date')
@@ -623,7 +629,7 @@ class StripeWebhookController extends Controller
         }
 
         // SUBSCRIPTION RENEWAL (Existing subscription, new billing period)
-        if ($eventType === 'invoice.payment_succeeded' && $subs && $subs->status === 'active') {
+        if ($eventType === 'invoice.payment_succeeded' && $subs && in_array($subs->status, ['active', 'paid', 'renew', 'failed', 'trial_ending'], true)) {
 
             $invoice = $object;
             $amount = ($invoice->amount_paid ?? 0) / 100;

@@ -571,7 +571,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             lockReason:
                 profileStatusLock != 2
                     ? "Unlocks once your profile is approved."
-                    : "Needs an active trial or subscription.",
+                    : "Needs an active subscription.",
             action: (
                 <Link className={primaryBtn} href="/stripe/identity-verification">
                     {identityError

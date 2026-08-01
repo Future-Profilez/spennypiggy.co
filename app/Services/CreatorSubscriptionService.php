@@ -62,7 +62,7 @@ class CreatorSubscriptionService
                             return [
                                 'eligible' => true,
                                 'status' => 'trial_active',
-                                'message' => '🌟 Trial period active',
+                                'message' => '🌟 Free until your first sale',
                                 'subscription_status' => $subscriptionStatus,
                             ];
                         }
@@ -98,10 +98,10 @@ class CreatorSubscriptionService
             // Status 2 = Trial or trial ending
             if ($subscriptionStatus === 2) {
                 $subscription = $creator->creatorMonthlySubscription;
-                $trialMessage = '🌟 Trial period active';
+                $trialMessage = '🌟 Free until your first sale';
 
                 if ($subscription && $subscription->status === 'trial_ending') {
-                    $trialMessage = '⏰ Trial ending soon - please update payment method';
+                    $trialMessage = '⏰ Please update your payment method to keep selling';
                 }
 
                 return [

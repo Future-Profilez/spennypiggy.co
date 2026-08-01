@@ -11,6 +11,7 @@ use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
+use App\Services\SubscriptionActivationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
@@ -72,6 +73,13 @@ class HandleInertiaRequests extends Middleware
                 'monthly_charge_enabled' => $user->monthly_charge_enabled,
                 'is_subscribed' => $user->is_subscribed,
                 'subscription_status' => $user->subscription_status,
+                // ⚠️ Creators only. This is a ledger query and the shared payload is
+                // sent with EVERY Inertia navigation, so running it for fans — who
+                // can never have creator income — was a query per page view for a
+                // value that is always false. Same reason `needs_first_listing`
+                // uses its fast form.
+                'has_ever_sold' => (int) $user->role === 1
+                    && app(SubscriptionActivationService::class)->hasEverMadeSale($user),
                 'email_verified_at' => $user->email_verified_at,
                 'stripe_details_submitted' => $user->stripe_details_submitted,
                 'stripe_connected_at' => $user->stripe_connected_at,
