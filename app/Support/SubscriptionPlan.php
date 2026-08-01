@@ -77,6 +77,45 @@ class SubscriptionPlan
         return max(1, min(self::STRIPE_MAX_TRIAL_DAYS, $days));
     }
 
+    /** Checkout saves the card and the subscription is created on first sale. */
+    public const MODE_SETUP = 'setup';
+
+    /** Legacy: Checkout creates the subscription with a parked trial. */
+    public const MODE_SUBSCRIPTION = 'subscription';
+
+    /**
+     * How a new checkout collects the card.
+     *
+     * Anything unrecognised falls back to the legacy path — an unknown value must
+     * not silently put creators on the newer flow.
+     */
+    public static function checkoutMode(): string
+    {
+        $mode = (string) config('creator_subscription.checkout_mode', self::MODE_SETUP);
+
+        return $mode === self::MODE_SETUP ? self::MODE_SETUP : self::MODE_SUBSCRIPTION;
+    }
+
+    public static function usesSetupMode(): bool
+    {
+        return self::checkoutMode() === self::MODE_SETUP;
+    }
+
+    /**
+     * Free days applied to the subscription created on first sale.
+     *
+     * ⚠️ Non-zero means the creator gets billed on a DATE rather than on their
+     * sale, so it has to be disclosed in our own copy before the card is taken —
+     * Stripe cannot render terms for a subscription that does not exist yet.
+     * Clamped to Stripe's ceiling like every other trial value here.
+     */
+    public static function trialDaysOnSale(): int
+    {
+        $days = (int) config('creator_subscription.trial_days', 0);
+
+        return max(0, min(self::STRIPE_MAX_TRIAL_DAYS, $days));
+    }
+
     /**
      * Money as it is shown to a creator. Zero-decimal currencies are not in
      * play here — the platform subscription is billed in GBP.
@@ -138,6 +177,7 @@ class SubscriptionPlan
             'price_formatted' => self::formatted(self::price()),
             'total_formatted' => self::formatted(self::total()),
             'free_until_first_sale' => self::freeUntilFirstSale(),
+            'trial_days_on_sale' => self::trialDaysOnSale(),
             'promise' => self::copy('promise'),
             'promise_long' => self::copy('promise_long'),
             'price_line' => self::copy('price_line'),

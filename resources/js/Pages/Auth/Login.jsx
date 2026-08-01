@@ -697,7 +697,17 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                     </div>
                 </div>
             </div>
-            <EnterOTP action={open} user={data} hasPasskey={hasPasskey} onSuccess={handleOTPSuccess} />
+            <EnterOTP
+                action={open}
+                user={data}
+                hasPasskey={hasPasskey}
+                onSuccess={handleOTPSuccess}
+                onHide={() => {
+                    if (google2faPendingEmail) {
+                        router.post(route("auth.google.cancel", { target: "login" }));
+                    }
+                }}
+            />
             <SetupPasskeyPrompt 
                 isOpen={showSetupPrompt} 
                 email={promptEmail} 

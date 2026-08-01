@@ -42,6 +42,8 @@ export default function Register() {
         googleUtm = null,
         googleEnabled = false,
     } = usePage().props;
+
+    const effectiveSiteKey = googleProfile ? null : turnstileSiteKey;
     const { url } = usePage();
     const { successAlert, errorAlert } = useAlerts();
     const plan = useMemo(
@@ -463,7 +465,7 @@ export default function Register() {
     }, [setData]);
 
     useEffect(() => {
-        if (!turnstileSiteKey || !turnstileEl) return;
+        if (!effectiveSiteKey || !turnstileEl) return;
 
         const render = () => {
             if (!window.turnstile || !turnstileEl) return;
@@ -473,7 +475,7 @@ export default function Register() {
             }
             turnstileEl.innerHTML = "";
             widgetId.current = window.turnstile.render(turnstileEl, {
-                sitekey: turnstileSiteKey,
+                sitekey: effectiveSiteKey,
                 theme: "light",
                 size: "flexible",
                 callback: onVerify,
@@ -511,7 +513,7 @@ export default function Register() {
                 widgetId.current = null;
             }
         };
-    }, [turnstileSiteKey, turnstileEl, onVerify]);
+    }, [effectiveSiteKey, turnstileEl, onVerify]);
 
     /* -------------------------------- consent ----------------------------- */
 
@@ -531,7 +533,7 @@ export default function Register() {
     const canSubmit =
         consents.terms &&
         (isCreator ? consents.creatorEmail : consents.ownDetails) &&
-        (!turnstileSiteKey || verified);
+        (!effectiveSiteKey || verified);
 
     /* -------------------------------- submit ------------------------------ */
 
@@ -761,7 +763,7 @@ export default function Register() {
                                 data={data}
                                 consents={consents}
                                 setConsent={setConsent}
-                                turnstileSiteKey={turnstileSiteKey}
+                                turnstileSiteKey={effectiveSiteKey}
                                 bindTurnstile={bindTurnstile}
                                 processing={processing}
                                 canSubmit={canSubmit}

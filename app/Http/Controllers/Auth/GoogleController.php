@@ -109,10 +109,10 @@ class GoogleController extends Controller
         }
 
         $googleId = (string) $googleUser->getId();
-        $user = User::where('google_id', $googleId)->first();
+        $user = User::withTrashed()->where('google_id', $googleId)->first();
 
         if (! $user) {
-            $user = User::where('email', $email)->first();
+            $user = User::withTrashed()->where('email', $email)->first();
 
             if ($user) {
                 $user->forceFill(['google_id' => $googleId])->save();
@@ -151,7 +151,10 @@ class GoogleController extends Controller
         // that signs somebody in without a password, which is written deliberately and with tests,
         // not as a side effect of adding a button. Tracked in TASKS.
         if ($user->is_2fa) {
-            $request->session()->put('google_2fa_pending_email', $user->email);
+            $request->session()->put('google_2fa_pending', self::pending([
+                'email' => $user->email,
+            ]));
+
             return redirect()->route('login');
         }
 
@@ -177,13 +180,13 @@ class GoogleController extends Controller
      */
     private function startSignUp(Request $request, SocialiteUser $googleUser, string $email): RedirectResponse
     {
-        $request->session()->put(self::SESSION_KEY, [
+        $request->session()->put(self::SESSION_KEY, self::pending([
             'email' => $email,
             'name' => trim((string) $googleUser->getName()) ?: null,
             'avatar' => $googleUser->getAvatar(),
             'google_id' => (string) $googleUser->getId(),
             'verified_at' => now()->toIso8601String(),
-        ]);
+        ]));
 
         $context = (array) $request->session()->pull('google_signup_context', []);
         $query = array_filter([
@@ -238,6 +241,41 @@ class GoogleController extends Controller
      *
      * Anything else returns null and the caller falls back to its own default.
      */
+    /**
+     * How long a half-finished Google flow stays usable.
+     *
+     * Without this the entry lived the full session lifetime (7 days). On a shared computer the
+     * next person opened `/register`, saw the first person's verified email pre-filled, and could
+     * finish creating an account on that address with `email_verified_at` already set.
+     */
+    public const PENDING_TTL_MINUTES = 15;
+
+    /** The value to store, so every writer stamps the deadline the same way. */
+    public static function pending(array $payload): array
+    {
+        return $payload + ['expires_at' => now()->addMinutes(self::PENDING_TTL_MINUTES)->timestamp];
+    }
+
+    /**
+     * Is a stashed pending entry still usable?
+     *
+     * ⚠️ **Fails CLOSED.** A missing or unreadable `expires_at` counts as expired, never as
+     * "no deadline set". The register-side guards previously read
+     * `! empty($entry['expires_at'])` as their outer condition, so an entry *without* the key
+     * skipped the check entirely and was honoured — which is precisely the entry an older deploy
+     * leaves behind, alive for up to seven days.
+     *
+     * One implementation because there are four read sites (register page, register submit, login
+     * page, OTP verify) and four copies of a security check drift.
+     */
+    public static function pendingIsValid(mixed $entry): bool
+    {
+        return is_array($entry)
+            && ! empty($entry['expires_at'])
+            && is_numeric($entry['expires_at'])
+            && now()->timestamp < (int) $entry['expires_at'];
+    }
+
     private function safeRedirect(?string $target): ?string
     {
         $target = trim((string) $target);
@@ -255,7 +293,15 @@ class GoogleController extends Controller
 
     public function cancel(Request $request): RedirectResponse
     {
-        $request->session()->forget([self::SESSION_KEY, 'google_signup_utm']);
+        $request->session()->forget([
+            self::SESSION_KEY,
+            'google_signup_utm',
+            'google_2fa_pending',
+        ]);
+
+        if ($request->input('target') === 'login' || str_contains($request->header('referer', ''), 'login')) {
+            return redirect()->route('login');
+        }
 
         return redirect()->route('register');
     }

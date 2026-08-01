@@ -154,6 +154,33 @@ class StripeControl
      * @param  string  $customer_id  Stripe Customer Id
      * @return Customer|null
      */
+    /**
+     * Point a customer at the card their subscriptions should collect against.
+     *
+     * Needed only by the setup-mode flow: when Checkout creates the subscription
+     * itself Stripe attaches the card, but a card saved by a SetupIntent is not
+     * anyone's default until it is made one.
+     *
+     * @return Throwable|Customer
+     */
+    public static function setDefaultPaymentMethod(string $customerId, string $paymentMethodId)
+    {
+        self::setClient();
+        try {
+            return self::$client->customers->update($customerId, [
+                'invoice_settings' => ['default_payment_method' => $paymentMethodId],
+            ]);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
     public static function retrieveCustomer($customer_id)
     {
         self::setClient();
@@ -1433,6 +1460,100 @@ class StripeControl
             throw new Exception('Stripe API Connection: '.$e->getMessage());
         } catch (ApiErrorException $e) {
             throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Create the platform subscription for a creator whose card is already saved.
+     *
+     * The setup-mode counterpart to endSubscriptionTrial(): under that flow no
+     * subscription exists until the creator's first sale, so this is what starts
+     * billing rather than a trial being cut short.
+     *
+     * ⚠️ This CHARGES immediately when $trialDays is 0. Pass an idempotency key —
+     * a retried activation must not be able to create a second subscription, which
+     * would bill the creator twice a month for the rest of time.
+     *
+     * ⚠️ `default_payment_method` is explicit. Stripe attaches the card itself when
+     * Checkout creates the subscription, but nothing does that here — omit it and
+     * the subscription is created and then immediately fails to collect.
+     *
+     * @return Throwable|Subscription
+     */
+    public static function createPlatformSubscription(
+        string $customerId,
+        string $paymentMethodId,
+        int $unitAmountMinor,
+        string $currency,
+        string $productName,
+        int $trialDays = 0,
+        array $metadata = [],
+        ?string $idempotencyKey = null,
+    ) {
+        self::setClient();
+        try {
+            $payload = array_filter([
+                'customer' => $customerId,
+                'default_payment_method' => $paymentMethodId,
+                'items' => [[
+                    'price_data' => [
+                        'currency' => strtolower($currency),
+                        'product_data' => ['name' => $productName],
+                        'unit_amount' => $unitAmountMinor,
+                        'recurring' => ['interval' => 'month', 'interval_count' => 1],
+                    ],
+                ]],
+                'trial_period_days' => $trialDays > 0 ? $trialDays : null,
+                'metadata' => $metadata ?: null,
+                // The card was authenticated when it was saved, so this charge is
+                // off-session. Telling Stripe that is what lets it use the saved
+                // authorisation instead of asking for the cardholder.
+                'off_session' => true,
+                'payment_behavior' => 'allow_incomplete',
+            ], fn ($v) => $v !== null);
+
+            $options = $idempotencyKey ? ['idempotency_key' => (string) $idempotencyKey] : [];
+
+            return self::$client->subscriptions->create($payload, $options);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * The card a completed setup-mode Checkout session saved.
+     *
+     * Returns null rather than throwing: a missing payment method means the
+     * creator has no usable card, which the caller has to report to them — it is
+     * not an exception in the flow.
+     */
+    public static function paymentMethodFromSetupSession($session): ?string
+    {
+        self::setClient();
+
+        try {
+            $setupIntentId = is_string($session->setup_intent ?? null)
+                ? $session->setup_intent
+                : ($session->setup_intent->id ?? null);
+
+            if (! $setupIntentId) {
+                return null;
+            }
+
+            $intent = self::$client->setupIntents->retrieve($setupIntentId, []);
+            $pm = $intent->payment_method ?? null;
+
+            return is_string($pm) ? $pm : ($pm->id ?? null);
+        } catch (\Throwable $e) {
+            Log::error('StripeControl: could not read the saved card from a setup session: '.$e->getMessage());
+
+            return null;
         }
     }
 

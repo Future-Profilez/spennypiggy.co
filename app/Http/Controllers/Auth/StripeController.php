@@ -96,8 +96,23 @@ class StripeController extends Controller
             ->newestFirst()
             ->first();
 
-        if (! $charge || ! $charge->stripe_id) {
+        if (! $charge) {
             return back()->with('error', 'No active subscription found to cancel.');
+        }
+
+        // Setup mode before a first sale: the card is saved but no Stripe
+        // subscription exists, so there is nothing there to cancel. Drop the local
+        // row and stop — calling Stripe with a null id would just error.
+        if (! $charge->stripe_id) {
+            $charge->forceFill([
+                'status' => 'canceled',
+                'cancelled_at' => now(),
+                'upcoming_payment' => null,
+            ])->save();
+
+            $user->forceFill(['is_subscribed' => 0])->save();
+
+            return back()->with('success', 'Your subscription has been cancelled. Nothing was charged.');
         }
 
         try {
@@ -4374,48 +4389,79 @@ class StripeController extends Controller
             ? 0
             : SubscriptionPlan::freePeriodDays();
 
-        $payload = [
-            'mode' => 'subscription',
-            'currency' => $currency,
-            'line_items' => [[
-                'quantity' => 1,
-                'price_data' => [
-                    'currency' => $currency,
-                    'product_data' => [
-                        // This is the last thing a creator reads before handing
-                        // over their card, so it has to carry the promise too —
-                        // an unqualified "monthly platform charge" here reads as
-                        // "you are about to be billed", which is the objection
-                        // the whole change removes.
-                        'name' => SubscriptionPlan::copy('checkout_name'),
-                        'description' => SubscriptionPlan::freeUntilFirstSale()
-                            ? SubscriptionPlan::copy('checkout_description')
-                            : 'Monthly platform charge for SpennyPiggy features',
-                    ],
-                    'unit_amount' => $unit_amount, // Ensure integer
-                    'recurring' => [
-                        'interval' => StripeControl::$periods['monthly'],
-                        'interval_count' => 1,
+        // ⚠️ Setup mode creates NO subscription, and that is the point.
+        //
+        // Stripe renders a subscription's trial terms itself and offers no way to
+        // suppress them, so the parked 730-day trial made the checkout page read
+        // "730 days free — then £10.79 per month starting July 31, 2028" while a
+        // creator who sells next week is charged then. Two years early, on the
+        // screen where they hand over their card.
+        //
+        // With no subscription there is no trial for Stripe to describe, so the
+        // page says only what we say. The subscription is created on the first
+        // sale by SubscriptionActivationService.
+        if (SubscriptionPlan::usesSetupMode()) {
+            $payload = [
+                'mode' => 'setup',
+                'currency' => $currency,
+                'customer' => $user->stripe_id,
+                // Saved so it can be charged later without the cardholder present.
+                'setup_intent_data' => [
+                    'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
+                        'subscription_amount' => (string) $price,
+                        'tax_amount' => (string) $tax,
+                        'subscription_purpose' => 'mandatory_platform_access',
+                        'checkout_mode' => SubscriptionPlan::MODE_SETUP,
+                    ]),
+                ],
+                // Stripe cannot describe terms for a subscription that does not
+                // exist, so the disclosure is ours to make. This is the last thing
+                // a creator reads before saving their card.
+                'custom_text' => [
+                    'submit' => [
+                        'message' => SubscriptionPlan::copy('checkout_description'),
                     ],
                 ],
-            ]],
-            'subscription_data' => array_filter([
-                // Only include trial if user has not used it before
-                'trial_period_days' => $trial_period_days > 0 ? $trial_period_days : null,
-                'description' => 'Subscription for using site through Stripe.',
-                'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
-                    'subscription_amount' => (string) $price,
-                    'tax_amount' => (string) $tax,
-                    // Reflect actual trial setting in metadata
-                    'trial_period_days' => $trial_period_days > 0 ? (string) $trial_period_days : '0',
-                    'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
-                    'subscription_purpose' => 'mandatory_platform_access',
+                'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+                'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
+            ];
+        } else {
+            $payload = [
+                'mode' => 'subscription',
+                'currency' => $currency,
+                'line_items' => [[
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => SubscriptionPlan::copy('checkout_name'),
+                            'description' => SubscriptionPlan::freeUntilFirstSale()
+                                ? SubscriptionPlan::copy('checkout_description')
+                                : 'Monthly platform charge for SpennyPiggy features',
+                        ],
+                        'unit_amount' => $unit_amount,
+                        'recurring' => [
+                            'interval' => StripeControl::$periods['monthly'],
+                            'interval_count' => 1,
+                        ],
+                    ],
+                ]],
+                'subscription_data' => array_filter([
+                    'trial_period_days' => $trial_period_days > 0 ? $trial_period_days : null,
+                    'description' => 'Subscription for using site through Stripe.',
+                    'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
+                        'subscription_amount' => (string) $price,
+                        'tax_amount' => (string) $tax,
+                        'trial_period_days' => $trial_period_days > 0 ? (string) $trial_period_days : '0',
+                        'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
+                        'subscription_purpose' => 'mandatory_platform_access',
+                    ]),
                 ]),
-            ]),
-            'customer' => $user->stripe_id,
-            'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
-            'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
-        ];
+                'customer' => $user->stripe_id,
+                'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
+                'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
+            ];
+        }
 
         try {
             $session = StripeControl::createCheckoutSession($payload);
@@ -4460,6 +4506,52 @@ class StripeController extends Controller
             $session = StripeControl::getCheckoutSession($sub->session_id);
             if ($session->payment_status == 'paid' || $session->payment_status == 'no_payment_required') {
                 $sub->stripe_id = $session->subscription;
+
+                // Setup mode: nothing was charged and no subscription exists yet —
+                // only a saved card. Record it, because it is the sole link between
+                // this row and something chargeable until the first sale creates the
+                // subscription.
+                if (! $sub->stripe_id && ($session->mode ?? null) === 'setup') {
+                    $paymentMethod = StripeControl::paymentMethodFromSetupSession($session);
+
+                    if (! $paymentMethod) {
+                        // No usable card means the creator cannot be billed later,
+                        // and pretending the setup worked would leave them selling
+                        // for free with nothing to charge.
+                        Log::error('StripeController: setup session completed without a payment method', [
+                            'monthly_charge_id' => $sub->id,
+                            'session_id' => $sub->session_id,
+                        ]);
+
+                        return to_route('activate-subscription')
+                            ->with('error', 'We could not save your card. Please try again.');
+                    }
+
+                    $sub->stripe_payment_method = $paymentMethod;
+
+                    // Make it the customer's default so the subscription created on
+                    // the first sale collects against it without being told again.
+                    try {
+                        StripeControl::setDefaultPaymentMethod($user->stripe_id, $paymentMethod);
+                    } catch (Exception $e) {
+                        // Not fatal: the subscription is created with an explicit
+                        // default_payment_method anyway. Worth knowing about, though.
+                        Log::warning('StripeController: could not set the default payment method: '.$e->getMessage());
+                    }
+
+                    // 'trialing' is the platform's word for "card on file, nothing
+                    // charged" — the eligibility allow-list already accepts it, so
+                    // the creator can sell straight away.
+                    $sub->status = 'trialing';
+                    $sub->upcoming_payment = null;
+                    $sub->save();
+
+                    $user->is_subscribed = 1;
+                    $user->save();
+
+                    return to_route('user.show', ['username' => $user->username])
+                        ->with('success', 'Your card is saved. Nothing is charged until your first sale.');
+                }
 
                 // Set upcoming payment and subscription dates based on whether a trial was applied
                 if (! empty($sub->current_end_trial_date)) {

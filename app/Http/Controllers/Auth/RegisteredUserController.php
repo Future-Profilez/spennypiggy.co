@@ -66,7 +66,15 @@ class RegisteredUserController extends Controller
         //         return Inertia::location("https://uk.spennypiggy.co/register");
         //     }
         // }
+        // Fails closed: an entry with no readable `expires_at` is treated as expired, not as
+        // "no deadline". Reading `! empty($entry['expires_at'])` as the outer condition let such
+        // an entry skip the check entirely — which is exactly what an older deploy leaves behind.
         $google = $request->session()->get(GoogleController::SESSION_KEY);
+
+        if ($google !== null && ! GoogleController::pendingIsValid($google)) {
+            $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
+            $google = null;
+        }
 
         return Inertia::render('Auth/Register', [
             // Present only when the person arrived through Google. The page pre-fills the name,
@@ -143,7 +151,15 @@ class RegisteredUserController extends Controller
         // request copy is whatever the browser sent. Trusting the request would let anyone with
         // a Google session POST somebody else's address and receive an account already marked
         // email-verified on it.
+        // Fails closed: an entry with no readable `expires_at` is treated as expired, not as
+        // "no deadline". Reading `! empty($entry['expires_at'])` as the outer condition let such
+        // an entry skip the check entirely — which is exactly what an older deploy leaves behind.
         $google = $request->session()->get(GoogleController::SESSION_KEY);
+
+        if ($google !== null && ! GoogleController::pendingIsValid($google)) {
+            $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
+            $google = null;
+        }
 
         if (is_array($google) && ! empty($google['email'])) {
             $request->merge([

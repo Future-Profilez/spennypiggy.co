@@ -48,6 +48,36 @@ return [
     'free_period_days' => (int) env('CREATOR_SUBSCRIPTION_FREE_PERIOD_DAYS', 730),
 
     /*
+    | How the card is collected.
+    |
+    | 'setup'        — Checkout saves the card and creates NO subscription. The
+    |                  subscription is created on the creator's first sale.
+    | 'subscription' — the legacy path: Checkout creates the subscription with a
+    |                  parked trial, which the first sale then ends.
+    |
+    | ⚠️ 'setup' exists because Stripe renders a subscription's trial terms itself
+    | and offers no way to suppress them. With a 730-day placeholder the checkout
+    | page read "730 days free — then £10.79 per month starting July 31, 2028",
+    | while a creator who sells next week is charged then: two years before the
+    | date printed on the screen where they handed over their card.
+    |
+    | Flip back to 'subscription' to roll the change back without a deploy.
+    | Creators already switched over keep the subscription they have — the switch
+    | only decides what a NEW checkout creates.
+    */
+    'checkout_mode' => env('CREATOR_SUBSCRIPTION_CHECKOUT_MODE', 'setup'),
+
+    /*
+    | Days of genuinely free access before billing starts, applied to the
+    | subscription created on first sale. 0 = charge on the first sale.
+    |
+    | Under 'setup' mode this is ours to display: Stripe cannot render terms for a
+    | subscription that does not exist yet, so any non-zero value MUST be stated
+    | in our own copy before the card is taken.
+    */
+    'trial_days' => (int) env('CREATOR_SUBSCRIPTION_TRIAL_DAYS_ON_SALE', 0),
+
+    /*
     | One set of words for every surface — the activate screen, the dashboard
     | card, the creator marketing pages, the Stripe Checkout line item and the
     | terms. `resources/js/constants/creatorSubscription.js` mirrors this for

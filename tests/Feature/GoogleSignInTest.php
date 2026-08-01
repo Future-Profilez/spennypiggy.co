@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
+use PragmaRX\Google2FALaravel\Google2FA;
 use Tests\TestCase;
 
 /**
@@ -20,15 +21,68 @@ class GoogleSignInTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Built through `GoogleController::pending()` — the same stamp the real writer uses — so the
+     * fixture cannot drift from production. A hand-written array without `expires_at` is now
+     * correctly rejected as expired, which is what these tests should be asserting against.
+     */
     private function googleSession(array $overrides = []): array
     {
-        return [GoogleController::SESSION_KEY => array_merge([
+        return [GoogleController::SESSION_KEY => GoogleController::pending(array_merge([
             'email' => 'verified@gmail.com',
             'name' => 'Verified Person',
             'avatar' => null,
             'google_id' => '1234567890',
             'verified_at' => now()->toIso8601String(),
-        ], $overrides)];
+        ], $overrides))];
+    }
+
+    /** A pending entry an older deploy would have left behind: no deadline at all. */
+    private function googleSessionWithoutExpiry(): array
+    {
+        return [GoogleController::SESSION_KEY => [
+            'email' => 'verified@gmail.com',
+            'name' => 'Verified Person',
+            'avatar' => null,
+            'google_id' => '1234567890',
+            'verified_at' => now()->toIso8601String(),
+        ]];
+    }
+
+    /**
+     * 🚨 Fail-closed. The guards used to read `! empty($entry['expires_at'])` as their OUTER
+     * condition, so an entry lacking the key skipped the expiry check entirely and was honoured —
+     * exactly the entry a pre-expiry deploy leaves in a live session for up to seven days.
+     */
+    public function test_a_pending_entry_with_no_expiry_is_treated_as_expired(): void
+    {
+        $response = $this->withSession($this->googleSessionWithoutExpiry())->get('/register');
+
+        $response->assertInertia(fn ($page) => $page->where('googleProfile', null));
+        $this->assertNull(session(GoogleController::SESSION_KEY));
+    }
+
+    /** …and it cannot be used to create an account either. */
+    public function test_a_pending_entry_with_no_expiry_cannot_create_an_account(): void
+    {
+        $this->withSession($this->googleSessionWithoutExpiry())
+            ->post('/register', $this->form())
+            ->assertSessionHasErrors('password');
+
+        $this->assertDatabaseMissing('users', ['email' => 'verified@gmail.com']);
+    }
+
+    /** A non-numeric deadline is unreadable, so it is expired too — never "no deadline". */
+    public function test_a_pending_entry_with_a_junk_expiry_is_treated_as_expired(): void
+    {
+        $session = $this->googleSessionWithoutExpiry();
+        $session[GoogleController::SESSION_KEY]['expires_at'] = 'not-a-timestamp';
+
+        $this->withSession($session)
+            ->post('/register', $this->form())
+            ->assertSessionHasErrors('password');
+
+        $this->assertDatabaseMissing('users', ['email' => 'verified@gmail.com']);
     }
 
     private function form(array $overrides = []): array
@@ -341,7 +395,10 @@ class GoogleSignInTest extends TestCase
         $response = $this->get('/auth/google/callback');
 
         $response->assertRedirect(route('login'));
-        $this->assertEquals('twofa@gmail.com', session('google_2fa_pending_email'));
+        $pending = session('google_2fa_pending');
+        $this->assertIsArray($pending);
+        $this->assertEquals('twofa@gmail.com', $pending['email']);
+        $this->assertGreaterThan(now()->timestamp, $pending['expires_at']);
     }
 
     public function test_verify_2fa_authenticates_google_user_without_password(): void
@@ -352,19 +409,23 @@ class GoogleSignInTest extends TestCase
             'tfa_key' => 'secretkey',
         ]);
 
-        $google2faMock = \Mockery::mock(\PragmaRX\Google2FALaravel\Google2FA::class);
+        $google2faMock = \Mockery::mock(Google2FA::class);
         $google2faMock->shouldReceive('verifyKey')->with('secretkey', '123456')->andReturn(true);
-        $this->app->instance(\PragmaRX\Google2FALaravel\Google2FA::class, $google2faMock);
+        $this->app->instance(Google2FA::class, $google2faMock);
 
-        $response = $this->withSession(['google_2fa_pending_email' => 'twofa@gmail.com'])
-            ->postJson(route('verify2FA'), [
+        $response = $this->withSession([
+            'google_2fa_pending' => [
                 'email' => 'twofa@gmail.com',
-                'otp' => '123456',
-            ]);
+                'expires_at' => now()->addMinutes(15)->timestamp,
+            ],
+        ])->postJson(route('verify2FA'), [
+            'email' => 'twofa@gmail.com',
+            'otp' => '123456',
+        ]);
 
         $response->assertJson(['status' => true]);
         $this->assertAuthenticatedAs($user);
-        $this->assertNull(session('google_2fa_pending_email'));
+        $this->assertNull(session('google_2fa_pending'));
     }
 
     public function test_callback_links_existing_user_by_verified_email(): void
@@ -418,6 +479,110 @@ class GoogleSignInTest extends TestCase
         $response->assertRedirect(route('register'));
         $this->assertNull(session(GoogleController::SESSION_KEY));
         $this->assertNull(session('google_signup_utm'));
+    }
+
+    public function test_cancel_clears_google_2fa_pending_email_and_redirects_to_login(): void
+    {
+        $response = $this->withSession([
+            'google_2fa_pending' => [
+                'email' => 'twofa@gmail.com',
+                'expires_at' => now()->addMinutes(15)->timestamp,
+            ],
+        ])->post('/auth/google/cancel', ['target' => 'login']);
+
+        $response->assertRedirect(route('login'));
+        $this->assertNull(session('google_2fa_pending'));
+    }
+
+    public function test_registration_page_ignores_expired_google_signup_session(): void
+    {
+        $response = $this->withSession([
+            GoogleController::SESSION_KEY => [
+                'email' => 'brandnew@gmail.com',
+                'expires_at' => now()->subSecond()->timestamp,
+            ],
+        ])->get(route('register'));
+
+        $response->assertInertia(fn ($page) => $page->where('googleProfile', null));
+        $this->assertNull(session(GoogleController::SESSION_KEY));
+    }
+
+    public function test_registration_store_ignores_expired_google_signup_session(): void
+    {
+        $response = $this->withSession([
+            GoogleController::SESSION_KEY => [
+                'email' => 'brandnew@gmail.com',
+                'expires_at' => now()->subSecond()->timestamp,
+            ],
+        ])->post(route('register'), [
+            'name' => 'Brand New',
+            'username' => 'brandnewuser',
+            'role' => 0,
+            'country_code' => 'US',
+            'terms_accepted' => true,
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $this->assertNull(session(GoogleController::SESSION_KEY));
+    }
+
+    public function test_login_page_ignores_expired_google_2fa_pending_session(): void
+    {
+        $response = $this->withSession([
+            'google_2fa_pending' => [
+                'email' => 'twofa@gmail.com',
+                'expires_at' => now()->subSecond()->timestamp,
+            ],
+        ])->get(route('login'));
+
+        $response->assertInertia(fn ($page) => $page->where('google2faPendingEmail', null));
+        $this->assertNull(session('google_2fa_pending'));
+    }
+
+    public function test_verify_2fa_ignores_expired_google_2fa_pending_session(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'twofa@gmail.com',
+            'is_2fa' => 1,
+            'tfa_key' => 'secretkey',
+        ]);
+
+        $google2faMock = \Mockery::mock(Google2FA::class);
+        $google2faMock->shouldReceive('verifyKey')->with('secretkey', '123456')->andReturn(true);
+        $this->app->instance(Google2FA::class, $google2faMock);
+
+        $response = $this->withSession([
+            'google_2fa_pending' => [
+                'email' => 'twofa@gmail.com',
+                'expires_at' => now()->subSecond()->timestamp,
+            ],
+        ])->postJson(route('verify2FA'), [
+            'email' => 'twofa@gmail.com',
+            'otp' => '123456',
+        ]);
+
+        $response->assertJson(['status' => false]);
+        $this->assertGuest();
+        $this->assertNull(session('google_2fa_pending'));
+    }
+
+    public function test_callback_refuses_soft_deleted_user(): void
+    {
+        config(['services.google.client_id' => 'client_id', 'services.google.client_secret' => 'client_secret']);
+
+        $user = User::factory()->create([
+            'email' => 'deleted@gmail.com',
+            'deleted_at' => now(),
+        ]);
+
+        $this->mockSocialiteGoogle([
+            'email' => 'deleted@gmail.com',
+        ]);
+
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('error', 'This account is deactivated. Please contact support.');
     }
 
     private function mockSocialiteGoogle(array $userAttrs = [], ?\Throwable $exception = null): void

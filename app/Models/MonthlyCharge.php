@@ -14,6 +14,7 @@ class MonthlyCharge extends Model
     protected $fillable = [
         'uuid',
         'stripe_id',
+        'stripe_payment_method',
         'session_id',
         'user_id',
         'name',
