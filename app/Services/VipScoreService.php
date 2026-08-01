@@ -44,6 +44,13 @@ class VipScoreService
         return round($score, 1);
     }
 
+    /** All engagement Levels, low → high — {level, min, icon, color}. Single
+     *  source for anything that needs the level list (e.g. a tier-distribution bar). */
+    public static function levels(): array
+    {
+        return self::TIERS;
+    }
+
     /** Tier {level, icon, color} for a score — canonical thresholds. */
     public static function tier(float $score): array
     {

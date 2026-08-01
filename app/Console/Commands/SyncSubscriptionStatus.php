@@ -45,7 +45,7 @@ class SyncSubscriptionStatus extends Command
             $query->where(function ($q) {
                 // 1. Users with active local records that might need renewal/expiry check
                 $q->whereHas('creatorMonthlySubscription', function ($sq) {
-                    $sq->whereIn('status', ['paid', 'active', 'renew', 'trialing']);
+                    $sq->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'trial_ending']);
                 })
                     // 2. OR users who were recently active on the platform (last 2 days)
                     ->orWhere('updated_at', '>=', now()->subDays(2))
@@ -88,7 +88,7 @@ class SyncSubscriptionStatus extends Command
 
         $this->info("🎯 Sync complete: {$updated} processed, {$errors} errors");
         // Expire old trial subscriptions
-        $expiredTrials = MonthlyCharge::whereIn('status', ['paid', 'trialing', 'canceled'])
+        $expiredTrials = MonthlyCharge::whereIn('status', ['paid', 'trialing', 'trial_ending', 'canceled'])
             ->whereNotNull('current_end_trial_date')
             ->whereDate('current_end_trial_date', '<', now())
             ->whereNull('current_end_subscription_date')

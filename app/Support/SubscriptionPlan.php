@@ -46,10 +46,6 @@ class SubscriptionPlan
 
     /**
      * Whether a creator is left un-charged until their first completed sale.
-     *
-     * A switch rather than a constant on purpose: the client's plan is to run
-     * this during the platform's early phase and revisit charging from day one
-     * once there is a track record.
      */
     public static function freeUntilFirstSale(): bool
     {
@@ -57,20 +53,28 @@ class SubscriptionPlan
     }
 
     /**
+     * Stripe's hard ceiling on a subscription trial.
+     *
+     * ⚠️ Exceed it and Checkout refuses the whole session with "The maximum
+     * number of trial period days is 730 (2 years)" — so the creator cannot
+     * subscribe at all. It is an external limit, not a preference, which is why
+     * it is enforced here rather than left to whoever edits the config.
+     */
+    public const STRIPE_MAX_TRIAL_DAYS = 730;
+
+    /**
      * How far out the parked trial is set while waiting for a first sale.
      *
-     * Clamped to at least a day: a zero or negative value would put trial_end
-     * in the past, and Stripe would charge the creator immediately — the exact
-     * outcome this feature exists to prevent.
+     * Clamped at BOTH ends. A zero or negative value would put trial_end in the
+     * past and Stripe would charge the creator immediately — the exact outcome
+     * this feature exists to prevent. Anything above Stripe's ceiling breaks
+     * checkout outright.
      */
     public static function freePeriodDays(): int
     {
-        return max(1, (int) config('creator_subscription.free_period_days', 1095));
-    }
+        $days = (int) config('creator_subscription.free_period_days', self::STRIPE_MAX_TRIAL_DAYS);
 
-    public static function legacyTrialDays(): int
-    {
-        return max(0, (int) config('creator_subscription.legacy_trial_days', 3));
+        return max(1, min(self::STRIPE_MAX_TRIAL_DAYS, $days));
     }
 
     /**

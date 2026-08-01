@@ -1507,8 +1507,8 @@ class UserProfileService
                             $syncUserSubscribed($target->user, 1);
                         }
                     } else {
-                        // Only set is_subscribed to 0 if the paid period has actually passed
-                        $periodEnded = now()->greaterThanOrEqualTo($stripeEnd);
+                        // Only set is_subscribed to 0 if the paid period has actually passed or if cancelled before any payment
+                        $periodEnded = ! $target->current_end_subscription_date || now()->greaterThanOrEqualTo($stripeEnd);
                         if ($periodEnded && $target->user) {
                             $syncUserSubscribed($target->user, 0);
                         }
@@ -1669,7 +1669,7 @@ class UserProfileService
         // Also update any local MonthlyCharge record for this user that thinks it's active
         // since Stripe has confirmed there is no active subscription whatsoever.
         MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'trialing', 'renew'])
+            ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
             ->update([
                 'status' => 'expired',
                 'upcoming_payment' => null,

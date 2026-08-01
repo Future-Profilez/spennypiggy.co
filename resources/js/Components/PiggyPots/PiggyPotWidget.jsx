@@ -28,9 +28,9 @@ export default function PiggyPotWidget({
     inPopup,
     feed,
 }) {
-    if (!piggyPots || piggyPots.length === 0) return null;
-
-    const featuredPot = piggyPots.find((p) => p.is_pinned) || piggyPots[0];
+    // featuredPot may be undefined when there are no pots. All hooks below stay
+    // null-safe and the early return happens AFTER every hook (Rules of Hooks).
+    const featuredPot = piggyPots?.find((p) => p.is_pinned) || piggyPots?.[0];
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
     const [selectegTag, setselectegTag] = useState(0);
@@ -44,7 +44,7 @@ export default function PiggyPotWidget({
 
     const { data, setData } = useForm({
         amount: "",
-        currency: featuredPot.currency,
+        currency: featuredPot?.currency,
         message: "",
         name: auth?.user?.name || "",
         email: auth?.user?.email || "",
@@ -64,7 +64,7 @@ export default function PiggyPotWidget({
     );
 
     const potCurrency = (
-        featuredPot.currency ||
+        featuredPot?.currency ||
         global_currency ||
         "GBP"
     ).toUpperCase();
@@ -78,8 +78,8 @@ export default function PiggyPotWidget({
         return (v) => formatter.format(Number(v) || 0);
     }, [potCurrency]);
 
-    const targetAmount = parseFloat(featuredPot.target_amount || 0);
-    const raisedAmount = parseFloat(featuredPot.total_raised || 0);
+    const targetAmount = parseFloat(featuredPot?.target_amount || 0);
+    const raisedAmount = parseFloat(featuredPot?.total_raised || 0);
     const progressPercent =
         targetAmount > 0
             ? Math.min(100, (raisedAmount / targetAmount) * 100)
@@ -90,15 +90,15 @@ export default function PiggyPotWidget({
     );
     const isComplete = targetAmount > 0 && remainingAmount <= 0;
 
-    const deadlinePassed = featuredPot.deadline
+    const deadlinePassed = featuredPot?.deadline
         ? new Date(String(featuredPot.deadline).replace(" ", "T")) < new Date()
         : false;
-    const isHeld = featuredPot.status === "moderation_hold";
+    const isHeld = featuredPot?.status === "moderation_hold";
     const isClosed =
         isComplete ||
         deadlinePassed ||
         isHeld ||
-        ["archived", "completed", "expired"].includes(featuredPot.status);
+        ["archived", "completed", "expired"].includes(featuredPot?.status);
 
     const maxAllowed = Math.min(
         MAX_AMOUNT,
@@ -107,10 +107,10 @@ export default function PiggyPotWidget({
     const presetAmounts = [25, 50, 75];
 
     const featuredCreatorId =
-        featuredPot.creator_id ||
-        featuredPot.creator?.id ||
-        featuredPot.user?.id ||
-        featuredPot.user_id;
+        featuredPot?.creator_id ||
+        featuredPot?.creator?.id ||
+        featuredPot?.user?.id ||
+        featuredPot?.user_id;
     const isCreator =
         auth?.user?.id &&
         featuredCreatorId &&
@@ -315,6 +315,9 @@ export default function PiggyPotWidget({
             }, 350);
         } catch (e) {}
     }, [shouldCelebrate, featuredPot?.uuid]);
+
+    // Nothing to show — safe to bail now that every hook has been called.
+    if (!featuredPot) return null;
 
     const primaryBtn =
         "w-full min-h-[52px] py-3 rounded-box-sm border-[3px] border-black font-black text-base uppercase transition-all";

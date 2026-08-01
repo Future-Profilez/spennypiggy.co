@@ -18,9 +18,9 @@ $messages = [
         'body' => 'We’re sorry to see you go. Your access will remain active until the end of the current billing period.',
     ],
     'trial' => [
-        'text' => 'Trial Ending Soon',
-        'desc' => 'Trial is ending soon ⏳',
-        'body' => 'Your free trial is about to end. If you don’t cancel, your subscription will start automatically and you will be charged.',
+        'text' => 'Subscription Starting Soon',
+        'desc' => 'Your subscription is about to start ⏳',
+        'body' => 'Your subscription is about to start. If you don’t cancel, it will begin automatically and you will be charged.',
     ],
     'start' => [
         'text' => 'Started',
@@ -144,7 +144,7 @@ $badgeEmoji = [
                             <td style="padding:20px 22px;">
                                 <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
                                     <tr>
-                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">⏳ Trial Ends</td>
+                                        <td style="font-family:'Outfit',Arial,sans-serif;font-size:13px;color:#999999;font-weight:500;padding:0 0 4px 0;">⏳ Starts</td>
                                         <td align="right" style="font-family:'Outfit',Arial,sans-serif;font-size:14px;color:#1A1A1A;font-weight:700;padding:0 0 4px 0;">{{ \Carbon\Carbon::parse($array['trial_end'])->format('F j, Y') }}</td>
                                     </tr>
                                 </table>

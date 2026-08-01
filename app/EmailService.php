@@ -701,8 +701,8 @@ class EmailService
     {
         try {
             $emails = app()->environment('production')
-                ? ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com']
-                : ['naveen@internetbusinesssolutionsindia.com'];
+                ? (array) config('alerts.production', [])
+                : (array) config('alerts.non_production', []);
             Mail::to($emails)->send(new FeatureSuggestionMail($data));
 
             Log::info('EmailService::featureSuggestion - Email sent successfully', [

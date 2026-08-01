@@ -169,17 +169,17 @@ function ThreeWays({ onPick, username }) {
                     className="group relative flex flex-col rounded-box-sm border-[3px] border-black bg-white p-4 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
                 >
                     {option.recommended && (
-                        <span className="absolute -top-2.5 right-3 rounded-full border-2 border-black bg-[#FF007F] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="absolute -top-2.5 right-3 rounded-full border-2 border-black bg-[#FF007F] px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                             Recommended
                         </span>
                     )}
                     <div aria-hidden="true" className="mb-2.5 text-3xl">
                         {option.emoji}
                     </div>
-                    <h4 className="mb-1 text-xs font-black uppercase tracking-wider text-black transition-colors group-hover:text-[#FF007F]">
+                    <h4 className="mb-1 text-sm font-black uppercase tracking-wider text-black transition-colors group-hover:text-[#FF007F]">
                         {option.title}
                     </h4>
-                    <p className="text-[11px] font-bold leading-normal text-neutral-500">
+                    <p className="text-xs font-bold leading-normal text-neutral-600">
                         {option.body}
                     </p>
                 </button>

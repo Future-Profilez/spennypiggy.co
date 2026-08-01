@@ -45,9 +45,11 @@ class Helpers
         $configured = is_array($configured) ? $configured : [];
 
         if (empty($configured)) {
+            // Recipients live in config/alerts.php, mirrored in the admin app under the
+            // same env variable names — both apps send internal alerts.
             $configured = app()->environment('production')
-                ? ['support@spennypiggy.co', 'naveen@internetbusinesssolutionsindia.com']
-                : ['naveen@internetbusinesssolutionsindia.com'];
+                ? (array) config('alerts.production', [])
+                : (array) config('alerts.non_production', []);
         }
 
         /*

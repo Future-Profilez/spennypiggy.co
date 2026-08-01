@@ -485,7 +485,7 @@ button.close-btn{position:absolute;right:20px;top:20px;z-index:2;background:#fff
 .new-wish-cats .wish-tags.active{background:var(--pink);color:#fff;}
 .new-wish-cats .wish-tags.edit{background:var(--mint);color:#000;}
 .cats_edit input{border:1px solid #ccc;border-radius:10px;padding:7px 10px;}
-.tip-wrapper{border-radius:40px;padding-top:52px;background:#8c53fb;}
+.tip-wrapper{border-radius:30px;padding-top:52px;background:#8c53fb;}
 .box-inner{background:#fff;border-radius:40px;border:4px solid var(--voilet);}
 .tip-wrapper{position:relative;}
 .piggyface{position:absolute;max-width:120px;top:8px;left:6px;z-index:auto;transform:rotate(9deg);}

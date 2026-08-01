@@ -92,7 +92,7 @@ class StripeController extends Controller
 
         // Find the latest active subscription for this user
         $charge = MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'trial_ending'])
             ->newestFirst()
             ->first();
 
@@ -101,13 +101,39 @@ class StripeController extends Controller
         }
 
         try {
-            // Cancel at period end via Stripe
-            $subscription = StripeControl::cancelSubscription($charge->stripe_id, true);
+            // Has billing started? Three signals, and all three must say no.
+            //
+            // ⚠️ `first_sale_activated_at` is the one that closes the race.
+            // SubscriptionActivationService claims that column BEFORE it tells
+            // Stripe to charge, and only flips the status to 'paid' after. In the
+            // window between the charge and the flip, the other two signals still
+            // read "free period" — so a creator who cancelled in that moment lost
+            // access instantly having just been billed, which is the single
+            // outcome this branch must never produce.
+            //
+            // A failed activation releases the claim, so the column correctly
+            // returns to null and the immediate path becomes available again.
+            $isBeforePayment = in_array($charge->status, ['trialing', 'trial_ending'], true)
+                && ! $charge->current_start_subscription_date
+                && ! $charge->first_sale_activated_at;
 
-            // Sync the change locally
-            app(UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+            if ($isBeforePayment) {
+                // Cancel instantly (atPeriodEnd = false)
+                $subscription = StripeControl::cancelSubscription($charge->stripe_id, false);
 
-            return back()->with('success', 'Auto-renewal has been cancelled. You will have access until '.Carbon::createFromTimestamp($subscription->current_period_end)->format('d M Y'));
+                // Sync the change locally
+                app(UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.deleted', null, $user);
+
+                return back()->with('success', 'Your subscription has been cancelled immediately.');
+            } else {
+                // Cancel at period end (atPeriodEnd = true)
+                $subscription = StripeControl::cancelSubscription($charge->stripe_id, true);
+
+                // Sync the change locally
+                app(UserProfileService::class)->syncMandatorySubscriptionStatus($subscription, 'customer.subscription.updated', null, $user);
+
+                return back()->with('success', 'Auto-renewal has been cancelled. You will have access until '.Carbon::createFromTimestamp($subscription->current_period_end)->format('d M Y'));
+            }
         } catch (Exception $e) {
             Log::error('StripeController: Manual cancellation failed: '.$e->getMessage());
 
@@ -124,7 +150,7 @@ class StripeController extends Controller
             return back()->with('error', 'User not found.');
         }
         $charge = MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'canceled'])
+            ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'trial_ending', 'canceled'])
             ->newestFirst()
             ->first();
 
@@ -4249,7 +4275,7 @@ class StripeController extends Controller
 
             // Also handle existing paid/active DB record that DB didn't sync (webhook missed)
             $existingActive = MonthlyCharge::where('user_id', $user->id)
-                ->whereIn('status', ['paid', 'active', 'renew', 'trialing'])
+                ->whereIn('status', ['paid', 'active', 'renew', 'trialing', 'trial_ending'])
                 ->whereNotNull('current_end_subscription_date')
                 ->whereDate('current_end_subscription_date', '>=', $now)
                 ->latest()
@@ -4344,16 +4370,9 @@ class StripeController extends Controller
         // returning creator immediately even though they had never earned a
         // penny — which is precisely the objection this change exists to remove.
         // A creator who HAS sold before is billed straight away on their return.
-        if (SubscriptionPlan::freeUntilFirstSale()) {
-            $trial_period_days = app(SubscriptionActivationService::class)->hasEverMadeSale($user)
-                ? 0
-                : SubscriptionPlan::freePeriodDays();
-        } else {
-            $hasUsedTrial = MonthlyCharge::where('user_id', $user->id)
-                ->whereNotNull('current_start_trial_date')
-                ->exists();
-            $trial_period_days = $hasUsedTrial ? 0 : SubscriptionPlan::legacyTrialDays();
-        }
+        $trial_period_days = app(SubscriptionActivationService::class)->hasEverMadeSale($user)
+            ? 0
+            : SubscriptionPlan::freePeriodDays();
 
         $payload = [
             'mode' => 'subscription',

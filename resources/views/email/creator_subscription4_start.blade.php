@@ -34,7 +34,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    Hi <strong style="color:#1A1A1A;">{{ ucwords($user->name ?? 'User') }}</strong> 👋 your free trial has ended and your subscription is now active.
+                    Hi <strong style="color:#1A1A1A;">{{ ucwords($user->name ?? 'User') }}</strong> 👋 you have made your first sale, so your subscription is now active.
                 </td>
             </tr>
 

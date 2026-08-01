@@ -29,8 +29,25 @@ class CreatorOpportunityService
     /** Spend (GBP, lifetime) at which a supporter is worth a personal thank-you. */
     private const HIGH_VALUE_GBP = 250.0;
 
+    /** Lifetime spend (GBP) that marks a supporter as "Platinum" — a money tier,
+     *  matching the client's Platinum concept, NOT the engagement Level. */
+    private const PLATINUM_SPEND_GBP = 500.0;
+
     /** Days of silence before an established supporter counts as at risk. */
     private const AT_RISK_DAYS = 30;
+
+    /** Last purchase this many days ago = "cooling" — drifting but not yet lost. */
+    private const COOLING_DAYS = 30;
+
+    /** Engagement-Level score cut-offs (mirror VipScoreService::TIERS). */
+    private const LEVEL5_MIN = 90;
+
+    private const LEVEL4_MIN = 70;
+
+    private const LEVEL3_MIN = 50;
+
+    /** Net + VAT — the money a row is worth. Single definition for every sum. */
+    private const GROSS_EXPR = 'net_amount + COALESCE(vat_amount, 0)';
 
     /** VIP lookups are a query each, so only the top slice gets enriched. */
     private const VIP_ENRICH_LIMIT = 10;
@@ -46,12 +63,35 @@ class CreatorOpportunityService
 
     public function __construct(private VipScoreService $vip) {}
 
+    /** Base income-ledger query — the one place the ledger definition lives. */
+    private function incomeQuery(User $creator)
+    {
+        return FinancialTransaction::query()
+            ->where('user_id', $creator->id)
+            ->where('type', 'income')
+            ->whereNotIn('status', self::EXCLUDED_STATUSES);
+    }
+
+    /** Convert a minor-unit-free amount between currencies (same-currency = no-op). */
+    private function convert(float $amount, ?string $from, string $to): float
+    {
+        $from = strtoupper($from ?: 'GBP');
+
+        return $from === $to ? $amount : (float) Helpers::priceFormat($from, $amount, $to);
+    }
+
+    /** Format an amount in the creator's display currency for alert/action copy. */
+    private function fmtMoney(float $amount, string $currency): string
+    {
+        return ($currency === 'GBP' ? '£' : '').number_format($amount, 2).($currency !== 'GBP' ? ' '.$currency : '');
+    }
+
     /** Everything the Opportunity Centre renders, in one call. */
     public function for(User $creator, string $currency = 'GBP'): array
     {
         $supporters = $this->supporters($creator, $currency);
         $retention = $this->retention($creator);
-        $alerts = $this->alerts($creator, $supporters, $retention);
+        $alerts = $this->alerts($creator, $supporters, $retention, $currency);
 
         return [
             'currency' => $currency,
@@ -62,7 +102,7 @@ class CreatorOpportunityService
             'alerts' => $alerts,
             'abandoned' => $this->abandonedCheckouts($creator, $currency),
             'listings' => $this->listingPerformance($creator),
-            'actions' => $this->suggestedActions($creator, $supporters, $retention),
+            'actions' => $this->suggestedActions($creator, $supporters, $retention, $currency),
             'totals' => [
                 'supporters' => $supporters->count(),
                 'lifetime_value' => round((float) $supporters->sum('lifetime_spent'), 2),
@@ -281,18 +321,10 @@ class CreatorOpportunityService
      */
     private function tierDistribution($supporters): array
     {
-        // Mirror VipScoreService::TIERS — the engagement Level, not a spend tier.
-        // Renamed from gem names to Level 1-5 (24 July 2026) so the supporter badge
-        // stops colliding with the admin spend tier. Keep in step with that service.
-        $meta = [
-            'Level 1' => ['color' => '#9CA3AF', 'icon' => '①'],
-            'Level 2' => ['color' => '#60A5FA', 'icon' => '②'],
-            'Level 3' => ['color' => '#34D399', 'icon' => '③'],
-            'Level 4' => ['color' => '#FBBF24', 'icon' => '④'],
-            'Level 5' => ['color' => '#FF007F', 'icon' => '⑤'],
-        ];
-
-        $counts = array_fill_keys(array_keys($meta), 0);
+        // Level list (label/icon/colour) read straight from VipScoreService — the
+        // single source — so this bar can never drift from the badges it mirrors.
+        $levels = VipScoreService::levels();
+        $counts = array_fill_keys(array_column($levels, 'level'), 0);
 
         // Counted from the already-enriched supporter set — every supporter now
         // carries its engagement Level, so no second VIP lookup is needed.
@@ -303,12 +335,12 @@ class CreatorOpportunityService
             }
         }
 
-        return collect($meta)
-            ->map(fn ($m, $level) => [
-                'level' => $level,
-                'count' => $counts[$level],
-                'color' => $m['color'],
-                'icon' => $m['icon'],
+        return collect($levels)
+            ->map(fn ($t) => [
+                'level' => $t['level'],
+                'count' => $counts[$t['level']],
+                'color' => $t['color'],
+                'icon' => $t['icon'],
             ])
             ->values()
             ->all();
@@ -333,7 +365,9 @@ class CreatorOpportunityService
             'TaskPurchase' => ['Tasks', '#f59e0b', '✅'],
             'ShopPayment' => ['Shop', '#f97316', '🛍️'],
             'PiggyPotContribution' => ['Piggy Pot', '#ec4899', '🐷'],
-            'TipGoalsPayment' => ['Tips', '#FF007F', '🔓'],
+            // "Piggy Bank", never "Tips" — tip/donation wording is banned on every
+            // user-facing surface (Stripe content-first compliance).
+            'TipGoalsPayment' => ['Piggy Bank', '#FF007F', '🔓'],
         ];
 
         // Seed every feature at zero, in display order.
@@ -342,14 +376,11 @@ class CreatorOpportunityService
             $totals[$label] ??= ['label' => $label, 'total' => 0.0, 'count' => 0, 'color' => $color, 'icon' => $icon];
         }
 
-        $rows = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+        $rows = $this->incomeQuery($creator)
             ->select(
                 'source_type',
                 'currency',
-                DB::raw('SUM(net_amount + COALESCE(vat_amount, 0)) as total'),
+                DB::raw('SUM('.self::GROSS_EXPR.') as total'),
                 DB::raw('COUNT(*) as cnt'),
             )
             ->groupBy('source_type', 'currency')
@@ -362,9 +393,7 @@ class CreatorOpportunityService
             }
 
             $label = $map[$class][0];
-            $from = strtoupper($row->currency ?: 'GBP');
-            $amount = (float) $row->total;
-            $converted = $from === $currency ? $amount : (float) Helpers::priceFormat($from, $amount, $currency);
+            $converted = $this->convert((float) $row->total, $row->currency, $currency);
 
             $totals[$label]['total'] += $converted;
             $totals[$label]['count'] += (int) $row->cnt;
@@ -385,21 +414,18 @@ class CreatorOpportunityService
         // Boundary for "spend this calendar month", used alongside the lifetime total.
         $monthStart = now()->startOfMonth()->toDateTimeString();
 
-        $rows = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+        $rows = $this->incomeQuery($creator)
             ->whereNotNull('supporter_id')
             ->select(
                 'supporter_id',
                 'currency',
-                DB::raw('SUM(net_amount + COALESCE(vat_amount, 0)) as gross_total'),
+                DB::raw('SUM('.self::GROSS_EXPR.') as gross_total'),
                 DB::raw('COUNT(*) as purchases'),
                 DB::raw('MIN(transaction_date) as first_purchase'),
                 DB::raw('MAX(transaction_date) as last_purchase'),
             )
             ->selectRaw(
-                'SUM(CASE WHEN transaction_date >= ? THEN net_amount + COALESCE(vat_amount, 0) ELSE 0 END) as month_total',
+                'SUM(CASE WHEN transaction_date >= ? THEN '.self::GROSS_EXPR.' ELSE 0 END) as month_total',
                 [$monthStart]
             )
             ->groupBy('supporter_id', 'currency')
@@ -409,16 +435,8 @@ class CreatorOpportunityService
 
         foreach ($rows as $row) {
             $id = (int) $row->supporter_id;
-            $from = strtoupper($row->currency ?? 'GBP');
-            $amount = (float) $row->gross_total;
-            $converted = $from === $currency
-                ? $amount
-                : (float) Helpers::priceFormat($from, $amount, $currency);
-
-            $monthAmount = (float) $row->month_total;
-            $monthConverted = $from === $currency
-                ? $monthAmount
-                : (float) Helpers::priceFormat($from, $monthAmount, $currency);
+            $converted = $this->convert((float) $row->gross_total, $row->currency, $currency);
+            $monthConverted = $this->convert((float) $row->month_total, $row->currency, $currency);
 
             if (! isset($bySupporter[$id])) {
                 $bySupporter[$id] = [
@@ -490,17 +508,15 @@ class CreatorOpportunityService
      * - new: first ever purchase landed in the window
      * - returning: bought in the window and had bought before it
      * - reactivated: returning, but their previous purchase was >60 days before
-     * - lost: bought before the window, silent for 60+ days
+     * - cooling: last purchase 30–60 days ago — drifting, not yet lost
+     * - lost: silent for 60+ days
      */
     public function retention(User $creator): array
     {
-        $windowStart = now()->subDays(30);
+        $windowStart = now()->subDays(self::COOLING_DAYS);
         $dormantCutoff = now()->subDays(60);
 
-        $rows = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+        $rows = $this->incomeQuery($creator)
             ->whereNotNull('supporter_id')
             ->select(
                 'supporter_id',
@@ -510,7 +526,7 @@ class CreatorOpportunityService
             ->groupBy('supporter_id')
             ->get();
 
-        $new = $returning = $reactivated = $lost = 0;
+        $new = $returning = $reactivated = $cooling = $lost = 0;
         $reactivatedIds = [];
 
         foreach ($rows as $row) {
@@ -518,8 +534,11 @@ class CreatorOpportunityService
             $last = Carbon::parse($row->last_purchase);
 
             if ($last->lt($windowStart)) {
+                // Silent 60+ days = lost; 30–60 days = cooling (still winnable).
                 if ($last->lt($dormantCutoff)) {
                     $lost++;
+                } else {
+                    $cooling++;
                 }
 
                 continue;
@@ -535,11 +554,8 @@ class CreatorOpportunityService
 
             // Bought again after a long silence — worth treating differently
             // from a steady regular.
-            $previous = FinancialTransaction::query()
-                ->where('user_id', $creator->id)
+            $previous = $this->incomeQuery($creator)
                 ->where('supporter_id', $row->supporter_id)
-                ->where('type', 'income')
-                ->whereNotIn('status', self::EXCLUDED_STATUSES)
                 ->where('transaction_date', '<', $windowStart)
                 ->max('transaction_date');
 
@@ -553,11 +569,12 @@ class CreatorOpportunityService
             'new' => $new,
             'returning' => $returning,
             'reactivated' => $reactivated,
+            'cooling' => $cooling,
             // Who they are, so alerts can single out the valuable ones. The
             // page already lists these supporters, so no new exposure.
             'reactivated_ids' => $reactivatedIds,
             'lost' => $lost,
-            'window_days' => 30,
+            'window_days' => self::COOLING_DAYS,
         ];
     }
 
@@ -565,15 +582,20 @@ class CreatorOpportunityService
     private const BIG_PURCHASE_GBP = 100.0;
 
     /** Notable changes worth surfacing at the top of the page. */
-    public function alerts(User $creator, $supporters, array $retention): array
+    public function alerts(User $creator, $supporters, array $retention, string $currency = 'GBP'): array
     {
         $alerts = [];
-        $windowStart = now()->subDays($retention['window_days'] ?? 30);
+        $windowStart = now()->subDays($retention['window_days'] ?? self::COOLING_DAYS);
+
+        // Thresholds are defined in GBP but supporter spend is in the display
+        // currency — convert once so a non-GBP creator's alerts don't misfire.
+        $highValue = $this->convert(self::HIGH_VALUE_GBP, 'GBP', $currency);
+        $platinum = $this->convert(self::PLATINUM_SPEND_GBP, 'GBP', $currency);
 
         // Level 4+ (engagement score ≥ 70) — filter on score, not the label, so a
         // future rename of the levels can't silently break these alerts.
         $topTier = $supporters->filter(
-            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 70
+            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= self::LEVEL4_MIN
         );
 
         if ($topTier->isNotEmpty()) {
@@ -609,7 +631,7 @@ class CreatorOpportunityService
         // has already passed the high-value line. They arrived spending big —
         // the moment to make them feel seen.
         $newWhales = $supporters->filter(
-            fn ($s) => ($s['lifetime_spent'] ?? 0) >= self::HIGH_VALUE_GBP
+            fn ($s) => ($s['lifetime_spent'] ?? 0) >= $highValue
                 && ! empty($s['first_purchase'])
                 && Carbon::parse($s['first_purchase'])->gte($windowStart)
         );
@@ -620,15 +642,14 @@ class CreatorOpportunityService
                 'severity' => 'good',
                 'title' => 'A big supporter arrived this month',
                 'detail' => $newWhales->count().' new supporter(s) have already passed '
-                    .number_format(self::HIGH_VALUE_GBP).' in purchases within their first month.',
+                    .$this->fmtMoney($highValue, $currency).' in purchases within their first month.',
             ];
         }
 
-        // Fresh arrival at the very top: a Level 5 supporter (score ≥ 90) whose
-        // first purchase from this creator landed in the window. Distinct from the
-        // combined top-tier (Level 4+) count above.
+        // New Platinum: a high-SPEND supporter (client's Platinum is a money tier,
+        // not the engagement Level) whose first purchase landed in the window.
         $newPlatinum = $supporters->filter(
-            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 90
+            fn ($s) => ($s['lifetime_spent'] ?? 0) >= $platinum
                 && ! empty($s['first_purchase'])
                 && Carbon::parse($s['first_purchase'])->gte($windowStart)
         );
@@ -637,8 +658,9 @@ class CreatorOpportunityService
             $alerts[] = [
                 'key' => 'new_platinum',
                 'severity' => 'good',
-                'title' => 'A new top-level supporter',
-                'detail' => $newPlatinum->count().' Level 5 supporter(s) started buying from you this month.',
+                'title' => 'A new Platinum supporter',
+                'detail' => $newPlatinum->count().' supporter(s) have already spent over '
+                    .$this->fmtMoney($platinum, $currency).' with you within their first month.',
             ];
         }
 
@@ -648,7 +670,7 @@ class CreatorOpportunityService
 
         $returningWhales = $supporters->filter(
             fn ($s) => in_array((int) $s['supporter_id'], $reactivatedIds, true)
-                && ($s['lifetime_spent'] ?? 0) >= self::HIGH_VALUE_GBP
+                && ($s['lifetime_spent'] ?? 0) >= $highValue
         );
 
         if ($returningWhales->isNotEmpty()) {
@@ -660,8 +682,7 @@ class CreatorOpportunityService
             ];
         }
 
-        // High-value purchase: one single order past the line, inside the
-        // window. The sum can hide it; the event deserves its own flag.
+        // High-value purchase: one single order past the line, inside the window.
         $big = $this->biggestRecentPurchaseGbp($creator, $windowStart);
 
         if ($big !== null && $big >= self::BIG_PURCHASE_GBP) {
@@ -669,8 +690,8 @@ class CreatorOpportunityService
                 'key' => 'high_value_purchase',
                 'severity' => 'good',
                 'title' => 'A high-value purchase landed',
-                'detail' => 'Your biggest single purchase in the last '.($retention['window_days'] ?? 30)
-                    .' days was £'.number_format($big, 2).' (GBP equivalent).',
+                'detail' => 'Your biggest single purchase in the last '.($retention['window_days'] ?? self::COOLING_DAYS)
+                    .' days was '.$this->fmtMoney($this->convert($big, 'GBP', $currency), $currency).'.',
             ];
         }
 
@@ -685,22 +706,17 @@ class CreatorOpportunityService
      */
     private function biggestRecentPurchaseGbp(User $creator, $windowStart): ?float
     {
-        $rows = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+        $rows = $this->incomeQuery($creator)
             ->whereNotNull('supporter_id')
             ->where('transaction_date', '>=', $windowStart)
-            ->select('currency', DB::raw('MAX(net_amount + COALESCE(vat_amount, 0)) as biggest'))
+            ->select('currency', DB::raw('MAX('.self::GROSS_EXPR.') as biggest'))
             ->groupBy('currency')
             ->get();
 
         $best = null;
 
         foreach ($rows as $row) {
-            $from = strtoupper($row->currency ?: 'GBP');
-            $amount = (float) $row->biggest;
-            $gbp = $from === 'GBP' ? $amount : (float) Helpers::priceFormat($from, $amount, 'GBP');
+            $gbp = $this->convert((float) $row->biggest, $row->currency, 'GBP');
 
             if ($best === null || $gbp > $best) {
                 $best = $gbp;
@@ -717,12 +733,16 @@ class CreatorOpportunityService
      * contact details, so anything outbound is framed as "through your own
      * channels, if appropriate".
      */
-    public function suggestedActions(User $creator, $supporters, array $retention): array
+    public function suggestedActions(User $creator, $supporters, array $retention, string $currency = 'GBP'): array
     {
         $actions = [];
 
+        // GBP thresholds vs display-currency spend — convert once (see alerts()).
+        $highValueThreshold = $this->convert(self::HIGH_VALUE_GBP, 'GBP', $currency);
+        $platinumThreshold = $this->convert(self::PLATINUM_SPEND_GBP, 'GBP', $currency);
+
         $highValue = $supporters->firstWhere(
-            fn ($s) => $s['lifetime_spent'] >= self::HIGH_VALUE_GBP && ! $s['at_risk']
+            fn ($s) => $s['lifetime_spent'] >= $highValueThreshold && ! $s['at_risk']
         );
 
         if ($highValue) {
@@ -730,7 +750,7 @@ class CreatorOpportunityService
                 'key' => 'thank_high_value',
                 'title' => 'Thank your top supporter',
                 'detail' => ($highValue['name'] ?? 'A supporter').' has spent '
-                    .number_format($highValue['lifetime_spent'], 2)
+                    .$this->fmtMoney((float) $highValue['lifetime_spent'], $currency)
                     .' with you across '.$highValue['purchases'].' purchase(s). A personal thank-you goes a long way.',
                 'hint' => 'Consider reaching out through your own social channels, if appropriate.',
             ];
@@ -757,28 +777,29 @@ class CreatorOpportunityService
             ];
         }
 
-        // Contact the very top of the ladder (Level 4+). Called out separately
-        // from a general follow-up because they are the few supporters most worth
-        // a personal touch.
+        // Contact a Platinum supporter — a high-SPEND supporter (client's Platinum
+        // is a money tier). Called out separately from a general follow-up.
         $platinumSupporter = $supporters->first(
-            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= 70
+            fn ($s) => ($s['lifetime_spent'] ?? 0) >= $platinumThreshold
         );
 
         if ($platinumSupporter) {
             $actions[] = [
                 'key' => 'contact_platinum',
-                'title' => 'Contact your top supporter',
-                'detail' => ($platinumSupporter['name'] ?? 'A supporter').' is '
-                    .($platinumSupporter['vip']['level'] ?? 'top-level').' on the platform and has spent '
-                    .number_format($platinumSupporter['lifetime_spent'], 2).' with you.',
+                'title' => 'Contact your Platinum supporter',
+                'detail' => ($platinumSupporter['name'] ?? 'A supporter').' has spent '
+                    .$this->fmtMoney((float) $platinumSupporter['lifetime_spent'], $currency)
+                    .' with you — one of your most valuable supporters.',
                 'hint' => 'Consider reaching out through your own social channels, if appropriate.',
             ];
         }
 
-        // Follow up with a Level 3 supporter who is still active — a nudge keeps
-        // them climbing toward the top levels.
+        // Follow up with an engaged VIP (Level 3, score 50–69) who is still active
+        // — a nudge keeps them climbing toward the top levels.
         $goldSupporter = $supporters->first(
-            fn ($s) => ((float) ($s['vip']['score'] ?? 0) >= 50 && (float) ($s['vip']['score'] ?? 0) < 70) && ! $s['at_risk']
+            fn ($s) => (float) ($s['vip']['score'] ?? 0) >= self::LEVEL3_MIN
+                && (float) ($s['vip']['score'] ?? 0) < self::LEVEL4_MIN
+                && ! $s['at_risk']
         );
 
         if ($goldSupporter) {
