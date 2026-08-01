@@ -92,12 +92,18 @@ class Kernel extends ConsoleKernel
                     'error' => $e->getMessage(),
                 ]);
             }
+            // ⚠️ The 5 is the lock expiry in MINUTES, and it is not optional here. Laravel's
+            // default is 1440 (a day): this task runs every minute, so a process killed
+            // mid-run would leave the mutex held until tomorrow — and the heartbeat is what
+            // reports whether the scheduler is alive at all, so its own lock jamming takes
+            // the diagnostic dark without a sound.
+            //
             // ⚠️ name() is REQUIRED before withoutOverlapping() on a closure task. Laravel's
             // CallbackEvent throws a LogicException without it, and that exception is raised
             // while the schedule is being BUILT — so it does not disable this one entry, it
             // takes down every scheduled task in the application, silently. Verify any change
             // here with `php artisan schedule:list`, which is where it surfaces.
-        })->name('scheduler-heartbeat')->everyMinute()->withoutOverlapping();
+        })->name('scheduler-heartbeat')->everyMinute()->withoutOverlapping(5);
 
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
 

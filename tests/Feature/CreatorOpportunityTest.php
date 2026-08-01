@@ -162,12 +162,38 @@ class CreatorOpportunityTest extends TestCase
         $lost = $this->makeUser();
         $this->purchase($creator, $lost, 100);
 
+        // Last purchase 45 days ago (30–60d) = cooling, not lost.
+        $cooling = $this->makeUser();
+        $this->purchase($creator, $cooling, 45);
+
         $retention = $this->service()->retention($creator);
 
         $this->assertSame(1, $retention['new']);
         $this->assertSame(2, $retention['returning'], 'Both returning and reactivated also count as returning.');
         $this->assertSame(1, $retention['reactivated']);
+        $this->assertSame(1, $retention['cooling'], 'A 30–60 day silent supporter is cooling, not lost.');
         $this->assertSame(1, $retention['lost']);
+    }
+
+    public function test_revenue_by_type_reports_piggy_bank_not_tips(): void
+    {
+        $creator = $this->makeUser();
+        $supporter = $this->makeUser();
+        $this->purchase($creator, $supporter, 3, 40.00);
+
+        $data = $this->service()->for($creator);
+
+        $byLabel = collect($data['revenue_by_type'])->keyBy('label');
+
+        // The purchase helper records a tip (TipGoalsPayment) — it must surface as
+        // "Piggy Bank" (content-first), never the banned word "Tips".
+        $this->assertArrayHasKey('Piggy Bank', $byLabel->all());
+        $this->assertArrayNotHasKey('Tips', $byLabel->all());
+        $this->assertGreaterThan(0, $byLabel['Piggy Bank']['total']);
+
+        // Every feature is returned even at zero, and the tier bar is present.
+        $this->assertArrayHasKey('Memberships', $byLabel->all());
+        $this->assertIsArray($data['tiers']);
     }
 
     public function test_suggested_actions_include_publishing_what_is_missing(): void

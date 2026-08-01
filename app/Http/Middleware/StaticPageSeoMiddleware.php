@@ -42,6 +42,8 @@ class StaticPageSeoMiddleware
             'notifications',
             'support',
             'refer-and-earn',
+            // Coming-soon screen while RYE is kill-switched — nothing to index.
+            'giftstore',
         ];
         $noIndexPrefixes = [
             'reset-password/',
@@ -176,9 +178,12 @@ class StaticPageSeoMiddleware
                 'title' => 'Pride on Spenny Piggy — Celebrating LGBTQ+ Creators 🏳️‍🌈',
                 'description' => 'Spenny Piggy proudly supports and celebrates our LGBTQ+ creators. Discover amazing talent, support diverse voices, and join an inclusive community.',
             ],
+            // Not open yet — the page is a coming-soon screen, so the meta says so
+            // rather than advertising a store nobody can buy from. Content-first
+            // wording only (no gift/tip/donation framing).
             'giftstore' => [
-                'title' => 'Spenny Piggy Gift Store — Buy Gifts for Your Favorite Creators',
-                'description' => 'Browse the Spenny Piggy Gift Store to send physical or digital gifts to your favorite creators. Safe, secure, and completely private delivery directly to them.',
+                'title' => 'Oink Store — Coming soon',
+                'description' => 'The Oink Store is not open yet. Soon you will be able to buy physical products from creators on Spenny Piggy, shipped direct to your door.',
             ],
             'how-spenny-piggy-works' => [
                 'title' => 'How Spenny Piggy Works — Payments & Content',

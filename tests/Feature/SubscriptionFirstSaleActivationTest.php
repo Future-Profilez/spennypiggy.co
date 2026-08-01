@@ -170,6 +170,22 @@ class SubscriptionFirstSaleActivationTest extends TestCase
     }
 
     /**
+     * ⚠️ Stripe rejects the whole Checkout session above 730 days — "The maximum
+     * number of trial period days is 730 (2 years)" — so a creator could not
+     * subscribe at all. This shipped broken at 1095 and was caught in the browser.
+     */
+    public function test_the_free_period_never_exceeds_stripes_trial_ceiling(): void
+    {
+        config()->set('creator_subscription.free_period_days', 1095);
+
+        $this->assertSame(
+            SubscriptionPlan::STRIPE_MAX_TRIAL_DAYS,
+            SubscriptionPlan::freePeriodDays(),
+        );
+        $this->assertLessThanOrEqual(730, SubscriptionPlan::freePeriodDays());
+    }
+
+    /**
      * The webhook and the redirect handler each create their own monthly_charges
      * row, so one Stripe subscription can be described by two local rows. Claiming
      * only the row we happened to read left the other for the next sweep, which
@@ -234,6 +250,111 @@ class SubscriptionFirstSaleActivationTest extends TestCase
         ]);
 
         $this->assertContains($creator->fresh()->subscription_status, [1, 2]);
+    }
+
+    /**
+     * ⚠️ The parked trial date sits ~2 years out and is NOT cleared when billing
+     * starts, so any status that reads as "still in the free period" keeps the
+     * creator selling for two years. A failed card did exactly that: the webhook
+     * writes 'failed', which slipped past the original deny-list check.
+     *
+     * @dataProvider nonFreePeriodStatuses
+     */
+    public function test_only_a_real_free_period_counts_as_eligible(string $status): void
+    {
+        $creator = $this->creator();
+        $this->parkedSubscription($creator, [
+            'status' => $status,
+            'current_start_trial_date' => now()->subDays(5),
+            'current_end_trial_date' => now()->addDays(SubscriptionPlan::freePeriodDays()),
+        ]);
+
+        $this->assertNotContains(
+            $creator->fresh()->subscription_status,
+            [1, 2],
+            "A '{$status}' subscription must not read as a live free period.",
+        );
+    }
+
+    public static function nonFreePeriodStatuses(): array
+    {
+        return [
+            'card payment failed' => ['failed'],
+            'checkout abandoned' => ['initiated'],
+            'cancelled' => ['canceled'],
+        ];
+    }
+
+    /** @dataProvider freePeriodStatuses */
+    public function test_a_real_free_period_is_eligible(string $status): void
+    {
+        $creator = $this->creator();
+        $this->parkedSubscription($creator, [
+            'status' => $status,
+            'current_start_trial_date' => now()->subDays(5),
+            'current_end_trial_date' => now()->addDays(SubscriptionPlan::freePeriodDays()),
+        ]);
+
+        $this->assertContains($creator->fresh()->subscription_status, [1, 2]);
+    }
+
+    public static function freePeriodStatuses(): array
+    {
+        return [
+            'trialing' => ['trialing'],
+            'trial ending' => ['trial_ending'],
+        ];
+    }
+
+    /**
+     * Cancelling before any payment revokes access at once; after a payment it
+     * runs to the end of the paid period. These assert the CONDITION the
+     * controller branches on, since the branch itself reaches Stripe.
+     *
+     * @dataProvider cancellationStates
+     */
+    public function test_cancellation_timing_is_decided_by_whether_billing_started(
+        array $attributes,
+        bool $expectedImmediate,
+        string $why,
+    ): void {
+        $creator = $this->creator();
+        $charge = $this->parkedSubscription($creator, $attributes);
+
+        $isBeforePayment = in_array($charge->status, ['trialing', 'trial_ending'], true)
+            && ! $charge->current_start_subscription_date
+            && ! $charge->first_sale_activated_at;
+
+        $this->assertSame($expectedImmediate, $isBeforePayment, $why);
+    }
+
+    public static function cancellationStates(): array
+    {
+        return [
+            'never billed' => [
+                ['status' => 'trialing'],
+                true,
+                'Nothing was paid, so nothing is owed and access stops at once.',
+            ],
+            'billing already started' => [
+                ['status' => 'paid', 'current_start_subscription_date' => '2026-07-01'],
+                false,
+                'A paid period must run to its end.',
+            ],
+            // ⚠️ The race this exists for: the claim is taken BEFORE Stripe is
+            // told to charge and the status is only flipped after, so for a
+            // moment a charged creator still looks like a free-period one.
+            'charged, status not yet flipped' => [
+                ['status' => 'trialing', 'first_sale_activated_at' => '2026-07-31 12:00:00'],
+                false,
+                'The creator has just been charged — access must not be revoked.',
+            ],
+            'activation failed, claim released' => [
+                ['status' => 'trialing', 'first_sale_activated_at' => null],
+                true,
+                'A released claim means billing never started.',
+            ],
+        ];
     }
 
     public function test_plan_arithmetic_and_copy_come_from_one_place(): void

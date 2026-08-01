@@ -26,7 +26,12 @@ LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/nu
 open_tab "php artisan serve --host=0.0.0.0 --port=8000"
 sleep 0.5
 
-open_tab "php artisan queue:work --tries=3 --timeout=60"
+# ⚠️ --queue names EVERY queue a job might land on, not just the default.
+# A job dispatched to a queue no worker listens to does not fail and does not
+# warn — it simply sits. One sat on `low` for 64 days before anyone noticed,
+# because the code that put it there had since been deleted while the row
+# stayed behind. Naming them here means a stray dispatch still gets run.
+open_tab "php artisan queue:work --queue=default,low --tries=3 --timeout=60"
 sleep 0.5
 
 open_tab "php artisan schedule:work"

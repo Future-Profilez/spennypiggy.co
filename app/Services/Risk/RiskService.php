@@ -272,7 +272,13 @@ class RiskService
             return;
         }
 
-        $oldRiskLevel = $metric->risk_level;
+        // A metric row that has never been evaluated (freshly created, or a legacy
+        // row with a NULL column) has no previous level. Treat that as 'low' — the
+        // baseline — so the first ever evaluation is never reported as a change.
+        // Without this, every new creator was emailed "Restrictions Lifted" for a
+        // restriction that was never applied.
+        $isFirstEvaluation = $metric->wasRecentlyCreated || $metric->risk_level === null || $metric->risk_level === '';
+        $oldRiskLevel = $isFirstEvaluation ? 'low' : $metric->risk_level;
 
         // Fetch Settings (with defaults)
         $thresholds = RiskSetting::get('risk_thresholds');
@@ -348,7 +354,10 @@ class RiskService
             // Notify Creator
             $this->notifyCreatorOfRiskChange($metric->creator_id, $newRiskLevel, $newReservePercent);
         } else {
-            // Even if level didn't change, values might need updating if config changed
+            // Even if level didn't change, values might need updating if config changed.
+            // Write the level too, so a legacy row holding NULL is normalised instead of
+            // being re-detected as a first evaluation on every run.
+            $metric->risk_level = $newRiskLevel;
             $metric->reserve_percent = $newReservePercent;
             $metric->payout_delay_days = $newPayoutDelay;
             $metric->save();

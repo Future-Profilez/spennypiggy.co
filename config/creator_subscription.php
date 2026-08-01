@@ -18,7 +18,7 @@
 | `free_until_first_sale` is deliberately a switch, not a hard-coded rule:
 | the client's intent is to run it during the platform's early phase and to
 | revisit charging from day one once there is a track record. Turning it off
-| restores the old behaviour (a `legacy_trial_days` trial, then billing).
+| restores day-one billing: the card is charged as soon as it is added.
 */
 
 return [
@@ -31,25 +31,21 @@ return [
 
     /*
     | When true, the creator's card is saved but nothing is taken until their
-    | first completed sale. When false, `legacy_trial_days` applies instead.
+    | first completed sale.
     */
-    'free_until_first_sale' => (bool) env('CREATOR_SUBSCRIPTION_FREE_UNTIL_FIRST_SALE', true),
+    'free_until_first_sale' => true,
 
     /*
     | Stripe has no "infinite trial" — `trial_end` is always a timestamp. While
     | we wait for a first sale the subscription is parked on a trial this far
     | out, and SubscriptionActivationService ends it the moment a sale lands.
     |
-    | Long enough that no genuine creator ever reaches it; short enough that a
-    | dormant subscription does not sit in Stripe forever.
+    | ⚠️ Stripe caps a trial at 730 days (2 years) and rejects the entire
+    | Checkout session above it — SubscriptionPlan::freePeriodDays() clamps to
+    | that ceiling, so a larger value here is silently reduced rather than
+    | breaking every creator's checkout.
     */
-    'free_period_days' => (int) env('CREATOR_SUBSCRIPTION_FREE_PERIOD_DAYS', 1095),
-
-    /*
-    | Only used when `free_until_first_sale` is false. This was the live rule
-    | until 31 July 2026.
-    */
-    'legacy_trial_days' => (int) env('CREATOR_SUBSCRIPTION_TRIAL_DAYS', 3),
+    'free_period_days' => (int) env('CREATOR_SUBSCRIPTION_FREE_PERIOD_DAYS', 730),
 
     /*
     | One set of words for every surface — the activate screen, the dashboard

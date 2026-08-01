@@ -25,7 +25,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
                            line-height:30px;padding:0 0 10px 0;text-align:center;">
-                    Your 3-Day Free Trial Has Started!
+                    You're all set — nothing to pay yet
                 </td>
             </tr>
 
@@ -34,7 +34,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    Welcome <strong style="color:#1A1A1A;">{{ $user->name ?? 'User' }}</strong>! Enjoy full access to all premium features during your trial period.
+                    Welcome <strong style="color:#1A1A1A;">{{ $user->name ?? 'User' }}</strong>! Your creator tools are live. Nothing is charged until you make your first sale.
                 </td>
             </tr>
 
@@ -88,7 +88,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:14px;color:#888888;
                            line-height:20px;padding:0 0 22px 0;text-align:center;">
-                    Your subscription will automatically start once the trial ends. Manage it anytime. ✨
+                    Your subscription starts automatically after your first sale. Manage it anytime. ✨
                 </td>
             </tr>
 

@@ -138,7 +138,7 @@ const StatusRow = ({ charge, index }) => {
                     ) : (
                         <CircleXIcon ref={iconRef} size={12} duration={1.2} />
                     )}
-                    {charge.status}
+                    {charge.status === 'trialing' || charge.status === 'trial' ? 'No charge yet' : charge.status}
                 </span>
 
                 {charge.status === 'trialing' ? (

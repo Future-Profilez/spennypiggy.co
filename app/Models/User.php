@@ -293,7 +293,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     {
         if (Auth::check() && $this->id === Auth::id()) {
             return MonthlyCharge::where('user_id', $this->id)
-                ->whereIn('status', ['paid', 'trialing', 'active'])
+                ->whereIn('status', ['paid', 'trialing', 'active', 'trial_ending', 'renew'])
                 ->exists();
         }
 
@@ -359,22 +359,30 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
             $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
 
-            // ⚠️ An 'initiated' row is a checkout that was STARTED, not one that
-            // completed — the trial dates are written before the creator is sent
-            // to Stripe. Counting it as an ongoing trial meant abandoning the
-            // Stripe page still granted payment eligibility for the length of the
-            // trial. That was a 3-day hole; under free-until-first-sale the trial
-            // is parked years out, so it would have become a permanent one.
+            // ⚠️ ALLOW-LIST, never a deny-list. Only these statuses are a live
+            // free period; every other row that happens to carry a trial date is
+            // not one.
+            //
+            // The trial date is parked ~2 years out under free-until-first-sale
+            // and is NOT cleared when the subscription starts billing, so any
+            // status that slips through here keeps selling for two years. This
+            // was first written as `!== 'initiated'` and a failed card promptly
+            // slipped past it: `invoice.payment_failed` sets the row to 'failed',
+            // which read as an ongoing free period and let the creator carry on
+            // indefinitely. On the old 3-day trial that hole was three days wide.
+            //
+            // Add a status here only if it genuinely means "not charged yet, by
+            // design".
             $isTrialOngoing = $trialEndCarbon
                 && $now->lessThan($trialEndCarbon)
-                && $subscription->status !== 'initiated';
+                && in_array($subscription->status, ['trialing', 'trial_ending'], true);
             // Check subscription status from MonthlyCharge table instead of is_subscribed column
             // A 'canceled' subscription is still ACTIVE if the end date has not been reached yet
             $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active', 'canceled']) && $subEndCarbon && $now->lessThan($subEndCarbon);
             $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
 
-            // Check for trialing status first, before other conditions
-            if ($subscription->status === 'trialing') {
+            // Check for trialing status first, before other conditions, only if dates are not set or trial is ongoing
+            if ($subscription->status === 'trialing' && (! $subscription->current_end_trial_date || $now->lessThan($trialEndCarbon))) {
                 return 2; // FREE_TRIAL
             }
 
@@ -475,7 +483,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
 
         $displayMap = [
             1 => 'Active Subscription',
-            2 => 'Free Trial',
+            // Not "Free Trial": under free-until-first-sale nothing is counting
+            // down, and calling it a trial tells the creator a charge is coming
+            // on a date that does not exist.
+            2 => 'No Charge Yet',
             0 => 'Subscription Expired',
             3 => 'Not Subscribed',
         ];

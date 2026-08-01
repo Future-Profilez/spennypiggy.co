@@ -369,9 +369,24 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 
 // GiftStore Route
+// RYE is still kill-switched (see EnsureRyeEnabled). The store PAGE answers with
+// a coming-soon screen rather than a 404 — every other RYE entry point stays 404'd.
 Route::get('/giftstore', function () {
+    if (! config('services.rye.enabled')) {
+        return Inertia::render('ComingSoon', [
+            // "Oink Store" is what the header calls it — keep the two in step.
+            'title' => 'Oink Store',
+            'message' => "The Oink Store isn't open yet. Soon you'll be able to buy real products from creators and have them shipped straight to your door.",
+            'highlights' => [
+                'Order physical products from the creators you follow.',
+                'Shipped direct to your door, tracked end to end.',
+                'Your address stays private — creators never see it.',
+            ],
+        ]);
+    }
+
     return Inertia::render('rye/GiftStore');
-})->middleware('rye.enabled')->name('giftStore');
+})->name('giftStore');
 
 Route::get('/creators', function () {
     return Inertia::render('creators/Index');
