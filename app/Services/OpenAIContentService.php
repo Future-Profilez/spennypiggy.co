@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\GeneratedText;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -88,9 +89,11 @@ class OpenAIContentService
                         'content_length' => strlen($contentData['content']),
                     ]);
 
+                    // The model is asked for emoji, so this is the path most
+                    // likely to produce one that does not survive the write.
                     return [
-                        'title' => $contentData['title'],
-                        'content' => $contentData['content'],
+                        'title' => GeneratedText::title($contentData['title'], 'Thank you'),
+                        'content' => GeneratedText::body($contentData['content']),
                     ];
                 } else {
                     Log::warning('Failed to parse OpenAI JSON response, falling back to default');
@@ -167,8 +170,8 @@ class OpenAIContentService
         ]);
 
         return [
-            'title' => $template['title'],
-            'content' => $content,
+            'title' => GeneratedText::title($template['title'], 'Thank you'),
+            'content' => GeneratedText::body($content),
         ];
     }
 

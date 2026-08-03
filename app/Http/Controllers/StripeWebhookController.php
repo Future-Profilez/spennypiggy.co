@@ -11,6 +11,7 @@ use App\Jobs\Dispute\SendDisputeCreatedMailJob;
 use App\Jobs\Dispute\SendDisputeUpdatedMailJob;
 use App\Jobs\FraudWarning\SendFraudWarningMailJob;
 use App\Jobs\MembershipMail;
+use App\Jobs\MonthlySubscribedJob;
 use App\Jobs\NotificationSave;
 use App\Jobs\PiggyPotContributionMailToUser;
 use App\Jobs\ProcessWishItemDeliverable;
@@ -653,7 +654,7 @@ class StripeWebhookController extends Controller
                 $subs->save();
 
                 // Create new active cycle WITHOUT trial dates
-                MonthlyCharge::create([
+                $renewed = MonthlyCharge::create([
                     'user_id' => $subs->user_id,
                     'name' => $subs->name ?? $customer->name ?? 'Creator',
                     'email' => $subs->email ?? $customer->email,
@@ -680,6 +681,22 @@ class StripeWebhookController extends Controller
                 if ($subs->user) {
                     $subs->user->is_subscribed = 1;
                     $subs->user->save();
+                }
+
+                // ⚠️ Tell the creator their card was charged again. A renewal was
+                // silent until now — Stripe took the money and nothing said so,
+                // which is how a recurring charge turns into a support ticket or a
+                // chargeback. Never fatal: the money has already moved.
+                try {
+                    // The row just created — never re-queried. Looking it up again by
+                    // (stripe_id, status) and taking the latest can pick a different
+                    // row if two renewal events land together, and would then email
+                    // the creator about a period other than the one just charged.
+                    if ($renewed->email) {
+                        MonthlySubscribedJob::dispatch($renewed->email, $renewed, 'success');
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('MonthlyCharge: could not send the renewal email: '.$e->getMessage());
                 }
 
                 Log::info('MonthlyCharge: Renewal processed', ['sub_id' => $subscriptionId]);

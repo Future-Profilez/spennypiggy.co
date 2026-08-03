@@ -143,13 +143,63 @@ export default function PiggyPotModal({
     };
 
     return (
-        <Popup size="xl" classes="hidden" action={show} onHide={handleClose}>
-            <div className="p-6">
-                <h3 className="font-GillSans uppercase text-3xl mb-6">
-                    {isEditing ? "Edit Piggy Pot" : "Create Piggy Pot"}
-                </h3>
+        // ⚠️ This is a SECOND Piggy Pot form. `Pages/PiggyPots/Index.jsx` has its
+        // own on `ItemFormShell`; this one is what the dashboard opens, so both
+        // have to look like the same product. Full page for the same reason as
+        // the post composer and the item shell — creating something to sell is
+        // not a task for a 576px box.
+        <Popup
+            size="xl"
+            classes="hidden"
+            fullscreen
+            hidecontrols
+            hideclose
+            action={show}
+            onHide={handleClose}
+        >
+            <div className="flex min-h-0 flex-1 flex-col bg-[#F2EFE7]">
+                <header className="shrink-0 border-b-[3px] border-black bg-black px-4 py-3 sm:px-6">
+                    <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            aria-label="Close"
+                            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white/25 text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="truncate font-GillSans text-lg uppercase leading-none tracking-wide text-white sm:text-2xl">
+                                {isEditing ? "Edit Piggy Pot" : "Create Piggy Pot"}
+                            </h3>
+                            <p className="mt-1 truncate text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+                                Sell content towards a visible goal
+                            </p>
+                        </div>
+
+                        {/* Reachable without scrolling the whole form. Submits the
+                            form below by id, so there is one handler, not two. */}
+                        <button
+                            type="submit"
+                            form="piggy-pot-form"
+                            disabled={processing}
+                            className="hidden h-11 shrink-0 items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
+                        >
+                            {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
+                        </button>
+                    </div>
+                </header>
+
+                {/* The action scrolls with the form — a pinned bar covered the
+                    last field, and on a phone it stacked on the bottom nav. */}
+                <div className="customScrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-28 sm:px-6 md:py-8">
+                    <div className="mx-auto w-full max-w-3xl rounded-box border-[3px] border-black bg-white p-5 sm:p-6">
+
+                <form id="piggy-pot-form" onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-gray-900 mb-1">
                             Content Title*
@@ -440,16 +490,18 @@ export default function PiggyPotModal({
                         </div>
                     )}
 
-                    <div className="modal-action flex justify-center space-x-4 mt-8">
+                    <div className="modal-action mt-8">
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full mt-2 px-8 py-3 border-2 border-black rounded-full font-bold bg-pink-500 hover:bg-pink-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
+                            className="flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-sm font-black uppercase tracking-[0.14em] text-white transition-all disabled:opacity-50"
                         >
-                            {processing ? "Saving..." : "Save Piggy Pot"}
+                            {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
                         </button>
                     </div>
                 </form>
+                    </div>
+                </div>
             </div>
         </Popup>
     );

@@ -26,6 +26,7 @@ class FeatureSuggestionStatusMail extends Mailable
         $subjects = [
             'under_review' => 'Your idea is under review',
             'planned' => 'Great news! Your idea is planned',
+            'accepted' => 'Great news! Your idea has been accepted',
             'rejected' => 'An update on your feature suggestion',
         ];
         $subject = $subjects[$this->suggestion->status] ?? 'Update on your feature suggestion';

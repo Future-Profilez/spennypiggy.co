@@ -9,7 +9,6 @@ use App\Jobs\SendContractMail;
 use App\Models\AuthRedirect;
 use App\Models\FanContract;
 use App\Models\FounderBonus;
-use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\RyeProduct;
 use App\Models\SocialLinks;
@@ -23,6 +22,7 @@ use App\SeoMeta;
 use App\Services\SeoTemplateService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -282,49 +282,10 @@ class AuthenticatedSessionController extends Controller
 
             $this->setSeoMetaTags($user, $username);
 
-            $now = Carbon::now();
-            $subscription = MonthlyCharge::where('user_id', $user->id)
-                ->where(function ($query) use ($now) {
-                    $query->where(function ($q) use ($now) {
-                        $q->whereDate('current_start_subscription_date', '<=', $now)
-                            ->whereDate('current_end_subscription_date', '>=', $now);
-                    })->orWhere(function ($q) use ($now) {
-                        $q->whereDate('current_start_trial_date', '<=', $now)
-                            ->whereDate('current_end_trial_date', '>=', $now);
-                    });
-                })
-                ->newestFirst()
-                ->first();
-
-            if (! $subscription) {
-                $subscription = MonthlyCharge::where('user_id', $user->id)
-                    ->newestFirst()
-                    ->first();
-            }
-
-            $monthlyCharges = null;
-            if ($subscription) {
-                $fmt = function ($date) {
-                    try {
-                        return $date ? Carbon::parse($date)->format('d F Y') : null;
-                    } catch (\Throwable $e) {
-                        return null;
-                    }
-                };
-
-                $monthlyCharges = [
-                    'id' => $subscription->id,
-                    'uuid' => $subscription->uuid,
-                    'status' => $subscription->status ?? 'pending',
-                    'amount' => (float) ($subscription->amount ?? 0),
-                    'currency' => $subscription->currency ?? 'GBP',
-                    'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
-                    'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
-                    'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
-                    'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
-                    'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                ];
-            }
+            // ⚠️ One builder for BOTH page payloads — see App\Support\SubscriptionPayload.
+            // The account page had its own copy of this array and the two drifted.
+            $subscription = SubscriptionPayload::currentRow($user);
+            $monthlyCharges = SubscriptionPayload::for($subscription);
 
             $sociallinks = null;
             $userIntro = null;
@@ -410,6 +371,16 @@ class AuthenticatedSessionController extends Controller
                 'social_proof' => $user->role == 1 ? $this->profileService->getProfileSocialProof($user->id) : null,
                 'viewer_support' => $user->role == 1
                     ? $this->profileService->getViewerSupportHistory($user->id, Auth::id())
+                    : null,
+                // Supporter (role 0) profiles: engagement level + activity counts.
+                // Only on the About page — the other tabs never render it.
+                'gifter_stats' => $user->role == 0 && $page === 'about'
+                    ? $this->profileService->getGifterStats($user->id)
+                    : null,
+                // ⚠️ OWNER ONLY — see getGifterCreators(). The card shows the
+                // count to everyone; who they back is the supporter's own view.
+                'gifter_creators' => $user->role == 0 && $page === 'about' && Auth::id() === $user->id
+                    ? $this->profileService->getGifterCreators($user->id)
                     : null,
             ];
         };
@@ -1039,6 +1010,25 @@ class AuthenticatedSessionController extends Controller
             return response()->json(['status' => false, 'msg' => 'Invalid verification code.'], 422);
         }
 
+        // 🚨 Refuse a suspended account BEFORE anything is validated or spent.
+        //
+        // `signIn()` refuses one too, but it does so up to PENDING_TTL_MINUTES (15)
+        // before the OTP is entered — so an admin suspending someone inside that
+        // window was overridden and the person still completed a full remembered
+        // session. The password branch had the same hole from the other direction.
+        //
+        // ⚠️ It must sit ABOVE the code checks, not inside `if ($valid)`: a backup
+        // code is claimed while `$valid` is being computed, so a guard placed lower
+        // spent one single-use recovery code per refused attempt.
+        if ((int) ($user->suspended_account ?? 0) === 1) {
+            $request->session()->forget('google_2fa_pending');
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'This account has been suspended. Contact support for help.',
+            ], 403);
+        }
+
         $valid = false;
 
         if (! empty($otp)) {
@@ -1046,13 +1036,26 @@ class AuthenticatedSessionController extends Controller
         }
 
         if (! empty($backup_code)) {
-            $backup = UserBackupCode::where('user_id', $user->id)->get();
-            foreach ($backup as $value) {
-                $code = decrypt($value->code);
+            // ⚠️ The DELETE is the claim, and its affected-row count is the verdict.
+            // Checking and then deleting are two steps, so two concurrent requests
+            // could both pass before either delete committed and one code would sign
+            // in twice.
+            foreach (UserBackupCode::where('user_id', $user->id)->get() as $value) {
+                try {
+                    $code = decrypt($value->code);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+
                 // Constant-time comparison to avoid timing side-channels.
                 if (hash_equals((string) $code, (string) $backup_code)) {
-                    $valid = true;
-                    $value->delete();
+                    $claimed = UserBackupCode::where('id', $value->id)->delete();
+
+                    if ($claimed > 0) {
+                        $valid = true;
+                    }
+
+                    break;
                 }
             }
         }

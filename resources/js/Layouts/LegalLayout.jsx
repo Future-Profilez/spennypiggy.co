@@ -39,7 +39,7 @@ export default function LegalLayout({ children, activePage }) {
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-100">
+                    <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center shadow-md shadow-pink-100">
                         <ShieldCheck className="text-white" size={16} />
                     </div>
                     <span className="font-bold text-gray-900 text-sm tracking-tight uppercase">Legal Center</span>
@@ -65,7 +65,7 @@ export default function LegalLayout({ children, activePage }) {
 
                     <div className="mb-8">
                         <div className="hidden md:flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-200">
+                            <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-200">
                                 <ShieldCheck className="text-white" size={20} />
                             </div>
                             <div>
@@ -89,7 +89,7 @@ export default function LegalLayout({ children, activePage }) {
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className={`flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-[30px]  transition-all duration-200 group ${
                                             isActive
-                                                ? 'bg-pink-600 text-white shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-100 translate-x-1'
+                                                ? 'bg-pink-600 text-white shadow-md shadow-pink-100 translate-x-1'
                                                 : 'text-gray-500 hover:bg-pink-50 hover:text-[#FF007F]'
                                         }`}
                                     >

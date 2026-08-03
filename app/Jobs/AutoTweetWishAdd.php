@@ -37,7 +37,7 @@ class AutoTweetWishAdd implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->wish_item->user_id);
-        if (! empty($user->twitter_token->token)) {
+        if ($user && $user->twitter_token && ! empty($user->twitter_token->token)) {
             $payload = [
                 'user_link' => route('user.show', ['username' => $user->username, '_t' => time()]),
                 // "user_link" =>  "https://uk.spennypiggy.co/jacksgifts?_t=".time()

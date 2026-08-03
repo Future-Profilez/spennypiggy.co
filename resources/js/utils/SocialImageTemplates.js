@@ -11,7 +11,7 @@ import socialbg from "../../assets/social-bg.png";
  */
 export function renderProfileCard({ avatarUid, name, username }) {
     return `
-        <div id="card-to-capture" class="dot-pattern relative my-[300px] flex items-center p-6 w-[600px] h-[337.5px] text-white shadow-[4px_4px_0px_0px_#FF007F]xl">
+        <div id="card-to-capture" class="dot-pattern relative my-[300px] flex items-center p-6 w-[600px] h-[337.5px] text-white shadow-2xl">
             <img src="${socialbg}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
 
             <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>

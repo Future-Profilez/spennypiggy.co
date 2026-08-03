@@ -250,7 +250,7 @@ export default function Index({
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
+                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
                             <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -476,7 +476,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -711,7 +711,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-[4px_4px_0px_0px_#FF007F]lack overflow-hidden rounded-[30px]  ">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History

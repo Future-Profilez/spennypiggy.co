@@ -5,7 +5,9 @@ import { useState, useEffect, Fragment } from "react";
 import GifterFeed from "./GifterFeed";
 import GifterPurchasesTab from "./GifterPurchasesTab";
 import ActivateCard from "./ActivateCard";
-import { Ban, Unlock } from "lucide-react";
+import { Ban, Unlock, CircleUserRound, Rss, ShoppingBag } from "lucide-react";
+import SupporterLevel from "@/Components/Gifter/SupporterLevel";
+import CreatorsBacked from "@/Components/Gifter/CreatorsBacked";
 import Modal from "@/Components/Modal";
 import { useAlerts } from "@/Components/Alerts";
 
@@ -18,11 +20,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
     // Owner viewing their own profile — gates the private "Purchases" tab.
     const isOwner = !!(auth?.user?.id && user?.id && auth.user.id === user.id);
 
-    const categories = [
-        "about",
-        "feed",
-        ...(isOwner ? ["purchases"] : []),
-    ];
+    const categories = ["about", "feed", ...(isOwner ? ["purchases"] : [])];
     const [selectedIndex, setSelectedIndex] = useState(0);
 
     useEffect(() => {
@@ -36,169 +34,129 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
         }
     }, []);
 
+    // Four review states rendered four near-identical blocks. One shape.
+    const Notice = ({ tone, title, children }) => (
+        <div
+            className={`rounded-box-sm border p-4 ${
+                tone === "warn"
+                    ? "border-[#E5A800]/40 bg-[#FFF8E1]"
+                    : "border-[#D92D20]/30 bg-[#FEF3F2]"
+            }`}
+        >
+            <p
+                className={`text-[11px] font-black uppercase tracking-[0.14em] ${
+                    tone === "warn" ? "text-[#8A6100]" : "text-[#B42318]"
+                }`}
+            >
+                {title}
+            </p>
+            <p className="mt-1.5 text-[13px] font-semibold leading-relaxed text-gray-700">
+                {children}
+            </p>
+        </div>
+    );
+
     const AboutScreen = () => {
-        const shouldShowAboutSection =
-            user?.bio_approved === 1 ||
+        // A bio only shows when it is approved, or to the owner while it is in
+        // review. There is deliberately NO placeholder body text — inventing a
+        // sentence for someone's profile is worse than showing nothing.
+        const showBio =
+            (user?.bio_approved === 1 && user?.bio) ||
             (IsloggedIn && user?.bio_approved === 0 && user?.bio) ||
             (IsloggedIn && user?.bio_approved === 2 && user?.edit_bio_reason);
 
+        const notices = [];
+        if (IsloggedIn && user?.bio_approved === 0 && user?.bio)
+            notices.push({
+                key: "bio-review",
+                tone: "warn",
+                title: "Bio under review",
+                body: "Your bio is waiting for admin approval. It stays hidden from visitors until then.",
+            });
+        if (IsloggedIn && user?.bio_approved === 2 && user?.edit_bio_reason)
+            notices.push({
+                key: "bio-edit",
+                tone: "bad",
+                title: "Bio needs an edit",
+                body: user.edit_bio_reason,
+            });
+        if (IsloggedIn && sLinks?.status === 0)
+            notices.push({
+                key: "links-review",
+                tone: "warn",
+                title: "Social links under review",
+                body: "Your updated links are waiting for admin approval.",
+            });
+        if (IsloggedIn && sLinks?.status === 2 && sLinks?.reason)
+            notices.push({
+                key: "links-edit",
+                tone: "bad",
+                title: "Social links need an edit",
+                body: sLinks.reason,
+            });
+        if (IsloggedIn && sLinks?.status === 3 && sLinks?.reason)
+            notices.push({
+                key: "links-req",
+                tone: "bad",
+                title: "Social links edit requested",
+                body: sLinks.reason,
+            });
+
+        const hasLinks =
+            sLinks &&
+            Object.keys(sLinks).some(
+                (k) => !["status", "reason", "id"].includes(k) && sLinks[k],
+            );
+
         return (
-            <div className="about-sec m-auto max-w-4xl">
-                {shouldShowAboutSection && (
-                    <div className="relative mb-10 rounded-[30px]  overflow-hidden bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group">
-                        <div className="p-8 md:p-12 relative">
-                            <div className="">
-                                <h3 className="text-sm font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
-                                    About Me
-                                </h3>
-                                <p className="text-black text-lg md:text-xl leading-relaxed font-bold">
-                                    {user && user.bio
-                                        ? user.bio
-                                        : "The overall effect is both humbling and inspiring in its clarity."}
-                                </p>
+            <div className="about-sec flex flex-col gap-4">
+                {/* What this person has actually done — the reason to look at
+                    a supporter profile at all. */}
+                <SupporterLevel isOwner={isOwner} />
 
-                                <div className="mt-8 pt-8 border-t-[3px] border-black/20">
-                                    <SocialLinks
-                                        textcolor="text-black hover:text-black transition-all duration-300"
-                                        links={sLinks}
-                                    />
-                                </div>
-                            </div>
+                {/* Owner-only; the component self-hides on a visitor's payload. */}
+                <CreatorsBacked />
 
-                            {IsloggedIn &&
-                            user?.bio_approved === 0 &&
-                            user?.bio ? (
-                                <div className="mt-10 p-6 rounded-xl bg-yellow-100 border-[3px] border-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <p className="text-yellow-800 font-black text-xs tracking-widest uppercase mb-2">
-                                        Under Review
-                                    </p>
-                                    <p className="text-gray-900 font-bold text-sm leading-relaxed">
-                                        Your bio is currently pending approval
-                                        by the admin.
-                                    </p>
-                                </div>
-                            ) : null}
-
-                            {IsloggedIn &&
-                            user?.bio_approved === 2 &&
-                            user?.edit_bio_reason ? (
-                                <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <p className="text-black font-black text-xs tracking-widest uppercase mb-2">
-                                        Review Required
-                                    </p>
-                                    <p className="text-gray-900 font-bold text-sm leading-relaxed">
-                                        {user?.edit_bio_reason}
-                                    </p>
-                                </div>
-                            ) : null}
-
-                            {IsloggedIn && sLinks?.status === 0 ? (
-                                <div className="mt-10 p-6 rounded-xl bg-yellow-100 border-[3px] border-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <p className="text-yellow-800 font-black text-xs tracking-widest uppercase mb-2">
-                                        Social Links Under Review
-                                    </p>
-                                    <p className="text-gray-900 font-bold text-sm leading-relaxed">
-                                        Your updated social links are currently
-                                        pending approval by the admin.
-                                    </p>
-                                </div>
-                            ) : null}
-
-                            {IsloggedIn &&
-                            sLinks?.status === 2 &&
-                            sLinks?.reason ? (
-                                <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <p className="text-black font-black text-xs tracking-widest uppercase mb-2">
-                                        Social Links Review Required
-                                    </p>
-                                    <p className="text-gray-900 font-bold text-sm leading-relaxed">
-                                        {sLinks?.reason}
-                                    </p>
-                                </div>
-                            ) : null}
-
-                            {IsloggedIn &&
-                            sLinks?.status === 3 &&
-                            sLinks?.reason ? (
-                                <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <p className="text-black font-black text-xs tracking-widest uppercase mb-2">
-                                        Social Links Edit Requested
-                                    </p>
-                                    <p className="text-gray-900 font-bold text-sm leading-relaxed">
-                                        {sLinks?.reason}
-                                    </p>
-                                </div>
-                            ) : null}
-                        </div>
+                {notices.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                        {notices.map((n) => (
+                            <Notice key={n.key} tone={n.tone} title={n.title}>
+                                {n.body}
+                            </Notice>
+                        ))}
                     </div>
                 )}
 
-                {/* Supporter Offerings Card */}
-                {IsloggedIn && (
-                    <div className="relative group mb-10">
-                        <div className="relative p-8 md:p-12 rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                                <div>
-                                    <h3 className="text-xs font-black text-black tracking-widest uppercase mb-4 flex items-center gap-4">
-                                        <div className="w-8 h-[3px] bg-[#FF007F] border border-black"></div>
-                                        Your Exclusive Benefits
-                                    </h3>
-                                    <p className="text-black text-2xl font-black tracking-wide">
-                                        As a SpennyPiggy Supporter, you enjoy:
-                                    </p>
-                                </div>
-                            </div>
+                {(showBio || hasLinks) && (
+                    <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
+                        {showBio && (
+                            <>
+                                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                                    About me
+                                </h3>
+                                <p className="mt-3 text-[15px] font-semibold leading-relaxed text-gray-800">
+                                    {user?.bio}
+                                </p>
+                            </>
+                        )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {[
-                                    {
-                                        title: "Zero Wait Time",
-                                        desc: "Priority support responses for all your inquiries.",
-                                        icon: "⚡",
-                                    },
-                                    {
-                                        title: "Exclusive Badges",
-                                        desc: "Unique identifiers that showcase your impact.",
-                                        icon: "🎖️",
-                                    },
-                                    {
-                                        title: "Creator Access",
-                                        desc: "Direct early access to content and special drops.",
-                                        icon: "🔓",
-                                    },
-                                    {
-                                        title: "Impact Tracking",
-                                        desc: "Detailed breakdown of how your support helps.",
-                                        icon: "📊",
-                                    },
-                                    {
-                                        title: "Private Feed",
-                                        desc: "A unified feed of all creators you support.",
-                                        icon: "📱",
-                                    },
-                                    {
-                                        title: "Custom Flair",
-                                        desc: "Unique visual styles for your profile and comments.",
-                                        icon: "✨",
-                                    },
-                                ].map((benefit, i) => (
-                                    <div
-                                        key={i}
-                                        className="p-6 rounded-[30px]  bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300"
-                                    >
-                                        <div className="text-3xl mb-4 drop-shadow-md">
-                                            {benefit.icon}
-                                        </div>
-                                        <h4 className="text-black font-black text-sm uppercase tracking-widest mb-2">
-                                            {benefit.title}
-                                        </h4>
-                                        <p className="text-black font-bold text-xs leading-relaxed">
-                                            {benefit.desc}
-                                        </p>
-                                    </div>
-                                ))}
+                        {hasLinks && (
+                            <div
+                                className={
+                                    showBio
+                                        ? "mt-4 border-t border-black/10 pt-4"
+                                        : ""
+                                }
+                            >
+                                <h3 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                                    Find me on
+                                </h3>
+                                <SocialLinks
+                                    textcolor="text-black hover:text-black transition-colors"
+                                    links={sLinks}
+                                />
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -248,13 +206,13 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                 IsloggedIn ? "IsloggedIn" : ""
             }`}
         >
-            <div className="max-w-[1400px] mx-auto pt-8">
+            <div className="mx-auto max-w-[1400px] pt-4">
                 {isBlocked ? (
                     <div className="max-w-4xl mx-auto">
-                        <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="bg-white border-2 border-black rounded-box p-8 md:p-10">
                             {/* Icon */}
                             <div className="flex justify-center">
-                                <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="w-20 h-20 rounded-full bg-red-100 border-2 border-black flex items-center justify-center">
                                     <Ban className="w-10 h-10 text-red-600" />
                                 </div>
                             </div>
@@ -310,15 +268,14 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                             hover:bg-[#28b45a]
                                             border-[3px]
                                             border-black
-                                            rounded-[18px]
+                                            rounded-box-sm
                                             px-8
                                             py-3
                                             font-black
                                             text-white
-                                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
                                             hover:translate-x-[2px]
                                             hover:translate-y-[2px]
-                                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                                            hover:
                                             transition-all
                                         "
                                     >
@@ -335,7 +292,11 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
 
                         {IsloggedIn ? (
                             <>
-                                <div className="max-w-4xl mx-auto">
+                                {/* ActivateCard returns null unless verification
+                                    is actually needed, and an empty wrapper still
+                                    applies its own margin — a phantom 16px above
+                                    the tabs on every normal profile. */}
+                                <div className="mx-auto max-w-4xl empty:hidden [&:not(:empty)]:mb-4">
                                     <ActivateCard />
                                 </div>
                                 <div className="inlinetab ">
@@ -343,39 +304,70 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                         selectedIndex={selectedIndex}
                                         onChange={setSelectedIndex}
                                     >
-                                        <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
-                                            {[
-                                                "About",
-                                                "Feed",
-                                                ...(isOwner ? ["Purchases"] : []),
-                                            ].map((category, idx) => (
-                                                <Tab
-                                                    key={category}
-                                                    as={Fragment}
-                                                >
-                                                    {({ selected }) => (
-                                                        <button
-                                                            className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
-                                                font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
-                                                py-2 px-6 border-[3px] border-black rounded-[30px]  
-                                                ${selected ? "text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" : "text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"} 
-                                            `}
+                                        <div className="relative pb-2">
+                                            <div className="relative flex w-full items-center gap-3 py-2">
+                                                <Tab.List className="flex min-w-0 flex-1 gap-2 overflow-x-auto scrollbar-hide px-0 pb-2 pt-1">
+                                                    {[
+                                                        {
+                                                            label: "About",
+                                                            Icon: CircleUserRound,
+                                                        },
+                                                        {
+                                                            label: "Feed",
+                                                            Icon: Rss,
+                                                        },
+                                                        ...(isOwner
+                                                            ? [
+                                                                  {
+                                                                      label: "Purchases",
+                                                                      Icon: ShoppingBag,
+                                                                  },
+                                                              ]
+                                                            : []),
+                                                    ].map(({ label, Icon }) => (
+                                                        <Tab
+                                                            key={label}
+                                                            as={Fragment}
                                                         >
-                                                            {category}
-                                                        </button>
-                                                    )}
-                                                </Tab>
-                                            ))}
-                                        </Tab.List>
+                                                            {({ selected }) => (
+                                                                <button
+                                                                    aria-pressed={
+                                                                        selected
+                                                                    }
+                                                                    className={`relative min-w-max touch-manipulation select-none whitespace-nowrap rounded-box-sm border-2 border-black px-3.5 py-2 text-xs font-black uppercase tracking-wider transition-colors duration-200 focus:outline-none md:text-sm ${
+                                                                        selected
+                                                                            ? "bg-yellow-300 text-black"
+                                                                            : "bg-white text-black hover:bg-yellow-100"
+                                                                    }`}
+                                                                >
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <Icon
+                                                                            size={
+                                                                                15
+                                                                            }
+                                                                            strokeWidth={
+                                                                                2.5
+                                                                            }
+                                                                            className="shrink-0"
+                                                                        />
+                                                                        {label}
+                                                                    </span>
+                                                                </button>
+                                                            )}
+                                                        </Tab>
+                                                    ))}
+                                                </Tab.List>
+                                            </div>
+                                        </div>
 
                                         <Tab.Panels>
                                             <Tab.Panel className="focus:outline-none">
-                                                <div className="max-w-4xl mx-auto">
+                                                <div className="mx-auto max-w-4xl">
                                                     <AboutScreen />
                                                 </div>
                                             </Tab.Panel>
                                             <Tab.Panel className="focus:outline-none">
-                                                <div className="w-full max-w-[700px] mx-auto ">
+                                                <div className="mx-auto w-full max-w-4xl">
                                                     <GifterFeed
                                                         username={
                                                             (user &&
@@ -388,7 +380,9 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
 
                                             {isOwner && (
                                                 <Tab.Panel className="focus:outline-none">
-                                                    <GifterPurchasesTab />
+                                                    <div className="mx-auto max-w-4xl">
+                                                        <GifterPurchasesTab />
+                                                    </div>
                                                 </Tab.Panel>
                                             )}
                                         </Tab.Panels>
@@ -396,7 +390,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                 </div>
                             </>
                         ) : (
-                            <div className="max-w-4xl mx-auto pt-10">
+                            <div className="mx-auto max-w-4xl">
                                 <AboutScreen />
                             </div>
                         )}
@@ -409,7 +403,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                     onClose={() => setShowUnblockModal(false)}
                 >
                     <div className="p-8 text-center">
-                        <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-green-100 border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-green-100 border-2 border-black flex items-center justify-center">
                             <Unlock className="w-10 h-10 text-green-600" />
                         </div>
 
@@ -421,7 +415,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                             Are you sure you want to unblock this user?
                         </p>
 
-                        <div className="mt-6 rounded-[18px] border-[3px] border-black bg-[#F8F9FC] p-5 text-left">
+                        <div className="mt-6 rounded-box-sm border-2 border-black bg-[#F8F9FC] p-5 text-left">
                             <p className="font-black mb-3">
                                 Once unblocked you'll be able to:
                             </p>
@@ -437,7 +431,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                             <button
                                 onClick={() => setShowUnblockModal(false)}
                                 disabled={isUnblocking}
-                                className="px-7 py-3 rounded-[18px] border-[3px] border-black bg-white font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all"
+                                className="px-7 py-3 rounded-box-sm border-2 border-black bg-white font-black transition-opacity hover:opacity-90"
                             >
                                 Cancel
                             </button>
@@ -445,7 +439,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                             <button
                                 onClick={confirmUnblock}
                                 disabled={isUnblocking}
-                                className="px-7 py-3 rounded-[18px] border-[3px] border-black bg-[#32C766] text-white font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-60"
+                                className="px-7 py-3 rounded-box-sm border-2 border-black bg-[#32C766] text-white font-black transition-opacity hover:opacity-90 disabled:opacity-60"
                             >
                                 {isUnblocking
                                     ? "Unblocking..."

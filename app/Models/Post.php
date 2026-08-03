@@ -29,6 +29,8 @@ class Post extends Model
         'can_delete_until',
         'slug',
         'is_pinned',
+        'scheduled_at',
+        'schedule_released_at',
     ];
 
     protected $hidden = [
@@ -42,6 +44,8 @@ class Post extends Model
         'ai_generated' => 'boolean',
         'is_pinned' => 'boolean',
         'media' => 'array',
+        'scheduled_at' => 'datetime',
+        'schedule_released_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -50,6 +54,7 @@ class Post extends Model
         'liked',
         'comments_count',
         'pending_items_count',
+        'is_scheduled',
     ];
 
     public static function boot()
@@ -61,6 +66,55 @@ class Post extends Model
                 $w->slug = static::generateUniqueSlug($w->title ?: 'post');
             }
         });
+
+        /*
+        | A post scheduled for the future is not published yet.
+        |
+        | ⚠️ This is a GLOBAL scope on purpose. Post visibility is decided in a
+        | dozen places — the profile feed, the module feeds, the post detail page,
+        | the sitemap, the posting-cadence count, the creator-journey "have you
+        | posted yet" step — and a scheduled post leaking into any one of them is
+        | a paid post published early. Adding the predicate to each site would
+        | have meant finding every site, and being wrong once is silent.
+        |
+        | Surfaces that must see unpublished posts (the creator's own feed, the
+        | scheduled list, the publisher) opt out with `Post::withScheduled()`.
+        |
+        | Deliberately NOT viewer-aware: a scope that let the owner through would
+        | also let the posting-cadence count through, and a post nobody can read
+        | must not hold a creator's subscription income open.
+        */
+        static::addGlobalScope('published', function ($query) {
+            $query->where(function ($q) {
+                $q->whereNull('posts.scheduled_at')
+                    ->orWhere('posts.scheduled_at', '<=', now());
+            });
+        });
+    }
+
+    /** Include posts whose publish time has not arrived yet. */
+    public function scopeWithScheduled($query)
+    {
+        return $query->withoutGlobalScope('published');
+    }
+
+    /** Only posts still waiting on their publish time. */
+    public function scopeOnlyScheduled($query)
+    {
+        return $query->withoutGlobalScope('published')
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '>', now());
+    }
+
+    /**
+     * Is this post still waiting to go live?
+     *
+     * Appended so a card can label itself without every caller re-deriving the
+     * comparison — and getting the timezone wrong in one of them.
+     */
+    public function getIsScheduledAttribute(): bool
+    {
+        return $this->scheduled_at !== null && $this->scheduled_at->isFuture();
     }
 
     /**
@@ -76,7 +130,13 @@ class Post extends Model
         }
         $originalSlug = $slug;
         $count = 1;
-        while (static::where('slug', $slug)
+        // ⚠️ withScheduled(): `slug` carries a UNIQUE index, and a post waiting
+        // on its publish time is hidden by the global scope — so without this the
+        // check cannot see it, hands back a slug that is already taken, and the
+        // insert dies on the constraint. Uniqueness is a property of the table,
+        // not of what the current viewer is allowed to read.
+        while (static::withScheduled()
+            ->where('slug', $slug)
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->exists()
         ) {

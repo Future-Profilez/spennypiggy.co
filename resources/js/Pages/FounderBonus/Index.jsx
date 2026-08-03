@@ -86,7 +86,7 @@ export default function FounderBonusIndex() {
 
                     {/* Founder Congratulations Section */}
                     {auth && auth?.user && auth?.user?.is_founder && founderBonusData && (
-                        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]l ring-1 ring-white/20 p-4 md:p-6 mb-8 text-white relative overflow-hidden">
+                        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-[30px]   shadow-xl ring-1 ring-white/20 p-4 md:p-6 mb-8 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10 animate-pulse"></div>
                             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-8 -translate-x-8 animate-pulse"></div>
                             <div className="relative">
@@ -207,7 +207,7 @@ export default function FounderBonusIndex() {
                     )|| ''}
 
                     {auth && auth?.user && auth?.user?.role == 1 && userInRace && userProgress && (
-                        <div className=" pinkbg rounded-[30px]   md:rounded-[30px]   shadow-[4px_4px_0px_0px_#FF007F]xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
+                        <div className=" pinkbg rounded-[30px]   md:rounded-[30px]   shadow-2xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
                             <div className="relative">

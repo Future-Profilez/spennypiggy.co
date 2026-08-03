@@ -242,6 +242,11 @@ class Kernel extends ConsoleKernel
             ->everyFifteenMinutes()
             ->withoutOverlapping(15);
 
+        // One row per refused purchase; nothing else would ever remove one.
+        $schedule->command('blocked-payments:prune')
+            ->dailyAt('03:55')
+            ->withoutOverlapping(30);
+
         // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
         // that puts stock back bypasses Eloquent events (the refund handler's
         // ->increment(), the creator edit's ->update(), and the admin app, which shares
@@ -249,6 +254,24 @@ class Kernel extends ConsoleKernel
         // have fired. The immediate checkRestock() calls only make it faster.
         $schedule->command('waitlist:notify-restock')
             ->everyTenMinutes()
+            ->withoutOverlapping(10);
+
+        // Scheduled posts. ⚠️ This does NOT make a post visible — the model's
+        // publish-time scope does that on every query, so a stopped worker cannot
+        // silently swallow a creator's whole content calendar. This owns only the
+        // once-per-post work: the release stamp, the guest cache clear, and
+        // telling the creator (or telling them their slot passed unreviewed).
+        $schedule->command('posts:publish-scheduled')
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10);
+
+        // Piggy Pots close because TIME passed, not because anybody saved a row, so
+        // nothing but a sweep can notice. Until this existed, a pot whose deadline
+        // was months ago still sat in the creator's featured profile slot and sent
+        // every visitor to a purchase refusal. Hourly: a pot is dated to a day, so
+        // finer granularity buys nothing.
+        $schedule->command('piggy-pots:expire')
+            ->hourly()
             ->withoutOverlapping(10);
 
         $schedule->command('app:send-shop-order-reminder-email')

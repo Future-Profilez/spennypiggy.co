@@ -119,7 +119,7 @@ export default function Index() {
                   </div>
 
                   {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px]  shadow-[4px_4px_0px_0px_#FF007F]l md:border border-gray-100">
+                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px]  shadow-xl md:border border-gray-100">
                     <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
                       Your Full <br/> Monetisation Toolkit
                     </h2>

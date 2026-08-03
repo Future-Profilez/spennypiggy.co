@@ -1,23 +1,45 @@
 import React, { useRef, useEffect } from "react";
 import { CalendarIcon, ClockIcon, CircleXIcon, CircleCheck as CircleCheckIcon, CreditCard as CreditCardIcon } from "lucide-react";
 
+/**
+ * ⚠️ The ONE definition of "a row that was actually billed" — the row count shown
+ * on the Creator Studio list must use it too.
+ *
+ * A free-period row has no billing period at all: under setup-mode checkout it
+ * carries no dates, no charge and no invoice. The list counted every row while this
+ * screen showed only the billed ones, so a creator who had never been charged read
+ * "1 Records" and opened it onto "No billing history yet".
+ */
+export const billedRecords = (rows) =>
+    (rows ?? []).filter((charge) => !!charge.current_start_subscription_date);
+
 const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     const emptyIconRef = useRef(null);
 
+    // ⚠️ Billing history means rows where money was actually due.
+    //
+    // A free-period row has no billing period at all — under setup-mode checkout
+    // it carries no dates, no charge and no invoice — so it rendered as a line of
+    // "N/A · N/A" with a stray Stripe id and an amount: a billing record for a
+    // thing that was never billed. Legacy trial rows are the same case.
+    const billed = billedRecords(subscriptionHistory);
+
     useEffect(() => {
-        if (!subscriptionHistory || subscriptionHistory.length === 0) {
+        if (billed.length === 0) {
             const interval = setInterval(() => {
                 emptyIconRef.current?.startAnimation?.();
             }, 4000);
             return () => clearInterval(interval);
         }
-    }, [subscriptionHistory]);
+    }, [billed.length]);
 
-    if (!subscriptionHistory || subscriptionHistory.length === 0) {
+    // One empty state, not two: filtering an empty list gives an empty list, so
+    // "no rows at all" and "no rows that were ever charged" are the same screen.
+    if (billed.length === 0) {
         return (
-            <div 
+            <div
                 className="bg-white rounded-[30px]  shadow-sm border border-gray-200 p-6"
-                onMouseEnter={() => emptyIconRef.current?.startAnimation()}
+                onMouseEnter={() => emptyIconRef.current?.startAnimation?.()}
             >
                 <div className="text-center py-8">
                     <div className="text-gray-400 mb-2">
@@ -31,8 +53,8 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
                         No billing history yet
                     </p>
                     <p className="text-sm text-gray-400 mt-1">
-                        Your subscription payments will appear here once
-                        processed.
+                        Nothing has been charged. Your first payment appears here
+                        once you make a sale.
                     </p>
                 </div>
             </div>
@@ -40,7 +62,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     }
 
     // Sort newest first
-    const sortedHistory = [...subscriptionHistory].sort((a, b) => {
+    const sortedHistory = [...billed].sort((a, b) => {
         const dateA = new Date(a.current_start_subscription_date || a.current_start_trial_date || a.created_at);
         const dateB = new Date(b.current_start_subscription_date || b.current_start_trial_date || b.created_at);
         return dateB - dateA;
@@ -68,7 +90,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
             
             <div className="pt-6 text-center">
                 <p className="text-xs font-medium text-gray-400 bg-gray-50 inline-block px-4 py-1.5 rounded-full">
-                    Showing {subscriptionHistory.length} billing record{subscriptionHistory.length !== 1 ? "s" : ""}
+                    Showing {billed.length} billing record{billed.length !== 1 ? "s" : ""}
                 </p>
             </div>
         </div>

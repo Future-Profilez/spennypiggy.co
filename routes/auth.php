@@ -51,6 +51,7 @@ use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\DiscoveryService;
 use App\Services\SubscriptionActivationService;
+use App\Support\SubscriptionPayload;
 use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -522,30 +523,11 @@ Route::middleware('auth')->group(function () {
                     $auto_tweet = (int) ($user->auto_tweet ?? 0) === 1;
                     $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
-                    // Find the currently active subscription period
-                    $now = Carbon::now();
-                    $subscription = MonthlyCharge::where('user_id', $user->id)
-                        ->where(function ($query) use ($now) {
-                            $query->where(function ($q) use ($now) {
-                                // Active subscription period
-                                $q->whereDate('current_start_subscription_date', '<=', $now)
-                                    ->whereDate('current_end_subscription_date', '>=', $now);
-                            })->orWhere(function ($q) use ($now) {
-                                // Active trial period
-                                $q->whereDate('current_start_trial_date', '<=', $now)
-                                    ->whereDate('current_end_trial_date', '>=', $now);
-                            });
-                        })
-                        // Newest period first (created_at ties are not reliable here)
-                        ->newestFirst()
-                        ->first();
-
-                    // If no active period found, get the most recent one
-                    if (! $subscription) {
-                        $subscription = MonthlyCharge::where('user_id', $user->id)
-                            ->newestFirst()
-                            ->first();
-                    }
+                    // ⚠️ One builder for BOTH page payloads — App\Support\SubscriptionPayload.
+                    // This screen hosts the Platform Subscription popup, and its own copy of
+                    // the array had no `has_card`, so a creator who had just saved their card
+                    // was still told to add one — right under a row reading "Card saved".
+                    $subscription = SubscriptionPayload::currentRow($user);
 
                     // Get complete subscription history for the user
                     $historyCollection = MonthlyCharge::where('user_id', $user->id)
@@ -629,20 +611,7 @@ Route::middleware('auth')->group(function () {
                         'auto_tweet' => $auto_tweet,
                         'site_subscription' => $site_subscription,
                         'subscription_history' => $subscription_history,
-                        'monthly_charges' => $subscription ? [
-                            'id' => $subscription->id,
-                            'uuid' => $subscription->uuid,
-                            'user_id' => $subscription->user_id,
-                            'status' => $subscription->status,
-                            'amount' => (float) ($subscription->amount ?? 0),
-                            'currency' => $subscription->currency ?? 'GBP',
-                            'current_start_trial_date' => $subscription->current_start_trial_date ? Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
-                            'current_end_trial_date' => $subscription->current_end_trial_date ? Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
-                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
-                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
-                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                            'created_at' => $subscription->created_at ? Carbon::parse($subscription->created_at)->format('d F Y') : null,
-                        ] : null,
+                        'monthly_charges' => SubscriptionPayload::for($subscription),
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
@@ -860,6 +829,7 @@ Route::middleware('auth')->group(function () {
             Route::get('top-bill/{type?}', [LeaderBoardController::class, 'topBill'])->name('top-bill');
             Route::get('top-shop/{type?}', [LeaderBoardController::class, 'topShop'])->name('top-shop');
             Route::get('top-piggy-bank/{type?}', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
+            Route::get('top-supporters/{type?}', [LeaderBoardController::class, 'topSupporters'])->name('top-supporters');
         });
 
         Route::get('/shop', function () {

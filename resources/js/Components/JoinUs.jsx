@@ -56,7 +56,7 @@ export default function JoinUs() {
                     >
                         <Link
                             href={route("register")}
-                            className="font-anton shadow-[4px_4px_0px_0px_#FF007F]lack font-medium uppercase text-xl bg-white rounded-full px-4 py-2 mb-4"
+                            className="font-anton shadow-black font-medium uppercase text-xl bg-white rounded-full px-4 py-2 mb-4"
                         >
                             Join the Spenny Piggy party!{" "}
                         </Link>

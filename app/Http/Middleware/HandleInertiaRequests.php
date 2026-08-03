@@ -12,6 +12,7 @@ use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
 use App\Services\SubscriptionActivationService;
+use App\Support\SubscriptionPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
@@ -215,6 +216,15 @@ class HandleInertiaRequests extends Middleware
             'platform_fee_percentage' => config('app.platform_fee_percentage', 17),
             'transaction_fee_percentage' => config('app.transaction_fee_percentage', 2),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
+
+            // ⚠️ Shared because two components read the plan at MODULE level, where
+            // they cannot take a prop — and with nothing to merge they fell back to
+            // the hardcoded client constants. `free_until_first_sale` is the one
+            // that matters: it is a config switch, and the client copy is a literal
+            // `true`, so with the policy turned off both screens still promised
+            // "no charge until your first sale" while creators were billed on day
+            // one. Config reads only — no queries — so it is safe on every request.
+            'subscriptionPlan' => SubscriptionPlan::forFrontend(),
             'intercom' => app(IntercomService::class)->buildSettings($user),
             'last_terms_update' => Setting::where('key', 'last_terms_update')->value('value') ?? '2026-04-23 00:00:00',
             'updated_terms_list' => json_decode(Setting::where('key', 'updated_terms_list')->value('value') ?? '[]', true),

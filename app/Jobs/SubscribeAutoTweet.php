@@ -32,7 +32,7 @@ class SubscribeAutoTweet implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->sub->wish_item->user_id);
-        if (! empty($user->twitter_token->token)) {
+        if ($user && $user->twitter_token && ! empty($user->twitter_token->token)) {
             $payload = [
                 'name' => $this->sub->guest_name ?? 'Someone',
                 'period' => $this->sub->wish_item->subscription_period,

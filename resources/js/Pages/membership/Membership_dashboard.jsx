@@ -672,38 +672,172 @@ export default function Membership_dashboard(props) {
     return (
         <Authenticated auth={auth?.user || ""}>
             <Head title={"Membership Dashboard"} />
-            {loading ? (
-                <div className="min-h-dvh bg-gray-50">
-                    <div className="containerbox m-auto">
-                        <div className="py-6 md:py-10 w-full m-auto animate-pulse">
-                            <div className="flex items-center gap-4 mb-8 mt-4">
-                                <div className="w-14 h-14 rounded-box-sm bg-gray-300 border border-gray-100" />
-                                <div className="space-y-3">
-                                    <div className="h-7 w-64 rounded-box-sm bg-gray-300" />
-                                    <div className="h-4 w-80 rounded-box-sm bg-gray-300" />
+            <div className="min-h-dvh bg-gray-50">
+                <div className="containerbox m-auto">
+                    <div className="py-6 md:py-10 w-full m-auto">
+                        {/* Header Section */}
+                        <CreatorDashboardTabs />
+
+                        {loading ? (
+                            <div className="animate-pulse flex flex-col gap-6 md:gap-8">
+                                {/* Hero Skeleton */}
+                                <div className="relative bg-gray-200 rounded-box p-6 md:p-8 mb-4 overflow-hidden min-h-[180px] w-full">
+                                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-11 h-11 bg-gray-300 rounded-box-sm" />
+                                                <div className="h-4 w-32 bg-gray-300 rounded" />
+                                            </div>
+                                            <div className="h-12 w-48 bg-gray-300 rounded mt-2" />
+                                        </div>
+                                        <div className="flex flex-wrap gap-3 shrink-0">
+                                            {[0, 1, 2].map((i) => (
+                                                <div key={i} className="bg-gray-300/60 rounded-box-sm px-4 py-3 min-w-[112px] h-[68px]" />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Stats Grid Skeleton */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                                        <div key={i} className="bg-white border border-gray-100 rounded-box p-5 h-[170px] flex flex-col justify-between shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)]">
+                                            <div className="flex items-center justify-between">
+                                                <div className="w-12 h-12 bg-gray-200 rounded-box-sm" />
+                                                <div className="h-6 w-20 bg-gray-200 rounded-box-sm" />
+                                            </div>
+                                            <div>
+                                                <div className="h-8 w-24 bg-gray-200 rounded mt-2" />
+                                                <div className="h-4 w-32 bg-gray-200 rounded mt-2" />
+                                            </div>
+                                            <div className="h-3 w-40 bg-gray-100 rounded" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Top Performing Memberships Skeleton */}
+                                <div className="bg-white border border-gray-100 rounded-box p-5 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)]">
+                                    <div className="mb-4">
+                                        <div className="h-6 w-56 bg-gray-200 rounded" />
+                                        <div className="h-3 w-40 bg-gray-200 rounded mt-2" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        {[0, 1, 2].map((i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-box-sm">
+                                                <div className="flex items-center gap-3 flex-1">
+                                                    <div className="w-8 h-8 rounded-box-sm bg-gray-200" />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 w-32 bg-gray-200 rounded" />
+                                                        <div className="h-3 w-48 bg-gray-200 rounded" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="h-5 w-16 bg-gray-200 rounded" />
+                                                    <div className="h-3 w-20 bg-gray-200 rounded" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Revenue Chart Skeleton */}
+                                <div className="bg-white border border-gray-100 rounded-box p-5 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)]">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <div className="h-6 w-36 bg-gray-200 rounded" />
+                                            <div className="h-3 w-56 bg-gray-200 rounded mt-2" />
+                                        </div>
+                                        <div className="h-[44px] w-36 bg-gray-200 rounded-box-sm" />
+                                    </div>
+                                    <div className="bg-gray-50 border border-gray-100 rounded-box p-5 h-[360px] flex items-end justify-between gap-2">
+                                        {[30, 45, 35, 60, 50, 70, 65, 80, 75, 90, 85, 100].map((h, i) => (
+                                            <div key={i} className="bg-pink-100 rounded-t w-full" style={{ height: `${h}%` }} />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* All Memberships Table Skeleton */}
+                                <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] overflow-hidden">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 gap-4">
+                                        <div>
+                                            <div className="h-6 w-40 bg-gray-200 rounded" />
+                                            <div className="h-3 w-56 bg-gray-200 rounded mt-2" />
+                                            <div className="h-6 w-32 bg-gray-200 rounded-box-sm mt-3" />
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-[44px] w-48 bg-gray-200 rounded-box-sm" />
+                                            <div className="h-[44px] w-24 bg-gray-200 rounded-box-sm" />
+                                        </div>
+                                    </div>
+
+                                    {/* Desktop Table Skeleton */}
+                                    <div className="hidden lg:block overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                                                        <th key={i} className="px-4 py-3"><div className="h-3 w-16 bg-gray-200 rounded" /></th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {[0, 1, 2].map((row) => (
+                                                    <tr key={row}>
+                                                        <td className="px-4 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-box-sm bg-gray-200" />
+                                                                <div className="space-y-2">
+                                                                    <div className="h-4 w-28 bg-gray-200 rounded" />
+                                                                    <div className="h-3 w-16 bg-gray-200 rounded" />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4"><div className="h-4 w-12 bg-gray-200 rounded" /></td>
+                                                        <td className="px-4 py-4"><div className="h-6 w-16 bg-gray-200 rounded-box-sm" /></td>
+                                                        <td className="px-4 py-4">
+                                                            <div className="space-y-2">
+                                                                <div className="h-4 w-10 bg-gray-200 rounded" />
+                                                                <div className="h-3 w-20 bg-gray-200 rounded" />
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4"><div className="h-4 w-16 bg-gray-200 rounded" /></td>
+                                                        <td className="px-4 py-4"><div className="h-3 w-12 bg-gray-200 rounded" /></td>
+                                                        <td className="px-4 py-4"><div className="h-9 w-28 bg-gray-200 rounded-box-sm" /></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Mobile List Skeleton */}
+                                    <div className="block lg:hidden divide-y divide-gray-100">
+                                        {[0, 1, 2].map((i) => (
+                                            <div key={i} className="p-4 space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-box-sm bg-gray-200" />
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 w-28 bg-gray-200 rounded" />
+                                                        <div className="h-3 w-16 bg-gray-200 rounded" />
+                                                    </div>
+                                                    <div className="h-6 w-16 bg-gray-200 rounded-box-sm" />
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {[0, 1, 2].map((j) => (
+                                                        <div key={j} className="space-y-1">
+                                                            <div className="h-3 w-10 bg-gray-200 rounded" />
+                                                            <div className="h-4 w-16 bg-gray-200 rounded" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="h-9 w-full bg-gray-200 rounded-box-sm" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
-                                {[0, 1, 2, 3].map((i) => (
-                                    <div
-                                        key={i}
-                                        className="h-[170px] rounded-box bg-white border border-gray-100 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)]"
-                                    />
-                                ))}
-                            </div>
-                            <div className="h-72 rounded-box bg-white border border-gray-100 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] mb-8" />
-                            <div className="h-96 rounded-box bg-white border border-gray-100 shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)]" />
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="min-h-dvh bg-gray-50">
-                    <div className="containerbox m-auto">
-                        <div className="py-6 md:py-10 w-full m-auto">
-                            {/* Header Section */}
-                            <CreatorDashboardTabs />
-
-                            <DashboardHero
+                        ) : (
+                            <>
+                                <DashboardHero
                                 accent="pink"
                                 Icon={FaCrown}
                                 sticker="Memberships"
@@ -1406,10 +1540,11 @@ export default function Membership_dashboard(props) {
                                 </div>
                             )}
                         </div>
-                    </div>
-                    </div>
-                </div>
-            )}
+                    </>
+                )}
+            </div>
+        </div>
+    </div>
             {showPaymentModal && (
                 <PaymentDetailsModal
                     payment={selectedPayment}

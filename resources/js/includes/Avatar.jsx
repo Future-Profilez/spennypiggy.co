@@ -90,11 +90,11 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
               />
               {role && profile_status_lock && (
                 is_founder ? (
-                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-[4px_4px_0px_0px_#FF007F]l border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
                 ) : (
                   <RiVerifiedBadgeFill
                     size="1.5rem"
-                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-[4px_4px_0px_0px_#FF007F]l rounded-full border border-2 !border-[#FF007F] rounded-full p-[1px]"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-[#FF007F] rounded-full p-[1px]"
                   />
                 )
               )}

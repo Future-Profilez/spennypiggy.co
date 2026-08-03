@@ -202,10 +202,11 @@ class TwitterAuth1
         $oauthHeader = $this->generateOauthHeader($params);
 
         $response = $this->curlHttp('GET', $url, $oauthHeader, $urlParams);
+        $userData = json_decode($response, true);
 
         return [
-            'status' => true,
-            'user' => json_decode($response, true),
+            'status' => $this->http_status == 200 && ! empty($userData['id_str'] ?? $userData['id']),
+            'user' => $userData,
         ];
     }
 

@@ -13,12 +13,13 @@ import ChangeCurrency from "@/Components/ChangeCurrency";
 import LinkTwitter from "../twitter/LinkTwitter";
 import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
+import { QRCodeSVG } from "qrcode.react";
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
-import SubscriptionHistory from "@/Components/SubscriptionHistory";
+import SubscriptionHistory, { billedRecords } from "@/Components/SubscriptionHistory";
 import ManagePasskey from "@/Components/ManagePasskey";
 import SecurityZone from "@/Components/SecurityZone";
 import { Switch } from "@headlessui/react";
@@ -42,6 +43,7 @@ import {
     LockIcon,
     GlobeIcon,
     ShieldCheckIcon,
+    ShoppingBagIcon,
 } from "@animateicons/react/lucide";
 import {
     Shield,
@@ -54,6 +56,7 @@ import {
     HelpCircle,
     FileText,
     Fingerprint,
+    Trophy,
 } from "lucide-react";
 
 export default function Accountsetting(props) {
@@ -70,6 +73,25 @@ export default function Accountsetting(props) {
         subscription_status,
         monthly_charges,
     } = usePage().props;
+
+    const contactSupport = () => {
+        if (window.Intercom) {
+            window.Intercom('show');
+        } else {
+            window.location.href = "mailto:support@spennypiggy.co";
+        }
+    };
+
+    const [suggestion, setSuggestion] = useState("");
+    const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
+    const [suggestionClose, setSuggestionClose] = useState(null);
+    
+    const closeSuggestionPopup = () => {
+        setSuggestionClose(false);
+        setTimeout(() => {
+            setSuggestionClose(null);
+        }, 50);
+    };
 
     const [emailPopupAction, setEmailPopupAction] = useState(null);
     const [emailEnabled, setSetEnabled] = useState(false);
@@ -339,6 +361,31 @@ export default function Accountsetting(props) {
                         </p>
                     </div>
 
+                    {/* BECOME A CREATOR */}
+                    {!isCreator && (
+                        <div className="mb-10 animate-fade-in-up">
+                            <div 
+                                onClick={contactSupport}
+                                className="relative group w-full flex items-center justify-between p-6 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black !rounded-[30px] hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] transition-all cursor-pointer mb-3"
+                            >
+                                <div className="flex items-center gap-4 text-left text-white">
+                                    <div className="p-2.5 bg-white/20 rounded-[20px] w-[50px] h-[50px] flex items-center justify-center">
+                                        <Trophy size={28} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-gulfs text-lg uppercase tracking-wide">
+                                            Become a Creator
+                                        </h3>
+                                        <p className="text-sm text-pink-100 font-medium mt-0.5">
+                                            Start selling content and memberships. Contact support to get started!
+                                        </p>
+                                    </div>
+                                </div>
+                                <ChevronRightIcon size={24} className="text-white/70 group-hover:text-white" />
+                            </div>
+                        </div>
+                    )}
+
                     {/* CREATOR STUDIO SECTION */}
                     {isCreator && (
                         <div className="mb-10 animate-fade-in-up">
@@ -356,6 +403,18 @@ export default function Accountsetting(props) {
                                 }
                                 classes="w-full"
                                 global_currency={global_currency}
+                            />
+
+                            <SettingItem
+                                icon={ExternalLinkIcon}
+                                title="Copy Profile Link"
+                                subtitle="Copy your public profile URL to share"
+                                onClick={() => {
+                                    const url = `${window.location.origin}/${auth.user.username}`;
+                                    navigator.clipboard.writeText(url)
+                                        .then(() => successAlert("Profile link copied to clipboard!"))
+                                        .catch(() => errorAlert("Failed to copy profile link"));
+                                }}
                             />
 
                             {stripeSubmitted && (
@@ -382,12 +441,30 @@ export default function Accountsetting(props) {
                                         icon={Gift}
                                         title="Platform Subscription"
                                         subtitle={
-                                            site_subscription?.subscription_status_code ===
-                                                1 ||
-                                            site_subscription?.subscription_status_code ===
-                                                2
-                                                ? "Active Subscription"
-                                                : "Manage Subscription"
+                                            // ⚠️ Code 2 is "card saved, nothing
+                                            // charged" — calling that "Active
+                                            // Subscription" next to a "No Charge
+                                            // Yet" chip made the row contradict
+                                            // itself. Each code says its own thing.
+                                            {
+                                                1: "Billing monthly",
+                                                2: "Card saved — no charge yet",
+                                                // ⚠️ 0 covers an abandoned checkout
+                                                // (`initiated`) as well as expired
+                                                // and failed, so the wording has to
+                                                // work for someone who never
+                                                // finished rather than accusing them
+                                                // of a problem.
+                                                0: "Not active — add your card",
+                                                // ⚠️ 3 = no MonthlyCharge row at all.
+                                                // It had no entry and fell back to
+                                                // "Manage Subscription", offering to
+                                                // manage a thing that does not exist.
+                                                3: "Not started — add your card",
+                                            }[
+                                                site_subscription
+                                                    ?.subscription_status_code
+                                            ] ?? "Manage Subscription"
                                         }
                                         value={site_subscription?.status}
                                     />
@@ -408,8 +485,7 @@ export default function Accountsetting(props) {
                                 </SiteSubscription>
                             </Popup>
 
-                            {subscription_history &&
-                                subscription_history.length > 0 && (
+                            {billedRecords(subscription_history).length > 0 && (
                                     <Popup
                                         space="4"
                                         size="md"
@@ -420,7 +496,7 @@ export default function Accountsetting(props) {
                                                 icon={History}
                                                 title="Billing History"
                                                 subtitle="View past invoices and payments"
-                                                value={`${subscription_history.length} Records`}
+                                                value={`${billedRecords(subscription_history).length} Records`}
                                             />
                                         }
                                     >
@@ -481,13 +557,83 @@ export default function Accountsetting(props) {
                                     pwa_notification_details
                                 }
                             />
+
+                            <Popup
+                                space="4"
+                                classes="w-full"
+                                modalclass="pinkmodal"
+                                text={
+                                    <SettingItem
+                                        icon={GlobeIcon}
+                                        title="Profile QR Code"
+                                        subtitle="Generate and download your profile QR code"
+                                    />
+                                }
+                            >
+                                <div className="text-center p-4">
+                                    <h2 className="text-black font-gulfs text-xl mb-4">
+                                        YOUR PROFILE QR CODE
+                                    </h2>
+                                    <div className="bg-white p-6 border-2 border-black rounded-[30px] inline-block shadow-[5px_5px_0px_rgba(0,0,0,1)] mb-6">
+                                        <QRCodeSVG
+                                            id="qr-code-svg"
+                                            value={`${window.location.origin}/${auth.user.username}`}
+                                            size={200}
+                                            level={"H"}
+                                            includeMargin={true}
+                                        />
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-6 font-medium max-w-[320px] mx-auto">
+                                        Let people scan this QR code with their phone camera to open your Spenny Piggy profile page instantly.
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            const svg = document.getElementById("qr-code-svg");
+                                            const svgData = new XMLSerializer().serializeToString(svg);
+                                            const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+                                            const svgUrl = URL.createObjectURL(svgBlob);
+                                            const downloadLink = document.createElement("a");
+                                            downloadLink.href = svgUrl;
+                                            downloadLink.download = `${auth.user.username}-qr-code.svg`;
+                                            document.body.appendChild(downloadLink);
+                                            downloadLink.click();
+                                            document.body.removeChild(downloadLink);
+                                        }}
+                                        className="bg-black text-white px-6 py-3 rounded-full text-sm font-black uppercase hover:bg-pink-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.2)]"
+                                    >
+                                        Download SVG
+                                    </button>
+                                </div>
+                            </Popup>
                         </div>
                     )}
+
+                    {/* BILLING & PURCHASES */}
+                    <div
+                        className="mb-10 animate-fade-in-up"
+                        style={{ animationDelay: "0.1s" }}
+                    >
+                        <SectionTitle title="Billing & Purchases" />
+
+                        <SettingItem
+                            icon={ShoppingBagIcon}
+                            title="My Purchases"
+                            subtitle="View your media, orders, receipts, and saved items"
+                            onClick={() => router.get(route("gifter.hub"))}
+                        />
+
+                        <SettingItem
+                            icon={CreditCardIcon}
+                            title="My Subscriptions"
+                            subtitle="Manage your creator memberships and subscriptions"
+                            onClick={() => router.get("/billing/my-subscriptions")}
+                        />
+                    </div>
 
                     {/* PREFERENCES SECTION */}
                     <div
                         className="mb-10 animate-fade-in-up"
-                        style={{ animationDelay: "0.1s" }}
+                        style={{ animationDelay: "0.2s" }}
                     >
                         <SectionTitle title="Preferences" />
 
@@ -638,7 +784,7 @@ export default function Accountsetting(props) {
                     {/* SECURITY SECTION */}
                     <div
                         className="mb-10 animate-fade-in-up"
-                        style={{ animationDelay: "0.2s" }}
+                        style={{ animationDelay: "0.3s" }}
                     >
                         <SectionTitle title="Security" />
 
@@ -647,24 +793,22 @@ export default function Accountsetting(props) {
                             email={auth.user.email}
                         />
 
-                        {isCreator && (
-                            <Popup
-                                size={"lg"}
-                                action={passClose}
-                                space="4"
-                                classes="w-full"
-                                modalclass="pinkmodal"
-                                text={
-                                    <SettingItem
-                                        icon={Shield}
-                                        title="Creator Security Zone"
-                                        subtitle="Manage sessions and blocked users"
-                                    />
-                                }
-                            >
-                                <SecurityZone />
-                            </Popup>
-                        )}
+                        <Popup
+                            size={"lg"}
+                            action={passClose}
+                            space="4"
+                            classes="w-full"
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem
+                                    icon={Shield}
+                                    title={isCreator ? "Creator Security Zone" : "Devices & Sessions"}
+                                    subtitle={isCreator ? "Manage sessions and blocked users" : "Manage active login sessions"}
+                                />
+                            }
+                        >
+                            <SecurityZone isCreator={isCreator} />
+                        </Popup>
 
                         <Popup
                             action={emailPopupAction}
@@ -724,7 +868,7 @@ export default function Accountsetting(props) {
                     {/* SUPPORT SECTION */}
                     <div
                         className="mb-10 animate-fade-in-up"
-                        style={{ animationDelay: "0.3s" }}
+                        style={{ animationDelay: "0.4s" }}
                     >
                         <SectionTitle title="Support & Legal" />
 
@@ -749,6 +893,93 @@ export default function Accountsetting(props) {
                                 subtitle="Learn about Spenny Piggy"
                             />
                         </Link>
+
+                        <Link
+                            href={route("founder.bonus")}
+                            className="block w-full"
+                        >
+                            <SettingItem
+                                icon={Trophy}
+                                title="Founder Program"
+                                subtitle="View seats, qualification status, and rewards"
+                            />
+                        </Link>
+
+                        <SettingItem
+                            icon={HelpCircle}
+                            title="Contact Support"
+                            subtitle="Get help via live chat or email"
+                            onClick={contactSupport}
+                        />
+
+                        <Popup
+                            action={suggestionClose}
+                            space="4"
+                            classes="w-full"
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem
+                                    icon={HelpCircle}
+                                    title="Suggest a Feature"
+                                    subtitle="Have an idea? Let us know what to build next"
+                                />
+                            }
+                        >
+                            <div className="p-4">
+                                <h2 className="text-black font-gulfs text-xl mb-4 uppercase">
+                                    Suggest a Feature
+                                </h2>
+                                <p className="text-sm text-gray-600 mb-4 font-medium">
+                                    We love hearing your feedback! Tell us what features or changes you'd like to see on Spenny Piggy.
+                                </p>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (!suggestion.trim()) return;
+                                    setSubmittingSuggestion(true);
+                                    router.post(route('feature-suggestion.store'), {
+                                        suggestion: suggestion
+                                    }, {
+                                        onSuccess: () => {
+                                            successAlert("Thank you for your suggestion!");
+                                            setSuggestion("");
+                                            closeSuggestionPopup();
+                                        },
+                                        onError: () => {
+                                            errorAlert("Failed to submit suggestion.");
+                                        },
+                                        onFinish: () => {
+                                            setSubmittingSuggestion(false);
+                                        }
+                                    });
+                                }}>
+                                    <textarea
+                                        value={suggestion}
+                                        onChange={(e) => setSuggestion(e.target.value)}
+                                        placeholder="I want a feature that allows..."
+                                        rows={5}
+                                        maxLength={2000}
+                                        required
+                                        className="w-full p-4 border-2 border-black rounded-[20px] focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none text-sm font-medium mb-4"
+                                    />
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={closeSuggestionPopup}
+                                            className="px-5 py-2.5 border-2 border-black text-black font-bold uppercase rounded-full hover:bg-gray-100 transition-all text-xs"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={submittingSuggestion || !suggestion.trim()}
+                                            className="px-6 py-2.5 bg-black text-white font-black uppercase rounded-full hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-xs shadow-[3px_3px_0px_rgba(0,0,0,1)] disabled:shadow-none"
+                                        >
+                                            {submittingSuggestion ? "Submitting..." : "Submit"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </Popup>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <Link
@@ -779,9 +1010,22 @@ export default function Accountsetting(props) {
                     {/* DANGER ZONE */}
                     <div
                         className="mb-10 animate-fade-in-up"
-                        style={{ animationDelay: "0.4s" }}
+                        style={{ animationDelay: "0.5s" }}
                     >
                         <SectionTitle title="Danger Zone" />
+
+                        <SettingItem
+                            bordercolor="border-red-600"
+                            icon={LogoutIcon}
+                            title="Logout"
+                            subtitle="Sign out of your session"
+                            onClick={() => {
+                                if (confirm("Are you sure you want to log out?")) {
+                                    router.post(route("logout"));
+                                }
+                            }}
+                            isDestructive
+                        />
                         <Popup
                             space="4"
                             classes="w-full"

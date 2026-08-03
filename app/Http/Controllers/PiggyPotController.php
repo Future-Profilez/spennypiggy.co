@@ -6,8 +6,10 @@ use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
 use App\Services\ItemTextModeration;
+use App\Services\PiggyPotStatusService;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -62,6 +64,21 @@ class PiggyPotController extends Controller
         }
 
         $piggyPots = $query->get();
+
+        // Which pot the creator's PUBLIC profile is actually showing. Resolved
+        // once for the page, not per row.
+        //
+        // ⚠️ Without this the dashboard could only report a status chip, and a
+        // chip cannot answer the one question a creator has when their pot stops
+        // selling: why is it gone from my profile, and what puts it back? A
+        // deadline that lapsed, a pot still under review and a pot that simply
+        // is not the featured one all read as "not on my profile" and each needs
+        // a different action.
+        $featuredPotId = PiggyPotStatusService::featuredPotId(Auth::id());
+
+        $piggyPots->each(function ($pot) use ($featuredPotId) {
+            $pot->setAttribute('visibility', PiggyPotStatusService::visibility($pot, $featuredPotId));
+        });
 
         // Only the most recent supporters are rendered — eager-loading every
         // paid contribution pulled a long-running pot's whole history into
@@ -237,6 +254,24 @@ class PiggyPotController extends Controller
         // the admin app) — never by the creator re-submitting status=active.
         if ($piggyPot->status === 'moderation_hold') {
             unset($data['status']);
+        }
+
+        // Giving a closed pot a future deadline reopens it.
+        //
+        // ⚠️ Without this the fix the dashboard tells the creator to make does not
+        // work: they set a new date, the form still posts `status = expired`
+        // (that IS the pot's status, so the select is showing the truth), and the
+        // pot stays hidden with no indication why. The only reason a pot is
+        // `expired` is that its date passed, so a date that has not is proof it
+        // should be open. Deliberately does NOT touch `completed` (a reached goal
+        // is not undone by a date) or `moderation_hold` (admin-only, above).
+        if (($piggyPot->status === 'expired' || ($data['status'] ?? null) === 'expired')
+            && array_key_exists('deadline', $data)
+            && ! PiggyPotStatusService::deadlinePassed(
+                $data['deadline'] ? Carbon::parse($data['deadline']) : null
+            )
+        ) {
+            $data['status'] = 'active';
         }
 
         // Same rule as creation: a pot still in review cannot take the featured

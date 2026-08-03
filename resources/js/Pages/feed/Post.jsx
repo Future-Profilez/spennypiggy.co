@@ -181,6 +181,19 @@ export default function Post({ item, isProfileView = false }) {
     const lock = LOCK_COPY[item?.for_module];
     const hasImage = !!posturl();
 
+    // A queued post reaches nobody but its author, so the chip only means
+    // anything to them — and `is_scheduled` is only ever true on a payload the
+    // owner asked for (the global publish scope hides the rest).
+    const isScheduled = IsloggedIn && Boolean(item?.is_scheduled);
+    const scheduledLabel = isScheduled
+        ? new Date(item.scheduled_at).toLocaleString(undefined, {
+              day: "numeric",
+              month: "short",
+              hour: "numeric",
+              minute: "2-digit",
+          })
+        : "";
+
     const singleLineStyle = isProfileView ? {
         display: '-webkit-box',
         WebkitLineClamp: '1',
@@ -357,7 +370,16 @@ export default function Post({ item, isProfileView = false }) {
                     is a status, not the content — it rides on the image as a chip
                     (with the full explanation on hover/long-press) and only falls
                     back to a block when the post has no image to sit on. */}
-                {isPendingApproval && !hasImage ? (
+                {/* Scheduled outranks "in review": both are true of a queued post,
+                    but the date is the fact the creator is looking for, and a
+                    lone "In review" chip on a post they deliberately queued reads
+                    as though the schedule was not saved. */}
+                {isScheduled && !hasImage ? (
+                    <div className="mb-3 flex items-center gap-2 rounded-box-sm border !border-black bg-[#A2E4B8] px-3 py-2 text-xs font-bold text-black">
+                        <span aria-hidden="true">🕒</span>
+                        <span>Publishes {scheduledLabel}</span>
+                    </div>
+                ) : isPendingApproval && !hasImage ? (
                     <div className="mb-3 flex items-center gap-2 rounded-box-sm border !border-yellow-500 bg-yellow-50 px-3 py-2 text-xs font-bold text-yellow-800">
                         <span aria-hidden="true">⏳</span>
                         <span>In review — only you can see this for now.</span>
@@ -372,7 +394,14 @@ export default function Post({ item, isProfileView = false }) {
                             </span>
                         ) : null}
 
-                        {isPendingApproval ? (
+                        {isScheduled ? (
+                            <span
+                                title="Only you can see this until it publishes. You can change the time or cancel it until then."
+                                className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border-2 border-black bg-[#A2E4B8] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-black"
+                            >
+                                🕒 {scheduledLabel}
+                            </span>
+                        ) : isPendingApproval ? (
                             <span
                                 title="Only you can see this post for now — it usually goes live within 24 hours, and it counts towards your activity once approved."
                                 className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-sm"

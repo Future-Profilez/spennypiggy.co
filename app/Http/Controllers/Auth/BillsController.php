@@ -36,6 +36,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -622,6 +623,8 @@ class BillsController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($bill->user, $bill->price);
 
             // Log the blocked payment for subscription issues
             Log::warning('Bill payment blocked due to subscription issue', [

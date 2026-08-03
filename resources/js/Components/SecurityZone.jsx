@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function SecurityZone() {
+export default function SecurityZone({ isCreator = true }) {
     const { successAlert, errorAlert } = useAlerts();
     const [sessions, setSessions] = useState([]);
     const [blockedUsers, setBlockedUsers] = useState([]);
@@ -29,12 +29,16 @@ export default function SecurityZone() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [sessionsRes, blockedRes] = await Promise.all([
-                axios.get(route("creator.security.sessions")),
-                axios.get(route("creator.security.blocked-users")),
-            ]);
-            setSessions(sessionsRes.data.sessions);
-            setBlockedUsers(blockedRes.data.blocked_users);
+            const requests = [axios.get(route("creator.security.sessions"))];
+            if (isCreator) {
+                requests.push(axios.get(route("creator.security.blocked-users")));
+            }
+            const results = await Promise.all(requests);
+            
+            setSessions(results[0].data.sessions);
+            if (isCreator && results[1]) {
+                setBlockedUsers(results[1].data.blocked_users);
+            }
         } catch (error) {
             console.error("Error fetching security data", error);
         } finally {
@@ -179,159 +183,161 @@ export default function SecurityZone() {
                         </p>
                     )}
                 </div>
-            </div>
+            </div>            {isCreator && (
+                <>
+                    <div className="h-0.5 bg-black/10 rounded-full"></div>
 
-            <div className="h-0.5 bg-black/10 rounded-full"></div>
+                    <div>
+                        <h2 className="text-xl font-gulfs mb-4 flex items-center gap-2 text-black">
+                            <UserX className="text-red-600" /> BLOCKED USERS
+                        </h2>
 
-            <div>
-                <h2 className="text-xl font-gulfs mb-4 flex items-center gap-2 text-black">
-                    <UserX className="text-red-600" /> BLOCKED USERS
-                </h2>
-
-                <div className="relative mb-6">
-                    <div
-                        className={`flex items-center gap-3 p-4 bg-white border-2 border-black rounded-[20px] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${searchQuery.length >= 2 ? "ring-2 ring-pink-500" : ""}`}
-                    >
-                        <Search
-                            size={22}
-                            className="text-gray-400"
-                            strokeWidth={2.5}
-                        />
-                        <input
-                            type="text"
-                            placeholder="SEARCH USER TO BLOCK..."
-                            className="flex-1 border-none focus:ring-0 p-0 text-sm font-black uppercase tracking-wider placeholder:text-gray-300 outline-none"
-                            value={searchQuery}
-                            onChange={handleSearch}
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={clearSearch}
-                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        <div className="relative mb-6">
+                            <div
+                                className={`flex items-center gap-3 p-4 bg-white border-2 border-black rounded-[20px] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${searchQuery.length >= 2 ? "ring-2 ring-pink-500" : ""}`}
                             >
-                                <X size={18} className="text-gray-400" />
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Search Results Dropdown */}
-                    {searchQuery.length >= 2 && (
-                        <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-[25px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                            {searching ? (
-                                <div className="p-8 text-center">
-                                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-black border-t-transparent"></div>
-                                    <p className="text-xs font-bold uppercase text-gray-400 mt-2">
-                                        Searching...
-                                    </p>
-                                </div>
-                            ) : filteredSearchResults.length > 0 ? (
-                                filteredSearchResults.map((user) => (
-                                    <div
-                                        key={user.id}
-                                        className="flex items-center justify-between p-4 hover:bg-pink-50 border-b-2 border-black last:border-none transition-colors"
+                                <Search
+                                    size={22}
+                                    className="text-gray-400"
+                                    strokeWidth={2.5}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="SEARCH USER TO BLOCK..."
+                                    className="flex-1 border-none focus:ring-0 p-0 text-sm font-black uppercase tracking-wider placeholder:text-gray-300 outline-none"
+                                    value={searchQuery}
+                                    onChange={handleSearch}
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={clearSearch}
+                                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <X size={18} className="text-gray-400" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Search Results Dropdown */}
+                            {searchQuery.length >= 2 && (
+                                <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-[25px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                    {searching ? (
+                                        <div className="p-8 text-center">
+                                            <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-black border-t-transparent"></div>
+                                            <p className="text-xs font-bold uppercase text-gray-400 mt-2">
+                                                Searching...
+                                            </p>
+                                        </div>
+                                    ) : filteredSearchResults.length > 0 ? (
+                                        filteredSearchResults.map((user) => (
+                                            <div
+                                                key={user.id}
+                                                className="flex items-center justify-between p-4 hover:bg-pink-50 border-b-2 border-black last:border-none transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={
+                                                            user.avatar_url ||
+                                                            "/default-avatar.png"
+                                                        }
+                                                        className="w-11 h-11 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                        alt={user.name}
+                                                        onError={(e) => {
+                                                            e.target.src =
+                                                                "/default-avatar.png";
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <p className="font-black text-sm uppercase">
+                                                            {user.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 font-bold">
+                                                            @{user.username}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => blockUser(user.id)}
+                                                    className="bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-red-600 transition-all shadow-[3px_3px_0px_0px_rgba(255,142,37,1)] active:translate-y-0.5 active:shadow-none"
+                                                >
+                                                    Block
+                                                </button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <UserMinus
+                                                className="mx-auto text-gray-300 mb-2"
+                                                size={32}
+                                            />
+                                            <p className="text-gray-400 font-bold uppercase text-sm">
+                                                No users found
+                                            </p>
+                                            <p className="text-gray-300 text-xs mt-1">
+                                                Try a different username
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            {blockedUsers.length > 0 ? (
+                                blockedUsers.map((block) => (
+                                    <div
+                                        key={block.id}
+                                        className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                    >
+                                        <div className="flex items-center gap-4">
                                             <img
                                                 src={
-                                                    user.avatar_url ||
+                                                    block.avatar_url ||
                                                     "/default-avatar.png"
                                                 }
-                                                className="w-11 h-11 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                                alt={user.name}
+                                                className="w-12 h-12 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                alt={block.name}
                                                 onError={(e) => {
                                                     e.target.src =
                                                         "/default-avatar.png";
                                                 }}
                                             />
                                             <div>
-                                                <p className="font-black text-sm uppercase">
-                                                    {user.name}
+                                                <p className="font-black text-gray-900 uppercase">
+                                                    {block.name}
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-bold">
-                                                    @{user.username}
+                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-tight">
+                                                    @{block.username} • BLOCKED{" "}
+                                                    {block.blocked_at}
                                                 </p>
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => blockUser(user.id)}
-                                            className="bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-red-600 transition-all shadow-[3px_3px_0px_0px_rgba(255,142,37,1)] active:translate-y-0.5 active:shadow-none"
+                                            onClick={() => unblockUser(block.id)}
+                                            className="bg-white border-2 border-black text-black px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-gray-100 transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
                                         >
-                                            Block
+                                            Unblock
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <div className="p-8 text-center">
-                                    <UserMinus
+                                <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px] ">
+                                    <UserX
                                         className="mx-auto text-gray-300 mb-2"
-                                        size={32}
+                                        size={40}
                                     />
                                     <p className="text-gray-400 font-bold uppercase text-sm">
-                                        No users found
+                                        No blocked users yet
                                     </p>
                                     <p className="text-gray-300 text-xs mt-1">
-                                        Try a different username
+                                        Search and block users above
                                     </p>
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
-
-                <div className="space-y-4">
-                    {blockedUsers.length > 0 ? (
-                        blockedUsers.map((block) => (
-                            <div
-                                key={block.id}
-                                className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <img
-                                        src={
-                                            block.avatar_url ||
-                                            "/default-avatar.png"
-                                        }
-                                        className="w-12 h-12 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                                        alt={block.name}
-                                        onError={(e) => {
-                                            e.target.src =
-                                                "/default-avatar.png";
-                                        }}
-                                    />
-                                    <div>
-                                        <p className="font-black text-gray-900 uppercase">
-                                            {block.name}
-                                        </p>
-                                        <p className="text-xs text-gray-500 font-bold uppercase tracking-tight">
-                                            @{block.username} • BLOCKED{" "}
-                                            {block.blocked_at}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => unblockUser(block.id)}
-                                    className="bg-white border-2 border-black text-black px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-gray-100 transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
-                                >
-                                    Unblock
-                                </button>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px] ">
-                            <UserX
-                                className="mx-auto text-gray-300 mb-2"
-                                size={40}
-                            />
-                            <p className="text-gray-400 font-bold uppercase text-sm">
-                                No blocked users yet
-                            </p>
-                            <p className="text-gray-300 text-xs mt-1">
-                                Search and block users above
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

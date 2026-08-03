@@ -20,7 +20,7 @@ class FeatureSuggestion extends Model
         'admin_notes',
     ];
 
-    const STATUSES = ['pending', 'under_review', 'planned', 'rejected'];
+    const STATUSES = ['pending', 'accepted', 'under_review', 'planned', 'rejected'];
 
     public function user()
     {

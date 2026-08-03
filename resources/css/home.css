@@ -251,7 +251,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .quty button,.qutynum{height:33px;align-items:center;align-content:center;justify-content:center;}
 .qutynum{font-size:16px;width:34px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;line-height:23px;}
 .quty button{width:33px;font-size:18px !important;display:flex;}
-.cartlist.shadow-[4px_4px_0px_0px_#FF007F]urple{box-shadow:5px 8px 0 0 var(--purple);}
+.cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
 .stripbox{max-width:741px;width:90%;}
 .stripbox .loginheadbox{border-radius:30px 30px 0 0;}
 .termselect label{color:#676767;font-size:17px;font-style:normal;letter-spacing:-0.28px;line-height:24px;}
@@ -690,7 +690,7 @@ select#country{width:150px;}
 .addsocial ul li a svg{width:24px;height:24px;}
 .addsocial ul li:last-child{border:0 !important;}
 .finish button{width:96%;margin:auto;}
-.text-shadow-[4px_4px_0px_0px_#FF007F]lack{text-shadow:1px 3px 0 var(--black);}
+.text-shadow-black{text-shadow:1px 3px 0 var(--black);}
 .funpart{padding:50px 0;}
 .funboxs{flex-wrap:wrap;justify-content:center;height:auto;}
 .funboximg,.funcnt{width:100%;text-align:center;}
@@ -784,7 +784,7 @@ select#country{width:150px;}
 /* .wishlistbtnFixed a{padding:20px !important;box-shadow:3px 3px 16px 3px #fdfdfd33 !important;}
 */
 .userManageHead .btn-pink-md{width:100%;}
-.wishbanner .shadow-[4px_4px_0px_0px_#FF007F]lack{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
+.wishbanner .shadow-black{box-shadow:7px 15px 0 0 rgba(0,0,0,0.8);}
 .userProfile .shadow-voilet{box-shadow:7px 15px 0 0 var(--voilet);}
 .welcomeHeading{font-size:48px;line-height:53px;}
 .funpart h2.headingMd br{display:none;}

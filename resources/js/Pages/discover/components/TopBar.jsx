@@ -103,7 +103,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px]   shadow-[4px_4px_0px_0px_#FF007F]l border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px]   shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>

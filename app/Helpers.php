@@ -897,7 +897,12 @@ class Helpers
             'nzd' => 'NZ$',
         ];
 
-        return $arr[$curr];
+        // ⚠️ Fall back to the ISO code, never throw. This ran as `$arr[$curr]`,
+        // which raises an undefined-key error for any currency not listed above —
+        // inside receipt and subscription emails, where the failure is a mail that
+        // never arrives about money that already moved. A bare "USD" is a worse
+        // symbol than "$" and a far better outcome than no email.
+        return $arr[$curr] ?? strtoupper((string) $currency);
     }
 
     /*

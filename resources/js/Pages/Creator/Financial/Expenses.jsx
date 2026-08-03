@@ -90,7 +90,7 @@ export default function Expenses({ auth, expenses, filters }) {
                         </div>
                         <button 
                             onClick={() => setIsAdding(!isAdding)}
-                            className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${isAdding ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-[#FF007F] text-white hover:bg-[#d83a7c] shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/20'}`}
+                            className={`px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${isAdding ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-[#FF007F] text-white hover:bg-[#d83a7c] shadow-lg shadow-pink-500/20'}`}
                         >
                             {isAdding ? <X size={20} /> : <Plus size={20} />}
                             {isAdding ? 'Close Form' : 'Log New Expense'}
@@ -186,7 +186,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                     <button 
                                         type="submit" 
                                         disabled={processing}
-                                        className="px-6 py-2.5 bg-[#FF007F] text-white rounded-xl hover:bg-[#d83a7c] font-bold shadow-lg shadow-[4px_4px_0px_0px_#FF007F]ink-500/20 transition-all flex items-center gap-2"
+                                        className="px-6 py-2.5 bg-[#FF007F] text-white rounded-xl hover:bg-[#d83a7c] font-bold shadow-lg shadow-pink-500/20 transition-all flex items-center gap-2"
                                     >
                                         <Save size={18} />
                                         Save Expense

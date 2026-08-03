@@ -35,6 +35,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -495,6 +496,8 @@ class TaskController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $task->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($creator, $task->price);
 
             // Log the blocked payment for subscription issues
             Log::warning('Task payment blocked due to subscription issue', [

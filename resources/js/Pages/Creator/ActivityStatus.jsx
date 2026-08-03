@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from "react";
+import PostingWindow from "@/Components/Creator/PostingWindow";
+import ActivityStatusBanner from "@/Components/Creator/ActivityStatusBanner";
+import CadenceChecklist from "@/Components/Creator/CadenceChecklist";
 import { Head, Link, router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 
@@ -248,10 +251,6 @@ const ActivityStatus = ({
         activityStatus?.needed ?? Math.max(0, required - contentCount);
 
     const badge = STATUS_BADGES[activityStatus?.status] || STATUS_BADGES.error;
-    const progress = Math.min(
-        100,
-        Math.round((contentCount / Math.max(1, required)) * 100),
-    );
 
     // A fan/gifter who lands here directly has no creator activity to show — the page
     // used to render a bare "Check unavailable" chip with no explanation.
@@ -322,6 +321,27 @@ const ActivityStatus = ({
                         </button>
                     </div>
 
+                    {/* ⚠️ The verdict comes FIRST, in money, and it is the same
+                        component the creator's profile shows — one wording for one
+                        state. This page used to open with a badge and a heatmap,
+                        and creators left it still not knowing whether they were
+                        being paid. `showDetailsLink` is off because that link
+                        points here. */}
+                    {postingCadence && (
+                        <ActivityStatusBanner
+                            cadence={postingCadence}
+                            className="mb-6"
+                            showDetailsLink={false}
+                        />
+                    )}
+
+                    {/* The steps, before any of the reporting below. A creator who
+                        does these does not need to read the rest of the page. */}
+                    <CadenceChecklist
+                        checklist={postingCadence?.checklist ?? []}
+                        className="mb-6"
+                    />
+
                     {/* ---- Headline: are payments running, and what closes the gap ---- */}
                     <Card className="mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -336,21 +356,58 @@ const ActivityStatus = ({
                             </span>
                         </div>
 
-                        <div className="mt-4">
-                            <div className="flex justify-between text-sm font-bold mb-1.5">
-                                <span>
-                                    {contentCount} of {required} content items
-                                </span>
-                                <span className="text-gray-600">
-                                    last {periodDays} days
-                                </span>
-                            </div>
-                            <div className="h-4 w-full bg-gray-200 rounded-full border-2 border-black overflow-hidden">
-                                <div
-                                    className={`h-full transition-all ${contentCount >= required ? "bg-green-500" : "bg-[#FF007F]"}`}
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
+                        {/* ⚠️ A window, not a progress bar. The rule is a ROLLING
+                            30 days: a post counting today drops out on a known
+                            date and the total falls by one, so "3 of 3" is not a
+                            finish line. The bar that used to sit here said the
+                            opposite, and hid the only date the creator can act on
+                            before it bites. */}
+                        {/* ⚠️ A SECOND, separate rule — the same divider
+                            CreatorActivityWidget carries, for the same reason. The
+                            badge above is the purchase-time content gate
+                            (CreatorActivityService, 28 days); this window is the
+                            posting cadence (PostingCadenceService, 30 days, member
+                            posts only). They measure different posts over different
+                            periods and can legitimately disagree, so without the
+                            heading the card reads as contradicting itself — a green
+                            "safe" badge above a window saying 1 / 3. */}
+                        <div className="mt-6 border-t border-black/10 pt-4">
+                            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-black/50">
+                                Separate rule &middot; Content membership posting
+                            </p>
+                            {/* ⚠️ The cadence payload is nested under
+                                `postingCadence` — the controller merges it in
+                                under that key. Reading counting_posts from the top
+                                level returned undefined and the window rendered
+                                "nothing counted yet" for every creator, silently. */}
+                            {/* ⚠️ Tone comes from the cadence's OWN status, never
+                                from contentCount — that belongs to the other rule,
+                                and driving the colour with it painted the window
+                                green while it read 1 / 3. */}
+                            <PostingWindow
+                                posts={
+                                    activityStatus?.postingCadence
+                                        ?.counting_posts ?? []
+                                }
+                                required={
+                                    activityStatus?.postingCadence?.required ??
+                                    required
+                                }
+                                windowDays={
+                                    activityStatus?.postingCadence
+                                        ?.window_days ?? periodDays
+                                }
+                                tone={
+                                    {
+                                        paused: "paused",
+                                        at_risk: "risk",
+                                        active: "safe",
+                                        grace: "safe",
+                                    }[
+                                        activityStatus?.postingCadence?.status
+                                    ] ?? "risk"
+                                }
+                            />
                         </div>
 
                         {activityStatus?.status === "grace_period" && (

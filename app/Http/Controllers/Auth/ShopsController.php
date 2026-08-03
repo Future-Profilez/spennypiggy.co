@@ -41,6 +41,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -1058,6 +1059,8 @@ class ShopsController extends Controller
             if (! $subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $shop->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $shop->price));
+                // Recorded and counted: one lost sale is a warning, six is a reason.
+                BlockedPaymentAlert::record($shop->user, $shop->price);
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Shop payment blocked due to subscription issue', [

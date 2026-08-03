@@ -2,6 +2,8 @@
 
 namespace App;
 
+use App\Support\StripeRequirementLabels;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Stripe\Account;
@@ -548,7 +550,45 @@ class StripeControl
     }
 
     /**
-     * Get comprehensive Stripe account requirements and action items
+     * Stripe `disabled_reason` values the creator cannot fix by filling a form.
+     * These must NEVER be collapsed into "finish your setup" and must never be
+     * given an onboarding button — sending a rejected creator back through
+     * onboarding is a loop that cannot terminate.
+     */
+    private const TERMINAL_DISABLED_REASONS = [
+        'rejected',
+        'rejected.fraud',
+        'rejected.listed',
+        'rejected.terms_of_service',
+        'rejected.incomplete_verification',
+        'rejected.platform_fraud',
+        'rejected.platform_terms_of_service',
+        'rejected.platform_other',
+        'rejected.other',
+        'listed',
+        'platform_paused',
+    ];
+
+    /** Wording per terminal reason — the creator is told what happened, not a code. */
+    private const TERMINAL_COPY = [
+        'rejected.fraud' => 'Stripe has closed your payment account after a fraud review.',
+        'rejected.listed' => 'Stripe has closed your payment account because it matched an entry on a sanctions or restricted list.',
+        'rejected.terms_of_service' => 'Stripe has closed your payment account for a breach of its terms of service.',
+        'rejected.incomplete_verification' => 'Stripe has closed your payment account because verification could not be completed in time.',
+        'listed' => 'Your payment account is on hold because it matched an entry on a restricted list.',
+        'platform_paused' => 'Your payment account has been paused.',
+    ];
+
+    /**
+     * Get comprehensive Stripe account requirements and action items.
+     *
+     * The contract every caller relies on: **if Stripe wants something, it
+     * appears here.** Creators do not open the Stripe dashboard — this panel is
+     * the only place most of them will ever see a requirement, so nothing may be
+     * silently dropped. What changed is the SHAPE, not the coverage: one primary
+     * card describing the actual state, plus only those extra cards that say
+     * something genuinely different (payouts blocked while charges work, a
+     * document Stripe rejected, a deadline).
      *
      * @param  string  $accountId  Stripe Account ID
      * @return array Account requirements analysis
@@ -558,245 +598,287 @@ class StripeControl
         self::setClient();
         try {
             $account = self::$client->accounts->retrieve($accountId);
-            $requirements = [];
-            $hasRequirements = false;
-
-            // Check if account is disabled
-            if (! $account->charges_enabled) {
-                $hasRequirements = true;
-
-                // Check disabled reason
-                if (isset($account->requirements->disabled_reason)) {
-                    switch ($account->requirements->disabled_reason) {
-                        case 'requirements.past_due':
-                            $requirements[] = [
-                                'type' => 'past_due_requirements',
-                                'severity' => 'critical',
-                                'title' => 'Past Due Requirements',
-                                'message' => 'Your account has past due requirements that must be completed immediately to restore payment processing.',
-                                'action' => 'Complete missing information in your Stripe dashboard.',
-                                'action_url' => '/stripe/enable_card_payments',
-                            ];
-                            break;
-
-                        case 'requirements.pending_verification':
-                            $requirements[] = [
-                                'type' => 'pending_verification',
-                                'severity' => 'warning',
-                                'title' => 'Verification Pending',
-                                'message' => 'Your account information is being verified. This process typically takes 1-3 business days.',
-                                'action' => 'Please wait for verification to complete.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'rejected.fraud':
-                            $requirements[] = [
-                                'type' => 'rejected_fraud',
-                                'severity' => 'critical',
-                                'title' => 'Account Rejected - Fraud',
-                                'message' => 'Your account was rejected due to fraud concerns. Please contact support.',
-                                'action' => 'Contact Stripe support for account review.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'rejected.listed':
-                            $requirements[] = [
-                                'type' => 'rejected_listed',
-                                'severity' => 'critical',
-                                'title' => 'Account Rejected - Listed',
-                                'message' => 'Your account was rejected due to being on a restricted list.',
-                                'action' => 'Contact Stripe support for clarification.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'rejected.terms_of_service':
-                            $requirements[] = [
-                                'type' => 'rejected_tos',
-                                'severity' => 'critical',
-                                'title' => 'Account Rejected - Terms of Service',
-                                'message' => 'Your account was rejected for a terms-of-service reason. Please contact support.',
-                                'action' => 'Contact support for account review.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'rejected.incomplete_verification':
-                            $requirements[] = [
-                                'type' => 'rejected_incomplete_verification',
-                                'severity' => 'critical',
-                                'title' => 'Account Rejected - Incomplete Verification',
-                                'message' => 'Your account was rejected because verification could not be completed.',
-                                'action' => 'Contact support to restart verification.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'listed':
-                            $requirements[] = [
-                                'type' => 'listed',
-                                'severity' => 'critical',
-                                'title' => 'Account Under Restriction',
-                                'message' => 'Your account matched an entry on a restricted list and is under review.',
-                                'action' => 'Contact support for clarification.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'under_review':
-                            $requirements[] = [
-                                'type' => 'under_review',
-                                'severity' => 'warning',
-                                'title' => 'Account Under Review',
-                                'message' => 'Stripe is reviewing your account. This usually resolves within a few business days.',
-                                'action' => 'Please wait for the review to complete.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        case 'platform_paused':
-                            $requirements[] = [
-                                'type' => 'platform_paused',
-                                'severity' => 'critical',
-                                'title' => 'Account Paused',
-                                'message' => 'Your payment account has been paused. Please contact support for details.',
-                                'action' => 'Contact support.',
-                                'action_url' => null,
-                            ];
-                            break;
-
-                        default:
-                            // Any disabled_reason we don't map explicitly (Stripe
-                            // adds new ones) must still produce a visible card —
-                            // otherwise has_requirements is true but requirements[]
-                            // is empty and the dashboard shows a dead account with
-                            // no explanation at all.
-                            $requirements[] = [
-                                'type' => 'account_disabled',
-                                'severity' => 'critical',
-                                'title' => 'Payments Disabled',
-                                'message' => 'Your payment account is currently disabled ('.$account->requirements->disabled_reason.'). Please complete any outstanding steps or contact support.',
-                                'action' => 'Complete outstanding requirements or contact support.',
-                                'action_url' => '/stripe/enable_card_payments',
-                            ];
-                            break;
-                    }
-                } elseif (! $account->charges_enabled) {
-                    // charges disabled with no disabled_reason at all — still not a
-                    // silent state. Point the creator at the resume-onboarding flow.
-                    $requirements[] = [
-                        'type' => 'charges_disabled',
-                        'severity' => 'high',
-                        'title' => 'Payments Not Active Yet',
-                        'message' => 'Your account cannot accept payments yet. Finish your Stripe setup to activate them.',
-                        'action' => 'Complete your Stripe onboarding.',
-                        'action_url' => '/stripe/enable_card_payments',
-                    ];
-                }
-
-                // Check currently due requirements
-                if (! empty($account->requirements->currently_due)) {
-                    $requirements[] = [
-                        'type' => 'currently_due',
-                        'severity' => 'high',
-                        'title' => 'Information Required',
-                        'message' => 'Additional information is required to activate your account.',
-                        'action' => 'Complete your account setup with the missing information.',
-                        'action_url' => '/stripe/enable_card_payments',
-                        'fields_needed' => $account->requirements->currently_due,
-                    ];
-                }
-
-                // Check eventually due requirements — only fields NOT already
-                // shown in the currently_due card (avoid duplicate cards)
-                $eventuallyOnly = array_values(array_diff(
-                    $account->requirements->eventually_due ?? [],
-                    $account->requirements->currently_due ?? []
-                ));
-                if (! empty($eventuallyOnly)) {
-                    $requirements[] = [
-                        'type' => 'eventually_due',
-                        'severity' => 'medium',
-                        'title' => 'Action Needed Soon',
-                        'message' => 'Additional information will be required in the future to maintain your account.',
-                        'action' => 'Complete account information at your convenience.',
-                        'action_url' => '/stripe/enable_card_payments',
-                        'fields_needed' => $eventuallyOnly,
-                    ];
-                }
-            }
-
-            // Check capabilities issues
-            if (isset($account->capabilities->card_payments)) {
-                if ($account->capabilities->card_payments === 'inactive') {
-                    $hasRequirements = true;
-                    $requirements[] = [
-                        'type' => 'card_payments_inactive',
-                        'severity' => 'high',
-                        'title' => 'Card Payments Disabled',
-                        'message' => 'Card payment capability is not active on your account.',
-                        'action' => 'Enable card payments in your account settings.',
-                        'action_url' => '/stripe/enable_card_payments',
-                    ];
-                } elseif ($account->capabilities->card_payments === 'pending') {
-                    $hasRequirements = true;
-                    $requirements[] = [
-                        'type' => 'card_payments_pending',
-                        'severity' => 'medium',
-                        'title' => 'Card Payments Pending',
-                        'message' => 'Card payment capability is being reviewed.',
-                        'action' => 'Please wait for the review to complete.',
-                        'action_url' => null,
-                    ];
-                }
-            }
-
-            // Check for legacy account upgrade needs using proper migration logic
-            // Note: We need the user object to check migration needs properly
-            // For now, we'll skip this check here since it requires user context
-            // The migration check is handled in the controllers where user context is available
-
-            // Check payout capability
-            if (isset($account->capabilities->transfers) && $account->capabilities->transfers !== 'active') {
-                $hasRequirements = true;
-                $requirements[] = [
-                    'type' => 'transfers_disabled',
-                    'severity' => 'high',
-                    'title' => 'Payouts Disabled',
-                    'message' => 'Your account cannot receive payouts. This may be due to missing bank account information.',
-                    'action' => 'Complete your payout information.',
-                    'action_url' => '/stripe/enable_card_payments',
-                ];
-            }
+            $requirements = self::buildAccountRequirements($account);
 
             return [
-                'has_requirements' => $hasRequirements,
+                'has_requirements' => $requirements !== [],
                 'requirements' => $requirements,
                 'account_status' => [
-                    'charges_enabled' => $account->charges_enabled,
-                    'details_submitted' => $account->details_submitted,
-                    'payouts_enabled' => $account->payouts_enabled ?? false,
+                    'charges_enabled' => (bool) ($account->charges_enabled ?? false),
+                    'details_submitted' => (bool) ($account->details_submitted ?? false),
+                    'payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
                     'disabled_reason' => $account->requirements->disabled_reason ?? null,
+                    'deadline' => self::deadlineIso($account),
                 ],
             ];
         } catch (Exception $e) {
             Log::error('Failed to get account requirements: '.$e->getMessage());
 
+            // A read failure is NOT "nothing to do" — it is an unknown state, and
+            // saying nothing would hide a real requirement behind a transient
+            // outage. Report it as its own state so the dashboard can keep the
+            // creator's other routes into Stripe available.
             return [
                 'has_requirements' => true,
                 'requirements' => [[
                     'type' => 'connection_error',
-                    'severity' => 'critical',
-                    'title' => 'Account Connection Issue',
-                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
-                    'action' => 'Refresh the page or contact support.',
+                    'severity' => 'warning',
+                    'title' => 'We could not check your payment account',
+                    'message' => 'We could not reach Stripe just now, so we cannot tell you whether anything needs your attention. This is usually temporary.',
+                    'action' => 'Refresh the page in a few minutes. If it keeps happening, contact support.',
                     'action_url' => null,
+                    'contact_support' => true,
                 ]],
                 'account_status' => [],
             ];
         }
+    }
+
+    /**
+     * Decide which cards describe this account, most severe first.
+     *
+     * Public because it is a pure mapper over an already-retrieved account —
+     * no client, no network — which is what makes every state below testable
+     * without standing up Stripe. Application code should call
+     * `getAccountRequirements()`.
+     *
+     * @param  Account  $account
+     * @return array<int, array<string, mixed>>
+     */
+    public static function buildAccountRequirements($account): array
+    {
+        $reqs = $account->requirements ?? null;
+
+        $disabledReason = $reqs->disabled_reason ?? null;
+        $pastDue = $reqs->past_due ?? [];
+        $currentlyDue = $reqs->currently_due ?? [];
+        $eventuallyDue = $reqs->eventually_due ?? [];
+        $pendingVerification = $reqs->pending_verification ?? [];
+        $stripeErrors = $reqs->errors ?? [];
+
+        $detailsSubmitted = (bool) ($account->details_submitted ?? false);
+        $chargesEnabled = (bool) ($account->charges_enabled ?? false);
+        $payoutsEnabled = (bool) ($account->payouts_enabled ?? false);
+        $deadline = self::deadlineIso($account);
+
+        // ── 1. Terminal ─────────────────────────────────────────────────────
+        // Nothing else matters and nothing else is actionable. Returned alone,
+        // with no onboarding link, so the creator is not sent round a loop.
+        if ($disabledReason !== null && in_array($disabledReason, self::TERMINAL_DISABLED_REASONS, true)) {
+            return [[
+                'type' => 'account_rejected',
+                'severity' => 'critical',
+                'title' => 'Your payment account is closed',
+                'message' => (self::TERMINAL_COPY[$disabledReason] ?? 'Your payment account has been closed or restricted by Stripe.')
+                    .' You cannot take payments or receive payouts. Our support team can tell you what your options are.',
+                'action' => 'Contact support — this cannot be fixed from the setup form.',
+                'action_url' => null,
+                'contact_support' => true,
+                'reason_code' => $disabledReason,
+            ]];
+        }
+
+        // ── 2. Stripe is reviewing ──────────────────────────────────────────
+        // There is genuinely nothing for the creator to do. Saying "action
+        // required" here trains people to ignore the panel.
+        if (in_array($disabledReason, ['requirements.pending_verification', 'under_review'], true)) {
+            return [[
+                'type' => 'pending_verification',
+                'severity' => 'info',
+                'title' => 'Stripe is reviewing your details',
+                'message' => 'Your information has been submitted and Stripe is checking it. This usually takes 1–3 business days. Payments switch on automatically once it passes — there is nothing for you to do.',
+                'action' => 'Nothing right now. We will email you when this changes.',
+                'action_url' => null,
+                'fields_needed' => StripeRequirementLabels::humanise($pendingVerification),
+            ]];
+        }
+
+        $cards = [];
+
+        // ── 3. The one primary blocking card ────────────────────────────────
+        // Exactly one of these applies. Before this they could all fire at once
+        // (past_due + currently_due + card_payments inactive + transfers
+        // inactive), producing four panels and one root cause.
+        if (! $detailsSubmitted) {
+            $cards[] = [
+                'type' => 'onboarding_incomplete',
+                'severity' => 'critical',
+                'title' => 'Finish your Stripe setup',
+                'message' => 'Your payment account was created but the setup form was never completed, so you cannot take payments or receive payouts yet. It takes a few minutes and you can stop and come back.',
+                'action' => 'Complete your Stripe setup.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Finish setup',
+                'fields_needed' => StripeRequirementLabels::humanise(
+                    array_merge($pastDue, $currentlyDue, $eventuallyDue)
+                ),
+                'deadline' => $deadline,
+            ];
+        } elseif (! $chargesEnabled) {
+            $cards[] = [
+                'type' => 'information_required',
+                'severity' => 'critical',
+                'title' => 'Stripe needs more information',
+                'message' => 'You cannot take payments until Stripe has the information below. You have already started — this is what is still missing.',
+                'action' => 'Add the missing information.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Add information',
+                'fields_needed' => StripeRequirementLabels::humanise(
+                    array_merge($pastDue, $currentlyDue)
+                ),
+                'deadline' => $deadline,
+            ];
+        } elseif ($pastDue !== [] || $currentlyDue !== []) {
+            // Charges still work, but Stripe is asking. Ignore it and they stop.
+            $cards[] = [
+                'type' => 'information_required_soon',
+                'severity' => 'high',
+                'title' => 'Stripe needs more information to keep your payments on',
+                'message' => 'Your payments are still working, but Stripe has asked for the information below. If it is not provided, payments and payouts will be switched off.',
+                'action' => 'Add the missing information.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Add information',
+                'fields_needed' => StripeRequirementLabels::humanise(
+                    array_merge($pastDue, $currentlyDue)
+                ),
+                'deadline' => $deadline,
+            ];
+        }
+
+        // ── 4. Money in, but not out ────────────────────────────────────────
+        // A genuinely different fact from anything above: sales are landing and
+        // the creator cannot withdraw. Only shown when charges DO work —
+        // otherwise the primary card already covers it.
+        if ($chargesEnabled && ! $payoutsEnabled) {
+            $cards[] = [
+                'type' => 'payouts_disabled',
+                'severity' => 'high',
+                'title' => 'Your payouts are on hold',
+                'message' => 'You can take payments, but your earnings cannot be paid out yet. This is usually a missing or unverified bank account.',
+                'action' => 'Add or confirm your bank details.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Fix payouts',
+                'deadline' => $deadline,
+            ];
+        }
+
+        // ── 5. Something the creator sent was rejected ──────────────────────
+        // `requirements.errors` is where Stripe says WHY — "the document is
+        // unreadable", "the name does not match". Nothing surfaced it before, so
+        // a creator re-uploaded the same unreadable passport indefinitely.
+        $errorMessages = self::requirementErrorMessages($stripeErrors);
+        if ($errorMessages !== []) {
+            $cards[] = [
+                'type' => 'requirement_errors',
+                'severity' => 'high',
+                'title' => 'Something you sent could not be accepted',
+                'message' => 'Stripe could not accept part of what you submitted. Fixing the points below is what unblocks your account.',
+                'action' => 'Resubmit the details below.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Fix and resubmit',
+                'fields_needed' => $errorMessages,
+            ];
+        }
+
+        // ── 6. Nothing blocking, but Stripe is still checking ───────────────
+        if ($cards === [] && $pendingVerification !== []) {
+            $cards[] = [
+                'type' => 'verification_in_progress',
+                'severity' => 'info',
+                'title' => 'Stripe is still checking some details',
+                'message' => 'Your account is working. Stripe is verifying the details below in the background — there is nothing for you to do.',
+                'action' => 'Nothing right now.',
+                'action_url' => null,
+                'fields_needed' => StripeRequirementLabels::humanise($pendingVerification),
+            ];
+        }
+
+        // ── 7. Will be needed later ─────────────────────────────────────────
+        // Only fields not already named above, and only when nothing urgent is
+        // on screen — a "soon" card stacked under a "now" card is noise.
+        $eventuallyOnly = array_values(array_diff(
+            $eventuallyDue,
+            $currentlyDue,
+            $pastDue
+        ));
+        if ($cards === [] && $eventuallyOnly !== []) {
+            $cards[] = [
+                'type' => 'eventually_due',
+                'severity' => 'medium',
+                'title' => 'Stripe will need this later',
+                'message' => 'Nothing is blocked today. Stripe will ask for the information below at some point — adding it now avoids an interruption later.',
+                'action' => 'Add it when convenient.',
+                'action_url' => '/stripe/enable_card_payments',
+                'action_label' => 'Add now',
+                'fields_needed' => StripeRequirementLabels::humanise($eventuallyOnly),
+                'deadline' => $deadline,
+            ];
+        }
+
+        // ── 8. A capability Stripe is still switching on ────────────────────
+        // Informational only, and only when the account is otherwise clean —
+        // this is the state right after a successful submission.
+        if ($cards === [] && ($account->capabilities->card_payments ?? null) === 'pending') {
+            $cards[] = [
+                'type' => 'card_payments_pending',
+                'severity' => 'info',
+                'title' => 'Card payments are being switched on',
+                'message' => 'Stripe is enabling card payments on your account. This normally completes on its own within a day.',
+                'action' => 'Nothing right now.',
+                'action_url' => null,
+            ];
+        }
+
+        return $cards;
+    }
+
+    /**
+     * Stripe's own explanation of what it rejected, deduplicated.
+     *
+     * Each entry carries `requirement`, `code` and `reason`; `reason` is written
+     * for the account holder, so it is shown as-is rather than re-worded into
+     * something less specific.
+     *
+     * @param  mixed  $errors
+     * @return array<int, string>
+     */
+    private static function requirementErrorMessages($errors): array
+    {
+        $messages = [];
+
+        foreach ((array) $errors as $error) {
+            $reason = is_object($error) ? ($error->reason ?? null) : ($error['reason'] ?? null);
+
+            if (! is_string($reason) || trim($reason) === '') {
+                continue;
+            }
+
+            $reason = trim($reason);
+            if (! in_array($reason, $messages, true)) {
+                $messages[] = $reason;
+            }
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Stripe's `current_deadline` as an ISO string the frontend can format.
+     *
+     * This is the date payments are switched off if the requirement is ignored,
+     * and it was never surfaced anywhere — a creator who does not open the
+     * Stripe dashboard had no way to know one existed.
+     *
+     * @param  Account  $account
+     */
+    private static function deadlineIso($account): ?string
+    {
+        $deadline = $account->requirements->current_deadline ?? null;
+
+        if (empty($deadline) || ! is_numeric($deadline)) {
+            return null;
+        }
+
+        return Carbon::createFromTimestampUTC((int) $deadline)->toIso8601String();
     }
 
     /**
@@ -898,6 +980,21 @@ class StripeControl
         } catch (ApiConnectionException $e) {
             throw new Exception('Stripe API Connection: '.$e->getMessage());
         } catch (ApiErrorException $e) {
+            // A reused idempotency key with changed parameters is OUR bug, not
+            // the creator's, and Stripe's own wording ("Try using a key other
+            // than …") is addressed to a developer. Surfacing it verbatim on a
+            // connect screen tells the creator nothing they can act on and
+            // reads as though their account is broken. Callers must derive the
+            // key from the payload — see initConnect.
+            if (str_contains($e->getMessage(), 'idempotent')) {
+                Log::error('Stripe idempotency key reused with different parameters', [
+                    'idempotency_key' => $idempotencyKey,
+                    'error' => $e->getMessage(),
+                ]);
+
+                throw new Exception('We could not set up your payment account just now. Please try again in a moment — if it keeps happening, contact support.');
+            }
+
             throw new Exception('Stripe API Error: '.$e->getMessage());
         }
     }
