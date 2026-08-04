@@ -15,7 +15,7 @@ class ProductOrderDetail extends Model
         return ['uuid'];
     }
 
-    protected $fillable = ['user_id', 'creater_id', 'cart_id', 'order_id', 'details', 'payment_status', 'session_id'];
+    protected $fillable = ['user_id', 'creater_id', 'cart_id', 'order_id', 'details', 'payment_status', 'session_id', 'product_id'];
 
     public function user()
     {

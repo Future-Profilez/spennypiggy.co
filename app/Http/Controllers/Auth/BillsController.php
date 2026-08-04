@@ -1062,7 +1062,7 @@ class BillsController extends Controller
                 $this->createBillDeliverable($bill_pay, $session);
 
                 // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency, 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
                 $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
 
                 // Dispatch mail jobs
@@ -1116,7 +1116,7 @@ class BillsController extends Controller
                         $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
                     }
                     // Use actual fee breakdown from the gross-up formula
-                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
+                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'), 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
                     $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
                     $stripeFee = $billBreakdown['stripe_fee'];
                     $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
@@ -1208,7 +1208,7 @@ class BillsController extends Controller
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use consistent fee calculation for creator net amount
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, $reserveRate);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, $reserveRate, $billPayment->fee_profile ?? 'card', null, Helpers::storedFeeRates($billPayment));
             $creatorNet = $breakdown['net_to_creator'];
 
             // Get payment intent ID from Stripe session if available

@@ -1839,7 +1839,8 @@ class WishitemController extends Controller
             $ryeProductPayment = new RyeProductPayment;
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $chargeCurrency;
-            $ryeProductPayment->amount = $finalTotalAmount; // Store total paid by supporter
+            $ryeProductPayment->amount = $basePrice;
+            $ryeProductPayment->tax = $applicationFeeAmount;
             $ryeProductPayment->total_paid = $finalTotalAmount;
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;

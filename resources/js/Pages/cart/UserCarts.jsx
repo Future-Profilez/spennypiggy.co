@@ -908,7 +908,7 @@ export default function UserCarts(props) {
                                             basePriceToGrossUp,
                                             itemCurrency,
                                             0,
-                                            creatorIdOf(item) ??
+                                            creatorIdOf(c) ??
                                                 datas?.user?.id,
                                         );
                                     const itemTotalPrice =

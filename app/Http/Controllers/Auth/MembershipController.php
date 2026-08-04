@@ -1166,7 +1166,7 @@ class MembershipController extends Controller
                 $total_amount = $mem->membership->price + $mem->vat_tax_amount;
 
                 // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency, 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
                 $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
 
                 MembershipMail::dispatch($mem, $creatorNetAmount);
@@ -1262,7 +1262,7 @@ class MembershipController extends Controller
                         $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
                     }
                     // Use actual fee breakdown from the gross-up formula
-                    $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'));
+                    $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'), 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
                     $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
                     $stripeFee = $memBreakdown['stripe_fee'];
                     $gross = $mem->total_paid && $mem->total_paid > 0

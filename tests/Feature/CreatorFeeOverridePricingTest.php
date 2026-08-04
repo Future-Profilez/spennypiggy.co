@@ -6,6 +6,9 @@ use App\Helpers;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\CreatorFeeOverride;
+use App\Models\FinancialTransaction;
+use App\Models\ProductOrderDetail;
+use App\Models\RyeProductPayment;
 use App\Models\User;
 use App\Services\Pricing\CreatorFeeResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -317,5 +320,43 @@ class CreatorFeeOverridePricingTest extends TestCase
             'compliance_fee_rate' => 2.0,
             'fee_source' => $chargedPlatformRate === 17.0 ? 'standard' : 'custom',
         ]);
+    }
+
+    public function test_rye_product_payment_syncs_correctly_to_financial_transactions(): void
+    {
+        $creator = $this->creator();
+        $supporter = User::factory()->create();
+
+        // Create RyeProductPayment
+        $payment = RyeProductPayment::create([
+            'user_id' => $supporter->id,
+            'currency' => 'GBP',
+            'amount' => 100.00,
+            'tax' => 20.31,
+            'total_paid' => 120.31,
+            'status' => 'succeeded',
+        ]);
+
+        // Create the corresponding ProductOrderDetail so sync can find the creator
+        ProductOrderDetail::create([
+            'order_id' => $payment->id,
+            'creater_id' => $creator->id,
+            'user_id' => $supporter->id,
+            'session_id' => 'cs_test',
+            'product_id' => 1,
+        ]);
+
+        // Run the sync command
+        $this->artisan('finance:sync-transactions')
+            ->assertSuccessful();
+
+        $ft = FinancialTransaction::where('source_type', RyeProductPayment::class)
+            ->where('source_id', $payment->id)
+            ->first();
+
+        $this->assertNotNull($ft);
+        $this->assertEquals(120.31, (float) $ft->gross_amount);
+        $this->assertEquals(20.31, (float) $ft->platform_fee);
+        $this->assertEquals(100.00, (float) $ft->net_amount);
     }
 }

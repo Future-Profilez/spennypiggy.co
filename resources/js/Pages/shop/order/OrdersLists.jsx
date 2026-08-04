@@ -229,14 +229,27 @@ export default function OrdersLists({ type = 'sales' }) {
                                             formatMultiPrice(item.net_amount || item.amount || 0, item?.currency || userCurrency)
                                         ) : (
                                             formatMultiPrice(
-                                                item.total_paid || 
+                                                /*
+                                                 * `total_paid` is what the buyer was ACTUALLY charged,
+                                                 * and it is written on every new order — always prefer it
+                                                 * over recomputing, which would re-price a past order at
+                                                 * today's rates.
+                                                 *
+                                                 * ⚠️ The fallback below is for LEGACY rows only (written
+                                                 * before total_paid was stored) and necessarily uses the
+                                                 * standard rate — it has no way to know what priced them.
+                                                 * It was also missing `.total_supporter_pays`, so it passed
+                                                 * the whole breakdown OBJECT to the formatter and rendered
+                                                 * garbage on exactly those rows.
+                                                 */
+                                                item.total_paid ||
                                                 calculateTotalSupporterPays(
                                                     ((Number(item.gross_amount || item.amount || 0)) + 
                                                     (Number(item.tax_amount || 0)) + 
                                                     (Number(item.vat_tax_amount || 0)) + 
                                                     (Number(item.shipping_amount || 0))),
                                                     item?.currency || userCurrency
-                                                ), 
+                                                ).total_supporter_pays, 
                                                 item?.currency || userCurrency
                                             )
                                         )

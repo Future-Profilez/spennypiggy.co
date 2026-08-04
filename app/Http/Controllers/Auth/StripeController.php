@@ -47,6 +47,7 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorJourneyService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
@@ -1843,6 +1844,9 @@ class StripeController extends Controller
 
             $stripePaymentDetail = StripePaymentDetail::create([
                 'fee_profile' => $methodResolution['fee_profile'],
+                // Priced with the owner's rate above, so record it — otherwise the
+                // FT sync re-costs this charge at the standard rate.
+                ...CreatorFeeResolver::columnsFor($getdata[0]->owner->id ?? null, $methodResolution['fee_profile']),
                 'amount_subtotal' => $totalCreatorNet,
                 'amount_total' => $sessionCreate->amount_total / 100,
                 'tax' => $totalApplicationFee,
@@ -2156,6 +2160,8 @@ class StripeController extends Controller
                 $stripeid = StripePaymentDetail::create([
                     'session_id' => $callbackData->id,
                     'fee_profile' => $methodResolution['fee_profile'],
+                    // Same as above — priced bespoke, so store the rate.
+                    ...CreatorFeeResolver::columnsFor($cart[0]->owner_id ?? null, $methodResolution['fee_profile']),
                     'amount_subtotal' => $subtotal,
                     'amount_total' => $callbackData->amount_total / 100,
                     'tax' => $taxnew,
@@ -3320,7 +3326,7 @@ class StripeController extends Controller
                             $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                             // Use consistent fee calculation for creator net amount
-                            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate, $wishSubscription->fee_profile ?? 'card', null, Helpers::storedFeeRates($wishSubscription));
                             $creatorNet = $breakdown['net_to_creator'];
 
                             // Create deliverable record for tracking
@@ -3518,7 +3524,7 @@ class StripeController extends Controller
                 $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                 // Use consistent fee calculation for creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate, $wishSubscription->fee_profile ?? 'card', null, Helpers::storedFeeRates($wishSubscription));
                 $creatorNet = $breakdown['net_to_creator'];
 
                 // Create deliverable record for renewal content delivery

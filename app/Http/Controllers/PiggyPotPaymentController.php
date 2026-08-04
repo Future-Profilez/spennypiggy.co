@@ -232,7 +232,16 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile'], $creator->id);
+        // Pass $creator->id as the 5th arg so the pricing engine picks up the
+        // creator's live bespoke deal (if any) — this is the correct pattern for
+        // new-charge paths. Recompute paths use $rateOverride (6th arg) instead.
+        $breakdown = Helpers::calculateStripeDirectChargeFlow(
+            $basePrice,
+            $sourceCurrency,
+            0,
+            $methodResolution['fee_profile'],
+            $creator->id
+        );
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -517,6 +526,18 @@ class PiggyPotPaymentController extends Controller
                             'gross_amount' => $gross,
                             'fee_profile' => $pay->fee_profile ?? 'card',
                             'platform_fee' => $platformFee,
+                            // Carry the rate columns from the stored payment row so a
+                            // later change to the creator's deal cannot re-price this entry.
+                            ...Helpers::feeRateColumns(Helpers::calculateStripeDirectChargeFlow(
+                                (float) $pay->amount,
+                                strtoupper($pay->currency ?? 'GBP'),
+                                0,
+                                $pay->fee_profile ?? 'card',
+                                null,
+                                Helpers::storedFeeRates($pay)
+                            )),
+                            'compliance_fee' => null,
+                            'admin_fee' => null,
                             'stripe_fee' => $stripeFee,
                             'vat_amount' => $vatAmt,
                             'net_amount' => (float) $pay->amount,
