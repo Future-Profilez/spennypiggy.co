@@ -144,7 +144,16 @@ class RepriceSubscriptionsOnFeeChange extends Command
         );
 
         if ($user = $this->option('user')) {
-            $query->where(fn ($q) => $q->where('id', $user)->orWhere('username', $user));
+            // Only compare against `id` when the option actually looks like one —
+            // MySQL casts a non-numeric string in an integer comparison and can
+            // match id 0, quietly repricing the wrong creator's subscribers.
+            $query->where(function ($q) use ($user) {
+                if (ctype_digit((string) $user)) {
+                    $q->where('id', (int) $user);
+                }
+
+                $q->orWhere('username', $user);
+            });
         }
 
         return $query->get();

@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import ItemBadges from "@/Components/ItemBadges";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import ShareProfile from "./ShareProfile";
@@ -340,6 +340,28 @@ export default function Wishlistbox(props) {
                 <div className="absolute top-1 left-1 text-xl">👀</div>
                 <div className="absolute bottom-2 right-2 text-xl">⭐</div>
             </div>
+
+            {/*
+              * 🚨 AddCart was imported and NEVER rendered, so every "Unlock" button
+              * on a wish card did nothing at all — no modal, no request, no console
+              * error. There was no working path to put a wish in the basket.
+              *
+              * `action={open}` is the same contract the rye twin (GiftListing) uses:
+              * `openAddtocart` sets it true, then clears it back to undefined a
+              * moment later so the NEXT click is a fresh true and Popup's effect
+              * fires again. undefined is neither true nor false, so clearing it does
+              * not close the modal the supporter is looking at.
+              */}
+            <Suspense fallback={null}>
+                <AddCart
+                    action={open}
+                    uuid={itm?.uuid}
+                    item={itm}
+                    currency={currency}
+                    showall={showall}
+                    IsloggedIn={IsloggedIn}
+                />
+            </Suspense>
         </div>
     );
 }

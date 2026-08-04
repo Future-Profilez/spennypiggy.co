@@ -1,4 +1,5 @@
 import React from 'react';
+import { creatorIdOf } from "@/utils/pricing";
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm, usePage, router } from "@inertiajs/react";
@@ -487,7 +488,7 @@ export default function TipInner({classes, idd}) {
                   amount={parseFloat(data.amount) || 0}
                   currency={user?.default_currency || 'GBP'}
                   email={data.email || auth?.user?.email}
-                  creatorId={user?.id}
+                  creatorId={creatorIdOf(user) ?? user?.id}
                   value={data.payment_method}
                   onChange={(m) => setData('payment_method', m)}
                   onPrices={setPreviewPrices}

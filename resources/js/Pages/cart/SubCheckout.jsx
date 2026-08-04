@@ -558,7 +558,14 @@ export default function SubCheckout(props) {
                                 </ul>
                                 <div className="mt-4" >
                                     <PayButton
-                                        label={reccure == 'onetime' ? 'Subscribe Once' : `Subscribe ${wish.subscription_period}`}
+                                        label={
+                                            reccure == 'onetime'
+                                                ? 'Subscribe Once'
+                                                // ⚠️ A wish with subscription=0 has a NULL period, and this
+                                                // route is still reachable for it — the button read
+                                                // "Subscribe null" on the last screen before payment.
+                                                : `Subscribe${wish?.subscription_period ? ' ' + wish.subscription_period : ''}`
+                                        }
                                         processing={processing}
                                         disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified)}
                                         onClick={submitCheckout}

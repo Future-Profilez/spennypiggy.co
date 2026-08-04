@@ -4095,6 +4095,77 @@ class StripeWebhookController extends Controller
     /**
      * Handle Charge Refunded
      */
+    /**
+     * Stamp the refunded portion of a PARTIAL refund onto the ledger.
+     *
+     * ⚠️ Only three module tables keep a payment-intent column (`task_purchases`,
+     * `piggy_pot_contributions`, `stripe_payment_details`), so a partial refund on a
+     * shop, tip, bill or membership purchase CANNOT be traced to its ledger row from
+     * a charge alone. Those are logged as unattributed rather than silently dropped —
+     * an admin can then reconcile by hand, which is a great deal better than a revenue
+     * figure that is quietly too high. Closing the gap properly needs a payment-intent
+     * column on the remaining tables.
+     *
+     * Never throws: a refund webhook must not fail because reporting could not be updated.
+     */
+    private function recordPartialRefundOnLedger(?string $paymentIntentId, int $amountRefundedMinor, string $currency): void
+    {
+        if (! $paymentIntentId || $amountRefundedMinor <= 0) {
+            return;
+        }
+
+        try {
+            $divisor = Helpers::isZeroDecimalCurrency($currency) ? 1 : 100;
+            $refunded = round($amountRefundedMinor / $divisor, 2);
+
+            $stamp = function (string $sourceType, $sourceIds, float $amount) {
+                $ids = is_array($sourceIds) ? $sourceIds : [$sourceIds];
+
+                return FinancialTransaction::where('source_type', $sourceType)
+                    ->whereIn('source_id', $ids)
+                    ->update(['refunded_amount' => $amount]);
+            };
+
+            $task = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+            if ($task && $stamp(TaskPurchase::class, $task->id, $refunded)) {
+                return;
+            }
+
+            $contribution = PiggyPotContribution::where('payment_intent_id', $paymentIntentId)->first();
+            if ($contribution && $stamp(PiggyPotContribution::class, $contribution->id, $refunded)) {
+                return;
+            }
+
+            // A cart can hold several items against one charge, so the refund is
+            // apportioned by each item's share — stamping the full amount on every
+            // row would report the refund once per item.
+            $detail = StripePaymentDetail::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            if ($detail) {
+                $items = StripePaymentItems::where('stripe_payment_detail_id', $detail->id)->get();
+                $itemsTotal = (float) $items->sum(fn ($i) => (float) ($i->total_paid ?: $i->amount));
+
+                if ($items->isNotEmpty() && $itemsTotal > 0) {
+                    foreach ($items as $item) {
+                        $share = ((float) ($item->total_paid ?: $item->amount)) / $itemsTotal;
+                        $stamp(StripePaymentItems::class, $item->id, round($refunded * $share, 2));
+                    }
+
+                    return;
+                }
+            }
+
+            Log::warning('Partial refund could not be attributed to a ledger row', [
+                'payment_intent_id' => $paymentIntentId,
+                'amount_refunded_minor' => $amountRefundedMinor,
+                'currency' => $currency,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to record partial refund on ledger: '.$e->getMessage(), [
+                'payment_intent_id' => $paymentIntentId,
+            ]);
+        }
+    }
+
     private function handleChargeRefunded($charge)
     {
         $paymentIntentId = $charge->payment_intent ?? null;
@@ -4113,6 +4184,12 @@ class StripeWebhookController extends Controller
                 'amount' => $chargeAmount,
                 'amount_refunded' => $amountRefunded,
             ]);
+
+            // The purchase rows stay intact — it is still mostly paid — but the money
+            // HAS gone back, and until this was recorded every revenue figure on the
+            // platform counted it as earned. The ledger row keeps its status; only the
+            // refunded portion is stamped on it.
+            $this->recordPartialRefundOnLedger($paymentIntentId, $amountRefunded, $charge->currency ?? 'gbp');
 
             return;
         }

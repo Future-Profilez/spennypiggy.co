@@ -55,6 +55,7 @@ const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
 const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
+const CustomPricingNote = lazy(() => import("./home/CustomPricingNote"));
 const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
@@ -138,6 +139,13 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 ]}
              />
             <Hero auth={auth} />
+
+            {/* Aimed at a handful of creators, so it sits under the hero rather
+                than inside it — visible early without displacing the pitch that
+                every other visitor came for. */}
+            <Suspense fallback={null}>
+                <CustomPricingNote />
+            </Suspense>
 
             <ChapterNav chapters={CHAPTERS} />
 
