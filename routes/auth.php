@@ -92,10 +92,25 @@ Route::middleware('guest')->group(function () {
         ->name('login');
     Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
     Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->middleware('throttle:5,1')->name('verify2FA');
-    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
-    Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
-    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
+    // ⚠️ Throttled: this endpoint answers "does an account exist with this email?"
+    // to anyone, unauthenticated, and it is the pre-step of every password login —
+    // without a limit it is a free account-enumeration oracle against the whole
+    // user table.
+    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])
+        ->middleware('throttle:10,1')
+        ->name('verifyUser');
+    // Throttled because it both enumerates addresses and SENDS MAIL on every hit —
+    // unlimited, it is a mail bomb aimed at any address the caller names.
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage'])
+        ->name('password.reset.uuid');
+    // Throttled: the token is single-use and verified server-side, but the endpoint
+    // is unauthenticated and a limit stops it being brute-forced.
+    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])
+        ->middleware('throttle:10,1')
+        ->name('changePassword');
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
     Route::get('verify-token/{token}', [AuthenticatedSessionController::class, 'authRedirects']);
@@ -158,11 +173,18 @@ if (app()->environment('local', 'testing')) {
 Route::prefix('webauthn')->group(function () {
 
     // CHECK ROUTE - Check if user has passkey
-    Route::post('/check', [WebAuthnCheckController::class, 'check'])->name('webauthn.check');
+    // ⚠️ Throttled: it answers a question about an arbitrary email address to an
+    // unauthenticated caller, and the login page fires it on every keystroke
+    // (debounced), so it is both an enumeration surface and a traffic source.
+    Route::post('/check', [WebAuthnCheckController::class, 'check'])
+        ->middleware('throttle:30,1')
+        ->name('webauthn.check');
 
     // LOGIN ROUTES
     // Email-based login
-    Route::post('/login/options', [WebAuthnLoginController::class, 'options'])->name('webauthn.login.options');
+    Route::post('/login/options', [WebAuthnLoginController::class, 'options'])
+        ->middleware('throttle:30,1')
+        ->name('webauthn.login.options');
 
     // Userless login (THIS IS THE MISSING ROUTE)
     Route::post('/login/options-userless', [WebAuthnLoginController::class, 'optionsUserless'])->name('webauthn.login.userless.options');
@@ -383,8 +405,15 @@ Route::middleware('auth')->group(function () {
 
     /* send surprise amount */
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
+    // Throttled: it sends mail on every hit and the verification page calls it on
+    // mount, so an open loop here is a self-inflicted mail bomb.
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->middleware('throttle:3,10')
         ->name('verification.email');
+    // Cheap poll for the verification screen, so it can stop reloading the whole page
+    // every 5 seconds while it waits.
+    Route::get('email/verification-status', [EmailVerificationNotificationController::class, 'status'])
+        ->name('verification.status');
 
     // Content creation routes - NO subscription requirements.
     //
@@ -975,7 +1004,9 @@ Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class,
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
-Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+// Named so the mail can mint a SIGNED link for it. The signature is verified inside
+// the controller (readable message on an expired link, not a bare 403).
+Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify'])->name('email.verify.uuid');
 
 // Legacy /how-it-works → canonical /how-spenny-piggy-works (preserve old URL + SEO)
 Route::get('/how-it-works', function () {

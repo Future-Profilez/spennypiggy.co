@@ -996,10 +996,26 @@ class AuthenticatedSessionController extends Controller
      */
     public function verify2FA(Request $request)
     {
-        $email = $request->input('email');
+        // ⚠️ Matched case-insensitively, and soft-deleted rows included, because
+        // every other door into this account does the same: `LoginRequest` lowercases
+        // in `prepareForValidation`, `verifyUser` matches on `LOWER(email)`, and
+        // `GoogleController` matches on a lowercased address. A stored address with
+        // any uppercase in it therefore passed the password step and then found no
+        // user here — a 2FA account that could never finish signing in.
+        $email = Str::lower(trim((string) $request->input('email')));
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->first();
+        $user = User::withTrashed()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+        // A deactivated account must not be able to complete the second factor.
+        if ($user && method_exists($user, 'trashed') && $user->trashed()) {
+            $request->session()->forget('google_2fa_pending');
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'This account is deactivated. Please contact support.',
+            ], 403);
+        }
 
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');

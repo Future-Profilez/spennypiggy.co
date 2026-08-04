@@ -181,6 +181,11 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
 
     const verify = (e) => {
         e.preventDefault();
+        if (loading) return;
+        if (!bCode && otp.join("").length !== 6) {
+            errorAlert("Enter the 6-digit code from your authenticator app.");
+            return;
+        }
         setLoading(true);
         axios
             .post(route("verify2FA"), {
@@ -207,13 +212,17 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
             })
             .catch((err) => {
                 setLoading(false);
-                console.log(err);
-                if (
-                    err.response &&
-                    err.response.data &&
-                    err.response.data.message
-                ) {
-                    errorAlert(err.response.data.message);
+                // ⚠️ `verify2FA` answers a bad code with 422 and a suspended account
+                // with 403, and BOTH put their text in `msg`. Reading only `message`
+                // meant every real refusal — "Invalid verification code", "This
+                // account has been suspended" — surfaced as "Something went wrong."
+                const payload = err?.response?.data;
+                if (err?.response?.status === 429) {
+                    errorAlert(
+                        "Too many attempts. Please wait a minute and try again.",
+                    );
+                } else if (payload?.msg || payload?.message) {
+                    errorAlert(payload.msg || payload.message);
                 } else {
                     errorAlert("Something went wrong.");
                 }

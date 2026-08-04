@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class VerifyEmail implements ShouldQueue
 {
@@ -56,6 +57,15 @@ class VerifyEmail implements ShouldQueue
             'phone' => $this->user->phone,
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
+            // ⚠️ SIGNED, and built here rather than in the template. The uuid is a
+            // public identifier, so a bare `/user/{uuid}` link let anyone mark any
+            // account's email verified; and `env('APP_URL')` inside a Blade view is
+            // NULL once the config is cached on deploy, so the link lost its host.
+            'verify_url' => URL::temporarySignedRoute(
+                'email.verify.uuid',
+                now()->addDays(7),
+                ['uuid' => $this->user->uuid]
+            ),
         ];
         EmailService::verifyUserEmail($emailData);
     }

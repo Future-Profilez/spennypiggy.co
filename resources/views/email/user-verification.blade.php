@@ -62,7 +62,10 @@
                                 style="background-color:#FF007F;
                                        background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
                                        border-radius:50px;-webkit-border-radius:50px;">
-                                <a href="{{ env('APP_URL') }}/user/{{ $data['uuid'] }}"
+                                {{-- Signed URL built by the job. `env('APP_URL')` is NULL once the
+                                     config is cached on deploy, and an unsigned `/user/{uuid}`
+                                     link let anyone verify any account's address. --}}
+                                <a href="{{ $data['verify_url'] ?? rtrim(config('app.url'), '/').'/user/'.$data['uuid'] }}"
                                     style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
                                            font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
                                            border-radius:50px;-webkit-border-radius:50px;">

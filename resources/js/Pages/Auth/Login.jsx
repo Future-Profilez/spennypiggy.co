@@ -65,9 +65,30 @@ function formatCredentialForServer(credential) {
     return formatted;
 }
 
+/**
+ * A landing page the URL asked for, but only if it is on this site.
+ *
+ * 🚨 `?redirect=` is attacker-controlled, and it was handed straight to
+ * `router.visit()` after a SUCCESSFUL sign-in — the worst place for an open
+ * redirect: the person signs in on the real domain, gets a real session, and is
+ * then dropped on the attacker's page carrying all the trust of a login that just
+ * worked. A "confirm your password" form there is very likely to be believed.
+ *
+ * Same rules as `GoogleController::safeRedirect()` on the server — keep the two in
+ * step: must start with "/", must NOT start with "//" (protocol-relative, which
+ * browsers read as another origin), must not start with "/\" (browsers normalise
+ * the backslash, making "/\evil.com" equivalent to "//evil.com").
+ */
+const safeRedirect = (target) => {
+    const value = String(target || "").trim();
+    if (!value.startsWith("/")) return null;
+    if (value.startsWith("//") || value.startsWith("/\\")) return null;
+    return value;
+};
+
 export default function Login({ status, canResetPassword, googleEnabled = false, google2faPendingEmail = null }) {
     const urlParams = new URLSearchParams(window.location.search);
-    const paramValue = urlParams.get("redirect");
+    const paramValue = safeRedirect(urlParams.get("redirect"));
     const redirectmessage = urlParams.get("message");
     const [open, setOpen] = useState(false);
     const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -323,9 +344,16 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     };
 
     const proceedToStandardLogin = () => {
+        // Re-entrancy guard. The disabled re-render loses the double-tap race, and
+        // each extra submit spends one of the five attempts the login throttle allows.
+        if (loading) return;
+        if (!data.email.trim() || !data.password) {
+            errorAlert("Enter your email address and password.");
+            return;
+        }
         setLoading(true);
         axios
-            .post("/verify-user", data)
+            .post(route("verifyUser"), data)
             .then((resp) => {
                 if (resp.data.status) {
                     if (resp.data.is_2fa) {
@@ -424,22 +452,20 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                 setAnimate("animate-shake");
                 reset("password");
 
-                if (error.response) {
-                    if (error.response.data?.message) {
-                        errorAlert(error.response.data.message);
-                    }
+                // One toast, not two. `LoginRequest` returns `message` AND
+                // `errors.email` carrying the SAME string, so showing both put the
+                // identical failure on screen twice.
+                const payload = error.response?.data;
+                const fieldErrors = Object.values(payload?.errors || {})
+                    .flat()
+                    .filter(Boolean);
 
-                    if (error.response.data?.errors) {
-                        Object.entries(error.response.data.errors).forEach(
-                            ([field, messages]) => {
-                                if (Array.isArray(messages)) {
-                                    messages.forEach((message) =>
-                                        errorAlert(message),
-                                    );
-                                }
-                            },
-                        );
-                    }
+                if (fieldErrors.length) {
+                    fieldErrors.forEach((message) => errorAlert(message));
+                } else if (payload?.message) {
+                    errorAlert(payload.message);
+                } else {
+                    errorAlert("We couldn't sign you in. Please try again.");
                 }
             });
     };
@@ -649,7 +675,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                                 {/* Login Button */}
                                 <div>
                                     <LoaderButton
-                                        disabled={loading}
+                                        disabled={loading || passkeyLoading}
                                         className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-[#FF007F] hover:!text-white pr-6 bg-black !text-white w-full`}
                                         spinnerclass="fill-white" >   
                                         {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
