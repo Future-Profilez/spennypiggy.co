@@ -6,12 +6,12 @@ use App\Helpers;
 use App\Models\CreatorExpense;
 use App\Models\CreatorFinancialProfile;
 use App\Models\Currency;
-use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Payment;
 use App\Models\ShopPayment;
 use App\Models\UkTaxSetting;
 use App\Models\User;
+use App\Services\Ledger\LedgerRules;
 use App\Services\Risk\PayoutService;
 use Carbon\Carbon;
 
@@ -56,7 +56,8 @@ class FinancialService
                     ShopPayment::class => ['shop'],
                 ]);
             }])
-            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status', 'source_type', 'source_id']);
+            // `id` is required — LedgerRules keys its fulfilment map on it.
+            ->get(['id', 'gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency', 'status', 'reserve_amount', 'reserve_status', 'source_type', 'source_id']);
 
         // Fetch Reserves and Review Holds from PayoutService
         $payoutService = app(PayoutService::class);
@@ -151,49 +152,15 @@ class FinancialService
         $netDisplay = 0;
         $reservesHeldDisplay = 0;
 
-        // Collect Shop IDs to fetch shipping amounts
-        $shopPaymentIds = $incomeTx->where('source_type', 'App\Models\ShopPayment')->pluck('source_id')->toArray();
-        $shopShippingAmounts = [];
-        if (! empty($shopPaymentIds)) {
-            $shopShippingAmounts = ShopPayment::whereIn('id', $shopPaymentIds)
-                ->pluck('shipping_amount', 'id')
-                ->toArray();
-        }
-
-        // Deliverable status per shop session, resolved in one query instead of one per
-        // physical-shop transaction inside the loop below.
-        $shopSessionIds = $incomeTx->where('source_type', 'App\Models\ShopPayment')
-            ->pluck('source.session_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        $deliverableStatusBySession = empty($shopSessionIds)
-            ? []
-            : Deliverable::whereIn('session_id', $shopSessionIds)
-                ->orderBy('id')
-                ->get(['session_id', 'status'])
-                ->groupBy('session_id')
-                ->map(fn ($rows) => $rows->first()->status)
-                ->all();
+        // Fulfilment is decided by LedgerRules — the single definition shared with the
+        // payout engine and the Support History feed. This screen used to keep its own
+        // copy, which excluded EVERY unfinished task while the payout engine excluded
+        // only timed ones, so an instant task was paid out without ever appearing here.
+        $fulfilmentMap = LedgerRules::fulfilmentMap($incomeTx);
 
         foreach ($incomeTx as $tx) {
-            // Task Completion Logic: Only count toward Gross/Net if completed
-            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
-                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                    continue;
-                }
-            }
-
-            // Shop Completion Logic: Only count toward Gross/Net if delivered (for physical items)
-            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
-                if ($tx->source->shop->type === 'physical') {
-                    $status = $deliverableStatusBySession[$tx->source->session_id] ?? null;
-                    if ($status !== 'delivered') {
-                        continue;
-                    }
-                }
+            if (! ($fulfilmentMap[$tx->id] ?? true)) {
+                continue;
             }
 
             $from = strtoupper($tx->currency ?? 'GBP');

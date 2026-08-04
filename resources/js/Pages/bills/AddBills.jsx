@@ -345,7 +345,7 @@ export default function AddBills(props) {
                                             style: "currency",
                                             currency: defaultCurrency,
                                         }).format(
-                                            calculateTotalSupporterPays(data.price, defaultCurrency)
+                                            calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id)
                                                 .total_supporter_pays,
                                         )}
                                     </span>

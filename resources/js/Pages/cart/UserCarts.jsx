@@ -13,6 +13,7 @@ import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
 import toast, { Toaster } from "react-hot-toast";
+import { creatorIdOf } from "@/utils/pricing";
 
 export default function UserCarts(props) {
     const {
@@ -746,9 +747,14 @@ export default function UserCarts(props) {
         }, 0);
 
         // 2. Calculate Total Gross (Supporter Pays) - Fixed fees added ONCE here for optimized transaction
+        // The basket is per-creator (`datas.user` owns every item in it), so one
+        // rate applies to the whole total. Without this the method selector quoted
+        // the bespoke price while the total below it quoted the standard one.
         const breakdown = calculateTotalSupporterPays(
             totalNetWithVatAndShipping,
             chargeCurrency,
+            0,
+            creatorIdOf(datas?.items?.[0]) ?? datas?.user?.id,
         );
         const totalGross = breakdown.total_supporter_pays;
 
@@ -901,6 +907,9 @@ export default function UserCarts(props) {
                                         calculateTotalSupporterPays(
                                             basePriceToGrossUp,
                                             itemCurrency,
+                                            0,
+                                            creatorIdOf(item) ??
+                                                datas?.user?.id,
                                         );
                                     const itemTotalPrice =
                                         breakdown.total_supporter_pays;
@@ -999,6 +1008,7 @@ export default function UserCarts(props) {
                                         amount={chargeBase}
                                         currency={chargeCurrency}
                                         email={email || auth?.user?.email}
+                                        creatorId={creatorIdOf(datas?.items?.[0]) ?? datas?.user?.id}
                                         value={paymentMethod}
                                         onChange={setPaymentMethod}
                                         onPrices={setPreviewPrices}

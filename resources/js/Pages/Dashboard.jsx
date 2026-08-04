@@ -288,9 +288,19 @@ export default function Dashboard(props) {
         // return () => controller.abort();
     }, [tab]);
 
+    // The activity card only exists once there is money to stop — Stripe
+    // connected AND identity verified. Same predicate gates the fetch and the
+    // render; two copies would drift and this one costs a request per page load
+    // for the largest cohort of creators (everyone still before Connect).
+    const canSeeActivityCard =
+        IsloggedIn &&
+        auth?.user?.role === 1 &&
+        auth?.user?.stripe_details_submitted == 1 &&
+        auth?.user?.identity_status == 1;
+
     // Fetch creator activity status
     const fetchActivityStatus = async () => {
-        if (!IsloggedIn || !auth?.user || auth?.user?.role !== 1) {
+        if (!canSeeActivityCard) {
             return;
         }
         setActivityLoading(true);
@@ -306,10 +316,12 @@ export default function Dashboard(props) {
 
     // Fetch activity status on component mount for logged-in creators
     useEffect(() => {
-        if (IsloggedIn && auth?.user?.role === 1) {
+        if (canSeeActivityCard) {
             fetchActivityStatus();
         }
-    }, [IsloggedIn, auth?.user?.role]);
+        // The predicate itself, not its inputs — a creator who finishes Connect
+        // or clears identity in this session gets the card without a full reload.
+    }, [canSeeActivityCard]);
 
     const currencyaction = (e) => {
         if (e == "open") {
@@ -1195,15 +1207,17 @@ export default function Dashboard(props) {
                                                     different tones. This card is the one that carries BOTH
                                                     payment rules, so it is the one that moved.
 
-                                                    Gated on IsloggedIn + creator ONLY — deliberately not on
-                                                    Stripe being connected, which is where it used to sit:
-                                                    the component states its own "finish verifying" case, and
-                                                    that gate hid it from exactly the creators who had not
-                                                    finished. */}
-                                                                                {IsloggedIn &&
-                                                                                    auth?.user
-                                                                                        ?.role ===
-                                                                                        1 &&
+                                                    ⚠️ Gated on Stripe connected AND identity verified
+                                                    (3 Aug 2026, client direction). It briefly ran for every
+                                                    creator on the reasoning that the component states its
+                                                    own "finish verifying" case — but its headline is "YOUR
+                                                    PAYMENTS ARE PAUSED", and a creator who has not finished
+                                                    Connect has no payments to pause. That reads as a fault
+                                                    on their account at the exact moment they are being asked
+                                                    to trust the platform with their bank details. The
+                                                    journey card is what speaks to a creator before this
+                                                    point; this card starts once there is money to stop. */}
+                                                                                {canSeeActivityCard &&
                                                                                     activityStatus && (
                                                                                         <Suspense
                                                                                             fallback={

@@ -299,7 +299,7 @@ export default function Create({ auth, currencySymbol }) {
                                                             {new Intl.NumberFormat('en-GB', { 
                                                                 style: 'currency', 
                                                                 currency: defaultCurrency 
-                                                            }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                            }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">

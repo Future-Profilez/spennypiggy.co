@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import CustomProgressBar from "@/Components/CustomProgressBar";
 import Wishlist from "@/Pages/Auth/Wishlist";
 import PriceFormat from "@/includes/PriceFormat";
+import { creatorIdOf } from "@/utils/pricing";
 const AddCart = lazy(() => import("./AddCart"));
 import { Menu, Transition } from "@headlessui/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -78,6 +79,8 @@ export default function Wishlistbox(props) {
             parseFloat(itm?.price || 0) *
                 (1 + (itm?.user?.vat_amount_percentage || 0) / 100),
             itm?.currency || "GBP",
+            0,
+            creatorIdOf(itm),
         )?.total_supporter_pays || itm?.price;
 
     const isSubscribable = itm?.subscription == 1;

@@ -25,6 +25,7 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
 use App\Services\DiscoveryService;
+use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskEngineService;
@@ -289,8 +290,10 @@ class CheckoutController extends Controller
                 $vatAmount = $itemAmount * $vatPercent / 100;
                 $itemAmountWithVat = $itemAmount + $vatAmount;
 
-                // Calculate breakdown using gross-up logic for this item in creator's currency
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency, 0, $methodResolution['fee_profile']);
+                // Calculate breakdown using gross-up logic for this item in creator's currency.
+                // A basket can span several creators, so the rate is resolved per ITEM
+                // from that item's own owner — never once for the whole cart.
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency, 0, $methodResolution['fee_profile'], $dd->owner->id ?? null);
 
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];
@@ -502,6 +505,10 @@ class CheckoutController extends Controller
                 'metadata' => json_encode($paymentMetadata), // Store comprehensive metadata
                 'created_at' => now(),
                 'updated_at' => now(),
+                // Resolved from the owner rather than from the loop's last $breakdown:
+                // this row describes the whole checkout, and reaching for whichever
+                // item happened to be priced last is how a wrong rate gets recorded.
+                ...CreatorFeeResolver::columnsFor($owner->id ?? null, $methodResolution['fee_profile']),
             ]);
 
             Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);

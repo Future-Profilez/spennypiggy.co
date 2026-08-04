@@ -45,10 +45,12 @@ use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
+use App\Services\CreatorJourneyService;
 use App\Services\CreatorSubscriptionService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
+use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
 use App\Services\SubscriptionActivationService;
 use App\Services\UserProfileService;
@@ -548,6 +550,10 @@ class StripeController extends Controller
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
 
+        if ($blocked = $this->subscriptionGate($user)) {
+            return $blocked;
+        }
+
         // Check if MoR consent exists in the database
         $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
 
@@ -562,6 +568,7 @@ class StripeController extends Controller
                     }
                     $user->save();
                     $this->applyContentDescriptorToAccount($user);
+                    StripeAccountState::forget($user->account_id);
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
 
                     // charges_enabled but payouts blocked = money comes in, none
@@ -603,6 +610,17 @@ class StripeController extends Controller
             'mor_consent_given' => $morConsentGiven,
             'mor_consent_details' => $morConsentDetails,
             'success' => session('success'),
+            // A creator who started onboarding and backed out already has an
+            // account, and an account's country is FIXED at creation. Asking them
+            // to pick one again is a question with no effect, so the page renders
+            // a single "Resume" action instead — and `initConnect` already skips
+            // the terms gate for an existing account, so nothing is re-collected.
+            'has_account' => ! empty($user->account_id),
+            'account_country' => $user->country,
+            // The rail renders from this. It used to be a hardcoded array in the
+            // JSX carrying a step order that had been superseded, so the same
+            // screen contradicted itself.
+            'journey_steps' => app(CreatorJourneyService::class)->stepStates($user),
         ]);
     }
 
@@ -790,6 +808,10 @@ class StripeController extends Controller
             return redirect(route('user.show', $user->username))->with('error', 'Your profile is not approved yet.');
         }
 
+        if ($blocked = $this->subscriptionGate($user)) {
+            return $blocked;
+        }
+
         // Log MoR consent verification
         $morConsent = MorConsent::getLatestConsent($user->id);
         Log::info('Stripe connection initiated with MoR consent', [
@@ -932,7 +954,19 @@ class StripeController extends Controller
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                 }
             } catch (Exception $e) {
-                return redirect(route('stripe.index'))->with('error', 'Account creation error:'.$e->getMessage());
+                // ⚠️ Never print Stripe's exception text at the creator. It is
+                // written for a developer ("Keys for idempotent requests can only
+                // be used with the same parameters…") and on a connect screen it
+                // reads as though their account is broken. The detail belongs in
+                // the log, where someone can act on it.
+                Log::error('Stripe connect account creation failed', [
+                    'user_id' => $user->id,
+                    'country' => $country,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect(route('stripe.index'))
+                    ->with('error', 'We could not set up your payment account just now. This is usually temporary — try again in a minute, and contact support if it keeps happening.');
             }
         }
 
@@ -945,6 +979,7 @@ class StripeController extends Controller
                 }
                 $user->save();
                 $this->applyContentDescriptorToAccount($user);
+                StripeAccountState::forget($user->account_id);
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
 
                 if (! ($account->payouts_enabled ?? false)) {
@@ -964,7 +999,14 @@ class StripeController extends Controller
 
             return Inertia::location($link->url);
         } catch (Exception $e) {
-            return redirect(route('stripe.index'))->with('error', 'Internal server error:'.$e->getMessage());
+            Log::error('Stripe onboarding link failed', [
+                'user_id' => $user->id,
+                'account_id' => $user->account_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect(route('stripe.index'))
+                ->with('error', 'We could not open Stripe just now. Your details are safe — try again in a minute, and contact support if it keeps happening.');
         }
     }
 
@@ -1037,22 +1079,36 @@ class StripeController extends Controller
     }
 
     /**
-     * Stripe return callback
+     * A creator must have a card on file before they can connect payouts.
+     *
+     * ⚠️ The gate existed on the frontend only. `CreatorVerification.jsx` locked
+     * the Connect step on `!hasSubscription` while the server never looked, so
+     * opening /stripe/authorize directly walked straight past it — the documented
+     * order (profile → card → connect → identity) held on one screen and nowhere
+     * else.
+     *
+     * ⚠️ Applies ONLY while `account_id` is empty. A creator who is already
+     * mid-onboarding, or already connected, must never be stranded by a rule
+     * introduced after they started: this method is also Stripe's refresh_url,
+     * and blocking it would leave them with an account they cannot finish.
+     *
+     * Statuses 1 and 2 are the same allow-list the checkout gates use — 2 is the
+     * free period, which IS payment-eligible.
+     *
+     * @return RedirectResponse|null Null when the creator may proceed.
      */
-    public function stripeReturn()
+    private function subscriptionGate(User $user)
     {
-        $user = Auth::user();
+        if (! empty($user->account_id)) {
+            return null;
+        }
 
-        // Log return with MoR consent info
-        $morConsent = MorConsent::getLatestConsent($user->id);
-        Log::info('Stripe return callback', [
-            'user_id' => $user->id,
-            'username' => $user->username,
-            'mor_consent_id' => $morConsent->id ?? null,
-        ]);
+        if (in_array((int) $user->subscription_status, [1, 2], true)) {
+            return null;
+        }
 
-        // Your existing return logic
-        // ...
+        return redirect()->route('activate-subscription')
+            ->with('error', 'Add your card first — it takes a minute, and you are not charged until your first sale. Then you can connect your payouts.');
     }
 
     /**
@@ -1421,6 +1477,10 @@ class StripeController extends Controller
 
             $accountLink = StripeControl::getClient()->accountLinks->create($accountLinkPayload);
 
+            // Capabilities were just changed on the account, so anything cached
+            // about it now describes the state before that change.
+            StripeAccountState::forget($user->account_id);
+
             // 3. Redirect to Stripe’s URL
             return Inertia::location($accountLink->url);
         } catch (ApiErrorException $e) {
@@ -1431,14 +1491,16 @@ class StripeController extends Controller
             ]);
             $errorMessage = $e->getError()->message ?? $e->getMessage();
 
-            // Provide more specific error messages for capability-related issues
-            $userErrorMessage = $errorMessage;
+            // Provide more specific error messages for capability-related issues.
+            // ⚠️ The fallback is OUR wording, never Stripe's raw message — that
+            // text is addressed to a developer and reads on a creator's dashboard
+            // as though their account is broken. The detail is in the log above.
             if (str_contains($errorMessage, 'recipient') && str_contains($errorMessage, 'service agreement')) {
                 $userErrorMessage = 'Your account is configured for recipient payments only and cannot process card payments. Please contact support if you need to change your account type.';
             } elseif (str_contains($errorMessage, 'capability') || str_contains($errorMessage, 'capabilities')) {
                 $userErrorMessage = 'There was an issue configuring payment capabilities for your account. Please contact support for assistance.';
-            } elseif (! $userErrorMessage) {
-                $userErrorMessage = 'Your Stripe account cannot be onboarded. Please contact support.';
+            } else {
+                $userErrorMessage = 'We could not open Stripe just now. Try again in a minute, and contact support if it keeps happening.';
             }
 
             return redirect(route('user.show', ['username' => $user->username, 'page' => 'about']))->with('error', $userErrorMessage);
@@ -1464,9 +1526,11 @@ class StripeController extends Controller
                 $user->default_currency = $account->default_currency;
                 $user->save();
             }
-            // Bust cached Stripe capability and migration status so the dashboard updates immediately
-            // Cache::forget("stripe_capabilities_{$user->account_id}");
-            // Cache::forget("migration_status_{$user->id}");
+            // ⚠️ Bust the cached account state, or the dashboard keeps telling a
+            // creator who has JUST finished onboarding that action is required —
+            // for the full five-minute TTL. These two lines used to be commented
+            // out, which is exactly what that bug was.
+            StripeAccountState::forget($user->account_id);
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             // Log updated capability status for diagnosis
@@ -1485,8 +1549,11 @@ class StripeController extends Controller
             // finished (user can close/back out mid-form). Never claim success
             // unless the details were really submitted.
             if (empty($account->details_submitted)) {
-                return redirect(route('user.show', ['username' => $user->username]))
-                    ->with('error', 'Your Stripe setup is not finished yet — please complete all onboarding steps to activate payments.');
+                // Point them back at the one screen that can resume it. Telling a
+                // creator their setup is unfinished without saying where to finish
+                // it is how an abandoned onboarding stays abandoned.
+                return redirect(route('stripe.index'))
+                    ->with('warning', 'Your Stripe setup is not finished. Pick up where you left off — nothing you already entered is lost.');
             }
 
             if (! $account->charges_enabled) {
@@ -1710,8 +1777,9 @@ class StripeController extends Controller
                 $vatAmount = ($basePrice * $vatPercent) / 100;
                 $listedPriceWithVat = $basePrice + $vatAmount;
 
-                // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate, $methodResolution['fee_profile']);
+                // Use new gross-up flow. Rate resolves per ITEM owner — a basket can
+                // span several creators and only some of them may be on a bespoke deal.
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $dd->wish->currency ?? 'USD', $reserveRate, $methodResolution['fee_profile'], $dd->owner->id ?? null);
 
                 $totalPrice = $breakdown['total_supporter_pays'];
                 $applicationFee = $breakdown['application_fee'];
@@ -2011,8 +2079,9 @@ class StripeController extends Controller
                     $vatAmount = ($basePrice * $vatPercent) / 100;
                     $listedPriceWithVat = $basePrice + $vatAmount;
 
-                    // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate, $methodResolution['fee_profile']);
+                    // Use new gross-up flow. Rate resolves per ITEM owner — a basket can
+                    // span several creators and only some of them may be on a bespoke deal.
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceWithVat, $currency, $reserveRate, $methodResolution['fee_profile'], $value->owner->id ?? null);
 
                     $totalPrice = $breakdown['total_supporter_pays'];
                     $applicationFee = $breakdown['application_fee'];
@@ -2376,7 +2445,7 @@ class StripeController extends Controller
                 return back()->with('error', $methodResolution['message']);
             }
 
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, 0, $methodResolution['fee_profile']);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, 0, $methodResolution['fee_profile'], $wish->user->id ?? null);
             $finalTotalAmount = $breakdown['total_supporter_pays'];
 
             $sub = WishItemSubscription::create([
@@ -2395,6 +2464,9 @@ class StripeController extends Controller
                 'payment_method' => 'stripe',
                 'surprise_message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
+                // On a RECURRING row this is also the grandfathering record: the
+                // supporter keeps this rate at renewal unless a LOWER one is agreed.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
@@ -3049,6 +3121,9 @@ class StripeController extends Controller
                 'uuid' => Str::uuid(),
                 'session_id' => $subscription->session_id,
                 'fee_profile' => $subscription->fee_profile ?? 'card',
+                // Grandfathered: the rate the supporter subscribed at, never the
+                // creator's current agreement.
+                ...Helpers::copyFeeRateColumns($subscription),
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -3753,7 +3828,7 @@ class StripeController extends Controller
                 ]);
             }
 
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $sourceCurrency, 0, $methodResolution['fee_profile']);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $sourceCurrency, 0, $methodResolution['fee_profile'], $creator->id);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -3797,6 +3872,9 @@ class StripeController extends Controller
                 'total_paid' => $finalTotalAmount,
                 'message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
+                // The rates this charge was priced at. Read back by every recompute
+                // path so a later change to the creator's deal cannot re-price it.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);

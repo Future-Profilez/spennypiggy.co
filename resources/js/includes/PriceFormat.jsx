@@ -1,8 +1,10 @@
 import { usePage } from "@inertiajs/react";
+import { feeRatesFor } from "@/utils/pricing";
 
 export default function PriceFormat() {
     // ✅ Hook called at top level (LEGAL)
-    const { rates, global_currency, currencies, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+    const pageProps = usePage().props;
+    const { rates, global_currency, currencies, platform_fee_percentage, transaction_fee_percentage } = pageProps;
 
     const adminFeeInCurrency = (currency) => {
         const upCurrency = (currency || "GBP").toUpperCase();
@@ -21,7 +23,12 @@ export default function PriceFormat() {
      * @param {number} reserveRate Optional reserve rate (percentage)
      * @returns {object} Breakdown of fees and total
      */
-    const calculateTotalSupporterPays = (price, currency = 'GBP', reserveRate = 0) => {
+    /**
+     * @param {number|string|null} creatorId  the listing owner — REQUIRED for any
+     *   creator on a bespoke platform rate, or this quotes the standard price
+     *   while checkout charges theirs.
+     */
+    const calculateTotalSupporterPays = (price, currency = 'GBP', reserveRate = 0, creatorId = null) => {
         const listedPrice = parseFloat(price) || 0;
         const upCurrency = (currency || global_currency || "GBP").toUpperCase();
         const targetCurrency = currencies?.[upCurrency];
@@ -31,9 +38,10 @@ export default function PriceFormat() {
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         
-        // Platform fees — use props with correct fallbacks matching backend
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        // Platform fees — per creator, falling back to the global props.
+        const rates = feeRatesFor(creatorId, pageProps);
+        const platformFeeRate = rates.platform / 100;
+        const complianceFeeRate = rates.compliance / 100;
         
         // Admin fee in target currency
         const adminFee = adminFeeInCurrency(upCurrency);

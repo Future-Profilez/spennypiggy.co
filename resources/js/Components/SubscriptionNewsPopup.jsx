@@ -21,10 +21,10 @@ import { useEffect, useState } from "react";
 const SEEN_KEY = "spenny_subscription_news_v1";
 
 /**
- * Long enough that it lands after the creator has settled into the page rather
+ * Long enough that it lands after the reader has settled into the page rather
  * than fighting it for attention on arrival.
  */
-const DELAY_MS = 90_000;
+const DELAY_MS = 30_000;
 
 export default function SubscriptionNewsPopup({ isOwnProfile = false }) {
     const { auth } = usePage().props;
@@ -38,12 +38,17 @@ export default function SubscriptionNewsPopup({ isOwnProfile = false }) {
     //
     // `is_site_subscription_active` is the platform's own definition (true for
     // both billing and a live free period), so someone already on the new terms
-    // is not told about them.
+    // is not told about them. To a creator who is already billing, "you're no
+    // longer charged before you earn" is simply false.
     //
     // ⚠️ The own-profile check is not optional: this page doubles as every
     // creator's PUBLIC profile, so without it the card fired while a creator was
     // reading someone else's page — a billing notice with no relationship to
     // what they were looking at.
+    //
+    // ⚠️ And the copy is written FOR a creator ("set up my card", a struck-out
+    // monthly price). Shown to a fan on a page where they may be about to buy,
+    // it reads as though THEY are being signed up for a monthly charge.
     const eligible =
         isOwnProfile &&
         !!user &&

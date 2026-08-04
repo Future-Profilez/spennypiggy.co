@@ -10,14 +10,13 @@ use App\Models\User;
 use App\Models\WishCategory;
 use App\SeoMeta;
 use App\Services\SeoTemplateService;
+use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
-use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
-use Stripe\Exception\InvalidRequestException;
 
 class OptimizedProfileController extends Controller
 {
@@ -50,8 +49,9 @@ class OptimizedProfileController extends Controller
         // Get Stripe account capabilities with caching
         [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
 
-        // Check if account needs migration for cross-border payments
-        $migrationStatus = $this->getMigrationStatus($user);
+        // Check if account needs migration for cross-border payments — derived
+        // from the state read above, not a second retrieve of the same account.
+        $migrationStatus = $this->getMigrationStatus($user, $isNeedToUpgrade);
 
         // Load ALL profile data at once for fastest loading
         $categoryId = request()->query('category');
@@ -153,93 +153,38 @@ class OptimizedProfileController extends Controller
     }
 
     /**
-     * Get Stripe account capabilities with caching
+     * Get Stripe account capabilities with caching.
+     *
+     * Shares one implementation with AuthenticatedSessionController — this was a
+     * verbatim copy of it, so a fix to either one silently missed the other.
      */
     private function getStripeCapabilities($user): array
     {
-        if (empty($user->account_id)) {
-            return [false, false, []];
-        }
-
-        try {
-            $account = StripeControl::getAccount($user->account_id);
-
-            // Use the proper migration check to determine if upgrade is needed
-            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-            $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-
-            $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-
-            // Get comprehensive account requirements
-            $requirements = StripeControl::getAccountRequirements($user->account_id);
-
-            // Add migration requirement if account needs upgrade
-            if ($isNeedToUpgrade) {
-                $requirements['has_requirements'] = true;
-                $requirements['requirements'][] = [
-                    'type' => 'legacy_upgrade',
-                    'severity' => 'high',
-                    'title' => 'Account Upgrade Required',
-                    'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                    'action' => 'Upgrade your Stripe account now.',
-                    'action_url' => '/stripe/upgrade-express-account',
-                ];
-            }
-
-            return [$isNeedToUpgrade, $cardCapabilities, $requirements];
-        } catch (\Exception $e) {
-            // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
-            if ($e instanceof InvalidRequestException && $e->getHttpStatus() === 404) {
-                $user->update(['stripe_details_submitted' => 0]);
-            }
-
-            return [false, false, [
-                'has_requirements' => true,
-                'requirements' => [[
-                    'type' => 'connection_error',
-                    'severity' => 'critical',
-                    'title' => 'Account Connection Issue',
-                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
-                    'action' => 'Refresh the page or contact support.',
-                    'action_url' => null,
-                ]],
-                'account_status' => [],
-            ]];
-        }
+        return StripeAccountState::for($user);
     }
 
     /**
-     * Check if user's Stripe account needs migration for cross-border payments
+     * Check if user's Stripe account needs migration for cross-border payments.
+     *
+     * Takes the answer already computed above rather than retrieving the account
+     * again behind its own cache key.
      */
-    private function getMigrationStatus($user): array
+    private function getMigrationStatus($user, bool $needsMigration): array
     {
-        // Only check for logged-in users viewing their own profile
         if (! Auth::check() || Auth::id() !== $user->id) {
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
-        try {
-            $cacheKey = 'stripe_migration_status_v1_'.$user->id;
-
-            return Cache::remember($cacheKey, 300, function () use ($user) {
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-
-                return [
-                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                    'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available',
-                ];
-            });
-        } catch (\Exception $e) {
-            return [
-                'needs_migration' => false,
-                'show_warning' => false,
-                'error' => 'Unable to check migration status',
-            ];
-        }
+        return [
+            'needs_migration' => $needsMigration,
+            'show_warning' => $needsMigration,
+            'current_agreement' => $needsMigration ? 'recipient' : null,
+            'required_agreement' => 'full',
+            'country' => $user->country,
+            'reason' => $needsMigration
+                ? 'Your payment account is on an older agreement and needs upgrading to accept card payments.'
+                : 'Account is correctly configured',
+        ];
     }
 
     /**

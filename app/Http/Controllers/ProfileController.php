@@ -45,6 +45,7 @@ use App\Models\UserVerificationStatus;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Services\Ledger\LedgerRules;
 use App\Services\RekognitionModeration;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
@@ -57,6 +58,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1352,42 +1354,31 @@ class ProfileController extends Controller
             return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
-        $filterEarnings = function ($tx) {
-            // If it's a Task purchase, only include if it's actually finished/completed
-            if ($tx->source_type === TaskPurchase::class) {
-                if (! $tx->source) {
-                    return false;
-                }
+        // The earned/fulfilled gate is LedgerRules', shared with the earnings dashboard
+        // and the payout engine. This total previously gated Paid Tasks only and had no
+        // physical-shop-delivered check, so it reported more received income than either
+        // the dashboard showed or the payout run would pay — three numbers, one pot of
+        // money.
+        $receivedFulfilment = LedgerRules::fulfilmentMap($receivedAll);
 
-                // Canonical earned-status list — must match FinancialService::getSummary,
-                // PayoutService and ReleaseReserves. 'delivered' used to be included
-                // here and nowhere else, so this total counted tasks still sitting in
-                // escrow: the creator was shown more received income than the dashboard
-                // reported or the payout run would ever pay.
-                return in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out']);
+        $receivedTotal = $receivedAll->sum(function ($tx) use ($convert, $displayCurrency, $receivedFulfilment) {
+            $tx->is_included_in_totals = LedgerRules::countsTowardTotals($tx, $receivedFulfilment);
+            if (! $tx->is_included_in_totals) {
+                return 0;
             }
 
-            return true;
-        };
-
-        $receivedTotal = $receivedAll->filter($filterEarnings)->sum(function ($tx) use ($convert, $displayCurrency) {
-            $tx->is_included_in_totals = true; // Mark as included
             $from = strtoupper($tx->currency ?? 'GBP');
-            $amount = (float) ($tx->net_amount ?? 0);
+            $amount = LedgerRules::creatorNet($tx);
 
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         });
 
-        // Mark excluded ones
-        $receivedAll->each(function ($tx) use ($filterEarnings) {
-            if (! isset($tx->is_included_in_totals)) {
-                $tx->is_included_in_totals = $filterEarnings($tx);
-            }
-        });
-
+        // Supporter spend is what the card was charged. buyerPaid() rebuilds it from the
+        // row's own parts when a legacy row recorded no gross, rather than reporting a
+        // real purchase as zero.
         $sentTotal = $sentAll->sum(function ($tx) use ($convert, $displayCurrency) {
             $from = strtoupper($tx->currency ?? 'GBP');
-            $amount = (float) ($tx->gross_amount ?? 0);
+            $amount = LedgerRules::buyerPaid($tx);
 
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         });
@@ -1402,7 +1393,7 @@ class ProfileController extends Controller
             $sumInDisplayCurrency = function ($rows) use ($convert, $displayCurrency) {
                 return $rows->sum(function ($tx) use ($convert, $displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->gross_amount ?? 0);
+                    $amount = LedgerRules::buyerPaid($tx);
 
                     return $from === $displayCurrency
                         ? $amount
@@ -1410,14 +1401,19 @@ class ProfileController extends Controller
                 });
             };
 
+            // These columns are what buyerPaid() falls back to when a legacy row recorded
+            // no gross. Selecting gross_amount alone reported those purchases as £0, and a
+            // spend limit measured against an understated total lets the limit be passed.
+            $spendColumns = ['gross_amount', 'net_amount', 'vat_amount', 'platform_fee', 'stripe_fee', 'currency'];
+
             $spend1hMajor = $sumInDisplayCurrency(
-                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subHour())->get(['gross_amount', 'currency'])
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subHour())->get($spendColumns)
             );
             $spend24hMajor = $sumInDisplayCurrency(
-                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDay())->get(['gross_amount', 'currency'])
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDay())->get($spendColumns)
             );
             $spend7dMajor = $sumInDisplayCurrency(
-                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDays(7))->get(['gross_amount', 'currency'])
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDays(7))->get($spendColumns)
             );
 
             $limit1hMajor = null;
@@ -1561,6 +1557,12 @@ class ProfileController extends Controller
 
         $hasMore = $rows->count() > $limit;
         $rows = $rows->take($limit)->values();
+
+        // Fulfilment comes from LedgerRules, shared with the earnings dashboard and the
+        // payout engine. This feed used to gate only on Paid Tasks and had no
+        // physical-shop-delivered check at all, so a creator's "Received" total here was
+        // larger than both their dashboard net income and what the payout run would pay.
+        $fulfilmentMap = LedgerRules::fulfilmentMap($rows);
 
         $supportTickets = SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
             return $tx->source_type === FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
@@ -1706,9 +1708,13 @@ class ProfileController extends Controller
             }
         }
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey) {
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey, $fulfilmentMap) {
             $from = strtoupper($tx->currency ?? 'GBP');
-            $baseAmount = $tab === 'sent' ? (float) ($tx->gross_amount ?? 0) : (float) ($tx->net_amount ?? 0);
+            // Supporter side reads what was charged; creator side reads what they keep.
+            // Both come from LedgerRules so the Purchase Hub cannot report a third figure.
+            $baseAmount = $tab === 'sent'
+                ? LedgerRules::buyerPaid($tx)
+                : LedgerRules::creatorNet($tx);
             $displayAmount = $from === $displayCurrency ? $baseAmount : ($convert($from, $baseAmount, $displayCurrency) ?? $baseAmount);
 
             $base = class_basename($tx->source_type);
@@ -1759,24 +1765,22 @@ class ProfileController extends Controller
                 };
             }
 
-            // Inclusion logic for UI messages.
-            // Must match the canonical earned-status list used by
-            // FinancialService::getSummary, PayoutService and ReleaseReserves —
-            // a 'delivered' task is still in escrow until the buyer accepts (or
-            // auto-confirm runs), so it is NOT counted as earned yet. Listing it
-            // as "included in totals" here contradicted the dashboard/payout.
-            $isIncluded = true;
-            if ($tx->type === 'income' && $tx->source_type === TaskPurchase::class) {
-                $taskStatus = $tx->source->status ?? null;
-                $isIncluded = in_array($taskStatus, ['completed', 'completed_accepted', 'paid_out']);
-            } elseif ($tx->status !== 'completed') {
-                $isIncluded = false;
-            }
+            // Inclusion is LedgerRules' decision — settled AND fulfilled. One definition,
+            // shared with the earnings dashboard and the payout engine, so a row can no
+            // longer be "included" on one screen and excluded on another.
+            $isIncluded = LedgerRules::countsTowardTotals($tx, $fulfilmentMap);
+            $ledgerState = LedgerRules::state($tx, $fulfilmentMap);
 
             // Gifter view normalization
             if ($tab === 'sent') {
                 $reserveAmount = 0; // Hide reserves from gifter
-                $isIncluded = true; // Gifter always sees their spend in their local totals
+
+                // A supporter's spend counts once the charge has settled. Fulfilment is
+                // the CREATOR's gate — the buyer's money left their account either way,
+                // so an undelivered order still counts as spent. A refund or a failed
+                // charge does not: that money came back.
+                $isIncluded = ! in_array((string) $tx->status, LedgerRules::REVERSED_STATUSES, true)
+                    && ! in_array((string) $tx->status, LedgerRules::IN_FLIGHT_STATUSES, true);
 
                 // Gifter only sees 'completed' or 'refunded'
                 if ($status === 'refunded') {
@@ -1936,6 +1940,20 @@ class ProfileController extends Controller
                 'status' => $status,
                 'item_status' => $itemStatus,
                 'is_included_in_totals' => $isIncluded,
+                // What is happening to this money, in one word, plus the full arithmetic
+                // behind it. Both sides of a payment are shown the same breakdown, so a
+                // creator and their supporter can never read different numbers for it.
+                'state' => $ledgerState,
+                'state_label' => LedgerRules::STATE_LABELS[$ledgerState] ?? 'Completed',
+                'breakdown' => $tab === 'sent'
+                    ? Arr::except(LedgerRules::breakdown($tx, $fulfilmentMap), [
+                        // A supporter is never shown the creator's fee split or reserve.
+                        'platform_fee', 'compliance_fee', 'admin_fee', 'stripe_fee',
+                        'total_fees', 'creator_net', 'creator_gross',
+                        'reserve_amount', 'reserve_status', 'reserve_released_at',
+                        'payout_run_id', 'fee_profile',
+                    ])
+                    : LedgerRules::breakdown($tx, $fulfilmentMap),
                 'reserve_status' => $tab === 'sent' ? 'none' : $tx->reserve_status,
                 'reserve_amount' => $reserveAmount,
                 'is_success' => $status === 'completed',

@@ -183,7 +183,7 @@ class WishitemController extends Controller
             $currency = $user->default_currency ?? 'gbp';
 
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency, 0, 'card', $user->id);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -381,7 +381,7 @@ class WishitemController extends Controller
         $currency = $user->default_currency ?? 'gbp';
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency, 0, 'card', $user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -538,7 +538,7 @@ class WishitemController extends Controller
 
         if (! empty($request->price)) {
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency, 0, 'card', $user->id);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -547,7 +547,7 @@ class WishitemController extends Controller
             $createpriceid = $finalTotalAmount;
         } else {
             // Re-calculate with current price to ensure gross-up logic is applied if it wasn't before
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($wish->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($wish->price, $currency, 0, 'card', $user->id);
             $taxamount = $breakdown['application_fee'];
             $price = $wish->price;
             $createpriceid = $breakdown['total_supporter_pays'];
@@ -1148,7 +1148,7 @@ class WishitemController extends Controller
 
             $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
                 $amountWithVat = $amount + (($amount * $vatPercent) / 100);
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $wishitem->user_id);
 
                 return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
             };
@@ -1193,7 +1193,7 @@ class WishitemController extends Controller
             $priceWithVat = $basePrice + $vatAmount;
 
             $itemCurrency = $wishitem->currency ?: ($wishitem->user->default_currency ?: 'GBP');
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $itemCurrency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $itemCurrency, 0, 'card', $wishitem->user_id);
 
             if ($wishitem->subscription == 2) {
                 // For crowdfunding, we need to calculate the gross-up total for the requested amount
@@ -1202,7 +1202,7 @@ class WishitemController extends Controller
                 $priceWithVatCrowdfund = $price + $vatAmountCrowdfund;
 
                 // Use new gross-up flow for consistent fee calculation
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $itemCurrency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $itemCurrency, 0, 'card', $wishitem->user_id);
 
                 $total = $breakdown['total_supporter_pays'];
                 $tax = $breakdown['total_fees'];
@@ -1811,7 +1811,7 @@ class WishitemController extends Controller
             // Use gross-up flow helper in creator's currency
             $basePriceStore = $totalAmount / 100; // Convert cents to major unit
             $basePrice = Helpers::priceFormat('usd', $basePriceStore, $chargeCurrency);
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency, 0, 'card', $orderDetails->creator->id ?? null);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -2673,7 +2673,7 @@ class WishitemController extends Controller
                     $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                     if (! empty($v['wish'])) {
                         $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                         $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                     } else {
                         $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -2784,7 +2784,7 @@ class WishitemController extends Controller
                 $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                 if (! empty($v['wish'])) {
                     $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                     $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                 } else {
                     $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -2995,7 +2995,7 @@ class WishitemController extends Controller
                     $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                     if (! empty($v['wish'])) {
                         $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                         $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                     } else {
                         $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -3057,7 +3057,7 @@ class WishitemController extends Controller
         // Use new gross-up flow for consistent fee calculation
         $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
         $priceWithVat = $price + (($price * $vatPercent) / 100);
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $owner->default_currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $owner->default_currency, 0, 'card', $owner->id);
         $total = $breakdown['total_supporter_pays'];
         $tax = $breakdown['total_fees'];
 
@@ -3126,7 +3126,7 @@ class WishitemController extends Controller
 
                         $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
                             $amountWithVat = $amount + (($amount * $vatPercent) / 100);
-                            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $owner->id);
 
                             return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                         };

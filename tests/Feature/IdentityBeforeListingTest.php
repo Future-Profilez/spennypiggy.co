@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\EnsureIdentityVerifiedForListings;
+use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Services\CreatorJourneyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -159,6 +161,17 @@ class IdentityBeforeListingTest extends TestCase
             'identity_status' => 0,
         ]);
 
-        $this->assertSame('stripe', app(CreatorJourneyService::class)->currentStep($creator));
+        // A card on file comes before Connect (4 Aug 2026) — without it the journey
+        // correctly stops on `subscription` and this says nothing about the ordering
+        // under test.
+        MonthlyCharge::create([
+            'user_id' => $creator->id,
+            'uuid' => (string) Str::uuid(),
+            'status' => 'trialing',
+            'amount' => 8.99,
+            'currency' => 'GBP',
+        ]);
+
+        $this->assertSame('stripe', app(CreatorJourneyService::class)->currentStep($creator->fresh()));
     }
 }

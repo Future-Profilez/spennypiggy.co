@@ -14,6 +14,10 @@ class StripePaymentDetail extends Model
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
+        'platform_fee_rate',
+        'compliance_fee_rate',
+        'fee_source',
+        'fee_override_id',
         'fee_profile',
         'id',
         'uuid',

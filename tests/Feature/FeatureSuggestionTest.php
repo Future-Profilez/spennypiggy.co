@@ -105,7 +105,7 @@ class FeatureSuggestionTest extends TestCase
         ]);
 
         // Email should be sent because the user is guest (null user relation, so receives email by default)
-        Mail::assertSent(FeatureSuggestionStatusMail::class, function ($mail) use ($suggestion) {
+        Mail::assertSent(FeatureSuggestionStatusMail::class, function ($mail) {
             return $mail->hasTo('test@example.com') && $mail->suggestion->status === 'accepted';
         });
     }

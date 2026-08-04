@@ -70,6 +70,7 @@ use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskService;
 use App\Services\StockWaitlistService;
+use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
@@ -1274,6 +1275,9 @@ class StripeWebhookController extends Controller
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'fee_profile' => $pay->fee_profile ?? 'card',
+                        // Carried from the contribution, never re-resolved: the ledger
+                        // must record the rate that actually priced this charge.
+                        ...Helpers::copyFeeRateColumns($pay),
                         'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vatAmt,
@@ -1528,7 +1532,7 @@ class StripeWebhookController extends Controller
 
         try {
             $listed = (float) $tip->amount + (float) ($tip->vat_amount ?? 0);
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, strtoupper($tip->currency ?? 'GBP'), 0, $tip->fee_profile ?? 'card');
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, strtoupper($tip->currency ?? 'GBP'), 0, $tip->fee_profile ?? 'card', null, Helpers::storedFeeRates($tip));
             $gross = $tip->total_paid && $tip->total_paid > 0 ? (float) $tip->total_paid : $breakdown['total_supporter_pays'];
 
             FinancialTransaction::updateOrCreate(
@@ -1539,6 +1543,9 @@ class StripeWebhookController extends Controller
                     'type' => 'income',
                     'gross_amount' => $gross,
                     'fee_profile' => $tip->fee_profile ?? 'card',
+                    ...Helpers::feeRateColumns($breakdown),
+                    'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                    'admin_fee' => $breakdown['admin_fee'] ?? null,
                     'platform_fee' => $breakdown['application_fee'],
                     'stripe_fee' => $breakdown['stripe_fee'],
                     'vat_amount' => (float) ($tip->vat_amount ?? 0),
@@ -1785,6 +1792,10 @@ class StripeWebhookController extends Controller
                 'status' => $initialStatus,
                 'payment_type' => $metadata->payment_type ?? 'STANDARD',
                 'fee_profile' => $metadata->fee_profile ?? 'card',
+                // Same rates the redirect handler would record — both paths read
+                // them off the charge's own metadata, so whichever wins the race
+                // produces an identical row.
+                ...Helpers::feeRateColumnsFromMetadata($metadata),
                 'gifter_message' => $metadata->gifter_message ?? null,
                 'admin_fee' => $adminFee,
                 'platform_fee' => $platformFee,
@@ -2981,7 +2992,7 @@ class StripeWebhookController extends Controller
                     $total_amount = $wishSubscription->amount;
                 }
 
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card', null, Helpers::storedFeeRates($wishSubscription));
                 $creatorNet = $breakdown['net_to_creator'];
                 $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -3068,7 +3079,7 @@ class StripeWebhookController extends Controller
                     // amount_paid is the already-grossed-up charge — feeding it
                     // back in overstated the creator's net on every renewal.
                     $listed = (float) $billPayment->amount + (float) ($billPayment->vat_tax_amount ?? 0);
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $billPayment->currency, 0, $billPayment->fee_profile ?? 'card');
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $billPayment->currency, 0, $billPayment->fee_profile ?? 'card', null, Helpers::storedFeeRates($billPayment));
                     $creatorNet = $breakdown['net_to_creator'];
                     $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -3136,7 +3147,7 @@ class StripeWebhookController extends Controller
                         // Same rule as the bill branch: feed the LISTED price,
                         // never Stripe's grossed-up amount_paid.
                         $listed = (float) $membershipPayment->amount + (float) ($membershipPayment->vat_tax_amount ?? 0);
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $membershipPayment->currency, 0, $membershipPayment->fee_profile ?? 'card');
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $membershipPayment->currency, 0, $membershipPayment->fee_profile ?? 'card', null, Helpers::storedFeeRates($membershipPayment));
                         $creatorNet = $breakdown['net_to_creator'];
                         $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -3220,6 +3231,10 @@ class StripeWebhookController extends Controller
                         'guest_email' => $wishSubscription->guest_email,
                         'name' => $wishSubscription->guest_name,
                         'fee_profile' => $wishSubscription->fee_profile ?? 'card',
+                        // A renewal is priced at the subscription's OWN rate — the
+                        // supporter is grandfathered onto what they signed up at
+                        // unless a lower rate has since been agreed and repriced.
+                        ...Helpers::copyFeeRateColumns($wishSubscription),
                     ]
                 );
 
@@ -3339,7 +3354,7 @@ class StripeWebhookController extends Controller
                 // than what actually lands in the creator's balance.
                 try {
                     $listed = (float) $wishSubscription->amount + (float) ($wishSubscription->vat_tax_amount ?? 0);
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card');
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listed, $wishSubscription->currency, 0, $wishSubscription->fee_profile ?? 'card', null, Helpers::storedFeeRates($wishSubscription));
                     $creatorNet = $breakdown['net_to_creator'];
                     $creatorNetAmountWithSymbol = $currencySymbol.number_format($creatorNet, 2);
 
@@ -3552,7 +3567,7 @@ class StripeWebhookController extends Controller
             $paymentIntentId = null;
 
             // Use gross-up flow for net amount calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($membershipPayment->amount, $membershipPayment->currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($membershipPayment->amount, $membershipPayment->currency, 0, 'card', null, Helpers::storedFeeRates($membershipPayment));
 
             // Create deliverable entry for renewed membership access
             $deliverable = Deliverable::create([
@@ -3626,7 +3641,7 @@ class StripeWebhookController extends Controller
             $bill = $billPayment->bill;
 
             // Use gross-up flow for net amount calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, 0, 'card', null, Helpers::storedFeeRates($billPayment));
 
             $deliverableUrl = null;
             if (! empty($bill->content_file)) {
@@ -5006,7 +5021,7 @@ class StripeWebhookController extends Controller
                 $metrics = app(RiskService::class)->recalculateMetrics((string) $shopPayment->shop->user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate, $shopPayment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate, $shopPayment->fee_profile ?? 'card', null, Helpers::storedFeeRates($shopPayment));
                 $creatorNetAmount = $symbol.number_format($breakdown['net_to_creator'], 2);
 
                 // 7. Dispatch jobs
@@ -5159,6 +5174,14 @@ class StripeWebhookController extends Controller
     private function handleAccountUpdated($account)
     {
         try {
+            // ⚠️ This event IS Stripe telling us the account state just changed, so
+            // it is the one moment the cached copy is guaranteed stale. Without
+            // this, a creator whose account went live (or got restricted) while
+            // they were off the site kept seeing the previous state for the rest
+            // of the TTL — and the restriction notice below would point at an
+            // action-required panel still showing nothing wrong.
+            StripeAccountState::forget($account->id ?? null);
+
             if (($account->charges_enabled ?? false) === true) {
                 $creator = User::where('account_id', $account->id)->first();
                 if ($creator && ! $creator->stripe_connected_at) {

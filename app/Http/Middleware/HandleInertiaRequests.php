@@ -11,6 +11,7 @@ use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
+use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\SubscriptionActivationService;
 use App\Support\SubscriptionPlan;
 use Illuminate\Http\Request;
@@ -215,6 +216,17 @@ class HandleInertiaRequests extends Middleware
             'global_currency' => Cookie::get('currency'),
             'platform_fee_percentage' => config('app.platform_fee_percentage', 17),
             'transaction_fee_percentage' => config('app.transaction_fee_percentage', 2),
+
+            // Creators on a negotiated platform rate, keyed by user id.
+            //
+            // ⚠️ The two props above are GLOBAL and cannot express a per-creator
+            // rate, so every screen that computes a supporter price client-side
+            // quoted the standard figure while checkout charged the bespoke one.
+            // This map is what lets those screens resolve the right rate. It is
+            // cached and empty for almost every deployment — see
+            // CreatorFeeResolver::publicRateMap() for why it is a map rather than
+            // a field on each item payload.
+            'custom_fee_rates' => CreatorFeeResolver::publicRateMap(),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
 
             // ⚠️ Shared because two components read the plan at MODULE level, where

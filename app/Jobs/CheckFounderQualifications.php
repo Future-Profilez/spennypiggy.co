@@ -80,6 +80,11 @@ class CheckFounderQualifications implements ShouldQueue
             ->where('stripe_connected_at', '<=', $thirtyDaysAgo)
             ->where('stripe_details_submitted', 1)
             ->whereNotNull('account_id')
+            // Excluded from the standard bonus schemes by a Super Admin (usually
+            // a bespoke commercial arrangement). NULL = eligible, per the default.
+            // Filtered HERE rather than at payout so an excluded creator is never
+            // told they qualified and then not paid.
+            ->where(fn ($q) => $q->whereNull('bonus_scheme_eligible')->orWhere('bonus_scheme_eligible', 1))
             ->whereDoesntHave('founderBonus')
             ->when(Schema::hasColumn('users', 'founder_missed_at'), function ($q) {
                 $q->whereNull('founder_missed_at');

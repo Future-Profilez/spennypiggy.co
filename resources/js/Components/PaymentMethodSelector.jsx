@@ -31,6 +31,8 @@ function Radio({ checked }) {
  *  - chargeCurrency optional charge currency if different
  *  - symbol        optional currency symbol for display (falls back to ISO)
  *  - email         optional buyer email (guest risk checks)
+ *  - creatorId     the listing owner's id — REQUIRED for any creator on a bespoke
+ *                  platform rate, or the quoted price differs from the charge
  *  - value         'card' | 'bank' (controlled)
  *  - onChange      (method) => void
  */
@@ -40,6 +42,7 @@ export default function PaymentMethodSelector({
     chargeCurrency = null,
     symbol = null,
     email = null,
+    creatorId = null,
     value = "card",
     onChange,
     onPrices = null,
@@ -63,6 +66,7 @@ export default function PaymentMethodSelector({
                     currency,
                     charge_currency: chargeCurrency || undefined,
                     email: email || undefined,
+                    creator_id: creatorId || undefined,
                 })
                 .then((res) => {
                     if (res.data?.status) {
@@ -82,7 +86,7 @@ export default function PaymentMethodSelector({
         }, 350);
 
         return () => clearTimeout(debounceRef.current);
-    }, [amount, currency, chargeCurrency, email]);
+    }, [amount, currency, chargeCurrency, email, creatorId]);
 
     const cardDisabled = preview ? !preview.rules?.card_allowed : false;
 

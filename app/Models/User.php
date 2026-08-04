@@ -87,6 +87,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'stripe_connected_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',
         'content_posting_warned_at' => 'datetime',
+        // Deliberately NOT in $fillable: it is a Super Admin commercial control
+        // set from the admin app, and nothing on the website should be able to
+        // flip it through mass assignment. Write it with forceFill()->save().
+        'bonus_scheme_eligible' => 'boolean',
         // Written by CreatorJourneyService, read by the admin app's onboarding drip.
         'journey_step_at' => 'datetime',
         'journey_completed_at' => 'datetime',
@@ -917,10 +921,39 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     }
 
     /**
+     * Is this creator eligible for the standard bonus schemes and promotional
+     * incentives (Founder, Fast Start, referral payouts)?
+     *
+     * The single definition — every bonus path reads this rather than checking
+     * the column itself, so turning a creator off cannot be honoured in three
+     * places and missed in a fourth.
+     *
+     * Deliberately independent of custom pricing (client decision, 3 Aug 2026):
+     * a creator on a bespoke rate may still be bonus eligible, and a creator on
+     * standard pricing may be excluded. The two are separate Super Admin calls.
+     *
+     * A missing or NULL column reads as ELIGIBLE, matching the DB default and
+     * the rule used by every other preference flag on this model — a column that
+     * was not selected is not evidence of exclusion.
+     */
+    public function isBonusEligible(): bool
+    {
+        return (bool) ($this->bonus_scheme_eligible ?? true);
+    }
+
+    /**
      * Check if user is currently eligible for founder program qualification
      */
     public function isEligibleForFounder()
     {
+        // A creator on a bespoke commercial arrangement is excluded from the
+        // standard bonus schemes unless a Super Admin has explicitly said
+        // otherwise — the two are separate switches, so this reads the flag, not
+        // whether they happen to be on a custom rate.
+        if (! $this->isBonusEligible()) {
+            return false;
+        }
+
         if ($this->is_founder || $this->stripe_connected_at === null) {
             return false;
         }

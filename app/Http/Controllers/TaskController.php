@@ -601,7 +601,7 @@ class TaskController extends Controller
             return back()->with('error', $methodResolution['message']);
         }
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, 0, $methodResolution['fee_profile']);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, 0, $methodResolution['fee_profile'], $creator->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -674,6 +674,13 @@ class TaskController extends Controller
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
             'fee_profile' => $methodResolution['fee_profile'],
+            // The rate travels WITH the charge so both fulfilment paths (the
+            // redirect handler and the webhook) record what actually priced it,
+            // rather than re-resolving a rate that may have changed since.
+            'platform_fee_rate' => (string) ($breakdown['platform_fee_rate'] ?? ''),
+            'compliance_fee_rate' => (string) ($breakdown['compliance_fee_rate'] ?? ''),
+            'fee_source' => (string) ($breakdown['fee_source'] ?? ''),
+            'fee_override_id' => (string) ($breakdown['fee_override_id'] ?? ''),
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
             'gifter_message' => Str::limit((string) ($gifterMessage ?? ''), 450),
@@ -952,6 +959,7 @@ class TaskController extends Controller
                 'status' => 'paid', // Always paid in sync handler (and especially for local dev)
                 'payment_type' => $metadata->payment_type ?? 'STANDARD',
                 'fee_profile' => $metadata->fee_profile ?? 'card',
+                ...Helpers::feeRateColumnsFromMetadata($metadata),
                 'gifter_message' => $metadata->gifter_message ?? null,
                 'admin_fee' => $adminFee,
                 'platform_fee' => $platformFee,

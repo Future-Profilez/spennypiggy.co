@@ -1442,6 +1442,28 @@ function MoneyView({ summary, receipts, creators, money, reduce, filtered, onCre
                             </span>
                         )}
                     </div>
+
+                    {/* Money that came back, and money still moving. Both are reported
+                        separately and never netted off the total — a single blended figure
+                        answers neither "what have I spent" nor "what was returned". These
+                        purchases used to vanish from this page entirely. */}
+                    {(Number(summary.refunded_total || 0) > 0 || Number(summary.pending_total || 0) > 0) && (
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-zinc-500">
+                            {Number(summary.refunded_total || 0) > 0 && (
+                                <span>
+                                    <span className={`text-zinc-900 font-medium ${MONO}`}>{money(summary.refunded_total)}</span>
+                                    {" refunded"}
+                                    {summary.refunded_count ? ` · ${summary.refunded_count} purchase${summary.refunded_count === 1 ? "" : "s"}` : ""}
+                                </span>
+                            )}
+                            {Number(summary.pending_total || 0) > 0 && (
+                                <span>
+                                    <span className={`text-zinc-900 font-medium ${MONO}`}>{money(summary.pending_total)}</span>
+                                    {" still confirming with your bank"}
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className={`${CARD} p-5 sm:p-6`}>

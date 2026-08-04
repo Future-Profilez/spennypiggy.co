@@ -20,6 +20,7 @@ use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Services\Ledger\LedgerRules;
 use App\StripeControl;
 use App\Support\PayoutLock;
 use Carbon\Carbon;
@@ -306,8 +307,11 @@ class PayoutService
                     if ($taskPurchase) {
                         $taskType = $taskPurchase->task->type ?? 'timed';
                         if ($taskType === 'timed') {
-                            // Task Timed: ONLY include if status is completed/accepted/paid_out
-                            if (! in_array($taskPurchase->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                            // Task Timed: ONLY include if status is completed/accepted/paid_out.
+                            // The list is LedgerRules' — this gate runs on Payment rows rather
+                            // than ledger rows, so it cannot call fulfilmentMap(), but it must
+                            // never disagree with it about what "earned" means.
+                            if (! in_array($taskPurchase->status, LedgerRules::EARNED_TASK_STATUSES, true)) {
                                 $fts = $this->getAllFinancialTransactionsForPayment($p);
                                 if ($fts->isNotEmpty()) {
                                     $pendingDeliverablesMinor += $pendingMinor($fts);
@@ -948,20 +952,14 @@ class PayoutService
             ->orderByDesc('id')
             ->get();
 
+        // The fulfilment gate is LedgerRules', shared with the earnings dashboard and the
+        // Support History feed, so a reserve cannot be held against a row those screens
+        // consider unearned (or vice versa).
+        $reserveFulfilment = LedgerRules::fulfilmentMap($pendingFts);
+
         foreach ($pendingFts as $ft) {
-            // Check fulfillment status for Shop and Task
-            if ($ft->source_type === TaskPurchase::class && $ft->source) {
-                $taskType = $ft->source->task->type ?? 'timed';
-                if ($taskType === 'timed' && ! in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                    continue; // Skip reserve calculation for unfulfilled timed tasks
-                }
-            }
-            if ($ft->source_type === ShopPayment::class && $ft->source && $ft->source->shop) {
-                if ($ft->source->shop->type === 'physical') {
-                    if (! $ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
-                        continue; // Skip reserve calculation for unfulfilled physical shop items
-                    }
-                }
+            if (! ($reserveFulfilment[$ft->id] ?? true)) {
+                continue; // Unfulfilled physical shop item or timed task
             }
 
             $reserveMajor = (float) ($ft->reserve_amount ?? 0);
@@ -1190,21 +1188,13 @@ class PayoutService
         $totalNet = 0;
         $totalReserve = 0;
 
+        // Same LedgerRules gate as getHeldReserves: an unfulfilled physical shop item or
+        // timed task is not yet payable.
+        $previewFulfilment = LedgerRules::fulfilmentMap($fts);
+
         foreach ($fts as $ft) {
-            // Same fulfillment gate as getHeldReserves: unfulfilled physical shop / timed tasks
-            // are not yet payable.
-            if ($ft->source_type === TaskPurchase::class && $ft->source) {
-                $taskType = $ft->source->task->type ?? 'timed';
-                if ($taskType === 'timed' && ! in_array($ft->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
-                    continue;
-                }
-            }
-            if ($ft->source_type === ShopPayment::class && $ft->source && $ft->source->shop) {
-                if ($ft->source->shop->type === 'physical') {
-                    if (! $ft->source->deliverable || $ft->source->deliverable->status !== 'delivered') {
-                        continue;
-                    }
-                }
+            if (! ($previewFulfilment[$ft->id] ?? true)) {
+                continue;
             }
 
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));

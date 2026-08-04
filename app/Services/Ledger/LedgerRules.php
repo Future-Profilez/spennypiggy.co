@@ -1,0 +1,303 @@
+<?php
+
+namespace App\Services\Ledger;
+
+use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
+use App\Models\ShopPayment;
+use App\Models\TaskPurchase;
+use Illuminate\Support\Collection;
+
+/**
+ * The ONE definition of how a ledger row is read.
+ *
+ * Before this class the same four questions — "is this money earned?", "is this
+ * item fulfilled?", "what did the supporter actually pay?", "what did the creator
+ * keep?" — were answered by four separate implementations (FinancialService,
+ * ProfileController's /history feed, GifterHubController and PayoutService), and
+ * they disagreed. A creator's Support History showed more received income than the
+ * earnings dashboard, which in turn showed a different figure to what the payout
+ * run would actually pay. Every surface now reads from here.
+ *
+ * The fulfilment gate mirrors PayoutService deliberately: the payout engine is
+ * what actually moves the money, so anything a creator is SHOWN as earned must be
+ * something the payout run agrees to pay.
+ */
+final class LedgerRules
+{
+    /**
+     * A Paid Task's money is earned once the buyer has accepted (or auto-confirm
+     * has run). 'delivered' is NOT here — that is still escrow.
+     */
+    public const EARNED_TASK_STATUSES = ['completed', 'completed_accepted', 'paid_out'];
+
+    /** Only a completed row counts toward a total. */
+    public const COUNTED_STATUSES = ['completed'];
+
+    /**
+     * Rows a person is allowed to SEE. A refunded or disputed transaction is
+     * excluded from every total but must still be listed — money that arrived and
+     * then left is a fact the buyer and the creator both need, and hiding it reads
+     * as the transaction never having existed.
+     */
+    public const VISIBLE_STATUSES = ['completed', 'review_hold', 'disputed', 'refunded', 'processing', 'pending'];
+
+    /** Statuses that mean the money is not (or no longer) the creator's. */
+    public const REVERSED_STATUSES = ['refunded', 'disputed', 'failed'];
+
+    /** Statuses that mean the money has not settled yet. */
+    public const IN_FLIGHT_STATUSES = ['processing', 'pending', 'review_hold'];
+
+    /**
+     * Resolve the fulfilment state of a whole set of ledger rows in a fixed number
+     * of queries.
+     *
+     * Two product types are only earned once they have been delivered:
+     *   - a PHYSICAL shop item (the parcel has to arrive), and
+     *   - a TIMED paid task (custom work sitting in escrow until accepted).
+     *
+     * An INSTANT task is deliberately fulfilled on payment — its deliverable is
+     * handed over the moment the buyer pays, and the payout engine has always paid
+     * it. The earnings screens used to exclude it, so the creator was paid money
+     * their own dashboard never showed.
+     *
+     * @param  Collection<int, FinancialTransaction>  $transactions
+     * @return array<int, bool> keyed by FinancialTransaction id
+     */
+    public static function fulfilmentMap(Collection $transactions): array
+    {
+        $map = [];
+
+        $taskIds = [];
+        $shopIds = [];
+        foreach ($transactions as $ft) {
+            if ($ft->source_type === TaskPurchase::class) {
+                $taskIds[] = $ft->source_id;
+            } elseif ($ft->source_type === ShopPayment::class) {
+                $shopIds[] = $ft->source_id;
+            }
+        }
+
+        $taskPurchases = empty($taskIds)
+            ? collect()
+            : TaskPurchase::with('task:id,type')
+                ->whereIn('id', array_unique($taskIds))
+                ->get(['id', 'task_id', 'status'])
+                ->keyBy('id');
+
+        $shopPayments = empty($shopIds)
+            ? collect()
+            : ShopPayment::with('shop:id,type')
+                ->whereIn('id', array_unique($shopIds))
+                ->get(['id', 'shop_id', 'session_id'])
+                ->keyBy('id');
+
+        // Deliverable status per session in one query. hasOne() on session_id has no
+        // deterministic order, so the row is picked by id like FinancialService did.
+        $sessionIds = $shopPayments->pluck('session_id')->filter()->unique()->values()->all();
+        $deliverableStatus = empty($sessionIds)
+            ? []
+            : Deliverable::whereIn('session_id', $sessionIds)
+                ->orderBy('id')
+                ->get(['session_id', 'status'])
+                ->groupBy('session_id')
+                ->map(fn ($rows) => $rows->first()->status)
+                ->all();
+
+        foreach ($transactions as $ft) {
+            $map[$ft->id] = self::resolveFulfilment($ft, $taskPurchases, $shopPayments, $deliverableStatus);
+        }
+
+        return $map;
+    }
+
+    /**
+     * Single-row convenience. Prefer fulfilmentMap() for a list — this issues its
+     * own queries and will N+1 in a loop.
+     */
+    public static function isFulfilled(FinancialTransaction $ft): bool
+    {
+        return self::fulfilmentMap(collect([$ft]))[$ft->id] ?? true;
+    }
+
+    /**
+     * Does this row count toward an earnings/spend total?
+     *
+     * Settled AND fulfilled. Anything else is shown with a state instead of being
+     * silently dropped.
+     *
+     * @param  array<int, bool>  $fulfilmentMap  from fulfilmentMap()
+     */
+    public static function countsTowardTotals(FinancialTransaction $ft, array $fulfilmentMap): bool
+    {
+        if (! in_array((string) $ft->status, self::COUNTED_STATUSES, true)) {
+            return false;
+        }
+
+        return $fulfilmentMap[$ft->id] ?? true;
+    }
+
+    /**
+     * What the supporter was actually charged.
+     *
+     * gross_amount is written from the payment row's total_paid wherever one
+     * exists, so it is the charged figure and NOT the creator's gross.
+     */
+    public static function buyerPaid(FinancialTransaction $ft): float
+    {
+        $gross = (float) ($ft->gross_amount ?? 0);
+        if ($gross > 0) {
+            return $gross;
+        }
+
+        // A legacy row with no gross recorded: rebuild it from its own parts rather
+        // than reporting the purchase as £0.
+        return self::creatorGross($ft) + self::fees($ft);
+    }
+
+    /**
+     * The creator's gross — what the sale is worth to them before fees they never
+     * paid. Net already includes shipping on a shop row.
+     */
+    public static function creatorGross(FinancialTransaction $ft): float
+    {
+        return (float) ($ft->net_amount ?? 0) + (float) ($ft->vat_amount ?? 0);
+    }
+
+    /** Every fee deducted between the supporter's charge and the creator's net. */
+    public static function fees(FinancialTransaction $ft): float
+    {
+        return (float) ($ft->platform_fee ?? 0) + (float) ($ft->stripe_fee ?? 0);
+    }
+
+    /** The creator's net — the canonical payable figure. */
+    public static function creatorNet(FinancialTransaction $ft): float
+    {
+        return (float) ($ft->net_amount ?? 0);
+    }
+
+    /**
+     * A single word for what is happening to this money, for display.
+     *
+     * Deliberately distinct from the raw DB status: "delivered but not yet
+     * accepted" and "waiting on the bank" are different things to the person
+     * reading the row, and both were previously rendered as nothing at all.
+     */
+    public static function state(FinancialTransaction $ft, array $fulfilmentMap): string
+    {
+        $status = (string) $ft->status;
+
+        if (in_array($status, self::REVERSED_STATUSES, true)) {
+            return $status === 'failed' ? 'failed' : $status;
+        }
+
+        if (in_array($status, self::IN_FLIGHT_STATUSES, true)) {
+            return $status === 'review_hold' ? 'on_hold' : 'awaiting_settlement';
+        }
+
+        if (! ($fulfilmentMap[$ft->id] ?? true)) {
+            return 'awaiting_delivery';
+        }
+
+        return 'settled';
+    }
+
+    /**
+     * Human wording for state(). Kept beside the state so two surfaces cannot
+     * describe the same row differently.
+     */
+    public const STATE_LABELS = [
+        'settled' => 'Completed',
+        'awaiting_delivery' => 'Awaiting delivery',
+        'awaiting_settlement' => 'Awaiting bank confirmation',
+        'on_hold' => 'Under review',
+        'refunded' => 'Refunded',
+        'disputed' => 'Disputed',
+        'failed' => 'Failed',
+    ];
+
+    /**
+     * The full money breakdown for one row, in its own currency.
+     *
+     * Every transactional surface renders this, so the buyer and the creator are
+     * shown the same arithmetic for the same payment.
+     *
+     * @param  array<int, bool>  $fulfilmentMap
+     */
+    public static function breakdown(FinancialTransaction $ft, array $fulfilmentMap): array
+    {
+        $state = self::state($ft, $fulfilmentMap);
+        $counts = self::countsTowardTotals($ft, $fulfilmentMap);
+
+        return [
+            'currency' => strtoupper((string) ($ft->currency ?: 'GBP')),
+            'buyer_paid' => round(self::buyerPaid($ft), 2),
+            'creator_gross' => round(self::creatorGross($ft), 2),
+            'platform_fee' => round((float) ($ft->platform_fee ?? 0), 2),
+            'compliance_fee' => $ft->compliance_fee !== null ? round((float) $ft->compliance_fee, 2) : null,
+            'admin_fee' => $ft->admin_fee !== null ? round((float) $ft->admin_fee, 2) : null,
+            'stripe_fee' => round((float) ($ft->stripe_fee ?? 0), 2),
+            'total_fees' => round(self::fees($ft), 2),
+            'vat' => round((float) ($ft->vat_amount ?? 0), 2),
+            'creator_net' => round(self::creatorNet($ft), 2),
+            'reserve_amount' => round((float) ($ft->reserve_amount ?? 0), 2),
+            'reserve_status' => $ft->reserve_status ?: 'none',
+            'reserve_released_at' => optional($ft->reserve_released_at)->toIso8601String(),
+            'fee_profile' => $ft->fee_profile ?: 'card',
+            'payout_run_id' => $ft->payout_run_id,
+            'state' => $state,
+            'state_label' => self::STATE_LABELS[$state] ?? 'Completed',
+            'counts_toward_totals' => $counts,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, TaskPurchase>  $taskPurchases
+     * @param  Collection<int, ShopPayment>  $shopPayments
+     * @param  array<string, string>  $deliverableStatus
+     */
+    private static function resolveFulfilment(
+        FinancialTransaction $ft,
+        Collection $taskPurchases,
+        Collection $shopPayments,
+        array $deliverableStatus
+    ): bool {
+        if ($ft->source_type === TaskPurchase::class) {
+            $purchase = $taskPurchases->get($ft->source_id);
+            if (! $purchase) {
+                // The purchase row is gone. The payout engine pays these (its own gate
+                // can only exclude a task it can actually find), so excluding them here
+                // would show the creator LESS than they are paid — the exact class of
+                // disagreement this class exists to remove. `finance:audit-ledger`
+                // reports the orphan instead.
+                return true;
+            }
+
+            // Default to 'timed' when the task is missing — the stricter branch.
+            $type = $purchase->task->type ?? 'timed';
+            if ($type !== 'timed') {
+                return true;
+            }
+
+            return in_array((string) $purchase->status, self::EARNED_TASK_STATUSES, true);
+        }
+
+        if ($ft->source_type === ShopPayment::class) {
+            $payment = $shopPayments->get($ft->source_id);
+            if (! $payment || ! $payment->shop) {
+                // Unknown product type — a digital sale is the common case and is
+                // fulfilled on payment, so this stays inclusive rather than hiding
+                // real income behind a missing relation.
+                return true;
+            }
+
+            if ($payment->shop->type !== 'physical') {
+                return true;
+            }
+
+            return ($deliverableStatus[$payment->session_id] ?? null) === 'delivered';
+        }
+
+        return true;
+    }
+}

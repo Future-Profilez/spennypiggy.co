@@ -190,7 +190,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
 
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['total_fees'];
@@ -332,7 +332,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
 
         $taxamount = $breakdown['application_fee'];
         $totalAmount = $breakdown['total_supporter_pays'];
@@ -665,7 +665,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate, 'card', $bill->user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -738,6 +738,9 @@ class BillsController extends Controller
                 'creator_currency' => $bill->currency,
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
+                // On a RECURRING row this is also the grandfathering record: the
+                // supporter keeps this rate at renewal unless a LOWER one is agreed.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             // Apply digital waiver confirmation
