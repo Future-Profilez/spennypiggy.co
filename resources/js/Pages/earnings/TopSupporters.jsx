@@ -10,7 +10,7 @@ import userphoto from "../../../assets/siteicon.png";
 export default function TopSupporters({earnType}) {
 
   const { formatMultiPrice } = PriceFormat();
-  const { auth } = usePage().props;
+  const { auth, global_currency } = usePage().props;
 
   const [loading, setLoading] = useState(false);
   const [lists, setLists] = useState([])
@@ -31,39 +31,39 @@ export default function TopSupporters({earnType}) {
 
   function SupporterItem({ item }) {
     return (
-      <div className="flex gap-4 justify-between items-center py-3 border-b-2 border-black last:border-0 group hover:bg-gray-100 px-2 -mx-2 rounded-[16px] transition-colors">
+      <div className="flex gap-4 justify-between items-center py-3 border-b border-gray-50 last:border-0 group hover:bg-gray-50 px-2.5 -mx-2.5 rounded-2xl transition-all duration-200">
         <Link href={`/${item.username}`} className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="relative shrink-0 border-2 border-black rounded-full overflow-hidden w-10 h-10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-voilet/10">
+          <div className="relative shrink-0 border border-gray-100 rounded-full overflow-hidden w-11 h-11 shadow-sm bg-indigo-50/50">
             <img 
               src={item.media || userphoto} 
               alt={item.name} 
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
             />
           </div>
           <div className="min-w-0 flex flex-col">
-            <h3 className="text-sm font-black text-black truncate flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-800 truncate flex items-center gap-2">
               {item.name}
               {item.has_dispute ? (
-                <span className="text-[9px] font-black uppercase tracking-wider bg-red-100 text-red-600 px-2 py-0.5 rounded-md border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Disputed</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider bg-red-50 text-red-500 px-2 py-0.5 rounded border border-red-100/50">Disputed</span>
               ) : item.has_hold ? (
-                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Hold</span>
+                <span className="text-[8px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-500 px-2 py-0.5 rounded border border-amber-100/50">Hold</span>
               ) : null}
             </h3>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">@{item.username}</p>
+            <p className="text-[10px] text-gray-400 font-semibold tracking-wider">@{item.username}</p>
           </div>
         </Link>
-        <div className="shrink-0 text-sm font-black text-black bg-white px-3 py-1.5 rounded-[12px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-          {formatMultiPrice((item && item.amount), (auth && auth?.user && auth?.user?.default_currency || 'gbp'))}
+        <div className="shrink-0 text-sm font-extrabold text-gray-900 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 tabular-nums">
+          {formatMultiPrice((item && item.amount), (global_currency || 'gbp'))}
         </div>
       </div>
     );
   }
 
   return (
-    <section className="bg-white rounded-[30px]  p-6 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden h-full flex flex-col hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1">
-      <div className="pb-4 mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase tracking-widest text-black">Top Supporters</h2>
-        <span className="bg-voilet/10 text-voilet-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+    <section className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm overflow-hidden h-full flex flex-col hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+      <div className="pb-4 mb-4 flex items-center justify-between border-b border-gray-50">
+        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Top Supporters</h2>
+        <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-100/50">
           VIP
         </span>
       </div>
@@ -71,7 +71,7 @@ export default function TopSupporters({earnType}) {
       <div className="flex-grow" >
         {loading ? (
           <div className="space-y-4 animate-pulse">
-            {[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-200 rounded-xl border-2 border-gray-300" />)}
+            {[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-50 rounded-2xl border border-gray-100" />)}
           </div>
         ) : lists && lists.length ? (
           lists.map((item, index) => (
@@ -79,10 +79,10 @@ export default function TopSupporters({earnType}) {
           ))
         ) : (
           <div className="py-12 flex flex-col items-center justify-center text-center">
-            <div className="w-14 h-14 bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-4 text-2xl">
+            <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-4 text-2xl">
               ⭐
             </div>
-            <p className="text-xs font-black text-gray-500 uppercase tracking-widest">No supporters found</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No supporters found</p>
           </div>
         )}
       </div>

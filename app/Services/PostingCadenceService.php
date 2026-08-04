@@ -57,6 +57,20 @@ class PostingCadenceService
      */
     public function recentPostCount(User $creator): int
     {
+        return $this->countingPostsQuery($creator)->count();
+    }
+
+    /**
+     * ⚠️ The ONE definition of "a post that counts" — do not inline these
+     * predicates a second time.
+     *
+     * This decides whether a creator's recurring income is paused for Stripe
+     * compliance, and it is read by both the count and the window of publish
+     * dates. Two copies drift, and the drift is silent: the number would say the
+     * creator is safe while the window it is drawn from says otherwise.
+     */
+    private function countingPostsQuery(User $creator)
+    {
         return Post::where('user_id', $creator->id)
             ->whereIn('for_module', self::GATED_MODULES)
             // Exclude system/auto posts, but keep genuine posts whose type is NULL
@@ -65,8 +79,7 @@ class PostingCadenceService
                 $q->whereNull('type')->orWhereNotIn('type', self::SYSTEM_TYPES);
             })
             ->where('approved', 1)
-            ->where('created_at', '>=', now()->subDays(self::WINDOW_DAYS))
-            ->count();
+            ->where('created_at', '>=', now()->subDays(self::WINDOW_DAYS));
     }
 
     public function meetsThreshold(User $creator): bool
@@ -82,7 +95,12 @@ class PostingCadenceService
      */
     public function statusFor(User $creator): array
     {
-        $count = $this->recentPostCount($creator);
+        // Read the window ONCE. The publish dates and the number are the same
+        // rows, so a second COUNT(*) here would be both wasted and a chance for
+        // the two to disagree.
+        $windowStart = now()->subDays(self::WINDOW_DAYS);
+        $publishedAt = $this->countingPostsQuery($creator)->orderBy('created_at')->pluck('created_at');
+        $count = $publishedAt->count();
         $meets = $count >= self::MIN_POSTS;
         $paused = $creator->isContentPostingPaused();
         $oldestSub = $this->oldestActiveSubscriptionDate($creator);
@@ -136,7 +154,31 @@ class PostingCadenceService
             }
         }
 
+        // ⚠️ The dates the counting posts were published, oldest first.
+        //
+        // The count alone cannot express the thing that actually matters here:
+        // this is a ROLLING window, so a post counting today drops out of it on a
+        // specific date and the creator's total falls by one. A creator at 3 of 3
+        // is not finished — they are 3 of 3 *until* their oldest post ages out.
+        // A progress bar cannot say that; a window can.
+        //
+        // Drawn from countingPostsQuery() so the dates and the number can never
+        // describe different sets of posts.
+        $countingPosts = $publishedAt
+            ->map(fn ($d) => [
+                'at' => $d->toIso8601String(),
+                // Where it sits in the window, 0 = about to drop out.
+                'position' => round(
+                    100 * $d->diffInSeconds($windowStart) / max(1, self::WINDOW_DAYS * 86400),
+                    2
+                ),
+                'drops_out_at' => $d->copy()->addDays(self::WINDOW_DAYS)->toIso8601String(),
+            ])
+            ->values()
+            ->all();
+
         return [
+            'counting_posts' => $countingPosts,
             'member_posts' => $count,
             'required' => self::MIN_POSTS,
             'window_days' => self::WINDOW_DAYS,
@@ -153,7 +195,126 @@ class PostingCadenceService
             // round() first: floatDiffInDays on an exact N-day gap returns N.0000000002,
             // and a bare ceil() would bump "3 days" to "4".
             'pause_in_days' => $pauseAt ? max(0, (int) ceil(round(now()->floatDiffInDays($pauseAt, false), 4))) : null,
+            // What this state means for the creator's money, and what fixes it.
+            'headline' => self::HEADLINES[$status] ?? $status,
+            'consequence' => $this->consequenceFor($status, $subscriberCount, $pauseAt),
+            'checklist' => $this->checklistFor($status, max(0, self::MIN_POSTS - $count), $countingPosts),
         ];
+    }
+
+    /**
+     * The state in the creator's own words.
+     *
+     * ⚠️ The states were previously surfaced as the raw keys `grace` / `at_risk` /
+     * `paused`, which say nothing about money to the person whose money it is.
+     * `paused` in particular is the whole reason this system exists and read as a
+     * neutral technical word: creators repeatedly did not understand that their
+     * subscription income had stopped.
+     */
+    public const HEADLINES = [
+        'grace' => 'You are getting set up',
+        'active' => 'Your payments are running normally',
+        'at_risk' => 'Your subscription payments are about to stop',
+        'paused' => 'Your subscription payments have stopped',
+    ];
+
+    /**
+     * One sentence naming the actual consequence — never the rule, always the money.
+     *
+     * A creator does not need to be told they are "below the posting threshold";
+     * they need to be told they are not being paid and what restarts it.
+     */
+    private function consequenceFor(string $status, int $subscriberCount, ?Carbon $pauseAt): string
+    {
+        $people = $subscriberCount === 1 ? '1 subscriber' : "{$subscriberCount} subscribers";
+        $on = $pauseAt ? $pauseAt->format('j M') : null;
+
+        return match ($status) {
+            'paused' => $subscriberCount > 0
+                ? "Your {$people} are not being charged right now, so you are earning nothing from them. They keep their access and nobody has been cancelled — collection restarts automatically the moment you post again."
+                : 'Your recurring subscriptions are not being charged right now. Collection restarts automatically the moment you post again.',
+            'at_risk' => $on
+                ? "If you do not post by {$on}, we stop charging your {$people} and that income stops until you do."
+                : "If you do not post soon, we stop charging your {$people} and that income stops until you do.",
+            'grace' => $on
+                ? "Nothing has stopped. From {$on} you need to be posting regularly for your subscription payments to keep running."
+                : 'Nothing has stopped. Keep posting regularly and your subscription payments keep running.',
+            default => $subscriberCount > 0
+                ? "Your {$people} are being charged as normal. Keep posting and nothing changes."
+                : 'Everything is running normally.',
+        };
+    }
+
+    /**
+     * The steps that get a creator out of this state, in order.
+     *
+     * ⚠️ Every item must be something the creator can DO. "You are below the
+     * threshold" is a diagnosis, not a step — the page it feeds was full of those,
+     * which is why creators read it and still asked what was wrong.
+     *
+     * @param  array<int,array{at:string,drops_out_at:string,position:float}>  $countingPosts
+     * @return array<int,array{key:string,label:string,detail:string,done:bool,cta_label:?string,cta_route:?string,cta_params:array}>
+     */
+    private function checklistFor(string $status, int $needed, array $countingPosts): array
+    {
+        $items = [];
+
+        $items[] = [
+            'key' => 'post',
+            'label' => $needed > 0
+                ? ($needed === 1
+                    ? 'Publish 1 more post for members'
+                    : "Publish {$needed} more posts for members")
+                : 'Post for your members',
+            'detail' => 'It must be posted to Members or Subscribers — a public post does not count, because your subscribers are paying for something only they get.',
+            'done' => $needed === 0,
+            'cta_label' => 'Write a post',
+            'cta_route' => 'dashboard',
+            // ?add=post opens the composer directly rather than the chooser.
+            'cta_params' => ['add' => 'post'],
+        ];
+
+        // The next post to age out. A creator at 3 of 3 is only safe until then,
+        // and the count alone cannot say so.
+        $nextDropOut = collect($countingPosts)->sortBy('drops_out_at')->first();
+
+        $items[] = [
+            'key' => 'keep_posting',
+            'label' => 'Keep at least '.self::MIN_POSTS.' posts inside the last '.self::WINDOW_DAYS.' days',
+            'detail' => $nextDropOut
+                ? 'This is a rolling window — your oldest post stops counting on '
+                    .Carbon::parse($nextDropOut['drops_out_at'])->format('j M').'.'
+                : 'This is a rolling window, so posts stop counting once they are '
+                    .self::WINDOW_DAYS.' days old.',
+            'done' => $needed === 0,
+            'cta_label' => null,
+            'cta_route' => null,
+            'cta_params' => [],
+        ];
+
+        $items[] = [
+            'key' => 'schedule',
+            'label' => 'Schedule posts ahead so you never drop below',
+            'detail' => 'Write several in one sitting and set each to publish on a different day. Scheduled posts count from the moment they go live.',
+            'done' => false,
+            'cta_label' => 'Schedule a post',
+            'cta_route' => 'dashboard',
+            'cta_params' => ['add' => 'post'],
+        ];
+
+        if ($status === 'paused') {
+            array_unshift($items, [
+                'key' => 'understand_pause',
+                'label' => 'Nothing is cancelled — you do not need to contact anyone',
+                'detail' => 'Your subscribers keep their access and their subscriptions stay in place. Charging restarts by itself once you meet the posting requirement.',
+                'done' => true,
+                'cta_label' => null,
+                'cta_route' => null,
+                'cta_params' => [],
+            ]);
+        }
+
+        return $items;
     }
 
     /**

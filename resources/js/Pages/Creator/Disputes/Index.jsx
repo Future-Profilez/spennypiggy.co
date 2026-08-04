@@ -139,7 +139,7 @@ export default function DisputesIndex({ auth, disputes, tickets, queries }) {
                         </div>
                     </div>
 
-                    <div className="bg-[#1a1a1a] rounded-[30px]  p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F]l border border-gray-800">
+                    <div className="bg-[#1a1a1a] rounded-[30px]  p-6 md:p-8 shadow-xl border border-gray-800">
                         {activeTab === 'disputes' && (
                             disputes.data.length === 0 ? (
                                 <div className="text-center py-16 flex flex-col items-center justify-center">

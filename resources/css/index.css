@@ -43,7 +43,7 @@ div{animation:load 0.4s linear;} */
   @supports not (-webkit-background-clip: text) {
     .text-gradient-founder{ color: #facc15; }
   }
-  .shadow-[4px_4px_0px_0px_#FF007F]ink{box-shadow:7px 7px 0 0 var(--pink); }
+  .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); }
   /* Buttons are 20px controls, not 30px containers (DESIGN.md strict radius), and
      clear the 44px mobile touch floor. Matches Components/Checkout PayButton so the
      legacy and the new button vocabulary read as one system. */
@@ -54,7 +54,7 @@ div{animation:load 0.4s linear;} */
   .w { @apply main-button bg-transparent !text-white transition !border-white shadow-[3px_3px_0px_var(--mint)] hover:shadow-[4px_4px_0px_var(--mint)] focus:shadow-[3px_3px_0px_var(--mint)] focus:outline    }
   .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[3px_3px_0px_white] hover:shadow-[4px_4px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
   .size-lg { @apply text-[17px] rounded-[20px]    px-[16px] py-3 min-h-[44px] }
-  .pink-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-pink shadow-[4px_4px_0px_0px_#FF007F]ink }
+  .pink-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-pink shadow-pink }
   .mint-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-mint shadow-mint }
   } 
   
@@ -90,12 +90,12 @@ div{animation:load 0.4s linear;} */
 .lightpink-50 {background:#F0E8FF;}
 .lightyellow  {background:#F9E3EC;}
 
-.shadow-[4px_4px_0px_0px_#FF007F]lack-sm{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
-.shadow-[4px_4px_0px_0px_#FF007F]lack{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
+.shadow-black-sm{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
+.shadow-black{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
 
-.shadow-[4px_4px_0px_0px_#FF007F]urple{box-shadow:5px 5px 0 0 var(--purple);}
+.shadow-purple{box-shadow:5px 5px 0 0 var(--purple);}
 .shadow-yellow{text-shadow:5px 4px 0px #e6ea82;-webkit-text-stroke:1px #e6ea82;}
 .text-pink{color:var(--pink) !important;}
 .text-mint{color:var(--mint);}

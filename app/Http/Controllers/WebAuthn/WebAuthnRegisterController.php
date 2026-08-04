@@ -51,6 +51,7 @@ class WebAuthnRegisterController
 
                 // Update with browser info
                 $credential->update([
+                    'credential_id' => $credentialId,
                     'browser' => $this->detectBrowser($userAgent),
                     'platform' => $this->detectPlatform($userAgent),
                     'ip_address' => request()->ip(),
@@ -77,6 +78,7 @@ class WebAuthnRegisterController
             if (is_object($saveResult)) {
                 $userAgent = request()->userAgent();
                 $saveResult->update([
+                    'credential_id' => $credentialId,
                     'browser' => $this->detectBrowser($userAgent),
                     'platform' => $this->detectPlatform($userAgent),
                     'ip_address' => request()->ip(),

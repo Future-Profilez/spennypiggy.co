@@ -187,6 +187,27 @@ export default function EditProfile({
         const NAME_FONT_SIZE = 43;
         const NAME_LINE_HEIGHT = 1.02;
 
+        // 🚨 NOTHING BELOW MAY USE `vertical-align: middle` TO CENTRE TEXT.
+        //
+        // html2canvas draws a text run near the BOTTOM of its line box rather than
+        // on the browser's baseline, and it does so whichever way the box is
+        // centred — `vertical-align: middle` on a table-cell and an explicit
+        // `line-height` equal to the box height both rendered the same. Measured on
+        // the raster: the pill's label sat 6.75px below the pill's centre and the
+        // URL 9.5px below the bar's centre, which is what "the badge text and the
+        // URL are not aligned" was.
+        //
+        // So each of these boxes has an explicit HEIGHT and a deliberately SHORTER
+        // `line-height`, chosen so the text lands centred in the exported PNG. The
+        // offset moves ~0.5px for every 1px of line-height, which is how these were
+        // derived. Consequence, and it is the whole point: the live DOM now looks
+        // slightly wrong while the PNG looks right. Only the PNG is ever seen —
+        // this element is generated off-screen and thrown away. Verify a change
+        // here by measuring the CANVAS, never by looking at the DOM.
+        //
+        // Verified good state (authored px, offset from box centre):
+        // pill label 0.25 · dot vs label -0.25 · URL -0.25 · VISIT -0.25
+
         const arc = (r, alpha) =>
             `<div style="position:absolute;width:${r * 2}px;height:${r * 2}px;left:${620 - r}px;top:${352 - r}px;border-radius:50%;background:rgba(255,255,255,${alpha});"></div>`;
 
@@ -231,8 +252,8 @@ export default function EditProfile({
                                 line-height must also stay >= 1 for the same reason.
                             -->
                             <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:${NAME_LINE_HEIGHT};text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
-                            <div style="display:inline-block;margin-top:26px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
-                                <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#0B2B1A;margin-right:6px;vertical-align:middle;"></span><span style="vertical-align:middle;">${esc(cardCategory)}</span>
+                            <div style="display:inline-block;margin-top:26px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:0 12px;height:25px;line-height:13px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
+                                <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#0B2B1A;margin-right:6px;margin-bottom:-5px;vertical-align:baseline;"></span><span style="vertical-align:baseline;">${esc(cardCategory)}</span>
                             </div>
                         </div>
                     </div>
@@ -242,9 +263,9 @@ export default function EditProfile({
 
                     <!-- Table for the same reason as the row above: no flex:1. -->
                     <div style="display:table;width:100%;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
-                        <div style="display:table-cell;width:62px;background:#0B0B0C;color:#fff;vertical-align:middle;text-align:center;padding:0 13px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
-                        <div style="display:table-cell;background:#fff;color:#0B0B0C;vertical-align:middle;padding:11px 8px 11px 15px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
-                        <div style="display:table-cell;width:82px;background:#fff;vertical-align:middle;padding:0 13px 0 3px;">
+                        <div style="display:table-cell;width:62px;background:#0B0B0C;color:#fff;vertical-align:top;text-align:center;padding:0 13px;height:44px;line-height:32px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
+                        <div style="display:table-cell;background:#fff;color:#0B0B0C;vertical-align:top;padding:0 8px 0 15px;height:44px;line-height:24px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
+                        <div style="display:table-cell;width:82px;background:#fff;vertical-align:top;padding:12px 13px 13px 3px;">
                             <img src="${spennypiggy}" alt="" crossorigin="anonymous" style="height:19px;width:auto;display:block;" />
                         </div>
                     </div>
@@ -554,19 +575,14 @@ export default function EditProfile({
                         : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
             >
-                Profile Info
+                Profile
             </button>
 
-            <button
-                onClick={() => setActiveTab("appearance")}
-                className={`py-2 px-6 text-sm   font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
-                    activeTab === "appearance"
-                        ? "bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                        : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                }`}
-            >
-                Appearance
-            </button>
+            {/* Appearance is no longer its own tab. Photos, bio and name are one
+                job — "how my profile looks" — and splitting them meant a creator
+                changing their avatar and their display name had to save, switch
+                tab and save again. The photos now open the merged tab, above the
+                fields, because they are what a visitor sees first. */}
             <button
                 onClick={() => setActiveTab("settings")}
                 className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
@@ -670,12 +686,20 @@ export default function EditProfile({
                     <>
                         {renderTabs()}
 
-                        <form onSubmit={updateProfile}>
+                        <form onSubmit={updateProfile} className="flex flex-col">
+                            {/* Merging the two tabs left the photos block running
+                                straight into "Display Name" with nothing between
+                                them, so the page read as one undifferentiated
+                                scroll. A rule and a heading say where one job
+                                ends and the next begins. */}
                             <div
                                 className={
                                     activeTab === "profile" ? "block" : "hidden"
                                 }
                             >
+                                <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                                    Your details
+                                </h3>
                                 <ul>
                                     <li className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -898,13 +922,21 @@ export default function EditProfile({
                                 </ul>
                             </div>
 
+                            {/* ⚠️ `order-first`, not a code move. This block is
+                                ~110 lines of upload wiring and cutting/pasting it
+                                above the fields is the kind of edit that silently
+                                drops a handler; the form is a flex column, so the
+                                order is expressed where it is read. */}
                             <div
                                 className={
-                                    activeTab === "appearance"
-                                        ? "block"
+                                    activeTab === "profile"
+                                        ? "order-first block"
                                         : "hidden"
                                 }
                             >
+                                <h3 className="mb-4 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                                    How your profile looks
+                                </h3>
                                 <div className="mainprofile mb-8 relative w-full">
                                     <div className="profilePhotoImg cover group relative">
                                         <img
@@ -956,8 +988,13 @@ export default function EditProfile({
                                     </div>
                                 </div>
 
+                                {/* mt-8, not mt-16: this card used to be the last
+                                    thing on its own tab, so a large gap above it
+                                    separated it from nothing. It now has fields
+                                    beneath it and the outsized margin read as a
+                                    broken layout. */}
                                 {user?.role == 1 && (
-                                    <div className="bg-gray-50 p-6 rounded-[30px]  border border-gray-200 mt-16 text-center">
+                                    <div className="bg-gray-50 p-6 rounded-box border border-gray-200 mt-8 text-center">
                                         <h4 className="text-lg font-gulfs uppercase text-gray-800 mb-2">
                                             Social Media Banner
                                         </h4>

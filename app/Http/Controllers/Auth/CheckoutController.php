@@ -32,6 +32,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -162,6 +163,8 @@ class CheckoutController extends Controller
             if (! $subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
+                // Recorded and counted: one lost sale is a warning, six is a reason.
+                BlockedPaymentAlert::record($owner, $preliminaryTotal);
 
                 // Return user-friendly error to fan
                 return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null));

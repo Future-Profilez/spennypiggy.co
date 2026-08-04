@@ -32,7 +32,7 @@ class TipJarTweet implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->tip_pay->tipGoal->user_id);
-        if (! empty($user->twitter_token->token)) {
+        if ($user && $user->twitter_token && ! empty($user->twitter_token->token)) {
             $payload = [
                 'name' => $this->tip_pay->guest_name ?? 'Someone',
                 'amount' => Helpers::getCurrency($this->tip_pay->currency).$this->tip_pay->amount,

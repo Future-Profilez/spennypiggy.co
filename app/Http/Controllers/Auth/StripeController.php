@@ -53,6 +53,7 @@ use App\Services\StripeMetadataService;
 use App\Services\SubscriptionActivationService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -344,6 +345,10 @@ class StripeController extends Controller
                 $capabilities['transfers'] = ['requested' => true];
             } else {
                 $capabilities['card_payments'] = ['requested' => true];
+                // Stripe refuses card_payments without transfers. This branch
+                // omitted it, so a migrated account came back without the
+                // capability the migration exists to obtain.
+                $capabilities['transfers'] = ['requested' => true];
 
                 // Bank payment methods must be requested explicitly (the Stripe
                 // dashboard "on by default" toggle doesn't reach Express accounts).
@@ -352,12 +357,14 @@ class StripeController extends Controller
                 }
             }
 
-            $newAccount = StripeControl::createAccount([
+            $migrationBusinessType = ($user->country === 'AE') ? 'company' : 'individual';
+
+            $migrationPayload = [
                 'country' => $user->country,
                 'type' => 'express',
                 'email' => $user->email,
                 'capabilities' => $capabilities,
-                'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                'business_type' => $migrationBusinessType,
                 'business_profile' => [
                     'url' => "https://spennypiggy.co/{$user->username}",
                     'mcc' => '7278',
@@ -365,7 +372,19 @@ class StripeController extends Controller
                 'tos_acceptance' => [
                     'service_agreement' => $serviceAgreementType,
                 ],
-            ]);
+            ];
+
+            // Prefill what we already know (see individualPrefill). A migrated
+            // creator has to redo onboarding from scratch, so this is the path
+            // where being asked the same questions again stings most.
+            if ($migrationBusinessType === 'individual') {
+                $prefill = self::individualPrefill($user, (string) $user->country);
+                if (! empty($prefill)) {
+                    $migrationPayload['individual'] = $prefill;
+                }
+            }
+
+            $newAccount = StripeControl::createAccount($migrationPayload);
 
             // Update user with new account ID
             $user->account_id = $newAccount->id;
@@ -830,13 +849,15 @@ class StripeController extends Controller
                         }
                     }
 
+                    $businessType = ($user->country === 'AE') ? 'company' : 'individual';
+
                     $payload = [
                         'country' => $country,
                         'type' => 'express',
                         'email' => $user->email,
                         'capabilities' => $capabilities,
                         'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
-                        'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                        'business_type' => $businessType,
                         'business_profile' => [
                             'url' => "https://spennypiggy.co/{$user->username}",
                             'mcc' => '7278',
@@ -850,7 +871,39 @@ class StripeController extends Controller
                             'username' => $user->username,
                         ],
                     ];
-                    $account = StripeControl::createAccount($payload, "connect_account_user_{$user->id}_{$country}");
+
+                    // Prefill what the platform already knows so Stripe does not
+                    // ask for it again. Only applies to an individual account —
+                    // a company account (AE) takes a `company` hash instead, and
+                    // sending `individual` there is rejected.
+                    if ($businessType === 'individual') {
+                        $prefill = self::individualPrefill($user, $country);
+                        if (! empty($prefill)) {
+                            $payload['individual'] = $prefill;
+                        }
+                    }
+
+                    // ⚠️ The idempotency key MUST be derived from the payload.
+                    //
+                    // It used to be a fixed `connect_account_user_<id>_<country>`,
+                    // and Stripe refuses a key that is reused with different
+                    // parameters — "Keys for idempotent requests can only be used
+                    // with the same parameters they were first used with." That
+                    // turns any change to the payload into a hard failure for
+                    // every creator who had already attempted a connect: adding
+                    // the `individual` prefill did exactly that, and the metadata
+                    // already carried a per-consent `mor_consent_id`, so
+                    // re-consenting would have done the same on its own.
+                    //
+                    // Hashing the payload keeps the property the key exists for —
+                    // an identical retry returns the original account instead of
+                    // creating a second one — while a genuinely different request
+                    // gets a different key. Two concurrent creates are already
+                    // prevented by the row lock above and the claim below.
+                    $idempotencyKey = 'connect_acct_u'.$user->id.'_'.$country.'_'
+                        .substr(hash('sha256', json_encode($payload)), 0, 24);
+
+                    $account = StripeControl::createAccount($payload, $idempotencyKey);
 
                     // Claim the account id under the same row lock. If another
                     // request won the race in between, keep theirs and drop this
@@ -913,6 +966,63 @@ class StripeController extends Controller
         } catch (Exception $e) {
             return redirect(route('stripe.index'))->with('error', 'Internal server error:'.$e->getMessage());
         }
+    }
+
+    /**
+     * Fields the platform can hand Stripe at account creation so the creator is
+     * not asked for them again in the hosted onboarding form.
+     *
+     * ⚠️ Deliberately does NOT prefill first_name / last_name. `users.name` is a
+     * DISPLAY name — "Oink Store", a stage name, a handle — and Stripe runs its
+     * KYC identity check against whatever sits in `individual.first_name` /
+     * `last_name`. Prefilling a display name there means a creator who clicks
+     * straight through the form submits a legal name that does not match their
+     * document, and the account fails verification days later with no obvious
+     * cause. An empty field the creator has to type is strictly better than a
+     * confidently wrong one they will not read.
+     *
+     * ⚠️ Address and phone are simply not collected anywhere for creators, so
+     * they cannot be prefilled. To remove those from the onboarding form they
+     * would have to be asked for at signup first — a product decision, not a
+     * code one (and signup was deliberately shortened on 1 Aug 2026).
+     *
+     * @return array Stripe `individual` hash — empty when nothing is known.
+     */
+    private static function individualPrefill(User $user, string $country): array
+    {
+        $prefill = [];
+
+        if (! empty($user->email)) {
+            $prefill['email'] = $user->email;
+        }
+
+        // Stripe rejects a partial dob — day, month and year go together or not
+        // at all. `date_of_birth` is an optional profile field, so most creators
+        // will have none and this is skipped.
+        if (! empty($user->date_of_birth)) {
+            try {
+                $dob = Carbon::parse($user->date_of_birth);
+                $prefill['dob'] = [
+                    'day' => (int) $dob->day,
+                    'month' => (int) $dob->month,
+                    'year' => (int) $dob->year,
+                ];
+            } catch (Exception $e) {
+                Log::warning('Skipping Stripe dob prefill — unparseable date_of_birth', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Country only. The rest of the address is unknown, and a partial
+        // address hash is still an incomplete requirement to Stripe — this just
+        // saves the creator picking a country they already told us.
+        if (! empty($country)) {
+            $prefill['address'] = ['country' => strtoupper($country)];
+        }
+
+        return $prefill;
     }
 
     /**
@@ -1493,7 +1603,15 @@ class StripeController extends Controller
                         $payload['default_currency'] = strtolower($currency);
                     }
 
-                    // 6️⃣ Create Stripe account
+                    // 6️⃣ Prefill what we already know (see individualPrefill)
+                    if ($businessType === 'individual') {
+                        $prefill = self::individualPrefill($user, $country);
+                        if (! empty($prefill)) {
+                            $payload['individual'] = $prefill;
+                        }
+                    }
+
+                    // 7️⃣ Create Stripe account
                     $account = StripeControl::createAccount($payload);
 
                     // 7️⃣ Persist safely
@@ -3492,6 +3610,8 @@ class StripeController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($creator, $request->amount ?? 0);
 
             // Log the blocked payment for subscription issues
             Log::warning('Tip jar payment blocked due to subscription issue', [

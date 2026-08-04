@@ -264,9 +264,14 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     const handlePasskeyLogin = async (fallbackToPassword = false) => {
         setPasskeyLoading(true);
         try {
-            const { data: options } = await axios.post(
-                route("webauthn.login.userless.options"),
-            );
+            const hasEmail = data.email && data.email.trim().length > 0;
+            const endpoint = hasEmail
+                ? route("webauthn.login.options")
+                : route("webauthn.login.userless.options");
+            
+            const payload = hasEmail ? { email: data.email } : {};
+
+            const { data: options } = await axios.post(endpoint, payload);
 
             const publicKey = options.publicKey ?? options;
             publicKey.challenge = base64urlToUint8Array(publicKey.challenge);

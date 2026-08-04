@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\EmailService;
 use App\Mail\FeatureSuggestionStatusMail;
 use App\Models\FeatureSuggestion;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -47,7 +48,7 @@ class FeatureSuggestionController extends Controller
     public function updateStatus(Request $request, FeatureSuggestion $suggestion)
     {
         $request->validate([
-            'status' => 'required|in:pending,under_review,planned,rejected',
+            'status' => 'required|in:pending,accepted,under_review,planned,rejected',
             'admin_notes' => 'nullable|string|max:1000',
         ]);
 
@@ -65,7 +66,7 @@ class FeatureSuggestionController extends Controller
             && $recipientEmail;
 
         $recipientUser = $suggestion->user;
-        $canSendEmail = ! $recipientUser || $recipientUser->notification_send == 1;
+        $canSendEmail = User::shouldSendEmail($recipientUser);
 
         if ($shouldNotify && $canSendEmail) {
             try {

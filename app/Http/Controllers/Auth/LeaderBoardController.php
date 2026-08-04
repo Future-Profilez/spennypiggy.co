@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
 use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Follow;
 use App\Models\MembershipPayment;
@@ -1522,7 +1523,28 @@ class LeaderBoardController extends Controller
             $incomeTx->whereBetween('transaction_date', [$start, $end]);
         }
 
-        $incomeTx = $incomeTx->get(['net_amount', 'currency', 'source_type']);
+        $incomeTx = $incomeTx->with(['source' => function ($morph) {
+            $morph->morphWith([
+                ShopPayment::class => ['shop'],
+            ]);
+        }])->get(['net_amount', 'currency', 'source_type', 'source_id', 'vat_amount']);
+
+        // Collect Shop session IDs to resolve physical item delivery status
+        $shopSessionIds = $incomeTx->where('source_type', 'App\Models\ShopPayment')
+            ->pluck('source.session_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $deliverableStatusBySession = empty($shopSessionIds)
+            ? []
+            : Deliverable::whereIn('session_id', $shopSessionIds)
+                ->orderBy('id')
+                ->get(['session_id', 'status'])
+                ->groupBy('session_id')
+                ->map(fn ($rows) => $rows->first()->status)
+                ->all();
 
         $allCurrencies = $incomeTx
             ->pluck('currency')
@@ -1580,6 +1602,23 @@ class LeaderBoardController extends Controller
 
         $buckets = [];
         foreach ($incomeTx as $tx) {
+            // Task Completion Logic: Only count if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $status = $deliverableStatusBySession[$tx->source->session_id] ?? null;
+                    if ($status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
             $meta = $labelForSource($tx->source_type);
             $tag = $meta['tag'];
             if (! isset($buckets[$tag])) {
@@ -1591,7 +1630,10 @@ class LeaderBoardController extends Controller
             }
 
             $from = strtoupper($tx->currency ?? 'GBP');
-            $amount = (float) ($tx->net_amount ?? 0);
+            $net = (float) ($tx->net_amount ?? 0);
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $amount = $net + $vat; // Gross earnings matches Gross Display!
+
             $buckets[$tag]['amount'] += $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         }
 
@@ -2103,6 +2145,145 @@ class LeaderBoardController extends Controller
                 'has_dispute' => in_array('disputed', $ftStatuses),
             ];
         }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp,
+        ]);
+    }
+
+    public function topSupporters($type = 'all')
+    {
+        $user = User::where('id', Auth::id())->first();
+        [$start, $end] = $this->getRange($type);
+        $displayCurrency = strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'));
+
+        $supporterTx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->whereBetween('transaction_date', [$start, $end])
+            ->whereNotNull('supporter_id')
+            ->with(['supporter:id,name,username,avatar', 'source' => function ($morph) {
+                $morph->morphWith([
+                    ShopPayment::class => ['shop'],
+                ]);
+            }])
+            ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date', 'status', 'source_id', 'vat_amount']);
+
+        $allCurrencies = $supporterTx
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
+
+        if (! isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+            $displayCurrency = 'GBP';
+        }
+
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
+                return null;
+            }
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
+            $gbp = $amount / $fromRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
+        };
+
+        // Collect Shop session IDs to resolve physical item delivery status
+        $shopSessionIds = $supporterTx->where('source_type', 'App\Models\ShopPayment')
+            ->pluck('source.session_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $deliverableStatusBySession = empty($shopSessionIds)
+            ? []
+            : Deliverable::whereIn('session_id', $shopSessionIds)
+                ->orderBy('id')
+                ->get(['session_id', 'status'])
+                ->groupBy('session_id')
+                ->map(fn ($rows) => $rows->first()->status)
+                ->all();
+
+        $supporters = [];
+        foreach ($supporterTx as $tx) {
+            // Task Completion Logic: Only count if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $status = $deliverableStatusBySession[$tx->source->session_id] ?? null;
+                    if ($status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
+            $supporter = $tx->supporter;
+            if (! $supporter) {
+                continue;
+            }
+
+            $username = $supporter->username;
+            if (! isset($supporters[$username])) {
+                $supporters[$username] = [
+                    'username' => $username,
+                    'name' => $supporter->name ?? 'Anonymous',
+                    'media' => $supporter->avatar_url,
+                    'amount' => 0.0,
+                    'has_hold' => false,
+                    'has_dispute' => false,
+                ];
+            }
+
+            // Only aggregate the amount if the transaction was completed successfully
+            if ($tx->status === 'completed') {
+                $from = strtoupper($tx->currency ?? 'GBP');
+                $net = (float) ($tx->net_amount ?? 0);
+                $vat = (float) ($tx->vat_amount ?? 0);
+                $gross = $net + $vat;
+
+                $supporters[$username]['amount'] += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
+            }
+
+            if ($tx->status === 'review_hold') {
+                $supporters[$username]['has_hold'] = true;
+            }
+            if ($tx->status === 'disputed') {
+                $supporters[$username]['has_dispute'] = true;
+            }
+        }
+
+        $resp = collect($supporters)
+            ->sortByDesc('amount')
+            ->take(5)
+            ->values()
+            ->all();
 
         return response()->json([
             'status' => true,

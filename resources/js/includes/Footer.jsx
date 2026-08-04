@@ -75,7 +75,7 @@ export default function Footer(props) {
                                         href={social.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`w-12 h-12 flex items-center justify-center rounded-[14px] bg-white/5 border-2 border-white/10 transition-all duration-300 ${social.color} hover:scale-110 shadow-[4px_4px_0px_0px_#FF007F]xl hover:border-transparent`}
+                                        className={`w-12 h-12 flex items-center justify-center rounded-[14px] bg-white/5 border-2 border-white/10 transition-all duration-300 ${social.color} hover:scale-110 shadow-2xl hover:border-transparent`}
                                     >
                                         <social.icon size={28} />
                                     </a>
@@ -88,7 +88,7 @@ export default function Footer(props) {
                                     height={100}
                                     src={risk}
                                     width={260}
-                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-[4px_4px_0px_0px_#FF007F]l border border-white/20 hover:scale-105 transition-transform duration-300"
+                                    className="rounded-[10px] max-w-[160px] md:max-w-[200px] shadow-xl border border-white/20 hover:scale-105 transition-transform duration-300"
                                 />
                             </div>
                         </div>

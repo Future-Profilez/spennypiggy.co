@@ -212,35 +212,6 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                 </div>
             ) : null}
 
-            {/* Membership promo — only when there is a membership to join */}
-            {show("membership") && ov?.memberships > 0 && (
-                <div className="relative overflow-hidden rounded-box bg-gradient-to-br from-[#FF007F] to-[#9333EA] p-5 text-white border-0 shadow-none md:border-2 md:border-black sm:flex sm:items-center sm:justify-between sm:gap-6">
-                    <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-                    <div className="min-w-0">
-                        <h3 className="text-lg font-black uppercase leading-tight tracking-wide">
-                            Join the inner circle
-                        </h3>
-                        <ul className="mt-2.5 space-y-1 text-[12px] font-semibold text-white/90 sm:flex sm:items-center sm:gap-4 sm:space-y-0">
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Premium content
-                            </li>
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Early access
-                            </li>
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Member-only posts
-                            </li>
-                        </ul>
-                    </div>
-                    <Link
-                        href={`/${user?.username}/memberships`}
-                        className="mt-4 flex w-full items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 py-2.5 text-[12px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5 sm:mt-0 sm:w-auto sm:shrink-0 sm:px-6"
-                    >
-                        View memberships
-                    </Link>
-                </div>
-            )}
-
             {/* Quick actions — icon tiles, visitors only */}
             {show("quick") && !IsloggedIn && (
                 <div className={cardClasses}>

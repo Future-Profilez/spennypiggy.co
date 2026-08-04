@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Post;
 use App\Models\TipGoalsPayment;
 use App\Services\UploadcareThankYouImageService;
+use App\Support\GeneratedText;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -56,8 +57,11 @@ class CreateThankYouPostJob implements ShouldQueue
 
             // Pick a random template for variety
             $template = $templates[array_rand($templates)];
-            $postTitle = $template['title'];
-            $postContent = $template['content'];
+            // ⚠️ A lost emoji must not leave the post opening on a bare "?".
+            // See App\Support\GeneratedText — this is published publicly under
+            // the creator's name, which is the worst place for a stray one.
+            $postTitle = GeneratedText::title($template['title'], 'Thank you');
+            $postContent = GeneratedText::body($template['content']);
 
             // Create the post with public visibility and auto-approval
             $postData = [

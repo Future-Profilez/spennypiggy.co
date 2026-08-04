@@ -33,7 +33,7 @@ return [
     | When true, the creator's card is saved but nothing is taken until their
     | first completed sale.
     */
-    'free_until_first_sale' => true,
+    'free_until_first_sale' => (bool) env('CREATOR_SUBSCRIPTION_FREE_UNTIL_FIRST_SALE', true),
 
     /*
     | Stripe has no "infinite trial" — `trial_end` is always a timestamp. While

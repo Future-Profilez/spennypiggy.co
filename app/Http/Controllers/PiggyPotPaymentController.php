@@ -16,6 +16,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\PiggyPotStatusService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskEngineService;
@@ -91,17 +92,17 @@ class PiggyPotPaymentController extends Controller
         }
 
         // Don't allow purchases into a pot that is under moderation review or closed.
-        if (in_array($piggyPot->status, ['moderation_hold', 'archived', 'completed', 'expired'], true)) {
+        if (in_array($piggyPot->status, PiggyPotStatusService::UNPURCHASABLE_STATUSES, true)) {
             return response()->json([
                 'status' => false,
                 'msg' => 'This content is currently unavailable for purchase.',
             ]);
         }
 
-        // A passed deadline closes the listing. Nothing flips `status` to
-        // `expired` on a schedule, so without this check a pot stays
-        // purchasable forever via a direct POST even once the UI hides it.
-        if ($piggyPot->deadline && $piggyPot->deadline->copy()->endOfDay()->isPast()) {
+        // A passed deadline closes the listing. `piggy-pots:expire` flips `status`
+        // hourly, so this covers the gap between the deadline passing and that
+        // sweep running — and a direct POST at any time thereafter.
+        if (PiggyPotStatusService::deadlinePassed($piggyPot->deadline)) {
             return response()->json([
                 'status' => false,
                 'msg' => 'This content is no longer available — the creator\'s deadline has passed.',

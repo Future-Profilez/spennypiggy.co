@@ -53,7 +53,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
     }
 
     return (
-        <div className={`fading border cartlist flex justify-between  content-between items-center border-black shadow-[4px_4px_0px_0px_#FF007F]lack rounded-[20px] 
+        <div className={`fading border cartlist flex justify-between  content-between items-center border-black shadow-black rounded-[20px] 
             mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
             <div className='prodcartbox items-center'>
                 <div className='productimg !rounded-[15px]  me-3'>

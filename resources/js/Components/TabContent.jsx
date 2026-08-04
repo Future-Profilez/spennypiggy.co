@@ -49,7 +49,7 @@ const AboutTab = ({ user, sLinks }) => (
 
                 {/* Sidebar Cards */}
                 <div className="space-y-6">
-                    <div className="bg-white/5 backdrop-blur-2xl border border-white/20 rounded-[30px]   p-8 shadow-[4px_4px_0px_0px_#FF007F]xl transition-all hover:border-white/10 group">
+                    <div className="bg-white/5 backdrop-blur-2xl border border-white/20 rounded-[30px]   p-8 shadow-2xl transition-all hover:border-white/10 group">
                         <h3 className="text-sm font-black text-white/40 tracking-[0.25em] uppercase mb-8 flex items-center gap-4">
                             <div className="w-8 h-[1px] bg-gradient-to-r from-[#8C52FF] to-transparent"></div>
                             Socials

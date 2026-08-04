@@ -21,7 +21,7 @@ export default function ForCreators() {
 
         <div className='publish-image max-w-5xl mx-auto relative group' >
              <div className="absolute inset-0 bg-gradient-to-b from-[#FF007F] to-[#05EFB8] rounded-[30px]    transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
-            <div className="relative rounded-[30px]    overflow-hidden border-2 border-gray-800 shadow-[4px_4px_0px_0px_#FF007F]xl bg-gray-800">
+            <div className="relative rounded-[30px]    overflow-hidden border-2 border-gray-800 shadow-2xl bg-gray-800">
                 <LazyLoadImage
                     alt={"image"} className="img-fluid w-full h-auto"
 

@@ -37,6 +37,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -646,6 +647,8 @@ class MembershipController extends Controller
         // return $subscriptionCheck;
         if (! $subscriptionCheck['eligible']) {
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($membership->user, $membership->price);
 
             return redirect()->back()->with(
                 'error',

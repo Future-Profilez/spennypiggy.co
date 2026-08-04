@@ -45,6 +45,7 @@ use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -1101,6 +1102,10 @@ class WishitemController extends Controller
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($wishitem->user);
 
         if (! $subscriptionCheck['eligible']) {
+            // ⚠️ This gate refused sales silently — it had no notification of any
+            // kind, so a creator lost wish purchases and was never told.
+            BlockedPaymentAlert::record($wishitem->user, $wishitem->price ?? 0);
+
             return response()->json([
                 'success' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null),
@@ -1700,6 +1705,8 @@ class WishitemController extends Controller
             if (! $subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $orderDetails->creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+                // Recorded and counted: one lost sale is a warning, six is a reason.
+                BlockedPaymentAlert::record($orderDetails->creator, $request->amount ?? 0);
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Rye product payment blocked due to subscription issue', [

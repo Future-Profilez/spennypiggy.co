@@ -872,7 +872,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                     >
                                         Next
                                     </button>
@@ -880,7 +880,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
-                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                         spinnerclass="fill-white"
                                     >
                                         {processing
