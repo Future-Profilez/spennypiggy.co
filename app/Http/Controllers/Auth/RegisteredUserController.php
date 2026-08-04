@@ -399,9 +399,15 @@ class RegisteredUserController extends Controller
             // Country only. The rest of the row is filled by
             // `successCheckout`'s `updateOrCreate` from Stripe's
             // `customer_details.address` on the first purchase.
+            //
+            // ⚠️ The ISO CODE, not the label. The form posts both (`country` is the
+            // display name, `country_code` the ISO code) and this wrote the label —
+            // so the column held "United Kingdom" until the first purchase replaced
+            // it with Stripe's "GB", and the same column meant two different things
+            // depending on how far through the funnel someone got.
             GifterAddress::create([
                 'user_id' => $user->id,
-                'country' => $request->country,
+                'country' => $request->country_code ?: $request->country,
             ]);
         }
 
@@ -451,17 +457,22 @@ class RegisteredUserController extends Controller
      */
     public function checkUsername(Request $request)
     {
+        // ⚠️ Mirrors the rule `store()` actually enforces. `alpha_num` here rejected
+        // full stops and underscores, which registration allows — so a handle like
+        // `jane.doe` came back as a validation error from the availability check
+        // even though it was perfectly registrable.
         $request->validate([
             'username' => [
                 'required',
                 'string',
-                'alpha_num',
+                'lowercase',
+                'regex:/^[a-zA-Z0-9_\.]+$/',
                 'not_regex:/@/',
                 'min:5',
                 'max:20',
             ],
         ]);
-        $exist = User::whereUsername($request->username)->first();
+        $exist = User::withTrashed()->whereUsername(strtolower($request->username))->first();
 
         return response()->json([
             'available' => empty($exist),
@@ -470,18 +481,17 @@ class RegisteredUserController extends Controller
 
     public function checkCouponCode($code)
     {
-        $promocode = PromoCode::whereCode($code)->get();
-        if (! empty($promocode)) {
-            return response()->json([
-                'status' => true,
-                'message' => 'promo code available',
-            ]);
-        } else {
-            return response()->json([
-                'status' => false,
-                'message' => 'promo code not available',
-            ]);
-        }
+        // ⚠️ This used `! empty($collection)`, and an Eloquent Collection is an
+        // OBJECT — always truthy, empty or not — so every code ever typed came back
+        // "available", including ones that do not exist. The key was `message` while
+        // the register form reads `msg`, so the text never rendered either.
+        $promocode = PromoCode::whereCode($code)->first();
+
+        return response()->json([
+            'status' => (bool) $promocode,
+            'msg' => $promocode ? 'Code applied.' : "That code isn't valid.",
+            'message' => $promocode ? 'Code applied.' : "That code isn't valid.",
+        ]);
     }
 
     /**

@@ -20,8 +20,8 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\SeoTemplateService;
+use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
-use App\StripeControl;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -40,7 +40,6 @@ use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
 use PragmaRX\Recovery\Recovery;
 use Ramsey\Uuid\Uuid;
-use Stripe\Exception\InvalidRequestException;
 use Uploadcare\Configuration;
 use Uploadcare\Uploader\Uploader;
 
@@ -307,10 +306,12 @@ class AuthenticatedSessionController extends Controller
                 $userIntro = $user->intro;
             }
 
-            $migrationStatus = ['needs_migration' => false, 'show_warning' => false];
-            if ($page === 'about') {
-                $migrationStatus = $this->getMigrationStatus($user);
-            }
+            // Derived from the state already read above, never re-fetched. It used
+            // to call checkAccountMigrationNeeds(), which retrieves the same
+            // account a FIFTH time behind its own separately-cached key — so the
+            // page could show a migration warning and a capability panel built
+            // from two different reads taken minutes apart.
+            $migrationStatus = $this->getMigrationStatus($user, $isNeedToUpgrade);
             $founderData = $this->getFounderData($user);
 
             $blockData = [
@@ -433,60 +434,15 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Get Stripe account capabilities with caching
+     * Get Stripe account capabilities with caching.
+     *
+     * One retrieve, one cache, one implementation — this block and the identical
+     * copy in OptimizedProfileController both made four sequential Stripe calls
+     * against the same account while the page render waited on them.
      */
     private function getStripeCapabilities($user): array
     {
-        if (empty($user->account_id)) {
-            return [false, false, []];
-        }
-
-        try {
-            $cacheKey = 'stripe_caps_v1_'.$user->account_id;
-
-            return Cache::remember($cacheKey, 300, function () use ($user) {
-                StripeControl::getAccount($user->account_id);
-
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-
-                $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-
-                $requirements = StripeControl::getAccountRequirements($user->account_id);
-
-                if ($isNeedToUpgrade) {
-                    $requirements['has_requirements'] = true;
-                    $requirements['requirements'][] = [
-                        'type' => 'legacy_upgrade',
-                        'severity' => 'high',
-                        'title' => 'Account Upgrade Required',
-                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                        'action' => 'Upgrade your Stripe account now.',
-                        'action_url' => '/stripe/upgrade-express-account',
-                    ];
-                }
-
-                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
-            });
-        } catch (\Exception $e) {
-            // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
-            if ($e instanceof InvalidRequestException && $e->getHttpStatus() === 404) {
-                $user->update(['stripe_details_submitted' => 0]);
-            }
-
-            return [false, false, [
-                'has_requirements' => true,
-                'requirements' => [[
-                    'type' => 'connection_error',
-                    'severity' => 'critical',
-                    'title' => 'Account Connection Issue',
-                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
-                    'action' => 'Refresh the page or contact support.',
-                    'action_url' => null,
-                ]],
-                'account_status' => [],
-            ]];
-        }
+        return StripeAccountState::for($user);
     }
 
     /**
@@ -517,37 +473,28 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Check if user's Stripe account needs migration for cross-border payments
+     * Check if user's Stripe account needs migration for cross-border payments.
+     *
+     * Takes the answer already computed by StripeAccountState rather than
+     * retrieving the account again — see the call site.
      */
-    private function getMigrationStatus($user): array
+    private function getMigrationStatus($user, bool $needsMigration): array
     {
-        // Only check for logged-in users viewing their own profile
+        // Only surface this to a creator looking at their own profile.
         if (! Auth::check() || Auth::id() !== $user->id) {
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
-        try {
-            $cacheKey = 'stripe_migration_status_v1_'.$user->id;
-
-            return Cache::remember($cacheKey, 300, function () use ($user) {
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-
-                return [
-                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                    'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available',
-                ];
-            });
-        } catch (\Exception $e) {
-            return [
-                'needs_migration' => false,
-                'show_warning' => false,
-                'error' => 'Unable to check migration status',
-            ];
-        }
+        return [
+            'needs_migration' => $needsMigration,
+            'show_warning' => $needsMigration,
+            'current_agreement' => $needsMigration ? 'recipient' : null,
+            'required_agreement' => 'full',
+            'country' => $user->country,
+            'reason' => $needsMigration
+                ? 'Your payment account is on an older agreement and needs upgrading to accept card payments.'
+                : 'Account is correctly configured',
+        ];
     }
 
     /**
@@ -996,10 +943,26 @@ class AuthenticatedSessionController extends Controller
      */
     public function verify2FA(Request $request)
     {
-        $email = $request->input('email');
+        // ⚠️ Matched case-insensitively, and soft-deleted rows included, because
+        // every other door into this account does the same: `LoginRequest` lowercases
+        // in `prepareForValidation`, `verifyUser` matches on `LOWER(email)`, and
+        // `GoogleController` matches on a lowercased address. A stored address with
+        // any uppercase in it therefore passed the password step and then found no
+        // user here — a 2FA account that could never finish signing in.
+        $email = Str::lower(trim((string) $request->input('email')));
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->first();
+        $user = User::withTrashed()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+        // A deactivated account must not be able to complete the second factor.
+        if ($user && method_exists($user, 'trashed') && $user->trashed()) {
+            $request->session()->forget('google_2fa_pending');
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'This account is deactivated. Please contact support.',
+            ], 403);
+        }
 
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');

@@ -49,11 +49,22 @@ class CreatorJourneyService
             'route' => 'account',
             'params' => [],
         ],
+        'subscription' => [
+            'title' => 'Add your card',
+            'body' => 'Takes a minute, and you are not charged until your first sale.',
+            'cta' => 'Add your card',
+            'route' => 'activate-subscription',
+            'params' => [],
+        ],
         'stripe' => [
             'title' => 'Connect your payouts',
             'body' => 'Add your bank details so the money you earn can reach you.',
             'cta' => 'Connect payouts',
-            'route' => 'stripe.connect',
+            // ⚠️ `stripe.connect` is the ACTION endpoint (/stripe/connect-init) —
+            // it needs a POST carrying `termaccept` and a country, so a plain
+            // click on it bounced straight back with a red error toast, every
+            // time. `stripe.index` is the page that collects those.
+            'route' => 'stripe.index',
             'params' => [],
         ],
         'identity' => [
@@ -169,6 +180,40 @@ class CreatorJourneyService
     }
 
     /**
+     * The whole journey, in order, with each step's state — for surfaces that draw a
+     * progress rail rather than a single "do this next" card.
+     *
+     * ⚠️ Exists because the rail was being hardcoded in the JSX. `stripe/Stripe.jsx` carried
+     * its own five-entry array that still listed identity BEFORE connect — the order that
+     * changed on 31 July 2026 — so the rail highlighted "Identity verified — you're here"
+     * while the panel directly beneath it said "Connect your payments". One screen, two
+     * answers. A step order is a product decision and belongs in exactly one place.
+     *
+     * Deliberately a PAGE prop, not a shared one: it costs a handful of checks and only the
+     * setup screens draw it, so putting it on every Inertia navigation would be paying for
+     * it everywhere to use it twice.
+     *
+     * @return array<int, array{key: string, label: string, done: bool, awaiting_review: bool}>
+     */
+    public function stepStates(User $creator): array
+    {
+        $states = [];
+
+        foreach (self::STEPS as $key => $copy) {
+            $done = $this->isDone($creator, $key);
+
+            $states[] = [
+                'key' => $key,
+                'label' => $copy['title'],
+                'done' => $done,
+                'awaiting_review' => ! $done && $this->isAwaitingReview($creator, $key),
+            ];
+        }
+
+        return $states;
+    }
+
+    /**
      * Has the creator done their part of this step, leaving it with us?
      */
     public function isAwaitingReview(User $creator, string $step): bool
@@ -227,6 +272,11 @@ class CreatorJourneyService
                 && (int) ($creator->bio_approved ?? 0) === 1,
 
             'identity' => (int) ($creator->identity_status ?? 0) === 1,
+
+            // Same allow-list the eight supporter-checkout gates use: 1 is
+            // billing, 2 is the free period. Both mean a card is on file, which
+            // is what this step is asking for.
+            'subscription' => in_array((int) ($creator->subscription_status ?? 0), [1, 2], true),
 
             'stripe' => (int) ($creator->stripe_details_submitted ?? 0) === 1,
 

@@ -598,19 +598,8 @@ class StripeControl
         self::setClient();
         try {
             $account = self::$client->accounts->retrieve($accountId);
-            $requirements = self::buildAccountRequirements($account);
 
-            return [
-                'has_requirements' => $requirements !== [],
-                'requirements' => $requirements,
-                'account_status' => [
-                    'charges_enabled' => (bool) ($account->charges_enabled ?? false),
-                    'details_submitted' => (bool) ($account->details_submitted ?? false),
-                    'payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
-                    'disabled_reason' => $account->requirements->disabled_reason ?? null,
-                    'deadline' => self::deadlineIso($account),
-                ],
-            ];
+            return self::accountRequirementsFrom($account);
         } catch (Exception $e) {
             Log::error('Failed to get account requirements: '.$e->getMessage());
 
@@ -632,6 +621,52 @@ class StripeControl
                 'account_status' => [],
             ];
         }
+    }
+
+    /**
+     * The same payload as `getAccountRequirements()`, built from an account that
+     * has ALREADY been retrieved.
+     *
+     * ⚠️ Exists so a caller needing several facts about one account pays for one
+     * `accounts->retrieve` rather than one per fact. The creator's dashboard used
+     * to make four sequential retrieves of the same account — capabilities,
+     * migration need, requirements and a bare status read — every time its
+     * five-minute cache lapsed, with the page render waiting on all four.
+     * `App\Services\Stripe\StripeAccountState` is the caller that folds them.
+     *
+     * Pure mapper: no client, no network.
+     *
+     * @param  Account  $account
+     */
+    public static function accountRequirementsFrom($account): array
+    {
+        $requirements = self::buildAccountRequirements($account);
+
+        return [
+            'has_requirements' => $requirements !== [],
+            'requirements' => $requirements,
+            'account_status' => [
+                'charges_enabled' => (bool) ($account->charges_enabled ?? false),
+                'details_submitted' => (bool) ($account->details_submitted ?? false),
+                'payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
+                'disabled_reason' => $account->requirements->disabled_reason ?? null,
+                'deadline' => self::deadlineIso($account),
+            ],
+        ];
+    }
+
+    /**
+     * Can this connected account take a card payment right now?
+     *
+     * Object-taking twin of `isAccountReadyForCheckout()`, for the same
+     * one-retrieve reason as `accountRequirementsFrom()`.
+     *
+     * @param  Account  $account
+     */
+    public static function accountReadyForCheckoutFrom($account): bool
+    {
+        return ($account->capabilities->card_payments ?? null) === 'active'
+            && ($account->capabilities->transfers ?? null) === 'active';
     }
 
     /**
@@ -1446,6 +1481,98 @@ class StripeControl
             return self::$client->products->update($productId, $payload, [
                 'stripe_account' => $accountId,
             ]);
+        } catch (RateLimitException $e) {
+            throw new Exception('Stripe RateLimit: '.$e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception('Stripe InvalidRequest: '.$e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception('Stripe API Connection: '.$e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception('Stripe API Error: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Move a live subscription onto a new recurring amount, effective at its NEXT
+     * renewal — used when a creator's negotiated platform rate falls and their
+     * existing supporters should benefit.
+     *
+     * ⚠️ `proration_behavior: 'none'` is load-bearing. The default ('create_prorations')
+     * would issue a mid-cycle credit or charge against a period the supporter has
+     * already paid for at the old price. The agreement is "from your next renewal",
+     * and this is what makes that literally true.
+     *
+     * The caller is responsible for only ever calling this with a LOWER amount —
+     * see RepriceSubscriptionsOnFeeChange, which refuses to raise one.
+     *
+     * @param  float  $newUnitAmountMajor  The new supporter-facing amount, in major units.
+     * @return Subscription
+     */
+    public static function repriceSubscription(
+        string $subscriptionId,
+        float $newUnitAmountMajor,
+        string $currency,
+        ?string $interval = null,
+        ?float $applicationFeePercent = null,
+        ?string $connectedAccountId = null,
+        ?string $idempotencyKey = null
+    ) {
+        self::setClient();
+
+        $options = [];
+        if ($connectedAccountId) {
+            $options['stripe_account'] = $connectedAccountId;
+        }
+        if ($idempotencyKey) {
+            $options['idempotency_key'] = $idempotencyKey;
+        }
+
+        try {
+            $subscription = self::$client->subscriptions->retrieve(
+                $subscriptionId,
+                [],
+                $connectedAccountId ? ['stripe_account' => $connectedAccountId] : []
+            );
+
+            $item = $subscription->items->data[0] ?? null;
+            if (! $item) {
+                throw new Exception('Subscription '.$subscriptionId.' has no items to reprice');
+            }
+
+            $multiplier = Helpers::isZeroDecimalCurrency($currency) ? 1 : 100;
+
+            // Read the cadence off the live price rather than making the caller map
+            // each product's own period vocabulary onto Stripe's — getting that wrong
+            // would silently change how often a supporter is billed.
+            $interval = $interval
+                ?: ($item->price->recurring->interval ?? null);
+
+            if (! $interval) {
+                throw new Exception('Subscription '.$subscriptionId.' has no billing interval to preserve');
+            }
+
+            $intervalCount = $item->price->recurring->interval_count ?? 1;
+
+            $payload = [
+                'items' => [[
+                    'id' => $item->id,
+                    'price_data' => [
+                        'currency' => strtolower($currency),
+                        // Reuse the existing product so the supporter's receipts and
+                        // the creator's Stripe dashboard keep describing the same thing.
+                        'product' => is_string($item->price->product) ? $item->price->product : $item->price->product->id,
+                        'unit_amount' => (int) round($newUnitAmountMajor * $multiplier),
+                        'recurring' => ['interval' => $interval, 'interval_count' => $intervalCount],
+                    ],
+                ]],
+                'proration_behavior' => 'none',
+            ];
+
+            if ($applicationFeePercent !== null) {
+                $payload['application_fee_percent'] = round($applicationFeePercent, 2);
+            }
+
+            return self::$client->subscriptions->update($subscriptionId, $payload, $options);
         } catch (RateLimitException $e) {
             throw new Exception('Stripe RateLimit: '.$e->getMessage());
         } catch (InvalidRequestException $e) {

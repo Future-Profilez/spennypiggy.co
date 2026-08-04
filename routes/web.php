@@ -439,8 +439,15 @@ if (app()->environment('local')) {
 
 // check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
-Route::post('/username-availablity', [RegisteredUserController::class, 'checkUsername'])->name('check.username');
-Route::post('/register/validate', [RegisteredUserController::class, 'validateRegistration'])->name('register.validate');
+// ⚠️ Both answer "is this username/email already taken?" to anyone. The register
+// form calls them per keystroke (debounced), so they need a limit that a real
+// signup never reaches but a scraper does.
+Route::post('/username-availablity', [RegisteredUserController::class, 'checkUsername'])
+    ->middleware('throttle:60,1')
+    ->name('check.username');
+Route::post('/register/validate', [RegisteredUserController::class, 'validateRegistration'])
+    ->middleware('throttle:60,1')
+    ->name('register.validate');
 
 Route::get('/dashboard', function () {
     // return Inertia::render('Dashboard');

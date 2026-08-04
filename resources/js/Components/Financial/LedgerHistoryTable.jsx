@@ -13,8 +13,13 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
         }).format(Number(amount || 0));
     };
 
+    // "Not yet earned" is the server's decision (LedgerRules), shared with the payout
+    // engine — so a row can no longer read "Pending delivery" here while the payout run
+    // is paying it. The item_status fallback stays for rows served before this shipped.
     const isPending = (tx) =>
-        tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out;
+        tx.counts_toward_totals === false ||
+        (tx.counts_toward_totals === undefined &&
+            (tx.status !== 'completed' || (tx.item_status && tx.item_status.endsWith('pending')) || tx.is_grayed_out));
 
     // One source of truth for a row's payout state — drives both the single badge and the row tint.
     const payoutInfo = (tx) => {
@@ -161,6 +166,15 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         <div className={`text-[16px] font-bold tabular-nums tracking-tight ${tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
                                             {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? (tx.gross_amount || tx.net_amount) : tx.gross_amount, tx.currency)}
                                         </div>
+                                        {/* What the supporter was actually charged. The ledger
+                                            only ever showed the creator's own gross, so the
+                                            platform's cut was invisible on the one screen a
+                                            creator opens to understand their money. */}
+                                        {tx.type === 'income' && Number(tx.buyer_paid || 0) > 0 && (
+                                            <div className="text-[11px] text-gray-400 font-medium mt-1 tabular-nums">
+                                                supporter paid {formatCurrency(tx.buyer_paid, tx.currency)}
+                                            </div>
+                                        )}
                                         {tx.shipping_amount > 0 && (
                                             <div className="text-[11px] text-gray-400 font-medium mt-1 tabular-nums">
                                                 incl. {formatCurrency(tx.shipping_amount, tx.currency)} shipping

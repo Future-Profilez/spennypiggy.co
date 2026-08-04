@@ -487,6 +487,7 @@ export default function TipInner({classes, idd}) {
                   amount={parseFloat(data.amount) || 0}
                   currency={user?.default_currency || 'GBP'}
                   email={data.email || auth?.user?.email}
+                  creatorId={user?.id}
                   value={data.payment_method}
                   onChange={(m) => setData('payment_method', m)}
                   onPrices={setPreviewPrices}

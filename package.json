@@ -43,7 +43,8 @@
         "deploy:staging": "php vendor/bin/vapor deploy development",
         "deploy:production": "php vendor/bin/vapor deploy production",
         "health:check": "curl -f http://localhost:8000/health || curl -f https://spennypiggy.co/health",
-        "monitoring:setup": "php artisan migrate:fresh --seed && php artisan web-vitals:setup"
+        "monitoring:setup": "php artisan migrate:fresh --seed && php artisan web-vitals:setup",
+        "liveboth": "npm run livebuild && cd .. && cd spennypiggy.co/ && npm run livebuild"
     },
     "devDependencies": {
         "@babel/plugin-transform-react-jsx": "^7.27.1",

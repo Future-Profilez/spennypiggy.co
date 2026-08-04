@@ -25,6 +25,7 @@ use App\Models\UkTaxSetting;
 use App\Models\User;
 use App\Services\CreatorOpportunityService;
 use App\Services\FinancialService;
+use App\Services\Ledger\LedgerRules;
 use App\Services\NotificationDispatcher;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
@@ -245,6 +246,10 @@ class CreatorFinancialController extends Controller
             $shopShipping = ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
+        // MUST run before the map below, which overwrites gross_amount with the
+        // creator's gross — the breakdown needs the supporter's charged figure.
+        $this->attachLedgerBreakdown($income);
+
         $income = $income->map(function ($tx) use ($shopShipping) {
             $tx->display_date = $tx->transaction_date;
             $tx->id = $tx->id;
@@ -316,8 +321,10 @@ class CreatorFinancialController extends Controller
                     default => $tx->source->status
                 };
 
-                // Gray out tasks that are not yet finalized (including escalated)
-                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                // Gray out tasks that are not yet finalized. Fulfilment is LedgerRules'
+                // decision, shared with the payout engine — this used to gray out an
+                // INSTANT task too, which the payout run pays on the spot.
+                if (! ($tx->ledger_fulfilled ?? true)) {
                     $tx->is_grayed_out = true;
                 }
             }
@@ -333,7 +340,7 @@ class CreatorFinancialController extends Controller
                 };
 
                 // Gray out physical shop items that are not yet delivered
-                if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                if (! ($tx->ledger_fulfilled ?? true)) {
                     $tx->is_grayed_out = true;
                 }
             }
@@ -978,6 +985,10 @@ class CreatorFinancialController extends Controller
             $shopShipping = ShopPayment::whereIn('id', $shopIds)->pluck('shipping_amount', 'id')->toArray();
         }
 
+        // MUST run before the map below, which overwrites gross_amount with the
+        // creator's gross — the breakdown needs the supporter's charged figure.
+        $this->attachLedgerBreakdown($income);
+
         $income = $income->map(function ($tx) use ($shopShipping) {
             $tx->display_date = $tx->transaction_date;
             $tx->id = $tx->id;
@@ -1049,8 +1060,10 @@ class CreatorFinancialController extends Controller
                     default => $tx->source->status
                 };
 
-                // Gray out tasks that are not yet finalized (including escalated)
-                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                // Gray out tasks that are not yet finalized. Fulfilment is LedgerRules'
+                // decision, shared with the payout engine — this used to gray out an
+                // INSTANT task too, which the payout run pays on the spot.
+                if (! ($tx->ledger_fulfilled ?? true)) {
                     $tx->is_grayed_out = true;
                 }
             }
@@ -1066,7 +1079,7 @@ class CreatorFinancialController extends Controller
                 };
 
                 // Gray out physical shop items that are not yet delivered
-                if (($tx->source->shop->type ?? null) === 'physical' && $itemStat !== 'delivered') {
+                if (! ($tx->ledger_fulfilled ?? true)) {
                     $tx->is_grayed_out = true;
                 }
             }
@@ -1622,6 +1635,38 @@ class CreatorFinancialController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Attach the shared money breakdown to every ledger row before it is displayed.
+     *
+     * Two things the creator's ledger could not previously show: what the SUPPORTER was
+     * charged (the row only carried the creator's own gross, so the platform's cut was
+     * invisible), and one consistent word for what is happening to the money. Both now
+     * come from LedgerRules, which the payout engine, the earnings dashboard and the
+     * supporter's own Support History all read — so no two screens can describe the same
+     * payment differently.
+     *
+     * Call this BEFORE any mapping that rewrites gross_amount.
+     */
+    private function attachLedgerBreakdown($income): void
+    {
+        if ($income->isEmpty()) {
+            return;
+        }
+
+        $fulfilment = LedgerRules::fulfilmentMap($income);
+
+        foreach ($income as $tx) {
+            $breakdown = LedgerRules::breakdown($tx, $fulfilment);
+
+            $tx->ledger_fulfilled = $fulfilment[$tx->id] ?? true;
+            $tx->breakdown = $breakdown;
+            $tx->ledger_state = $breakdown['state'];
+            $tx->ledger_state_label = $breakdown['state_label'];
+            $tx->counts_toward_totals = $breakdown['counts_toward_totals'];
+            $tx->buyer_paid = $breakdown['buyer_paid'];
+        }
     }
 
     /**

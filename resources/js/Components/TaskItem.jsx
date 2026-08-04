@@ -1,10 +1,12 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
+import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
+    const __pageProps = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const url = `/task/${task.uuid}`;
     const approvalStatus = Number(task?.is_approved);
@@ -46,8 +48,11 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         const priceWithVat = listedPrice + vat;
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        // Per-creator: a creator on a bespoke platform rate must be QUOTED
+        // what checkout will CHARGE them. The global props cannot express that.
+        const __rates = feeRatesFor(creatorIdOf(task) ?? profileUser?.id, __pageProps);
+        const platformFeeRate = __rates.platform / 100;
+        const complianceFeeRate = __rates.compliance / 100;
         const adminFee = adminFeeInCurrency(curr);
         const totalDeductionRate =
             stripeFeeRate + platformFeeRate + complianceFeeRate;

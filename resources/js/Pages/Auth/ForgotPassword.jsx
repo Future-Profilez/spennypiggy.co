@@ -17,9 +17,15 @@ export default function ForgotPassword(props) {
     const [loading, setLoading] = useState(false);
     const submit = (e) => {
         e.preventDefault();
+        // Re-entrancy guard: the disabled re-render loses the double-tap race, and
+        // each extra submit sends another reset mail and invalidates the last link.
+        if (loading) return;
         setLoading(true);
         axios
-            .post(`forgot-password`, { email: data.email })
+            // Absolute, never relative. This page is served at BOTH `/forgot-password`
+            // and (after a failed reset) other paths — a relative "forgot-password"
+            // resolves against whatever the current directory happens to be.
+            .post(route("password.email"), { email: data.email })
             .then((resp) => {
                 if (resp.data.status) {
                     successAlert(resp.data.message);
@@ -29,10 +35,22 @@ export default function ForgotPassword(props) {
                 }
                 setLoading(false);
             })
-            .catch((_err) => {
-                console.error("error", _err);
-                errorAlert("Unable to update quantity.");
-                setQuantity(intialItem);
+            .catch((err) => {
+                console.error("Forgot password error:", err);
+                // ⚠️ This branch called `setQuantity(intialItem)` — neither exists
+                // here — so every failed request threw a ReferenceError instead of
+                // showing anything, under the message "Unable to update quantity."
+                const status = err?.response?.status;
+                if (status === 429) {
+                    errorAlert(
+                        "Too many attempts. Please wait a minute and try again.",
+                    );
+                } else {
+                    errorAlert(
+                        err?.response?.data?.message ||
+                            "We couldn't send the reset email. Please try again.",
+                    );
+                }
                 setLoading(false);
             });
     };

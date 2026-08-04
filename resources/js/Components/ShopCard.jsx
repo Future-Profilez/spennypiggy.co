@@ -3,6 +3,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import AddItem from "@/Pages/shop/AddItem";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import WaitlistButton from "@/Components/WaitlistButton";
+import { creatorIdOf } from "@/utils/pricing";
 
 export default function ShopCard({
     item,
@@ -54,6 +55,8 @@ export default function ShopCard({
         calculateTotalSupporterPays(
             basePriceWithShippingAndVat,
             item?.currency || "GBP",
+            0,
+            creatorIdOf(item),
         )?.total_supporter_pays ?? basePriceWithShippingAndVat;
 
     return (

@@ -232,7 +232,7 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile']);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile'], $creator->id);
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -303,6 +303,9 @@ class PiggyPotPaymentController extends Controller
                     'total_paid' => $finalTotalAmount,
                     'message' => $request->message ?? null,
                     'is_anonymous' => $request->anonymous ?? 0,
+                    // The rates this charge was priced at. Read back by every recompute
+                    // path so a later change to the creator's deal cannot re-price it.
+                    ...Helpers::feeRateColumns($breakdown),
                 ]);
             });
         } catch (\RuntimeException $e) {

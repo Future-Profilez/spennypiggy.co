@@ -141,6 +141,14 @@ class Kernel extends ConsoleKernel
             ->dailyAt('06:30')
             ->withoutOverlapping();
 
+        // Reconcile the payment tables against the ledger. A payment that never produced
+        // a ledger row is money the creator is not shown and the payout run will not pay,
+        // and nothing about it errors — this is the only thing that surfaces it. Runs
+        // after the sync so it reports what the sync could not fix.
+        $schedule->command('finance:audit-ledger --days=7')
+            ->dailyAt('06:45')
+            ->withoutOverlapping();
+
         // Process SLA Refunds
         $schedule->command('app:process-sla-refunds')
             ->hourly()
@@ -292,6 +300,25 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('reserve:release')
             ->dailyAt('10:30')
+            ->withoutOverlapping();
+
+        /*
+        | Move existing subscribers onto a creator's REDUCED platform rate.
+        |
+        | 🚨 Without this the feature is half-built and fails silently: a Stripe
+        | subscription's amount is fixed at signup, so a rate cut agreed with a
+        | creator would never reach anyone already subscribed to them. The
+        | command is the only thing that repricing happens through.
+        |
+        | Daily, and deliberately BEFORE the payout window: a supporter's invoice
+        | should be raised at the new price the first time it renews after the
+        | deal changes, not one cycle later.
+        |
+        | It can only ever lower a charge — an increase leaves existing
+        | subscribers grandfathered (see RepriceSubscriptionsOnFeeChange).
+        */
+        $schedule->command('subscriptions:reprice-on-fee-change')
+            ->dailyAt('06:15')
             ->withoutOverlapping();
 
         // Catch-all for bank payment capabilities: onboarding payloads and the

@@ -13,6 +13,10 @@ class WishItemSubscription extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'platform_fee_rate',
+        'compliance_fee_rate',
+        'fee_source',
+        'fee_override_id',
         'uuid',
         'fee_profile',
         'stripe_id',

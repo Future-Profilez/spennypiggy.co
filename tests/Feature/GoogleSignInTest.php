@@ -218,8 +218,12 @@ class GoogleSignInTest extends TestCase
 
         // The address row carries country only; the rest arrives from Stripe at first purchase,
         // and reading those NULL encrypted columns must not throw.
+        //
+        // ⚠️ The ISO CODE, not the display label. This used to store "United Kingdom"
+        // until the first purchase replaced it with Stripe's "GB", so the same column
+        // meant two different things depending on how far through the funnel someone got.
         $address = GifterAddress::where('user_id', $user->id)->first();
-        $this->assertSame('United Kingdom', $address->country);
+        $this->assertSame('GB', $address->country);
         $this->assertNull($address->street_address);
     }
 

@@ -23,21 +23,24 @@ class ForgotPassword implements ShouldQueue
     public $user;
 
     /**
-     * Is via Social
+     * Single-use reset token. The link is worthless without it — the uuid in the
+     * URL only says WHICH account, it proves nothing.
      *
-     * @var bool
+     * @var string
      */
+    public $token;
 
     /**
      * Create a new job instance.
      *
      * @param  User  $user
-     * @param  bool  $social  = false
+     * @param  string  $token
      * @return void
      */
-    public function __construct($user)
+    public function __construct($user, $token = '')
     {
         $this->user = $user;
+        $this->token = (string) $token;
     }
 
     /**
@@ -54,11 +57,18 @@ class ForgotPassword implements ShouldQueue
             'username' => $this->user->username,
             'email' => $this->user->email,
             'uuid' => $this->user->uuid,
+            'token' => $this->token,
+            // Built here, not in the template: `env('APP_URL')` inside a Blade view
+            // returns NULL once the config is cached (every Vapor deploy), which
+            // shipped a reset link pointing at `/forgot-password/...` with no host.
+            'reset_url' => rtrim((string) config('app.url'), '/')
+                .'/forgot-password/'.$this->user->uuid
+                .'?token='.urlencode($this->token),
         ];
-        try {
-            EmailService::ForgotPassword($emailData);
-        } catch (\Throwable $th) {
-            // dd($th);
-        }
+
+        // Not swallowed: RetriesCriticalWork gives this job three attempts and a
+        // Log::critical on final failure. Catching here meant one SMTP blip lost
+        // the reset mail permanently and silently.
+        EmailService::ForgotPassword($emailData);
     }
 }

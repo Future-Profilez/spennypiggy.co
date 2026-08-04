@@ -56,7 +56,11 @@
                                 style="background-color:#FF007F;
                                        background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
                                        border-radius:50px;-webkit-border-radius:50px;">
-                                <a href="{{ env('APP_URL') }}/forgot-password/{{ $data['uuid'] }}"
+                                {{-- ⚠️ Never `env('APP_URL')` here: it is NULL once the config is
+                                     cached (every Vapor deploy) and the link loses its host.
+                                     The URL is built by the job, which also carries the
+                                     single-use reset token — the uuid alone proves nothing. --}}
+                                <a href="{{ $data['reset_url'] ?? rtrim(config('app.url'), '/').'/forgot-password/'.$data['uuid'] }}"
                                     style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
                                            font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
                                            border-radius:50px;-webkit-border-radius:50px;">

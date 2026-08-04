@@ -45,6 +45,10 @@ class ProcessFastStartBonusPayouts extends Command
             ->whereNotNull('stripe_connected_at')
             ->where('stripe_details_submitted', 1)
             ->whereNotNull('account_id')
+            // Creators excluded from the standard bonus schemes (an independent
+            // Super Admin switch, usually because they are on a bespoke rate).
+            // NULL means eligible, matching the column default.
+            ->where(fn ($q) => $q->whereNull('bonus_scheme_eligible')->orWhere('bonus_scheme_eligible', 1))
             ->orderBy('id');
 
         if ($creatorFilter !== '') {

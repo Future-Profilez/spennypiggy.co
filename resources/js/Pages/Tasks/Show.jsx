@@ -13,9 +13,11 @@ import { fieldClass } from "@/Components/Checkout/FormKit";
 import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
+import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
 
 export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
+    const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
         gifter_message: '',
@@ -48,8 +50,11 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
+        // Per-creator: a creator on a bespoke platform rate must be QUOTED
+        // what checkout will CHARGE them. The global props cannot express that.
+        const __rates = feeRatesFor(creatorIdOf(task), __pageProps);
+        const platformFeeRate = __rates.platform / 100;
+        const complianceFeeRate = __rates.compliance / 100; 
         const adminFee = adminFeeInCurrency(curr); 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
@@ -599,6 +604,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                                         + ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)}
                                                     currency={task.currency || 'USD'}
                                                     email={auth?.user?.email}
+                                                    creatorId={creatorIdOf(task)}
                                                     value={data.payment_method}
                                                     onChange={(m) => setData('payment_method', m)}
                                                     onPrices={setPreviewPrices}

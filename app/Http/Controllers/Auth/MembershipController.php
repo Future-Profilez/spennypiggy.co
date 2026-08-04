@@ -219,7 +219,7 @@ class MembershipController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
         $totalPrice = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['total_fees']; // Store total fees (Platform + Stripe) for consistency
 
@@ -355,7 +355,7 @@ class MembershipController extends Controller
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
                 $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
                 $totalTaxAmount = $breakdown['application_fee'];
 
@@ -694,7 +694,7 @@ class MembershipController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate, 'card', $membership->user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -798,6 +798,9 @@ class MembershipController extends Controller
                 'creator_currency' => $membership->currency,
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
+                // On a RECURRING row this is also the grandfathering record: the
+                // supporter keeps this rate at renewal unless a LOWER one is agreed.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             // Apply digital waiver confirmation
@@ -1084,7 +1087,7 @@ class MembershipController extends Controller
         $metrics = app(RiskService::class)->recalculateMetrics((string) $membership->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
-        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate);
+        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate, 'card', $membership->user->id);
 
         // Update membership object for view (this doesn't save to DB)
         // We include both application fee and stripe fee in the "tax_amount" for display so the total is closer to reality

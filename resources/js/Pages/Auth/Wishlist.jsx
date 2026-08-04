@@ -562,7 +562,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                     {new Intl.NumberFormat('en-GB', { 
                                                         style: 'currency', 
                                                         currency: defaultCurrency 
-                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">

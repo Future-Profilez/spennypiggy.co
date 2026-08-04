@@ -16,6 +16,7 @@ import AllContries from "../../includes/AllCountries";
 import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
+import { creatorIdOf } from "@/utils/pricing";
 
 export default function BuyShopItem({
     opened,
@@ -97,7 +98,7 @@ export default function BuyShopItem({
     const totalSupporterPays =
         paymentMethod === "bank" && previewPrices?.bank != null
             ? previewPrices.bank
-            : calculateTotalSupporterPays(baseBeforeFees, itemCurrency).total_supporter_pays;
+            : calculateTotalSupporterPays(baseBeforeFees, itemCurrency, 0, creatorIdOf(s)).total_supporter_pays;
 
 
     const [checking, setChecking] = useState(false);
@@ -857,6 +858,7 @@ export default function BuyShopItem({
                                     amount={baseBeforeFees}
                                     currency={s?.currency || "GBP"}
                                     email={email}
+                                    creatorId={creatorIdOf(s)}
                                     value={paymentMethod}
                                     onChange={setPaymentMethod}
                                     onPrices={setPreviewPrices}

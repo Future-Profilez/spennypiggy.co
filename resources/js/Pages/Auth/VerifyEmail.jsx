@@ -7,19 +7,25 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 
 export default function VerifyEmail({auth}) {
+    const { errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [send, setSent] = useState(false);
-    const sendMail = (e) => {
+    const sendMail = () => {
+        if (loading) return;
         setLoading(true);
-        axios.get(`/email/send-verification-email`).then(resp => {
-            // setSent(true);
-            setLoading(false);
-        }).catch(_err => {
-            console.error("error", _err);
-            setLoading(false);
-        });
+        axios
+            .get(route("verification.email"))
+            .then(() => setLoading(false))
+            .catch((err) => {
+                console.error("Verification email error:", err);
+                errorAlert(
+                    err?.response?.status === 429
+                        ? "You've just requested one — please wait a few minutes before asking for another."
+                        : "We couldn't send the email. Please try again in a moment.",
+                );
+                setLoading(false);
+            });
     };
-
 
     useEffect(() => {
         const lastSent = localStorage.getItem('last_verification_sent_at');
@@ -29,12 +35,26 @@ export default function VerifyEmail({auth}) {
             localStorage.setItem('last_verification_sent_at', now.toString());
         }
     }, []);
-    
-    
+
+    // ⚠️ Polls a small JSON endpoint instead of `window.location.reload()`.
+    // The old form re-loaded the WHOLE page every 5 seconds, for as long as the tab
+    // stayed open — the screen could not be read, every open tab hit the app 12×/min,
+    // and the reload re-ran the mount effect on each pass. Now it reloads once, at
+    // the moment the address is actually verified.
     useEffect(() => {
         const timer = setInterval(() => {
-            window.location.reload();
-        }, 5000); 
+            if (document.hidden) return;
+            axios
+                .get(route("verification.status"))
+                .then((resp) => {
+                    if (resp.data?.verified) {
+                        clearInterval(timer);
+                        window.location.reload();
+                    }
+                })
+                .catch(() => {});
+        }, 10000);
+
         return () => clearInterval(timer);
     }, []);
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FinancialTransaction;
+use App\Models\MonthlyCharge;
 use App\Models\Post;
 use App\Models\Task;
 use App\Models\User;
@@ -74,6 +75,10 @@ class CreatorJourneyTest extends TestCase
             'stripe_details_submitted' => in_array('stripe', $done, true) ? 1 : 0,
         ]);
 
+        if (in_array('subscription', $done, true)) {
+            $this->cardOnFile($creator);
+        }
+
         if (in_array('first_listing', $done, true)) {
             $this->publishTask($creator);
         }
@@ -87,6 +92,22 @@ class CreatorJourneyTest extends TestCase
         }
 
         return $creator->fresh();
+    }
+
+    /**
+     * A card on file, in the shape `computeSubscriptionStatus()` reads as the free
+     * period (status 2) — `trialing` with no trial end date. Status 1 and 2 are the
+     * same allow-list the checkout gates use.
+     */
+    private function cardOnFile(User $creator): MonthlyCharge
+    {
+        return MonthlyCharge::create([
+            'user_id' => $creator->id,
+            'uuid' => (string) Str::uuid(),
+            'status' => 'trialing',
+            'amount' => 8.99,
+            'currency' => 'GBP',
+        ]);
     }
 
     private function publishTask(User $creator, int $approved = 1): Task

@@ -12,6 +12,7 @@ use App\Models\RiskIdentity;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserPayment;
+use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
 use Illuminate\Database\Eloquent\Model;
@@ -365,7 +366,13 @@ class Helpers
 
             $referral->lifetime_gmv = $totalGmvGbp;
 
-            if ($referral->status === 'IN_PROGRESS' && $totalGmvGbp >= 1000) {
+            // The REFERRER is the one who gets paid, so it is their bonus
+            // eligibility that decides this — not the referred creator's.
+            // Checked at qualification rather than at payout so nobody is told
+            // they have earned a bonus that will not be paid.
+            $referrerEligible = $referral->referrer ? $referral->referrer->isBonusEligible() : true;
+
+            if ($referrerEligible && $referral->status === 'IN_PROGRESS' && $totalGmvGbp >= 1000) {
                 $referral->status = 'QUALIFIED';
                 $referral->qualified_at = now();
 
@@ -454,6 +461,110 @@ class Helpers
             : round($minor / 100, 2);
     }
 
+    /**
+     * The fee-rate columns to persist alongside a charge, taken from the
+     * breakdown that priced it.
+     *
+     * Spread this into every payment-row and ledger write:
+     *
+     *     ShopPayment::create([... , ...Helpers::feeRateColumns($breakdown)]);
+     *
+     * Storing the RATE, not just the resulting amount, is what makes history
+     * immutable: every recompute path re-derives fees from a rate, so a row
+     * without one silently inherits whatever the creator's deal says today.
+     *
+     * @return array{platform_fee_rate: float|null, compliance_fee_rate: float|null, fee_source: string|null, fee_override_id: int|null}
+     */
+    public static function feeRateColumns(array $breakdown): array
+    {
+        return [
+            'platform_fee_rate' => $breakdown['platform_fee_rate'] ?? null,
+            'compliance_fee_rate' => $breakdown['compliance_fee_rate'] ?? null,
+            'fee_source' => $breakdown['fee_source'] ?? null,
+            'fee_override_id' => $breakdown['fee_override_id'] ?? null,
+        ];
+    }
+
+    /**
+     * Carry the rates already recorded on one row onto another — a subscription
+     * onto the payment record for one of its cycles, for instance.
+     *
+     * NEVER re-resolve the creator's rate at that point: on a recurring product
+     * the supporter is grandfathered onto the rate they subscribed at, so the
+     * subscription row is the authority, not today's agreement.
+     */
+    public static function copyFeeRateColumns($row): array
+    {
+        return [
+            'platform_fee_rate' => $row->platform_fee_rate ?? null,
+            'compliance_fee_rate' => $row->compliance_fee_rate ?? null,
+            'fee_source' => $row->fee_source ?? null,
+            'fee_override_id' => $row->fee_override_id ?? null,
+        ];
+    }
+
+    /**
+     * The same columns, read back off a Stripe session's metadata.
+     *
+     * The rate travels with the charge so that BOTH fulfilment paths — the
+     * redirect handler and the webhook, which race for every payment — record
+     * identical rates, and neither re-resolves a rate that may have changed
+     * between the charge and its fulfilment.
+     *
+     * @param  object|array|null  $metadata
+     */
+    public static function feeRateColumnsFromMetadata($metadata): array
+    {
+        $get = function (string $key) use ($metadata) {
+            $value = is_array($metadata)
+                ? ($metadata[$key] ?? null)
+                : ($metadata->{$key} ?? null);
+
+            return ($value === '' || $value === null) ? null : $value;
+        };
+
+        return [
+            'platform_fee_rate' => $get('platform_fee_rate') !== null ? (float) $get('platform_fee_rate') : null,
+            'compliance_fee_rate' => $get('compliance_fee_rate') !== null ? (float) $get('compliance_fee_rate') : null,
+            'fee_source' => $get('fee_source'),
+            'fee_override_id' => $get('fee_override_id') !== null ? (int) $get('fee_override_id') : null,
+        ];
+    }
+
+    /**
+     * The inverse: the rates a past charge was priced at, in the shape
+     * calculateStripeDirectChargeFlow()'s $rateOverride expects.
+     *
+     * Every recompute path (SyncFinancialTransactions, the webhook FT syncs,
+     * renewal mails, payments:verify-creator-net) must pass this rather than
+     * letting the rate resolve live, or changing a creator's deal would re-price
+     * everything they have ever sold — silently, with no error.
+     *
+     * Returns NULL when the row predates these columns, which correctly falls
+     * back to the standard config rates that priced it at the time.
+     */
+    public static function storedFeeRates($row): ?array
+    {
+        if (! $row) {
+            return null;
+        }
+
+        $platform = $row->platform_fee_rate ?? null;
+
+        if ($platform === null) {
+            return null;
+        }
+
+        return [
+            'platform_rate' => (float) $platform,
+            'compliance_rate' => $row->compliance_fee_rate === null
+                ? (float) config('payments.fee_profiles.card.compliance_rate', 2)
+                : (float) $row->compliance_fee_rate,
+            'fee_source' => $row->fee_source ?? 'standard',
+            'fee_override_id' => $row->fee_override_id ?? null,
+        ];
+    }
+
     public static function administrationFeeInCurrency($currency): float
     {
         $feeGbp = (float) config('app.administration_fee', 1);
@@ -473,18 +584,44 @@ class Helpers
         return round($converted, $precision, PHP_ROUND_HALF_UP);
     }
 
-    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'GBP', $reserveRate = 0, string $feeProfile = 'card'): array
+    /**
+     * @param  int|null  $creatorId  Resolve this creator's bespoke platform rate, if they have one.
+     *                               Pass on every LIVE charge. Omit and the standard config rates
+     *                               apply, which is what every existing call site already does.
+     * @param  array|null  $rateOverride  Price with EXPLICIT rates instead of resolving them —
+     *                                    `['platform_rate' => 8.0, 'compliance_rate' => 2.0,
+     *                                    'fee_source' => 'custom', 'fee_override_id' => 12]`.
+     *                                    Recompute paths (SyncFinancialTransactions, the webhook FT
+     *                                    syncs, renewal mails) MUST pass the rates STORED on the row,
+     *                                    or a later rate change would silently re-price history.
+     *                                    Takes precedence over $creatorId.
+     */
+    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'GBP', $reserveRate = 0, string $feeProfile = 'card', ?int $creatorId = null, ?array $rateOverride = null): array
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
 
-        // Fee rates come from the per-method profile (config/payments.php).
+        // Fee rates come from the per-method profile (config/payments.php),
+        // with a creator's negotiated platform rate swapped in where one exists.
         // "card" mirrors the historical hard-coded rates; "bank" is the
         // lower-fee profile for Pay by Bank / SEPA / ACH.
-        $profile = config("payments.fee_profiles.$feeProfile");
-        if (! is_array($profile)) {
+        $profile = CreatorFeeResolver::profileFor($creatorId, $feeProfile);
+        if (! is_array(config("payments.fee_profiles.$feeProfile"))) {
             $feeProfile = 'card';
-            $profile = config('payments.fee_profiles.card', []);
+        }
+
+        // An explicit override wins: this is how a historical transaction is
+        // re-costed at the rate it was actually charged, never today's.
+        if (is_array($rateOverride)) {
+            foreach (['platform_rate', 'compliance_rate'] as $key) {
+                if (isset($rateOverride[$key]) && is_numeric($rateOverride[$key])) {
+                    $profile[$key] = (float) $rateOverride[$key];
+                }
+            }
+
+            $profile['fee_source'] = $rateOverride['fee_source']
+                ?? CreatorFeeResolver::SOURCE_STANDARD;
+            $profile['fee_override_id'] = $rateOverride['fee_override_id'] ?? null;
         }
 
         // Note: The actual Stripe fee is deducted at transaction time; the
@@ -505,6 +642,10 @@ class Helpers
 
             return [
                 'fee_profile' => $feeProfile,
+                'platform_fee_rate' => $platformFeeRate * 100,
+                'compliance_fee_rate' => $complianceFeeRate * 100,
+                'fee_source' => $profile['fee_source'] ?? 'standard',
+                'fee_override_id' => $profile['fee_override_id'] ?? null,
                 'listed_price' => $listedPrice,
                 'total_supporter_pays' => $listedPrice,
                 'application_fee' => 0,
@@ -544,8 +685,54 @@ class Helpers
         // Reserve is NOT deducted here — it stays in connected account, withheld at payout time
         $netToCreator = round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision);
 
+        /*
+        | 🚨 The platform absorbs any rounding shortfall — the creator ALWAYS receives
+        | at least the listed price. That is the promise the whole pricing model is
+        | built on ("the creator receives exactly what they listed"), and it was not
+        | quite true.
+        |
+        | Each component is rounded independently (supporter total CEILed, Stripe and
+        | platform fees rounded half-up) so the parts can sum to one minor unit more
+        | than the whole. Measured across 288 price/currency/profile combinations,
+        | 8 landed a penny short — all of them non-GBP, where the £1 admin fee is
+        | currency-converted and brings its own rounding. GBP was always fine, which
+        | is why an earlier GBP-only sweep reported this as clean.
+        |
+        | The shortfall is taken off the APPLICATION FEE, never added to the supporter
+        | price: what a supporter is charged must not change, and this must not become
+        | a back-door price rise for every creator on standard pricing.
+        |
+        | Guarded so it can only ever reduce the platform's take, never invert it.
+        */
+        if ($netToCreator < $listedPrice) {
+            $shortfall = round($listedPrice - $netToCreator, $precision);
+
+            if ($shortfall > 0 && $shortfall <= $applicationFee) {
+                $applicationFee = round($applicationFee - $shortfall, $precision);
+                $platformFee = round(max(0, $platformFee - $shortfall), $precision);
+                $netToCreator = round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision);
+            } else {
+                // Cannot be covered from our own fee — the creator would be short and
+                // we would not know. Loud, because it means the model is wrong.
+                Log::error('calculateStripeDirectChargeFlow: creator net is below the listed price and the shortfall exceeds the application fee', [
+                    'listed_price' => $listedPrice,
+                    'net_to_creator' => $netToCreator,
+                    'application_fee' => $applicationFee,
+                    'currency' => $currency,
+                    'fee_profile' => $feeProfile,
+                ]);
+            }
+        }
+
         return [
             'fee_profile' => $feeProfile,
+            // The rates that priced THIS charge. Persisted alongside the amounts
+            // so history can never be re-costed by a later rate change, and so an
+            // admin can read a fee back as a percentage rather than a bare figure.
+            'platform_fee_rate' => round($platformFeeRate * 100, 2),
+            'compliance_fee_rate' => round($complianceFeeRate * 100, 2),
+            'fee_source' => $profile['fee_source'] ?? 'standard',
+            'fee_override_id' => $profile['fee_override_id'] ?? null,
             'listed_price' => round($listedPrice, $precision),
             'platform_fee' => $platformFee,
             'compliance_fee' => $complianceFee,
