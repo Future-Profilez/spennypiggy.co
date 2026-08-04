@@ -1127,10 +1127,7 @@ export default function Dashboard(props) {
 
                                                             <div className="tabs-containers min-height">
                                                                 <>
-                                                                    {page ===
-                                                                        "about" ||
-                                                                    page ===
-                                                                        false ? (
+                                                                    {page === "about" || page === false ? (
                                                                         <Suspense
                                                                             fallback={
                                                                                 <LoadingScreen />
@@ -1197,26 +1194,26 @@ export default function Dashboard(props) {
                                                                                     <ReturningSupporter />
                                                                                 </div>
 
-                                                {/* ⚠️ Above About me, deliberately, and there is only ONE of
-                                                    these. A creator whose subscription income had been paused
-                                                    for not posting could not learn that from their own
-                                                    profile — the only surface saying so sat ~1,000 lines
-                                                    further down the page behind a Stripe gate. A second
-                                                    strip was briefly added at the top instead, which left
-                                                    the page telling the creator the same thing twice in two
-                                                    different tones. This card is the one that carries BOTH
-                                                    payment rules, so it is the one that moved.
+                                                                                {/* ⚠️ Above About me, deliberately, and there is only ONE of
+                                                                                    these. A creator whose subscription income had been paused
+                                                                                    for not posting could not learn that from their own
+                                                                                    profile — the only surface saying so sat ~1,000 lines
+                                                                                    further down the page behind a Stripe gate. A second
+                                                                                    strip was briefly added at the top instead, which left
+                                                                                    the page telling the creator the same thing twice in two
+                                                                                    different tones. This card is the one that carries BOTH
+                                                                                    payment rules, so it is the one that moved.
 
-                                                    ⚠️ Gated on Stripe connected AND identity verified
-                                                    (3 Aug 2026, client direction). It briefly ran for every
-                                                    creator on the reasoning that the component states its
-                                                    own "finish verifying" case — but its headline is "YOUR
-                                                    PAYMENTS ARE PAUSED", and a creator who has not finished
-                                                    Connect has no payments to pause. That reads as a fault
-                                                    on their account at the exact moment they are being asked
-                                                    to trust the platform with their bank details. The
-                                                    journey card is what speaks to a creator before this
-                                                    point; this card starts once there is money to stop. */}
+                                                                                    ⚠️ Gated on Stripe connected AND identity verified
+                                                                                    (3 Aug 2026, client direction). It briefly ran for every
+                                                                                    creator on the reasoning that the component states its
+                                                                                    own "finish verifying" case — but its headline is "YOUR
+                                                                                    PAYMENTS ARE PAUSED", and a creator who has not finished
+                                                                                    Connect has no payments to pause. That reads as a fault
+                                                                                    on their account at the exact moment they are being asked
+                                                                                    to trust the platform with their bank details. The
+                                                                                    journey card is what speaks to a creator before this
+                                                                                    point; this card starts once there is money to stop. */}
                                                                                 {canSeeActivityCard &&
                                                                                     activityStatus && (
                                                                                         <Suspense
@@ -1287,9 +1284,7 @@ export default function Dashboard(props) {
                                                                                     About me — it is the creator's payment status and was
                                                                                     unreadable buried here. Rendering it in both places
                                                                                     left the page saying the same thing twice. */}
-                                                                                {IsloggedIn &&
-                                                                                UserStripeConnected !==
-                                                                                    1 ? (
+                                                                                {IsloggedIn && auth?.user?.role == 1 && auth?.user?.identity_status !== 1 ? (
                                                                                     <CreatorVerification
                                                                                         IsloggedIn={
                                                                                             IsloggedIn
@@ -1640,9 +1635,7 @@ export default function Dashboard(props) {
                                                                                     )}
 
                                                                                 <div className="w-full">
-                                                                                    {IsloggedIn &&
-                                                                                    UserStripeConnected ==
-                                                                                        1 ? (
+                                                                                    {IsloggedIn && UserStripeConnected == 1 ? (
                                                                                         <>
                                                                                             <Suspense
                                                                                                 fallback={
@@ -1743,9 +1736,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn ||
-                                                                    UserStripeConnected ==
-                                                                        1 ? (
+                                                                    {IsloggedIn || UserStripeConnected == 1 ? (
                                                                         <>
                                                                             {page ===
                                                                             "wishes" ? (

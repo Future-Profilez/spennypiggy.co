@@ -3,9 +3,12 @@ import { FaCrown } from "react-icons/fa6";
 import { FiRefreshCw, FiShoppingBag } from "react-icons/fi";
 
 export default function CreatorDashboardTabs() {
-    const { url } = usePage();
+    const page = usePage();
+    const url = page.url;
+    const auth = page.props?.auth;
+    const role = parseInt(auth?.user?.role, 10);
 
-    const tabs = [
+    const creatorTabs = [
         {
             title: "Memberships",
             subtitle: "Your tiers & members",
@@ -25,6 +28,17 @@ export default function CreatorDashboardTabs() {
             Icon: FiShoppingBag,
         },
     ];
+
+    const gifterTabs = [
+        {
+            title: "My subscriptions",
+            subtitle: "What you support",
+            route: "/billing/my-subscriptions",
+            Icon: FiShoppingBag,
+        },
+    ];
+
+    const tabs = role === 1 ? creatorTabs : role === 0 ? gifterTabs : [];
 
     return (
         <div className="mb-8">
@@ -59,7 +73,11 @@ export default function CreatorDashboardTabs() {
                                     }`}
                                 >
                                     <Icon
-                                        className={active ? "text-white" : "text-[#FF007F]"}
+                                        className={
+                                            active
+                                                ? "text-white"
+                                                : "text-[#FF007F]"
+                                        }
                                         size="1.2rem"
                                     />
                                 </div>
@@ -67,14 +85,18 @@ export default function CreatorDashboardTabs() {
                                 <div className="text-left">
                                     <p
                                         className={`text-sm font-semibold leading-tight ${
-                                            active ? "text-white" : "text-gray-900"
+                                            active
+                                                ? "text-white"
+                                                : "text-gray-900"
                                         }`}
                                     >
                                         {tab.title}
                                     </p>
                                     <p
                                         className={`text-xs mt-0.5 leading-tight ${
-                                            active ? "text-white/75" : "text-gray-500"
+                                            active
+                                                ? "text-white/75"
+                                                : "text-gray-500"
                                         }`}
                                     >
                                         {tab.subtitle}
