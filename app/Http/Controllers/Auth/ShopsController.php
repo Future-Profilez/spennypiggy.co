@@ -42,6 +42,7 @@ use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -1399,6 +1400,15 @@ class ShopsController extends Controller
 
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
+
+                NotificationContext::for([
+                    'context_type' => 'shop',
+                    'context_id' => $stripeid->shop_id,
+                    'stripe_session_id' => $stripeid->session_id,
+                    'buyer_id' => $stripeid->user_id,
+                    'buyer_email' => $stripeid->user->email ?? $stripeid->guest_email ?? null,
+                    'creator_id' => $stripeid->shop->user_id ?? null,
+                ]);
 
                 // Delayed-settlement bank methods (SEPA/ACH): don't fulfil on the
                 // redirect while the debit is still clearing — the

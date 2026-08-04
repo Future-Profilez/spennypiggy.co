@@ -9,10 +9,12 @@ import TiltCard from '@/Components/animations/TiltCard';
 export default function LiveBarSection() {
   return (
 
-    <section className='bg-transparent pb-14 md:pb-24 relative overflow-hidden'>
+    <section
+      className='bg-transparent pb-14 md:pb-24 relative overflow-hidden'
+    >
        {/* Decorative Background Elements */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 floating-shape"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-screen filter blur-[128px] opacity-20 floating-shape"></div>
         </div>
 
       <div className="relative container px-4 mx-auto pt-6 lg:pt-10">

@@ -78,17 +78,17 @@ function WishTile({ tile }) {
         <span className={`font-gulfs uppercase tracking-wider text-[12px] leading-none ${tile.dark ? 'text-black' : 'text-white'}`}>
           {tile.label}
         </span>
-        <span className="font-black text-[10px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
+        <span className="font-black text-[11px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
           {tile.price}
         </span>
       </div>
       <div className="relative mx-3 mt-2.5 rounded-[12px] bg-white border-2 border-black h-16 flex items-center justify-center">
         <span className="text-[34px] leading-none">{tile.emoji}</span>
-        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[10px] leading-none">
+        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[11px] leading-none">
           ❤️
         </span>
       </div>
-      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[9px] tracking-widest py-[6px]">
+      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[11px] tracking-widest py-[6px]">
         Unlock
       </div>
     </motion.div>
@@ -230,8 +230,6 @@ export default function Hero({auth}) {
           onPointerLeave={onHeroPointerLeave}
           className="bg-transparent relative min-h-[88vh] lg:min-h-[92vh] flex items-center py-10 md:py-20 overflow-hidden"
         >
-
-          {/* Premium depth: soft corner light wash behind everything */}
           <div
             aria-hidden
             className="absolute inset-0 z-0 pointer-events-none"

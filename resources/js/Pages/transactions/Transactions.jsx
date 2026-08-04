@@ -7,6 +7,8 @@ import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
 import LedgerBreakdown, { StateChip } from '@/Components/Transactions/LedgerBreakdown';
+import DeliveryStatus from '@/Components/Transactions/DeliveryStatus';
+import RefreshRecordsButton from '@/Components/RefreshRecordsButton';
 import { FaTwitter } from 'react-icons/fa';
 import Modal from '@/Components/Modal';
 import Popup from '@/Components/Popup';
@@ -448,6 +450,7 @@ export default function Transactions(props) {
                 <h1 className="font-black text-3xl md:text-4xl text-gray-900 tracking-tight">Support History</h1>
                 <p className="text-gray-700 font-medium mt-2">Every purchase — and exactly what was delivered with it.</p>
               </div>
+              <RefreshRecordsButton className="w-full md:w-auto shrink-0 bg-white text-gray-800 border border-gray-200 hover:bg-gray-100 shadow-sm" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -713,6 +716,10 @@ export default function Transactions(props) {
                           <span className="text-gray-300">·</span>
                           <p className="text-gray-400 font-medium text-xs">{e.created_at}</p>
                         </div>
+
+                        {/* What WE sent YOU about this purchase. Your own messages
+                            only — the server never returns the other party's. */}
+                        <DeliveryStatus notifications={e.notifications} />
 
                         {/* The full arithmetic behind the figure above, from the same
                             server payload the creator's ledger and the Purchase Hub read. */}

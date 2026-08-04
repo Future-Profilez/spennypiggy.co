@@ -36,6 +36,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -781,6 +782,16 @@ class TaskController extends Controller
             $sessionId,
             ['stripe_account' => $task->creator->account_id]
         );
+
+        NotificationContext::for([
+            'context_type' => 'task',
+            'context_id' => $task->id,
+            'stripe_session_id' => $session->id,
+            'stripe_payment_intent_id' => $session->payment_intent ?? null,
+            'buyer_id' => Auth::id(),
+            'buyer_email' => $session->customer_details->email ?? null,
+            'creator_id' => $task->creator_id,
+        ]);
 
         $purchase = null;
 

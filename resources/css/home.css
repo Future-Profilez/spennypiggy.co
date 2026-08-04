@@ -145,14 +145,11 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .wishlistcntbox{width:100%;border-radius:20px;overflow:hidden;border:1px solid #8442ff;}
 .wishlistimg{background:#8c52ff;overflow:hidden;border-radius:0 0 20px 20px !important;}
 .wishlistcntbox.shadow-voilet{box-shadow:6px 6px 0 0 var(--voilet);}
-.sharebtn,.wishlistdetial h3,.wishlistdetial h4{color:var(--voilet);font-style:normal;line-height:120%;}
+.sharebtn{color:var(--voilet);font-style:normal;line-height:120%;}
 .sharebtn{background:var(--white);width:70px;height:30px;border-radius:5px;position:absolute;right:10px;top:-15px;display:flex;align-items:center;align-content:center;justify-content:center;text-align:center;font-family:var(--font-CeraGRBold);font-size:13.538px;font-weight:400;letter-spacing:-1.218px;border:1px solid var(--voilet);}
 .wishlistbox{margin:0-2%;}
-.wishlistdetial h3,.wishlistdetial h4{font-size:20px;letter-spacing:-0.7px;margin-bottom:7px;}
 .el1,.el2{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical;}
 .el2{-webkit-line-clamp:2;line-clamp:2;}
-.wishlistdetial{min-height:140px;padding:20px;}
-.wishlistdetial h3{color:var(--gray2);}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
 .sharelinks a,.userprofilesec h2 {font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
@@ -285,8 +282,6 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .noResult{border-radius:30px;background:#171717 !important;}
 .userphotobox > img{object-fit:cover;}
 .cartbanner img{width:100%;max-height:220px;height:190px;}
-.wishlistdetial h5,.wishlistdetial h5 .font-CeraGRBold{font-family:var(--font-CeraGR) !important;font-weight:800 !important;}
-.wishlistdetial h5{font-weight:bolder !important;}
 .content-pr-modal{height:100vh;max-height:80vh;border-radius:16px;overflow:auto;}
 .content-pr-modal iframe{width:100%;height:100%;background:0 0;padding:10px;}
 ul.socialmedia a svg{width:25px;height:25px;}
@@ -609,8 +604,6 @@ button.editProfile,select#country{padding:10px;font-size:18px;}
 .finish .btn-pink-lg{width:95%;font-size:14px;border-radius:7px;height:40px;}
 .userManageHead .btn-pink-md{width:190px;height:46px;border-radius:9px;font-size:16px;}
 select#country{width:150px;}
-.wishlistdetial{padding:15px;}
-.wishlistdetial h3{font-size:15px;}
 .userManageHead button.btn-pink{padding:13px 10px;}
 .header{height:auto;}
 .footlinks h2,.headtitle{font-size:20px;}
@@ -650,7 +643,6 @@ select#country{width:150px;}
 .shows.menuList{overflow:auto;max-height:96vh;display:block !important;align-items:baseline !important;}
 .menuList ul li{margin:5px 18px 5px 0 !important;}
 .funboximg img,.gifts-links,.welcomeRt img{margin:auto;}
-.wishlistdetial h4{font-size:16px;}
 .cartProRtbox{display:inline-flex;width:100%;justify-content:space-between;margin-top:10px;}
 .shadow-yellow{text-shadow:1px 3px 0 var(--yellow);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
@@ -771,7 +763,6 @@ select#country{width:150px;}
 .full.modal .modal-content{margin:0;max-width:100%;border:0 !important;border-radius:0 !important;box-shadow:none !important;}
 .wishtracker .nav.nav-tabs li button{font-size:15px !important;}
 .menu-toggle svg{width:45px;height:45px;}
-.wishlistdetial{min-height:125px;}
 .funboxs{position:sticky;top:20px;}
 .loveboxes h3.headingSm{margin-bottom:6px;}
 .editprofileModalInner,.innermodel{width:100% !important;}
@@ -822,11 +813,9 @@ select#country{width:100%;}
 @media (max-width:430px){.subscribletag{padding:5px 13px !important;font-size:10px !important;}
 .wishlistimg img{height:140px !important;}
 .crowd .text-small{font-size:13px !important;}
-.wishlistdetial h5{font-size:15px;}
 .progress{background:#eccedb;height:5px;}
 .sharelinks button{font-size:14px;}
 .sharelinks{padding:4px;}
-.wishlistdetial{padding:12px;min-height:106px;}
 .items-lists{margin-left:-8px;margin-right:-8px;}
 .row.items-lists > div{padding:0 8px !important;}
 .wishlistcntbox.shadow-voilet{box-shadow:4px 4px 0 0 var(--voilet);}
@@ -939,14 +928,57 @@ html.lenis, html.lenis body { height: auto; }
   .wcard{animation:none !important;}
 }
 
-/* Coloured full-bleed bands: fade top & bottom edges into the black page so the
-   seam between a bright section and the black sections is soft, not a hard cut. */
+/* Coloured full-bleed bands.
+
+   The page is #000 (see `body` above), and a band has to arrive out of that black
+   and return to it without a visible cut.
+
+   ⚠️ Verify section adjacency against the RENDERED DOM, not against Welcome.jsx.
+   CustomPricingNote (mint) and EarnMore (yellow) look adjacent in the JSX but
+   CreatorShowcase sits between them, so wiring their edges to each other was wrong.
+
+   This is a BACKGROUND-IMAGE on the section, not a ::before/::after overlay. A
+   background paints behind content by definition, so it can never dim the headline
+   or the cards the way the old z-indexed pseudo-elements did — and there is no
+   stacking order left to get wrong.
+
+   --band-deep is supplied per section rather than computed, so this needs no
+   color-mix() support and cannot fall back to an untinted black on older engines. */
+/* 🚨 A BAND IS A SOLID BLOCK OF COLOUR WITH A CRISP EDGE. It carries no fade of
+   its own, and must not be given one again.
+
+   Every previous attempt faded the band itself into the page — through neutral
+   black, then through a deep tint of its own colour, then proportionally. All of
+   them read as a blurry smudge, because desaturating a saturated block toward the
+   background IS a smudge; there is no stop distribution that fixes it. The mint
+   band spent its top and bottom looking like fog, and the yellow band looked
+   dirty. Confident full-bleed colour blocks are also what the rest of this brand
+   does — hard edges are on-language here, not a defect.
+
+   The smoothness comes from the DARK NEIGHBOUR instead (see .sp-flow): the band
+   stays fully saturated to its last pixel, and the black section next to it picks
+   up a faint wash of that band's hue. Light spilling out of a colour block reads
+   as premium; the block dissolving reads as cheap. */
 .sp-band{position:relative;}
-.sp-band::before,.sp-band::after{content:'';position:absolute;left:0;right:0;height:180px;pointer-events:none;z-index:2;}
-.sp-band::before{top:0;background:linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.85) 16%, rgba(0,0,0,0.5) 42%, rgba(0,0,0,0.18) 70%, transparent 100%);}
-.sp-band::after{bottom:0;background:linear-gradient(to top, #000 0%, rgba(0,0,0,0.85) 16%, rgba(0,0,0,0.5) 42%, rgba(0,0,0,0.18) 70%, transparent 100%);}
+
+/* The ambient bleed. Set --flow-top / --flow-bottom to the "R G B" channels (space
+   separated, no rgb() wrapper) of whichever band that edge touches. It ADDS a faint
+   amount of that colour to the black page and fades to nothing — it never darkens
+   anything, so it cannot produce a shadow. */
+.sp-flow{
+  --flow-len:min(320px, 38%);
+  --flow-strength:0.16;
+  background-image:
+    linear-gradient(to bottom,
+      rgb(var(--flow-top, 0 0 0) / var(--flow-strength)) 0,
+      rgb(var(--flow-top, 0 0 0) / 0) var(--flow-len)),
+    linear-gradient(to top,
+      rgb(var(--flow-bottom, 0 0 0) / var(--flow-strength)) 0,
+      rgb(var(--flow-bottom, 0 0 0) / 0) var(--flow-len));
+}
+
 @media (max-width:768px){
-  .sp-band::before,.sp-band::after{height:120px;}
+  .sp-flow{--flow-len:min(200px, 30%);}
 }
 
 /* horizontal-pan mobile fallback */

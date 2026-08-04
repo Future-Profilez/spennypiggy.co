@@ -102,7 +102,7 @@ function Shell({ children, className = "", accent = PINK }) {
 function GlossButton({ children, glyph, accent }) {
     return (
         <button
-            className="relative mt-auto w-full text-white text-[11px] font-black uppercase tracking-wide py-2 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
+            className="relative mt-auto w-full min-h-[44px] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
             style={{ background: accent, boxShadow: `0 6px 18px -4px ${accent}99` }}
         >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
@@ -148,7 +148,7 @@ function ShareCard({ handle }) {
             </div>
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-[10px] px-2.5 py-1.5">
                 <span className="text-[11px] font-bold text-white/70 truncate">{handle}</span>
-                <span className="ml-auto text-[10px] font-black uppercase text-white rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
+                <span className="ml-auto text-[11px] font-black uppercase text-white rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
             </div>
         </Shell>
     );
@@ -158,7 +158,7 @@ function ThankYouCard() {
     return (
         <Shell accent={PURPLE}>
             <div className="flex items-start gap-2 mb-2.5">
-                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[10px] font-black bg-gradient-to-br from-[#8C52FF] to-[#FF007F]">JJ</span>
+                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#8C52FF] to-[#FF007F]">JJ</span>
                 <p className="text-[11.5px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
                     <span className="font-black text-white">@legitjustjack</span> just supported your content! 🙌
                 </p>
@@ -172,13 +172,13 @@ function SupportCard({ handle, amount }) {
     return (
         <Shell accent={PINK}>
             <span className="absolute top-2.5 right-3 text-xs opacity-80 select-none" aria-hidden>🎉</span>
-            <span className="absolute top-7 right-7 text-[9px] opacity-60 select-none" aria-hidden>✨</span>
+            <span className="absolute top-7 right-7 text-[11px] opacity-60 select-none" aria-hidden>✨</span>
             <div className="flex items-center gap-2 mb-2">
                 <span className="relative w-8 h-8">
                     <span className="absolute inset-0 rounded-full animate-ping" style={{ background: `${PINK}40` }}></span>
                     <span className="relative w-8 h-8 rounded-full flex items-center justify-center text-sm ring-2 ring-[#14141f]" style={{ background: `${PINK}33` }} aria-hidden>💖</span>
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: PINK }}>New supporter</span>
+                <span className="text-[11px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: PINK }}>New supporter</span>
             </div>
             <p className="text-[11.5px] text-white/70 leading-snug">
                 <span className="font-black text-white">{handle}</span> supported you

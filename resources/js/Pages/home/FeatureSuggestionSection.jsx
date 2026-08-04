@@ -10,21 +10,11 @@ export default function FeatureSuggestionSection({ auth }) {
     const [showModal, setShowModal] = useState(false);
 
     return (
-        <section className="sp-band bg-[var(--pink)] py-20 md:py-28 relative overflow-hidden">
-            {/* Background decorative elements */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#FF007F]/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
-                <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-yellow-500/5 rounded-full filter blur-[100px]"></div>
-
-                {/* Floating particles */}
-                <div className="absolute top-1/4 left-10 w-1 h-1 bg-white/20 rounded-full animate-ping"></div>
-                <div className="absolute top-3/4 left-1/4 w-1.5 h-1.5 bg-[#05EFB8]/20 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
-                <div className="absolute top-1/2 right-20 w-1 h-1 bg-yellow-400/20 rounded-full animate-pulse"></div>
-                <div className="absolute top-10 right-1/3 w-2 h-2 bg-[#FF007F]/10 rounded-full animate-ping" style={{ animationDuration: '4s' }}></div>
-            </div>
-
-            {/* Giant outlined idea strip — scrubs sideways with scroll */}
-            <WatermarkStrip text="Ideas" from={-300} to={150} opacity={0.28} className="bottom-4" />
+        <section
+            className="py-20 md:py-28 relative overflow-hidden"
+        >
+        
+            <WatermarkStrip text="Ideas" from={-300} to={50} opacity={0.28} className="top-28" />
 
             <div className="containerbox relative z-10 px-4 mx-auto text-center">
                 <div className="max-w-4xl mx-auto">
@@ -34,7 +24,7 @@ export default function FeatureSuggestionSection({ auth }) {
                         <ScrollX from={0} to={0} rotate={18}>
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-[30px]  flex items-center justify-center shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] transform transition-transform duration-700 group-hover:scale-110">
+                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-[30px] flex items-center justify-center transform transition-transform duration-700 group-hover:scale-110">
                                 <FaLightbulb className="text-[#EFEA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
                             </div>
                         </div>
@@ -44,9 +34,7 @@ export default function FeatureSuggestionSection({ auth }) {
 
                     {/* Whole heading glides sideways with the scroll */}
                     <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase tracking-wide leading-[1.1]">
-                        <ScrollX as="span" from={-100} to={50} className="inline-block">
                             Have a <span className="text-yellow-400">Brilliant</span> Idea?
-                        </ScrollX>
                     </h2>
 
                     <FadeIn y={20} delay={0.2}>
@@ -65,8 +53,6 @@ export default function FeatureSuggestionSection({ auth }) {
                         >
                             <span className="relative z-10">Suggest a Feature</span>
                             <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />
-
-                            {/* Hover Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </button>
                         </Magnetic>

@@ -255,6 +255,36 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:55')
             ->withoutOverlapping(30);
 
+        // Delivery log: a row per email, push and bell entry the platform sends,
+        // so this table grows faster than any payment table. The same pass
+        // settles rows the mail transport never confirmed, which would otherwise
+        // read as "still on its way" forever.
+        $schedule->command('notification-logs:prune')
+            ->dailyAt('03:40')
+            ->withoutOverlapping(30);
+
+        // Names settled payments that produced no buyer receipt. This is the
+        // check that catches a fulfilment path which silently stops emailing —
+        // the failure mode that lost bank-settled wish receipts, where nothing
+        // errored and nothing was logged.
+        //
+        // ⚠️ HOURLY, over the last day only. Most receipts are sent from inside
+        // QUEUED jobs, so a stopped `queue:work` means the mail is never
+        // attempted and therefore never logged — the log records what the mailer
+        // did, not what was intended. The absence is the finding, and this is
+        // what reports it. It runs on the SCHEDULER, a different process from
+        // the worker, so it still fires when the worker is the thing that died;
+        // daily would have let that hide for 24 hours.
+        $schedule->command('notifications:audit-missing', ['--days' => 1])
+            ->hourlyAt(50)
+            ->withoutOverlapping(30);
+
+        // Deeper daily pass: catches anything the hourly window stepped over
+        // (a backlog drained late, a worker down overnight).
+        $schedule->command('notifications:audit-missing', ['--days' => 7])
+            ->dailyAt('06:50')
+            ->withoutOverlapping(30);
+
         // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
         // that puts stock back bypasses Eloquent events (the refund handler's
         // ->increment(), the creator edit's ->update(), and the admin app, which shares

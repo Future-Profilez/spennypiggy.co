@@ -111,7 +111,7 @@ export default function Membership() {
                     <p className="text-[11px] font-gulfs uppercase tracking-[2px] text-white/60">Set your own perks &amp; price</p>
                   </div>
                 </div>
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-black bg-[#05EFB8] rounded-full px-3 py-1">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-black bg-[#05EFB8] rounded-full px-3 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-black"></span>0% fan fees
                 </span>
               </div>
@@ -128,7 +128,7 @@ export default function Membership() {
                     style={{ borderColor: t.accent, boxShadow: `8px 8px 0 0 ${t.accent}` }}
                   >
                     {t.popular && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wide text-black bg-[#E6EA7B] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-black uppercase tracking-wide text-black bg-[#E6EA7B] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
                     )}
                     <p className="font-gulfs uppercase text-white text-lg tracking-tight">{t.name}</p>
                     <p className="mt-1 mb-4">
@@ -138,7 +138,7 @@ export default function Membership() {
                     <ul className="space-y-2 mb-5">
                       {t.perks.map((p, j) => (
                         <li key={j} className="flex items-start gap-2 text-[12.5px] font-semibold text-white/70 leading-snug">
-                          <span className="mt-0.5 w-4 h-4 shrink-0 rounded-full grid place-items-center text-[9px] text-black" style={{ background: t.accent }}>✓</span>
+                          <span className="mt-0.5 w-4 h-4 shrink-0 rounded-full grid place-items-center text-[11px] text-black" style={{ background: t.accent }}>✓</span>
                           {p}
                         </li>
                       ))}

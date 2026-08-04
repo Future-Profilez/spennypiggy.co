@@ -204,22 +204,22 @@ if (app()->environment('local')) {
 
 Route::get('/', function (DiscoveryService $discoveryService) {
     $period = request()->query('top_earners_period', '');
-    $limit = (int) request()->query('top_earners_limit', 9);
 
     // Use shared cache for both guests and authenticated users for public discovery data
     $trendingCreators = function () use ($discoveryService) {
-        return Cache::remember('home_trending_creators_v2', 900, function () use ($discoveryService) {
-            return $discoveryService->getTrendingCreators();
+        return Cache::remember('home_trending_creators_v3_limit_6', 900, function () use ($discoveryService) {
+            return $discoveryService->getTrendingCreators(6);
         });
     };
 
     $newVerifiedCreators = function () use ($discoveryService) {
-        return Cache::remember('home_new_verified_creators_v2', 900, function () use ($discoveryService) {
-            return $discoveryService->getNewVerifiedCreators();
+        return Cache::remember('home_new_verified_creators_v3_limit_6', 900, function () use ($discoveryService) {
+            return $discoveryService->getNewVerifiedCreators(6);
         });
     };
 
-    $topEarnersData = function () use ($discoveryService, $period, $limit) {
+    $topEarnersData = function () use ($discoveryService, $period) {
+        $limit = 6;
         $ttl = match ($period) {
             'daily' => 600,
             'weekly' => 1200,
@@ -227,7 +227,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             default => 1200,
         };
 
-        return Cache::remember('home_top_earners_v2_'.$period.'_'.$limit, $ttl, function () use ($discoveryService, $period, $limit) {
+        return Cache::remember('home_top_earners_v3_'.$period.'_limit_6', $ttl, function () use ($discoveryService, $period, $limit) {
             return $discoveryService->getTopEarners($period, $limit);
         });
     };
@@ -252,11 +252,11 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
             'founderSpotsRemaining' => $founderSpots,
         ],
-        // Use Inertia::lazy to allow the page to load instantly while data fetches in background
-        'trendingCreators' => Inertia::lazy($trendingCreators),
-        'newVerifiedCreators' => Inertia::lazy($newVerifiedCreators),
-        'topEarners' => Inertia::lazy(fn () => $topEarnersData()['data']),
-        'topEarnersLabel' => Inertia::lazy(fn () => $topEarnersData()['label']),
+        // Load cached creator lists directly for the homepage showcase
+        'trendingCreators' => $trendingCreators(),
+        'newVerifiedCreators' => $newVerifiedCreators(),
+        'topEarners' => $topEarnersData()['data'],
+        'topEarnersLabel' => $topEarnersData()['label'],
     ]);
 })->name('home');
 

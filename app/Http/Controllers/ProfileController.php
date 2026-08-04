@@ -46,6 +46,7 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Services\Ledger\LedgerRules;
+use App\Services\NotificationDeliveryService;
 use App\Services\RekognitionModeration;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
@@ -1564,6 +1565,11 @@ class ProfileController extends Controller
         // larger than both their dashboard net income and what the payout run would pay.
         $fulfilmentMap = LedgerRules::fulfilmentMap($rows);
 
+        // "Were you told about this?" — the viewer's OWN email/push/bell status
+        // per purchase. Scoped to them by the service; a creator never sees
+        // whether their supporter's receipt arrived, and vice versa.
+        $deliveryByTx = app(NotificationDeliveryService::class)->forLedgerRows(Auth::id(), $rows);
+
         $supportTickets = SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
             return $tx->source_type === FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
         })->filter())
@@ -1708,7 +1714,7 @@ class ProfileController extends Controller
             }
         }
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey, $fulfilmentMap) {
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey, $fulfilmentMap, $deliveryByTx) {
             $from = strtoupper($tx->currency ?? 'GBP');
             // Supporter side reads what was charged; creator side reads what they keep.
             // Both come from LedgerRules so the Purchase Hub cannot report a third figure.
@@ -2004,6 +2010,11 @@ class ProfileController extends Controller
                 $event['user_reacted'] = [];
                 $event['replies'] = [];
             }
+
+            // Null means we cannot speak to it — either nothing was recorded, or
+            // the purchase predates delivery logging. The UI says so rather than
+            // implying nobody was told.
+            $event['notifications'] = $deliveryByTx[$tx->id] ?? null;
 
             return $event;
         })->values()->toArray();

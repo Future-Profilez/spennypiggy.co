@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
+use App\Models\NotificationLog;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
 use App\Models\Shop;
@@ -15,6 +16,7 @@ use App\Models\UserPayment;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
+use App\Support\NotificationRecorder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -1097,8 +1099,18 @@ class Helpers
      */
     public static function sendNotification($title, $content, $email)
     {
+        // Every push on the platform goes through this one method, so it is
+        // where the delivery log records them — see App\Support\NotificationRecorder.
         if (empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             Log::warning('Helpers::sendNotification: Invalid or missing recipient email', ['email' => $email, 'title' => $title]);
+
+            NotificationRecorder::push(
+                $title,
+                $content,
+                $email,
+                NotificationLog::STATUS_SKIPPED,
+                'No valid recipient email on file',
+            );
 
             return false;
         }
@@ -1121,6 +1133,14 @@ class Helpers
             if (empty($apiKey) || empty($apiSecret)) {
                 Log::error('Helpers::sendNotification: Missing MagicBell credentials');
 
+                NotificationRecorder::push(
+                    $title,
+                    $content,
+                    $email,
+                    NotificationLog::STATUS_SKIPPED,
+                    'Push provider is not configured',
+                );
+
                 return false;
             }
 
@@ -1133,6 +1153,8 @@ class Helpers
             Log::info('MagicBell API response status: '.$response->status());
 
             if ($response->successful()) {
+                NotificationRecorder::push($title, $content, $email, NotificationLog::STATUS_SENT);
+
                 return true;
             }
 
@@ -1142,9 +1164,25 @@ class Helpers
                 'body' => $response->body(),
             ]);
 
+            NotificationRecorder::push(
+                $title,
+                $content,
+                $email,
+                NotificationLog::STATUS_FAILED,
+                'Push provider returned '.$response->status().' '.$response->reason(),
+            );
+
             return false;
         } catch (\Exception $e) {
             Log::error('Error sending push notification: '.$e->getMessage());
+
+            NotificationRecorder::push(
+                $title,
+                $content,
+                $email,
+                NotificationLog::STATUS_FAILED,
+                $e->getMessage(),
+            );
 
             return false;
         }

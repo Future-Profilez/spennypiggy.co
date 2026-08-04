@@ -172,7 +172,7 @@ class UserProfileService
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner, int $limit = 20): array
     {
-        $query = WishItem::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -192,7 +192,31 @@ class UserProfileService
             'tax_amount',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+        ];
+
+        // ⚠️ The owner edits a wish straight from their own card, and the edit
+        // form patches whatever it sends — a column absent from this payload
+        // loads as an empty field and is written back empty. `reward_body` is
+        // the paid deliverable of a message/link reward, so it is OWNER ONLY
+        // (the model hides it; HasRewardContract reveals it to the owner).
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'item_url',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+                'subscription_period',
+                'repeat_purchase',
+                'ai_generated',
+                'reward',
+            ]);
+        }
+
+        $query = WishItem::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
@@ -259,7 +283,7 @@ class UserProfileService
      */
     private function getOptimizedBills(int $userId, bool $isOwner, ?int $limit = null): array
     {
-        $query = Bills::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -275,7 +299,26 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+        ];
+
+        // ⚠️ The owner edits a bill straight from their own card, and the edit
+        // form sends the whole reward object back — a column absent here loads
+        // empty, and `billEdit` then either refuses the save (a file/message
+        // reward is required) or writes the empty value. `reward_body` is the
+        // paid deliverable of a message/link reward, so it is OWNER ONLY.
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+            ]);
+        }
+
+        $query = Bills::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {

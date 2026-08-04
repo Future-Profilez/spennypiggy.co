@@ -328,7 +328,10 @@ class DiscoveryService
                 ->where('role', 1)
                 ->where('profile_status_lock', 2)
                 ->limit($limit)
-                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency'])
+                ->with(['wishes' => function ($q) {
+                    $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
+                }])
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved', 'default_currency'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -338,6 +341,8 @@ class DiscoveryService
                         'cover_url' => $u->cover_url,
                         'profile_status_lock' => $u->profile_status_lock,
                         'role' => $u->role,
+                        'bio' => $u->bio,
+                        'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                         'total_amount' => 0, // Hidden for privacy anyway
                         'currency' => strtoupper($u->default_currency ?? 'GBP'),
                     ];

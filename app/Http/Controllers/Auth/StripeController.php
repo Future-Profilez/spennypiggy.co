@@ -57,6 +57,7 @@ use App\Services\SubscriptionActivationService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -4030,6 +4031,15 @@ class StripeController extends Controller
         if (! $tip_pay) {
             return to_route('home')->with('error', 'Insufficient data!');
         }
+
+        NotificationContext::for([
+            'context_type' => 'tip',
+            'context_id' => $tip_pay->tip_goal_id,
+            'stripe_session_id' => $tip_pay->session_id,
+            'buyer_id' => $tip_pay->user_id,
+            'buyer_email' => $tip_pay->guest_email ?? null,
+            'creator_id' => $tip_pay->creator_id,
+        ]);
 
         // Idempotency: this handler runs every time the supporter lands on / reloads /
         // back-buttons the success page, and it can race the async webhook. Without this

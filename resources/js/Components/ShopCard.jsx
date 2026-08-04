@@ -73,7 +73,7 @@ export default function ShopCard({
             onClick={() => router.visit(url)}
             className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 self-start max-w-sm w-full bg-white border-[3px] border-black rounded-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden h-full flex flex-col"
         >
-            <div className="p-4 flex flex-col h-full">
+            <div className="p-3 flex flex-col h-full">
                 {/* Image Section */}
                 <div className="relative">
                     {/* Status Overlays */}
@@ -222,7 +222,7 @@ export default function ShopCard({
                             className="w-full"
                         >
                             <AddItem
-                                classes="font-black cursor-pointer bg-blue-300 border-[3px] border-black px-4 py-3 min-h-[44px] rounded-box-sm hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm uppercase w-full text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none"
+                                classes="font-black cursor-pointer bg-blue-300 border-[3px] border-black px-4 py-3 min-h-[44px] rounded-box-sm hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm uppercase w-full text-center  hover:shadow-none"
                                 pre_title={item?.name}
                                 title="Edit Item"
                                 pre_description={item?.description}

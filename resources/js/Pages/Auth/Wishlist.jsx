@@ -38,8 +38,16 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories, all_user_categories } = usePage().props;
-    const { currency, item, text, editpop, openPop, setuped, customtext } =
-        props;
+    const {
+        currency,
+        item,
+        text,
+        editpop,
+        openPop,
+        setuped,
+        customtext,
+        hidetrigger,
+    } = props;
     const defaultCurrency =
         (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -436,7 +444,11 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             space="4"
             size="lg"
             classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] mb-4 text-center"}`}
-            text={customtext || <AddItem />}
+            /* `hidetrigger` renders NO trigger button — the caller owns the
+               open state and drives it through `openPop`. Popup only skips its
+               button when `text` is literally undefined, so null/false will
+               still fall through to <AddItem /> here. */
+            text={hidetrigger ? undefined : customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">

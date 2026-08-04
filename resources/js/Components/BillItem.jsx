@@ -1,7 +1,7 @@
 import { lazy, memo, useMemo, Fragment, useState, useEffect } from "react";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import PriceFormat from "@/includes/PriceFormat";
-import { Link, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -89,23 +89,38 @@ function BillItem(props) {
     );
 
     const [itemUID, setItemUID] = useState(itemid);
-    const [open, setOpen] = useState();
+    const [editing, setEditing] = useState();
 
-    const openAddtocart = useMemo(
+    const openEdit = useMemo(
         () => () => {
-            setOpen(true);
+            setEditing(true);
+            // Cleared back to undefined so a second click re-opens it.
             setTimeout(() => {
-                setOpen();
+                setEditing();
             }, 1000);
         },
         [],
     );
 
+    /* The owner is looking at their own listing — the checkout page is the one
+       thing they cannot act on. Everyone else subscribes. */
+    const onCardClick = useMemo(
+        () => () => {
+            if (IsloggedIn) {
+                openEdit();
+
+                return;
+            }
+            router.visit(route("bill.checkout", { uuid: itm.uuid }));
+        },
+        [IsloggedIn, openEdit, itm.uuid],
+    );
+
     useEffect(() => {
-        if (itemUID == itm.uuid) {
-            setOpen(true);
+        if (itemUID && itemUID == itm.uuid && IsloggedIn) {
+            openEdit();
         }
-    }, [itemUID, itm.uuid]);
+    }, [itemUID, itm.uuid, IsloggedIn, openEdit]);
 
     const imageSrc = useMemo(
         () => itm?.perma_link || uploadedimg,
@@ -143,24 +158,30 @@ function BillItem(props) {
                     ""
                 )}
 
-                <div className="cursor-pointer relative !overflow-hidden !bg-white p-3 !pb-0">
+                <div
+                    onClick={onCardClick}
+                    className="cursor-pointer relative !overflow-hidden !bg-white p-2.5 !pb-0"
+                >
                     <LazyLoadImage
                         alt={itm?.name || ""}
                         effect="blur"
                         height={193}
                         src={imageSrc}
-                        className="!rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto"
+                        className="!rounded-[20px] object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
                         width={220}
                     />
 
-                    <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-black px-4 py-1.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10">
+                    <div className="absolute bottom-[14px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[10px] font-black px-3 py-1 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10">
                         {periodDisplay} Subscribable
                     </div>
 
                     {IsloggedIn && (
                         <Menu
                             as="div"
-                            className="absolute top-8 right-8 z-10 inline-block text-left"
+                            /* The image is a click target now — without this the
+                               dots menu would also open the edit sheet behind it. */
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute top-6 right-6 z-10 inline-block text-left"
                         >
                             <div>
                                 <Menu.Button
@@ -187,6 +208,17 @@ function BillItem(props) {
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={openEdit}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm`}
+                                                >
+                                                    Edit Bill
+                                                </button>
+                                            )}
+                                        </Menu.Item>
+                                        <Menu.Item>
+                                            {({ active }) => (
                                                 <div
                                                     className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm`}
                                                 >
@@ -206,17 +238,23 @@ function BillItem(props) {
                 </div>
 
                 <div
-                    onClick={openAddtocart}
+                    onClick={onCardClick}
                     role="button"
                     tabIndex={0}
-                    aria-label={itm?.name ? `View ${itm.name}` : "View bill"}
+                    aria-label={
+                        IsloggedIn
+                            ? `Edit ${itm?.name || "bill"}`
+                            : itm?.name
+                              ? `View ${itm.name}`
+                              : "View bill"
+                    }
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === "") {
+                        if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            openAddtocart();
+                            onCardClick();
                         }
                     }}
-                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-4 flex-grow"
+                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-3 flex-grow"
                 >
                     <div>
                         {itm.goal_label ? (
@@ -224,10 +262,10 @@ function BillItem(props) {
                                 🎯 {itm.goal_label}
                             </p>
                         ) : null}
-                        <h4 className="text-xl font-black !text-black text-center el1 uppercase tracking-wide">
+                        <h4 className="text-lg font-black !text-black text-center el1 uppercase tracking-wide leading-tight">
                             {itm.name}
                         </h4>
-                        <h5 className="text-center font-black text-2xl text-black mt-1 mb-1 titleprice">
+                        <h5 className="text-center font-black text-2xl text-black mt-0.5 mb-0.5 titleprice">
                             {isCreator ? (
                                 formatMultiPrice(
                                     itm.price,
@@ -252,17 +290,30 @@ function BillItem(props) {
                             )}
                         </h5>
                     </div>
-                    <p className="text-xs mt-3 text-center font-bold text-gray-800">
+                    <RewardHint item={itm} className="mt-1.5 max-w-full" />
+
+                    {/* Sits UNDER the reward line: it describes how the reward
+                        is delivered, so it reads as a footnote to it, not as
+                        the item's own subtitle. */}
+                    <p className="text-[9px] mt-1 text-center font-semibold text-gray-400 uppercase tracking-wide">
                         {periodDisplay} content membership · min. 3 posts/month
                     </p>
-                    <RewardHint item={itm} className="mt-2 max-w-full" />
-                    <div className="flex justify-center mt-5 mb-2">
+
+                    <div
+                        className="flex justify-center mt-2.5 mb-1"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {IsloggedIn ? (
+                            /* ONE instance drives all three entry points — its
+                               own button, the card click and the dots menu.
+                               A second hidden <AddBills> would be a second
+                               sheet with its own form state. */
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-                                text="Manage subscription"
+                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[11px] py-1.5 px-4 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                text="Edit bill"
                                 item={itm}
                                 isEdit={true}
+                                openPop={editing}
                             />
                         ) : (
                             <Link
@@ -271,14 +322,17 @@ function BillItem(props) {
                                 href={route("bill.checkout", {
                                     uuid: itm.uuid,
                                 })}
-                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-xs py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                             >
                                 Subscribe
                             </Link>
                         )}
                     </div>
                     {itm.user ? (
-                        <div className="flex items-center justify-center mt-3">
+                        <div
+                            className="flex items-center justify-center mt-2"
+                            onClick={(e) => e.stopPropagation()}
+                        >
                             <span className="text-xs text-black font-black uppercase">
                                 by
                             </span>
