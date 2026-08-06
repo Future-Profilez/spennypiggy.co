@@ -2,6 +2,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
@@ -205,6 +206,11 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     </p>
                 ) : (
                     ""
+                )}
+
+                {/* Not on sale yet, however finished it looks. */}
+                {task?.publish_at && (
+                    <ScheduledBadge publishAt={task.publish_at} className="mt-3" />
                 )}
             </div>
         </div>

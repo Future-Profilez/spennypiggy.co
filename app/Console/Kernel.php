@@ -303,6 +303,14 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->withoutOverlapping(10);
 
+        // ⚠️ This does NOT decide visibility — the HasScheduledPublishing global scope
+        // compares publish_at to the clock on every query, so a listing goes on sale at
+        // its minute whether or not this runs. It owns the once-per-listing work:
+        // clearing the guest profile cache and telling the creator.
+        $schedule->command('listings:publish-scheduled')
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10);
+
         // Piggy Pots close because TIME passed, not because anybody saved a row, so
         // nothing but a sweep can notice. Until this existed, a pot whose deadline
         // was months ago still sat in the creator's featured profile slot and sent

@@ -196,7 +196,7 @@ class MembershipController extends Controller
             ]);
         }
 
-        $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
+        $exist = Membership::withScheduled()->where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
         if (in_array($request->level, $exist)) {
             return response()->json([
@@ -332,7 +332,7 @@ class MembershipController extends Controller
         } else {
             try {
                 $user = User::where('id', Auth::id())->first();
-                $mem = Membership::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+                $mem = Membership::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
                 if (empty($mem)) {
                     return redirect()->back()->with('error', 'Membership not found.');

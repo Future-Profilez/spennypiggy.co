@@ -59,7 +59,7 @@ class TaskController extends Controller
 
     public function index()
     {
-        $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
+        $tasks = Task::withScheduled()->where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
 
         $orders = TaskPurchase::where('creator_id', Auth::id())
             ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'])
@@ -232,7 +232,7 @@ class TaskController extends Controller
 
     public function edit($uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {
@@ -251,7 +251,7 @@ class TaskController extends Controller
 
     public function update(Request $request, $uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {

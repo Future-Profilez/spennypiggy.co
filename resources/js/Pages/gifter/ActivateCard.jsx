@@ -1,163 +1,269 @@
-import LoaderButton from "@/Components/LoaderButton";
 import { useState } from "react";
 import axios from "axios";
 import { usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
+import VerificationAddressForm from "./VerificationAddressForm";
+
+/**
+ * The £500 card-verification gate.
+ *
+ * 🚨 ONE state, resolved in order — the screen used to compute two independent
+ * booleans and could satisfy both at once. `cardVerificationSuccess` sets
+ * `profile_status_lock = 1` and `is_subscribed = 1` but never clears
+ * `is_500_limit_exceeded`, so after paying, `needsVerification` AND `isPending`
+ * were both true: the gifter saw "We're reviewing your details" with the
+ * "Activate Account" button still sitting above it, and could pay a second time
+ * for nothing. Every state below is exclusive by construction.
+ */
+
+const STEPS = [
+    { key: "address", label: "Your address" },
+    { key: "verify", label: "Verify your card" },
+    { key: "review", label: "We check it" },
+];
+
+function StepRail({ current }) {
+    const index = STEPS.findIndex((s) => s.key === current);
+
+    return (
+        <ol className="mb-6 flex items-center gap-2" aria-label="Verification progress">
+            {STEPS.map((step, i) => {
+                const done = i < index;
+                const active = i === index;
+
+                return (
+                    <li key={step.key} className="flex min-w-0 flex-1 items-center gap-2">
+                        <span
+                            aria-current={active ? "step" : undefined}
+                            className={
+                                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-black text-[13px] font-bold " +
+                                (done
+                                    ? "bg-black text-white"
+                                    : active
+                                      ? "bg-[#A2E4B8] text-black"
+                                      : "bg-white text-black/40")
+                            }
+                        >
+                            {done ? "✓" : i + 1}
+                        </span>
+                        <span
+                            className={
+                                "truncate text-[13px] leading-[1.3] " +
+                                (active ? "font-semibold text-black" : "text-black/55")
+                            }
+                        >
+                            {step.label}
+                        </span>
+                    </li>
+                );
+            })}
+        </ol>
+    );
+}
+
+/**
+ * ⚠️ Module scope, NOT declared inside `ActivateCard`.
+ *
+ * A component defined in the parent body is a new type on every render, so React
+ * unmounts and remounts the whole subtree — and this one wraps
+ * `VerificationAddressForm`, which holds the address the gifter is typing. Every
+ * `loading` toggle would have wiped the form. Same trap as `AddItem.jsx`.
+ */
+function Shell({ children }) {
+    return (
+        <div className="mx-auto mb-6 rounded-box border-2 border-black bg-white p-4 shadow-[5px_5px_0px_rgba(0,0,0,0.9)] md:p-6">
+            {children}
+        </div>
+    );
+}
+
+function Notice({ tone, title, children }) {
+    const tones = {
+        bad: "border-red-300 bg-red-50 text-red-800",
+        warn: "border-orange-300 bg-orange-50 text-orange-800",
+    };
+
+    return (
+        <div className={`mb-5 rounded-box-sm border-2 p-4 ${tones[tone]}`} role="alert">
+            <p className="text-[15px] font-bold">{title}</p>
+            <div className="mt-1 text-[14px] leading-[1.5]">{children}</div>
+        </div>
+    );
+}
 
 export default function ActivateCard() {
-    const { auth, gifterCardVerification } = usePage().props;
-    const verification_status = auth && auth.verification_status;
-    const [loading, setLoading] = useState(false);
-    const { successAlert, errorAlert } = useAlerts();
+    const { auth } = usePage().props;
+    const user = auth?.user;
 
-    const checkTerms = async () => {
+    const gate = auth?.verification_gate || null;
+    const [address, setAddress] = useState(gate?.address || null);
+    const charge = gate?.charge || null;
+
+    const [loading, setLoading] = useState(false);
+    const { errorAlert } = useAlerts();
+
+    const hasAddress = !!address?.is_complete;
+
+    const verification = user?.gifter_card_verification;
+    const isApproved = user?.profile_status_lock == 2;
+    const isRejected =
+        user?.profile_reject_reason && user.profile_reject_reason.trim() !== "";
+    const isFailed = verification?.status === "failed";
+
+    // ⚠️ `is_subscribed` is what `cardVerificationSuccess` flips, but the verification
+    // row's own status is the honest signal — either one means the charge went through.
+    const hasPaid =
+        verification?.status === "success" || user?.is_subscribed == 1;
+
+    // 🚨 Exclusive, first match wins. A rejection outranks a completed payment because
+    // the gifter has to go round again; a completed payment outranks the £500 flag,
+    // which is never cleared and would otherwise keep the pay button on screen forever.
+    const state = isApproved
+        ? null
+        : isRejected
+          ? "rejected"
+          : hasPaid
+            ? "pending"
+            : user?.is_500_limit_exceeded == 1
+              ? "action"
+              : null;
+
+    if (!state) return null;
+
+    const startVerification = async () => {
         if (loading) return;
+        // The server refuses this with a 422 anyway; stopping here just means the
+        // gifter is told what to do instead of watching a request fail.
+        if (!hasAddress) {
+            errorAlert("Please add your billing address first.");
+            return;
+        }
         setLoading(true);
         try {
-            const { data: response } = await axios.get(
-                route("gifter.card.verification")
-            );
-            if (response.checkout_url) {
-                window.location.href = response.checkout_url;
+            const { data } = await axios.get(route("gifter.card.verification"));
+            if (data.checkout_url) {
+                window.location.href = data.checkout_url;
             } else {
-                errorAlert(
-                    "Unexpected response from the server. Please try again later."
-                );
+                errorAlert("Something went wrong on our side. Please try again.");
             }
         } catch (err) {
-            const errorMessage =
+            errorAlert(
                 err.response?.data?.error ||
-                "Unable to connect to the server. Please check your network and try again.";
-            errorAlert(errorMessage);
+                    "We could not reach the server. Check your connection and try again."
+            );
         } finally {
             setLoading(false);
         }
     };
 
-    const user = auth?.user;
-    const isRejected = user?.profile_reject_reason && user.profile_reject_reason.trim() !== '';
-    const verification = user?.gifter_card_verification;
-    const isFailed = verification?.status === 'failed';
-    const isPending = user?.profile_status_lock == 1 && user?.is_subscribed == 1;
-    const needsVerification = (isRejected || user?.is_500_limit_exceeded == 1) && user?.profile_status_lock != 2;
+    if (state === "pending") {
+        return (
+            <Shell>
+                <StepRail current="review" />
+                <h2 className="mb-2 text-center font-GillSans text-[26px] uppercase leading-[1.1] text-black md:text-[30px]">
+                    We&apos;re checking your details
+                </h2>
+                <p className="mx-auto max-w-[420px] text-center text-[15px] leading-[1.55] text-black/75">
+                    Your card came back verified. Someone here confirms the last bit,
+                    usually within a couple of hours — you&apos;ll get an email the
+                    moment it&apos;s done.
+                </p>
+                <p className="mt-4 text-center text-[14px] font-semibold text-black">
+                    Nothing for you to do.
+                </p>
 
-    if (!needsVerification && !isPending) {
-        return null;
+                {auth?.verification_status?.address_verification_error ? (
+                    <div className="mt-5">
+                        <Notice tone="bad" title="We couldn't match your address">
+                            {auth.verification_status.address_verification_error}
+                        </Notice>
+                    </div>
+                ) : null}
+            </Shell>
+        );
     }
 
     return (
-        <>
-            <div className="">
-                <div className="mb-6 mx-auto !bg-white rounded-[20px] md:rounded-[30px]  border-2 border-black shadow-[5px_5px_0px_rgba(0,0,0,0.9)] ">
-                    {needsVerification ? (
-                        <div className=" rounded-[30px]   p-3">
-                            <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[30px] font-GillSans text-black text-center uppercase mb-3">
-                                   {isRejected ? 'Retry Card Verification' : 'Card Verification' }
-                                </h4>
-                                {isRejected ? (
-                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-red-50 border-2 border-red-200 rounded-[30px] ">
-                                        <strong className="text-red-600 text-lg flex items-center justify-center gap-2 mb-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                            </svg>
-                                            Verification Rejected
-                                        </strong>
-                                        <p className="text-red-700 font-bold">
-                                            Reason: {auth?.user?.profile_reject_reason}
-                                        </p>
-                                        <p className="text-red-500 text-sm mt-2">
-                                            Please correct the issues above and try again.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
+        <Shell>
+            <StepRail current={hasAddress ? "verify" : "address"} />
 
-                                {isFailed && !isRejected ? (
-                                    <div className="mt-3 text-center mb-6 p-4 md:p-6 bg-orange-50 border-2 border-orange-200 rounded-[30px] ">
-                                        <strong className="text-orange-600 text-lg flex items-center justify-center gap-2 mb-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Payment Failed or Canceled
-                                        </strong>
-                                        <p className="text-orange-700">
-                                            {verification?.payment_details?.reason || 'The card verification payment was not completed.'}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
-                                <p className="mb-1 text-[19px] text-center text-gray-800">
-                                    To activate your card and access the ability
-                                    to make payments on our platform, simply
-                                    click the button below and complete a
-                                    one-time verification fee of £1. This quick
-                                    and secure process ensures the safety of all
-                                    transactions and helps us maintain a trusted
-                                    environment for our users. Once your card is
-                                    activated, you’ll be able to seamlessly make
-                                    purchases and access all payment features on
-                                    the website.
-                                </p>
+            <h2 className="mb-2 text-center font-GillSans text-[26px] uppercase leading-[1.1] text-black md:text-[30px]">
+                {isRejected ? "Let's try that again" : "One quick check"}
+            </h2>
+            <p className="mx-auto mb-5 max-w-[460px] text-center text-[15px] leading-[1.55] text-black/75">
+                You&apos;ve spent over £500 supporting creators. We confirm the card is
+                yours once, and then you&apos;re back to buying as normal.
+            </p>
 
+            {isRejected ? (
+                <Notice tone="bad" title="Your last attempt was rejected">
+                    <p>{user.profile_reject_reason}</p>
+                    <p className="mt-1.5">
+                        Fix the above, check your address below, and try once more.
+                    </p>
+                </Notice>
+            ) : null}
 
-                            </div>
+            {isFailed && !isRejected ? (
+                <Notice tone="warn" title="Your last payment didn't go through">
+                    {verification?.payment_details?.reason ||
+                        "The verification payment was cancelled or failed. Nothing was charged."}
+                </Notice>
+            ) : null}
 
-                            <p className="p-2 text-center  text-pink mb-3">
-                                Please use the card with same address as you
-                                have used for your account.{" "}
-                            </p>
+            <VerificationAddressForm address={address} onSaved={setAddress} />
 
-                            <div className="text-center flex justify-center mb-2">
-                                <LoaderButton
-                                    onClick={checkTerms}
-                                    disabled={loading} 
-                                    className={"main-button p !bg-white "}
-                                    spinnerclass="fill-red-600 " >
-                                    {isRejected ? "Re-Activate Account" : "Activate Account"}
-                                </LoaderButton>
-                            </div>
-
-                        </div>
-                    ) : (
-                        ""
-                    )}
-
-                    {isPending ? (
-                        <div className=" rounded-[30px]   p-3">
-                            <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[25px] font-GillSans text-yellow-600 text-center uppercase mb-3">
-                                    Verification Pending
-                                </h4>
-                                <p className="mb-1 text-[19px] text-center max-w-[400px] m-auto text-gray-800">
-                                    Admin will now confirm that you are a
-                                    Verified person. Please check back in 1-2
-                                    hours.
-                                </p>
-
-                                {verification_status?.address_verification_error ? (
-                                    <div className="mt-4 text-center">
-                                        <strong className="text-red-600">
-                                            Address verification error
-                                        </strong>
-                                        <p className="text-red-600">
-                                            {
-                                                verification_status?.address_verification_error
-                                            }
-                                        </p>
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        ""
-                    )}
-                </div>
+            <div className="mb-5 rounded-box-sm border-2 border-black bg-[#A2E4B8] p-4">
+                <p className="text-[13px] font-semibold uppercase tracking-wide text-black/70">
+                    What happens next
+                </p>
+                <ul className="mt-2 space-y-1.5 text-[15px] leading-[1.5] text-black">
+                    {/* 🚨 The real figure, from the same call that creates the charge.
+                        This line used to read "a one-time verification fee of £1"
+                        while the card was charged the grossed-up £2.95 — three times
+                        the promise, on the one payment meant to build trust. */}
+                    <li>
+                        <span className="font-bold">
+                            {charge?.formatted || "A small amount"}
+                        </span>{" "}
+                        is charged to your card
+                    </li>
+                    <li>Your bank confirms the card and the address match</li>
+                    <li>We check it over and your account is back to normal</li>
+                </ul>
             </div>
-        </>
+
+            <div className="flex flex-col items-center">
+                {/* ⚠️ Plain button, not `LoaderButton` — that renders its spinner off
+                    `disabled`, so gating the missing address through it left the
+                    button spinning before it had ever been pressed. */}
+                {/* ⚠️ Not the shared `main-button` class — that is `bg-white`, and this
+                    sits on a white card, so the primary action would have been white on
+                    white. Black fill matches the address form's own save button, which
+                    is the other button in this same flow. */}
+                <button
+                    type="button"
+                    onClick={startVerification}
+                    disabled={loading}
+                    aria-disabled={!hasAddress}
+                    className={
+                        "flex min-h-[48px] w-full items-center justify-center rounded-box-sm border-2 border-black bg-black px-6 font-gulfs text-[16px] uppercase text-white sm:w-auto " +
+                        (hasAddress ? "" : "opacity-50")
+                    }
+                >
+                    {loading
+                        ? "Processing…"
+                        : charge?.formatted
+                          ? `${isRejected ? "Try again" : "Verify my card"} · ${charge.formatted}`
+                          : isRejected
+                            ? "Try again"
+                            : "Verify my card"}
+                </button>
+                <p className="mt-2.5 text-center text-[13px] leading-[1.5] text-black/60">
+                    Pay with the card registered to the address above — that&apos;s what
+                    we check.
+                </p>
+            </div>
+        </Shell>
     );
 }

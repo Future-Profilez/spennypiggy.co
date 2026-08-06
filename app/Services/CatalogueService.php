@@ -172,7 +172,10 @@ class CatalogueService
         /** @var Model $model */
         $model = $config['model'];
 
-        $query = $model::query()
+        // ⚠️ withScheduled(): this screen is the creator's own catalogue, and a listing
+        // they scheduled is exactly the one they want to see and edit. The global scope
+        // is for the public; it must not hide a creator's work from themselves.
+        $query = $model::withScheduled()
             ->where($config['owner'], $creator->id)
             ->select(CatalogueRegistry::columns($type, $present));
 
@@ -268,6 +271,7 @@ class CatalogueService
                 'caption' => $title,
             ],
             'pausable' => $this->pausable($config, $context['present']),
+            'publish_at' => $this->has($item, 'publish_at') ? optional($item->publish_at)->toIso8601String() : null,
             'created_at' => optional($item->created_at)->toIso8601String(),
         ];
     }
@@ -316,6 +320,13 @@ class CatalogueService
 
         if ($type === 'shop' && $this->soldOut($item)) {
             return 'sold_out';
+        }
+
+        // ⚠️ Checked LAST, after every reason the listing might not be sellable at all.
+        // A scheduled listing that is also rejected is a rejected listing — telling its
+        // creator it goes live on Friday would be false.
+        if ($this->has($item, 'publish_at') && $item->publish_at !== null && $item->publish_at->isFuture()) {
+            return 'scheduled';
         }
 
         return 'live';

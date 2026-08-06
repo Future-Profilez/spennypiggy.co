@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import RemoveWish from "./RemoveWish";
 import { Link, usePage } from "@inertiajs/react";
 import SaveButton from "@/Components/SaveButton";
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
@@ -119,6 +120,14 @@ export default function Wishlistbox(props) {
             } ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
         >
             <div className="bg-[#fdfbf7] rounded-[30px] overflow-hidden relative border-[3px] border-black w-full h-full flex flex-col">
+                {/* Owner only: a scheduled wish looks exactly like a live one here, and
+                    nobody can buy it yet. */}
+                {isCreator && itm?.publish_at && (
+                    <div className="px-4 pt-4">
+                        <ScheduledBadge publishAt={itm.publish_at} />
+                    </div>
+                )}
+
                 {/* Status Messages */}
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-4 rounded-[20px] !text-[12px] p-4">

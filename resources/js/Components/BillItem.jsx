@@ -11,6 +11,7 @@ import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
 import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 function BillItem(props) {
     useAlerts();
@@ -156,6 +157,13 @@ function BillItem(props) {
                     </div>
                 ) : (
                     ""
+                )}
+
+                {/* Not on sale yet, however finished it looks. */}
+                {itm?.publish_at && (
+                    <div className="px-3 pb-2">
+                        <ScheduledBadge publishAt={itm.publish_at} />
+                    </div>
                 )}
 
                 <div

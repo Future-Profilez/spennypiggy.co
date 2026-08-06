@@ -55,9 +55,9 @@ export default function GoogleButton({
 /**
  * "or" rule, for separating the button from a password form.
  *
- * `tone` exists because the two pages that use it have opposite backgrounds: register is on
- * near-black, login is on a white card over mint. A single white-on-transparent rule was
- * invisible on one of them.
+ * `tone` exists because the two pages that use it have opposite backgrounds: register places it
+ * directly on the near-black page, login places it inside the white panel. A single
+ * white-on-transparent rule was invisible on one of them.
  */
 export function AuthDivider({ label = "or", tone = "dark" }) {
     const line = tone === "light" ? "bg-black/10" : "bg-white/15";

@@ -724,6 +724,18 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasOne(GifterCardVerification::class, 'user_id');
     }
 
+    /**
+     * The billing address the gifter typed themselves.
+     *
+     * Created at signup with `country` only; the rest is filled at the £500
+     * card-verification gate. Compared against `stripe_address` (what they typed
+     * into Stripe Checkout) by the admin app's gifter review.
+     */
+    public function gifterAddress()
+    {
+        return $this->hasOne(GifterAddress::class, 'user_id');
+    }
+
     public function creatorMonthlySubscription()
     {
         return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany('id');

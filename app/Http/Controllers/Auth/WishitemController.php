@@ -494,7 +494,7 @@ class WishitemController extends Controller
 
     public function updateWishItem(Request $request, $uuid = null)
     {
-        $wish = WishItem::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
+        $wish = WishItem::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
         $old_wish = $wish->subscription;
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
@@ -3316,7 +3316,7 @@ class WishitemController extends Controller
         $item = WishItem::where('id', $wish_id)->first();
 
         if ($item->user_id == Auth::id()) {
-            WishItem::where('user_id', Auth::id())->update(['is_pin' => 0]);
+            WishItem::withScheduled()->where('user_id', Auth::id())->update(['is_pin' => 0]);
 
             $item->is_pin = 1;
             $item->save();

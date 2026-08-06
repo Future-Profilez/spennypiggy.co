@@ -74,7 +74,7 @@ export default function PlatformAnalytics() {
         <div className="country-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                    <div className="rank-badge bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    <div className="rank-badge flex h-6 w-6 items-center justify-center rounded-full font-gulfs text-12 leading-none text-black/40 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
                         {rank}
                     </div>
                     <div className="text-2xl">{country.flag}</div>

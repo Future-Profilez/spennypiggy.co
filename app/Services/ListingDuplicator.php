@@ -71,7 +71,8 @@ class ListingDuplicator
         // ⚠️ Ownership is resolved from the OWNER COLUMN, never from the id alone — and
         // Task's is `creator_id`, not `user_id`. Without this a guessed id would let one
         // creator mint a copy of another's listing onto their own account.
-        $source = $model::query()
+        // withScheduled(): a creator may duplicate a listing they have not launched yet.
+        $source = $model::withScheduled()
             ->where($config['owner'], $creator->id)
             ->find($id);
 

@@ -214,7 +214,8 @@ class CatalogueRegistry
         'not_featured' => ['rank' => 7, 'label' => 'Not featured', 'tone' => 'neutral', 'attention' => false],
         'completed' => ['rank' => 8, 'label' => 'Finished', 'tone' => 'neutral', 'attention' => false],
         'archived' => ['rank' => 9, 'label' => 'Archived', 'tone' => 'neutral', 'attention' => false],
-        'live' => ['rank' => 10, 'label' => 'Live', 'tone' => 'good', 'attention' => false],
+        'scheduled' => ['rank' => 10, 'label' => 'Scheduled', 'tone' => 'neutral', 'attention' => false],
+        'live' => ['rank' => 11, 'label' => 'Live', 'tone' => 'good', 'attention' => false],
     ];
 
     /** @return array<string> */
@@ -283,6 +284,7 @@ class CatalogueRegistry
             'moderation_reason',
             'moderation_asset',
             'reward_title',
+            'publish_at',
             'created_at',
         ];
 

@@ -1712,7 +1712,9 @@ export default function Dashboard(props) {
                                                                                                 null
                                                                                             }
                                                                                         >
-                                                                                            <TipInner classes="" />
+                                                                                            <div className='pb-4'>
+                                                                                                <TipInner classes="" />
+                                                                                            </div>
                                                                                         </Suspense>
                                                                                     ) : (
                                                                                         ""

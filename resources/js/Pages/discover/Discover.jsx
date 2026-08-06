@@ -15,6 +15,7 @@ import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
 import DiscoverHero from './components/DiscoverHero';
+import HowItWorks from './components/HowItWorks';
 
 export default function Discover(props) {
     
@@ -281,9 +282,11 @@ export default function Discover(props) {
                                 {(!filters.contentType || filters.contentType === 'All') && (
                                     <>
                                         {featuredWishes && featuredWishes.length > 0 && (
-                                            <FeaturedCarousel 
-                                                title="Wishes Trending Now 🎁" 
-                                                items={featuredWishes} 
+                                            <FeaturedCarousel
+                                                title="Wishes Trending Now 🎁"
+                                                kicker="One-off unlock"
+                                                subtitle="Buy once and the creator's content unlocks straight away — no subscription."
+                                                items={featuredWishes}
                                                 type="wish"
                                                 icon={<Gift />}
                                             />
@@ -294,26 +297,32 @@ export default function Discover(props) {
                                 {(filters.contentType === 'Creators' || !filters.contentType || filters.contentType === 'All') && (
                                     <div className="space-y-2 mb-8">
                                         {featuredCreators && featuredCreators.length > 0 && (
-                                            <FeaturedCarousel 
-                                                title="Trending Creators 🔥" 
-                                                items={featuredCreators} 
+                                            <FeaturedCarousel
+                                                title="Trending Creators 🔥"
+                                                kicker="Most viewed today"
+                                                subtitle="The creators people are backing right now."
+                                                items={featuredCreators}
                                                 type="creator"
                                                 icon={<FlameIcon />}
                                             />
                                         )}
                                         {newVerifiedCreators && newVerifiedCreators.length > 0 && (
-                                            <FeaturedCarousel 
-                                                title="New & Verified 🆕" 
-                                                items={newVerifiedCreators} 
+                                            <FeaturedCarousel
+                                                title="New & Verified 🆕"
+                                                kicker="Just joined"
+                                                subtitle="Verified by us and only starting out — be one of their first supporters."
+                                                items={newVerifiedCreators}
                                                 type="creator"
                                                 icon={<CircleCheckIcon />}
                                             />
                                         )}
-                                        
+
                                         {topEarners && topEarners.length > 0 && (
-                                            <FeaturedCarousel 
-                                                title="Top Earners This Week 💰" 
-                                                items={topEarners} 
+                                            <FeaturedCarousel
+                                                title="Top Earners This Week 💰"
+                                                kicker="This week"
+                                                subtitle="The creators earning the most on the platform right now."
+                                                items={topEarners}
                                                 type="creator"
                                                 icon={<PoundSterlingIcon />}
                                             />
@@ -323,6 +332,7 @@ export default function Discover(props) {
 
                                 {(!filters.contentType || filters.contentType === 'All') && (
                                     <>
+                                        {!auth?.user && <HowItWorks />}
                                         <div className="">
                                             <TopSupporters grid={true} />
                                         </div>
@@ -333,45 +343,55 @@ export default function Discover(props) {
                                 )}
 
                                 {filters.contentType === 'Wishes' && featuredWishes && featuredWishes.length > 0 && (
-                                    <FeaturedCarousel 
-                                        title="Wishes Trending Now 🎁" 
-                                        items={featuredWishes} 
+                                    <FeaturedCarousel
+                                        title="Wishes Trending Now 🎁"
+                                        kicker="One-off unlock"
+                                        subtitle="Buy once and the creator's content unlocks straight away — no subscription."
+                                        items={featuredWishes}
                                         type="wish"
                                         icon={<Gift />}
                                     />
                                 )}
 
                                 {(filters.contentType === 'Bills' || (!filters.contentType && filters.contentType !== 'Creators')) && featuredBills && featuredBills.length > 0 && (
-                                    <FeaturedCarousel 
-                                        title="Featured Bills" 
-                                        items={featuredBills} 
+                                    <FeaturedCarousel
+                                        title="Featured Bills"
+                                        kicker="Recurring"
+                                        subtitle="A monthly content stream — new subscriber-only posts every month. Cancel any time."
+                                        items={featuredBills}
                                         type="bill"
                                         icon={<Gift />}
                                     />
                                 )}
 
                                 {(filters.contentType === 'Memberships' || (!filters.contentType && filters.contentType !== 'Creators')) && featuredMemberships && featuredMemberships.length > 0 && (
-                                    <FeaturedCarousel 
-                                        title="Featured Memberships" 
-                                        items={featuredMemberships} 
+                                    <FeaturedCarousel
+                                        title="Featured Memberships"
+                                        kicker="Recurring · tiers"
+                                        subtitle="Pick a tier and get members-only posts plus the perks that come with it."
+                                        items={featuredMemberships}
                                         type="membership"
                                         icon={<Gift />}
                                     />
                                 )}
 
                                 {(filters.contentType === 'Tasks' || (!filters.contentType && filters.contentType !== 'Creators')) && featuredTasks && featuredTasks.length > 0 && (
-                                    <FeaturedCarousel 
-                                        title="Featured Tasks" 
-                                        items={featuredTasks} 
+                                    <FeaturedCarousel
+                                        title="Featured Tasks"
+                                        kicker="Made for you"
+                                        subtitle="Request custom work from a creator. Your money is held until it's delivered."
+                                        items={featuredTasks}
                                         type="task"
                                         icon={<Gift />}
                                     />
                                 )}
 
                                 {(filters.contentType === 'Shops' || (!filters.contentType && filters.contentType !== 'Creators')) && featuredShops && featuredShops.length > 0 && (
-                                    <FeaturedCarousel 
-                                        title="Featured Shop Items" 
-                                        items={featuredShops} 
+                                    <FeaturedCarousel
+                                        title="Featured Shop Items"
+                                        kicker="Buy now"
+                                        subtitle="Digital downloads and physical products, sold direct by the creator."
+                                        items={featuredShops}
                                         type="shop"
                                         icon={<Gift />}
                                     />

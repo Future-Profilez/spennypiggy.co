@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CatalogueService;
 use App\Services\ListingDuplicator;
 use App\Support\CatalogueRegistry;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -18,6 +19,9 @@ use Inertia\Inertia;
  */
 class CatalogueController extends Controller
 {
+    /** How far ahead a listing may be scheduled. Matches the posts composer. */
+    public const MAX_SCHEDULE_DAYS = 90;
+
     public function __construct(private CatalogueService $catalogue) {}
 
     public function index(Request $request)
@@ -48,6 +52,68 @@ class CatalogueController extends Controller
         }
 
         return Inertia::render('Creator/Catalogue/Index', $payload);
+    }
+
+    /**
+     * Set or clear a listing's scheduled publish time.
+     *
+     * ⚠️ Lives here, not on the six create forms. A schedule is a property of the
+     * catalogue ("launch this on Friday"), and adding a picker to six differently-shaped
+     * forms is six places for it to drift. The catalogue already knows every listing.
+     */
+    public function schedule(Request $request, string $type, int $id)
+    {
+        $user = Auth::user();
+
+        if (! $user || (int) $user->role !== 1) {
+            return redirect()->route('home');
+        }
+
+        $config = CatalogueRegistry::config($type);
+
+        if (! $config) {
+            return back()->with('error', 'That kind of listing cannot be scheduled.');
+        }
+
+        $validated = $request->validate([
+            // ⚠️ Capped. A date years out is almost always a typo, and a listing nobody
+            // can see for three years is indistinguishable from one that was lost.
+            'publish_at' => ['nullable', 'date', 'before_or_equal:'.now()->addDays(self::MAX_SCHEDULE_DAYS)->toDateTimeString()],
+        ]);
+
+        $model = $config['model'];
+
+        // withScheduled(): the listing being rescheduled is, by definition, one the
+        // global scope is currently hiding.
+        $listing = $model::withScheduled()->where($config['owner'], $user->id)->find($id);
+
+        if (! $listing) {
+            return back()->with('error', 'That listing could not be found.');
+        }
+
+        $when = $validated['publish_at'] ?? null;
+        $publishAt = $when ? Carbon::parse($when) : null;
+
+        // ⚠️ A past date publishes NOW rather than failing. The creator's intent is
+        // plainly "this should be live"; refusing on a stale value in a form they left
+        // open for ten minutes would be pedantry.
+        if ($publishAt && $publishAt->isPast()) {
+            $publishAt = null;
+        }
+
+        $listing->forceFill([
+            'publish_at' => $publishAt,
+            // Clearing or moving a schedule re-arms the announcement — otherwise a
+            // listing rescheduled after its first release would go live in silence.
+            'schedule_released_at' => null,
+        ])->save();
+
+        return back()->with(
+            'success',
+            $publishAt
+                ? 'This listing will go on sale on '.$publishAt->format('j M Y, H:i').'.'
+                : 'Schedule removed — this listing is live as soon as it is approved.'
+        );
     }
 
     /**

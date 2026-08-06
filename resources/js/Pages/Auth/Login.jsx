@@ -4,13 +4,17 @@ import GoogleButton, { AuthDivider } from "@/Components/GoogleButton";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from "@/Components/Alerts";
-import InputError from "@/Components/InputError";
 import EnterOTP from "./EnterOTP";
 import SetupPasskeyPrompt from "@/Components/SetupPasskeyPrompt";
 import axios from "axios";
 import DeviceID from "@/includes/DeviceID";
-import { FaCircleUser } from "react-icons/fa6";
-import { RiLockPasswordLine } from "react-icons/ri";
+/**
+ * The same field the person filled in to sign UP. Registration was rebuilt around
+ * `register/Field.jsx` (label, control, inline status, error) and login kept its own
+ * hand-rolled inputs, so the two halves of one flow had different heights, different
+ * focus treatment and different error placement. One component, no drift.
+ */
+import Field from "./register/Field";
 
 // Helper function to convert base64url to Uint8Array for WebAuthn
 function base64urlToUint8Array(base64url) {
@@ -97,6 +101,10 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     const [promptEmail, setPromptEmail] = useState("");
     const [pendingRedirectUrl, setPendingRedirectUrl] = useState(null);
     const [abortController, setAbortController] = useState(null);
+    // A reveal toggle, not a second "confirm password" box — the same reasoning that
+    // removed confirm-password from registration. Retyping a password you cannot see
+    // only ever costs time; being able to read it is what actually prevents the typo.
+    const [showPassword, setShowPassword] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -508,196 +516,210 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     };
 
     return (
-        <GuestLayout className="bg-[#A2E4B8]">
+        <GuestLayout>
             <Head title="Log in" description="Log in to your account" />
-            <div className="min-h-dvh relative flex flex-col items-center justify-center pt-28 pb-12 md:pb-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
-                {/* Decorative Background Elements */}
-                {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
-                </div> */}   
 
-                {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px]  border border-green-500/30 backdrop-blur-sm relative z-20">
-                        {status}
-                    </div>
-                )}
+            {/*
+                Registration is on #0B0B0C with a single accent wash and a white
+                bordered panel; login was on mint green inside a fake browser window
+                (traffic-light dots), so the two halves of one flow read as two
+                different products. Same shell, same panel, same fields.
 
-                <div className="relative w-full">
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl md:text-5xl lg:text-6xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                            Welcome{" "}
-                            <span className="text-gradient-wishlist">
-                                Back!
-                            </span>
-                        </h2>
-                        <h1 className="hidden">Login to your account.</h1>
-                        <p className="text-gray-800 text-lg font-medium">
-                            Don't have an account?{" "}
-                            <Link
-                                href={route("register")}
-                                className="text-[#FF007F] hover:text-[#FF007F] font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
-                            >
-                                Signup
-                            </Link>
+                The accent here is MINT, deliberately neither of registration's two:
+                pink is the creator's colour and violet the supporter's, and this one
+                screen serves both — picking either would signal a role the page
+                cannot know yet.
+
+                `Header` already renders its own 75px spacer, so this only adds
+                breathing room on top of it.
+            */}
+            <div className="relative flex min-h-[85vh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
+                <div
+                    aria-hidden="true"
+                    /* Follows the content now the page centres it — pinned to top-0 it
+                       sat in empty space above the fold on a tall desktop viewport. */
+                    className="pointer-events-none absolute inset-0 opacity-20"
+                    style={{
+                        background:
+                            "radial-gradient(55% 55% at 50% 38%, #05EFB8 0%, transparent 70%)",
+                    }}
+                />
+
+                {/*
+                    Two columns from `lg`: the words on the left, the form on the right.
+
+                    ONE DOM order — heading, form, then the other doors — so a phone
+                    stacks in the order someone actually uses them and the guest block
+                    still lands BELOW the form. The desktop split is explicit cell
+                    placement, never a second copy of the markup.
+
+                    Both columns start at the same line: the panel's top edge against the
+                    top of the headline. Rows are `auto`, never `1fr 1fr` — equal
+                    fractions force the short row under the heading to match the
+                    heading's own height, which inflates the block and drops the panel
+                    down the page against nothing.
+                */}
+                <div className="relative mx-auto grid w-full max-w-[440px] gap-6 lg:max-w-[980px] lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto] lg:gap-x-14 lg:gap-y-6">
+                    <header className="lg:col-start-1 lg:row-start-1 lg:self-start">
+                        <h1 className="font-gulfs text-3xl uppercase leading-[1.05] text-white sm:text-4xl lg:text-[52px] lg:leading-[0.95]">
+                            Welcome back
+                        </h1>
+                        {/* The house device: the accent carries as a rule under the
+                            headline rather than colouring the type. */}
+                        <span
+                            aria-hidden="true"
+                            className="mt-4 block h-1 w-16 rounded-full bg-[#05EFB8]"
+                        />
+                        <p className="mt-4 max-w-[34ch] text-sm text-white/70 lg:text-base">
+                            Sign in to reach your dashboard, your purchases and
+                            your payouts.
                         </p>
-                    </div>
+                    </header>
 
-                    <div className="max-w-md m-auto bg-white rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group">
-                        <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2 rounded-t-xl">
-                            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                        </div>
+                    {/* The banners belong to the form, so they travel with it.
+                        `self-start` so the panel's top edge lines up with the top of
+                        the headline. */}
+                    <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start">
+                    {status && (
+                        <p className="mb-4 rounded-box-sm border-2 border-[#05EFB8]/40 bg-[#05EFB8]/10 px-4 py-3 text-sm font-medium text-[#05EFB8]">
+                            {status}
+                        </p>
+                    )}
 
-                        <div className="p-6 sm:p-8   rounded-b-xl">
-                            <form onSubmit={checkTFA} className="space-y-6">
-                                {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px]  border border-red-500/20 animate-pulse">
-                                        {redirectmessage}
-                                    </p>
-                                )}
+                    {redirectmessage && (
+                        <p
+                            role="alert"
+                            className="mb-4 rounded-box-sm border-2 border-[#FF3B30]/50 bg-[#FF3B30]/10 px-4 py-3 text-sm font-medium text-[#FF8A80]"
+                        >
+                            {redirectmessage}
+                        </p>
+                    )}
 
-                                {/* Quick Login with Fingerprint/Face/Windows Hello Button */}
-                                 
+                    <div
+                        className={`${animate} motion-reduce:animate-none rounded-box border-[3px] border-black bg-white p-4 shadow-black sm:p-6`}
+                    >
+                        <div>
+                            <form onSubmit={checkTFA} className="space-y-4" noValidate>
 
-                                {/* OR Divider */}
-                                {/* <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-600"></div>
-                                    </div>
-                                    <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-black/20 text-gray-400 backdrop-blur-sm">
-                                            OR LOGIN WITH EMAIL
-                                        </span>
-                                    </div>
-                                </div> */}
+                                {/* `autoComplete="username webauthn"` is what the passkey
+                                    conditional-UI (Safari autofill) binds to — it is not
+                                    decoration, do not shorten it. */}
+                                <Field
+                                    id="email"
+                                    label="Email address"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    autoComplete="username webauthn"
+                                    autoFocus
+                                    placeholder="you@example.com"
+                                    error={errors.email}
+                                    status={errors.email ? "error" : "idle"}
+                                    onChange={(e) => setData("email", e.target.value)}
+                                />
 
-                                <div>
-                                    <label
-                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
-                                        htmlFor="email"
-                                    >
-                                        Email Address
-                                    </label>
-                                    <div className="relative group">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <FaCircleUser
-                                            size="24"
-                                            color="#000000"
-                                            className="absolute top-[15px] left-3 z-1 login-icon"
-                                        />
-                                        <input
-                                            id="email"
-                                            type="email"
-                                            name="email"
-                                            value={data.email}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
-                                            autoComplete="username webauthn"
-                                            autoFocus={true}
-                                            placeholder="you@example.com"
-                                            onChange={(e) =>
-                                                setData("email", e.target.value)
+                                <Field
+                                    id="password"
+                                    label="Password"
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={data.password}
+                                    autoComplete="current-password webauthn"
+                                    placeholder="Your password"
+                                    error={errors.password}
+                                    status={errors.password ? "error" : "idle"}
+                                    onChange={(e) => setData("password", e.target.value)}
+                                    suffix={
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword((v) => !v)}
+                                            aria-label={
+                                                showPassword
+                                                    ? "Hide password"
+                                                    : "Show password"
                                             }
-                                        />
-                                    </div>
-                                    <InputError
-                                        message={errors.email}
-                                        className="mt-2"
-                                    />
-                                </div>
+                                            aria-pressed={showPassword}
+                                            className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-black/60 transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                                        >
+                                            {showPassword ? (
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-5 w-5"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M3 3l18 18" />
+                                                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                                                    <path d="M16.7 16.7A9.7 9.7 0 0 1 12 18c-5 0-9-6-9-6a17 17 0 0 1 4.2-4.7m3-1.1A9.7 9.7 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.2 2.8" />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-5 w-5"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    }
+                                />
 
-                                <div>
-                                    <label
-                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
-                                        htmlFor="password"
-                                    >
-                                        Password
-                                    </label>
-                                    <div className="relative group relative">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <RiLockPasswordLine
-                                            color="#000000"
-                                            size="24"
-                                            className="absolute top-[14px] left-3 z-1 login-icon"
-                                        />
+                                {/* One row, two jobs. These were three centred grey links
+                                    stacked under the password — all the same weight, so
+                                    none of them was findable. */}
+                                <div className="flex items-center justify-between gap-3 pt-1">
+                                    <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-black/70">
                                         <input
-                                            id="password"
-                                            type="password"
-                                            name="password"
-                                            value={data.password}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
-                                            autoComplete="current-password webauthn"
-                                            placeholder="••••••••"
+                                            type="checkbox"
+                                            name="remember"
+                                            checked={data.remember}
                                             onChange={(e) =>
-                                                setData(
-                                                    "password",
-                                                    e.target.value,
-                                                )
+                                                setData("remember", e.target.checked)
                                             }
+                                            /* Inline, because index.css styles every
+                                               checkbox on the site pink — a third colour
+                                               inside a mint-accented panel. */
+                                            style={{ accentColor: "#000000" }}
+                                            className="h-4 w-4 cursor-pointer"
                                         />
-                                    </div>
-                                    <InputError
-                                        message={errors.password}
-                                        className="mt-2"
-                                    />
+                                        Remember me
+                                    </label>
 
                                     {canResetPassword && (
-                                        <div className="flex justify-center mt-2 relative z-1">
-                                            <Link
-                                                method="get"
-                                                href={route("password.request")}
-                                                className="!cursor-pointer text-sm text-gray-600 hover:text-black transition-colors duration-200"
-                                            >
-                                                Forgot your password?
-                                            </Link>
-                                        </div>
-                                    )}
-
-                                    {/*
-                                        Guest checkout is allowed on Piggy Pot, Wishes and
-                                        the Piggy Bank, so a real supporter can be here
-                                        with no account at all — trying to sign in is
-                                        exactly what they do when their receipt email is
-                                        gone. This is the only page that catches them.
-                                    */}
-                                    <div className="flex justify-center mt-2 relative z-1">
                                         <Link
                                             method="get"
-                                            href={route("guest-purchases.form")}
-                                            className="!cursor-pointer text-sm text-gray-600 hover:text-black transition-colors duration-200"
+                                            href={route("password.request")}
+                                            className="text-sm font-semibold text-black underline decoration-2 underline-offset-4 hover:text-[#FF007F]"
                                         >
-                                            Bought without an account?
+                                            Forgot password?
                                         </Link>
-                                    </div>
-
-                                    {/* Persistent login: keeps the user signed in beyond the session window */}
-                                    <div className="flex items-center justify-center mt-3 relative z-1">
-                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                                            <input
-                                                type="checkbox"
-                                                name="remember"
-                                                checked={data.remember}
-                                                onChange={(e) =>
-                                                    setData("remember", e.target.checked)
-                                                }
-                                                className="w-4 h-4 accent-[#FF007F] cursor-pointer"
-                                            />
-                                            Remember me
-                                        </label>
-                                    </div>
+                                    )}
                                 </div>
 
-                                {/* Login Button */}
-                                <div>
-                                    <LoaderButton
-                                        disabled={loading || passkeyLoading}
-                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-[#FF007F] hover:!text-white pr-6 bg-black !text-white w-full`}
-                                        spinnerclass="fill-white" >   
-                                        {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
-                                    </LoaderButton>
-                                </div>
+                                <LoaderButton
+                                    disabled={loading || passkeyLoading}
+                                    className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-[3px] border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
+                                        loading || passkeyLoading
+                                            ? "cursor-not-allowed opacity-70 hover:translate-y-0"
+                                            : ""
+                                    }`}
+                                    spinnerclass="fill-black"
+                                >
+                                    {loading || passkeyLoading
+                                        ? "Signing in…"
+                                        : "Sign in"}
+                                </LoaderButton>
 
                                 {/* Below the password form, not above it: most people arriving
                                     here already have a password. `tone="light"` because this
@@ -743,6 +765,48 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                             </form>
                         </div>
                     </div>
+                    </div>
+
+                    {/* The other two doors. Second in the DOM after the form, so a
+                        phone reads password → sign up → no account; on desktop they
+                        sit under the heading in the left column. */}
+                    <aside className="lg:col-start-1 lg:row-start-2 lg:self-start">
+                    <p className="text-center text-sm text-white/60 lg:text-left">
+                        New to Spenny Piggy?{" "}
+                        <Link
+                            href={route("register")}
+                            className="font-semibold text-[#05EFB8] underline decoration-2 underline-offset-4"
+                        >
+                            Create an account
+                        </Link>
+                    </p>
+
+                    {/*
+                        Its own row, not a grey link among the password footnotes.
+                        Guest checkout is allowed on Piggy Pot, Wishes and the Piggy
+                        Bank, so a real supporter can be here with no account at all —
+                        trying to sign in is exactly what they do when the receipt
+                        email is gone, and this page is the only thing that catches
+                        them. They are a different person from everyone else on this
+                        screen, so they get a different block.
+                    */}
+                    <div className="mt-6 rounded-box-sm border-2 border-dashed border-white/20 bg-white/5 p-4">
+                        <p className="text-sm font-semibold text-white">
+                            Bought something without an account?
+                        </p>
+                        <p className="mt-1 text-sm text-white/60">
+                            There is nothing to sign in to — we'll email your
+                            purchases to the address you paid with.
+                        </p>
+                        <Link
+                            method="get"
+                            href={route("guest-purchases.form")}
+                            className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#05EFB8] underline decoration-2 underline-offset-4"
+                        >
+                            Find my purchase
+                        </Link>
+                    </div>
+                    </aside>
                 </div>
             </div>
             <EnterOTP

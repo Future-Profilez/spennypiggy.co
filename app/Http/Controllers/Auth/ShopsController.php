@@ -74,7 +74,7 @@ class ShopsController extends Controller
 
         $isOwner = Auth::check() && Auth::id() === $user->id;
 
-        $query = Shop::where('user_id', $user->id);
+        $query = Shop::withScheduled()->where('user_id', $user->id);
 
         // If not the owner, only show approved and active items
         if (! $isOwner) {
@@ -472,7 +472,7 @@ class ShopsController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $shop = Shop::where('uuid', $uuid)->where('user_id', $user->id)->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', $user->id)->first();
 
         if (! $shop) {
             return response()->json([
@@ -724,7 +724,7 @@ class ShopsController extends Controller
 
     public function deleteShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
         if (! $shop) {
             return response()->json([
@@ -1727,7 +1727,7 @@ class ShopsController extends Controller
 
     public function deactivateShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
         if (! empty($shop)) {
             if ($shop->status == 1) {
                 $shop->status = 0;

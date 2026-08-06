@@ -304,7 +304,7 @@ class BillsController extends Controller
         }
 
         $user = User::where('id', Auth::id())->first();
-        $bill = Bills::where('uuid', $id)->where('user_id', Auth::id())->first();
+        $bill = Bills::withScheduled()->where('uuid', $id)->where('user_id', Auth::id())->first();
 
         if (! $user || ! $bill) {
             return response()->json([
@@ -1927,7 +1927,7 @@ class BillsController extends Controller
     {
         try {
             $user = Auth::user();
-            $billIds = Bills::where('user_id', $user->id)->pluck('id')->toArray();
+            $billIds = Bills::withScheduled()->where('user_id', $user->id)->pluck('id')->toArray();
 
             $perPage = $request->get('per_page', 20);
 

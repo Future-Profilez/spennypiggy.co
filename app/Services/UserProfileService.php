@@ -154,10 +154,17 @@ class UserProfileService
     public function getOptimizedTasks(int $userId, bool $isOwner, ?int $limit = null): array
     {
         $query = Task::where('creator_id', $userId);
+
+        // ⚠️ The owner sees their own scheduled listings — they manage this page, and a
+        // listing that silently vanished until launch day would read as lost work. The
+        // public sees only what is on sale.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
         if (! $isOwner) {
             $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description'])
+        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description', 'publish_at'])
             ->latest();
 
         $cacheKey = 'user_tasks_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -197,6 +204,7 @@ class UserProfileService
             'is_suspended',
             'suspend_reason',
             'goal_label',
+            'publish_at',
         ];
 
         // ⚠️ The owner edits a wish straight from their own card, and the edit
@@ -225,6 +233,9 @@ class UserProfileService
 
         if (! $isOwner) {
             $query->where('is_approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         if ($categoryId && $categoryId !== 'all') {
@@ -263,11 +274,15 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
+            'publish_at',
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_memberships_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -304,6 +319,7 @@ class UserProfileService
             'is_suspended',
             'suspend_reason',
             'goal_label',
+            'publish_at',
         ];
 
         // ⚠️ The owner edits a bill straight from their own card, and the edit
@@ -327,6 +343,9 @@ class UserProfileService
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_bills_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -349,6 +368,11 @@ class UserProfileService
         $query = Shop::where('user_id', $userId)->where('status', 1)
             ->with('category')
             ->withCount('paidPayments');
+
+        // See getOptimizedTasks — the owner sees their own scheduled listings.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
 
         if ($isOwner) {
             $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);

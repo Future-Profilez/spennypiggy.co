@@ -524,6 +524,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
+            // The gifter's own billing address, typed before the £1 verification charge.
+            // Throttled because it is an authenticated write reachable from a console.
+            Route::post('gifter-verification-address', [RegisteredUserController::class, 'saveVerificationAddress'])
+                ->middleware('throttle:20,1')
+                ->name('gifter.verification.address');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
@@ -862,6 +867,13 @@ Route::middleware('auth')->group(function () {
         // product on the creator's connected account, so an unthrottled button is a cheap
         // way to fill it with junk. `identityBeforeListing` because this CREATES a
         // listing — the same gate as every other create route.
+        // Set or clear a scheduled publish time. POST — it changes when real money can
+        // start being taken, and a GET carries no CSRF token.
+        Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1')
+            ->name('catalogue.schedule');
+
         Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
             ->whereNumber('id')
             ->middleware(['identityBeforeListing', 'throttle:10,1'])

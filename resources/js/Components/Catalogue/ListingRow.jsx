@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, router } from "@inertiajs/react";
 import { route } from "ziggy-js";
-import { ExternalLink, Pencil, ImageOff, Copy } from "lucide-react";
+import { ExternalLink, Pencil, ImageOff, Copy, CalendarClock } from "lucide-react";
 import StatusChip from "./StatusChip";
 import ShareButton from "@/Components/ShareButton";
 import ItemFunnelLine from "@/Components/ItemFunnelLine";
@@ -21,6 +21,35 @@ const MONEY = "tabular-nums tracking-tight font-bold";
 const LABEL = "text-[11px] font-semibold uppercase tracking-wide text-gray-500";
 const ACTION =
     "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-box-sm border border-gray-200 px-3 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50";
+
+/** ISO → the `datetime-local` shape, in the viewer's own timezone. */
+function toLocalInput(iso) {
+    if (!iso) return "";
+
+    try {
+        const d = new Date(iso);
+        const pad = (n) => String(n).padStart(2, "0");
+
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch {
+        return "";
+    }
+}
+
+function whenLabel(iso) {
+    if (!iso) return null;
+
+    try {
+        return new Date(iso).toLocaleString(undefined, {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    } catch {
+        return null;
+    }
+}
 
 function money(amount, currency) {
     if (amount === null || amount === undefined) return null;
@@ -45,6 +74,20 @@ export default function ListingRow({ item }) {
     // Stripe product on the creator's connected account, and the disabled re-render
     // loses the double-tap race.
     const [duplicating, setDuplicating] = useState(false);
+
+    // The picker is opened per row rather than always rendered: a datetime input on
+    // every card is a form control the width of the cell, on a value nobody edits most
+    // days, out-shouting the status beside it.
+    const [scheduling, setScheduling] = useState(false);
+    const [when, setWhen] = useState(() => toLocalInput(item.publish_at));
+
+    const saveSchedule = (value) => {
+        router.post(
+            route("catalogue.schedule", { type: item.type, id: item.id }),
+            { publish_at: value || null },
+            { preserveScroll: true, onFinish: () => setScheduling(false) },
+        );
+    };
 
     const duplicate = () => {
         if (duplicating) return;
@@ -91,6 +134,13 @@ export default function ListingRow({ item }) {
                                 {item.stock > 0
                                     ? `${item.stock} left`
                                     : "Sold out"}
+                            </span>
+                        )}
+                        {/* "Scheduled" alone is the one status that raises a question it
+                            does not answer. The date belongs beside it. */}
+                        {item.status === "scheduled" && whenLabel(item.publish_at) && (
+                            <span className="text-[12px] font-semibold text-gray-500">
+                                {whenLabel(item.publish_at)}
                             </span>
                         )}
                     </div>
@@ -170,8 +220,70 @@ export default function ListingRow({ item }) {
                     {duplicating ? "Duplicating…" : "Duplicate"}
                 </button>
 
+                <button
+                    type="button"
+                    onClick={() => setScheduling((open) => !open)}
+                    aria-expanded={scheduling}
+                    className={ACTION}
+                >
+                    <CalendarClock size={15} />{" "}
+                    {item.status === "scheduled" ? "Reschedule" : "Schedule"}
+                </button>
+
                 {item.share && <ShareButton share={item.share} />}
             </div>
+            {scheduling && (
+                <div className="mt-3 rounded-box-sm border border-gray-200 bg-gray-50 p-3">
+                    <label
+                        htmlFor={`schedule-${item.key}`}
+                        className={LABEL}
+                    >
+                        Go on sale at
+                    </label>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        {/*
+                            ⚠️ The value is sent as a full ISO instant. A raw
+                            `datetime-local` string carries no timezone and would be read
+                            against the SERVER's clock — the creator picks 9am and the
+                            listing appears at some other hour.
+                        */}
+                        <input
+                            id={`schedule-${item.key}`}
+                            type="datetime-local"
+                            value={when}
+                            onChange={(e) => setWhen(e.target.value)}
+                            className="min-h-[44px] rounded-box-sm border border-gray-300 px-3 text-[14px]"
+                        />
+                        <button
+                            type="button"
+                            onClick={() =>
+                                saveSchedule(
+                                    when ? new Date(when).toISOString() : null,
+                                )
+                            }
+                            className="min-h-[44px] rounded-box-sm bg-black px-4 text-[14px] font-semibold text-white"
+                        >
+                            Save
+                        </button>
+                        {item.publish_at && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setWhen("");
+                                    saveSchedule(null);
+                                }}
+                                className={ACTION}
+                            >
+                                Publish now
+                            </button>
+                        )}
+                    </div>
+                    <p className="mt-2 text-[12px] text-gray-500">
+                        Nobody can see or buy this until then. It still needs to pass
+                        review first.
+                    </p>
+                </div>
+            )}
         </article>
     );
 }

@@ -184,7 +184,7 @@ export default function Header({ classMagicword }) {
 
     return (
         <>
-            <div className="blackbg headermain fixed top-0 left-0 w-full z-[100] py-4 ">
+            <div className="bg-[#1a1a1a] headermain fixed top-0 left-0 w-full z-[100] py-4 ">
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center justify-between ">
                         <div className="md:flex hidden leftspaces items-center justify-start">
