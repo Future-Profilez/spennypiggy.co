@@ -299,4 +299,5 @@
         </table>
     </td>
 </tr>
+@include('email.guest-purchase-hint', ['isGuest' => $isGuest])
 @endsection

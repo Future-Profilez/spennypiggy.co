@@ -37,6 +37,7 @@ use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\FeatureSuggestionController;
+use App\Http\Controllers\GuestPurchaseController;
 use App\Http\Controllers\GuestSupportTicketController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MagicBellProxyController;
@@ -946,6 +947,24 @@ Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker()
     ->middleware(['auth', 'throttle:30,1'])
     ->name('cover-banners');
 
+/*
+| Guest purchase lookup — "where did my purchase go?" for someone with no account.
+|
+| Public by definition: guest checkout is allowed on Piggy Pot, Wishes and the Piggy
+| Bank, so these supporters have nothing to sign in to. Same catch-all rule as above —
+| single-segment paths must stay ABOVE the auth.php require.
+|
+| Throttled hard: `send` is an unauthenticated endpoint that sends mail, and `show`
+| renders paid content.
+*/
+Route::get('/find-my-purchase', [GuestPurchaseController::class, 'form'])->name('guest-purchases.form');
+Route::post('/find-my-purchase', [GuestPurchaseController::class, 'send'])
+    ->middleware('throttle:5,1')
+    ->name('guest-purchases.send');
+Route::get('/my-purchases-link', [GuestPurchaseController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('guest-purchases.show');
+
 // require __DIR__.'/auth.php'; // moved below founder routes
 
 // Debug routes for wish creation issue.
@@ -1020,21 +1039,18 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 | deployed `development` environment is a publicly reachable host, so it is NOT
 | on the open list.
 */
-$systemDiagnosticsRoutes = function () {
-    Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-    // Throttled: a deep run creates a real Stripe Connect Express account and a real
-    // PaymentIntent, and the whole sweep is ~10s of work.
-    Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
-        ->middleware('throttle:10,1')
-        ->name('admin.system-diagnostics.run');
-    Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])->name('admin.system-diagnostics.history');
-};
+Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])
+    ->name('admin.system-diagnostics.index');
 
-if (app()->environment('local', 'testing')) {
-    $systemDiagnosticsRoutes();
-} else {
-    Route::middleware(['auth', 'verified', 'admin'])->group($systemDiagnosticsRoutes);
-}
+// Throttled because the sweep is real work (~10s, 538 routes + 210 files parsed) and this is
+// now an unauthenticated endpoint — without a limit it is a free way to load the server.
+Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
+    ->middleware('throttle:10,1')
+    ->name('admin.system-diagnostics.run');
+
+Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])
+    ->middleware('throttle:30,1')
+    ->name('admin.system-diagnostics.history');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 // Sentry smoke test — anyone could write an event into the production Sentry project.

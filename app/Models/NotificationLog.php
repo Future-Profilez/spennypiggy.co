@@ -45,6 +45,7 @@ class NotificationLog extends Model
         'recipient_email',
         'type',
         'subject',
+        'body_preview',
         'context_type',
         'context_id',
         'stripe_session_id',
@@ -55,12 +56,15 @@ class NotificationLog extends Model
         'meta',
         'sent_at',
         'delivered_at',
+        'resent_at',
+        'resend_count',
     ];
 
     protected $casts = [
         'meta' => 'array',
         'sent_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'resent_at' => 'datetime',
     ];
 
     public function recipient()

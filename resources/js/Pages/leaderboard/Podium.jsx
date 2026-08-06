@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import { BadgeCheckIcon } from "lucide-react";
+import VerifiedBadge from "@/Components/VerifiedBadge";
 import userphoto from "../../../assets/siteicon.png";
 import { trackSearchClick } from "@/includes/Analytics";
 import MovementChip from "./MovementChip";
@@ -28,7 +28,6 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
 
     const { label, ordinal, metal, tint, ring } = PLACE[place];
     const first = place === 1;
-    const verified = row.role == 1 && row.profile_status_lock === 2;
     const tier = rankTier(row.top);
 
     return (
@@ -81,9 +80,7 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
                 >
                     {row.name || "Anonymous"}
                 </span>
-                {verified && (
-                    <BadgeCheckIcon size={14} className="shrink-0 text-brandPink" aria-label="Verified creator" />
-                )}
+                <VerifiedBadge user={row} size="sm" />
             </div>
             <span className="mt-0.5 max-w-full truncate text-11 text-black/45">@{row.username}</span>
 

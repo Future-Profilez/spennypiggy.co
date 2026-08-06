@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CreatorExpenseController;
 use App\Http\Controllers\CreatorFinancialController;
 use App\Http\Controllers\DeliveriesController;
@@ -848,6 +849,23 @@ Route::middleware('auth')->group(function () {
             Route::put('/expenses/{expense}', [CreatorExpenseController::class, 'update'])->name('expenses.update');
             Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
         });
+
+        // "My Listings" — the creator's whole catalogue in one screen.
+        //
+        // ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}` profile
+        // catch-all at the end of this file. Declared after it, Laravel reads
+        // `my-listings` as a username and answers with the profile 404 — and
+        // `route:list` shows the route either way, which is what makes that hard to see.
+        Route::get('/my-listings', [CatalogueController::class, 'index'])->name('catalogue.index');
+
+        // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
+        // product on the creator's connected account, so an unthrottled button is a cheap
+        // way to fill it with junk. `identityBeforeListing` because this CREATES a
+        // listing — the same gate as every other create route.
+        Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
+            ->whereNumber('id')
+            ->middleware(['identityBeforeListing', 'throttle:10,1'])
+            ->name('catalogue.duplicate');
 
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');

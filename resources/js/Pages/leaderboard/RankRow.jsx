@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import { BadgeCheckIcon } from "lucide-react";
+import VerifiedBadge from "@/Components/VerifiedBadge";
 import userphoto from "../../../assets/siteicon.png";
 import { trackSearchClick } from "@/includes/Analytics";
 import FollowButton from "@/Pages/Profile/FollowButton";
@@ -22,7 +22,6 @@ import { rankTier } from "./rankTier";
 export default function RankRow({ row, windowDays, isYou = false }) {
     if (!row) return null;
 
-    const verified = row.role == 1 && row.profile_status_lock === 2;
     const tier = rankTier(row.top);
 
     return (
@@ -58,9 +57,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                         <span className="truncate text-14 font-semibold capitalize tracking-tight text-[#0B0B0C] sm:text-15">
                             {row.name || "Anonymous"}
                         </span>
-                        {verified && (
-                            <BadgeCheckIcon size={14} className="shrink-0 text-brandPink" aria-label="Verified creator" />
-                        )}
+                        <VerifiedBadge user={row} size="sm" />
                     </div>
 
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-11 text-black/45 sm:text-12">

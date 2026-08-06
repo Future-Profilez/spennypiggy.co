@@ -78,7 +78,7 @@ const supportData = [
 export default function Membership() {
   return (
     <>
-      <section className='relative bg-transparent py-20 md:py-28 px-4 overflow-hidden'>
+      <section className='relative bg-transparent py-12 md:py-28 px-4 overflow-hidden'>
         {/* single faint brand glow */}
         <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF007F] rounded-full blur-[140px] opacity-[0.08] z-0"></div>
 
@@ -100,10 +100,10 @@ export default function Membership() {
           </div>
 
           <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-5xl mt-3 relative z-10'>
-            <div className="relative w-full bg-[#0d0a16] border-2 border-[#FF007F] rounded-[24px] shadow-[8px_8px_0_0_#FF007F] p-6 md:p-8">
+            <div className="relative w-full bg-[#0d0a16] border-2 border-[#FF007F] rounded-[24px] p-6 md:p-8">
               <div className="relative flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="w-11 h-11 rounded-2xl bg-[#E6EA7B] border-2 border-black grid place-items-center text-black shadow-[3px_3px_0_0_#000]">
+                  <span className="w-11 h-11 rounded-2xl bg-[#E6EA7B] border-2 border-black grid place-items-center text-black">
                     <FaCrown size={20} />
                   </span>
                   <div className="text-left leading-tight">
@@ -125,7 +125,7 @@ export default function Membership() {
                   <div
                     key={i}
                     className={`relative bg-[#0d0a16] border-2 rounded-[24px] p-5 text-left flex flex-col ${t.popular ? 'md:-translate-y-2' : ''}`}
-                    style={{ borderColor: t.accent, boxShadow: `8px 8px 0 0 ${t.accent}` }}
+                    style={{ borderColor: t.accent }}
                   >
                     {t.popular && (
                       <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-black uppercase tracking-wide text-black bg-[#E6EA7B] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
@@ -145,7 +145,7 @@ export default function Membership() {
                     </ul>
                     <button
                       className={`mt-auto w-full rounded-full py-2.5 text-[12px] font-black uppercase tracking-wide border-2 border-black transition-transform hover:-translate-y-0.5 ${t.popular ? 'text-white' : 'text-black'}`}
-                      style={{ background: t.accent, boxShadow: '3px 3px 0 0 #000' }}
+                      style={{ background: t.accent }}
                     >
                       Join {t.name}
                     </button>
@@ -161,7 +161,7 @@ export default function Membership() {
         </div>
       </section>
 
-      <section id='features' className="relative bg-black py-20 md:py-28 px-4 text-center overflow-hidden">
+      <section id='features' className="relative bg-black py-12 md:py-28 px-4 text-center overflow-hidden">
         {/* single faint brand glow */}
         <div className="pointer-events-none absolute bottom-10 right-10 w-96 h-96 bg-[#FF007F] rounded-full blur-[140px] opacity-[0.08] z-0"></div>
 
@@ -189,7 +189,7 @@ export default function Membership() {
                   <StaggerItem key={index} index={index} y={20} stagger={0.08} duration={0.6} className="h-full">
                     <div
                       className="relative h-full bg-[#0d0a16] border-2 rounded-[24px] p-6 md:p-8 flex flex-col items-start gap-4 text-left"
-                      style={{ borderColor: accent, boxShadow: `8px 8px 0 0 ${accent}` }}
+                      style={{ borderColor: accent }}
                     >
                       <div
                         className="w-16 h-16 rounded-[18px] border-2 border-black flex items-center justify-center"

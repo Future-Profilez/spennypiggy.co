@@ -71,6 +71,24 @@ class NotificationLogMaintenanceTest extends TestCase
         $this->assertNotNull($recent->fresh());
     }
 
+    /**
+     * 90 days is the platform default — "delete records older than 3 months so
+     * the table doesn't fill up with junk". No `SoftDeletes` on the model, so
+     * this is a genuine, permanent `DELETE`, not a flag flip.
+     */
+    public function test_the_default_retention_is_ninety_days_and_the_delete_is_permanent(): void
+    {
+        $this->assertSame(90, config('notification_logs.retention_days'));
+
+        $justOver = $this->log(['created_at' => now()->subDays(91)]);
+        $justUnder = $this->log(['created_at' => now()->subDays(89)]);
+
+        $this->artisan('notification-logs:prune')->assertSuccessful();
+
+        $this->assertDatabaseMissing('notification_logs', ['id' => $justOver->id]);
+        $this->assertDatabaseHas('notification_logs', ['id' => $justUnder->id]);
+    }
+
     /** Campaign traffic is far higher volume and is kept for less time. */
     public function test_campaign_rows_use_their_own_shorter_window(): void
     {

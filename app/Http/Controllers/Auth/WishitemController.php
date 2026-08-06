@@ -46,6 +46,7 @@ use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -892,7 +893,7 @@ class WishitemController extends Controller
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
         $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)
             ->with(['user' => function ($q) {
-                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account']);
+                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'is_founder', 'role', 'gender', 'suspended_account']);
             }])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->whereNull('deleted_at')
@@ -963,7 +964,7 @@ class WishitemController extends Controller
                 $join->on('user_intros.id', '=', 'latest_intros.latest_id');
             })
                 ->with(['user' => function ($q) use ($gender) {
-                    $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account'])
+                    $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'is_founder', 'role', 'gender', 'suspended_account'])
                         ->where('suspended_account', 0)
                         ->whereNotNull('username')
                         ->where('username', '!=', '');
@@ -1008,6 +1009,8 @@ class WishitemController extends Controller
                         'username' => $intro->user->username,
                         'role' => $intro->user->role,
                         'profile_status_lock' => $intro->user->profile_status_lock,
+                        'verified_badge' => VerifiedBadge::tierFor($intro->user),
+                        'is_founder' => $intro->user->is_founder ?? false,
                         'avatar_url' => $intro->user->avatar_url,
                     ],
                 ];

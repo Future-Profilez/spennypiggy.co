@@ -31,7 +31,7 @@ const STEPS = [
 
 export default function NotForBusiness() {
     return (
-        <section className="relative py-20 md:py-28 px-4 bg-transparent overflow-x-hidden">
+        <section className="relative py-12 md:py-28 px-4 bg-transparent overflow-x-hidden">
             <div aria-hidden className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-0 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float"></div>
                 <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-[#05EFB8] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float-delayed" style={{ animationDelay: '1s' }}></div>
@@ -67,7 +67,7 @@ export default function NotForBusiness() {
                         >
                             <article
                                 className="group relative h-full overflow-hidden rounded-[24px] border-2 bg-[#0d0a16] p-7 md:p-8 text-left transition-transform duration-300 hover:-translate-y-1 motion-reduce:transform-none motion-reduce:transition-none"
-                                style={{ borderColor: step.accent, boxShadow: `8px 8px 0 0 ${step.accent}` }}
+                                style={{ borderColor: step.accent }}
                             >
                                 {/* the numeral is the artwork — outlined, bleeding off the corner */}
                                 <span

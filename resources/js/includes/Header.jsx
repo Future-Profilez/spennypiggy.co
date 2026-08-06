@@ -504,13 +504,13 @@ export default function Header({ classMagicword }) {
                                                 label="Bill Dashboard"
                                                 activeColor="hover:bg-[#007BFF]"
                                             /> */}
-                                            <NavLinkWithIcon
+                                            {/* <NavLinkWithIcon
                                                 href="/admin/feature-suggestions"
                                                 onClick={toggleClass}
                                                 icon={InfoIcon}
                                                 label="Feature Suggestions"
                                                 activeColor="hover:bg-[#EFEA7B]"
-                                            />
+                                            /> */}
                                         </>
                                     ) : (
                                         ""

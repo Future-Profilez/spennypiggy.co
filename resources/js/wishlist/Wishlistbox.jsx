@@ -270,8 +270,14 @@ export default function Wishlistbox(props) {
                         )}
                     </div>
 
-                    {/* Title */}
-                    <h4 className="text-lg font-black !text-black uppercase text-center mt-0.5 leading-tight">
+                    {/* Title — two lines are RESERVED, not just allowed. Creators
+                        name items whatever they like, so one card wrapping to two
+                        lines used to shift its price, CTA and byline out of step
+                        with every other card in the row. */}
+                    <h4
+                        title={itm.wishname}
+                        className="mt-0.5 line-clamp-2 min-h-[45px] text-center text-lg font-black uppercase leading-tight !text-black"
+                    >
                         {itm.wishname}
                     </h4>
 
@@ -330,8 +336,10 @@ export default function Wishlistbox(props) {
                         </div>
                     )}
 
-                    {/* Action Button */}
-                    <div className="flex justify-center items-center mt-2.5">
+                    {/* Action Button — mt-auto pins this and the byline below it to
+                        the card's floor, so the row shares one CTA line whatever
+                        optional blocks rendered above. */}
+                    <div className="mt-auto flex items-center justify-center pt-2.5">
                         {IsloggedIn ? (
                             <ShareProfile
                                 username={itm.wishname}

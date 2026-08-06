@@ -96,7 +96,7 @@ export default function FeatureShowcase() {
     // so flow each feature normally instead.
     if (isMobile || reduce) {
         return (
-            <section className="bg-transparent py-16 space-y-24">
+            <section className="bg-transparent py-12 md:py-16 space-y-12 md:space-y-24">
                 {FEATURES.map((f, i) => (
                     <div key={i} className="container px-4 mx-auto grid grid-cols-1 gap-12 items-center">
                         <Mockup f={f} />

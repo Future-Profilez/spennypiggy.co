@@ -89,8 +89,8 @@ export default function WishlistShowcase() {
 function Shell({ children, className = "", accent = PINK }) {
     return (
         <div
-            className={`relative h-full rounded-[16px] border border-white/10 bg-[#14141f]/95 backdrop-blur-xl p-3.5 flex flex-col ${className}`}
-            style={{ boxShadow: `0 16px 46px -12px rgba(0,0,0,0.8), inset 0 0 0 1px ${accent}22, 0 0 26px -8px ${accent}66` }}
+            className={`relative h-full rounded-[16px] border bg-[#14141f]/95 backdrop-blur-xl p-3.5 flex flex-col ${className}`}
+            style={{ borderColor: `${accent}55` }}
         >
             <span className="pointer-events-none absolute inset-x-3 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: 0.7 }}></span>
             {children}
@@ -103,7 +103,7 @@ function GlossButton({ children, glyph, accent }) {
     return (
         <button
             className="relative mt-auto w-full min-h-[44px] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
-            style={{ background: accent, boxShadow: `0 6px 18px -4px ${accent}99` }}
+            style={{ background: accent }}
         >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>
@@ -118,7 +118,7 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
             {/* wishlist heart */}
             <span
                 className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] rotate-12 z-10 ring-2 ring-[#14141f]"
-                style={{ background: accent, boxShadow: `0 0 16px -2px ${accent}` }}
+                style={{ background: accent }}
                 aria-hidden
             >♥</span>
 

@@ -69,6 +69,10 @@ class UserProfileService
                 'country',
                 'creator_category',
                 'identity_status',
+                // The badge tier is derived from these; an admin rejection of
+                // the identity check outranks Stripe's pass, and a suspended
+                // account carries no badge at all. See App\Support\VerifiedBadge.
+                'identity_admin_status',
                 'edit_bio_reason',
                 'profile_status_lock',
                 'is_subscribed',

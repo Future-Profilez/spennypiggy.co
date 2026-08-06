@@ -4,7 +4,7 @@ import WatermarkStrip from '@/Components/animations/WatermarkStrip';
 export default function WhyLove() {
     return (
         <>
-            <section className="bg-transparent py-20 md:py-28 relative overflow-hidden">
+            <section className="bg-transparent py-12 md:py-28 relative overflow-hidden">
                 <WatermarkStrip text="Stores" from={150} to={-350} opacity={0.18} className="top-4" />
                  {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

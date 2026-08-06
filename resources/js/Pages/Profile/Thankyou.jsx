@@ -1,6 +1,7 @@
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import LazyVideo from '@/Components/LazyVideo';
 import { Link, Head, usePage } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import userphoto from "../../../assets/siteicon.png";
 import { FaCheckCircle, FaGift, FaStar, FaBolt, FaShoppingBag, FaHeart } from 'react-icons/fa';
@@ -473,6 +474,27 @@ export default function Thankyou(props) {
                                 </p>
                             )}
                         </div>
+
+                        {/*
+                            Guest only. Guest checkout is allowed on Piggy Pot, Wishes and
+                            the Piggy Bank, so this buyer has no account to come back to —
+                            and the receipt email is the only record they hold. This is the
+                            moment to tell them there is a way back if they lose it. An
+                            account holder has /my-purchases and must never be told they
+                            have no account.
+                        */}
+                        {!auth?.user && (
+                            <p className="mt-4 text-sm text-gray-600">
+                                Bought without an account?{' '}
+                                <Link
+                                    href={route('guest-purchases.form')}
+                                    className="font-bold text-[#FF007F] underline underline-offset-4"
+                                >
+                                    Find your purchases any time
+                                </Link>{' '}
+                                using the email you paid with.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>

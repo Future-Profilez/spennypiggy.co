@@ -8,6 +8,7 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -51,7 +52,7 @@ class DiscoveryService
                 ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
-                ->get(['users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_approved', 'users.avatar_cdn_modifier', 'users.cover', 'users.cover_approved', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio', 'users.bio_approved'])
+                ->get(['users.id', 'users.name', 'users.username', 'users.avatar', 'users.avatar_approved', 'users.avatar_cdn_modifier', 'users.cover', 'users.cover_approved', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.identity_status', 'users.identity_admin_status', 'users.stripe_details_submitted', 'users.suspended_account', 'users.is_founder', 'users.role', 'users.bio', 'users.bio_approved'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -61,6 +62,8 @@ class DiscoveryService
                         'cover_url' => $u->cover_url,
                         'bio' => $u->bio,
                         'profile_status_lock' => $u->profile_status_lock,
+                        'verified_badge' => VerifiedBadge::tierFor($u),
+                        'is_founder' => $u->is_founder,
                         'role' => $u->role,
                         'clicks_24h' => 0,
                         'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
@@ -91,7 +94,7 @@ class DiscoveryService
                 ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }, 'intro'])
-                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'bio', 'bio_approved'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -101,6 +104,8 @@ class DiscoveryService
                         'cover_url' => $u->cover_url,
                         'bio' => $u->bio,
                         'profile_status_lock' => $u->profile_status_lock,
+                        'verified_badge' => VerifiedBadge::tierFor($u),
+                        'is_founder' => $u->is_founder,
                         'role' => $u->role,
                         'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                         'intro' => $u->intro ? [
@@ -179,7 +184,7 @@ class DiscoveryService
                 },
                 'intro',
             ])
-            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved'])
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'bio', 'bio_approved'])
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
@@ -191,6 +196,8 @@ class DiscoveryService
                     'cover_url' => ($u->cover_approved == 1) ? $u->cover_url : null,
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
+                    'verified_badge' => VerifiedBadge::tierFor($u),
+                    'is_founder' => $u->is_founder,
                     'role' => $u->role,
                     'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
                     'intro' => $u->intro ? [
@@ -331,7 +338,7 @@ class DiscoveryService
                 ->with(['wishes' => function ($q) {
                     $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
                 }])
-                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio', 'bio_approved', 'default_currency'])
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'bio', 'bio_approved', 'default_currency'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
@@ -340,6 +347,8 @@ class DiscoveryService
                         'avatar_url' => $u->avatar_url,
                         'cover_url' => $u->cover_url,
                         'profile_status_lock' => $u->profile_status_lock,
+                        'verified_badge' => VerifiedBadge::tierFor($u),
+                        'is_founder' => $u->is_founder,
                         'role' => $u->role,
                         'bio' => $u->bio,
                         'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),

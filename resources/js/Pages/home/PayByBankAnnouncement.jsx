@@ -20,7 +20,7 @@ export default function PayByBankAnnouncement() {
 
     return (
         <div
-            className="bg-transparent py-20 md:py-28 px-4 relative overflow-x-hidden"
+            className="bg-transparent py-12 md:py-28 px-4 relative overflow-x-hidden"
         >
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                 <div className="absolute top-10 right-10 w-40 h-40 bg-[#A2E4B8] rounded-full mix-blend-screen filter blur-2xl opacity-25 floating-shape"></div>
@@ -40,7 +40,7 @@ export default function PayByBankAnnouncement() {
                     <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
                         <h2 className="uppercase fading text-3xl md:text-4xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-">
                             Your money, <br />
-                            <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">cleared for takeoff.</span> ✈️
+                            <span className="uppercase text-gradient-wishlist tracking-[2px] ">cleared for takeoff.</span> <span className="animate-pulse">✈️</span> 
                         </h2>
                     </FadeIn>
                     <FadeIn y={20} delay={0.2}>

@@ -43,7 +43,7 @@ export default function CustomPricingNote() {
 
     return (
         <section
-            className="relative overflow-hidden px-4 py-16 md:py-24"
+            className="relative overflow-hidden px-4 py-12 md:py-24"
             aria-labelledby="custom-pricing-note"
         >
             {/*

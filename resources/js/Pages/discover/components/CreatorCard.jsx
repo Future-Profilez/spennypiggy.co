@@ -3,7 +3,8 @@ import { Link } from '@inertiajs/react';
 import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.png";
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
-import { RiFireLine, RiVerifiedBadgeFill } from 'react-icons/ri';
+import { RiFireLine } from 'react-icons/ri';
+import VerifiedBadge from '@/Components/VerifiedBadge';
 
 /**
  * CreatorCard — compact rectangular tile. Cover shows as a full landscape banner
@@ -12,7 +13,6 @@ import { RiFireLine, RiVerifiedBadgeFill } from 'react-icons/ri';
  */
 function CreatorCard({ auth, item }) {
     const cover = item.cover_url || wishlistbannerimg;
-    const verified = item.profile_status_lock == 2 || item.is_verified;
 
     return (
         <Link
@@ -55,7 +55,7 @@ function CreatorCard({ auth, item }) {
                 <div className="ps-3 min-w-0 pb-0.5">
                     <h3 className="flex items-center gap-1 truncate text-[17px] font-bold leading-tight text-white transition-colors group-hover:text-[#FF9ecb]">
                         <span className="truncate">{item.name}</span>
-                        {verified && <RiVerifiedBadgeFill className="shrink-0 text-[#3BA3FF]" size={14} />}
+                        <VerifiedBadge user={item} size="sm" />
                     </h3>
                     <p className="truncate text-sm font-medium text-white/50">@{item.username}</p>
                 </div>

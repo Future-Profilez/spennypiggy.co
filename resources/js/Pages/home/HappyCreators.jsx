@@ -51,7 +51,7 @@ export default function HappyCreators() {
     return (
         <section
             id="reviews"
-            className="bg-transparent relative py-20 md:py-28"
+            className="bg-transparent relative py-12 md:py-28"
         >
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

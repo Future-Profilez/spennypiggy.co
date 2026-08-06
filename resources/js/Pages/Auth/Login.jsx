@@ -655,6 +655,23 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                                         </div>
                                     )}
 
+                                    {/*
+                                        Guest checkout is allowed on Piggy Pot, Wishes and
+                                        the Piggy Bank, so a real supporter can be here
+                                        with no account at all — trying to sign in is
+                                        exactly what they do when their receipt email is
+                                        gone. This is the only page that catches them.
+                                    */}
+                                    <div className="flex justify-center mt-2 relative z-1">
+                                        <Link
+                                            method="get"
+                                            href={route("guest-purchases.form")}
+                                            className="!cursor-pointer text-sm text-gray-600 hover:text-black transition-colors duration-200"
+                                        >
+                                            Bought without an account?
+                                        </Link>
+                                    </div>
+
                                     {/* Persistent login: keeps the user signed in beyond the session window */}
                                     <div className="flex items-center justify-center mt-3 relative z-1">
                                         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">

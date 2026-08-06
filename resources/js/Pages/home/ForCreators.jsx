@@ -3,7 +3,7 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 
 export default function ForCreators() {
   return (
-    <div className='bg-gray-900 py-20 md:py-28 relative overflow-hidden' >
+    <div className='bg-gray-900 py-12 md:py-28 relative overflow-hidden' >
        
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
@@ -21,7 +21,7 @@ export default function ForCreators() {
 
         <div className='publish-image max-w-5xl mx-auto relative group' >
              <div className="absolute inset-0 bg-gradient-to-b from-[#FF007F] to-[#05EFB8] rounded-[30px] transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
-            <div className="relative rounded-[30px] overflow-hidden border-2 border-gray-800 shadow-2xl bg-gray-800">
+            <div className="relative rounded-[30px] overflow-hidden border-2 border-gray-800 bg-gray-800">
                 <LazyLoadImage
                     alt={"image"} className="img-fluid w-full h-auto"
 

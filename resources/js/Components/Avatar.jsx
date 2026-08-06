@@ -1,11 +1,11 @@
 import React from "react";
 import { Link } from "@inertiajs/react";
-import { VscVerifiedFilled } from "react-icons/vsc";
+import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import userimage from "../../assets/img/user.jpg";
 
 export default function Avatar({ user, name }) {
     const u = user || null;
-    const verified = u?.profile_status_lock == 2;
+    const verified = Boolean(verifiedTier(u));
 
     const inner = (
         <div className="flex items-center gap-3 min-w-0">
@@ -15,12 +15,11 @@ export default function Avatar({ user, name }) {
                     alt={u?.name || "User"}
                     src={u?.avatar_url || userimage}
                 />
-                {verified && (
-                    <VscVerifiedFilled
-                        size={14}
-                        className="text-green-400 absolute -top-1 -right-1 bg-black rounded-full"
-                    />
-                )}
+                <VerifiedBadge
+                    user={u}
+                    size="sm"
+                    className="absolute -top-1 -right-1 bg-white rounded-full"
+                />
             </div>
             <div className="min-w-0">
                 <p className="text-gray-500 font-semibold text-[14px] leading-tight truncate max-w-[200px]">

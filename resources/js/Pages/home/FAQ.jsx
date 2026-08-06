@@ -27,7 +27,7 @@ export default function FAQ() {
     <>
     <div
       id={`faq`}
-      className='bg-transparent py-20 md:py-28 relative'
+      className='bg-transparent py-12 md:py-28 relative'
     >
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

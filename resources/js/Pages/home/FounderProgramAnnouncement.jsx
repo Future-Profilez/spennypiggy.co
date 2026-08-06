@@ -21,7 +21,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
     return (
         <>
-            <section className="bg-transparent py-20 md:py-28 px-4 relative overflow-hidden">
+            <section className="bg-transparent py-12 md:py-28 px-4 relative overflow-hidden">
                 {/* Background decorative elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-[#E6EA7B] rounded-full mix-blend-screen filter blur-xl opacity-30 floating-shape"></div>
@@ -61,13 +61,13 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     </div>
 
                     {/* Cards Grid — outer cards drift horizontally with scroll, middle drifts vertically */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
 
                         {/* Card 1: Monthly Bonus */}
                         <ScrollX from={-45} to={0} rotate={2} fade className="h-full">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
+                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
                                 <FaTrophy />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-[#E6EA7B]">Bonus</span></h3>
@@ -86,7 +86,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         <Parallax speed={22} className="h-full md:mt-12">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
+                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform -rotate-12">
                                 <FaCrown />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Founder<br/><span className="text-[#FF007F]">Status</span></h3>
@@ -105,7 +105,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         <ScrollX from={45} to={0} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
                         <TiltCard max={8} className="rounded-[30px] h-full">
                         <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
+                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-6">
                                 <FaGift />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Priority<br/><span className="text-[#05EFB8]">Access</span></h3>

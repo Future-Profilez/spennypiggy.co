@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Listeners\LogOutboundMail;
 use App\Models\NotificationLog;
 use App\Models\StripePaymentDetail;
 use App\Models\User;
@@ -9,6 +10,8 @@ use App\Support\NotificationContext;
 use App\Support\NotificationRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\AbstractTransport;
 use Tests\TestCase;
 
 class NotificationDeliveryLogTest extends TestCase
@@ -234,6 +237,231 @@ class NotificationDeliveryLogTest extends TestCase
             'The context did not reach the job — every queued receipt would be unattributable.',
         );
         $this->assertSame(NotificationLog::ROLE_BUYER, $log->role);
+    }
+
+    /**
+     * A transport that throws never reaches MessageSent, so the row would sit at
+     * `queued` until the prune command settled it an hour later — an hour in
+     * which a receipt nobody received reads as "still on its way".
+     *
+     * Driven end to end through a transport that refuses, so this exercises the
+     * real wiring: the sending hook writes the row, the send throws, the job
+     * dies, and the job-failure listener settles it.
+     */
+    public function test_a_failed_send_inside_a_job_is_recorded_as_failed_immediately(): void
+    {
+        $this->useFailingMailTransport();
+
+        $user = User::factory()->create(['email' => 'boom@example.test']);
+
+        try {
+            dispatch(function () use ($user) {
+                Mail::raw('Receipt', function ($message) use ($user) {
+                    $message->to($user->email)->subject('Receipt that will not send');
+                });
+            });
+        } catch (\Throwable $e) {
+            // The sync driver rethrows after raising JobExceptionOccurred, which
+            // is the listener that settles the row.
+        }
+
+        $log = NotificationLog::where('subject', 'Receipt that will not send')->first();
+
+        $this->assertNotNull($log, 'The sending hook never wrote a row.');
+        $this->assertSame(
+            NotificationLog::STATUS_FAILED,
+            $log->status,
+            'A send that threw was left looking like it was still on its way.',
+        );
+        $this->assertStringContainsString('SMTP refused', (string) $log->reason);
+        $this->assertNull($log->sent_at, 'A failed message must not carry a sent timestamp.');
+    }
+
+    /** Point the mailer at a transport that always throws. */
+    private function useFailingMailTransport(): void
+    {
+        $this->app['mail.manager']->extend('spenny-failing', function () {
+            return new class extends AbstractTransport
+            {
+                protected function doSend(SentMessage $message): void
+                {
+                    throw new \RuntimeException('SMTP refused');
+                }
+
+                public function __toString(): string
+                {
+                    return 'spenny-failing://';
+                }
+            };
+        });
+
+        config([
+            'mail.mailers.spenny-failing' => ['transport' => 'spenny-failing'],
+            'mail.default' => 'spenny-failing',
+        ]);
+    }
+
+    /** A confirmed send must not be re-settled as failed by a later job failure. */
+    public function test_settling_never_downgrades_a_message_already_sent(): void
+    {
+        $row = NotificationLog::record([
+            'channel' => NotificationLog::CHANNEL_EMAIL,
+            'status' => NotificationLog::STATUS_SENT,
+            'recipient_email' => 'ok@example.test',
+            'sent_at' => now(),
+        ]);
+
+        $reflection = new \ReflectionClass(LogOutboundMail::class);
+        $pending = $reflection->getProperty('pending');
+        $pending->setAccessible(true);
+        $pending->setValue(null, [$row->id => true]);
+
+        LogOutboundMail::settlePending('unrelated later failure');
+
+        $this->assertSame(NotificationLog::STATUS_SENT, $row->fresh()->status);
+    }
+
+    /**
+     * What the message said, so an admin can answer "what did we send them?"
+     * without asking the recipient to forward it.
+     */
+    public function test_the_message_body_is_stored_as_a_plain_text_preview(): void
+    {
+        Mail::html('<p>Hello Jane</p><p>Your download is ready.</p>', function ($message) {
+            $message->to('reader@example.test')->subject('Your download');
+        });
+
+        $log = NotificationLog::first();
+
+        $this->assertStringContainsString('Hello Jane', $log->body_preview);
+        $this->assertStringContainsString('Your download is ready.', $log->body_preview);
+        $this->assertStringNotContainsString('<p>', $log->body_preview, 'HTML was stored verbatim.');
+    }
+
+    /**
+     * 🚨 Regression: alert/receipt templates are heavily-indented, multi-line
+     * Blade markup (nested divs/spans/tables), and stripping tags naively left
+     * every block on its own line surrounded by BLANK lines padded with the
+     * original indentation whitespace — "LOCAL", then a large gap, then "Fraud
+     * digest", then another gap — because a bare `\n{3,}` collapse only matches
+     * literal newlines in a row, not newline-space-newline. Found live on the
+     * admin Notification Logs screen.
+     */
+    public function test_heavily_indented_html_does_not_fragment_into_isolated_lines(): void
+    {
+        Mail::html(
+            "<div>\n".
+            "        <span style=\"padding:4px\">LOCAL</span>\n".
+            "    </div>\n".
+            "\n".
+            "    <h1>\n".
+            "        Fraud digest\n".
+            "    </h1>\n".
+            "\n".
+            "    <p>\n".
+            "        An unanswered dispute is lost automatically at its evidence deadline.\n".
+            "    </p>\n",
+            function ($message) {
+                $message->to('reader@example.test')->subject('Fraud digest');
+            }
+        );
+
+        $preview = NotificationLog::first()->body_preview;
+
+        $this->assertStringNotContainsString("\n\n\n", $preview, 'Blank-line runs were not collapsed.');
+        $this->assertMatchesRegularExpression(
+            '/LOCAL\s*\n\s*Fraud digest/',
+            $preview,
+            'Adjacent short blocks should be at most one blank line apart, not several.',
+        );
+        $this->assertStringContainsString(
+            'An unanswered dispute is lost automatically at its evidence deadline.',
+            $preview,
+        );
+    }
+
+    /** A long body is truncated — the log is a record, not a mail archive. */
+    public function test_a_long_body_is_truncated(): void
+    {
+        config(['notification_logs.body_limit' => 200]);
+
+        Mail::raw(str_repeat('word ', 500), function ($message) {
+            $message->to('reader@example.test')->subject('Long one');
+        });
+
+        $preview = NotificationLog::first()->body_preview;
+
+        $this->assertLessThan(400, mb_strlen($preview));
+        $this->assertStringContainsString('truncated', $preview);
+    }
+
+    /**
+     * ⚠️ Campaign bodies are identical for every recipient and already stored
+     * once on the campaign row, so repeating one across tens of thousands of log
+     * rows is waste. Off by default.
+     */
+    public function test_a_campaign_body_is_not_repeated_on_every_recipient(): void
+    {
+        NotificationContext::for(['campaign_id' => 3]);
+
+        Mail::raw('This month on Spenny Piggy', function ($message) {
+            $message->to('subscriber@example.test')->subject('Newsletter');
+        });
+
+        $log = NotificationLog::first();
+
+        $this->assertNotNull($log, 'The campaign send was not logged at all.');
+        $this->assertNull($log->body_preview);
+        $this->assertSame('Newsletter', $log->subject, 'The subject is still recorded.');
+    }
+
+    /** The whole body capture can be switched off without affecting sending. */
+    public function test_body_capture_can_be_switched_off(): void
+    {
+        config(['notification_logs.store_body' => false]);
+
+        Mail::raw('Secret contents', function ($message) {
+            $message->to('reader@example.test')->subject('Quiet');
+        });
+
+        $log = NotificationLog::first();
+
+        $this->assertNotNull($log);
+        $this->assertNull($log->body_preview);
+    }
+
+    /**
+     * 🚨 When the claim column does not exist the two callers must NOT behave
+     * the same way. Failing open for both sends the buyer two receipts; failing
+     * closed for both sends none. The fallback restores the pre-claim split:
+     * the redirect handler sends, the webhook stands down.
+     */
+    public function test_the_claim_falls_back_to_the_pre_claim_split_when_unsupported(): void
+    {
+        $payment = StripePaymentDetail::create([
+            'session_id' => 'cs_claim_fallback',
+            'owner_id' => User::factory()->create()->id,
+            'currency' => 'gbp',
+        ]);
+
+        // Force the "column missing" branch without touching the schema.
+        $reflection = new \ReflectionClass(StripePaymentDetail::class);
+        $supported = $reflection->getProperty('receiptClaimSupported');
+        $supported->setAccessible(true);
+        $supported->setValue(null, false);
+
+        try {
+            $this->assertTrue(
+                StripePaymentDetail::claimReceipt($payment->id, failOpen: true),
+                'The redirect handler must still send — that was its behaviour before the claim existed.',
+            );
+            $this->assertFalse(
+                StripePaymentDetail::claimReceipt($payment->id, failOpen: false),
+                'The webhook must stand down, or the buyer receives the receipt twice.',
+            );
+        } finally {
+            $supported->setValue(null, null);
+        }
     }
 
     /** A scoped context restores what was open before it, including nothing. */

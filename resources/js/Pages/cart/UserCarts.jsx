@@ -10,7 +10,7 @@ import Turnstile from "@/Components/Turnstile";
 import Popup from "@/Components/Popup";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
-import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
+import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
 import toast, { Toaster } from "react-hot-toast";
 import { creatorIdOf } from "@/utils/pricing";
@@ -25,7 +25,14 @@ export default function UserCarts(props) {
     } = usePage().props;
     const turnstileRef = useRef(null);
     const deviceid = useMemo(() => DeviceID(), []);
-    const { auth, removeFromCart, currency } = props;
+    const { auth, removeFromCart, currency, onSummary, onToggle } = props;
+    // A basket spanning several creators is several payments (one Stripe session
+    // per creator), so only the OPEN creator mounts its checkout form. With every
+    // basket expanded the page carried a Turnstile widget, a price-preview poll
+    // and a full set of buyer fields PER CREATOR.
+    const collapsible = props.collapsible ?? false;
+    const expanded = props.expanded ?? true;
+    const creatorKey = props.creatorKey ?? props.data?.user?.id;
     const {
         format,
         formatMultiPrice,
@@ -181,6 +188,9 @@ export default function UserCarts(props) {
             setGuestAllowed(true);
             return;
         }
+        // Only the open basket asks — the answer is identical for every creator
+        // on the page, so N baskets meant N identical requests on load.
+        if (!expanded) return;
         axios
             .get("/api/risk/limits")
             .then((res) => {
@@ -190,7 +200,7 @@ export default function UserCarts(props) {
             .catch(() => {
                 setGuestAllowed(true);
             });
-    }, [auth?.user]);
+    }, [auth?.user, expanded]);
 
     useEffect(() => {
         if (!debugEnabled) return;
@@ -780,38 +790,144 @@ export default function UserCarts(props) {
         updateTotals();
     }, [items]);
 
+    // The page header states the whole basket, and it reads THIS figure rather
+    // than recomputing the gross-up — a second copy would drift from what the
+    // buyer is actually charged.
+    useEffect(() => {
+        onSummary?.(creatorKey, {
+            total: fee + subtotal,
+            currency: chargeCurrency,
+            count: items?.length || 0,
+            cleared: cartCleared,
+        });
+    }, [
+        onSummary,
+        creatorKey,
+        fee,
+        subtotal,
+        chargeCurrency,
+        items?.length,
+        cartCleared,
+    ]);
+
+    const itemCount = items?.length || 0;
+    const displayTotal =
+        paymentMethod === "bank" && previewPrices?.bank != null
+            ? previewPrices.bank
+            : fee + subtotal;
+
+    // The creator strip is the accordion control when the basket spans several
+    // creators, and a plain heading when it does not — a disclosure triangle on
+    // the only section on the page is a control that cannot do anything useful.
+    const headerBody = (
+        <>
+            {datas?.user?.avatar_url ? (
+                <img
+                    src={datas.user.avatar_url}
+                    alt=""
+                    className="h-11 w-11 shrink-0 rounded-full border-2 border-black object-cover"
+                />
+            ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-black bg-[#A2E4B8] text-lg font-black uppercase">
+                    {(datas?.user?.name || datas?.user?.username || "?").charAt(0)}
+                </span>
+            )}
+            {/* The name gets whatever width is left. At 390px an avatar, a
+                money column and a chevron leave very little, so the affordance
+                is the Checkout/Close text itself rather than a separate icon
+                column competing with the creator's name. */}
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-black uppercase leading-tight text-black">
+                    {datas?.user?.name || datas?.user?.username}
+                </span>
+                <span className="block truncate text-xs text-black/60">
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                    {datas?.user?.username ? ` · @${datas.user.username}` : ""}
+                </span>
+            </span>
+            <span className="shrink-0 text-right">
+                <span className="block whitespace-nowrap text-[15px] font-black text-black">
+                    {formatMultiPrice(displayTotal || "", chargeCurrency)}
+                </span>
+                {collapsible ? (
+                    <span className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wide text-[#FF007F]">
+                        {expanded ? "Close" : "Checkout"}
+                        <svg
+                            className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M6 9l6 6 6-6"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </span>
+                ) : null}
+            </span>
+        </>
+    );
+
     return (
-        <div className={`${cartCleared ? "hidden" : ""} px-2 containerbox`}>
-            <div className="containerbox mx-auto">
-                {/* <div className='hidden md:flex p-4 md:p-6 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
-                        <span className=' border-black border-2 bg-red-700 mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-yellow-400 mr-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-mint mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
-                    </div> */}
-                <div className="w-full">
+        <section
+            className={`${cartCleared ? "hidden" : ""} overflow-hidden rounded-box border-2 border-black bg-white`}
+        >
+            {collapsible ? (
+                <button
+                    type="button"
+                    onClick={() => onToggle?.(creatorKey)}
+                    aria-expanded={expanded}
+                    aria-controls={`basket-panel-${creatorKey}`}
+                    className={`flex min-h-[64px] w-full items-center gap-3 p-3.5 text-left transition-colors active:bg-black/[0.05] md:hover:bg-black/[0.03] ${expanded ? "bg-black/[0.03]" : ""}`}
+                >
+                    {headerBody}
+                </button>
+            ) : (
+                <div className="flex min-h-[64px] w-full items-center gap-3 p-3.5">
+                    {headerBody}
+                </div>
+            )}
+
+            {/* Collapsed baskets render no checkout at all — not merely hidden.
+                A mounted-but-invisible form still boots a Turnstile widget and
+                polls /payments/price-preview for a creator nobody is paying. */}
+            {expanded ? (
+            <div
+                id={`basket-panel-${creatorKey}`}
+                className=" p-4 md:p-5"
+            >
                     <div className="cartMain">
-                        <h2 className="pb-1 wishtitle font-black uppercase">Your basket</h2>
-                        <OrderContextCard
-                            className="mt-2 mb-4"
-                            image={datas?.user?.avatar_url}
-                            typeBadge={`${items?.length || 0} ${(items?.length || 0) === 1 ? "item" : "items"}`}
-                            itemTitle="Your basket"
-                            itemSub="Content from this creator"
-                            payingLabel="You're supporting"
-                            creatorName={datas?.user?.name}
-                            creatorUsername={datas?.user?.username}
-                            creatorAvatar={datas?.user?.avatar_url}
-                            // Name what each item actually delivers. The old
-                            // copy ("everything in your basket") described the
-                            // basket, not the purchase — a buyer could reach
-                            // checkout without ever being told what they get.
-                            whatYouGet={[
-                                ...(items || [])
-                                    .map((item) => item?.reward_title)
-                                    .filter(Boolean),
-                                "A copy of each item sent to your email",
-                            ]}
-                        />
+                        {/* Names what each item actually delivers — the totals
+                            alone never did. This replaced OrderContextCard: on
+                            the accordion the card repeated the creator's avatar
+                            and name a third time, and titled itself "Your
+                            basket" directly under the page heading of the same
+                            name. */}
+                        <div className="mb-4 rounded-box-sm border-2 border-black/10 bg-black/[0.03] p-3">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-black/60">
+                                What you get
+                            </p>
+                            <ul className="mt-1.5 space-y-1">
+                                {[
+                                    ...(items || [])
+                                        .map((item) => item?.reward_title)
+                                        .filter(Boolean),
+                                    "A copy of each item sent to your email",
+                                ].map((line, n) => (
+                                    <li
+                                        key={`get-${n}`}
+                                        className="flex gap-2 text-sm leading-snug text-black/80"
+                                    >
+                                        <span aria-hidden="true">✓</span>
+                                        <span className="min-w-0">{line}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                         {debugEnabled ? (
                             <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-3 mb-4 rounded">
                                 <div className="flex items-center justify-between gap-3">
@@ -928,25 +1044,18 @@ export default function UserCarts(props) {
                                 })}
                         </div>
 
-                        <div className="cartTotal pt-3 pb-6">
-                            <div className="  cartSubTotal text-right mt-2">
-                                <strong className="!text-black">Total :</strong>
+                        <div className="cartTotal pb-5 pt-3">
+                            <div className="cartSubTotal mt-2 flex items-baseline justify-between gap-4">
+                                <strong className="!text-black">Total</strong>
+                                {/* Bank pricing is cheaper — show the figure the
+                                    buyer will actually be charged for the
+                                    selected method, not always the card gross. */}
                                 <strong className="!text-right !text-black">
-                                    {formatMultiPrice(
-                                        // Bank pricing is cheaper — show the figure the
-                                        // buyer will actually be charged for the
-                                        // selected method, not always the card gross.
-                                        (paymentMethod === "bank" &&
-                                        previewPrices?.bank != null
-                                            ? previewPrices.bank
-                                            : fee + subtotal) || "",
-                                        chargeCurrency,
-                                    )}
+                                    {formatMultiPrice(displayTotal || "", chargeCurrency)}
                                 </strong>
-                                <div className="text-[10px] text-black/60 font-normal mt-1 leading-tight text-right">
-                                    *Includes platform and payment processing
-                                    fees
-                                </div>
+                            </div>
+                            <div className="mt-1 text-right text-[10px] font-normal leading-tight text-black/60">
+                                *Includes platform and payment processing fees
                             </div>
                         </div>
 
@@ -1032,18 +1141,29 @@ export default function UserCarts(props) {
                                         />
                                     </div>
                                 ) : null}
-                                <div className=" mt-4 sm:flex gap-3 items-center justify-between">
+                                {/* Reversed on mobile so the primary action sits
+                                    at the thumb end of the panel and "Clear"
+                                    is never the first button under a thumb. */}
+                                <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <button
                                         type="button"
                                         onClick={() =>
                                             clearcart(datas?.user?.id)
                                         }
-                                        className={`  w-full main-button b mb-3 md:!mb-0`}
+                                        className={`w-full main-button b !min-h-[48px]`}
                                     >
-                                        {loading ? "Clearing…" : "Clear"}{" "}
+                                        {loading
+                                            ? "Clearing…"
+                                            : collapsible
+                                              ? "Clear this basket"
+                                              : "Clear"}
                                     </button>
+                                    {/* The amount is on the button: with several
+                                        baskets on one page, an unlabelled
+                                        "Checkout" does not say which creator is
+                                        about to be paid, or how much. */}
                                     <PayButton
-                                        label="Checkout"
+                                        label={`Checkout ${formatMultiPrice(displayTotal || "", chargeCurrency)}`}
                                         processing={checking}
                                         disabled={
                                             !isChecked ||
@@ -1059,8 +1179,8 @@ export default function UserCarts(props) {
                             </form>
                         </div>
                     </div>
-                </div>
             </div>
+            ) : null}
 
             {/* Step-Up Verification Modal */}
             <Popup
@@ -1202,6 +1322,6 @@ export default function UserCarts(props) {
                     )}
                 </div>
             </Popup>
-        </div>
+        </section>
     );
 }

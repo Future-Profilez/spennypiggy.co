@@ -1748,7 +1748,10 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        if (! StripePaymentDetail::claimReceipt($payment->id)) {
+        // failOpen: false — if the claim column is missing this path stands
+        // down, exactly as its commented-out dispatch used to. Both paths
+        // failing open would send the buyer two receipts.
+        if (! StripePaymentDetail::claimReceipt($payment->id, failOpen: false)) {
             Log::info('Checkout receipt already claimed by the redirect handler', [
                 'payment_id' => $payment->id,
             ]);

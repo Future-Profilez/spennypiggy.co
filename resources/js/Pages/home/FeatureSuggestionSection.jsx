@@ -11,7 +11,7 @@ export default function FeatureSuggestionSection({ auth }) {
 
     return (
         <section
-            className="py-20 md:py-28 relative overflow-hidden"
+            className="py-12 md:py-28 relative overflow-hidden"
         >
         
             <WatermarkStrip text="Ideas" from={-300} to={50} opacity={0.28} className="top-28" />
@@ -49,7 +49,7 @@ export default function FeatureSuggestionSection({ auth }) {
                         <Magnetic strength={0.3}>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="group relative inline-flex items-center gap-3 md:gap-6 bg-white text-black font-gulfs uppercase text-base md:text-xl py-3 px-7 md:py-4 md:px-10 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
+                            className="group relative inline-flex items-center gap-3 md:gap-6 bg-white text-black font-gulfs uppercase text-base md:text-xl py-3 px-7 md:py-4 md:px-10 rounded-full hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
                         >
                             <span className="relative z-10">Suggest a Feature</span>
                             <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />

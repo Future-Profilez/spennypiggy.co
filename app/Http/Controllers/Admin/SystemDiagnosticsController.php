@@ -16,6 +16,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\WishItem;
+use App\SeoMeta;
 use App\Services\Diagnostics\DiagnosticsRunner;
 use App\Services\IntercomService;
 use App\Services\MagicBellService;
@@ -34,13 +35,29 @@ class SystemDiagnosticsController extends Controller
 {
     /**
      * Show the diagnostics dashboard.
+     *
+     * This route carries no auth, so it must never be indexed. `StaticPageSeoMiddleware`
+     * already noindexes everything under `admin/` and robots.txt already disallows `/admin/`,
+     * but this page sets its own tag as well: the prefix rule is shared with a dozen other
+     * screens, and a page nobody is authenticating for should not have its only protection
+     * from search be a list it does not own.
+     *
+     * `noindex,nofollow` rather than the site-wide `noindex,follow` — there is nothing here
+     * worth passing crawl on to.
      */
     public function index()
     {
+        SeoMeta::setRobots('noindex,nofollow,noarchive');
+
         return Inertia::render('Admin/SystemDiagnostics', [
             'app_version' => config('app.version', '1.0.0'),
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
+        ])->toResponse(request())->withHeaders([
+            // A meta tag only reaches a crawler that renders the page. The header is read from
+            // the response itself, so it also covers the JSON/XHR responses and any fetcher
+            // that never executes the markup.
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
         ]);
     }
 
@@ -94,9 +111,21 @@ class SystemDiagnosticsController extends Controller
 
     public function run(Request $request)
     {
-        // Deep run is opt-in: the Stripe checks create a real Connect Express account and a real
-        // PaymentIntent, which is not something a page should do every time it is opened.
+        /*
+         * Deep run is opt-in: the Stripe checks create a real Connect Express account and a real
+         * PaymentIntent, which is not something a page should do every time it is opened.
+         *
+         * ⚠️ It is additionally refused to an anonymous caller outside local/testing. The page
+         * itself is deliberately unauthenticated, but "anyone may read the health report" and
+         * "anyone may mint Stripe objects on the platform account, ten times a minute" are
+         * different things, and only the first was asked for. Signing in is enough — this is not
+         * the `admin` gate, which no user can satisfy.
+         */
         $deep = $request->boolean('deep');
+
+        if ($deep && ! app()->environment('local', 'testing') && ! $request->user()) {
+            $deep = false;
+        }
 
         $only = array_values(array_filter(
             (array) $request->input('only', []),

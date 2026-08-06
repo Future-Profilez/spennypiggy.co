@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\CreatorActivityService;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -126,6 +127,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'upcoming_payment_date',
         'subscription_end',
         'is_subscription_cancelled',
+        // Pure — it reads columns already on the row and issues no query, so
+        // unlike most of this list it is safe on a paginated payload. See
+        // `VerifiedBadge::COLUMNS` for what a builder has to select.
+        'verified_badge',
     ];
 
     protected $with = ['social_links'];
@@ -243,6 +248,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         }
 
         return Auth::check() && ! empty($this->id) && (int) Auth::id() === (int) $this->id;
+    }
+
+    /**
+     * `basic` (grey), `creator` (pink), or null.
+     *
+     * ⚠️ Reads only columns on this row — no query — which is why it is safe in
+     * `$appends`. It is also why a builder that does not select
+     * `VerifiedBadge::COLUMNS` renders a verified creator as unverified: a
+     * missing attribute is null, and null is not approved.
+     */
+    public function getVerifiedBadgeAttribute(): ?string
+    {
+        return VerifiedBadge::tierFor($this);
     }
 
     public function getAvatarUrlAttribute()

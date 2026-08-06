@@ -62,6 +62,11 @@ class NotificationLogServiceProvider extends ServiceProvider
         });
 
         Event::listen(JobProcessing::class, function (JobProcessing $event) {
+            // Unconfirmed rows belong to whichever job wrote them, so the list
+            // resets with the job — not doing so would blame this job's failure
+            // on the previous job's messages.
+            LogOutboundMail::resetPending();
+
             try {
                 $snapshot = $event->job->payload()[NotificationContext::PAYLOAD_KEY] ?? null;
 
@@ -78,10 +83,27 @@ class NotificationLogServiceProvider extends ServiceProvider
             }
         });
 
-        foreach ([JobProcessed::class, JobFailed::class, JobExceptionOccurred::class] as $event) {
-            Event::listen($event, function () {
-                NotificationContext::clear();
-            });
-        }
+        // A job that threw did not deliver whatever it had already handed to the
+        // mailer. Recording that now, rather than leaving it for the prune
+        // command an hour later, is the difference between "this failed" and
+        // "this looks like it is still on its way".
+        Event::listen(JobExceptionOccurred::class, function (JobExceptionOccurred $event) {
+            LogOutboundMail::settlePending(
+                'The job sending this message threw: '.$event->exception->getMessage()
+            );
+            NotificationContext::clear();
+        });
+
+        Event::listen(JobFailed::class, function (JobFailed $event) {
+            LogOutboundMail::settlePending(
+                'The job sending this message failed permanently: '.$event->exception->getMessage()
+            );
+            NotificationContext::clear();
+        });
+
+        Event::listen(JobProcessed::class, function () {
+            LogOutboundMail::resetPending();
+            NotificationContext::clear();
+        });
     }
 }

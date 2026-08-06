@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Ramsey\Uuid\Uuid;
 
 class StripePaymentDetail extends Model
@@ -48,6 +50,9 @@ class StripePaymentDetail extends Model
     protected $casts = [
         'receipt_claimed_at' => 'datetime',
     ];
+
+    /** null = not yet checked. See supportsReceiptClaim(). */
+    private static ?bool $receiptClaimSupported = null;
 
     protected $hidden = [
         'id',
@@ -100,10 +105,25 @@ class StripePaymentDetail extends Model
      * ⚠️ Never guard on a plain `whereNull` read followed by a save; that is
      * check-then-act and would send two receipts under load.
      */
-    public static function claimReceipt(?int $paymentId): bool
+    public static function claimReceipt(?int $paymentId, bool $failOpen = true): bool
     {
         if (! $paymentId) {
             return false;
+        }
+
+        // 🚨 The column may not exist yet — code and migration do not always
+        // land together outside Vapor (which migrates on deploy). Failing OPEN
+        // for BOTH callers would mean both dispatch and the buyer gets TWO
+        // receipts; failing CLOSED for both would mean nobody gets one.
+        //
+        // So the fallback restores the PRE-CLAIM behaviour exactly: the
+        // redirect handler still sends ($failOpen = true, its historic role),
+        // the webhook stands down ($failOpen = false, which is what its
+        // commented-out dispatch used to do). Bank payments still lose their
+        // receipt until the migration runs — the same bug as before, not a new
+        // one — and nothing is ever sent twice.
+        if (! self::supportsReceiptClaim()) {
+            return $failOpen;
         }
 
         try {
@@ -111,10 +131,26 @@ class StripePaymentDetail extends Model
                 ->whereNull('receipt_claimed_at')
                 ->update(['receipt_claimed_at' => now()]) === 1;
         } catch (\Throwable $e) {
-            // The column is missing (a database that predates the migration) —
-            // fall back to the old behaviour rather than blocking the receipt.
-            return true;
+            Log::warning('StripePaymentDetail: receipt claim failed', [
+                'payment_id' => $paymentId, 'error' => $e->getMessage(),
+            ]);
+
+            return $failOpen;
         }
+    }
+
+    /** Memoised per request — `hasColumn` is a round trip, and this sits on the money path. */
+    private static function supportsReceiptClaim(): bool
+    {
+        if (self::$receiptClaimSupported === null) {
+            try {
+                self::$receiptClaimSupported = Schema::hasColumn('stripe_payment_details', 'receipt_claimed_at');
+            } catch (\Throwable $e) {
+                self::$receiptClaimSupported = false;
+            }
+        }
+
+        return self::$receiptClaimSupported;
     }
 
     /** Hand the claim back so the next attempt can retry a failed dispatch. */

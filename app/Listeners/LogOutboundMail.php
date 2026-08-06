@@ -32,6 +32,18 @@ class LogOutboundMail
 
     private const USER_CACHE_LIMIT = 200;
 
+    /**
+     * Rows written during the current job that the transport has not confirmed.
+     *
+     * A send that throws never reaches MessageSent, so its row would sit at
+     * `queued` until the prune command settled it an hour later — an hour in
+     * which a failed receipt reads as "still on its way". When the job dies, we
+     * already know those rows failed, so they are settled immediately.
+     */
+    private static array $pending = [];
+
+    private const PENDING_LIMIT = 500;
+
     public function sending(MessageSending $event): void
     {
         try {
@@ -50,6 +62,7 @@ class LogOutboundMail
             $message = $event->message;
             $subject = (string) ($message->getSubject() ?? '');
             $type = $this->resolveType($event->data ?? []);
+            $bodyPreview = $this->bodyPreview($message, $context);
 
             $ids = [];
 
@@ -70,6 +83,7 @@ class LogOutboundMail
                     'recipient_email' => $email,
                     'type' => $type,
                     'subject' => $subject,
+                    'body_preview' => $bodyPreview,
                 ]));
 
                 if ($row) {
@@ -82,6 +96,12 @@ class LogOutboundMail
                 // same Email instance is not guaranteed to reach MessageSent
                 // (transports may wrap it), but its headers always do.
                 $message->getHeaders()->addTextHeader(self::HEADER, implode(',', $ids));
+
+                if (count(self::$pending) < self::PENDING_LIMIT) {
+                    foreach ($ids as $id) {
+                        self::$pending[$id] = true;
+                    }
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('LogOutboundMail: sending hook failed', ['error' => $e->getMessage()]);
@@ -110,6 +130,10 @@ class LogOutboundMail
                     'sent_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+            foreach ($ids as $id) {
+                unset(self::$pending[$id]);
+            }
         } catch (\Throwable $e) {
             Log::warning('LogOutboundMail: sent hook failed', ['error' => $e->getMessage()]);
         }
@@ -153,5 +177,106 @@ class LogOutboundMail
         self::$userIdCache[$key] = $id;
 
         return $id;
+    }
+
+    /** Called when a job starts — the previous job's unconfirmed rows are not ours. */
+    public static function resetPending(): void
+    {
+        self::$pending = [];
+    }
+
+    /**
+     * Settle everything this job wrote but never confirmed. Called when the job
+     * throws, so a transport failure is recorded as `failed` at the moment it
+     * happens rather than an hour later by the prune command.
+     */
+    public static function settlePending(string $reason): void
+    {
+        try {
+            $ids = array_keys(self::$pending);
+            self::$pending = [];
+
+            if ($ids === []) {
+                return;
+            }
+
+            NotificationLog::whereIn('id', $ids)
+                ->where('status', NotificationLog::STATUS_QUEUED)
+                ->update([
+                    'status' => NotificationLog::STATUS_FAILED,
+                    'reason' => mb_substr($reason, 0, 500),
+                    'updated_at' => now(),
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('LogOutboundMail: could not settle unconfirmed rows', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * A plain-text preview of what the message said, so an admin can answer
+     * "what did we send them?" without asking the recipient to forward it.
+     *
+     * ⚠️ A PREVIEW, never the message. Receipt emails carry `reward_body` — the
+     * content the buyer paid for — so keeping whole HTML bodies would put every
+     * purchased message and link in a second table that admins can read.
+     * Plain text only, truncated, and attachments are never touched.
+     *
+     * ⚠️ Campaign bodies are identical for every recipient and already stored
+     * once on the campaign row. Repeating one across tens of thousands of log
+     * rows is pure waste, so it is off by default.
+     */
+    private function bodyPreview($message, array $context): ?string
+    {
+        try {
+            if (! config('notification_logs.store_body', true)) {
+                return null;
+            }
+
+            if (! empty($context['campaign_id']) && ! config('notification_logs.store_campaign_body', false)) {
+                return null;
+            }
+
+            $text = $message->getTextBody();
+
+            if (empty($text)) {
+                $html = $message->getHtmlBody();
+
+                if (empty($html)) {
+                    return null;
+                }
+
+                // <br> and block ends become newlines first, or the whole email
+                // collapses into one unreadable line. Table cells become a
+                // space, not a newline, so a row's cells stay on one line.
+                $html = preg_replace('/<(br|\/p|\/div|\/tr|\/h[1-6])[^>]*>/i', "\n", (string) $html);
+                $html = preg_replace('/<\/(td|th)[^>]*>/i', ' ', $html);
+                $html = preg_replace('/<(style|script|head)\b[^>]*>.*?<\/\1>/is', ' ', $html);
+                $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+
+            // Alert/receipt templates are heavily indented multi-line Blade
+            // markup, so stripping tags leaves whitespace-only "lines" between
+            // every block — a blank line padded with the original indentation
+            // spaces/tabs, which a bare `\n{3,}` collapse does not match (it is
+            // not three literal newlines in a row, it is newline-space-newline).
+            // Trimming the horizontal whitespace touching every newline FIRST
+            // is what makes the count collapse correctly.
+            $text = (string) $text;
+            $text = preg_replace('/[ \t]+/', ' ', $text);
+            $text = preg_replace('/ *\n[ \t]*/', "\n", $text);
+            $text = trim(preg_replace('/\n{3,}/', "\n\n", $text));
+
+            if ($text === '') {
+                return null;
+            }
+
+            $limit = max(200, (int) config('notification_logs.body_limit', 2000));
+
+            return mb_strlen($text) > $limit
+                ? mb_substr($text, 0, $limit)."\n\n… (truncated)"
+                : $text;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

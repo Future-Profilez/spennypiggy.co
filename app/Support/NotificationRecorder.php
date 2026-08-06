@@ -20,6 +20,9 @@ class NotificationRecorder
 {
     private static array $userIdCache = [];
 
+    /** id → email, for bell call sites that only have an id. */
+    private static array $emailCache = [];
+
     private const USER_CACHE_LIMIT = 200;
 
     public static function push(
@@ -33,24 +36,60 @@ class NotificationRecorder
         self::write(NotificationLog::CHANNEL_PUSH, $title, $body, $email, $userId, $status, $reason);
     }
 
+    /**
+     * @param  User|int|null  $user  the recipient, or just their id — call sites
+     *                               that only have an id (a moderation approve
+     *                               resolves a creator id, not a model) must not
+     *                               have to load a whole User just to log.
+     */
     public static function bell(
         ?string $title,
         ?string $body,
-        ?User $user,
+        $user,
         string $status,
         ?string $reason = null,
         ?string $module = null,
     ): void {
+        [$userId, $email] = self::resolveRecipient($user);
+
         self::write(
             NotificationLog::CHANNEL_BELL,
             $title,
             $body,
-            $user?->email,
-            $user?->id,
+            $email,
+            $userId,
             $status,
             $reason,
             $module,
         );
+    }
+
+    /** @return array{0: ?int, 1: ?string} */
+    private static function resolveRecipient($user): array
+    {
+        if ($user instanceof User) {
+            return [$user->id, $user->email];
+        }
+
+        if (is_numeric($user) && (int) $user > 0) {
+            $id = (int) $user;
+
+            if (! array_key_exists($id, self::$emailCache)) {
+                if (count(self::$emailCache) >= self::USER_CACHE_LIMIT) {
+                    self::$emailCache = [];
+                }
+
+                try {
+                    self::$emailCache[$id] = User::withTrashed()->whereKey($id)->value('email');
+                } catch (\Throwable $e) {
+                    self::$emailCache[$id] = null;
+                }
+            }
+
+            return [$id, self::$emailCache[$id]];
+        }
+
+        return [null, null];
     }
 
     /**
@@ -105,8 +144,11 @@ class NotificationRecorder
                 // derived from the module or the message itself.
                 'type' => $type ?: self::slug($title),
                 'subject' => $title,
+                // Push and bell text is short and is the whole message, so it
+                // goes in the same column the email preview uses — one place for
+                // "what did this say?", whatever the channel.
+                'body_preview' => $body ? mb_substr($body, 0, max(200, (int) config('notification_logs.body_limit', 2000))) : null,
                 'reason' => $reason,
-                'meta' => $body ? ['body' => mb_substr($body, 0, 500)] : null,
                 'sent_at' => $status === NotificationLog::STATUS_SENT ? now() : null,
             ]));
         } catch (\Throwable $e) {

@@ -11,7 +11,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
 
     return (
         <section
-            className="py-20 md:py-28 px-4 relative overflow-x-hidden overflow-y-visible"
+            className="py-12 md:py-28 px-4 relative overflow-x-hidden overflow-y-visible"
         >
             {/* No decorative orbs. `bg-white mix-blend-multiply` over yellow is yellow
                 (invisible), `bg-[#FF007F] mix-blend-multiply` over yellow is a dirty
@@ -41,7 +41,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                     </FadeIn>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-[30px] h-full">
                     <div className="bg-[#E6EA7B] border-[3px] border-black rounded-[30px] p-6 md:p-8 relative group h-full">
@@ -53,9 +53,9 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             Earn an extra 5% on everything you make during your first 30 days.
                         </p>
                         <ul className="space-y-2 text-black/75 font-semibold">
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> No minimum earnings</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Paid automatically with weekly payouts</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Available to every creator</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> No minimum earnings</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Paid automatically with weekly payouts</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Available to every creator</li>
                         </ul>
                     </div>
                     </TiltCard>
@@ -72,9 +72,9 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             First 150 creators only. Earn £2,500 in your first 30 days and unlock an extra 10% on your earnings every month for 12 months.
                         </p>
                         <ul className="space-y-2 text-black/75 font-semibold">
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Limited founder spots</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Exclusive reward programme</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Built for ambitious creators</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Limited founder spots</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Exclusive reward programme</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Built for ambitious creators</li>
                         </ul>
                         {typeof spotsRemaining === "number" ? (
                             <div className="mt-5 inline-flex items-center gap-2 bg-[#E6EA7B] text-black font-black px-4 py-2 rounded-full uppercase tracking-widest text-xs">
@@ -92,13 +92,13 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             <FaUserFriends />
                         </div>
                         <h3 className="text-2xl font-gulfs text-white mb-2 uppercase">Creator Referral Bonus</h3>
-                        <p className="text-white/60 text-lg mb-5 leading-snug">
+                        <p className="text-white/85 text-lg mb-5 leading-snug">
                             Refer creators and earn £50 when they reach £1,000 in earnings.
                         </p>
-                        <ul className="space-y-2 text-white/75 font-semibold">
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Unlimited referrals</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> No cap on rewards</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-[#FF007F]" /> Earn while helping others grow</li>
+                        <ul className="space-y-2 text-white font-semibold">
+                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> Unlimited referrals</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> No cap on rewards</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> Earn while helping others grow</li>
                         </ul>
                     </div>
                     </TiltCard>
@@ -117,7 +117,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         <Magnetic strength={0.3}>
                         <Link
                             href="/register"
-                            className="relative inline-flex items-center gap-3 bg-[#E6EA7B] text-black font-black text-base md:text-lg py-3 px-7 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
+                            className="relative inline-flex items-center gap-3 bg-[#E6EA7B] text-black font-black text-base md:text-lg py-3 px-7 rounded-full hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
                         >
                             <span>Start Selling for Free</span>
                             <FaArrowRight className="group-hover:translate-x-1 transition-transform" />

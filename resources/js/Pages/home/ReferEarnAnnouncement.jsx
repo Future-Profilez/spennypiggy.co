@@ -7,7 +7,7 @@ export default function ReferEarnAnnouncement() {
     return (
         <>
             <div
-                className="py-20 md:py-28 px-4 relative overflow-x-hidden"
+                className="py-12 md:py-28 px-4 relative overflow-x-hidden"
             >
                 {/* Same reason as the yellow band: white multiplied over pink is pink,
                     and yellow multiplied over pink is a muddy blotch. Kept flat. */}
@@ -39,7 +39,7 @@ export default function ReferEarnAnnouncement() {
                     </div>
 
                     {/* Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4">
                         
                         <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                         <div className="fading bg-[#E6EA7B] border-[3px] border-black mb-2 md:mb-0 rounded-[30px] p-6 relative group hover:-translate-y-1 transition-transform duration-300">
@@ -71,7 +71,7 @@ export default function ReferEarnAnnouncement() {
                                 <FaPoundSign />
                             </div>
                             <h3 className="text-2xl font-gulfs text-white mb-2 uppercase">3. You Earn</h3>
-                            <p className="text-white/60 text-lg mb-6 leading-snug">
+                            <p className="text-white/85 text-lg mb-6 leading-snug">
                                 Once they reach £1,000 lifetime GMV, you get a £50 reward ready for Stripe payout.
                             </p>
                         </div>
@@ -82,7 +82,7 @@ export default function ReferEarnAnnouncement() {
                     {/* CTA Section */}
                     <div className="mt-12 text-center relative">
                         <Link href="/refer-and-earn" 
-                            className="relative inline-flex items-center gap-4 bg-[#FF007F] text-white font-black text-md md:text-lg py-3 px-6 md:py-4: mdpx-12 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group" >
+                            className="relative inline-flex items-center gap-4 bg-[#FF007F] text-white font-black text-md md:text-lg py-3 px-6 md:py-4: mdpx-12 rounded-full hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group" >
                             <span>Get Your Referral Link</span>
                             <FaRocket className="group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                         </Link>
