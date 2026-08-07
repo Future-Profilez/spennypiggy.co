@@ -1201,7 +1201,13 @@ class Helpers
         }
         try {
 
-            if ($user->role != 0) {
+            // 🚨 Creators spend too, and used to be exempt.
+            //
+            // `role != 0` returned early, so a creator could buy past £500 with
+            // no card verification at all while a gifter was stopped at exactly
+            // the same figure. The threshold is about the SPEND, not about which
+            // kind of account is doing it.
+            if (! in_array((int) $user->role, [0, 1], true)) {
                 return false;
             }
 
@@ -1225,12 +1231,41 @@ class Helpers
             $totalAmountPaid = array_sum($convertedAmount);
 
             if ($user->is_500_limit_exceeded == 0 && $totalAmountPaid && $totalAmountPaid > 500) {
-                $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+                $update = ['is_500_limit_exceeded' => 1];
 
-                return true;
+                /*
+                 * 🚨 NEVER demote a creator to `profile_status_lock = 1`.
+                 *
+                 * For a gifter that flag is how they enter the review queue and
+                 * it costs them nothing. For a creator it takes the verified
+                 * badge, removes them from Discover, search, trending and
+                 * top-earners — DELISTING EVERY ITEM THEY SELL — and blocks
+                 * Stripe onboarding, and nothing on the website ever sets it
+                 * back. Spending £500 as a buyer must not take a creator's shop
+                 * off the platform.
+                 *
+                 * They are still stopped at checkout by the return value below,
+                 * and the console shows their address check on their own panel.
+                 */
+                if ((int) $user->role === 0) {
+                    $update['profile_status_lock'] = 1;
+                }
+
+                $user->update($update);
+                $user->refresh();
             }
 
-            return false;
+            /*
+             * 🚨 Answer "are they blocked RIGHT NOW", not "did the flag flip on
+             * this request".
+             *
+             * This used to `return true` inside the branch above and `false`
+             * everywhere else — so a buyer was bounced on the single purchase
+             * that crossed £500 and every purchase after it went straight
+             * through. On Shop, Paid Tasks, Piggy Pot and the Piggy Bank, which
+             * carry no middleware, that was the whole enforcement.
+             */
+            return $user->requiresCardVerification();
         } catch (\Exception $e) {
             Log::error('Error retrieving authenticated user: '.$e->getMessage());
 

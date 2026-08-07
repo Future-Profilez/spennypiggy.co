@@ -40,7 +40,7 @@ class FounderBonusPayoutInitiated extends Mailable
     {
         return new Envelope(
             subject: "{$this->label} payout is on the way",
-            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            from: new Address(config('mail.from.address', 'noreply@spennypiggy.co'), config('mail.from.name', 'Spenny Piggy'))
         );
     }
 

@@ -27,6 +27,10 @@ class PayoutInitiated extends Mailable
         public string $sentAt,
         public ?string $destination = null,
         public ?string $reference = null,
+        // Stripe's own estimate of when the money lands. Stripe may omit it, so
+        // the template renders the row only when it is present rather than
+        // printing a date the bank never promised.
+        public ?string $arrivalDate = null,
     ) {
         $this->currency = strtoupper($currency ?: 'GBP');
     }
@@ -35,7 +39,12 @@ class PayoutInitiated extends Mailable
     {
         return new Envelope(
             subject: 'Your payout is on the way',
-            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            // config(), never env() — env() returns null once Vapor caches the
+            // config on deploy, silently falling back to the hardcoded default.
+            from: new Address(
+                config('mail.from.address', 'noreply@spennypiggy.co'),
+                config('mail.from.name', 'Spenny Piggy')
+            )
         );
     }
 

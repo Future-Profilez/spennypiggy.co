@@ -33,7 +33,11 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-size:15px;color:#4A4A4A;
                            line-height:24px;padding:0 0 22px 0;text-align:center;">
-                    We've sent your earnings to your bank. It usually lands within a few business days.
+                    @if ($arrivalDate)
+                        We've sent your earnings to your bank. Your bank expects it by {{ $arrivalDate }}.
+                    @else
+                        We've sent your earnings to your bank. It usually lands within a few business days.
+                    @endif
                 </td>
             </tr>
 
@@ -66,6 +70,14 @@
                                 {{ $sentAt }}
                             </td>
                         </tr>
+                        @if ($arrivalDate)
+                        <tr>
+                            <td style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#7A7A7A;">Estimated arrival</td>
+                            <td align="right" style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#1A1A1A;font-weight:600;">
+                                {{ $arrivalDate }}
+                            </td>
+                        </tr>
+                        @endif
                         @if ($destination)
                         <tr>
                             <td style="padding:8px 0;border-bottom:1px solid #EEEEEE;color:#7A7A7A;">Destination</td>

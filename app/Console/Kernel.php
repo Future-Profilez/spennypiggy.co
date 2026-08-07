@@ -250,6 +250,17 @@ class Kernel extends ConsoleKernel
             ->everyFifteenMinutes()
             ->withoutOverlapping(15);
 
+        // The backstop for a card checkout that was started and never resolved.
+        //
+        // ⚠️ Every ten minutes, not daily. A Stripe Checkout session lives ~24h, so
+        // a creator whose redirect was lost has to be found while their session can
+        // still be read and their reminder link still works — and until then they
+        // cannot sell anything at all. Safe to overlap-guard: the completion and the
+        // close are both atomic claims, so a second runner cannot double-apply.
+        $schedule->command('subscription:reconcile-checkouts')
+            ->everyTenMinutes()
+            ->withoutOverlapping(10);
+
         // One row per refused purchase; nothing else would ever remove one.
         $schedule->command('blocked-payments:prune')
             ->dailyAt('03:55')

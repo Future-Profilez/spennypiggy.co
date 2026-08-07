@@ -74,6 +74,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StockWaitlistService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
+use App\Services\SubscriptionCheckoutService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
@@ -1076,6 +1077,18 @@ class StripeWebhookController extends Controller
                 'session_id' => $session->id,
                 'metadata' => $metadata,
             ]);
+
+            // 🚨 The platform subscription's own checkout, handled BEFORE anything
+            // else because it is not a purchase: no creator, no item, no risk-ledger
+            // payment, nothing to fulfil. Until this branch existed the only thing
+            // that could record the saved card was the browser following
+            // `success_url`, so a creator who lost that redirect had their card on
+            // Stripe and `initiated` here, permanently — no webhook, no sweep, no
+            // reminder. Every other checkout on this platform lets the redirect and
+            // the webhook race; this one could not.
+            if ($this->completeSubscriptionCheckout($session)) {
+                return response()->json(['status' => 'subscription_checkout_completed']);
+            }
 
             // Delayed-settlement bank methods (SEPA/ACH): the session completes
             // with payment_status 'unpaid' while the debit clears. Defer ALL
@@ -4090,6 +4103,73 @@ class StripeWebhookController extends Controller
         Payment::where('stripe_session_id', $session->id)
             ->where('status', 'initiated')
             ->update(['status' => 'expired']);
+
+        // ⚠️ This used to touch the risk-ledger `Payment` table and nothing else, so
+        // an abandoned SUBSCRIPTION checkout sat at `initiated` forever — long after
+        // Stripe had expired the session and the link in it was dead. Every retry
+        // then added another row beside it.
+        try {
+            $checkout = app(SubscriptionCheckoutService::class);
+            $sub = $checkout->rowForSession($session->id ?? null);
+
+            if ($sub) {
+                $checkout->markDead($sub, 'stripe_session_expired');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Webhook: could not close the expired subscription checkout: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Record the card from a completed platform-subscription setup checkout.
+     *
+     * Returns true when this session WAS a subscription checkout, whether or not
+     * this call is the one that completed it — either way there is nothing else in
+     * the fulfilment pipeline for it to do.
+     *
+     * ⚠️ Matched on `session_id`, not on metadata. Sessions already open in
+     * production carry their metadata on the SetupIntent rather than the session, so
+     * a metadata-only match would recover none of the creators currently stuck.
+     */
+    private function completeSubscriptionCheckout($session): bool
+    {
+        try {
+            $checkout = app(SubscriptionCheckoutService::class);
+            $sub = $checkout->rowForSession($session->id ?? null);
+
+            if (! $sub) {
+                return false;
+            }
+
+            if ($sub->status !== SubscriptionCheckoutService::STATUS_STARTED) {
+                // Already finished — most likely by the redirect, which is the
+                // normal outcome. Still ours, so no other handler should see it.
+                return true;
+            }
+
+            // A `subscription`-mode session creates a real subscription and is
+            // finished by the existing MonthlyCharge handlers keyed on `stripe_id`.
+            if (($session->mode ?? null) !== 'setup') {
+                return false;
+            }
+
+            $completed = $checkout->completeSetupCheckout($sub, $session, 'webhook');
+
+            if ($completed && $sub->user) {
+                $checkout->activateIfAlreadySelling($sub->user, $sub->fresh());
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            // Never swallow silently into a 200: a lost card here is the exact
+            // failure this branch exists to prevent, so let the caller's handler
+            // record it and let Stripe retry.
+            Log::error('Webhook: subscription checkout completion failed: '.$e->getMessage(), [
+                'session_id' => $session->id ?? null,
+            ]);
+
+            throw $e;
+        }
     }
 
     private function handleAsyncPaymentFailed($session)

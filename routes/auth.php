@@ -985,7 +985,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item')->middleware('mustCompletedCardVerification');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -1021,12 +1021,12 @@ Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class,
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::prefix('tip-jar')->name('tip-jar.')->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay');
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
 Route::prefix('piggy-pot')->name('piggy-pot.')->group(function () {
-    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay');
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
@@ -1148,7 +1148,7 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
     Route::post('/', [TaskController::class, 'store'])->middleware('identityBeforeListing')->name('store');
-    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
+    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase')->middleware('mustCompletedCardVerification');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');
     Route::get('/order/{uuid}', [TaskController::class, 'order'])->name('order');
