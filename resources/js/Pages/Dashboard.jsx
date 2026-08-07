@@ -95,6 +95,8 @@ const FounderProgressTracker = lazy(
     () => import("@/Components/FounderProgressTracker"),
 );
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+import PendingChangesNotice from "@/Components/PendingChangesNotice";
+
 const CreatorRiskBanner = lazy(
     () => import("@/Components/Risk/CreatorRiskBanner"),
 );
@@ -148,6 +150,7 @@ export default function Dashboard(props) {
         founderData,
         monthly_charges,
         profile_overview,
+        pending_profile_changes,
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -1061,6 +1064,15 @@ export default function Dashboard(props) {
                                             />
                                         </Suspense>
                                     )} */}
+
+                                            {IsloggedIn && (
+                                                <PendingChangesNotice
+                                                    assets={
+                                                        pending_profile_changes
+                                                    }
+                                                    className="mb-3"
+                                                />
+                                            )}
 
                                             {IsloggedIn && (
                                                 <CreatorRiskBanner />

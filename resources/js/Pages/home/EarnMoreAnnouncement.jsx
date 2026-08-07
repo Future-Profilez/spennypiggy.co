@@ -41,7 +41,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                     </FadeIn>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-[30px] h-full">
                     <div className="bg-[#E6EA7B] border-[3px] border-black rounded-[30px] p-6 md:p-8 relative group h-full">

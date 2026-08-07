@@ -39,7 +39,7 @@ export default function ReferEarnAnnouncement() {
                     </div>
 
                     {/* Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3 md:gap-y-10 px-2 md:px-4">
                         
                         <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                         <div className="fading bg-[#E6EA7B] border-[3px] border-black mb-2 md:mb-0 rounded-[30px] p-6 relative group hover:-translate-y-1 transition-transform duration-300">

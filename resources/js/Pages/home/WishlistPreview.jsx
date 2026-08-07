@@ -14,7 +14,7 @@ const YELLOW = "#FFE14D";
 
 function Frame({ children }) {
     return (
-        <div className="relative w-[280px] sm:w-[318px] -rotate-[4deg] bg-white border-[3px] border-black rounded-[26px] p-4">
+        <div className="relative md:w-[318px] md:-rotate-[4deg] bg-white border-[3px] border-black rounded-[26px] p-4">
             {children}
         </div>
     );

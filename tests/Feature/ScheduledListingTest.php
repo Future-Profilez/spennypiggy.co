@@ -7,6 +7,8 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\CatalogueService;
+use App\Services\CreatorActivityService;
+use App\Services\CreatorSetupService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -244,7 +246,7 @@ class ScheduledListingTest extends TestCase
 
         $this->shop($creator, ['publish_at' => now()->addDays(2)]);
 
-        $setup = app(\App\Services\CreatorSetupService::class);
+        $setup = app(CreatorSetupService::class);
 
         // 🚨 `candidateQuery()` closes its subqueries with toBase(), so EVERY global
         // scope applies — deliberate for soft-deletes, wrong for scheduling. Without the
@@ -267,7 +269,7 @@ class ScheduledListingTest extends TestCase
         $shop = $this->shop($creator, ['publish_at' => now()->subMinutes(5)]);
         $shop->forceFill(['created_at' => now()->subDays(25)])->saveQuietly();
 
-        $breakdown = app(\App\Services\CreatorActivityService::class)->getContentBreakdown($creator);
+        $breakdown = app(CreatorActivityService::class)->getContentBreakdown($creator);
 
         $this->assertSame(1, $breakdown['shops']);
 
@@ -280,7 +282,7 @@ class ScheduledListingTest extends TestCase
 
         $this->assertSame(
             1,
-            app(\App\Services\CreatorActivityService::class)->getContentBreakdown($creator->fresh())['shops'],
+            app(CreatorActivityService::class)->getContentBreakdown($creator->fresh())['shops'],
             'A listing genuinely outside the window must still not count.'
         );
     }
@@ -294,7 +296,7 @@ class ScheduledListingTest extends TestCase
         // listing nobody can buy yet is not that.
         $this->assertSame(
             0,
-            app(\App\Services\CreatorActivityService::class)->getContentBreakdown($creator)['shops']
+            app(CreatorActivityService::class)->getContentBreakdown($creator)['shops']
         );
     }
 

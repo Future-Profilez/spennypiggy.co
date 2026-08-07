@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Jobs\Concerns\RetriesCriticalWork;
+use App\Models\ProfileChangeRequest;
 use App\Models\User;
 use App\Services\RekognitionModeration;
 use App\Support\ModerationNotice;
@@ -181,6 +182,14 @@ class CheckMediaModeration implements ShouldQueue
                 return;
             }
 
+            // ⚠️ A verdict that lands after the row was decided must not resurrect it.
+            // The scan is asynchronous — Rekognition takes seconds and an admin can
+            // approve or the creator can supersede in that window — and writing a flag
+            // onto a closed change request would put a hold on something already live.
+            if ($record instanceof ProfileChangeRequest && ! $record->isPending()) {
+                return;
+            }
+
             $attributes = $this->flagOnViolation;
 
             // Store a creator-facing reason on the listing itself (not just the
@@ -243,7 +252,12 @@ class CheckMediaModeration implements ShouldQueue
                 return;
             }
 
-            $label = self::FEATURE_LABELS[class_basename($this->modelClass)] ?? 'item';
+            // ⚠️ An unmapped class falls back to the literal word "item", so a held
+            // profile photo told the creator "your item is held" — which names nothing
+            // they can go and fix. A media scan already knows which asset it looked at.
+            $label = self::FEATURE_LABELS[class_basename($this->modelClass)]
+                ?? self::ASSET_LABELS[$this->mediaAsset]
+                ?? 'item';
             $title = $record->title ?? $record->name ?? '';
             $why = $reason !== '' ? $reason : 'Edit it and upload a different image to make it live, or contact support if you think this is a mistake.';
 

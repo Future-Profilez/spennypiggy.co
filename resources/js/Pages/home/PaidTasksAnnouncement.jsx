@@ -36,10 +36,8 @@ export default function PaidTasksAnnouncement() {
                         </FadeIn>
                     </div>
 
-                    {/* Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
 
-                        {/* Card 1: Instant */}
                         <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
                         <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
@@ -113,7 +111,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                         <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-[#FF007F] rounded-full blur-3xl opacity-10"></div>
                             <Link  href="/task/dashboard"
-                                className="relative inline-flex items-center gap-4 bg-white text-black font-gulfs uppercase tracking-tight text-base md:text-xl py-3 px-12 rounded-full border-2 border-black hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 group" >
+                                className="relative inline-flex items-center gap-4 bg-white text-black font-gulfs uppercase tracking-tight text-base md:text-xl py-3 px-4 md:px-12 rounded-full border-2 border-black hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 group" >
                                 <span className="relative z-10">Turn Requests Into Income</span>
                                 <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                             </Link>
