@@ -13,7 +13,9 @@ use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\SubscriptionActivationService;
+use App\Support\GifterVerificationCharge;
 use App\Support\SubscriptionPlan;
+use App\Support\VerifiedBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
@@ -71,6 +73,7 @@ class HandleInertiaRequests extends Middleware
                 'identity_admin_notes' => $user->identity_admin_notes,
                 'identity_admin_reviewed_at' => $user->identity_admin_reviewed_at,
                 'profile_status_lock' => $user->profile_status_lock,
+                'verified_badge' => VerifiedBadge::tierFor($user),
                 'default_currency' => $user->default_currency,
                 'monthly_charge_enabled' => $user->monthly_charge_enabled,
                 'is_subscribed' => $user->is_subscribed,
@@ -115,6 +118,29 @@ class HandleInertiaRequests extends Middleware
                 'cover_cdn_modifier' => $user->cover_cdn_modifier,
                 'twitter_token' => $user->twitter_token,
                 'gifter_card_verification' => $user->gifterCardVerification,
+                // ⚠️ Loaded ONLY for the gifter sitting at the £500 gate — the exact
+                // condition under which `ActivateCard` renders at all. The shared
+                // payload goes out with every Inertia navigation, so an ungated read
+                // would be a query per page view, for every user, to answer a question
+                // that only a handful of accounts are ever asked. Same rule as
+                // `has_ever_sold` and `needs_first_listing`.
+                //
+                // ⚠️ It MUST mirror `ActivateCard`'s own `needsVerification`, which is
+                // reached by a rejection as well as by the £500 milestone. Gating on
+                // the milestone alone left a rejected gifter looking at an empty form
+                // for an address they had already given us — and retyping it is the
+                // one thing that turns two independent records into one.
+                //
+                // Carries the price too, so the button quotes the number the card is
+                // actually charged — see `GifterVerificationCharge`.
+                'verification_gate' => ((int) $user->role === 0
+                    && (int) $user->profile_status_lock !== 2
+                    && ((int) $user->is_500_limit_exceeded === 1 || filled($user->profile_reject_reason)))
+                        ? [
+                            'address' => $user->gifterAddress?->toFormArray(),
+                            'charge' => GifterVerificationCharge::quote($request->cookie('currency', 'GBP')),
+                        ]
+                        : null,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
                 'terms_accepted_at' => $user->terms_accepted_at,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\BillPayMail;
+use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CreateThankYouPostJob;
 use App\Jobs\Dispute\SendDisputeClosedMailJob;
 use App\Jobs\Dispute\SendDisputeCreatedMailJob;
@@ -20,6 +21,7 @@ use App\Jobs\SendRenewMail;
 use App\Jobs\ShopBuyed;
 use App\Jobs\ShopBuyedUser;
 use App\Jobs\SubscribedMail;
+use App\Jobs\SyncCreatorLedger;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipPaymentMailToUser;
 use App\Jobs\UpdateSupportPaymentStripeMetadata;
@@ -72,10 +74,12 @@ use App\Services\Risk\RiskService;
 use App\Services\StockWaitlistService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
+use App\Services\SubscriptionCheckoutService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\StripeControl as AppStripeControl;
 use App\Support\IdentityFailureReason;
+use App\Support\NotificationContext;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -96,6 +100,15 @@ use Stripe\Webhook;
 
 class StripeWebhookController extends Controller
 {
+    /**
+     * How long after connecting Stripe an account may report a non-manual payout
+     * schedule (or emit an automatic payout) without the creator being suspended
+     * for it. A new Express account carries Stripe's own automatic default until
+     * our manual write lands, so inside this window the schedule is corrected
+     * silently instead. payout:enforce-manual re-checks every ten minutes.
+     */
+    private const PAYOUT_SCHEDULE_GRACE_HOURS = 48;
+
     protected $userProfileService;
 
     protected $riskService;
@@ -244,6 +257,12 @@ class StripeWebhookController extends Controller
 
         Log::info('Handling Stripe Event: '.$type);
 
+        // Label every message this event goes on to produce with the payment it
+        // came from. Set once here rather than in each processor: the mails and
+        // pushes are sent several hops away (processor → job → mailable), and
+        // the context travels with them through the queue automatically.
+        $this->openNotificationContext($data, $metadata);
+
         try {
             switch ($type) {
                 // --- Identity Verification Events ---
@@ -367,6 +386,15 @@ class StripeWebhookController extends Controller
                     } elseif ($metaProduct === 'wish_item_subscription' || $metaType === 'wish') {
                         $this->handleWishSubscriptionUpdate($data, $metadata);
                     }
+
+                    // A renewal writes a fresh payment row for the new cycle, and
+                    // that row needs a ledger entry just as a first purchase does
+                    // — otherwise month 2 onwards is invisible to the creator
+                    // until the half-hourly cron catches up.
+                    SyncCreatorLedger::schedule(
+                        isset($metadata->creator_id) ? (int) $metadata->creator_id : null
+                    );
+
                     // Handle MonthlyCharge updates (Platform Subscription)
                     $this->processMandatorySubscription($event);
                     break;
@@ -1050,6 +1078,18 @@ class StripeWebhookController extends Controller
                 'metadata' => $metadata,
             ]);
 
+            // 🚨 The platform subscription's own checkout, handled BEFORE anything
+            // else because it is not a purchase: no creator, no item, no risk-ledger
+            // payment, nothing to fulfil. Until this branch existed the only thing
+            // that could record the saved card was the browser following
+            // `success_url`, so a creator who lost that redirect had their card on
+            // Stripe and `initiated` here, permanently — no webhook, no sweep, no
+            // reminder. Every other checkout on this platform lets the redirect and
+            // the webhook race; this one could not.
+            if ($this->completeSubscriptionCheckout($session)) {
+                return response()->json(['status' => 'subscription_checkout_completed']);
+            }
+
             // Delayed-settlement bank methods (SEPA/ACH): the session completes
             // with payment_status 'unpaid' while the debit clears. Defer ALL
             // fulfilment to checkout.session.async_payment_succeeded — mark the
@@ -1120,6 +1160,14 @@ class StripeWebhookController extends Controller
                     if ($session->payment_intent) {
                         $this->syncFinancialTransactionsByPaymentIntent($session->payment_intent, $newStatus);
                     }
+
+                    // Build the creator's ledger row NOW rather than at the next
+                    // half-hourly cron. The sync above only UPDATES rows that
+                    // already exist — nothing on the payment path creates one —
+                    // so without this the creator's dashboard and both tabs of
+                    // Support History show a completed sale as nothing at all
+                    // until they press "Refresh records" by hand.
+                    SyncCreatorLedger::schedule($payment->creator_id ?? null);
 
                     Log::info('Risk Ledger: Checkout session mapped to payment', [
                         'session_id' => $session->id,
@@ -1676,33 +1724,72 @@ class StripeWebhookController extends Controller
             }
         }
 
-        // Send thank you email to the purchaser
-        if (isset($metadata->user_id)) {
-            $payment = StripePaymentDetail::where('session_id', $session->id)->first();
-            if ($payment) {
-                // Check if user exists
-                $user = User::where('id', $metadata->user_id)->first();
+        // Send the purchase receipt to the buyer and the "you got paid" mail to
+        // the creator.
+        //
+        // ⚠️ This dispatch used to be COMMENTED OUT, on the grounds that the
+        // redirect handler always sent it. That holds for a card payment, which
+        // is `paid` by the time the buyer lands back on the site — but a BANK
+        // payment returns `unpaid` while the debit clears, so the redirect
+        // handler bails and this webhook is the only path that ever completes
+        // the purchase. The result was a bank-settled wish sale with a
+        // deliverable, a ledger row, and no email to either party.
+        //
+        // Both paths now claim `stripe_payment_details.receipt_claimed_at`
+        // before dispatching, so exactly one of them sends. Do not re-comment
+        // this out; if duplicates ever reappear the claim is what to fix.
+        //
+        // Deliberately NOT gated on `$metadata->user_id`: guest checkout is
+        // allowed on wishes, and a guest buyer needs their receipt more than
+        // anyone — it is the only copy of what they bought that they get.
+        $payment = StripePaymentDetail::where('session_id', $session->id)->first();
 
-                if ($user) {
-                    $currency = Currency::where('iso', strtoupper($session->currency))->first();
-                    $currencySymbol = $currency ? $currency->symbol : '£';
+        if (! $payment) {
+            Log::warning('Payment record not found for session', ['session_id' => $session->id]);
 
-                    Log::info('Skipping CheckoutMailToUser dispatch in webhook - already handled by checkout controller', [
-                        'payment_id' => $payment->id,
-                        'user_id' => $metadata->user_id,
-                        'currency' => $currencySymbol,
-                    ]);
+            return;
+        }
 
-                    // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
-                    // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
-                } else {
-                    Log::info('User not eligible for email (user not found)', [
-                        'user_id' => $metadata->user_id,
-                    ]);
-                }
-            } else {
-                Log::warning('Payment record not found for session', ['session_id' => $session->id]);
-            }
+        $hasRecipient = ! empty($payment->user_id) || ! empty($payment->guest_email);
+
+        if (! $hasRecipient) {
+            Log::info('Checkout receipt has no recipient (no buyer account and no guest email)', [
+                'payment_id' => $payment->id,
+                'session_id' => $session->id,
+            ]);
+
+            return;
+        }
+
+        // failOpen: false — if the claim column is missing this path stands
+        // down, exactly as its commented-out dispatch used to. Both paths
+        // failing open would send the buyer two receipts.
+        if (! StripePaymentDetail::claimReceipt($payment->id, failOpen: false)) {
+            Log::info('Checkout receipt already claimed by the redirect handler', [
+                'payment_id' => $payment->id,
+            ]);
+
+            return;
+        }
+
+        try {
+            $currency = Currency::where('iso', strtoupper($session->currency))->first();
+            $currencySymbol = $currency ? $currency->symbol : '£';
+
+            CheckoutMailToUser::dispatch($payment, $currencySymbol);
+
+            Log::info('CheckoutMailToUser dispatched from webhook', [
+                'payment_id' => $payment->id,
+                'session_id' => $session->id,
+            ]);
+        } catch (\Throwable $e) {
+            // Hand the claim back, or a transient dispatch failure would mean
+            // nobody ever sends this receipt — the exact silence this fixes.
+            StripePaymentDetail::releaseReceiptClaim($payment->id);
+
+            Log::error('Failed to dispatch checkout receipt from webhook: '.$e->getMessage(), [
+                'payment_id' => $payment->id,
+            ]);
         }
     }
 
@@ -3725,6 +3812,69 @@ class StripeWebhookController extends Controller
      * Public so `payments:reconcile` can replay a settled session that the
      * webhook missed.
      */
+    /**
+     * Open the notification delivery context for a Stripe event.
+     *
+     * The keys differ per checkout — one flow calls the item `wish_id`, another
+     * `item_id`, and the buyer is variously `user_id`, `payer_id` or `buyer_id`
+     * — so this reads whichever is present rather than assuming a shape. It
+     * never throws: a payment must not fail because its log could not be
+     * labelled, and an unlabelled row is still a recorded delivery.
+     */
+    private function openNotificationContext($data, $metadata): void
+    {
+        try {
+            NotificationContext::clear();
+
+            $meta = (array) ($metadata ?? []);
+
+            $sessionId = $data->id ?? null;
+            if (is_string($sessionId) && ! str_starts_with($sessionId, 'cs_')) {
+                // Not a checkout session (an invoice, a payout, an account) —
+                // the session key belongs to sessions only.
+                $sessionId = null;
+            }
+
+            $contextType = $meta['product_type'] ?? $meta['type'] ?? null;
+
+            $itemId = null;
+            foreach (['wish_id', 'wishlist_item_id', 'shop_id', 'task_id', 'piggy_pot_id', 'bill_id', 'membership_id', 'tip_goal_id', 'item_id'] as $key) {
+                if (! empty($meta[$key])) {
+                    $itemId = $meta[$key];
+                    break;
+                }
+            }
+
+            $buyerId = null;
+            foreach (['user_id', 'payer_id', 'buyer_id', 'supporter_id'] as $key) {
+                if (! empty($meta[$key])) {
+                    $buyerId = $meta[$key];
+                    break;
+                }
+            }
+
+            // Only a real intent id — `$data->id` is an `acct_`/`po_`/`in_` on
+            // most other events, and a wrong id here silently files a message
+            // against a payment it has nothing to do with.
+            $intentId = $data->payment_intent ?? $data->id ?? null;
+            if (! is_string($intentId) || ! str_starts_with($intentId, 'pi_')) {
+                $intentId = null;
+            }
+
+            NotificationContext::for([
+                'context_type' => $contextType,
+                'context_id' => $itemId,
+                'stripe_session_id' => $sessionId,
+                'stripe_payment_intent_id' => $intentId,
+                'buyer_id' => $buyerId,
+                'buyer_email' => $data->customer_details->email ?? $meta['guest_email'] ?? null,
+                'creator_id' => $meta['creator_id'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            NotificationContext::clear();
+        }
+    }
+
     public function completeBySessionLookup($session): void
     {
         $sid = $session->id;
@@ -3953,6 +4103,73 @@ class StripeWebhookController extends Controller
         Payment::where('stripe_session_id', $session->id)
             ->where('status', 'initiated')
             ->update(['status' => 'expired']);
+
+        // ⚠️ This used to touch the risk-ledger `Payment` table and nothing else, so
+        // an abandoned SUBSCRIPTION checkout sat at `initiated` forever — long after
+        // Stripe had expired the session and the link in it was dead. Every retry
+        // then added another row beside it.
+        try {
+            $checkout = app(SubscriptionCheckoutService::class);
+            $sub = $checkout->rowForSession($session->id ?? null);
+
+            if ($sub) {
+                $checkout->markDead($sub, 'stripe_session_expired');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Webhook: could not close the expired subscription checkout: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Record the card from a completed platform-subscription setup checkout.
+     *
+     * Returns true when this session WAS a subscription checkout, whether or not
+     * this call is the one that completed it — either way there is nothing else in
+     * the fulfilment pipeline for it to do.
+     *
+     * ⚠️ Matched on `session_id`, not on metadata. Sessions already open in
+     * production carry their metadata on the SetupIntent rather than the session, so
+     * a metadata-only match would recover none of the creators currently stuck.
+     */
+    private function completeSubscriptionCheckout($session): bool
+    {
+        try {
+            $checkout = app(SubscriptionCheckoutService::class);
+            $sub = $checkout->rowForSession($session->id ?? null);
+
+            if (! $sub) {
+                return false;
+            }
+
+            if ($sub->status !== SubscriptionCheckoutService::STATUS_STARTED) {
+                // Already finished — most likely by the redirect, which is the
+                // normal outcome. Still ours, so no other handler should see it.
+                return true;
+            }
+
+            // A `subscription`-mode session creates a real subscription and is
+            // finished by the existing MonthlyCharge handlers keyed on `stripe_id`.
+            if (($session->mode ?? null) !== 'setup') {
+                return false;
+            }
+
+            $completed = $checkout->completeSetupCheckout($sub, $session, 'webhook');
+
+            if ($completed && $sub->user) {
+                $checkout->activateIfAlreadySelling($sub->user, $sub->fresh());
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            // Never swallow silently into a 200: a lost card here is the exact
+            // failure this branch exists to prevent, so let the caller's handler
+            // record it and let Stripe retry.
+            Log::error('Webhook: subscription checkout completion failed: '.$e->getMessage(), [
+                'session_id' => $session->id ?? null,
+            ]);
+
+            throw $e;
+        }
     }
 
     private function handleAsyncPaymentFailed($session)
@@ -5323,28 +5540,72 @@ class StripeWebhookController extends Controller
             }
 
             $schedule = $account->settings->payouts->schedule->interval;
-            if ($schedule !== 'manual') {
-                Log::warning("Stripe Risk: Account {$account->id} changed payout schedule to {$schedule}. Reverting and locking.");
-
-                $creator = User::where('account_id', $account->id)->first();
-                if ($creator) {
-                    // Auto-lock the account
-                    $creator->suspended_account = 1;
-                    $creator->save();
-                    $creator->tokens()->delete();
-
-                    // Mark as HIGH RISK with minimum 20% reserve
-                    $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
-                    $metrics->risk_level = 'high';
-                    $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
-                    $metrics->save();
-
-                    // Revert to manual
-                    StripeControl::ensureManualPayoutSchedule($account->id);
-
-                    Log::warning("Stripe Risk: Account {$account->id} locked and marked HIGH RISK due to payout schedule manipulation.");
-                }
+            if ($schedule === 'manual') {
+                return;
             }
+
+            $creator = $creator ?? User::where('account_id', $account->id)->first();
+            if (! $creator) {
+                return;
+            }
+
+            // ⚠️ Trust the LIVE account, never this event's payload. Stripe does
+            // not guarantee event ordering, so an account.updated generated
+            // BEFORE our own manual-schedule write can be delivered after it —
+            // and that stale payload reads exactly like a creator tampering
+            // with their payout schedule. Suspending is irreversible without an
+            // admin, so it must never rest on a possibly-stale copy.
+            try {
+                $live = StripeControl::getAccount($account->id);
+                if (($live->settings->payouts->schedule->interval ?? null) === 'manual') {
+                    return;
+                }
+            } catch (\Throwable $e) {
+                // Could not confirm. Do NOT suspend: a locked-out creator is a
+                // far worse outcome than a schedule left unenforced until the
+                // next payout:enforce-manual run (every ten minutes).
+                Log::warning("Stripe Risk: could not confirm payout schedule for {$account->id}, not acting.", [
+                    'error' => $e->getMessage(),
+                ]);
+
+                return;
+            }
+
+            // A brand-new Express account carries Stripe's own AUTOMATIC default
+            // until our manual write lands, and a creator who connected an hour
+            // ago has had no opportunity to change anything. Fix it silently.
+            // Suspending here locked out creators on their first day for
+            // something the platform did — the single biggest source of
+            // wrongful suspensions on newly connected accounts.
+            $connectedAt = $creator->stripe_connected_at ? Carbon::parse($creator->stripe_connected_at) : null;
+            if ($connectedAt === null || $connectedAt->greaterThan(now()->subHours(self::PAYOUT_SCHEDULE_GRACE_HOURS))) {
+                Log::warning("Stripe Risk: Account {$account->id} is on '{$schedule}' within the connect grace window. Reverting to manual, not suspending.", [
+                    'user_id' => $creator->id,
+                    'stripe_connected_at' => $connectedAt?->toIso8601String(),
+                ]);
+
+                StripeControl::ensureManualPayoutSchedule($account->id);
+
+                return;
+            }
+
+            Log::warning("Stripe Risk: Account {$account->id} changed payout schedule to {$schedule}. Reverting and locking.");
+
+            // Auto-lock the account
+            $creator->suspended_account = 1;
+            $creator->save();
+            $creator->tokens()->delete();
+
+            // Mark as HIGH RISK with minimum 20% reserve
+            $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+            $metrics->risk_level = 'high';
+            $metrics->reserve_percent = max((int) $metrics->reserve_percent, 20);
+            $metrics->save();
+
+            // Revert to manual
+            StripeControl::ensureManualPayoutSchedule($account->id);
+
+            Log::warning("Stripe Risk: Account {$account->id} locked and marked HIGH RISK due to payout schedule manipulation.");
         } catch (\Exception $e) {
             Log::error('Error handling account.updated for risk monitoring: '.$e->getMessage());
         }
@@ -5653,6 +5914,27 @@ class StripeWebhookController extends Controller
             if (! $isPlatformPayout && $payout->status !== 'canceled' && $payout->status !== 'failed') {
                 $accountId = $event->account ?? null;
                 Log::critical("Stripe Risk: Unexpected payout created {$payout->id} on account {$accountId}.");
+
+                // ⚠️ An AUTOMATIC payout is Stripe's own scheduler, not the
+                // creator. A creator cannot create one — only a payout schedule
+                // can — so the fault is a schedule that is not manual, which is
+                // handleAccountUpdated's decision to make (it re-reads the live
+                // account and honours the connect grace window). Suspending here
+                // locked out newly connected creators the first time Stripe's
+                // default schedule swept their balance, for something they never
+                // did. Force the schedule back and alert instead.
+                if (($payout->automatic ?? false) === true) {
+                    Log::critical("Stripe Risk: AUTOMATIC payout {$payout->id} on account {$accountId} — payout schedule is not manual. Reverting schedule, not suspending.");
+
+                    if ($accountId) {
+                        StripeControl::ensureManualPayoutSchedule(
+                            $accountId,
+                            strtoupper((string) ($payout->currency ?? 'GBP'))
+                        );
+                    }
+
+                    return;
+                }
 
                 if ($accountId) {
                     $creator = User::where('account_id', $accountId)->first();

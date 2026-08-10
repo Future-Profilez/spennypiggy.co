@@ -1,7 +1,7 @@
 import { lazy, Suspense, useRef } from "react";
 import { usePage } from "@inertiajs/react";
 import { CopyIcon } from "@animateicons/react/lucide";
-import { BadgeCheckIcon } from "lucide-react";
+import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import {
     FaInstagram,
     FaXTwitter,
@@ -179,7 +179,7 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                     }`}
                 >
                     <span className="line-clamp-1">{user?.name}</span>
-                    {(user?.role == 1 && user?.profile_status_lock == 2 && (
+                    {(verifiedTier(user) && (
                         <span className="flex items-center inline-block transform hover:scale-110 transition-transform">
                             {user?.is_founder ? (
                                 <Suspense
@@ -193,8 +193,15 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                                     />
                                 </Suspense>
                             ) : (
-                                <BadgeCheckIcon
-                                    className={`min-w-7 min-h-7 w-7 h-7 ${onCover ? "text-white" : "text-[#1d3ef8]"}`}
+                                /* ⚠️ The tier colour is kept over the cover photo
+                                   rather than forced to white — this is the one
+                                   place the grey/pink difference is most worth
+                                   reading, so contrast comes from a shadow
+                                   instead of throwing the colour away. */
+                                <VerifiedBadge
+                                    user={user}
+                                    size="xl"
+                                    className={onCover ? "drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)]" : ""}
                                 />
                             )}
                         </span>

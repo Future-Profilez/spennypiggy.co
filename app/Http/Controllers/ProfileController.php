@@ -22,6 +22,7 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostCommentReplies;
 use App\Models\PostLike;
+use App\Models\ProfileChangeRequest;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
@@ -46,12 +47,14 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Services\Ledger\LedgerRules;
+use App\Services\NotificationDeliveryService;
 use App\Services\RekognitionModeration;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\PresetCovers;
+use App\Support\ProfileAssetVisibility;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -92,11 +95,47 @@ class ProfileController extends Controller
 
     public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
     {
-        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(config('services.uploadcare.secret'), 300));
-        $config = Configuration::create(config('services.uploadcare.public'), config('services.uploadcare.secret'))->setAuthUrlConfig($authUrlConfig);
+        // ⚠️ Both Uploadcare constructors are typed `string`, so a missing key is a
+        // TypeError in the CONSTRUCTOR — every route on this controller (including
+        // `GET /account` and `POST /edit-profile`) dies with a 500 before any of its
+        // own error handling runs. That is why none of them had a test: the keys are
+        // absent from `.env.testing`. An empty key surfaces as an auth failure from
+        // Uploadcare on the one call that needs it, which is diagnosable; a fatal on
+        // page load is not.
+        $publicKey = (string) (config('services.uploadcare.public') ?? '');
+        $secretKey = (string) (config('services.uploadcare.secret') ?? '');
+
+        $config = Configuration::create($publicKey, $secretKey);
+
+        // `AkamaiToken` additionally rejects anything that is not an even-length hex
+        // string, so the signed-URL config is attached only when the key can actually
+        // sign. Signed delivery is a delivery concern; uploading does not need it.
+        if ($secretKey !== '' && strlen($secretKey) % 2 === 0 && ctype_xdigit($secretKey)) {
+            $config->setAuthUrlConfig(new AuthUrlConfig('ucarecdn.com', new AkamaiToken($secretKey, 300)));
+        }
         $this->uploadcareApi = new Api($config);
         $this->google2FA = $google2FA;
         $this->userProfileService = $userProfileService;
+    }
+
+    /**
+     * Did the posted image actually change?
+     *
+     * ⚠️ The CROP counts. A creator who re-frames the same photo has changed what
+     * the public sees while the uuid stays identical, so comparing uuids alone would
+     * publish a new crop with no review at all — and comparing nothing, which is what
+     * this replaced, re-opened an already-approved photo on every unrelated save.
+     */
+    private static function mediaDiffers(array $posted, ?string $currentUuid, ?string $currentModifier): bool
+    {
+        $postedUuid = $posted['uuid'] ?? null;
+
+        if (blank($postedUuid)) {
+            return false;
+        }
+
+        return $postedUuid !== $currentUuid
+            || ($posted['cdnUrlModifiers'] ?? null) !== $currentModifier;
     }
 
     /**
@@ -224,7 +263,16 @@ class ProfileController extends Controller
                         'user_profile_status' => 1,
                     ]);
                 }
-                if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
+                // ⚠️ This used to read
+                //   `$request->bio !== $user->bio || $request->social_handle !== $user->social_handle`
+                // and `social_handle` is not a column on `users` — no migration, not in
+                // `$fillable`, absent from the schema dump — so `$user->social_handle` is
+                // always null. It reads as "every save re-opens the bio for review", and it
+                // is not: `ConvertEmptyStringsToNull` is global (Kernel.php:72), so the
+                // form's `""` arrives as null too and `null !== null` is false. The clause
+                // was inert. It is gone because a condition nobody can evaluate by reading
+                // it is worse than no condition, and `$updatedFields['social']` with it.
+                if ($request->bio !== $user->bio) {
 
                     UserVerificationStatus::UpdateOrCreate([
                         'user_id' => $user->id,
@@ -234,23 +282,40 @@ class ProfileController extends Controller
                         'bio_status' => ! empty($request->bio) ? 0 : null,
                     ]);
 
-                    $updatedFields = [
-                        'bio' => $request->bio !== $user->bio,
-                        'social' => $request->social_handle !== $user->social_handle,
-                    ];
-
-                    if ($user->profile_status_lock == 2 && ((! empty($updatedFields['bio']) && ! empty($request->bio)) || ! empty($updatedFields['social']))) {
-                        dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
+                    if ($user->profile_status_lock == 2 && ! empty($request->bio)) {
+                        dispatch(new SendBioSocialUpdateEmail($user, ['bio' => true, 'social' => false]));
                     }
 
-                    if ($user->bio_approved == 2 || $user->bio_approved == 1) {
-                        $user->bio_approved = 0;
+                    // A bio that is already published is edited through review: the
+                    // approved text stays on the profile until an admin decides, and a
+                    // rejection costs nothing because nothing was overwritten.
+                    if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_BIO)) {
+                        ProfileChangeRequest::open(
+                            $user,
+                            ProfileChangeRequest::ASSET_BIO,
+                            ['bio' => $request->bio],
+                            ['bio' => $user->bio],
+                        );
+                    } else {
+                        if ($user->bio_approved == 2 || $user->bio_approved == 1) {
+                            $user->bio_approved = 0;
+                        }
+
+                        $user->bio = $request->bio;
                     }
 
-                    $user->bio = $request->bio;
-                    if ($user->profile_status_lock == 2) {
-                        $user->profile_status_lock = 1;
-                    }
+                    // 🚨 `profile_status_lock = 1` is NOT "under review" — it is a
+                    // punishment. It takes the verified badge (VerifiedBadge.php:95),
+                    // removes the creator from Discover, search, trending and top-earners
+                    // and DELISTS EVERY ITEM THEY SELL (24 hard `where('profile_status_lock', 2)`
+                    // in DiscoveryService), and blocks Stripe onboarding
+                    // (StripeController.php:551, :809). Nothing on the website ever sets it
+                    // back to 2 — only an admin can, so one bio edit cost a creator their
+                    // discoverability until someone in the back office noticed.
+                    //
+                    // The review queue does not need it: CreatorReviewService::queue()
+                    // already picks up `lock = 2 AND whereAssetPending()`, and the pending
+                    // change (or `bio_approved = 0` above) is exactly that signal.
                     if ($userProfileStatus) {
                         $userProfileStatus->user_profile_status = 0;
                         $userProfileStatus->save();
@@ -259,20 +324,61 @@ class ProfileController extends Controller
 
                 $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
 
-                if (is_array($avatar) && ! empty($avatar)) {
-                    $user->avatar = $avatar['uuid'] ?? null;
-                    $user->avatar_approved = 0;
-                    // $user->profile_status_lock = 1;
-                    $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+                $pendingAvatarChange = null;
+                $pendingCoverChange = null;
+
+                // ⚠️ These were unconditional on "an image object was posted" — they
+                // never compared the uuid — so re-opening the form and saving re-zeroed
+                // the approval flag on a photo an admin had already cleared. A change is
+                // now a change: same uuid and same crop is not one.
+                $avatarChanged = is_array($avatar) && ! empty($avatar) && self::mediaDiffers(
+                    $avatar, $user->avatar, $user->avatar_cdn_modifier
+                );
+                $coverChanged = is_array($cover) && ! empty($cover) && self::mediaDiffers(
+                    $cover, $user->cover, $user->cover_cdn_modifier
+                );
+
+                if ($avatarChanged) {
+                    if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_AVATAR)) {
+                        // The approved photo stays on the profile. Nothing here writes
+                        // `users.avatar`, so there is no old uuid to lose.
+                        $pendingAvatarChange = ProfileChangeRequest::open(
+                            $user,
+                            ProfileChangeRequest::ASSET_AVATAR,
+                            ['uuid' => $avatar['uuid'] ?? null, 'cdn_modifier' => $avatar['cdnUrlModifiers'] ?? null],
+                            ['uuid' => $user->avatar, 'cdn_modifier' => $user->avatar_cdn_modifier],
+                        );
+                    } else {
+                        $user->avatar = $avatar['uuid'] ?? null;
+                        $user->avatar_approved = 0;
+                        $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
+                    }
+
                     if ($userProfileStatus) {
                         $userProfileStatus->user_profile_status = 0;
                         $userProfileStatus->save();
                     }
                 }
-                if (is_array($cover) && ! empty($cover)) {
-                    $user->cover = $cover['uuid'] ?? null;
-                    $user->cover_approved = PresetCovers::isPreApproved($user->cover) ? 1 : 0;
-                    $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+
+                if ($coverChanged) {
+                    $coverUuid = $cover['uuid'] ?? null;
+
+                    // A curated cover is pre-approved, so it goes live immediately and
+                    // opens no review — it has already been vetted, and holding it would
+                    // queue work nobody needs to do.
+                    if (! PresetCovers::isPreApproved($coverUuid)
+                        && ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_COVER)) {
+                        $pendingCoverChange = ProfileChangeRequest::open(
+                            $user,
+                            ProfileChangeRequest::ASSET_COVER,
+                            ['uuid' => $coverUuid, 'cdn_modifier' => $cover['cdnUrlModifiers'] ?? null],
+                            ['uuid' => $user->cover, 'cdn_modifier' => $user->cover_cdn_modifier],
+                        );
+                    } else {
+                        $user->cover = $coverUuid;
+                        $user->cover_approved = PresetCovers::isPreApproved($user->cover) ? 1 : 0;
+                        $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
+                    }
                 }
 
                 if ($request->hasFile('social_image')) {
@@ -327,7 +433,21 @@ class ProfileController extends Controller
                 // creator sees. Only dispatched when the upload actually changed,
                 // so an unrelated profile edit does not re-scan (and re-flag) a
                 // photo an admin already cleared.
-                if (is_array($avatar) && ! empty($avatar) && ! empty($user->avatar)) {
+                //
+                // 🚨 A PENDING change is scanned against its own row, never against
+                // `users`. `users.moderation_reason` describes the LIVE photo, and
+                // `CreatorReviewAdvisor::media()` reads it — writing a pending upload's
+                // verdict there would make the console recommend rejecting the photo the
+                // admin already approved and the public is still looking at.
+                if ($pendingAvatarChange) {
+                    CheckMediaModeration::dispatch(
+                        ProfileChangeRequest::class,
+                        $pendingAvatarChange->id,
+                        $pendingAvatarChange->proposed['uuid'] ?? null,
+                        ['scan_state' => ProfileChangeRequest::SCAN_FLAGGED],
+                        'avatar'
+                    );
+                } elseif ($avatarChanged && ! empty($user->avatar)) {
                     CheckMediaModeration::dispatch(
                         User::class,
                         $user->id,
@@ -340,7 +460,15 @@ class ProfileController extends Controller
                 // A curated cover is never re-scanned: it has already been
                 // reviewed, and a false positive would pull the same banner off
                 // every profile using it, on an unrelated profile edit.
-                if (is_array($cover) && ! empty($cover) && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
+                if ($pendingCoverChange) {
+                    CheckMediaModeration::dispatch(
+                        ProfileChangeRequest::class,
+                        $pendingCoverChange->id,
+                        $pendingCoverChange->proposed['uuid'] ?? null,
+                        ['scan_state' => ProfileChangeRequest::SCAN_FLAGGED],
+                        'cover'
+                    );
+                } elseif ($coverChanged && ! empty($user->cover) && ! PresetCovers::isPreApproved($user->cover)) {
                     CheckMediaModeration::dispatch(
                         User::class,
                         $user->id,
@@ -376,6 +504,7 @@ class ProfileController extends Controller
             $user = User::where('id', Auth::id())->first();
             if ($user->role == 1) {
                 $user->profile_status_lock = 1;
+                $user->profile_reject_reason = null;
                 $user->save();
             }
 
@@ -1564,6 +1693,11 @@ class ProfileController extends Controller
         // larger than both their dashboard net income and what the payout run would pay.
         $fulfilmentMap = LedgerRules::fulfilmentMap($rows);
 
+        // "Were you told about this?" — the viewer's OWN email/push/bell status
+        // per purchase. Scoped to them by the service; a creator never sees
+        // whether their supporter's receipt arrived, and vice versa.
+        $deliveryByTx = app(NotificationDeliveryService::class)->forLedgerRows(Auth::id(), $rows);
+
         $supportTickets = SupportTicket::whereIn('source_id', $rows->map(function ($tx) {
             return $tx->source_type === FinancialTransaction::class || empty($tx->source_type) ? $tx->id : $tx->source_id;
         })->filter())
@@ -1708,7 +1842,7 @@ class ProfileController extends Controller
             }
         }
 
-        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey, $fulfilmentMap) {
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert, $supportTickets, $gatedPostCounts, $composite, $reactionsByKey, $userReactedByKey, $repliesByKey, $fulfilmentMap, $deliveryByTx) {
             $from = strtoupper($tx->currency ?? 'GBP');
             // Supporter side reads what was charged; creator side reads what they keep.
             // Both come from LedgerRules so the Purchase Hub cannot report a third figure.
@@ -2004,6 +2138,11 @@ class ProfileController extends Controller
                 $event['user_reacted'] = [];
                 $event['replies'] = [];
             }
+
+            // Null means we cannot speak to it — either nothing was recorded, or
+            // the purchase predates delivery logging. The UI says so rather than
+            // implying nobody was told.
+            $event['notifications'] = $deliveryByTx[$tx->id] ?? null;
 
             return $event;
         })->values()->toArray();

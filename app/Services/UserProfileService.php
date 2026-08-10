@@ -69,6 +69,10 @@ class UserProfileService
                 'country',
                 'creator_category',
                 'identity_status',
+                // The badge tier is derived from these; an admin rejection of
+                // the identity check outranks Stripe's pass, and a suspended
+                // account carries no badge at all. See App\Support\VerifiedBadge.
+                'identity_admin_status',
                 'edit_bio_reason',
                 'profile_status_lock',
                 'is_subscribed',
@@ -150,10 +154,17 @@ class UserProfileService
     public function getOptimizedTasks(int $userId, bool $isOwner, ?int $limit = null): array
     {
         $query = Task::where('creator_id', $userId);
+
+        // ⚠️ The owner sees their own scheduled listings — they manage this page, and a
+        // listing that silently vanished until launch day would read as lost work. The
+        // public sees only what is on sale.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
         if (! $isOwner) {
             $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description'])
+        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description', 'publish_at'])
             ->latest();
 
         $cacheKey = 'user_tasks_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -172,7 +183,7 @@ class UserProfileService
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner, int $limit = 20): array
     {
-        $query = WishItem::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -192,11 +203,39 @@ class UserProfileService
             'tax_amount',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+            'publish_at',
+        ];
+
+        // ⚠️ The owner edits a wish straight from their own card, and the edit
+        // form patches whatever it sends — a column absent from this payload
+        // loads as an empty field and is written back empty. `reward_body` is
+        // the paid deliverable of a message/link reward, so it is OWNER ONLY
+        // (the model hides it; HasRewardContract reveals it to the owner).
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'item_url',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+                'subscription_period',
+                'repeat_purchase',
+                'ai_generated',
+                'reward',
+            ]);
+        }
+
+        $query = WishItem::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('is_approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         if ($categoryId && $categoryId !== 'all') {
@@ -235,11 +274,15 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
+            'publish_at',
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_memberships_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -259,7 +302,7 @@ class UserProfileService
      */
     private function getOptimizedBills(int $userId, bool $isOwner, ?int $limit = null): array
     {
-        $query = Bills::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -275,11 +318,34 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+            'publish_at',
+        ];
+
+        // ⚠️ The owner edits a bill straight from their own card, and the edit
+        // form sends the whole reward object back — a column absent here loads
+        // empty, and `billEdit` then either refuses the save (a file/message
+        // reward is required) or writes the empty value. `reward_body` is the
+        // paid deliverable of a message/link reward, so it is OWNER ONLY.
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+            ]);
+        }
+
+        $query = Bills::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_bills_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -302,6 +368,11 @@ class UserProfileService
         $query = Shop::where('user_id', $userId)->where('status', 1)
             ->with('category')
             ->withCount('paidPayments');
+
+        // See getOptimizedTasks — the owner sees their own scheduled listings.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
 
         if ($isOwner) {
             $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);

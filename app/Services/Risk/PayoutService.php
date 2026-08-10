@@ -776,6 +776,12 @@ class PayoutService
                                 sentAt: now()->format('d M Y'),
                                 destination: $creator->account_id ? 'Connected account '.$creator->account_id : null,
                                 reference: $payout->id ?? null,
+                                // Same isset() guard as the PayoutRecord write above:
+                                // Carbon::createFromTimestamp(null) raises a TypeError, and this
+                                // runs AFTER the money moved.
+                                arrivalDate: isset($payout->arrival_date)
+                                    ? Carbon::createFromTimestamp($payout->arrival_date)->format('d M Y')
+                                    : null,
                             )
                         );
                     } catch (\Throwable $mailError) {

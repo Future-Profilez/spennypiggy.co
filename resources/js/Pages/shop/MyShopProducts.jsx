@@ -10,6 +10,7 @@ import Nocontent from '@/includes/Nocontent';
 import { WaitingCount } from '@/Components/WaitlistButton';
 import ItemFunnelLine from '@/Components/ItemFunnelLine';
 import PriceFormat from '@/includes/PriceFormat';
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 const ProductCardSkeleton = () => (
    <div className="overflow-hidden rounded-box border-[3px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-pulse">
@@ -204,6 +205,15 @@ export default function MyShopProducts({lists, loading, update}) {
                            )}
                            {s.edited_status == 0 && s.edited_reason && (
                               <StatusStrip tone="note" label="Admin requested changes" detail={s.edited_reason} />
+                           )}
+
+                           {/* A scheduled listing looks exactly like a live one here, and
+                               it is not on sale — without this the creator finds out when
+                               the sales do not arrive. */}
+                           {s.publish_at && (
+                              <div className="px-4 pt-3">
+                                 <ScheduledBadge publishAt={s.publish_at} />
+                              </div>
                            )}
 
                            <div className="flex flex-1 flex-col p-4">

@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
+import userphoto from '../../../../assets/siteicon.png';
 
 /**
- * DiscoverHero — premium dark hero. A pink-glow headline over a live "Happening
- * now" ticker built entirely from data the page already receives (no new backend).
- * The ticker + glow are the signature: quiet, high-end, but alive.
+ * DiscoverHero — the signature of the Discover page.
+ *
+ * The page is about people, so the hero shows people: a live wall of real
+ * creator faces drifting in alternating columns beside the headline. Everything
+ * is built from data the page already receives — no new backend, no new request.
+ * The wall is desktop-only; a phone gets the headline, the CTA and the ticker.
  */
 export default function DiscoverHero({
     featuredCreators = [],
@@ -16,133 +20,218 @@ export default function DiscoverHero({
 }) {
     const reduce = useReducedMotion();
 
-    const events = useMemo(() => {
+    // One deduped pool of faces for the wall.
+    const faces = useMemo(() => {
+        const seen = new Set();
         const out = [];
-        (topEarners || []).slice(0, 6).forEach((c) => {
+        [...(featuredCreators || []), ...(newVerifiedCreators || []), ...(topEarners || [])].forEach((c) => {
+            if (!c?.username || seen.has(c.username)) return;
+            seen.add(c.username);
+            out.push({
+                username: c.username,
+                name: c.name,
+                img: c.avatar_url || c.cover_url || userphoto,
+                hot: Number(c.clicks_24h) > 0,
+            });
+        });
+        return out;
+    }, [featuredCreators, newVerifiedCreators, topEarners]);
+
+    // Three columns, each long enough to loop seamlessly.
+    const columns = useMemo(() => {
+        if (faces.length < 3) return [];
+        const cols = [[], [], []];
+        faces.forEach((f, i) => cols[i % 3].push(f));
+        return cols
+            .filter((c) => c.length)
+            .map((c) => {
+                const filled = [...c];
+                while (filled.length < 4) filled.push(...c);          // never a short column
+                return [...filled, ...filled];                        // duplicate = seamless loop
+            });
+    }, [faces]);
+
+    const ticker = useMemo(() => {
+        const out = [];
+        (topEarners || []).slice(0, 5).forEach((c) => {
             if (!c?.username) return;
-            out.push({ k: `e-${c.id}`, emoji: '💎', to: `/${c.username}`,
+            out.push({ k: `e-${c.id}`, mark: '◆', to: `/${c.username}`,
                 text: <><b className="text-white">@{c.username}</b> top earner this week</> });
         });
-        (featuredCreators || []).slice(0, 10).forEach((c) => {
+        (featuredCreators || []).slice(0, 8).forEach((c) => {
             if (!c?.username) return;
-            out.push({ k: `v-${c.id}`, emoji: '🔥', to: `/${c.username}`,
+            out.push({ k: `v-${c.id}`, mark: '↗', to: `/${c.username}`,
                 text: c.clicks_24h
                     ? <><b className="text-white">@{c.username}</b> · {c.clicks_24h} views today</>
                     : <><b className="text-white">@{c.username}</b> trending now</> });
         });
-        (newVerifiedCreators || []).slice(0, 6).forEach((c) => {
-            if (!c?.username) return;
-            out.push({ k: `n-${c.id}`, emoji: '✦', to: `/${c.username}`,
-                text: <><b className="text-white">@{c.username}</b> just joined</> });
-        });
-        (featuredWishes || []).slice(0, 6).forEach((w) => {
-            const title = w?.title || w?.name || w?.content_description;
+        (featuredWishes || []).slice(0, 5).forEach((w) => {
+            const title = w?.wishname || w?.title || w?.name;
             const uname = w?.user?.username;
             if (!title || !uname) return;
-            out.push({ k: `w-${w.id}`, emoji: '↗', to: `/${uname}`,
-                text: <><b className="text-white">@{uname}</b> · {String(title).slice(0, 30)}</> });
+            out.push({ k: `w-${w.id}`, mark: '✦', to: `/${uname}`,
+                text: <><b className="text-white">@{uname}</b> · {String(title).slice(0, 28)}</> });
         });
         return out.sort((a, b) => (a.k.charCodeAt(0) + a.k.length) - (b.k.charCodeAt(0) + b.k.length));
-    }, [featuredCreators, newVerifiedCreators, topEarners, featuredWishes]);
+    }, [featuredCreators, topEarners, featuredWishes]);
 
-    const stats = useMemo(() => {
-        const creators = featuredCreators?.length || 0;
-        const wishes = featuredWishes?.length || 0;
-        const views = (featuredCreators || []).reduce((s, c) => s + (Number(c?.clicks_24h) || 0), 0);
-        const fresh = newVerifiedCreators?.length || 0;
-        return [
-            { n: creators ? `${creators}+` : '—', label: 'creators trending' },
-            views
-                ? { n: views.toLocaleString(), label: 'views today' }
-                : { n: wishes ? `${wishes}+` : '—', label: 'wishes live' },
-            { n: fresh ? `${fresh}` : (creators ? `${creators}` : '—'), label: fresh ? 'new & verified' : 'to explore' },
-        ];
-    }, [featuredCreators, newVerifiedCreators, featuredWishes]);
-
-    const loop = events.length ? [...events, ...events] : [];
+    const loop = ticker.length ? [...ticker, ...ticker] : [];
+    const creatorCount = faces.length;
+    const wishCount = featuredWishes?.length || 0;
 
     return (
         <section className="container max-w-7xl mx-auto px-4 pt-6 pb-2 md:pt-8">
-          <div className="relative overflow-hidden rounded-[30px] bg-[#0E0E12] shadow-[0_16px_40px_-16px_rgba(0,0,0,0.55)]">
-            {/* ambient pink glow */}
-            <div className="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[#FF007F]/25 blur-[120px]" aria-hidden />
-            <div className="pointer-events-none absolute -top-24 right-10 h-64 w-64 rounded-full bg-[#A2E4B8]/10 blur-[100px]" aria-hidden />
+            <div className="relative overflow-hidden rounded-[30px] bg-[#0E0E12] shadow-[0_16px_40px_-16px_rgba(0,0,0,0.55)]">
+                {/* ambient light, kept behind everything */}
+                <div className="pointer-events-none absolute -left-24 top-0 h-[380px] w-[380px] rounded-full bg-[#FF007F]/20 blur-[120px]" aria-hidden />
+                <div className="pointer-events-none absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[#A2E4B8]/10 blur-[100px]" aria-hidden />
 
-            <div className="relative px-6 pt-10 pb-8 md:px-10 md:pt-14 md:pb-12">
-                {/* live eyebrow */}
-                <div className="inline-flex items-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur">
-                    <span className="relative flex h-2 w-2">
-                        {!reduce && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF007F] opacity-70" />}
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FF007F]" />
-                    </span>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">Happening now</span>
-                </div>
-
-                {/* headline */}
-                <h1 className="mt-5 font-anton uppercase tracking-tight text-white leading-[0.95] text-[44px] sm:text-6xl md:text-[86px]">
-                    Find your next
-                    <span className="block bg-gradient-to-r from-[#FF007F] via-[#FF4FA8] to-[#FF007F] bg-clip-text text-transparent">
-                        obsession
-                    </span>
-                </h1>
-                <p className="mt-5 max-w-lg text-[15px] md:text-base leading-relaxed text-white/60">
-                    Real creators, live right now. Browse who's trending, unlock their content, and back the people worth following.
-                </p>
-
-                {/* stats + CTA */}
-                <div className="mt-8 flex flex-wrap items-center gap-3">
-                    {stats.map((s) => (
-                        <div key={s.label} className="rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-2.5 backdrop-blur">
-                            <div className="font-anton text-[22px] leading-none text-white">{s.n}</div>
-                            <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-white/45">{s.label}</div>
+                <div className="relative flex">
+                    {/* ── Left: the pitch ───────────────────────────── */}
+                    <div className="relative z-10 w-full lg:w-[58%] px-6 py-10 md:px-10 md:py-14">
+                        <div className="inline-flex items-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur">
+                            <span className="relative flex h-2 w-2">
+                                {!reduce && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF007F] opacity-70" />}
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FF007F]" />
+                            </span>
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+                                {creatorCount > 0 ? `${creatorCount} creators live` : 'Happening now'}
+                            </span>
                         </div>
-                    ))}
-                    <button
-                        onClick={onExplore}
-                        className="group inline-flex items-center gap-2 rounded-[20px] bg-[#FF007F] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_30px_-6px_rgba(255,0,127,0.6)] transition-all hover:bg-[#ff1a8c] hover:shadow-[0_10px_40px_-6px_rgba(255,0,127,0.75)]"
-                    >
-                        Explore creators
-                        <span className="transition-transform group-hover:translate-x-0.5">→</span>
-                    </button>
-                </div>
-            </div>
 
-            {/* live ticker */}
-            {loop.length > 0 && (
-                <div className="relative border-t border-white/[0.06] bg-white/[0.02] backdrop-blur">
-                    <div className="flex items-stretch">
-                        <div className="hidden shrink-0 items-center gap-1.5 px-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF007F] sm:flex">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" /> Live
+                        <h1 className="mt-6 font-anton uppercase leading-[0.92] tracking-tight text-white text-[34px] sm:text-[44px] md:text-[56px]">
+                            Find your next
+                            <span className="mt-1 block bg-gradient-to-r from-[#FF007F] via-[#FF4FA8] to-[#FF007F] bg-clip-text text-transparent">
+                                obsession
+                            </span>
+                        </h1>
+
+                        {/* a rule, then the promise — structure instead of a second paragraph */}
+                        <div className="mt-6 flex max-w-md items-start gap-4">
+                            <span className="mt-2.5 h-px w-10 shrink-0 bg-[#FF007F]" aria-hidden />
+                            <p className="text-[15px] leading-relaxed text-white/60">
+                                Real creators, live right now. Unlock their content and back the people worth following.
+                            </p>
                         </div>
-                        {/* edge fade */}
-                        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#0E0E12] to-transparent" aria-hidden />
-                        <div className="relative flex-1 overflow-hidden py-3">
-                            {reduce ? (
-                                <div className="flex gap-10 overflow-x-auto px-4 no-scrollbar">
-                                    {events.map((e) => <TickerItem key={e.k} e={e} />)}
-                                </div>
-                            ) : (
-                                <motion.div
-                                    className="flex w-max gap-10 px-4"
-                                    animate={{ x: ['0%', '-50%'] }}
-                                    transition={{ duration: Math.max(20, loop.length * 2.6), ease: 'linear', repeat: Infinity }}
-                                >
-                                    {loop.map((e, i) => <TickerItem key={`${e.k}-${i}`} e={e} />)}
-                                </motion.div>
+
+                        <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                            <button
+                                onClick={onExplore}
+                                className="group inline-flex min-h-[44px] items-center gap-2 rounded-[20px] bg-[#FF007F] px-6 text-sm font-bold text-white shadow-[0_8px_30px_-6px_rgba(255,0,127,0.6)] transition-all hover:bg-[#ff1a8c] hover:shadow-[0_10px_40px_-6px_rgba(255,0,127,0.75)]"
+                            >
+                                Explore creators
+                                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                            </button>
+                            {(creatorCount > 0 || wishCount > 0) && (
+                                <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/40">
+                                    {creatorCount > 0 && `${creatorCount} trending`}
+                                    {creatorCount > 0 && wishCount > 0 && ' · '}
+                                    {wishCount > 0 && `${wishCount} wishes live`}
+                                </p>
                             )}
                         </div>
                     </div>
+
+                    {/* ── Right: the live creator wall (desktop only) ── */}
+                    {columns.length === 3 && (
+                        <div
+                            className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] lg:block [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_82%,transparent)]"
+                            aria-hidden
+                        >
+                            {/* fade the wall into the panel on its left edge */}
+                            <div className="absolute inset-y-0 left-0 z-10 w-32 bg-gradient-to-r from-[#0E0E12] to-transparent" />
+                            <div className="flex h-full gap-3 px-3">
+                                {columns.map((col, ci) => (
+                                    <FaceColumn key={ci} col={col} up={ci % 2 === 0} reduce={reduce} index={ci} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
-          </div>
+
+                {/* ── Ticker ─────────────────────────────────────── */}
+                {loop.length > 0 && (
+                    <div className="relative z-10 border-t border-white/[0.06] bg-[#0B0B0F]/80 backdrop-blur">
+                        <div className="flex items-stretch">
+                            <div className="hidden shrink-0 items-center gap-1.5 px-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF007F] sm:flex">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" /> Live
+                            </div>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#0B0B0F] to-transparent" aria-hidden />
+                            <div className="relative flex-1 overflow-hidden py-3">
+                                {reduce ? (
+                                    <div className="flex gap-10 overflow-x-auto px-4 no-scrollbar">
+                                        {ticker.map((e) => <TickerItem key={e.k} e={e} />)}
+                                    </div>
+                                ) : (
+                                    <motion.div
+                                        className="flex w-max gap-10 px-4"
+                                        animate={{ x: ['0%', '-50%'] }}
+                                        transition={{ duration: Math.max(22, loop.length * 2.6), ease: 'linear', repeat: Infinity }}
+                                    >
+                                        {loop.map((e, i) => <TickerItem key={`${e.k}-${i}`} e={e} />)}
+                                    </motion.div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </section>
+    );
+}
+
+/** One drifting column of creator faces. Slow, and opposite to its neighbours. */
+function FaceColumn({ col, up, reduce, index }) {
+    const tiles = reduce ? col.slice(0, 3) : col;
+
+    const inner = tiles.map((f, i) => (
+        <div
+            key={`${f.username}-${i}`}
+            className="relative mb-3 overflow-hidden rounded-[20px] border border-white/10 bg-[#16161C]"
+        >
+            <img
+                src={f.img}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="aspect-[4/5] w-full object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+            {/* the handle is the point of the tile — give it a real chip so it
+                stays legible on a bright photo, not grey text on grey pixels */}
+            <span
+                className={`absolute bottom-2 left-2 right-2 flex items-center gap-1.5 truncate rounded-[20px] border px-2 py-1 backdrop-blur-md ${
+                    f.hot
+                        ? 'border-[#FF007F]/60 bg-[#FF007F]/20 shadow-[0_0_16px_-4px_rgba(255,0,127,0.8)]'
+                        : 'border-white/15 bg-black/55'
+                }`}
+            >
+                {f.hot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF007F] shadow-[0_0_8px_2px_rgba(255,0,127,0.7)]" />}
+                <span className="truncate text-[11px] font-bold tracking-wide text-white">@{f.username}</span>
+            </span>
+        </div>
+    ));
+
+    if (reduce) {
+        return <div className="flex-1 pt-6">{inner}</div>;
+    }
+
+    return (
+        <div className="flex-1 overflow-hidden">
+            <motion.div
+                animate={{ y: up ? ['0%', '-50%'] : ['-50%', '0%'] }}
+                transition={{ duration: 46 + index * 6, ease: 'linear', repeat: Infinity }}
+            >
+                {inner}
+            </motion.div>
+        </div>
     );
 }
 
 function TickerItem({ e }) {
     return (
         <Link href={e.to} className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-white/50 transition-colors hover:text-white/90">
-            <span className="text-[#FF007F]">{e.emoji}</span>
+            <span className="text-[#FF007F]">{e.mark}</span>
             <span>{e.text}</span>
         </Link>
     );

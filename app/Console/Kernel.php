@@ -250,9 +250,50 @@ class Kernel extends ConsoleKernel
             ->everyFifteenMinutes()
             ->withoutOverlapping(15);
 
+        // The backstop for a card checkout that was started and never resolved.
+        //
+        // ⚠️ Every ten minutes, not daily. A Stripe Checkout session lives ~24h, so
+        // a creator whose redirect was lost has to be found while their session can
+        // still be read and their reminder link still works — and until then they
+        // cannot sell anything at all. Safe to overlap-guard: the completion and the
+        // close are both atomic claims, so a second runner cannot double-apply.
+        $schedule->command('subscription:reconcile-checkouts')
+            ->everyTenMinutes()
+            ->withoutOverlapping(10);
+
         // One row per refused purchase; nothing else would ever remove one.
         $schedule->command('blocked-payments:prune')
             ->dailyAt('03:55')
+            ->withoutOverlapping(30);
+
+        // Delivery log: a row per email, push and bell entry the platform sends,
+        // so this table grows faster than any payment table. The same pass
+        // settles rows the mail transport never confirmed, which would otherwise
+        // read as "still on its way" forever.
+        $schedule->command('notification-logs:prune')
+            ->dailyAt('03:40')
+            ->withoutOverlapping(30);
+
+        // Names settled payments that produced no buyer receipt. This is the
+        // check that catches a fulfilment path which silently stops emailing —
+        // the failure mode that lost bank-settled wish receipts, where nothing
+        // errored and nothing was logged.
+        //
+        // ⚠️ HOURLY, over the last day only. Most receipts are sent from inside
+        // QUEUED jobs, so a stopped `queue:work` means the mail is never
+        // attempted and therefore never logged — the log records what the mailer
+        // did, not what was intended. The absence is the finding, and this is
+        // what reports it. It runs on the SCHEDULER, a different process from
+        // the worker, so it still fires when the worker is the thing that died;
+        // daily would have let that hide for 24 hours.
+        $schedule->command('notifications:audit-missing', ['--days' => 1])
+            ->hourlyAt(50)
+            ->withoutOverlapping(30);
+
+        // Deeper daily pass: catches anything the hourly window stepped over
+        // (a backlog drained late, a worker down overnight).
+        $schedule->command('notifications:audit-missing', ['--days' => 7])
+            ->dailyAt('06:50')
             ->withoutOverlapping(30);
 
         // Sold-out waitlist. This sweep is the GUARANTEE, not a backstop: every path
@@ -270,6 +311,14 @@ class Kernel extends ConsoleKernel
         // once-per-post work: the release stamp, the guest cache clear, and
         // telling the creator (or telling them their slot passed unreviewed).
         $schedule->command('posts:publish-scheduled')
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10);
+
+        // ⚠️ This does NOT decide visibility — the HasScheduledPublishing global scope
+        // compares publish_at to the clock on every query, so a listing goes on sale at
+        // its minute whether or not this runs. It owns the once-per-listing work:
+        // clearing the guest profile cache and telling the creator.
+        $schedule->command('listings:publish-scheduled')
             ->everyFiveMinutes()
             ->withoutOverlapping(10);
 

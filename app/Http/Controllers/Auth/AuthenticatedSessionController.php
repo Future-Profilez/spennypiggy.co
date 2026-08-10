@@ -10,6 +10,7 @@ use App\Models\AuthRedirect;
 use App\Models\FanContract;
 use App\Models\FounderBonus;
 use App\Models\Post;
+use App\Models\ProfileChangeRequest;
 use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -383,6 +384,21 @@ class AuthenticatedSessionController extends Controller
                 'gifter_creators' => $user->role == 0 && $page === 'about' && Auth::id() === $user->id
                     ? $this->profileService->getGifterCreators($user->id)
                     : null,
+                // ⚠️ OWNER ONLY, and one query only for them. An edit to a live
+                // asset leaves the published version on the page, so a creator who
+                // has just uploaded a new photo lands here and sees the old one —
+                // with nothing saying why, they upload it again.
+                //
+                // Deliberately NOT an accessor: `avatar_url` is in `User::$appends`
+                // and is serialised on every rail, feed and queue row, so a query
+                // there would run for every card on the site.
+                'pending_profile_changes' => Auth::id() === $user->id
+                    ? ProfileChangeRequest::query()
+                        ->where('user_id', $user->id)
+                        ->where('status', ProfileChangeRequest::STATUS_PENDING)
+                        ->pluck('asset')
+                        ->all()
+                    : [],
             ];
         };
         $data = $getData();
@@ -559,15 +575,11 @@ class AuthenticatedSessionController extends Controller
      */
     private function setSeoMetaTags($user, string $username): void
     {
-        $defaultImage = url('/og-image.png');
-        $image = $defaultImage;
-        if (! empty($user->social_image)) {
-            $image = "https://ucarecdn.com/{$user->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (! empty($user->cover)) {
-            $image = "https://ucarecdn.com/{$user->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (! empty($user->avatar)) {
-            $image = "https://ucarecdn.com/{$user->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        }
+        // ⚠️ This was a verbatim second copy of SeoTemplateService::getCreatorOgImage,
+        // and it was the LIVE one — so when the service learned to check approval
+        // flags, the tag every link unfurl actually reads would still have carried an
+        // unreviewed photo. One implementation, not two.
+        $image = SeoTemplateService::getCreatorOgImage($user);
 
         $isWishPage = request()->routeIs('wish.show');
         $wish = null;

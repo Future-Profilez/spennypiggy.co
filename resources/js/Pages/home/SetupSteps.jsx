@@ -11,7 +11,7 @@ const STEPS = [
 
 export default function SetupSteps() {
     return (
-        <section className="relative bg-transparent py-20 md:py-28 overflow-hidden">
+        <section className="relative bg-transparent py-12 md:py-28 overflow-hidden">
             <div aria-hidden className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[420px] bg-[#FF007F] rounded-full blur-[170px] opacity-[0.14]"></div>
             </div>
@@ -31,7 +31,7 @@ export default function SetupSteps() {
                     </p>
                 </FadeIn>
 
-                <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 max-w-6xl mx-auto">
+                <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 md:gap-6 max-w-6xl mx-auto">
                     {/* flow line connecting the steps (desktop) */}
                     <div aria-hidden className="hidden md:block absolute top-0 left-[16%] right-[16%] h-[3px] bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-40 z-0"></div>
 
@@ -40,10 +40,10 @@ export default function SetupSteps() {
                             <TiltCard max={6} className="rounded-[28px] h-full">
                                 <div
                                     className="relative h-full rounded-[28px] bg-[#0d0a16] border-2 p-7 md:p-8 pt-10 text-left flex flex-col"
-                                    style={{ borderColor: s.accent, boxShadow: `6px 6px 0 0 ${s.accent}` }}
+                                    style={{ borderColor: s.accent }}
                                 >
                                     <span
-                                        className="absolute -top-6 left-7 w-12 h-12 rounded-full border-2 border-black flex items-center justify-center font-gulfs text-2xl text-black shadow-[3px_3px_0_0_rgba(0,0,0,1)]"
+                                        className="absolute -top-6 left-7 w-12 h-12 rounded-full border-2 border-black flex items-center justify-center font-gulfs text-2xl text-black"
                                         style={{ background: s.accent }}
                                     >
                                         {s.n}

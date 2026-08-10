@@ -7,8 +7,9 @@ import axios from 'axios';
 import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
 import StatementDownloadCard from './StatementDownloadCard';
 import EnableBankPaymentsCard from '@/Components/EnableBankPaymentsCard';
+import RefreshRecordsButton from '@/Components/RefreshRecordsButton';
 import { WalletIcon, TrendingUpIcon, TrendingDownIcon, DownloadIcon, PlusIcon, TriangleAlertIcon, CircleCheckIcon, UsersIcon, ChevronRightIcon, ChartPieIcon, ShieldCheckIcon } from '@animateicons/react/lucide';
-import { Calculator, FileText, Building2, HelpCircle, Pencil, RefreshCw, Clock, Landmark, Receipt, BadgeCheck } from 'lucide-react';
+import { Calculator, FileText, Building2, HelpCircle, Pencil, Clock, Landmark, Receipt, BadgeCheck } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 /* ---------------------------------------------------------------------------
@@ -89,7 +90,6 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
     const logExpenseIconRef = useRef(null);
     const exportCsvIconRef = useRef(null);
 
-    const { post: refreshPost, processing: refreshProcessing } = useForm({});
 
     const displayCurrency = display_currency || summary?.currency || auth?.user?.default_currency || 'GBP';
 
@@ -544,15 +544,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 <DownloadIcon ref={exportCsvIconRef} size={18} />
                                 <span>Export CSV</span>
                             </a>
-                            <button
-                                type="button"
-                                onClick={() => refreshPost(route('financial.refresh'))}
-                                disabled={refreshProcessing}
-                                className={`${BTN} col-span-2 lg:col-auto bg-white border border-gray-200 hover:bg-gray-100 disabled:opacity-60 text-gray-800`}
-                            >
-                                <RefreshCw size={18} className={refreshProcessing ? 'animate-spin' : ''} />
-                                <span>{refreshProcessing ? 'Refreshing…' : 'Refresh'}</span>
-                            </button>
+                            <RefreshRecordsButton className="col-span-2 lg:col-auto bg-white border border-gray-200 hover:bg-gray-100 text-gray-800" />
                         </div>
                     </div>
 

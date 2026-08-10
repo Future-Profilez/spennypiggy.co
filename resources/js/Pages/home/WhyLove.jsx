@@ -1,43 +1,18 @@
 import FadeIn from '@/Components/animations/FadeIn';
-import StaggerItem from '@/Components/animations/StaggerItem';
-import TiltCard from '@/Components/animations/TiltCard';
 import WatermarkStrip from '@/Components/animations/WatermarkStrip';
-import amazon from "../../../assets/new/amazon.png";
-import nike from "../../../assets/new/nike.png";
-import uniqlo from "../../../assets/new/uniqlo.png";
-import beauty from "../../../assets/new/beauty.png";
-import apple from "../../../assets/new/apple.png";
-import kylie from "../../../assets/new/kylie.png";
-import asos from "../../../assets/new/asos.png";
-import nova from "../../../assets/new/nova.png";
-import other from "../../../assets/new/other.png";
-import alo from "../../../assets/new/alo.png";
-import huel from "../../../assets/new/huel.png";
 
 export default function WhyLove() {
-    const brandLogos = [
-      { name: "Amazon", src: amazon },
-      { name: "Nike", src: nike },
-      { name: "Uniqlo", src: uniqlo },
-      { name: "Fenty", src: beauty },
-      { name: "Apple", src: apple },
-      { name: "Kylie", src: kylie },
-      { name: "Asos", src: asos },
-      { name: "Fashion Nova", src: nova },
-      { name: "Sephora", src: other },
-      { name: "Alo", src: alo },
-      { name: "Huel", src: huel },
-    ];
-
     return (
         <>
-            <section className="bg-transparent py-20 md:py-28 relative overflow-hidden">
+            <section className="bg-transparent py-12 md:py-28 relative overflow-hidden">
                 <WatermarkStrip text="Stores" from={150} to={-350} opacity={0.18} className="top-4" />
                  {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-600/40 rounded-full mix-blend-screen filter blur-[100px] animate-float"></div>
-                    <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-purple-600/40 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/30 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                    {/* Held at the same ~20% the other dark sections use. At 30–40% this
+                        section bloomed far brighter than its neighbours, so the seams either
+                        side of it read as a step change rather than a continuous page. */}
+                    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#FF007F] opacity-20 rounded-full mix-blend-screen filter blur-[100px] animate-float"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#05EFB8] opacity-[0.18] rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
                 </div>
 
                 <div className="container relative px-4 mx-auto">
@@ -48,28 +23,41 @@ export default function WhyLove() {
                     </FadeIn>
                     <FadeIn y={20} delay={0.15}>
                     <p className="fading text-gray-300 text-base md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-8 md:mb-12 text-center">
-                        Drop a link to anything you want onto one page. Add items from our
-                        Oink Store partner stores, or any other online store. Your supporters
+                        Drop a link to anything you want onto one page. Your supporters
                         unlock and buy what's on your list, delivered straight to your door.
                     </p>
                     </FadeIn>
 
-                    <div className="flex flex-wrap justify-center gap-3 md:gap-8 max-w-[1000px] m-auto">
-                      {brandLogos.map((brand, index) => (
-                         <StaggerItem key={index} index={index} stagger={0.05} y={20}>
-                         <TiltCard max={18} scale={1.1} className="fading group relative w-24 h-24 sm:w-28 sm:h-28 rounded-[30px] bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-colors duration-300 border border-gray-800 hover:border-[#FF007F] shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
-                           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-[30px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                           <img
-                             src={brand.src}
-                             alt={brand.name}
-                             loading="lazy"
-                             decoding="async"
-                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
-                           />
-                         </TiltCard>
-                       </StaggerItem>
-                      ))}
+                    {/* The paste bar — the actual mechanic, shown rather than described.
+                        This replaced a wall of eleven third-party logos (Amazon, Nike,
+                        Apple, Sephora…). Two reasons, and the first is not a design one:
+                        `App\Rules\NoExpenseOrBrandName` REJECTS a creator's listing for
+                        naming any of those brands, so the homepage was advertising what
+                        the platform's own validation refuses — and grayscale logos imply
+                        partnerships that do not exist. Borrowed credibility also reads as
+                        borrowed; the mechanic is ours and is the stronger claim. */}
+                    <FadeIn y={24} delay={0.25}>
+                    <div className="fading mx-auto max-w-2xl">
+                        <div className="flex items-center gap-3 rounded-box border border-white/12 bg-white/[0.04] px-5 py-4 backdrop-blur-sm">
+                            <span className="font-poppins text-xs uppercase tracking-[0.2em] text-[#05EFB8]">
+                                Paste
+                            </span>
+                            <span className="h-4 w-px bg-white/15" />
+                            <span className="truncate font-mono text-sm text-white/55">
+                                https://anystore.com/the-thing-you-want
+                            </span>
+                            <span
+                                aria-hidden
+                                className="ml-auto hidden shrink-0 font-gulfs text-lg text-[#FF007F] sm:block"
+                            >
+                                →
+                            </span>
+                        </div>
+                        <p className="mt-4 text-center font-poppins text-sm text-white/45">
+                            Any online store. No catalogue, no integrations, no limits.
+                        </p>
                     </div>
+                    </FadeIn>
                 </div>
             </section>
         </>

@@ -449,7 +449,16 @@ export default function Opportunities({
                                 <BarChart3 size={18} className="text-[#FF007F]" /> Which listings are working
                             </h2>
                             <p className="mb-3 text-sm text-gray-500">
-                                Last {listings.window_days ?? 30} days, across your shop and paid tasks.
+                                Last {listings.window_days ?? 30} days, across your shop and paid tasks.{' '}
+                                {/* This panel ranks the two types that have view data. The
+                                    catalogue is where the other four — and anything stuck
+                                    in review — actually show up. */}
+                                <Link
+                                    href={route('catalogue.index')}
+                                    className="font-semibold text-[#FF007F] underline underline-offset-2"
+                                >
+                                    See every listing
+                                </Link>
                             </p>
 
                             <div className="grid gap-3 md:grid-cols-2">

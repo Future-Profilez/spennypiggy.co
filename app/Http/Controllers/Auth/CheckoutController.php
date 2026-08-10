@@ -34,6 +34,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -1011,6 +1012,18 @@ class CheckoutController extends Controller
         $sessionId = session('session_id');
         $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
 
+        // Label every receipt and push this request goes on to send with the
+        // payment behind it, so the delivery log can answer "did the buyer get
+        // their receipt for THIS purchase?".
+        NotificationContext::for([
+            'context_type' => 'cart',
+            'stripe_session_id' => $sessionId,
+            'stripe_payment_intent_id' => $paymentRecord->stripe_payment_intent_id ?? null,
+            'buyer_id' => Auth::id() ?: ($paymentRecord->user_id ?? null),
+            'buyer_email' => Auth::user()->email ?? ($paymentRecord->guest_email ?? null),
+            'creator_id' => $paymentRecord->owner_id ?? $id,
+        ]);
+
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish', 'owner', 'user'])->get();
         } else {
@@ -1398,14 +1411,23 @@ class CheckoutController extends Controller
             // Use actual payment currency instead of cookie currency
             $actualCurrency = $stripeid->currency ?? $currency;
             $curr = Currency::where('iso', strtoupper($actualCurrency))->first();
-            if ($curr) {
-                Log::info('Currency found, dispatching CheckoutMailToUser', ['currency' => $actualCurrency, 'symbol' => $curr->symbol]);
-                CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
-                Log::info('CheckoutMailToUser job dispatched successfully');
-            } else {
+            $symbol = $curr->symbol ?? '£';
+
+            if (! $curr) {
                 Log::warning('Currency not found for checkout email: '.strtoupper($actualCurrency));
-                CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
-                Log::info('CheckoutMailToUser job dispatched with default symbol');
+            }
+
+            // Claim before dispatching. The webhook reaches the same point for
+            // the same payment (and is the ONLY path that gets there for a bank
+            // payment, where this redirect returns before the debit clears), so
+            // the claim is what stops both of them sending the same receipt.
+            if (StripePaymentDetail::claimReceipt($stripeid->id)) {
+                CheckoutMailToUser::dispatch($stripeid, $symbol);
+                Log::info('CheckoutMailToUser job dispatched successfully', ['payment_id' => $stripeid->id]);
+            } else {
+                Log::info('Checkout receipt already claimed elsewhere, not dispatching again', [
+                    'payment_id' => $stripeid->id,
+                ]);
             }
 
             // Clear user cache for the creator

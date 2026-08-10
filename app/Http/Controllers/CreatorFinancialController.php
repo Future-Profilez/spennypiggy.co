@@ -26,6 +26,7 @@ use App\Models\User;
 use App\Services\CreatorOpportunityService;
 use App\Services\FinancialService;
 use App\Services\Ledger\LedgerRules;
+use App\Services\NotificationDeliveryService;
 use App\Services\NotificationDispatcher;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
@@ -1151,11 +1152,14 @@ class CreatorFinancialController extends Controller
 
             Log::info("CreatorFinancialController: Sync completed for user {$user->id}");
 
-            return redirect()->route('financial.dashboard')->with('success', 'Financial records refreshed.');
+            // back(), not a hardcoded route — this is called from the financial
+            // dashboard, the earnings page and support history, and sending the
+            // other two to the dashboard would read as the button navigating away.
+            return back()->with('success', 'Records refreshed.');
         } catch (\Exception $e) {
             Log::error("CreatorFinancialController: Sync failed for user {$user->id}: ".$e->getMessage());
 
-            return redirect()->route('financial.dashboard')->with('error', 'Failed to refresh records: '.$e->getMessage());
+            return back()->with('error', 'Failed to refresh records: '.$e->getMessage());
         }
     }
 
@@ -1657,6 +1661,12 @@ class CreatorFinancialController extends Controller
 
         $fulfilment = LedgerRules::fulfilmentMap($income);
 
+        // What the creator was told about each sale — their OWN messages only.
+        // The service scopes on recipient, so the supporter's receipt status is
+        // never visible here (nor should it be: a creator is never given
+        // anything about a supporter beyond the purchase itself).
+        $delivery = app(NotificationDeliveryService::class)->forLedgerRows(Auth::id(), $income);
+
         foreach ($income as $tx) {
             $breakdown = LedgerRules::breakdown($tx, $fulfilment);
 
@@ -1666,6 +1676,7 @@ class CreatorFinancialController extends Controller
             $tx->ledger_state_label = $breakdown['state_label'];
             $tx->counts_toward_totals = $breakdown['counts_toward_totals'];
             $tx->buyer_paid = $breakdown['buyer_paid'];
+            $tx->notifications = $delivery[$tx->id] ?? null;
         }
     }
 

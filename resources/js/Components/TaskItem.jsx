@@ -2,6 +2,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
@@ -92,7 +93,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     router.visit(url);
                 }
             }}
-            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black"
+            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[2px] !border-black"
         >
             <Link
                 href={url}
@@ -205,6 +206,11 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     </p>
                 ) : (
                     ""
+                )}
+
+                {/* Not on sale yet, however finished it looks. */}
+                {task?.publish_at && (
+                    <ScheduledBadge publishAt={task.publish_at} className="mt-3" />
                 )}
             </div>
         </div>

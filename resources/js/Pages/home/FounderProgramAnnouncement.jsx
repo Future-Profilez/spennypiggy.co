@@ -21,12 +21,12 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
     return (
         <>
-            <section className="bg-transparent py-20 md:py-28 px-4 relative overflow-hidden">
+            <section className="bg-transparent py-12 md:py-28 px-4 relative overflow-hidden">
                 {/* Background decorative elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                    <div className="absolute top-10 left-10 w-32 h-32 bg-[#E6EA7B] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
-                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
-                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-[#05EFB8] rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-[#E6EA7B] rounded-full mix-blend-screen filter blur-xl opacity-30 floating-shape"></div>
+                    <div className="absolute top-10 right-10 w-32 h-32 bg-[#FF007F] rounded-full mix-blend-screen filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-[#05EFB8] rounded-full mix-blend-screen filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
                 {/* Giant outlined watermark strip — scrubs sideways with scroll */}
@@ -36,14 +36,14 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     <div className="text-center mb-8 md:mb-16">
                         <FadeIn y={20} duration={0.5}>
                         <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                            <span className="bg-[#E6EA7B] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
+                            <span className="bg-[#E6EA7B] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full mb-4 inline-block">
                                 👑 NEW PROGRAM LAUNCH 👑
                             </span>
                         </div>
                         </FadeIn>
 
                         {/* Heading lines scrub in opposite directions with the scroll */}
-                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-[4px_4px_0px_0px_#FF007F]">
+                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-">
                             <span className="block">JOIN THE</span>
                             <span className="block mt-2">
                                 <span className="uppercase text-[#E6EA7B] tracking-[2px] drop-shadow-[0_0_25px_rgba(230,234,123,0.45)]">
@@ -61,13 +61,13 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     </div>
 
                     {/* Cards Grid — outer cards drift horizontally with scroll, middle drifts vertically */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-10 px-2 md:px-4 mt-12 md:mt-16 items-stretch">
 
                         {/* Card 1: Monthly Bonus */}
                         <ScrollX from={-45} to={0} rotate={2} fade className="h-full">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#E6EA7B] md:shadow-[8px_8px_0px_0px_#E6EA7B] flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
                                 <FaTrophy />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">{config.bonusPercentage}% Monthly<br/><span className="text-[#E6EA7B]">Bonus</span></h3>
@@ -85,8 +85,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         {/* Card 2: Founder Status (drifts vertically, sits lower) */}
                         <Parallax speed={22} className="h-full md:mt-12">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform -rotate-12">
                                 <FaCrown />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Founder<br/><span className="text-[#FF007F]">Status</span></h3>
@@ -104,8 +104,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         {/* Card 3: Priority Qualification */}
                         <ScrollX from={45} to={0} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
                         <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[30px] p-6 md:p-8 relative group shadow-[4px_4px_0px_0px_#05EFB8] md:shadow-[8px_8px_0px_0px_#05EFB8] flex flex-col h-full">
-                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                            <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-6">
                                 <FaGift />
                             </div>
                             <h3 className="fading text-xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none">Priority<br/><span className="text-[#05EFB8]">Access</span></h3>
@@ -126,7 +126,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                     <div className="mt-10 md:mt-24 text-center relative z-10">
                         <Magnetic strength={0.3}>
                         <Link href="/founder/bonus"
-                            className="relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black font-black text-sm md:text-lg py-3 px-7 md:py-4 md:px-12 rounded-full shadow-[6px_6px_0px_0px_#FF007F] border-2 border-[#E6EA7B] hover:shadow-[0px_0px_0px_0px_#FF007F] hover:translate-y-[6px] hover:translate-x-[6px] transition-all duration-300 uppercase tracking-wide group">
+                            className="relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black font-black text-sm md:text-lg py-3 px-7 md:py-4 md:px-12 rounded-full border-2 border-[#E6EA7B] hover: hover:translate-y-[6px] hover:translate-x-[6px] transition-all duration-300 uppercase tracking-wide group">
                             <span>Learn More About Founder Bonus</span>
                             <FaArrowRight className="text-base md:text-2xl group-hover:translate-x-1 transition-transform" />
                         </Link>

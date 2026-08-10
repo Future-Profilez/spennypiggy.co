@@ -67,7 +67,7 @@ function Mockup({ f }) {
             <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-[360px] h-[360px] md:w-[440px] md:h-[440px] rounded-full blur-[120px] opacity-25" style={{ background: f.accent }}></div>
             </div>
-            <div className="relative z-10 scale-[1.05] md:scale-[1.18] drop-shadow-[0_36px_70px_rgba(0,0,0,0.55)]">
+            <div className=" w-full  md:w-autorelative z-10 md:scale-[1.18] drop-shadow-[0_36px_70px_rgba(0,0,0,0.55)]">
                 <WishlistPreview variant={f.variant} />
             </div>
         </div>
@@ -96,9 +96,9 @@ export default function FeatureShowcase() {
     // so flow each feature normally instead.
     if (isMobile || reduce) {
         return (
-            <section className="bg-transparent py-16 space-y-24">
+            <section className="bg-transparent py-6 md:py-16 space-y-12 md:space-y-24">
                 {FEATURES.map((f, i) => (
-                    <div key={i} className="container px-4 mx-auto grid grid-cols-1 gap-12 items-center">
+                    <div key={i} className="!pt-16 md:!pt-0 container px-4 mx-auto grid grid-cols-1 gap-6 md:gap-12 items-center">
                         <Mockup f={f} />
                         <FeatureText f={f} />
                     </div>
@@ -112,7 +112,7 @@ export default function FeatureShowcase() {
     return (
         <section ref={ref} style={{ height: `${FEATURES.length * 78}vh` }} className="relative bg-transparent">
             <div className="sticky top-0 h-dvh flex items-center overflow-hidden">
-                <div className="container relative px-4 mx-auto grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
+                <div className="!mt-20 container relative px-4 mx-auto grid md:grid-cols-2 gap-10 lg:gap-16 items-center">
 
                     {/* progress rail */}
                     <div className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-3 z-20">

@@ -14,19 +14,19 @@ const YELLOW = "#FFE14D";
 
 function Frame({ children }) {
     return (
-        <div className="relative w-[280px] sm:w-[318px] -rotate-[4deg] bg-white border-[3px] border-black rounded-[26px] shadow-[12px_14px_0px_0px_#000] p-4">
+        <div className="relative md:w-[318px] md:-rotate-[4deg] bg-white border-[3px] border-black rounded-[26px] p-4">
             {children}
         </div>
     );
 }
 
 function Avatar({ size = "w-9 h-9" }) {
-    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-white text-[10px] font-black bg-gradient-to-br from-[#05EFB8] to-[#FF007F]`}>JJ</span>;
+    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#05EFB8] to-[#FF007F]`}>JJ</span>;
 }
 
 function CTA({ children, glyph }) {
     return (
-        <button className="relative w-full mt-3.5 bg-[#FF007F] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[12px] border-[3px] border-black shadow-[3px_3px_0px_0px_#000] overflow-hidden flex items-center justify-center gap-1.5">
+        <button className="relative w-full mt-3.5 bg-[#FF007F] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[12px] border-[3px] border-black overflow-hidden flex items-center justify-center gap-1.5">
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>{glyph && <span className="relative">{glyph}</span>}
         </button>
@@ -50,14 +50,14 @@ function WishlistMock() {
                     <p className="font-gulfs uppercase text-[13px] text-black">@justjack</p>
                     <p className="text-[9.5px] font-bold uppercase text-gray-500 truncate">3 items · £1,748 dream list</p>
                 </div>
-                <span className="ml-auto text-[9px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: TEAL }}>Share</span>
+                <span className="ml-auto text-[11px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: TEAL }}>Share</span>
             </div>
             {/* progress */}
             <div className="flex items-center gap-2 mb-3">
                 <div className="flex-1 h-2.5 rounded-full border-2 border-black bg-gray-100 overflow-hidden">
                     <div className="h-full rounded-r-full" style={{ width: `${pct}%`, background: TEAL }}></div>
                 </div>
-                <span className="text-[9px] font-black uppercase whitespace-nowrap">{inCount}/{items.length} in</span>
+                <span className="text-[11px] font-black uppercase whitespace-nowrap">{inCount}/{items.length} in</span>
             </div>
             <div className="space-y-2">
                 {items.map((it, i) => (
@@ -65,7 +65,7 @@ function WishlistMock() {
                         <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black flex items-center justify-center text-base" style={{ background: `${it.tint}33` }}>{it.e}</span>
                         <span className="text-[11.5px] font-black uppercase text-black flex-1 min-w-0 truncate">{it.n}</span>
                         <span className="font-black text-[11px] text-[#FF007F]">{it.p}</span>
-                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[10px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: TEAL } : undefined}>{it.done ? "✓" : ""}</span>
+                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: TEAL } : undefined}>{it.done ? "✓" : ""}</span>
                     </div>
                 ))}
                 <div className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-300 rounded-[12px] py-2 text-[11px] font-black uppercase text-gray-400">＋ Add item</div>
@@ -85,16 +85,16 @@ function GiftsMock() {
         <Frame>
             <div className="flex items-center gap-2.5 mb-3">
                 <Avatar size="w-8 h-8" />
-                <p className="text-[10px] font-black uppercase tracking-wide text-gray-500">From your fans</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">From your fans</p>
                 <span className="ml-auto inline-flex items-center gap-1 text-[8.5px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: TEAL }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span>Live
                 </span>
             </div>
             {/* weekly total */}
             <div className="rounded-[14px] border-[3px] border-black p-3 mb-3" style={{ background: `linear-gradient(135deg, ${PINK}, #c4006a)` }}>
-                <p className="text-[10px] font-black uppercase tracking-wide text-white/80">This week from fans</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-white/80">This week from fans</p>
                 <p className="font-gulfs text-[26px] leading-none text-white mt-0.5">£1,548</p>
-                <p className="text-[10px] font-bold uppercase text-white/85 mt-1">🎉 12 items sent from any store</p>
+                <p className="text-[11px] font-bold uppercase text-white/85 mt-1">🎉 12 items sent from any store</p>
             </div>
             <div className="space-y-1.5">
                 {feed.map((f, i) => (
@@ -122,14 +122,14 @@ function ShopMock() {
             <div className="flex items-center gap-2.5 mb-3">
                 <Avatar size="w-8 h-8" />
                 <p className="font-gulfs uppercase text-[13px] text-black">Justjack's shop</p>
-                <span className="ml-auto text-[9px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: YELLOW }}>⭐ 4.9</span>
+                <span className="ml-auto text-[11px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: YELLOW }}>⭐ 4.9</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
                 {products.map((pr, i) => (
                     <div key={i} className="border-2 border-black rounded-[12px] overflow-hidden">
-                        <div className="h-12 flex items-center justify-center text-xl border-b-2 border-black" style={{ background: `${pr.bg}33` }}>{pr.e}</div>
+                        <div className="h-12 flex items-center justify-center text-xl" style={{ background: `${pr.bg}33` }}>{pr.e}</div>
                         <div className="p-1.5">
-                            <p className="text-[10px] font-black uppercase text-black truncate">{pr.n}</p>
+                            <p className="text-[11px] font-black uppercase text-black truncate">{pr.n}</p>
                             <div className="flex items-center justify-between mt-0.5">
                                 <span className="font-black text-[11px] text-[#FF007F]">{pr.p}</span>
                                 <span className="text-[8px] font-black uppercase text-white bg-black rounded-[5px] px-1.5 py-0.5">Buy</span>

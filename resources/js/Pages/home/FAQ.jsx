@@ -25,11 +25,14 @@ export default function FAQ() {
 
   return (
     <>
-    <div id={`faq`} className='bg-transparent py-20 md:py-28 relative ' >
+    <div
+      id={`faq`}
+      className='bg-transparent py-12 md:py-28 relative'
+    >
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float-delayed"></div>
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-[#FF007F] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float-delayed"></div>
       </div>
 
       <div className='containerbox relative  ' >
@@ -39,14 +42,14 @@ export default function FAQ() {
           </h2>
           </FadeIn>
           <div className='max-w-4xl mx-auto' >
-              <div className='flex flex-col gap-6' >
+              <div className='flex flex-col gap-4 md:gap-6' >
                   {faqs && faqs.map((f, i)=>{
                     return (
                       <StaggerItem key={i} index={i} stagger={0.1}>
                       <Disclosure defaultOpen={i === 0}>
                         {({ open }) => (
-                          <div className={`fading bg-gray-900 border-2 border-[#FF007F] rounded-[30px]    shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
-                            <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
+                          <div className={`bg-gray-900 border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px]     overflow-hidden`}>
+                            <Disclosure.Button className={`flex w-full justify-between px-4 py-4 md:px-6 md:py-6 text-left text-md md:text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
                               <span>{f.title}</span>
                               <ChevronUpIcon
                                 className={`${

@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CreatorExpenseController;
 use App\Http\Controllers\CreatorFinancialController;
 use App\Http\Controllers\DeliveriesController;
@@ -523,6 +524,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
+            // The gifter's own billing address, typed before the £1 verification charge.
+            // Throttled because it is an authenticated write reachable from a console.
+            Route::post('gifter-verification-address', [RegisteredUserController::class, 'saveVerificationAddress'])
+                ->middleware('throttle:20,1')
+                ->name('gifter.verification.address');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
@@ -849,6 +855,30 @@ Route::middleware('auth')->group(function () {
             Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
         });
 
+        // "My Listings" — the creator's whole catalogue in one screen.
+        //
+        // ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}` profile
+        // catch-all at the end of this file. Declared after it, Laravel reads
+        // `my-listings` as a username and answers with the profile 404 — and
+        // `route:list` shows the route either way, which is what makes that hard to see.
+        Route::get('/my-listings', [CatalogueController::class, 'index'])->name('catalogue.index');
+
+        // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
+        // product on the creator's connected account, so an unthrottled button is a cheap
+        // way to fill it with junk. `identityBeforeListing` because this CREATES a
+        // listing — the same gate as every other create route.
+        // Set or clear a scheduled publish time. POST — it changes when real money can
+        // start being taken, and a GET carries no CSRF token.
+        Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1')
+            ->name('catalogue.schedule');
+
+        Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
+            ->whereNumber('id')
+            ->middleware(['identityBeforeListing', 'throttle:10,1'])
+            ->name('catalogue.duplicate');
+
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
@@ -955,7 +985,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item')->middleware('mustCompletedCardVerification');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -991,12 +1021,12 @@ Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class,
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::prefix('tip-jar')->name('tip-jar.')->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay');
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
 Route::prefix('piggy-pot')->name('piggy-pot.')->group(function () {
-    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay');
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
@@ -1118,7 +1148,7 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
     Route::post('/', [TaskController::class, 'store'])->middleware('identityBeforeListing')->name('store');
-    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
+    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase')->middleware('mustCompletedCardVerification');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');
     Route::get('/order/{uuid}', [TaskController::class, 'order'])->name('order');

@@ -3,6 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Notification;
+use App\Models\NotificationLog;
+use App\Models\User;
+use App\Support\NotificationRecorder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -45,5 +48,16 @@ class NotificationSave implements ShouldQueue
         $notification->notifiable_type = $this->type;
         $notification->save();
 
+        // Recorded so a bell entry counts as a delivery like any other. Without
+        // it a purchase could show "notified" on the site while the push and the
+        // email both failed, which is the same silence this log exists to break.
+        NotificationRecorder::bell(
+            $this->message,
+            null,
+            $this->notifiable instanceof User ? $this->notifiable : null,
+            NotificationLog::STATUS_SENT,
+            null,
+            $this->type ? 'bell.'.strtolower((string) class_basename($this->type)) : null,
+        );
     }
 }

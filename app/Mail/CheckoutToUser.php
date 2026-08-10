@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Helpers;
+use App\Models\Currency;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -26,6 +28,67 @@ class CheckoutToUser extends Mailable
     {
         $this->data = $data;
         $this->curr = $curr;
+    }
+
+    /**
+     * What the buyer was actually charged, and the currency it was charged in.
+     *
+     * 🚨 A RECEIPT STATES THE CHARGED AMOUNT IN THE CHARGED CURRENCY. This used to
+     * be worked out inside the Blade template from a fallback chain
+     * (`total_paid → amount_subtotal → amount → amount_total`) and got it wrong
+     * for every shape it was handed:
+     *
+     *  - `stripe_payment_details` HAS NO `total_paid` COLUMN, so the chain always
+     *    landed on `amount_subtotal` — which is the LISTED price, i.e. the
+     *    creator's net. A buyer charged 130.15 was emailed 100.
+     *  - `stripe_payment_items.total_paid` is written by nothing (0 on every row),
+     *    and `is_numeric(0)` is true, so an item hit branch one and the receipt
+     *    read 0.00.
+     *
+     * `amount_subtotal` is the creator's net and `amount_total` is the buyer's
+     * charge — the buyer and creator emails had them the wrong way round.
+     *
+     * @return array{amount: float, iso: string}
+     */
+    private function buyerCharge(): array
+    {
+        $fallbackIso = strtoupper((string) ($this->data->currency ?? 'GBP'));
+
+        try {
+            // An item's own charge is its share of the payment it belongs to.
+            if (class_basename($this->data) === 'StripePaymentItems') {
+                $payment = $this->data->payment;
+
+                if (! $payment) {
+                    return ['amount' => (float) ($this->data->amount ?? 0), 'iso' => $fallbackIso];
+                }
+
+                $iso = strtoupper((string) ($payment->currency ?? $fallbackIso));
+                $total = (float) ($payment->amount_total ?? 0);
+                $subtotal = (float) ($payment->amount_subtotal ?? 0);
+                $mine = (float) ($this->data->amount ?? 0);
+
+                // Split by listed price, so a multi-item basket does not report the
+                // whole basket's charge against one line.
+                if ($subtotal > 0 && $mine > 0 && $mine < $subtotal) {
+                    return ['amount' => round($total * ($mine / $subtotal), 2), 'iso' => $iso];
+                }
+
+                return ['amount' => $total > 0 ? $total : $mine, 'iso' => $iso];
+            }
+
+            return [
+                'amount' => (float) ($this->data->amount_total ?? $this->data->amount_subtotal ?? 0),
+                'iso' => $fallbackIso,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('CheckoutToUser: could not resolve the buyer charge', [
+                'payment_id' => $this->data->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['amount' => (float) ($this->data->amount_total ?? 0), 'iso' => $fallbackIso];
+        }
     }
 
     /**
@@ -171,13 +234,34 @@ class CheckoutToUser extends Mailable
                 ]);
             }
 
+            $charge = $this->buyerCharge();
+
+            /*
+             * ⚠️ Digits are resolved by ISO, never by SYMBOL. `$` is shared by 8
+             * currencies in the `currencies` table, so a `where('symbol', $curr)`
+             * lookup returned BMD for a USD payment — and the template then ran a
+             * spurious USD→BMD conversion on the receipt figure.
+             */
+            $digits = 2;
+            try {
+                $row = Currency::where('ISO', $charge['iso'])->first();
+                if ($row && is_numeric($row->ISOdigits)) {
+                    $digits = (int) $row->ISOdigits;
+                }
+            } catch (\Throwable $e) {
+                // A receipt must still send if the currency table is unreachable.
+            }
+
             $builtEmail = $this->view('email.checkout-user')
-                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+                ->from(config('mail.from.address'), config('mail.from.name'))
                 ->subject($subject)
                 ->with([
                     'supportUrl' => $supportUrl,
                     'contactUrl' => $contactUrl,
                     'refundUrl' => $refundUrl,
+                    'buyerPaid' => $charge['amount'],
+                    'buyerCurrencySymbol' => Helpers::getCurrency($charge['iso']),
+                    'buyerCurrencyDigits' => $digits,
                 ]);
 
             Log::info('CheckoutToUser: Email built successfully');

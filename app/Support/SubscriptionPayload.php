@@ -94,7 +94,16 @@ class SubscriptionPayload
             // ⚠️ A BOOLEAN, never the `pm_...` id. The page only needs to know a
             // card is saved; a payment-method identifier has no reason to leave
             // the server.
-            'has_card' => ! empty($subscription->stripe_payment_method),
+            //
+            // ⚠️ And NOT `stripe_payment_method` alone. That column is written only
+            // by SETUP-mode checkout, so every creator who subscribed under the
+            // older subscription-mode flow has it NULL — measured on live data, 9 of
+            // the 10 creators the platform is actively collecting from. Reading it
+            // alone told all of them they had no card on file. A subscription that
+            // is collecting cannot exist without a payment method behind it.
+            'has_card' => ! empty($subscription->stripe_payment_method)
+                || (! empty($subscription->stripe_id)
+                    && in_array($subscription->status, ['paid', 'active', 'renew'], true)),
         ];
     }
 }

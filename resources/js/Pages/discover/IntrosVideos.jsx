@@ -4,7 +4,8 @@ import axios from 'axios';
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
 import { trackSearchClick } from "@/includes/Analytics";
-import { RiVerifiedBadgeFill, RiPlayFill } from "react-icons/ri";
+import { RiPlayFill } from "react-icons/ri";
+import VerifiedBadge from "@/Components/VerifiedBadge";
 
 /**
  * Intro videos rail. Two perf rules:
@@ -134,7 +135,6 @@ function IntroSkeleton() {
 
 function IntroCard({ w }) {
     const [imgLoaded, setImgLoaded] = useState(false);
-    const verified = w?.user?.role === 1 && w?.user?.profile_status_lock === 2;
     const avatar = w?.user?.avatar_url || userphoto;
     const poster = (w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
 
@@ -177,7 +177,7 @@ function IntroCard({ w }) {
                     >
                         <p className="flex items-center gap-1 truncate font-anton text-base uppercase tracking-wide text-white group-hover:text-[#FF9ecb] transition-colors">
                             <span className="truncate">{w.user.name}</span>
-                            {verified && <RiVerifiedBadgeFill className="shrink-0 text-[#3BA3FF]" size={14} />}
+                            <VerifiedBadge user={w?.user} size="sm" />
                         </p>
                         <p className="truncate text-xs font-medium text-white/60">@{w.user.username}</p>
                     </Link>

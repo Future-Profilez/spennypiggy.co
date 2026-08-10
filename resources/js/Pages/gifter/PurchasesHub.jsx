@@ -3,12 +3,14 @@ import { usePage } from "@inertiajs/react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import LazyVideo from "../../Components/LazyVideo";
 import { useVideoPoster } from "../../utils/videoPoster";
+import DeliveryStatus from "../../Components/Transactions/DeliveryStatus";
 import {
     Heart, ShoppingBag, CheckCircle2, PiggyBank, Crown, Repeat, Coins,
     Wallet, Unlock, FileText, Music, Image as ImageIcon, Film,
     ArrowUpRight, Play, Trophy, Download, Truck, Clock, AlertTriangle, ReceiptText,
     Users, BellRing, RotateCw, MessageCircle, Bookmark, Search, X,
     ArrowDownUp, ChevronLeft, ChevronRight, Compass, LifeBuoy, Undo2, ShieldCheck,
+    Gift, ExternalLink,
 } from "lucide-react";
 
 /* Category system — one quiet colour + icon per type, rendered as soft tinted
@@ -30,19 +32,20 @@ const tint = (hex, a = "1a") => hex + a; // 8-digit hex alpha
 const TIER_COLOR = { "Level 1": "#9CA3AF", "Level 2": "#60A5FA", "Level 3": "#34D399", "Level 4": "#FBBF24", "Level 5": "#FF007F" };
 
 const ACCENT = "#FF007F";
-const CARD = "bg-white border border-zinc-200/70 rounded-box shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
-const CARD_HOVER = "transition-shadow duration-200 hover:shadow-[0_10px_30px_-12px_rgba(16,24,40,0.18)]";
+const ACCENT2 = "#7C3AED";
+const CARD = "bg-white/80 backdrop-blur-sm border border-white/60 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)]";
+const CARD_HOVER = "transition-all duration-300 hover:shadow-[0_12px_40px_-8px_rgba(16,24,40,0.2)] hover:-translate-y-0.5";
 const MONO = "[font-variant-numeric:tabular-nums] tabular-nums";
-const EYEBROW = "text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400";
+const EYEBROW = "text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400";
 
 /* Four top-level tabs, each grouping what used to be its own tab. Eight tabs on a
    phone meant a horizontally-scrolled rail where half the destinations were never
    seen; these group by the question the buyer is actually asking. */
 const TABS = [
-    { key: "library", label: "Library", icon: Film },
-    { key: "orders",  label: "Orders",  icon: Truck },
-    { key: "money",   label: "Money",   icon: Wallet },
-    { key: "saved",   label: "Saved",   icon: Bookmark },
+    { key: "library",      label: "Library",      icon: Film },
+    { key: "transactions", label: "Transactions", icon: ReceiptText },
+    { key: "spending",     label: "Spending",     icon: Wallet },
+    { key: "saved",        label: "Saved",        icon: Bookmark },
 ];
 
 const SORTS = { recent: "Recent", oldest: "Oldest first", name: "Name A–Z", price_desc: "Price: high → low", price_asc: "Price: low → high" };
@@ -50,14 +53,12 @@ const SORTS = { recent: "Recent", oldest: "Oldest first", name: "Name A–Z", pr
 /* Views that own a search box, and the sort keys each supports. */
 const VIEW_TOOLS = {
     media:         { search: true, types: true,  sorts: ["recent", "oldest", "name"], server: true },
-    access:        { search: true, types: true,  sorts: ["recent", "name"] },
-    incoming:      { search: true, types: false, sorts: ["recent"] },
-    subscriptions: { search: true, types: false, sorts: ["recent", "price_desc", "price_asc", "name"] },
-    receipts:      { search: true, types: true,  sorts: ["recent", "price_desc", "price_asc", "name"] },
+    transactions:  { search: true, types: true,  sorts: ["recent", "oldest", "price_desc", "price_asc", "name"] },
+    spending:      { search: false, types: false, sorts: [] },
     saved:         { search: true, types: true,  sorts: ["recent", "name"] },
 };
 
-const DEFAULT_VIEW = { library: "media", orders: "incoming", money: "receipts", saved: "saved" };
+const DEFAULT_VIEW = { library: "media", transactions: "transactions", spending: "spending", saved: "saved" };
 
 const SEEN_KEY = "spenny_hub_seen_at";
 
@@ -111,8 +112,8 @@ export default function PurchasesHub({
 
     // An overdue delivery is the only thing on this page that needs the buyer to act,
     // so it decides the landing tab. Landing on the media grid buried it.
-    const [tab, setTab] = useState(url.tab || (hasOverdue ? "orders" : "library"));
-    const [view, setView] = useState(url.view || DEFAULT_VIEW[url.tab] || (hasOverdue ? "incoming" : "media"));
+    const [tab, setTab] = useState(url.tab || (hasOverdue ? "transactions" : "library"));
+    const [view, setView] = useState(url.view || DEFAULT_VIEW[url.tab] || (hasOverdue ? "transactions" : "media"));
     const [creatorFilter, setCreatorFilter] = useState(url.creator || "");
 
     const [media, setMedia] = useState(media_library);
@@ -316,12 +317,22 @@ export default function PurchasesHub({
 
     const byCreator = (list) => (creatorFilter ? list.filter((x) => x?.owner?.username === creatorFilter) : list);
 
+    // Unified transactions list: merge receipts + unlocked + incoming + subscriptions, sort by date desc
+    const allTransactions = useMemo(() => {
+        const merged = [
+            ...receipts.map((r) => ({ ...r, _kind: "receipt" })),
+            ...unlocked.map((u) => ({ ...u, _kind: "unlocked" })),
+            ...incomingItems.map((i) => ({ ...i, _kind: "incoming" })),
+            ...subs.map((s) => ({ ...s, _kind: "subscription" })),
+        ];
+        merged.sort((a, b) => String(dateOf(b)).localeCompare(String(dateOf(a))));
+        return merged;
+    }, [receipts, unlocked, incomingItems, subs]);
+
     const rawSource = {
         media,                                    // already creator-filtered server-side
-        access: byCreator(unlocked),
-        incoming: byCreator(incomingItems),
-        subscriptions: byCreator(subs),
-        receipts: byCreator(receipts),
+        transactions: byCreator(allTransactions),
+        spending: [],
         saved: byCreator(savedItems),
     }[view] || [];
 
@@ -366,13 +377,13 @@ export default function PurchasesHub({
 
     const counts = {
         library: libraryTotal,
-        orders: incomingItems.length + subs.filter((s) => s.is_active).length,
-        money: receipts.length,
+        transactions: receipts.length + unlocked.length + incomingItems.length + subs.length,
+        spending: 0,
         saved: savedItems.length,
     };
 
     const inner = (
-        <div className={`mx-auto px-4 sm:px-6 ${embedded ? "max-w-[1080px]" : "max-w-[1140px] pt-5 sm:pt-9"}`}>
+        <div className={`mx-auto px-4 sm:px-6 ${embedded ? "max-w-[1080px]" : "max-w-[1140px] pt-5 sm:pt-9"}`} style={{ fontFamily: "'Inter', -apple-system, system-ui, sans-serif" }}>
             <Hero
                 embedded={embedded}
                 media={media}
@@ -381,7 +392,7 @@ export default function PurchasesHub({
                 reduce={reduce}
                 status={supporter_status}
                 overdue={incomingItems.filter((i) => i.is_overdue).length}
-                onOverdue={() => { setTab("orders"); setView("incoming"); }}
+                onOverdue={() => { setTab("transactions"); setView("transactions"); }}
             />
 
             {renewingSoon.length > 0 && (
@@ -390,32 +401,35 @@ export default function PurchasesHub({
                     money={money}
                     onCancel={cancelSub}
                     busy={busySub}
-                    onView={() => { setTab("orders"); setView("subscriptions"); }}
+                    onView={() => { setTab("transactions"); setView("transactions"); }}
                 />
             )}
 
             {/* Tab rail — sticky, four destinations so nothing scrolls out of reach */}
             <div className={`${embedded ? "" : "sticky top-2 z-20"} mt-7 mb-4`}>
-                <div className="flex gap-1 bg-white/90 backdrop-blur border border-zinc-200/70 rounded-box-sm p-1.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                <div className="flex gap-1.5 bg-white/70 backdrop-blur-xl border border-white/80 rounded-[20px] p-1.5 shadow-[0_4px_24px_rgba(16,24,40,0.10)]">
                     {TABS.map((t) => {
                         const Icon = t.icon;
                         const active = tab === t.key;
-                        const alert = t.key === "orders" && hasOverdue;
+                        const alert = t.key === "transactions" && hasOverdue;
                         return (
                             <button
                                 key={t.key}
                                 onClick={() => setTab(t.key)}
                                 aria-pressed={active}
-                                className={`group flex-1 flex items-center justify-center gap-2 px-2 sm:px-3.5 min-h-[44px] rounded-[14px] text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
-                                    active ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                                className={`group relative flex-1 flex items-center justify-center gap-2 px-2 sm:px-3.5 min-h-[46px] rounded-[20px] text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
+                                    active
+                                        ? "text-white shadow-lg"
+                                        : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50/80"
                                 }`}
+                                style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 20px -4px ${ACCENT}55` } : {}}
                             >
-                                <Icon size={15} strokeWidth={2} />
+                                <Icon size={15} strokeWidth={2.2} />
                                 <span className={active ? "" : "hidden xs:inline sm:inline"}>{t.label}</span>
-                                {alert && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" aria-label="Needs attention" />}
+                                {alert && <span className="w-2 h-2 rounded-full bg-rose-400 ring-2 ring-white absolute top-2 right-2" aria-label="Needs attention" />}
                                 {!alert && counts[t.key] > 0 && (
                                     <span className={`text-[11px] rounded-full px-1.5 py-0.5 hidden sm:inline ${MONO} ${
-                                        active ? "bg-white/15 text-white/80" : "bg-zinc-100 text-zinc-400"
+                                        active ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-400"
                                     }`}>{counts[t.key]}</span>
                                 )}
                             </button>
@@ -426,11 +440,7 @@ export default function PurchasesHub({
 
             <ViewSwitch tab={tab} view={view} setView={setView} counts={{
                 media: libraryTotal,
-                access: unlocked.length,
-                incoming: incomingItems.length,
-                subscriptions: subs.length,
-                receipts: receipts.length,
-                creators: creators.length,
+                transactions: counts.transactions,
             }} />
 
             {tools.search && (
@@ -457,18 +467,18 @@ export default function PurchasesHub({
                         <MediaGrid items={list} hasMore={hasMore} loadMore={loadMore} loading={loading}
                             reduce={reduce} filtered={filtered} onOpen={setLightbox} isNew={isNew} />
                     )}
-                    {view === "access" && <UnlockedList items={list} reduce={reduce} filtered={filtered} isNew={isNew} />}
-                    {view === "incoming" && (
-                        <IncomingList items={list} reduce={reduce} filtered={filtered} isNew={isNew}
-                            onAccept={acceptDelivery} onReport={setReport} busy={busyIncoming} />
+                    {view === "transactions" && (
+                        <AllTransactionsView
+                            items={list} money={money} reduce={reduce} filtered={filtered} isNew={isNew}
+                            onAccept={acceptDelivery} onReport={setReport} busy={busyIncoming}
+                            onCancel={cancelSub} onResume={resumeSub} busySub={busySub}
+                        />
                     )}
-                    {view === "subscriptions" && (
-                        <SubscriptionList items={list} money={money} reduce={reduce} filtered={filtered}
-                            onCancel={cancelSub} onResume={resumeSub} busy={busySub} />
+                    {view === "spending" && (
+                        <MoneyView summary={spend_summary} creators={creators}
+                            money={money} reduce={reduce} filtered={filtered} embedded={embedded}
+                            onCreator={(u) => { setCreatorFilter(u); setTab("transactions"); setView("transactions"); }} />
                     )}
-                    {view === "receipts" && <MoneyView summary={spend_summary} receipts={list} creators={creators}
-                        money={money} reduce={reduce} filtered={filtered} embedded={embedded}
-                        onCreator={(u) => setCreatorFilter(u)} />}
                     {view === "saved" && <SavedList items={list} money={money} reduce={reduce} filtered={filtered} onRemove={removeSaved} />}
                 </motion.div>
             </AnimatePresence>
@@ -495,15 +505,28 @@ export default function PurchasesHub({
     );
 
     if (embedded) return inner;
-    return <div className="relative min-h-dvh pb-24 bg-[#F7F7F8] text-zinc-900" style={{ paddingBottom: "calc(6rem + env(safe-area-inset-bottom))" }}>{inner}</div>;
+    return (
+        <div className="relative min-h-dvh pb-24 text-zinc-900"
+            style={{
+                paddingBottom: "calc(6rem + env(safe-area-inset-bottom))",
+                background: "linear-gradient(160deg, #fdf6ff 0%, #f0f4ff 40%, #fff5fb 100%)",
+            }}>
+            {/* Subtle decorative orbs */}
+            <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+                <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${ACCENT}44 0%, transparent 70%)` }} />
+                <div className="absolute top-1/3 -left-32 w-[400px] h-[400px] rounded-full opacity-15" style={{ background: `radial-gradient(circle, ${ACCENT2}44 0%, transparent 70%)` }} />
+            </div>
+            {inner}
+        </div>
+    );
 }
 
 function viewsFor(tab) {
     return {
-        library: ["media", "access"],
-        orders: ["incoming", "subscriptions"],
-        money: ["receipts"],
-        saved: ["saved"],
+        library:      ["media"],
+        transactions: ["transactions"],
+        spending:     ["spending"],
+        saved:        ["saved"],
     }[tab] || [];
 }
 
@@ -516,27 +539,30 @@ const rise = (reduce) => ({
 /* ---------------- Sub-view segmented control ---------------- */
 function ViewSwitch({ tab, view, setView, counts }) {
     const opts = {
-        library: [{ k: "media", label: "Media" }, { k: "access", label: "Access passes" }],
-        orders: [{ k: "incoming", label: "In progress" }, { k: "subscriptions", label: "Subscriptions" }],
+        library: [{ k: "media", label: "Media" }],
     }[tab];
     if (!opts) return null;
     return (
-        <div className="flex gap-1.5 mb-5">
+        <div className="flex gap-2 mb-5">
             {opts.map((o) => {
                 const active = view === o.k;
                 return (
                     <button key={o.k} onClick={() => setView(o.k)} aria-pressed={active}
-                        className={`inline-flex items-center gap-2 min-h-[40px] px-3.5 rounded-full text-sm font-medium border transition ${
-                            active ? "bg-zinc-900 text-white border-transparent" : "bg-white text-zinc-600 border-zinc-200/70 hover:border-zinc-300"
-                        }`}>
+                        className={`inline-flex items-center gap-2 min-h-[40px] px-4 rounded-full text-sm font-semibold border transition-all duration-200 ${
+                            active
+                                ? "text-white border-transparent shadow-md"
+                                : "bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
+                        }`}
+                        style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 16px -4px ${ACCENT}44` } : {}}>
                         {o.label}
-                        <span className={`text-[11px] ${MONO} ${active ? "text-white/60" : "text-zinc-400"}`}>{counts[o.k] ?? 0}</span>
+                        <span className={`text-[11px] ${MONO} ${active ? "text-white/70" : "text-zinc-400"}`}>{counts[o.k] ?? 0}</span>
                     </button>
                 );
             })}
         </div>
     );
 }
+
 
 /* ---------------- Toolbar ---------------- */
 function Toolbar({
@@ -553,7 +579,7 @@ function Toolbar({
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search by title or creator…"
-                        className="w-full min-h-[44px] pl-10 pr-9 rounded-box-sm bg-white border border-zinc-200/70 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 focus:border-[#FF007F]/40 transition"
+                        className="w-full min-h-[44px] pl-10 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 focus:border-[#FF007F]/30 transition-all"
                     />
                     {query && (
                         <button onClick={() => setQuery("")} aria-label="Clear search"
@@ -567,7 +593,7 @@ function Toolbar({
                     <div className="relative shrink-0">
                         <Users size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                         <select value={creatorFilter} onChange={(e) => setCreatorFilter(e.target.value)} aria-label="Filter by creator"
-                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-box-sm bg-white border border-zinc-200/70 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 cursor-pointer">
+                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
                             <option value="">All creators</option>
                             {creators.map((c) => (
                                 <option key={c.owner?.username} value={c.owner?.username || ""}>@{c.owner?.username}</option>
@@ -581,7 +607,7 @@ function Toolbar({
                     <div className="relative shrink-0">
                         <ArrowDownUp size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                         <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort"
-                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-box-sm bg-white border border-zinc-200/70 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 cursor-pointer">
+                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
                             {sorts.map((k) => <option key={k} value={k}>{SORTS[k]}</option>)}
                         </select>
                         <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-zinc-400 pointer-events-none" />
@@ -618,10 +644,10 @@ function Toolbar({
 function FilterChip({ active, onClick, label, color = "#71717A", Icon }) {
     return (
         <button onClick={onClick} aria-pressed={active}
-            className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full text-xs font-medium border transition ${
-                active ? "text-white border-transparent" : "text-zinc-600 bg-white border-zinc-200/70 hover:border-zinc-300"
+            className={`inline-flex items-center gap-1.5 min-h-[34px] px-3 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                active ? "text-white border-transparent shadow-sm" : "text-zinc-600 bg-white/70 backdrop-blur-sm border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
             }`}
-            style={active ? { backgroundColor: color } : undefined}>
+            style={active ? { backgroundColor: color, boxShadow: `0 2px 10px -2px ${color}66` } : undefined}>
             {Icon && <Icon size={12} strokeWidth={2.4} />} {label}
         </button>
     );
@@ -637,14 +663,14 @@ function Backdrop({ children, onClose, reduce }) {
         return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
     }, [onClose]);
     return (
-        <motion.div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6"
+        <motion.div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6"
             initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }} onClick={onClose}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
             <motion.div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true"
                 initial={reduce ? false : { y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={reduce ? { opacity: 0 } : { y: 24, opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full sm:max-w-md bg-white rounded-t-box sm:rounded-box p-6 shadow-2xl">
+                className="w-full sm:max-w-md bg-white/95 backdrop-blur-xl rounded-t-[30px] sm:rounded-[30px] p-6 shadow-2xl border border-white/60">
                 {children}
             </motion.div>
         </motion.div>
@@ -718,11 +744,11 @@ function Toast({ message, onDone }) {
         <AnimatePresence>
             {message && (
                 <motion.div
-                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     role="status"
-                    className="fixed left-1/2 -translate-x-1/2 z-[60] bg-zinc-900 text-white text-sm font-medium px-4 py-3 rounded-box-sm shadow-xl max-w-[92vw] text-center"
-                    style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
+                    className="fixed left-1/2 -translate-x-1/2 z-[60] text-white text-sm font-semibold px-5 py-3.5 rounded-[20px] shadow-2xl max-w-[92vw] text-center border border-white/10"
+                    style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", background: `linear-gradient(135deg, #18181b 0%, #27272a 100%)`, backdropFilter: "blur(12px)" }}>
                     {message}
                 </motion.div>
             )}
@@ -871,8 +897,9 @@ function IconTile({ type, size = 44, rounded = "rounded-box-sm" }) {
 
 function NewDot() {
     return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-1.5 py-0.5"
-            style={{ backgroundColor: tint(ACCENT, "16"), color: ACCENT }}>
+        <span className="relative inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 text-white"
+            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 2px 8px ${ACCENT}55` }}>
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-white animate-ping opacity-60" />
             New
         </span>
     );
@@ -885,20 +912,25 @@ function NewDot() {
  */
 function RowCard({ lead, title, titleHref, subtitle, meta, right, actions, badge }) {
     return (
-        <div className={`${CARD} ${CARD_HOVER} p-4 flex items-center gap-3.5`}>
-            {lead}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                    {titleHref
-                        ? <a href={titleHref} className="font-medium text-zinc-900 truncate hover:underline">{title}</a>
-                        : <span className="font-medium text-zinc-900 truncate">{title}</span>}
-                    {badge}
+        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_16px_40px_-8px_rgba(16,24,40,0.18)] hover:-translate-y-0.5">
+            {/* Subtle left accent glow on hover */}
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
+            <div className="p-4 flex items-center gap-3.5">
+                {lead}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        {titleHref
+                            ? <a href={titleHref} className="font-semibold text-zinc-900 truncate hover:underline">{title}</a>
+                            : <span className="font-semibold text-zinc-900 truncate">{title}</span>}
+                        {badge}
+                    </div>
+                    {subtitle && <div className="text-xs text-zinc-500 truncate mt-0.5 font-medium">{subtitle}</div>}
+                    {meta && <div className="flex items-center gap-2 mt-1.5 flex-wrap">{meta}</div>}
+                    {actions && <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">{actions}</div>}
                 </div>
-                {subtitle && <div className="text-xs text-zinc-400 truncate mt-0.5">{subtitle}</div>}
-                {meta && <div className="flex items-center gap-2 mt-1.5 flex-wrap">{meta}</div>}
-                {actions && <div className="flex items-center gap-2.5 mt-2 flex-wrap">{actions}</div>}
+                {right && <div className="text-right shrink-0">{right}</div>}
             </div>
-            {right && <div className="text-right shrink-0">{right}</div>}
         </div>
     );
 }
@@ -916,26 +948,39 @@ function LinkAction({ onClick, href, children, tone = "accent", disabled }) {
 function Hero({ embedded, media, summary, money, reduce, status, overdue, onOverdue }) {
     const Title = embedded ? "h2" : "h1";
     return (
-        <div className={`${CARD} overflow-hidden`}>
-            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-                <div className="p-5 sm:p-7 md:p-9">
-                    <div className={EYEBROW}>Your library</div>
-                    <Title className={`${embedded ? "text-2xl md:text-3xl" : "text-2xl sm:text-3xl md:text-[2.6rem]"} font-semibold tracking-tight text-zinc-900 mt-1.5 leading-tight`}>
-                        My purchases
+        <div className="overflow-hidden rounded-[30px] relative" style={{
+            background: `linear-gradient(135deg, #1a0533 0%, #280a50 30%, #3b0764 60%, #1e0a4a 100%)`,
+            boxShadow: `0 20px 60px -12px rgba(124,58,237,0.4), 0 4px 20px -4px rgba(255,0,127,0.3)`,
+        }}>
+            {/* Background decorative blobs */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-30" style={{ background: `radial-gradient(circle, ${ACCENT}99 0%, transparent 70%)` }} />
+                <div className="absolute bottom-0 left-10 w-56 h-56 rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${ACCENT2}99 0%, transparent 70%)` }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 opacity-10" style={{ background: `radial-gradient(ellipse, white 0%, transparent 70%)` }} />
+            </div>
+
+            <div className="grid lg:grid-cols-[1.2fr_0.8fr] relative z-10">
+                <div className="p-6 sm:p-8 md:p-10">
+                    <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 mb-3">
+                        <span className="w-4 h-px bg-white/30" />
+                        Your library
+                    </div>
+                    <Title className={`${embedded ? "text-2xl md:text-3xl" : "text-3xl sm:text-4xl md:text-[2.8rem]"} font-bold tracking-tight text-white mt-1 leading-tight`}>
+                        My Purchases
                     </Title>
 
-                    {/* Compact stat row — three numbers on one line even on a phone, so the
-                        content below is reachable without scrolling past a full screen. */}
-                    <div className="mt-5 grid grid-cols-3 gap-3 max-w-md">
-                        <Stat label="Total spent" value={<CountUp value={Number(summary.total_spent || 0)} money={money} reduce={reduce} />} big />
-                        <Stat label="This month" value={money(summary.this_month)} />
-                        <Stat label="Creators" value={summary.creators_supported || 0} />
+                    {/* Compact stat row */}
+                    <div className="mt-6 grid grid-cols-3 gap-3 max-w-md">
+                        <HeroStat label="Total spent" value={<CountUp value={Number(summary.total_spent || 0)} money={money} reduce={reduce} />} big accent />
+                        <HeroStat label="This month" value={money(summary.this_month)} />
+                        <HeroStat label="Creators" value={summary.creators_supported || 0} />
                     </div>
 
                     {overdue > 0 && (
                         <button onClick={onOverdue}
-                            className="mt-5 inline-flex items-center gap-2 min-h-[44px] px-4 rounded-box-sm text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition">
-                            <AlertTriangle size={15} strokeWidth={2.2} />
+                            className="mt-5 inline-flex items-center gap-2 min-h-[44px] px-4 rounded-[20px] text-sm font-semibold text-white/90 border border-rose-400/40 hover:border-rose-400/70 transition-all"
+                            style={{ background: "rgba(225,29,72,0.20)", backdropFilter: "blur(8px)" }}>
+                            <AlertTriangle size={15} strokeWidth={2.2} className="text-rose-400" />
                             {overdue} {overdue === 1 ? "delivery is" : "deliveries are"} overdue
                         </button>
                     )}
@@ -943,14 +988,14 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
                     {status && <SupporterStatus status={status} reduce={reduce} />}
                 </div>
 
-                {/* Decorative — desktop only. On a phone it pushed every action below the fold. */}
-                <div className="relative bg-zinc-50 border-l border-zinc-200/70 min-h-[260px] hidden lg:flex items-center justify-center p-7">
+                {/* Decorative — desktop only */}
+                <div className="relative hidden lg:flex items-center justify-center p-8">
                     {media.length ? (
                         <Mosaic tiles={media.slice(0, 4)} extra={Math.max(0, media.length - 4)} reduce={reduce} />
                     ) : (
-                        <div className="flex flex-col items-center justify-center text-zinc-400">
-                            <PiggyBank size={44} strokeWidth={1.6} />
-                            <span className="mt-3 text-sm font-medium">Your library is empty</span>
+                        <div className="flex flex-col items-center justify-center text-white/30">
+                            <PiggyBank size={48} strokeWidth={1.4} />
+                            <span className="mt-3 text-sm font-medium text-white/40">Your library is empty</span>
                         </div>
                     )}
                 </div>
@@ -970,6 +1015,18 @@ function Stat({ label, value, big }) {
     );
 }
 
+function HeroStat({ label, value, big, accent }) {
+    return (
+        <div className="min-w-0 bg-white/10 backdrop-blur-sm rounded-[20px] p-3 border border-white/10">
+            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50 mb-1.5">{label}</div>
+            <div className={`${big ? "text-xl sm:text-2xl" : "text-base sm:text-lg"} font-bold leading-none truncate ${MONO}`}
+                style={{ color: accent ? ACCENT : "white" }}>
+                {value}
+            </div>
+        </div>
+    );
+}
+
 function SupporterStatus({ status, reduce }) {
     const [open, setOpen] = useState(false);
     const color = status.color || TIER_COLOR[status.level] || ACCENT;
@@ -977,46 +1034,49 @@ function SupporterStatus({ status, reduce }) {
     const rows = Object.keys(breakdown);
     return (
         <div className="mt-6 max-w-md">
-            <div className="flex items-center justify-between mb-2">
-                <span className="inline-flex items-center gap-2 text-sm font-medium text-zinc-900">
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: tint(color, "1f"), color }}>
-                        <Trophy size={14} strokeWidth={2.2} />
+            <div className="p-3.5 rounded-[20px] border border-white/20" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
+                <div className="flex items-center justify-between mb-3">
+                    <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                        <span className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
+                            style={{ background: `linear-gradient(135deg, ${color}cc, ${color})`, boxShadow: `0 4px 12px ${color}55` }}>
+                            <Trophy size={15} strokeWidth={2.2} className="text-white" />
+                        </span>
+                        {status.level} supporter
                     </span>
-                    {status.level} supporter
-                </span>
-                <span className={`text-xs text-zinc-400 ${MONO}`}>{Math.round(status.score)} pts</span>
+                    <span className={`text-xs text-white/50 ${MONO}`}>{Math.round(status.score)} pts</span>
+                </div>
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)`, boxShadow: `0 0 8px ${color}77` }}
+                        initial={reduce ? false : { width: 0 }}
+                        animate={{ width: `${Math.round((status.progress || 0) * 100)}%` }}
+                        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
+                </div>
+                <div className="flex items-center justify-between gap-3 mt-2">
+                    <span className="text-[11px] text-white/40">
+                        {status.next_level ? `${status.to_next} pts to ${status.next_level}` : "Top tier reached"} · last 90 days
+                    </span>
+                    {rows.length > 0 && (
+                        <button onClick={() => setOpen((o) => !o)} className="text-[11px] font-semibold text-white/50 hover:text-white/90 min-h-[28px] transition-colors">
+                            {open ? "Hide" : "How this works"}
+                        </button>
+                    )}
+                </div>
+                <AnimatePresence>
+                    {open && rows.length > 0 && (
+                        <motion.ul
+                            initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden mt-2 space-y-1">
+                            {rows.map((k) => (
+                                <li key={k} className="flex items-center justify-between text-[11px] text-white/50 capitalize">
+                                    <span>{String(k).replace(/_/g, " ")}</span>
+                                    <span className={MONO}>{Math.round(Number(breakdown[k]) || 0)} pts</span>
+                                </li>
+                            ))}
+                        </motion.ul>
+                    )}
+                </AnimatePresence>
             </div>
-            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                <motion.div className="h-full rounded-full" style={{ background: color }}
-                    initial={reduce ? false : { width: 0 }}
-                    animate={{ width: `${Math.round((status.progress || 0) * 100)}%` }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} />
-            </div>
-            <div className="flex items-center justify-between gap-3 mt-1.5">
-                <span className="text-[11px] text-zinc-400">
-                    {status.next_level ? `${status.to_next} pts to ${status.next_level}` : "Top tier reached"} · last 90 days
-                </span>
-                {rows.length > 0 && (
-                    <button onClick={() => setOpen((o) => !o)} className="text-[11px] font-medium text-zinc-500 hover:text-zinc-900 min-h-[32px]">
-                        {open ? "Hide" : "How this works"}
-                    </button>
-                )}
-            </div>
-            <AnimatePresence>
-                {open && rows.length > 0 && (
-                    <motion.ul
-                        initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden mt-2 space-y-1">
-                        {rows.map((k) => (
-                            <li key={k} className="flex items-center justify-between text-[11px] text-zinc-500 capitalize">
-                                <span>{String(k).replace(/_/g, " ")}</span>
-                                <span className={MONO}>{Math.round(Number(breakdown[k]) || 0)} pts</span>
-                            </li>
-                        ))}
-                    </motion.ul>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
@@ -1041,23 +1101,30 @@ function CountUp({ value, money, reduce }) {
 }
 
 function Mosaic({ tiles, extra, reduce }) {
-    const rot = ["-2deg", "1.5deg", "1.5deg", "-1.5deg"];
+    const rot = ["-3deg", "2deg", "2.5deg", "-2deg"];
+    const shadows = [
+        "0 8px 24px -4px rgba(255,0,127,0.25), 0 2px 8px rgba(0,0,0,0.12)",
+        "0 8px 24px -4px rgba(124,58,237,0.2), 0 2px 8px rgba(0,0,0,0.10)",
+        "0 8px 24px -4px rgba(14,165,233,0.2), 0 2px 8px rgba(0,0,0,0.10)",
+        "0 8px 24px -4px rgba(16,185,129,0.2), 0 2px 8px rgba(0,0,0,0.10)",
+    ];
     return (
         <motion.div className="relative w-full max-w-[280px]" variants={stagger(reduce)} initial="hidden" animate="show">
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
                 {tiles.map((t, i) => {
                     const c = cat(t.source_type);
                     const Icon = c.icon;
                     const isImg = t.media_kind === "image" && t.media_url;
                     return (
                         <motion.div key={t.id} variants={rise(reduce)}
-                            className="aspect-square rounded-box-sm border border-zinc-200 bg-white shadow-[0_4px_14px_-6px_rgba(16,24,40,0.2)] overflow-hidden"
-                            style={{ transform: `rotate(${rot[i]})` }}>
+                            className="aspect-square rounded-[16px] bg-white overflow-hidden border border-white/80"
+                            style={{ transform: `rotate(${rot[i]})`, boxShadow: shadows[i] }}>
                             {isImg ? (
                                 <img src={t.media_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: tint(c.color, "12"), color: c.color }}>
-                                    {t.media_kind === "video" ? <Play size={22} strokeWidth={2} /> : <Icon size={22} strokeWidth={2} />}
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2"
+                                    style={{ background: `linear-gradient(135deg, ${tint(c.color, "16")}, ${tint(c.color, "22")})`, color: c.color }}>
+                                    {t.media_kind === "video" ? <Play size={24} strokeWidth={2} /> : <Icon size={24} strokeWidth={2} />}
                                 </div>
                             )}
                         </motion.div>
@@ -1065,7 +1132,8 @@ function Mosaic({ tiles, extra, reduce }) {
                 })}
             </div>
             {extra > 0 && (
-                <span className={`absolute -bottom-2 -right-2 bg-zinc-900 text-white text-[11px] font-medium px-2 py-1 rounded-full shadow-sm ${MONO}`}>
+                <span className={`absolute -bottom-2 -right-2 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg ${MONO}`}
+                    style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                     +{extra}
                 </span>
             )}
@@ -1113,37 +1181,37 @@ function MediaCard({ item, onOpen, isNew }) {
     const poster = useVideoPoster(media_kind === "video" ? media_url : null, owner?.avatar);
 
     return (
-        <div className={`${CARD} ${CARD_HOVER} overflow-hidden flex flex-col group`}>
+        <div className="overflow-hidden flex flex-col group rounded-[20px] border border-white/70 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_16px_48px_-8px_rgba(16,24,40,0.22)] hover:-translate-y-1" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.07)" }}>
             <button
                 type="button"
                 onClick={openable ? onOpen : undefined}
                 aria-label={openable ? `Open ${title}` : title}
                 className="aspect-square flex items-center justify-center overflow-hidden relative text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40"
-                style={{ backgroundColor: tint(c.color, "10"), cursor: openable ? "zoom-in" : "default" }}
+                style={{ backgroundColor: tint(c.color, "12"), cursor: openable ? "zoom-in" : "default" }}
             >
                 {media_kind === "video" ? (
                     <>
                         {poster && <img src={poster} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
                         <span className="absolute inset-0 flex items-center justify-center">
-                            <span className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                            <span className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white group-hover:scale-110 transition-all duration-300" style={{ background: "rgba(0,0,0,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
                                 <Play size={20} className="ml-0.5" />
                             </span>
                         </span>
-                        <span className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 pointer-events-none backdrop-blur-sm">
-                            <Play size={10} /> Video
+                        <span className="absolute top-2.5 left-2.5 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 pointer-events-none" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
+                            <Play size={9} /> Video
                         </span>
                     </>
                 ) : media_kind === "image" ? (
-                    <img src={media_url} alt={title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
+                    <img src={media_url} alt={title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
                 ) : (
                     <NonVisual kind={media_kind} color={c.color} />
                 )}
-                {isNew && <span className="absolute top-2 right-2"><NewDot /></span>}
+                {isNew && <span className="absolute top-2.5 right-2.5"><NewDot /></span>}
             </button>
             <div className="p-3.5">
-                <div className="text-sm font-medium text-zinc-900 truncate" title={title}>{title}</div>
+                <div className="text-sm font-semibold text-zinc-900 truncate" title={title}>{title}</div>
                 <div className="flex items-center justify-between mt-2 gap-2">
-                    <a href={owner?.username ? `/${owner.username}` : undefined} className="text-xs text-zinc-400 truncate hover:text-zinc-700 hover:underline">@{owner?.username}</a>
+                    <a href={owner?.username ? `/${owner.username}` : undefined} className="text-xs text-zinc-500 truncate hover:text-zinc-800 hover:underline font-medium">@{owner?.username}</a>
                     <Chip type={item.source_type} />
                 </div>
             </div>
@@ -1153,11 +1221,11 @@ function MediaCard({ item, onOpen, isNew }) {
 
 function SkeletonCard() {
     return (
-        <div className={`${CARD} overflow-hidden flex flex-col animate-pulse`}>
-            <div className="aspect-square bg-zinc-100" />
+        <div className="overflow-hidden flex flex-col rounded-[20px] border border-white/70 bg-white/60 animate-pulse">
+            <div className="aspect-square bg-gradient-to-br from-zinc-100 to-zinc-50" />
             <div className="p-3.5 space-y-2">
-                <div className="h-3.5 w-3/4 bg-zinc-100 rounded" />
-                <div className="h-3 w-1/2 bg-zinc-100 rounded" />
+                <div className="h-3.5 w-3/4 bg-zinc-100 rounded-full" />
+                <div className="h-3 w-1/2 bg-zinc-100 rounded-full" />
             </div>
         </div>
     );
@@ -1176,21 +1244,23 @@ function NonVisual({ kind, color }) {
 /* ---------------- Renewing banner ---------------- */
 function RenewingBanner({ items, money, onCancel, busy, onView }) {
     return (
-        <div className={`mt-5 ${CARD} p-5`} style={{ borderColor: tint("#F59E0B", "55") }}>
-            <div className="flex items-center gap-2 mb-3 text-zinc-900">
-                <BellRing size={16} strokeWidth={2} className="text-amber-500" />
-                <span className="text-sm font-medium">{items.length} renewing this week</span>
+        <div className="mt-5 rounded-[20px] p-5 border" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", borderColor: "#fde68a", boxShadow: "0 4px 20px -4px rgba(245,158,11,0.2)" }}>
+            <div className="flex items-center gap-2.5 mb-3">
+                <span className="w-8 h-8 rounded-[20px] flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
+                    <BellRing size={16} strokeWidth={2} className="text-amber-500" />
+                </span>
+                <span className="text-sm font-bold text-amber-900">{items.length} renewing this week</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {items.slice(0, 4).map((s) => (
-                    <div key={s.id} className="bg-zinc-50 border border-zinc-200/70 rounded-box-sm px-3.5 py-2.5 flex items-center gap-3">
+                    <div key={s.id} className="bg-white/70 backdrop-blur-sm border border-amber-200/60 rounded-[20px] px-3.5 py-2.5 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-zinc-900 truncate">{s.title}</div>
-                            <div className={`text-xs text-zinc-400 ${MONO}`}>{money(s.amount)} · renews {fmtDate(s.next_charge_at)}</div>
+                            <div className="text-sm font-semibold text-zinc-900 truncate">{s.title}</div>
+                            <div className={`text-xs text-amber-700/70 ${MONO}`}>{money(s.amount)} · renews {fmtDate(s.next_charge_at)}</div>
                         </div>
                         {s.cancelable && (
                             <button onClick={() => onCancel(s)} disabled={busy === s.id}
-                                className="shrink-0 text-xs font-medium text-zinc-500 hover:text-rose-600 transition-colors disabled:opacity-50 min-h-[44px] px-2">
+                                className="shrink-0 text-xs font-semibold text-amber-700/70 hover:text-rose-600 transition-colors disabled:opacity-50 min-h-[44px] px-2">
                                 {busy === s.id ? "…" : "Cancel"}
                             </button>
                         )}
@@ -1387,8 +1457,8 @@ function UnlockedList({ items, reduce, filtered, isNew }) {
     );
 }
 
-/* ---------------- Money (spending + creators + receipts) ---------------- */
-function MoneyView({ summary, receipts, creators, money, reduce, filtered, onCreator, embedded }) {
+/* ---------------- Spending (charts + creators only, receipts moved to Transactions tab) ---------------- */
+function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embedded }) {
     const by = summary.by_type || {};
     const rows = Object.keys(by).filter((k) => by[k] > 0).sort((a, b) => by[b] - by[a]);
     const max = rows.length ? by[rows[0]] : 1;
@@ -1401,64 +1471,81 @@ function MoneyView({ summary, receipts, creators, money, reduce, filtered, onCre
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Spend over time — "am I spending more than last month" is the question
                     a single total can never answer. */}
-                <div className={`${CARD} p-5 sm:p-6`}>
-                    <div className="flex items-start justify-between gap-3 mb-5">
+                <div className={`${CARD} p-5 sm:p-6 overflow-hidden relative`}>
+                    {/* Subtle gradient tint in top-right */}
+                    <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full pointer-events-none"
+                        style={{ background: `radial-gradient(circle, ${ACCENT}10 0%, transparent 70%)` }} />
+                    <div className="flex items-start justify-between gap-3 mb-5 relative z-10">
                         <div>
                             <div className={EYEBROW}>Last 12 months</div>
-                            <div className={`text-2xl font-semibold text-zinc-900 mt-1.5 ${MONO}`}>{money(summary.total_spent)}</div>
+                            <div className={`text-2xl font-bold text-zinc-900 mt-1.5 ${MONO}`}>{money(summary.total_spent)}</div>
                         </div>
                         {!embedded && (
                             <a href="/my-purchases-export"
-                                className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-box-sm border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition">
-                                <Download size={14} strokeWidth={2.2} /> Export CSV
+                                className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 rounded-[20px] text-xs font-semibold text-white transition-all hover:opacity-90"
+                                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}33` }}>
+                                <Download size={13} strokeWidth={2.4} /> Export CSV
                             </a>
                         )}
                     </div>
                     {months.length > 0 && (
                         <>
-                            <div className="flex items-end gap-1 h-24">
-                                {months.map((m) => (
-                                    <div key={m.month} className="flex-1 flex flex-col justify-end group relative" title={`${fmtMonth(m.month)}: ${money(m.total)}`}>
-                                        <motion.div
-                                            className="w-full rounded-t-[4px]"
-                                            style={{ background: m.total > 0 ? ACCENT : "#E4E4E7", minHeight: 3 }}
-                                            initial={reduce ? false : { height: 0 }}
-                                            animate={{ height: `${Math.max(3, (m.total / monthMax) * 96)}px` }}
-                                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} />
-                                    </div>
-                                ))}
+                            <div className="flex items-end gap-1.5 h-28 relative z-10">
+                                {months.map((m, idx) => {
+                                    const h = Math.max(4, (m.total / monthMax) * 112);
+                                    const isLast = idx === months.length - 1;
+                                    return (
+                                        <div key={m.month} className="flex-1 flex flex-col justify-end group relative">
+                                            {/* Tooltip on hover */}
+                                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10">
+                                                <div className={`text-[10px] font-semibold text-white px-2 py-1 rounded-lg whitespace-nowrap ${MONO}`}
+                                                    style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}55` }}>
+                                                    {money(m.total)}
+                                                </div>
+                                            </div>
+                                            <motion.div
+                                                className="w-full rounded-t-[6px] cursor-default"
+                                                style={{
+                                                    background: m.total > 0
+                                                        ? (isLast ? `linear-gradient(180deg, ${ACCENT} 0%, ${ACCENT2} 100%)` : `linear-gradient(180deg, ${ACCENT}cc 0%, ${ACCENT}88 100%)`)
+                                                        : "#E4E4E7",
+                                                    minHeight: 4,
+                                                    boxShadow: m.total > 0 ? `0 -2px 8px ${ACCENT}33` : "none",
+                                                }}
+                                                initial={reduce ? false : { height: 0 }}
+                                                animate={{ height: `${h}px` }}
+                                                transition={{ duration: 0.55, delay: idx * 0.03, ease: [0.16, 1, 0.3, 1] }} />
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <div className="flex justify-between text-[10px] text-zinc-400 mt-1.5">
+                            <div className="flex justify-between text-[10px] font-semibold text-zinc-400 mt-2">
                                 <span>{fmtMonth(months[0]?.month)}</span>
                                 <span>{fmtMonth(months[months.length - 1]?.month)}</span>
                             </div>
                         </>
                     )}
-                    <div className="text-xs text-zinc-500 mt-4 pt-4 border-t border-zinc-100">
-                        {money(summary.this_month)} this month
+                    <div className="text-xs text-zinc-500 mt-4 pt-4 border-t border-zinc-100/80 flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-zinc-900">{money(summary.this_month)}</span> this month
                         {delta !== 0 && (
-                            <span className={delta > 0 ? "text-amber-600" : "text-emerald-600"}>
-                                {" · "}{delta > 0 ? "+" : "−"}{money(Math.abs(delta))} vs last month
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${delta > 0 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"}`}>
+                                {delta > 0 ? "+" : "−"}{money(Math.abs(delta))} vs last month
                             </span>
                         )}
                     </div>
 
-                    {/* Money that came back, and money still moving. Both are reported
-                        separately and never netted off the total — a single blended figure
-                        answers neither "what have I spent" nor "what was returned". These
-                        purchases used to vanish from this page entirely. */}
                     {(Number(summary.refunded_total || 0) > 0 || Number(summary.pending_total || 0) > 0) && (
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-zinc-500">
                             {Number(summary.refunded_total || 0) > 0 && (
                                 <span>
-                                    <span className={`text-zinc-900 font-medium ${MONO}`}>{money(summary.refunded_total)}</span>
+                                    <span className={`text-zinc-900 font-semibold ${MONO}`}>{money(summary.refunded_total)}</span>
                                     {" refunded"}
                                     {summary.refunded_count ? ` · ${summary.refunded_count} purchase${summary.refunded_count === 1 ? "" : "s"}` : ""}
                                 </span>
                             )}
                             {Number(summary.pending_total || 0) > 0 && (
                                 <span>
-                                    <span className={`text-zinc-900 font-medium ${MONO}`}>{money(summary.pending_total)}</span>
+                                    <span className={`text-zinc-900 font-semibold ${MONO}`}>{money(summary.pending_total)}</span>
                                     {" still confirming with your bank"}
                                 </span>
                             )}
@@ -1467,25 +1554,31 @@ function MoneyView({ summary, receipts, creators, money, reduce, filtered, onCre
                 </div>
 
                 <div className={`${CARD} p-5 sm:p-6`}>
-                    <div className={`${EYEBROW} mb-4`}>Where it went</div>
+                    <div className={`${EYEBROW} mb-5`}>Where it went</div>
                     {rows.length ? (
-                        <div className="space-y-3.5">
-                            {rows.map((k) => {
+                        <div className="space-y-4">
+                            {rows.map((k, idx) => {
                                 const c = cat(k);
+                                const Icon = c.icon;
                                 const pct = Math.max(4, (by[k] / max) * 100);
                                 return (
                                     <div key={k}>
-                                        <div className="flex justify-between items-center text-sm mb-1.5">
-                                            <span className="flex items-center gap-2 text-zinc-700">
-                                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
-                                                {c.label}
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="flex items-center gap-2">
+                                                <span className="w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0"
+                                                    style={{ backgroundColor: tint(c.color, "18"), color: c.color }}>
+                                                    <Icon size={13} strokeWidth={2.4} />
+                                                </span>
+                                                <span className="text-sm font-semibold text-zinc-800">{c.label}</span>
                                             </span>
-                                            <span className={`text-zinc-900 font-medium ${MONO}`}>{money(by[k])}</span>
+                                            <span className={`text-sm font-bold text-zinc-900 ${MONO}`}>{money(by[k])}</span>
                                         </div>
-                                        <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                                            <motion.div className="h-full rounded-full" style={{ background: c.color }}
-                                                initial={reduce ? false : { width: 0 }} animate={{ width: `${pct}%` }}
-                                                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} />
+                                        <div className="h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+                                            <motion.div className="h-full rounded-full"
+                                                style={{ background: `linear-gradient(90deg, ${c.color}cc, ${c.color})`, boxShadow: `0 0 6px ${c.color}44` }}
+                                                initial={reduce ? false : { width: 0 }}
+                                                animate={{ width: `${pct}%` }}
+                                                transition={{ duration: 0.7, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }} />
                                         </div>
                                     </div>
                                 );
@@ -1501,80 +1594,355 @@ function MoneyView({ summary, receipts, creators, money, reduce, filtered, onCre
                 <div className={`${CARD} p-5 sm:p-6`}>
                     <div className={`${EYEBROW} mb-4`}>Creators you support</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {creators.slice(0, 8).map((c) => (
-                            <div key={c.owner?.username} className="flex items-center gap-3 bg-zinc-50 border border-zinc-200/70 rounded-box-sm p-3">
-                                <img src={c.owner?.avatar} alt="" className="w-10 h-10 rounded-full object-cover bg-zinc-100" />
+                        {creators.slice(0, 8).map((c, idx) => (
+                            <div key={c.owner?.username}
+                                className="group flex items-center gap-3.5 rounded-[20px] p-3.5 border border-white/60 transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(16,24,40,0.15)] hover:-translate-y-0.5 cursor-default"
+                                style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)" }}>
+                                {/* Avatar with ring glow */}
+                                <div className="relative shrink-0">
+                                    <img src={c.owner?.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-zinc-100 ring-2 ring-white shadow-md" />
+                                    {c.active_subs > 0 && (
+                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white flex items-center justify-center"
+                                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <a href={c.open_link} className="text-sm font-medium text-zinc-900 truncate block hover:underline">@{c.owner?.username}</a>
-                                    <div className={`text-[11px] text-zinc-400 ${MONO}`}>
-                                        {c.purchase_count} purchases{c.active_subs ? ` · ${c.active_subs} active` : ""}
+                                    <a href={c.open_link} className="text-sm font-bold text-zinc-900 truncate block hover:underline">@{c.owner?.username}</a>
+                                    <div className={`text-[11px] text-zinc-500 font-medium ${MONO} mt-0.5`}>
+                                        {c.purchase_count} purchase{c.purchase_count !== 1 ? "s" : ""}{c.active_subs ? ` · ${c.active_subs} active` : ""}
                                     </div>
-                                    <div className="flex items-center gap-2.5 mt-1">
-                                        <button onClick={() => onCreator(c.owner?.username)} className="text-[11px] font-medium hover:underline" style={{ color: ACCENT }}>
-                                            Show their items
+                                    <div className="flex items-center gap-2.5 mt-1.5">
+                                        <button onClick={() => onCreator(c.owner?.username)}
+                                            className="text-[11px] font-bold transition-opacity hover:opacity-70" style={{ color: ACCENT }}>
+                                            Show items
                                         </button>
                                         {c.support_story_url && (
-                                            <a href={c.support_story_url} className="text-[11px] font-medium text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1">
+                                            <a href={c.support_story_url} className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 inline-flex items-center gap-1">
                                                 <MessageCircle size={10} strokeWidth={2.4} /> Our story
                                             </a>
                                         )}
                                     </div>
                                 </div>
-                                <div className={`text-sm font-semibold text-zinc-900 shrink-0 ${MONO}`}>{money(c.total_spent)}</div>
+                                <div className={`text-sm font-bold shrink-0 ${MONO}`} style={{ color: ACCENT }}>{money(c.total_spent)}</div>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
 
-            <div>
-                <div className={`${EYEBROW} mb-3`}>Receipts</div>
-                {receipts.length ? (
-                    <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-4" variants={stagger(reduce)} initial="hidden" animate="show">
-                        {receipts.map((r) => (
-                            <motion.div key={r.id} variants={rise(reduce)}>
-                                <RowCard
-                                    lead={<IconTile type={r.source_type} size={46} />}
-                                    title={r.title}
-                                    subtitle={`@${r.owner?.username} · ${fmtDate(r.date)}`}
-                                    right={
-                                        <>
-                                            <div className={`font-semibold text-zinc-900 ${MONO}`}>{money(r.amount)}</div>
-                                            <a href={r.certificate_url} target="_blank" rel="noreferrer"
-                                                className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-zinc-600 hover:text-zinc-900">
-                                                <Download size={12} strokeWidth={2.2} /> Receipt
-                                            </a>
-                                        </>
-                                    }
-                                />
-                            </motion.div>
-                        ))}
-                    </motion.div>
-                ) : (
-                    filtered
-                        ? <Empty title="No matches" sub="Try a different search or clear the filters." Icon={Search} />
-                        : <Empty title="No receipts yet" sub="A receipt is saved for every purchase you make." Icon={ReceiptText} />
-                )}
-            </div>
         </div>
     );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   AllTransactionsView — unified chronological list of every purchase,
+   showing receipts, unlocked access, in-progress deliveries, and
+   subscriptions in one place, each with rewards visible inline.
+───────────────────────────────────────────────────────────────────────── */
+function AllTransactionsView({ items, money, reduce, filtered, isNew,
+    onAccept, onReport, busy, onCancel, onResume, busySub }) {
+
+    if (!items.length) {
+        return filtered
+            ? <Empty title="No matches" sub="Try a different search or clear the filters." Icon={Search} />
+            : <Empty title="No transactions yet" sub="Every purchase you make will appear here with its reward or delivery status." Icon={ReceiptText} cta />;
+    }
+
+    return (
+        <motion.div className="space-y-3" variants={stagger(reduce)} initial="hidden" animate="show">
+            {items.map((item) => (
+                <motion.div key={item.id} variants={rise(reduce)}>
+                    <TransactionRow item={item} money={money} isNew={isNew}
+                        onAccept={onAccept} onReport={onReport} busy={busy}
+                        onCancel={onCancel} onResume={onResume} busySub={busySub} />
+                </motion.div>
+            ))}
+        </motion.div>
+    );
+}
+
+function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel, onResume, busySub }) {
+    const kind = item._kind; // 'receipt' | 'unlocked' | 'incoming' | 'subscription'
+    const hasReward = item.reward_url || item.reward_text;
+
+    const RewardIcon = item.reward_type === 'file' ? Download
+        : item.reward_type === 'link' ? ExternalLink : Gift;
+
+    const rewardLabel = item.reward_type === 'file' ? 'Download your reward'
+        : item.reward_type === 'link' ? 'Access exclusive content' : 'View your reward';
+
+    // ---- Status badge ----
+    const statusBadge = (() => {
+        if (kind === 'receipt') return <StatusPill tone="#10B981" label="Completed" />;
+        if (kind === 'unlocked') return <StatusPill tone="#8B5CF6" label="Lifetime" />;
+        if (kind === 'subscription') {
+            if (item.is_canceling) return <StatusPill tone="#F59E0B" label="Cancelling" />;
+            if (item.is_active) return <StatusPill tone="#10B981" label="Active" />;
+            return <StatusPill tone="#71717A" label="Ended" />;
+        }
+        if (kind === 'incoming') {
+            if (item.is_overdue) return <StatusPill tone="#EF4444" label="Overdue" />;
+            return <StatusPill tone="#F59E0B" label="In progress" />;
+        }
+        return null;
+    })();
+
+    // ---- Date display ----
+    const dateStr = fmtDate(item.date || item.created_at || item.unlocked_at || item.started_at);
+
+    // ---- Amount ----
+    const amount = item.amount ?? item.price ?? null;
+
+    return (
+        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_12px_32px_-8px_rgba(16,24,40,0.14)]">
+            {/* Left accent glow on hover */}
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
+
+            {/* ── Top row: icon + info + amount ── */}
+            <div className="p-4 flex items-start gap-3.5">
+                <IconTile type={item.source_type} size={46} />
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-zinc-900 truncate">{item.title || 'Purchase'}</span>
+                        {isNew(item) && <NewDot />}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5 font-medium flex items-center gap-1.5 flex-wrap">
+                        {item.owner?.username && <span>@{item.owner.username}</span>}
+                        {dateStr && <><span className="w-1 h-1 rounded-full bg-zinc-300 shrink-0" /><span>{dateStr}</span></>}
+                    </div>
+                    <div className="mt-1.5">{statusBadge}</div>
+                    {/* What WE sent YOU about this purchase — your own messages only. */}
+                    <DeliveryStatus notifications={item.notifications} className="mt-1.5" />
+                </div>
+                {amount !== null && (
+                    <div className="text-right shrink-0">
+                        <div className={`text-base font-bold text-zinc-900 ${MONO}`}>{money(amount)}</div>
+                        {kind === 'receipt' && item.certificate_url && (
+                            <a href={item.certificate_url} target="_blank" rel="noreferrer"
+                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 transition-colors">
+                                <Download size={11} strokeWidth={2.4} /> Receipt
+                            </a>
+                        )}
+                        {kind === 'subscription' && item.recurring_type && (
+                            <div className="text-[10px] text-zinc-400 font-medium mt-0.5 capitalize">{item.recurring_type}</div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Reward section (receipts + unlocked) ── */}
+            {hasReward && (
+                <div className="border-t mx-4 mb-4 pt-3.5" style={{ borderColor: `${ACCENT}22` }}>
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
+                            <Gift size={11} strokeWidth={2.5} className="text-white" />
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>What you unlocked</span>
+                    </div>
+                    {item.reward_text && (
+                        <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-[12px] px-3 py-2.5 border border-white/80 mb-2.5">{item.reward_text}</p>
+                    )}
+                    {item.reward_url && (
+                        <a href={item.reward_url} target="_blank" rel="noreferrer"
+                            className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
+                            <RewardIcon size={13} strokeWidth={2.5} />{rewardLabel}
+                        </a>
+                    )}
+                </div>
+            )}
+
+            {/* ── Unlocked: open link ── */}
+            {kind === 'unlocked' && !hasReward && item.open_link && (
+                <div className="px-4 pb-4">
+                    <a href={item.open_link} target="_blank" rel="noreferrer"
+                        className="flex items-center justify-center gap-2 min-h-[38px] w-full rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
+                        <ArrowUpRight size={13} strokeWidth={2.4} /> View content
+                    </a>
+                </div>
+            )}
+
+            {/* ── Incoming: delivery info + actions ── */}
+            {kind === 'incoming' && (
+                <div className="px-4 pb-4 space-y-2.5">
+                    {item.is_physical && item.tracking_id && (
+                        <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 rounded-[12px] px-3 py-2.5 border border-zinc-100">
+                            <Truck size={13} strokeWidth={2.2} />
+                            <span className="font-medium">{item.courier_name || 'Courier'}</span>
+                            <span className={MONO}>{item.tracking_id}</span>
+                        </div>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                        {item.can_accept && (
+                            <button onClick={() => onAccept(item)} disabled={busy === item.id}
+                                className="flex-1 min-h-[38px] rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
+                                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
+                                {busy === item.id ? 'Accepting…' : 'Accept delivery'}
+                            </button>
+                        )}
+                        {item.open_link && (
+                            <a href={item.open_link}
+                                className="flex-1 flex items-center justify-center gap-1.5 min-h-[38px] rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
+                                <ArrowUpRight size={12} strokeWidth={2.4} /> View creator
+                            </a>
+                        )}
+                        <button onClick={() => onReport(item)}
+                            className="min-h-[38px] px-3.5 rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 transition-all">
+                            Report
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Subscription: renewal info + actions ── */}
+            {kind === 'subscription' && (
+                <div className="px-4 pb-4">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2.5">
+                        {item.next_charge_at && <span>Renews <strong className="text-zinc-800">{fmtDate(item.next_charge_at)}</strong></span>}
+                        {item.ends_at && <span className="text-amber-600">Ends <strong>{fmtDate(item.ends_at)}</strong></span>}
+                    </div>
+                    <div className="flex gap-2">
+                        {item.cancelable && (
+                            <button onClick={() => onCancel(item)} disabled={busySub === item.id}
+                                className="min-h-[36px] px-4 rounded-[14px] border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all disabled:opacity-50">
+                                Cancel renewal
+                            </button>
+                        )}
+                        {item.resumable && (
+                            <button onClick={() => onResume(item)} disabled={busySub === item.id}
+                                className="min-h-[36px] px-4 rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
+                                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
+                                Resume
+                            </button>
+                        )}
+                        {item.open_link && (
+                            <a href={item.open_link}
+                                className="ml-auto min-h-[36px] px-3.5 flex items-center gap-1.5 rounded-[14px] border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all">
+                                <ArrowUpRight size={12} strokeWidth={2.4} /> View
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── No reward, no special section (e.g. physical shop item) ── */}
+            {kind === 'receipt' && !hasReward && (
+                <div className="px-4 pb-3.5">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
+                        <Truck size={12} strokeWidth={2.2} />
+                        <span>Physical or pending delivery</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ---------------- Receipt card with per-transaction reward ---------------- */
+function ReceiptCard({ r, money }) {
+    const hasReward = r.reward_url || r.reward_text;
+
+    const RewardIcon = r.reward_type === 'file'
+        ? Download
+        : r.reward_type === 'link'
+        ? ExternalLink
+        : Gift;
+
+    const rewardLabel = r.reward_type === 'file'
+        ? 'Download your reward'
+        : r.reward_type === 'link'
+        ? 'Access exclusive content'
+        : 'View your reward';
+
+    return (
+        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_12px_32px_-8px_rgba(16,24,40,0.16)]">
+            {/* Left accent bar on hover */}
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
+
+            {/* Top: transaction info */}
+            <div className="p-4 flex items-center gap-3.5">
+                <IconTile type={r.source_type} size={46} />
+                <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-900 truncate">{r.title}</div>
+                    <div className="text-xs text-zinc-500 mt-0.5 font-medium flex items-center gap-1.5">
+                        <span>@{r.owner?.username}</span>
+                        <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                        <span>{fmtDate(r.date)}</span>
+                    </div>
+                </div>
+                <div className="text-right shrink-0">
+                    <div className={`text-base font-bold text-zinc-900 ${MONO}`}>{money(r.amount)}</div>
+                    <a href={r.certificate_url} target="_blank" rel="noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 transition-colors">
+                        <Download size={11} strokeWidth={2.4} /> Receipt
+                    </a>
+                </div>
+            </div>
+
+            {/* Bottom: reward — always visible, no click required */}
+            {hasReward ? (
+                <div className="border-t mx-4 mb-4 pt-3.5" style={{ borderColor: `${ACCENT}22` }}>
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
+                            <Gift size={11} strokeWidth={2.5} className="text-white" />
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>
+                            What you unlocked
+                        </span>
+                    </div>
+
+                    {/* Reward message text */}
+                    {r.reward_text && (
+                        <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-[12px] px-3 py-2.5 border border-white/80 mb-2.5">
+                            {r.reward_text}
+                        </p>
+                    )}
+
+                    {/* Reward access button */}
+                    {r.reward_url && (
+                        <a href={r.reward_url} target="_blank" rel="noreferrer"
+                            className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 hover:shadow-lg"
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
+                            <RewardIcon size={13} strokeWidth={2.5} />
+                            {rewardLabel}
+                        </a>
+                    )}
+                </div>
+            ) : (
+                /* No reward: show a subtle "Pending delivery" or "No digital reward" note */
+                <div className="px-4 pb-3.5">
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
+                        <Truck size={12} strokeWidth={2.2} />
+                        <span>Physical or pending delivery</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
 /* ---------------- Shared ---------------- */
 function Empty({ title, sub, Icon, cta }) {
     return (
-        <div className={`${CARD} py-14 sm:py-16 text-center px-6`}>
-            <span className="inline-flex w-14 h-14 rounded-full bg-zinc-100 items-center justify-center mb-4 text-zinc-400">
-                <Icon size={24} strokeWidth={1.8} />
+        <div className="py-14 sm:py-18 text-center px-6 rounded-[20px] border border-white/70 bg-white/60 backdrop-blur-sm" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.06)" }}>
+            <span className="inline-flex w-16 h-16 rounded-[20px] items-center justify-center mb-5 text-zinc-400" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%)", boxShadow: "0 4px 16px rgba(16,24,40,0.08)" }}>
+                <Icon size={26} strokeWidth={1.7} />
             </span>
-            <div className="text-base font-medium text-zinc-900">{title}</div>
-            <div className="text-sm text-zinc-500 mt-1.5 max-w-xs mx-auto">{sub}</div>
+            <div className="text-base font-bold text-zinc-900">{title}</div>
+            <div className="text-sm text-zinc-500 mt-2 max-w-xs mx-auto leading-relaxed">{sub}</div>
             {/* An empty state that only says "nothing here" is a dead end — every one
                 of them now offers the next step. */}
             {cta && (
                 <a href="/creators"
-                    className="mt-5 inline-flex items-center gap-2 min-h-[44px] px-5 rounded-box-sm text-sm font-semibold text-white transition"
-                    style={{ backgroundColor: ACCENT }}>
+                    className="mt-6 inline-flex items-center gap-2 min-h-[44px] px-6 rounded-[20px] text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 hover:shadow-lg"
+                    style={{ background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 6px 20px -4px ${ACCENT}55` }}>
                     <Compass size={15} strokeWidth={2.2} /> Find creators
                 </a>
             )}

@@ -52,7 +52,7 @@ function UnlockToast({ reduceMotion }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 220, damping: 20 }}
-          className="flex items-center gap-2.5 bg-white border-2 border-black rounded-2xl shadow-[5px_5px_0_0_rgba(0,0,0,1)] pl-2 pr-3.5 py-2"
+          className="flex items-center gap-2.5 bg-white border-2 border-black rounded-2xl pl-2 pr-3.5 py-2"
         >
           <span className="w-8 h-8 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center text-base leading-none">{u.emoji}</span>
           <span className="leading-tight">
@@ -71,24 +71,24 @@ function WishTile({ tile }) {
     <motion.div
       whileHover={{ scale: 1.06, rotate: 0, y: -6 }}
       transition={{ type: "spring", stiffness: 300, damping: 18 }}
-      className={`w-40 md:w-44 rounded-[20px] border-2 border-black shadow-[0_22px_45px_-14px_rgba(0,0,0,0.85)] overflow-visible cursor-pointer ${tile.rot}`}
+      className={`w-40 md:w-44 rounded-[20px] border-2 border-black overflow-visible cursor-pointer ${tile.rot}`}
       style={{ background: tile.bg }}
     >
       <div className="flex items-center justify-between px-3 pt-2.5">
         <span className={`font-gulfs uppercase tracking-wider text-[12px] leading-none ${tile.dark ? 'text-black' : 'text-white'}`}>
           {tile.label}
         </span>
-        <span className="font-black text-[10px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
+        <span className="font-black text-[11px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
           {tile.price}
         </span>
       </div>
       <div className="relative mx-3 mt-2.5 rounded-[12px] bg-white border-2 border-black h-16 flex items-center justify-center">
         <span className="text-[34px] leading-none">{tile.emoji}</span>
-        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[10px] leading-none">
+        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[11px] leading-none">
           ❤️
         </span>
       </div>
-      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[9px] tracking-widest py-[6px]">
+      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[11px] tracking-widest py-[6px]">
         Unlock
       </div>
     </motion.div>
@@ -230,8 +230,6 @@ export default function Hero({auth}) {
           onPointerLeave={onHeroPointerLeave}
           className="bg-transparent relative min-h-[88vh] lg:min-h-[92vh] flex items-center py-10 md:py-20 overflow-hidden"
         >
-
-          {/* Premium depth: soft corner light wash behind everything */}
           <div
             aria-hidden
             className="absolute inset-0 z-0 pointer-events-none"
@@ -313,7 +311,7 @@ export default function Hero({auth}) {
                       <Magnetic strength={0.3}>
                         <Link
                           href={ctaHref}
-                          className="relative inline-flex items-center gap-3 md:gap-4 bg-[#FF007F] text-white font-black text-base md:text-xl py-3 px-7 md:px-9 rounded-full shadow-[0_20px_50px_rgba(255,0,127,0.45)] hover:scale-105 hover:rotate-1 transition-all duration-300 active:scale-[0.98] uppercase tracking-wide group overflow-hidden"
+                          className="relative inline-flex items-center gap-3 md:gap-4 bg-[#FF007F] text-white font-black text-base md:text-xl py-3 px-7 md:px-9 rounded-full hover:scale-105 hover:rotate-1 transition-all duration-300 active:scale-[0.98] uppercase tracking-wide group overflow-hidden"
                           onMouseEnter={() => ctaRef.current?.startAnimation()}
                         >
                           <span className="relative z-10">{ctaLabel}</span>
@@ -321,7 +319,7 @@ export default function Hero({auth}) {
                           <div className="absolute inset-0 bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
                       </Magnetic>
-                      <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[11px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full shadow-[0_8px_24px_-6px_rgba(255,0,127,0.5)]">It's Free</span>
+                      <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[11px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full">It's Free</span>
                     </div>
 
                     {/* The promise, not a footnote. "No charge until your first

@@ -24,6 +24,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\NotificationContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -449,6 +450,18 @@ class PiggyPotPaymentController extends Controller
         // must not leave a paid purchase with no resolvable content (the deliverable
         // would be written url-less and nothing ever revisits it).
         $pay->load(['creator', 'user', 'piggyPot' => fn ($q) => $q->withTrashed()]);
+
+        // Labels every receipt/push this request sends with the contribution
+        // behind it — see App\Support\NotificationContext.
+        NotificationContext::for([
+            'context_type' => 'piggy_pot',
+            'context_id' => $pay->piggy_pot_id,
+            'stripe_session_id' => $pay->session_id,
+            'stripe_payment_intent_id' => $pay->payment_intent_id,
+            'buyer_id' => $pay->user_id,
+            'buyer_email' => $pay->user->email ?? $pay->guest_email ?? null,
+            'creator_id' => $pay->creator_id,
+        ]);
 
         $redirectUrl = $request->query('redirect');
 

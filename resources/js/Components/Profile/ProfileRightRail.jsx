@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Link, usePage } from "@inertiajs/react";
+import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import {
     Sparkles,
     PiggyBank,
@@ -94,7 +95,11 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
 
     if (!user || user.role != 1) return null;
 
-    const isVerified = user?.profile_status_lock == 2;
+    // 🚨 The old row read "Verified creator / Identity verified" for anyone
+    // whose PROFILE was approved — a claim about a Stripe identity check that
+    // may never have happened. The two tiers now say two different things.
+    const verifiedLevel = verifiedTier(user);
+    const isVerified = Boolean(verifiedLevel);
     const hasPremium = (ov?.wishes || 0) > 0 || (ov?.shops || 0) > 0;
     const hasListings =
         (ov?.wishes || 0) +
@@ -116,10 +121,14 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     <div className={compact ? "" : "sm:grid sm:grid-cols-2 sm:gap-x-6"}>
                     {isVerified && (
                         <HighlightRow
-                            icon={<BadgeCheck size={16} className="text-[#12A150]" />}
-                            iconBg="bg-[#12A150]/10"
-                            title="Verified creator"
-                            subtitle="Identity verified"
+                            icon={<VerifiedBadge tier={verifiedLevel} size="md" />}
+                            iconBg={verifiedLevel === "creator" ? "bg-[#FF007F]/10" : "bg-black/[0.06]"}
+                            title={verifiedLevel === "creator" ? "Verified creator" : "Verified profile"}
+                            subtitle={
+                                verifiedLevel === "creator"
+                                    ? "Identity confirmed and payouts set up"
+                                    : "Reviewed and approved by our team"
+                            }
                         />
                     )}
                     {user?.is_founder ? (

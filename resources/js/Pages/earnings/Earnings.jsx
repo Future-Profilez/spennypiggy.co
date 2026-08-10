@@ -5,6 +5,7 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import PriceFormat from "@/includes/PriceFormat";
+import RefreshRecordsButton from "@/Components/RefreshRecordsButton";
 import TopEarnWishes from "./TopEarnWishes";
 import TopEarnPiggyPots from "./TopEarnPiggyPots";
 import TopEarnShop from "./TopEarnShop";
@@ -183,7 +184,7 @@ export default function Earnings(props) {
                             </div>
                         </div>
 
-                        <div className="w-full md:w-auto">
+                        <div className="w-full md:w-auto md:flex md:flex-col md:items-end md:gap-3">
                             <div className="bg-[#111] p-1 rounded-full border border-white/10 flex items-center shadow-inner">
                                 {["today", "week", "month", "all"].map(
                                     (type) => (
@@ -202,6 +203,7 @@ export default function Earnings(props) {
                                     ),
                                 )}
                             </div>
+                            <RefreshRecordsButton className="mt-3 w-full md:mt-0 md:w-auto bg-[#111] text-white border border-white/10 hover:bg-white/10" />
                         </div>
                     </div>
 

@@ -9,10 +9,12 @@ import TiltCard from '@/Components/animations/TiltCard';
 export default function LiveBarSection() {
   return (
 
-    <section className='bg-transparent pb-14 md:pb-24 relative overflow-hidden'>
+    <section
+      className='bg-transparent pb-14 md:pb-24 relative overflow-hidden'
+    >
        {/* Decorative Background Elements */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 floating-shape"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-screen filter blur-[128px] opacity-20 floating-shape"></div>
         </div>
 
       <div className="relative container px-4 mx-auto pt-6 lg:pt-10">
@@ -47,7 +49,7 @@ export default function LiveBarSection() {
            <div className="max-w-3xl mx-auto px-4">
            <Reveal3D rotate={18} y={60}>
            <TiltCard max={4} scale={1.01} className="rounded-[24px]">
-           <div className="relative rounded-[24px] border-2 border-black bg-[#0c0c14] overflow-hidden shadow-[0_0_60px_rgba(236,72,153,0.22)]">
+           <div className="relative rounded-[24px] border-2 border-black bg-[#0c0c14] overflow-hidden">
               {/* browser chrome */}
               <div className="flex items-center gap-2 px-4 py-3 bg-black/50 border-b-2 border-white/10">
                 <span className="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
@@ -66,7 +68,7 @@ export default function LiveBarSection() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                         <span className="relative flex items-center justify-center w-20 h-20">
                             <span className="absolute inset-0 rounded-full bg-[#FF007F]/40 animate-ping"></span>
-                            <span className="relative w-20 h-20 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center shadow-[0_8px_30px_rgba(255,0,127,0.5)] group-hover:scale-110 transition-transform duration-300">
+                            <span className="relative w-20 h-20 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                                 <span className="w-0 h-0 border-y-[11px] border-y-transparent border-l-[18px] border-l-white ml-1.5"></span>
                             </span>
                         </span>

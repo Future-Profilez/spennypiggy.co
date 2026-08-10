@@ -36,6 +36,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -58,7 +59,7 @@ class TaskController extends Controller
 
     public function index()
     {
-        $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
+        $tasks = Task::withScheduled()->where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
 
         $orders = TaskPurchase::where('creator_id', Auth::id())
             ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'])
@@ -231,7 +232,7 @@ class TaskController extends Controller
 
     public function edit($uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {
@@ -250,7 +251,7 @@ class TaskController extends Controller
 
     public function update(Request $request, $uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {
@@ -781,6 +782,16 @@ class TaskController extends Controller
             $sessionId,
             ['stripe_account' => $task->creator->account_id]
         );
+
+        NotificationContext::for([
+            'context_type' => 'task',
+            'context_id' => $task->id,
+            'stripe_session_id' => $session->id,
+            'stripe_payment_intent_id' => $session->payment_intent ?? null,
+            'buyer_id' => Auth::id(),
+            'buyer_email' => $session->customer_details->email ?? null,
+            'creator_id' => $task->creator_id,
+        ]);
 
         $purchase = null;
 

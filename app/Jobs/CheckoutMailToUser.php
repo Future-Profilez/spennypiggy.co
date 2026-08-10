@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\EmailService;
-use App\Helpers;
 use App\Models\Deliverable;
 use App\Models\User;
 use App\Models\WishItem;
@@ -1127,17 +1126,44 @@ class CheckoutMailToUser implements ShouldQueue
                 'creator_email' => $this->payment->owner->email,
             ]);
 
-            // Calculate creator net amount (total of all items)
+            /*
+             * 🚨 THE CREATOR IS TOLD WHAT THEY EARN, NOT WHAT THE SUPPORTER PAID.
+             * Under this pricing model the creator receives exactly their listed
+             * price and the fees are grossed up on top, so the two numbers are ~20-30%
+             * apart on every sale.
+             *
+             * This used to read `$metadata['creator_net_amount'] ?? $deliverable->transaction_amount`.
+             * NOTHING WRITES `creator_net_amount` on a wish deliverable (0 of 8 rows
+             * carried it), so the fallback fired every time and `transaction_amount` is
+             * the SUPPORTER's charge — a creator earning 100 was emailed 129.71.
+             *
+             * ⚠️ The old `<= 0` branch was wrong in the same direction: it passed
+             * `amount_total` (already grossed up) into `calculateStripeDirectChargeFlow`
+             * as if it were a listed price, which grosses it up a second time. The
+             * listed price is `amount_subtotal`, and that IS the creator's net — do not
+             * recompute it.
+             */
             $totalCreatorNet = 0;
             foreach ($deliverables as $deliverable) {
                 $metadata = json_decode($deliverable->metadata, true);
-                $totalCreatorNet += $metadata['creator_net_amount'] ?? $deliverable->transaction_amount;
+
+                if (isset($metadata['creator_net_amount']) && is_numeric($metadata['creator_net_amount'])) {
+                    $totalCreatorNet += (float) $metadata['creator_net_amount'];
+
+                    continue;
+                }
+
+                // The item row stores the listed price, which is the creator's net.
+                $item = $this->payment->items?->firstWhere('wish_item_id', $deliverable->item_id);
+
+                if ($item && is_numeric($item->amount)) {
+                    $totalCreatorNet += (float) $item->amount;
+                }
             }
 
-            // If we couldn't get it from deliverables, use a default calculation
+            // Whole-payment fallback — still the listed price, never the gross.
             if ($totalCreatorNet <= 0) {
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($this->payment->amount_total, $this->payment->currency, 0, $this->payment->fee_profile ?? 'card', null, Helpers::storedFeeRates($this->payment));
-                $totalCreatorNet = $breakdown['net_to_creator'];
+                $totalCreatorNet = (float) ($this->payment->amount_subtotal ?? 0);
             }
 
             // Create creator email data object (mocking what Checkout mailable expects)

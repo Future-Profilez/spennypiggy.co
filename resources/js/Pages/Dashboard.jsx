@@ -95,6 +95,8 @@ const FounderProgressTracker = lazy(
     () => import("@/Components/FounderProgressTracker"),
 );
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+import PendingChangesNotice from "@/Components/PendingChangesNotice";
+
 const CreatorRiskBanner = lazy(
     () => import("@/Components/Risk/CreatorRiskBanner"),
 );
@@ -148,6 +150,7 @@ export default function Dashboard(props) {
         founderData,
         monthly_charges,
         profile_overview,
+        pending_profile_changes,
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -421,8 +424,12 @@ export default function Dashboard(props) {
             if (typeof window === "undefined") return null;
             return new URLSearchParams(window.location.search).get("add");
         });
+        // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
+        // not this one (My Listings) sends a creator here to pick what to sell. The
+        // other values each open a specific form on top of the chooser, which is the
+        // wrong landing for "add something".
         const [showAdd, setShowAdd] = useState(
-            () => addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
+            () => addIntent === "menu" || addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
         );
         const [wishOptions, setWishOptions] = useState(() => addIntent === "wish");
 
@@ -1059,6 +1066,15 @@ export default function Dashboard(props) {
                                     )} */}
 
                                             {IsloggedIn && (
+                                                <PendingChangesNotice
+                                                    assets={
+                                                        pending_profile_changes
+                                                    }
+                                                    className="mb-3"
+                                                />
+                                            )}
+
+                                            {IsloggedIn && (
                                                 <CreatorRiskBanner />
                                             )}
 
@@ -1076,11 +1092,11 @@ export default function Dashboard(props) {
                                                         📈
                                                     </span>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="text-[22px] font-black uppercase tracking-tigher text-[#FF007F]">
+                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-[#FF007F]">
                                                             Grow your income
                                                         </div>
                                                         
-                                                        <div className="text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
                                                             Who spends the most,
                                                             who&apos;s gone
                                                             quiet, and how to
@@ -1088,6 +1104,36 @@ export default function Dashboard(props) {
                                                         </div>
                                                     </div>
                                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#05EFB8] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
+                                                        ›
+                                                    </span>
+                                                </Link>
+                                            )}
+
+                                            {/* Owner-only. The six module tabs below show one type
+ at a time; this is the only route to the whole catalogue,
+ which is where a rejected or expired listing surfaces. */}
+                                            {IsloggedIn && (
+                                                <Link
+                                                    href={route(
+                                                        "catalogue.index",
+                                                    )}
+                                                    className="group mt-3 flex items-center gap-4 rounded-[25px] border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                >
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] border-[3px] border-black bg-[#05EFB8] text-2xl">
+                                                        🗂️
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
+                                                            My listings
+                                                        </div>
+                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                            Everything you sell
+                                                            in one place — and
+                                                            anything that is
+                                                            stuck.
+                                                        </div>
+                                                    </div>
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-white text-lg font-black transition-transform group-hover:translate-x-0.5">
                                                         ›
                                                     </span>
                                                 </Link>
@@ -1678,7 +1724,9 @@ export default function Dashboard(props) {
                                                                                                 null
                                                                                             }
                                                                                         >
-                                                                                            <TipInner classes="" />
+                                                                                            <div className='pb-4'>
+                                                                                                <TipInner classes="" />
+                                                                                            </div>
                                                                                         </Suspense>
                                                                                     ) : (
                                                                                         ""

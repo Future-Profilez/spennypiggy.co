@@ -1,6 +1,11 @@
 
-export default function Countries({ send, selectClassName = "" }) {
-  const data = [
+/**
+ * The country list, at module scope so a form that needs to PRE-SELECT a country
+ * can reuse it. The `<Countries>` select below emits `JSON.stringify(country)` and
+ * is uncontrolled, so it can only ever start empty — fine for signup, useless for
+ * an edit form, and duplicating 500 rows to work around that is how two lists drift.
+ */
+export const COUNTRIES = [
     {
         "code": "AT",
         "label": "Austria",
@@ -507,7 +512,9 @@ export default function Countries({ send, selectClassName = "" }) {
   {code:'ZW',label:'Zimbabwe',phone:'263'}
   ];
 
-  const updated = data.sort((a, b) => a.label.localeCompare(b.label));
+export default function Countries({ send, selectClassName = "" }) {
+  // ⚠️ Copy before sorting — `sort` mutates, and this array is now shared.
+  const updated = [...COUNTRIES].sort((a, b) => a.label.localeCompare(b.label));
   return <>
     <div className="custom-country-select" >
       <select className={`${selectClassName} appearance-none`} onChange={(e)=>send(e.target.value )} >

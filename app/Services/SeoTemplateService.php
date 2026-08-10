@@ -123,11 +123,43 @@ class SeoTemplateService
         $desc = 'Buy exclusive content from '.$creator->name.' on Spenny Piggy. ';
         $desc .= 'Memberships, one-off unlocks and paid requests — delivered by the creator.';
 
-        if ($creator->bio) {
-            $desc = trim((string) $creator->bio).' | '.$desc;
+        if ($bio = static::approvedValue($creator, 'bio', 'bio_approved')) {
+            $desc = trim((string) $bio).' | '.$desc;
         }
 
         return static::validateDescription($desc);
+    }
+
+    /**
+     * 🚨 Meta is the most public surface the platform has — it is printed in search
+     * results and baked into every link unfurl on every chat app — and none of these
+     * templates checked an approval flag. An unreviewed bio and photo were served to
+     * every crawler through `meta description`, `og:image`, `twitter:image` and the
+     * Person schema, which is the one place moderation cannot be undone: a card that
+     * has been unfurled into a group chat is already delivered.
+     *
+     * ⚠️ Fails CLOSED. Unlike `User::profileMediaVisible()`, which returns true when
+     * the flag column was not selected, an unanswerable question here means "do not
+     * publish". A blank og:image is visible and fixable; a leaked photo is not.
+     *
+     * ⚠️ Deliberately NOT owner-aware either. The accessors show a creator their own
+     * pending upload, which is right on their own screen and wrong in a tag whose
+     * whole purpose is to be read by someone else.
+     *
+     * @param  object  $creator
+     * @return mixed The value when it is approved and public, otherwise null.
+     */
+    protected static function approvedValue($creator, string $column, string $flag)
+    {
+        $value = $creator->{$column} ?? null;
+
+        if (empty($value)) {
+            return null;
+        }
+
+        $approved = $creator->{$flag} ?? null;
+
+        return (int) $approved === 1 ? $value : null;
     }
 
     /**
@@ -181,10 +213,10 @@ class SeoTemplateService
             '@type' => 'Person',
             'name' => $creator->name,
             'url' => url('/'.$creator->username),
-            'description' => $creator->bio ?? 'Creator on SpennyPiggy',
+            'description' => static::approvedValue($creator, 'bio', 'bio_approved') ?? 'Creator on SpennyPiggy',
         ];
 
-        if ($creator->avatar) {
+        if (static::approvedValue($creator, 'avatar', 'avatar_approved')) {
             $schema['image'] = static::getCreatorAvatarUrl($creator);
         }
 
@@ -264,8 +296,8 @@ class SeoTemplateService
      */
     protected static function getCreatorAvatarUrl($creator)
     {
-        if ($creator->avatar) {
-            $baseUrl = 'https://ucarecdn.com/'.$creator->avatar.'/';
+        if ($avatar = static::approvedValue($creator, 'avatar', 'avatar_approved')) {
+            $baseUrl = 'https://ucarecdn.com/'.$avatar.'/';
             $modifier = $creator->avatar_cdn_modifier ?? '-/resize/400x400/-/quality/smart/';
 
             return $baseUrl.$modifier;
@@ -284,16 +316,20 @@ class SeoTemplateService
         return url('/og-image.png');
     }
 
-    protected static function getCreatorOgImage($creator)
+    public static function getCreatorOgImage($creator)
     {
-        if (! empty($creator->social_image)) {
+        // ⚠️ `social_image` is the announcement card, and the card is GENERATED FROM
+        // the avatar — it has no approval flag of its own, so it inherits the
+        // avatar's. Without that, an unreviewed photo reaches every unfurl inside a
+        // 1200×630 card instead of on its own.
+        if (! empty($creator->social_image) && static::approvedValue($creator, 'avatar', 'avatar_approved')) {
             return "https://ucarecdn.com/{$creator->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
         }
-        if (! empty($creator->cover)) {
-            return "https://ucarecdn.com/{$creator->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        if ($cover = static::approvedValue($creator, 'cover', 'cover_approved')) {
+            return "https://ucarecdn.com/{$cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
         }
-        if (! empty($creator->avatar)) {
-            return "https://ucarecdn.com/{$creator->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
+        if ($avatar = static::approvedValue($creator, 'avatar', 'avatar_approved')) {
+            return "https://ucarecdn.com/{$avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
         }
 
         return static::getDefaultImage();

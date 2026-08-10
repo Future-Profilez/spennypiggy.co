@@ -216,11 +216,25 @@
         }
     </style>
     
-    {{-- Optimized favicon loading --}}
-    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
-    <link rel="icon" href="{{ URL::asset('/favicon.svg') }}" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="{{ URL::asset('/apple-touch-icon.png') }}">
-    <link rel="mask-icon" href="{{ URL::asset('/favicon.svg') }}" color="#05EFB8">
+    {{-- Favicons.
+
+         Safari has never supported SVG favicons for the tab icon, so it needs a
+         raster it can actually read. It also treats `sizes="any"` as "this is
+         scalable" and deprioritises the .ico against the SVG it cannot render —
+         between the two, Safari found no usable icon and fell back to drawing the
+         first letter of the title. The explicit PNG sizes below are what fixes it;
+         keep at least the 32x32 PNG whatever else changes here.
+
+         /favicon.svg is NOT a vector — it is a 1.1MB base64 raster wrapped in a
+         <pattern> with zero paths, which is also why the old `mask-icon` did
+         nothing (that tag requires a monochrome vector). It is left out entirely
+         rather than kept as decoration. --}}
+    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="32x32">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ URL::asset('/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ URL::asset('/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ URL::asset('/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ URL::asset('/favicon-192x192.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ URL::asset('/apple-touch-icon.png') }}">
     
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">

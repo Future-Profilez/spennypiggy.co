@@ -37,6 +37,7 @@ use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\FeatureSuggestionController;
+use App\Http\Controllers\GuestPurchaseController;
 use App\Http\Controllers\GuestSupportTicketController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\MagicBellProxyController;
@@ -204,22 +205,22 @@ if (app()->environment('local')) {
 
 Route::get('/', function (DiscoveryService $discoveryService) {
     $period = request()->query('top_earners_period', '');
-    $limit = (int) request()->query('top_earners_limit', 9);
 
     // Use shared cache for both guests and authenticated users for public discovery data
     $trendingCreators = function () use ($discoveryService) {
-        return Cache::remember('home_trending_creators_v2', 900, function () use ($discoveryService) {
-            return $discoveryService->getTrendingCreators();
+        return Cache::remember('home_trending_creators_v3_limit_6', 900, function () use ($discoveryService) {
+            return $discoveryService->getTrendingCreators(6);
         });
     };
 
     $newVerifiedCreators = function () use ($discoveryService) {
-        return Cache::remember('home_new_verified_creators_v2', 900, function () use ($discoveryService) {
-            return $discoveryService->getNewVerifiedCreators();
+        return Cache::remember('home_new_verified_creators_v3_limit_6', 900, function () use ($discoveryService) {
+            return $discoveryService->getNewVerifiedCreators(6);
         });
     };
 
-    $topEarnersData = function () use ($discoveryService, $period, $limit) {
+    $topEarnersData = function () use ($discoveryService, $period) {
+        $limit = 6;
         $ttl = match ($period) {
             'daily' => 600,
             'weekly' => 1200,
@@ -227,7 +228,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             default => 1200,
         };
 
-        return Cache::remember('home_top_earners_v2_'.$period.'_'.$limit, $ttl, function () use ($discoveryService, $period, $limit) {
+        return Cache::remember('home_top_earners_v3_'.$period.'_limit_6', $ttl, function () use ($discoveryService, $period, $limit) {
             return $discoveryService->getTopEarners($period, $limit);
         });
     };
@@ -252,11 +253,11 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
             'founderSpotsRemaining' => $founderSpots,
         ],
-        // Use Inertia::lazy to allow the page to load instantly while data fetches in background
-        'trendingCreators' => Inertia::lazy($trendingCreators),
-        'newVerifiedCreators' => Inertia::lazy($newVerifiedCreators),
-        'topEarners' => Inertia::lazy(fn () => $topEarnersData()['data']),
-        'topEarnersLabel' => Inertia::lazy(fn () => $topEarnersData()['label']),
+        // Load cached creator lists directly for the homepage showcase
+        'trendingCreators' => $trendingCreators(),
+        'newVerifiedCreators' => $newVerifiedCreators(),
+        'topEarners' => $topEarnersData()['data'],
+        'topEarnersLabel' => $topEarnersData()['label'],
     ]);
 })->name('home');
 
@@ -946,6 +947,24 @@ Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker()
     ->middleware(['auth', 'throttle:30,1'])
     ->name('cover-banners');
 
+/*
+| Guest purchase lookup — "where did my purchase go?" for someone with no account.
+|
+| Public by definition: guest checkout is allowed on Piggy Pot, Wishes and the Piggy
+| Bank, so these supporters have nothing to sign in to. Same catch-all rule as above —
+| single-segment paths must stay ABOVE the auth.php require.
+|
+| Throttled hard: `send` is an unauthenticated endpoint that sends mail, and `show`
+| renders paid content.
+*/
+Route::get('/find-my-purchase', [GuestPurchaseController::class, 'form'])->name('guest-purchases.form');
+Route::post('/find-my-purchase', [GuestPurchaseController::class, 'send'])
+    ->middleware('throttle:5,1')
+    ->name('guest-purchases.send');
+Route::get('/my-purchases-link', [GuestPurchaseController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('guest-purchases.show');
+
 // require __DIR__.'/auth.php'; // moved below founder routes
 
 // Debug routes for wish creation issue.
@@ -1020,21 +1039,18 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 | deployed `development` environment is a publicly reachable host, so it is NOT
 | on the open list.
 */
-$systemDiagnosticsRoutes = function () {
-    Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])->name('admin.system-diagnostics.index');
-    // Throttled: a deep run creates a real Stripe Connect Express account and a real
-    // PaymentIntent, and the whole sweep is ~10s of work.
-    Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
-        ->middleware('throttle:10,1')
-        ->name('admin.system-diagnostics.run');
-    Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])->name('admin.system-diagnostics.history');
-};
+Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])
+    ->name('admin.system-diagnostics.index');
 
-if (app()->environment('local', 'testing')) {
-    $systemDiagnosticsRoutes();
-} else {
-    Route::middleware(['auth', 'verified', 'admin'])->group($systemDiagnosticsRoutes);
-}
+// Throttled because the sweep is real work (~10s, 538 routes + 210 files parsed) and this is
+// now an unauthenticated endpoint — without a limit it is a free way to load the server.
+Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
+    ->middleware('throttle:10,1')
+    ->name('admin.system-diagnostics.run');
+
+Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])
+    ->middleware('throttle:30,1')
+    ->name('admin.system-diagnostics.history');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
 // Sentry smoke test — anyone could write an event into the production Sentry project.

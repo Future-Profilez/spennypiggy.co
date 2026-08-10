@@ -35,7 +35,7 @@ export default function LegalLayout({ children, activePage }) {
     ];
 
     return (
-        <div className="min-h-dvh bg-[#FDFCFD] flex flex-col md:flex-row font-poppins overflow-hidden">
+        <div className="min-h-dvh bg-[#FDFCFD] flex flex-col md:flex-row font-poppins">
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -53,7 +53,9 @@ export default function LegalLayout({ children, activePage }) {
             </div>
 
             {/* Sidebar */}
-            <aside className={`w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-gray-100    md:h-dvh overflow-y-auto  transition-all duration-300
+            <aside
+                data-lenis-prevent
+                className={`w-full md:w-72 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-100 md:sticky md:top-0 md:h-dvh md:overflow-y-auto transition-all duration-300
                 ${isMobileMenuOpen ? 'block' : 'hidden md:block'} `}>
                 <div className="p-6">
                     <Link 
@@ -121,7 +123,7 @@ export default function LegalLayout({ children, activePage }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 bg-white md:bg-[#FDFCFD] md:max-h-screen md:overflow-auto">
+            <main className="flex-1 min-w-0 bg-white md:bg-[#FDFCFD]">
                 <div className="">
                     <div className="min-h-[80vh]">
                         {children}

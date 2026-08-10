@@ -50,7 +50,7 @@ class PiggyPotController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PiggyPot::where('user_id', Auth::id())
+        $query = PiggyPot::withScheduled()->where('user_id', Auth::id())
             ->withSum(['contributions as total_raised' => function ($q) {
                 $q->where('status', 'paid');
             }], 'amount')
@@ -92,7 +92,7 @@ class PiggyPotController extends Controller
                 ->get());
         });
 
-        $allPotsList = PiggyPot::where('user_id', Auth::id())
+        $allPotsList = PiggyPot::withScheduled()->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get(['id', 'title']);
 
@@ -207,7 +207,7 @@ class PiggyPotController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $piggyPot = PiggyPot::where('user_id', Auth::id())->findOrFail($id);
+        $piggyPot = PiggyPot::withScheduled()->where('user_id', Auth::id())->findOrFail($id);
 
         // Default the reward headline from the pot title so a missing field
         // never blocks creation (the pot's content IS the deliverable).
@@ -280,7 +280,7 @@ class PiggyPotController extends Controller
             $data['is_pinned'] = false;
         } elseif (! empty($data['is_pinned']) && $data['is_pinned']) {
             // Unpin others
-            PiggyPot::where('user_id', Auth::id())->where('id', '!=', $id)->update(['is_pinned' => false]);
+            PiggyPot::withScheduled()->where('user_id', Auth::id())->where('id', '!=', $id)->update(['is_pinned' => false]);
         }
 
         $piggyPot->update($data);
@@ -313,7 +313,7 @@ class PiggyPotController extends Controller
      */
     public function destroy($id)
     {
-        $piggyPot = PiggyPot::where('user_id', Auth::id())->findOrFail($id);
+        $piggyPot = PiggyPot::withScheduled()->where('user_id', Auth::id())->findOrFail($id);
         $piggyPot->delete();
 
         app(UserProfileService::class)->clearUserCaches(Auth::user()->username, Auth::user()->id);

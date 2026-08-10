@@ -7,7 +7,9 @@ use App\Helpers;
 use App\Jobs\SendEngagementNotification;
 use App\Models\EngagementNotification;
 use App\Models\Notification;
+use App\Models\NotificationLog;
 use App\Models\User;
+use App\Support\NotificationRecorder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -55,22 +57,50 @@ class NotificationDispatcher
         $title = (string) ($payload['title'] ?? '');
         $body = (string) ($payload['body'] ?? '');
 
-        if (in_array(self::CHANNEL_BELL, $channels, true) && $this->allowsBell($user, $marketing)) {
-            $this->writeBell($user, $payload, $title, $body);
-        }
-
-        if (in_array(self::CHANNEL_PUSH, $channels, true) && $this->allowsPush($user, $marketing)) {
-            try {
-                Helpers::sendNotification($title, $body, $user->email);
-            } catch (\Throwable $e) {
-                Log::error('NotificationDispatcher: push failed', [
-                    'user_id' => $user->id, 'type' => $type, 'error' => $e->getMessage(),
-                ]);
+        if (in_array(self::CHANNEL_BELL, $channels, true)) {
+            if ($this->allowsBell($user, $marketing)) {
+                $this->writeBell($user, $payload, $title, $body);
+            } else {
+                // A refusal is recorded, not swallowed. "Nothing was sent" and
+                // "they asked us not to" look identical in a support ticket
+                // otherwise, and only one of them is a bug.
+                NotificationRecorder::bell($title, $body, $user, NotificationLog::STATUS_SKIPPED, 'Notifications turned off by the recipient', $type);
             }
         }
 
-        if (in_array(self::CHANNEL_EMAIL, $channels, true) && ! empty($payload['mailable'])) {
-            $this->sendEmail($user, $type, $payload, $marketing);
+        if (in_array(self::CHANNEL_PUSH, $channels, true)) {
+            if ($this->allowsPush($user, $marketing)) {
+                try {
+                    // Helpers::sendNotification records its own outcome.
+                    Helpers::sendNotification($title, $body, $user->email);
+                } catch (\Throwable $e) {
+                    Log::error('NotificationDispatcher: push failed', [
+                        'user_id' => $user->id, 'type' => $type, 'error' => $e->getMessage(),
+                    ]);
+
+                    NotificationRecorder::push($title, $body, $user->email, NotificationLog::STATUS_FAILED, $e->getMessage(), $user->id);
+                }
+            } else {
+                NotificationRecorder::push(
+                    $title,
+                    $body,
+                    $user->email,
+                    NotificationLog::STATUS_SKIPPED,
+                    empty($user->email) ? 'No email address on file' : 'Push turned off by the recipient',
+                    $user->id,
+                );
+            }
+        }
+
+        if (in_array(self::CHANNEL_EMAIL, $channels, true)) {
+            if (! empty($payload['mailable'])) {
+                $this->sendEmail($user, $type, $payload, $marketing);
+            } else {
+                // The email channel is a no-op without a mailable in the payload,
+                // so passing ALL_CHANNELS looks like three channels while sending
+                // two. Record it rather than let the gap stay invisible.
+                NotificationRecorder::email($title, $body, $user, NotificationLog::STATUS_SKIPPED, 'No mailable supplied for this notification', $type);
+            }
         }
     }
 
@@ -124,10 +154,14 @@ class NotificationDispatcher
                 'target_id' => $payload['target_id'] ?? null,
                 'is_read' => 0,
             ]);
+
+            NotificationRecorder::bell($title, $body, $user, NotificationLog::STATUS_SENT, null, $payload['module'] ?? null);
         } catch (\Throwable $e) {
             Log::error('NotificationDispatcher: bell write failed', [
                 'user_id' => $user->id, 'error' => $e->getMessage(),
             ]);
+
+            NotificationRecorder::bell($title, $body, $user, NotificationLog::STATUS_FAILED, $e->getMessage(), $payload['module'] ?? null);
         }
     }
 
@@ -138,6 +172,15 @@ class NotificationDispatcher
     private function sendEmail(User $user, string $type, array $payload, bool $marketing): void
     {
         if ($marketing && ! ($user->reactivation_emails_enabled ?? true)) {
+            NotificationRecorder::email(
+                $payload['title'] ?? null,
+                $payload['body'] ?? null,
+                $user,
+                NotificationLog::STATUS_SKIPPED,
+                'Reactivation emails turned off by the recipient',
+                $payload['mailable'] ?? $type,
+            );
+
             return;
         }
 
@@ -160,6 +203,15 @@ class NotificationDispatcher
             Log::error('NotificationDispatcher: email failed', [
                 'user_id' => $user->id, 'type' => $type, 'error' => $e->getMessage(),
             ]);
+
+            NotificationRecorder::email(
+                $payload['title'] ?? null,
+                $payload['body'] ?? null,
+                $user,
+                NotificationLog::STATUS_FAILED,
+                $e->getMessage(),
+                $payload['mailable'] ?? $type,
+            );
         }
     }
 }

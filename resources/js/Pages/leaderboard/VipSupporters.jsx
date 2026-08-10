@@ -23,7 +23,7 @@ export default function VipSupporters() {
                  style={{borderLeftColor: vip_level.color}}>
                 <div className="flex relative items-center justify-between mb-3">
                     <div className="flex items-center">
-                        <div className="absolute top-[-10px] left-[-10px] z-1 rank-badge bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                        <div className="absolute top-[-8px] left-[-8px] z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
                             {supporter.rank}
                         </div>
                         <Avatar
@@ -136,7 +136,7 @@ export default function VipSupporters() {
                 {vipSupporters.slice(0, 5).map((supporter, index) => (
                     <div key={supporter.id} className={`${index === 0 ? 'hidden':""} fading  rank py-3 border-bottom flex items-center justify-between relative`}>
                         <div className="flex items-center space-x-3">
-                            <div className="absolute top-2 left-1 z-1 rank-badge bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                            <div className="absolute top-2 left-1 z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
                                 {supporter.rank}
                             </div>
                             <Avatar

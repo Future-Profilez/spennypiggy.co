@@ -54,9 +54,11 @@ use App\Services\Risk\RiskService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\StripeMetadataService;
 use App\Services\SubscriptionActivationService;
+use App\Services\SubscriptionCheckoutService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -4031,6 +4033,15 @@ class StripeController extends Controller
             return to_route('home')->with('error', 'Insufficient data!');
         }
 
+        NotificationContext::for([
+            'context_type' => 'tip',
+            'context_id' => $tip_pay->tip_goal_id,
+            'stripe_session_id' => $tip_pay->session_id,
+            'buyer_id' => $tip_pay->user_id,
+            'buyer_email' => $tip_pay->guest_email ?? null,
+            'creator_id' => $tip_pay->creator_id,
+        ]);
+
         // Idempotency: this handler runs every time the supporter lands on / reloads /
         // back-buttons the success page, and it can race the async webhook. Without this
         // guard the goal progress (fullfilled) is re-incremented and the confirmation
@@ -4605,18 +4616,41 @@ class StripeController extends Controller
         // page says only what we say. The subscription is created on the first
         // sale by SubscriptionActivationService.
         if (SubscriptionPlan::usesSetupMode()) {
+            $subscriptionMetadata = Helpers::buildStripeMetadata('site_subscription', $sub, [
+                'subscription_amount' => (string) $price,
+                'tax_amount' => (string) $tax,
+                'subscription_purpose' => 'mandatory_platform_access',
+                'checkout_mode' => SubscriptionPlan::MODE_SETUP,
+                // Read by `checkout.session.completed`. Session-level metadata is
+                // what the webhook routes on; carried on the SetupIntent alone it
+                // is invisible to the event, which is the same trap that stopped
+                // bank payments fulfilling.
+                'type' => 'site_subscription',
+            ]);
+
             $payload = [
                 'mode' => 'setup',
-                'currency' => $currency,
+                // 🚨 The currency the subscription will actually be BILLED in, not
+                // the visitor's display-currency cookie.
+                //
+                // Setup mode charges nothing, so this looks cosmetic — it is not.
+                // Stripe picks which payment methods to offer from the session
+                // currency, so `usd` here offered `us_bank_account`, `cashapp` and
+                // `amazon_pay`. Those are USD-only, and the subscription created on
+                // the first sale is GBP (`SubscriptionPlan::currency()`), so a
+                // creator who saved one of them could never be charged: activation
+                // would fail, release its claim, and the 15-minute sweep would retry
+                // it forever while they sold and were never billed. Silently.
+                'currency' => strtolower(SubscriptionPlan::currency()),
                 'customer' => $user->stripe_id,
+                // ⚠️ Session-level AND intent-level. The webhook reads
+                // `$event->data->object->metadata`, which is the SESSION's — with it
+                // set only under `setup_intent_data` the event arrived carrying
+                // `metadata: {}` and could not be routed to this row at all.
+                'metadata' => $subscriptionMetadata,
                 // Saved so it can be charged later without the cardholder present.
                 'setup_intent_data' => [
-                    'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
-                        'subscription_amount' => (string) $price,
-                        'tax_amount' => (string) $tax,
-                        'subscription_purpose' => 'mandatory_platform_access',
-                        'checkout_mode' => SubscriptionPlan::MODE_SETUP,
-                    ]),
+                    'metadata' => $subscriptionMetadata,
                 ],
                 // Stripe cannot describe terms for a subscription that does not
                 // exist, so the disclosure is ours to make. This is the last thing
@@ -4630,6 +4664,16 @@ class StripeController extends Controller
                 'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
         } else {
+            // ⚠️ NOT the live path (`CREATOR_SUBSCRIPTION_CHECKOUT_MODE` defaults to
+            // 'setup'), and it carries a known mismatch before it can become one:
+            // this bills in the visitor's cookie currency at a converted
+            // `unit_amount`, while the `monthly_charges` row above ALWAYS records
+            // `GBP 8.99 + 1.80`. So a US creator would be charged in USD and
+            // reported in GBP — including on the admin Site Subscriptions screen,
+            // which reads the row's own currency. Decide which currency creators are
+            // billed in before switching this on; it is a product decision, not a
+            // typo, which is why it has not simply been changed to match the setup
+            // branch above.
             $payload = [
                 'mode' => 'subscription',
                 'currency' => $currency,
@@ -4720,59 +4764,27 @@ class StripeController extends Controller
                 // this row and something chargeable until the first sale creates the
                 // subscription.
                 if (! $sub->stripe_id && ($session->mode ?? null) === 'setup') {
-                    $paymentMethod = StripeControl::paymentMethodFromSetupSession($session);
+                    // ⚠️ Delegated, never reimplemented. The webhook and the
+                    // reconcile sweep complete the same row by the same rule; three
+                    // copies of "record the card" is how one path silently stops
+                    // setting the default payment method or opening the free period.
+                    $checkout = app(SubscriptionCheckoutService::class);
 
-                    if (! $paymentMethod) {
-                        // No usable card means the creator cannot be billed later,
-                        // and pretending the setup worked would leave them selling
-                        // for free with nothing to charge.
-                        Log::error('StripeController: setup session completed without a payment method', [
-                            'monthly_charge_id' => $sub->id,
-                            'session_id' => $sub->session_id,
-                        ]);
+                    if (! $checkout->completeSetupCheckout($sub, $session, 'redirect')) {
+                        $sub->refresh();
 
-                        return to_route('activate-subscription')
-                            ->with('error', 'We could not save your card. Please try again.');
-                    }
-
-                    $sub->stripe_payment_method = $paymentMethod;
-
-                    // Make it the customer's default so the subscription created on
-                    // the first sale collects against it without being told again.
-                    try {
-                        StripeControl::setDefaultPaymentMethod($user->stripe_id, $paymentMethod);
-                    } catch (Exception $e) {
-                        // Not fatal: the subscription is created with an explicit
-                        // default_payment_method anyway. Worth knowing about, though.
-                        Log::warning('StripeController: could not set the default payment method: '.$e->getMessage());
-                    }
-
-                    // 'trialing' is the platform's word for "card on file, nothing
-                    // charged" — the eligibility allow-list already accepts it, so
-                    // the creator can sell straight away.
-                    $sub->status = 'trialing';
-                    $sub->upcoming_payment = null;
-                    $sub->save();
-
-                    $user->is_subscribed = 1;
-                    $user->save();
-
-                    // A creator who has already sold is billed the moment they add
-                    // a card — they are past the free period by definition, so
-                    // making them wait for the 15-minute sweep would leave them
-                    // reading "nothing charged yet" about a charge that is simply
-                    // late. Failure is not fatal: the sweep is still the guarantee.
-                    $activation = app(SubscriptionActivationService::class);
-
-                    if ($activation->hasEverMadeSale($user)) {
-                        try {
-                            $activation->activate($user, subscription: $sub->fresh());
-
-                            return to_route('user.show', ['username' => $user->username])
-                                ->with('success', 'Your card is saved and your subscription is active.');
-                        } catch (Exception $e) {
-                            Log::warning('StripeController: immediate activation failed, leaving it to the sweep: '.$e->getMessage());
+                        // The webhook may simply have won the race — in which case
+                        // the card IS saved and telling the creator it failed would
+                        // send them to do it all again.
+                        if ($sub->status === SubscriptionCheckoutService::STATUS_STARTED) {
+                            return to_route('activate-subscription')
+                                ->with('error', 'We could not save your card. Please try again.');
                         }
+                    }
+
+                    if ($checkout->activateIfAlreadySelling($user, $sub)) {
+                        return to_route('user.show', ['username' => $user->username])
+                            ->with('success', 'Your card is saved and your subscription is active.');
                     }
 
                     return to_route('user.show', ['username' => $user->username])

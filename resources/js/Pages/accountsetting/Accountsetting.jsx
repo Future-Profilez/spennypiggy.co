@@ -405,6 +405,19 @@ export default function Accountsetting(props) {
                                 global_currency={global_currency}
                             />
 
+                            {/*
+                                Everything the creator sells, in one screen. Its own
+                                entry point because the six module screens do not link
+                                to each other, so a creator has no way to discover a
+                                whole-catalogue view from any of them.
+                            */}
+                            <SettingItem
+                                icon={ShoppingBagIcon}
+                                title="My Listings"
+                                subtitle="Every wish, shop item, pot and subscription in one place"
+                                onClick={() => router.visit(route("catalogue.index"))}
+                            />
+
                             <SettingItem
                                 icon={ExternalLinkIcon}
                                 title="Copy Profile Link"

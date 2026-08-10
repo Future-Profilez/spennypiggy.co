@@ -42,6 +42,7 @@ use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -73,7 +74,7 @@ class ShopsController extends Controller
 
         $isOwner = Auth::check() && Auth::id() === $user->id;
 
-        $query = Shop::where('user_id', $user->id);
+        $query = Shop::withScheduled()->where('user_id', $user->id);
 
         // If not the owner, only show approved and active items
         if (! $isOwner) {
@@ -471,7 +472,7 @@ class ShopsController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $shop = Shop::where('uuid', $uuid)->where('user_id', $user->id)->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', $user->id)->first();
 
         if (! $shop) {
             return response()->json([
@@ -723,7 +724,7 @@ class ShopsController extends Controller
 
     public function deleteShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
         if (! $shop) {
             return response()->json([
@@ -1400,6 +1401,15 @@ class ShopsController extends Controller
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
 
+                NotificationContext::for([
+                    'context_type' => 'shop',
+                    'context_id' => $stripeid->shop_id,
+                    'stripe_session_id' => $stripeid->session_id,
+                    'buyer_id' => $stripeid->user_id,
+                    'buyer_email' => $stripeid->user->email ?? $stripeid->guest_email ?? null,
+                    'creator_id' => $stripeid->shop->user_id ?? null,
+                ]);
+
                 // Delayed-settlement bank methods (SEPA/ACH): don't fulfil on the
                 // redirect while the debit is still clearing — the
                 // async_payment_succeeded webhook completes fulfilment later.
@@ -1717,7 +1727,7 @@ class ShopsController extends Controller
 
     public function deactivateShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
         if (! empty($shop)) {
             if ($shop->status == 1) {
                 $shop->status = 0;

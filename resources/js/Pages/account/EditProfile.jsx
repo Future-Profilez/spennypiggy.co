@@ -4,6 +4,7 @@ import coverimage from "../../../assets/img/wishlistbannerimg.png";
 import editicon from "../../../assets/img/editicon.png";
 import Popup from "@/Components/Popup";
 import { useForm, usePage } from "@inertiajs/react";
+import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import { useAlerts } from "@/Components/Alerts";
 import UpdateAvatar from "./UpdateAvatar";
 import LoaderButton from "@/Components/LoaderButton";
@@ -687,6 +688,16 @@ export default function EditProfile({
                         {renderTabs()}
 
                         <form onSubmit={updateProfile} className="flex flex-col">
+                            {/* ⚠️ Read straight off the page props rather than
+                                taken as a prop: this form is embedded in five
+                                different parents, and threading it through each
+                                is five chances for one of them to forget. Absent
+                                on a page that does not send it, so it renders
+                                nothing rather than guessing. */}
+                            <PendingChangesNotice
+                                assets={pageProps?.pending_profile_changes}
+                                className="mt-6"
+                            />
                             {/* Merging the two tabs left the photos block running
                                 straight into "Display Name" with nothing between
                                 them, so the page read as one undifferentiated
