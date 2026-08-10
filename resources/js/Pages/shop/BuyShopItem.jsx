@@ -17,6 +17,7 @@ import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import { creatorIdOf } from "@/utils/pricing";
+import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function BuyShopItem({
     opened,
@@ -372,7 +373,7 @@ export default function BuyShopItem({
                             return;
                         }
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
-                            const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
+                            const msg = res.data.msg || riskMessageBody("GUEST_ACCOUNT_REQUIRED");
                             router.visit(
                                 `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`
                             );
@@ -410,7 +411,7 @@ export default function BuyShopItem({
                             return;
                         }
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
-                            const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
+                            const msg = res.data.msg || riskMessageBody("GUEST_ACCOUNT_REQUIRED");
                             router.visit(
                                 `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`
                             );

@@ -19,13 +19,11 @@ use App\Services\CreatorSubscriptionService;
 use App\Services\PiggyPotStatusService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
-use App\Services\Risk\RiskEngineService;
-use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\NotificationContext;
-use Illuminate\Http\JsonResponse;
+use App\Traits\RiskEnforcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -36,6 +34,8 @@ use Stripe\PaymentIntent;
 
 class PiggyPotPaymentController extends Controller
 {
+    use RiskEnforcement;
+
     /**
      * Minutes an unpaid ('pending') contribution reserves goal headroom.
      * A Stripe Checkout session the supporter is still filling in must not be
@@ -253,30 +253,44 @@ class PiggyPotPaymentController extends Controller
         $unitAmount = (int) round($finalTotalAmount * $multiplier);
         $creatorNetMinor = (int) round($creatorNet * $multiplier);
 
-        // Identity check
-        $identityService = app(RiskIdentityService::class);
-        $payerIdentity = $identityService->resolveIdentity([
-            'email' => $user ? $user->email : $request->email,
-            'ip' => $request->ip(),
-            'device_id' => $request->device_id,
-        ]);
-
-        $riskData = app(RiskEngineService::class)->evaluate(
-            [
-                'creator' => $creator,
-                'supporter' => $user,
-                'identity' => $payerIdentity,
-                'amount' => $unitAmount,
-                'currency' => $sourceCurrency,
-                'type' => 'piggy_pot',
-                'return_json' => true,
-            ]
+        // 🚨 Risk enforcement — this used to be the ONLY checkout on the
+        // platform where the risk engine did nothing at all.
+        //
+        // The old code called evaluate() directly and then did
+        // `if ($riskData instanceof JsonResponse) { return $riskData; }`.
+        // evaluate() ALWAYS returns an array, never a JsonResponse, so every
+        // BLOCK / COOLDOWN / STEP_UP decision was silently discarded and the
+        // checkout carried straight on. On top of that the context it passed
+        // used the keys `creator`/`supporter`/`identity`/`type` instead of
+        // `creator_id`/`email`/`ip`/`device_id`/`is_guest`, so `creator_id` was
+        // null (killing the new-creator and cross-creator rules outright) and a
+        // brand-new orphan RiskIdentity was resolved from an empty context on
+        // every call — meaning the rollups this pot's spend was measured
+        // against were always zero. `risk_identity_id` on the ledger row below
+        // was always null for the same reason.
+        //
+        // It now goes through the same shared trait as the other eight
+        // checkouts, which also applies the guest-checkout gate that Piggy Pot
+        // never called. Note the consequence: a GUEST contributing more than the
+        // high-value threshold is now asked to log in here, exactly as they
+        // already are on the wish flows.
+        $riskResult = $this->enforceRiskChecks(
+            $request,
+            $creator,
+            (float) $finalTotalAmount,
+            $sourceCurrency,
+            'piggy_pot',
+            true
         );
 
-        if ($riskData instanceof JsonResponse) {
-            return $riskData;
+        // A refusal, a step-up, or a login requirement comes back as a response.
+        // Checked with is_array rather than a class name so that a future change
+        // to the trait's return type cannot silently reopen this same hole.
+        if (! is_array($riskResult)) {
+            return $riskResult;
         }
 
+        $riskData = $riskResult;
         $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
         // Re-check the remaining headroom under a row lock before inserting.

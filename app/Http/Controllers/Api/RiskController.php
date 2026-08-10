@@ -17,6 +17,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\Risk\VerificationService;
 use App\StripeControl;
+use App\Support\RiskMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -373,6 +374,27 @@ class RiskController extends Controller
         $limitsService = app(EffectiveLimitsService::class);
         $limits = $limitsService->getEffectiveLimits($identity);
 
+        // 🚨 A GUEST IS TOLD NOTHING BUT WHETHER THEY MAY CHECK OUT.
+        //
+        // This route is unauthenticated, so the full array — max_spend_1h,
+        // max_spend_24h, max_spend_7d, step_up_threshold, review_hold_threshold,
+        // cooldown_minutes — was a public readout of every threshold on the
+        // platform. Combined with guest identity being keyed to card
+        // fingerprint, device and IP, that is exactly the "live readout of how
+        // much headroom is left" the messaging brief forbids: someone testing
+        // stolen cards could read the line and stay just under it.
+        //
+        // A signed-in supporter still gets their own limits — they are shown
+        // them on /history by design, and they are that person's own terms.
+        // The only field the frontend reads for a guest is `guest_allowed`
+        // (Tasks/Show.jsx, cart/SubCheckout.jsx, cart/UserCarts.jsx), so
+        // narrowing this costs no behaviour.
+        if (! $request->user()) {
+            return response()->json([
+                'guest_allowed' => (bool) ($limits['guest_allowed'] ?? true),
+            ]);
+        }
+
         return response()->json($limits);
     }
 
@@ -424,6 +446,7 @@ class RiskController extends Controller
                 'error' => $guestRestriction['message'],
                 'requires_login' => true,
                 'reason_code' => $guestRestriction['code'],
+                'ui' => $guestRestriction['ui'] ?? null,
             ], 401);
         }
 
@@ -440,10 +463,19 @@ class RiskController extends Controller
 
         // 2. Handle Decisions
         if (in_array($decision, ['BLOCK', 'COOLDOWN'])) {
+            // ⚠️ `error` is read straight onto the screen by older callers, so
+            // it must be the customer-facing copy — never "Payment blocked by
+            // risk engine.", which names the internal system, implies
+            // wrongdoing and offers no next step.
+            $ui = $riskResult['ui'] ?: RiskMessages::get(
+                'GENERIC_HOLD',
+                RiskMessages::audienceFor($context['is_guest'] ?? null)
+            );
+
             return response()->json([
-                'error' => 'Payment blocked by risk engine.',
+                'error' => $ui['body'],
                 'decision' => $decision,
-                'ui' => $riskResult['ui'],
+                'ui' => $ui,
             ], 403);
         }
 

@@ -73,8 +73,18 @@ class RiskIdentityService
             if ($ipHash && ! $identity->ip_hash) {
                 $updates['ip_hash'] = $ipHash;
             } // Always update IP? or just fill if empty?
-            if (($context['is_guest'] ?? null) === false && ($identity->is_guest ?? true) === true) {
-                $updates['is_guest'] = false;
+            // 🚨 `is_guest` describes THIS attempt, so it must be able to move
+            // in both directions. It used to be a one-way latch (only ever
+            // true → false), so anyone who signed in once and later signed out
+            // kept `is_guest = false` for good — and the guest block in
+            // RiskEngineService reads exactly this column, so that visitor
+            // evaded it permanently. A device and an email are shared and
+            // reused; whether the person at the keyboard is signed in right now
+            // is a fact about the request, not a permanent property of the
+            // identity.
+            $contextIsGuest = $context['is_guest'] ?? null;
+            if ($contextIsGuest !== null && (bool) $contextIsGuest !== (bool) ($identity->is_guest ?? true)) {
+                $updates['is_guest'] = (bool) $contextIsGuest;
             }
             // IP changes frequently, so maybe we don't "lock" it. But the spec says "store hashes".
             // Let's just fill if empty for now to build the profile.

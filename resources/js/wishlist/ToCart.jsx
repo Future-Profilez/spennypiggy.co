@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import DeviceID from "@/includes/DeviceID";
 import { router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
+import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function ToCart({
     sub,
@@ -72,7 +73,7 @@ export default function ToCart({
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : "/onetime"}${amount ? `/${amount}/` : ""}`)
             .then((resp) => {
                 if (resp.data && (resp.data.message === "Login required" || resp.data.code === "AUTH_REQUIRED")) {
-                    const msg = resp.data.msg || "Larger payments more than £50 need to login.";
+                    const msg = resp.data.msg || riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE");
                     errorAlert(msg);
                     router.visit(
                         `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`

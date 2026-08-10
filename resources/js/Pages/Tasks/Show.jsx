@@ -14,6 +14,7 @@ import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
@@ -326,7 +327,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         }
         if (!auth?.user) {
             const msg = guestAllowed === false
-                ? "Guest checkout is disabled. Please log in."
+                ? riskMessageBody("GUEST_ACCOUNT_REQUIRED")
                 : "Please log in to purchase this task.";
             toast.error(msg);
             window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;

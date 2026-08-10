@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\RiskIdentity;
 use App\Models\RiskSetting;
 use App\Models\User;
+use App\Support\RiskMessages;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -45,7 +46,7 @@ class RiskEngineService
                 'ALLOW',
                 ['RISK_ENGINE_DISABLED'],
                 $this->limitsService->getEffectiveLimits(new RiskIdentity), // Default limits
-                []
+                $context
             );
         }
 
@@ -57,14 +58,9 @@ class RiskEngineService
         if ($identity->is_blocked ?? false) {
             $decision = 'BLOCK';
             $reasons = ['IDENTITY_BLOCKED'];
-            $ui = [
-                'key' => 'IDENTITY_BLOCKED',
-                'title' => 'Payment Unavailable',
-                'body' => 'This payment cannot be processed. Please contact support.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $this->limitsService->getEffectiveLimits($identity), $ui);
+            return $this->formatResponse($decision, $reasons, $this->limitsService->getEffectiveLimits($identity), $context);
         }
 
         // 2. Refresh Rollups (to have latest counters)
@@ -84,36 +80,27 @@ class RiskEngineService
 
         $decision = 'ALLOW';
         $reasons = [];
-        $ui = [];
 
         // --- RULE 0: COOLDOWN CHECK ---
+        // ⚠️ The remaining minutes are deliberately NOT surfaced. A precise
+        // countdown tells a card tester exactly when to resume, so the copy in
+        // RiskMessages says "in a little while" instead. Do not put the value
+        // back into the payload "just for the UI" — the payload is readable.
         if ($identity->cooldown_until && $identity->cooldown_until->isFuture()) {
             $decision = 'COOLDOWN';
             $reasons[] = 'ACTIVE_COOLDOWN';
-            $minutesLeft = max(1, $identity->cooldown_until->diffInMinutes(Carbon::now()));
-            $ui = [
-                'key' => 'COOLDOWN_ACTIVE',
-                'title' => 'Please Wait',
-                'body' => 'You are paying too fast. Please wait '.$minutesLeft.' minute'.($minutesLeft > 1 ? 's' : '').' and try again.',
-            ];
-
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // --- RULE 1: GUEST BLOCK (THROTTLE/FREEZE) ---
         if (! $limits['guest_allowed'] && $identity->is_guest) {
             $decision = 'BLOCK';
             $reasons[] = 'GUEST_BLOCKED_IN_STATE';
-            $ui = [
-                'key' => 'THROTTLE_LIMITS_ACTIVE',
-                'title' => 'Safety Limits Active',
-                'body' => 'Guest payments are temporarily disabled. Please log in.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // --- RULE 2: SPEND LIMITS (1H, 24H, 7D) ---
@@ -121,42 +108,27 @@ class RiskEngineService
         if (($rollup->spend_1h + $amountGbp) > $limits['max_spend_1h']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_1H';
-            $ui = [
-                'key' => 'LIMIT_EXCEEDED',
-                'title' => 'Hourly Limit Reached',
-                'body' => 'You have reached your hourly spending limit. Please try again later.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // Check 24 Hour Limit
         if (($rollup->spend_24h + $amountGbp) > $limits['max_spend_24h']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_24H';
-            $ui = [
-                'key' => 'LIMIT_EXCEEDED',
-                'title' => 'Daily Limit Reached',
-                'body' => 'You have reached your daily spending limit. Please try again tomorrow.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // Check 7 Day Limit
         if (($rollup->spend_7d + $amountGbp) > $limits['max_spend_7d']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_7D';
-            $ui = [
-                'key' => 'LIMIT_EXCEEDED',
-                'title' => 'Weekly Limit Reached',
-                'body' => 'You have reached your weekly spending limit.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // --- RULE 3: SINGLE TRANSACTION LIMIT (> threshold -> STEP_UP) ---
@@ -173,11 +145,6 @@ class RiskEngineService
                     $reasons[] = 'MARK_REVIEW_HOLD';
                 }
 
-                $ui = [
-                    'key' => 'STEP_UP_REQUIRED',
-                    'title' => 'Confirm Your Payment',
-                    'body' => 'For your security, please confirm this payment.',
-                ];
             }
         } elseif ($singleTxReviewHoldAmount > 0 && $amountGbp > $singleTxReviewHoldAmount) {
             if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
@@ -217,14 +184,9 @@ class RiskEngineService
                 if ($newCreatorDailyCap > 0 && ($dailyVolume + $amountGbp) > $newCreatorDailyCap) {
                     $decision = 'BLOCK';
                     $reasons[] = 'NEW_CREATOR_VOLUME_LIMIT';
-                    $ui = [
-                        'key' => 'CREATOR_LIMIT_REACHED',
-                        'title' => 'Creator Limit Reached',
-                        'body' => 'This creator has reached their daily processing limit. Please try again tomorrow.',
-                    ];
                     $this->logDecision($identity, $context, $decision, $reasons);
 
-                    return $this->formatResponse($decision, $reasons, $limits, $ui);
+                    return $this->formatResponse($decision, $reasons, $limits, $context);
                 }
             }
         }
@@ -237,28 +199,18 @@ class RiskEngineService
             $decision = 'COOLDOWN';
             $reasons[] = 'VELOCITY_5_IN_10M';
             $minutes = $limits['cooldown_minutes'];
-            $ui = [
-                'key' => 'COOLDOWN_ACTIVE',
-                'title' => 'Please Wait',
-                'body' => $minutes > 0 ? 'You are paying too fast. Please wait '.$minutes.' minute'.($minutes > 1 ? 's' : '').' and try again.' : 'You are paying too fast. Please try again in a moment.',
-            ];
             $this->logDecision($identity, $context, $decision, $reasons);
             // Trigger cooldown on identity
             if ($minutes > 0) {
                 $identity->update(['cooldown_until' => Carbon::now()->addMinutes($minutes)]);
             }
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         if ($velocityStepUpCount > 0 && $rollup->payment_count_10m >= $velocityStepUpCount) {
             $decision = 'STEP_UP';
             $reasons[] = 'ACCELERATION_3_IN_10M';
-            $ui = [
-                'key' => 'STEP_UP_REQUIRED',
-                'title' => 'Confirm Your Payment',
-                'body' => 'For your security, please confirm this payment.',
-            ];
             // Step-up doesn't block immediately, but requires action.
             // We return decision. Controller handles logic.
         }
@@ -277,15 +229,9 @@ class RiskEngineService
                 $identity->update(['cooldown_until' => Carbon::now()->addMinutes($minutes)]);
             }
 
-            $ui = [
-                'key' => 'COOLDOWN_ACTIVE',
-                'title' => 'Please Wait',
-                'body' => $minutes > 0 ? 'You are paying too fast. Please wait '.$minutes.' minute'.($minutes > 1 ? 's' : '').'.' : 'You are paying too fast. Please try again in a moment.',
-            ];
-
             $this->logDecision($identity, $context, $decision, $reasons);
 
-            return $this->formatResponse($decision, $reasons, $limits, $ui);
+            return $this->formatResponse($decision, $reasons, $limits, $context);
         }
 
         // --- RULE 9: NEW CREATOR LIMIT (1/DAY) ---
@@ -298,14 +244,9 @@ class RiskEngineService
             if ($rollup->new_creators_24h >= $limits['max_new_creators_24h']) {
                 $decision = 'BLOCK';
                 $reasons[] = 'NEW_CREATOR_LIMIT';
-                $ui = [
-                    'key' => 'NEW_CREATOR_LIMIT',
-                    'title' => 'Limit Reached',
-                    'body' => 'You can support '.$limits['max_new_creators_24h'].' new creator per day for safety.',
-                ];
                 $this->logDecision($identity, $context, $decision, $reasons);
 
-                return $this->formatResponse($decision, $reasons, $limits, $ui);
+                return $this->formatResponse($decision, $reasons, $limits, $context);
             }
         }
 
@@ -338,14 +279,9 @@ class RiskEngineService
             if ($isNewCreator) {
                 $decision = 'BLOCK';
                 $reasons[] = 'NEW_CREATOR_RESTRICTED';
-                $ui = [
-                    'key' => 'NEW_CREATOR_RESTRICTED',
-                    'title' => 'Safety Limit',
-                    'body' => 'New creator payments are temporarily limited. You can still pay creators you already supported.',
-                ];
                 $this->logDecision($identity, $context, $decision, $reasons);
 
-                return $this->formatResponse($decision, $reasons, $limits, $ui);
+                return $this->formatResponse($decision, $reasons, $limits, $context);
             }
         }
 
@@ -370,18 +306,13 @@ class RiskEngineService
                     $reasons[] = 'FORCE_3DS';
                 }
 
-                $ui = [
-                    'key' => 'STEP_UP_REQUIRED',
-                    'title' => 'Confirm Your Payment',
-                    'body' => 'For your security, please confirm this payment.',
-                ];
             }
         }
 
         // Log final decision
         $this->logDecision($identity, $context, $decision, $reasons);
 
-        return $this->formatResponse($decision, $reasons, $limits, $ui);
+        return $this->formatResponse($decision, $reasons, $limits, $context);
     }
 
     private function isNewCreator(RiskIdentity $identity, $creatorId)
@@ -410,8 +341,31 @@ class RiskEngineService
         ]);
     }
 
-    private function formatResponse($decision, $reasons, $limits, $ui)
+    /**
+     * Build the engine's response.
+     *
+     * The engine decides and names its reason; it does NOT write copy.
+     * `App\Support\RiskMessages` is the one definition of what a person reads,
+     * and it resolves the audience (guest vs logged in) itself — which is what
+     * stops a guest being handed a link to /history, a page they cannot reach.
+     *
+     * ⚠️ Nothing here may put a threshold in the payload. The old copy
+     * interpolated cooldown minutes and `max_new_creators_24h` straight into the
+     * body, which told a card tester exactly where the line was and when to
+     * resume. `limits` stays in the response because the API's own limits
+     * endpoint and the ledger read it — it is never rendered to a supporter.
+     */
+    private function formatResponse($decision, $reasons, $limits, array $context = [])
     {
+        $ui = [];
+
+        // ALLOW has nothing to say to anyone. Building a message for it would
+        // put a refusal string into a successful checkout's payload.
+        if ($decision !== 'ALLOW') {
+            $audience = RiskMessages::audienceFor($context['is_guest'] ?? null);
+            $ui = RiskMessages::forReasonCodes($reasons, $audience);
+        }
+
         return [
             'decision' => $decision,
             'reason_codes' => $reasons,

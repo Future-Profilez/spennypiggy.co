@@ -14,6 +14,7 @@ import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import { feeRatesFor, supporterTotal, creatorIdOf } from "@/utils/pricing";
+import { riskMessageBody, redirectToLoginWithMessage, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
 
 export default function SubCheckout(props) {
     const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
@@ -104,18 +105,19 @@ export default function SubCheckout(props) {
         }
         if (!auth?.user) {
             if (guestAllowed === false) {
-                const msg = "Guest checkout is disabled. Please log in.";
-                errorAlert(msg);
-                window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED"));
+                redirectToLoginWithMessage("GUEST_ACCOUNT_REQUIRED");
                 return;
             }
             const total = calculateTotalSupporterPays(wish?.price, wish?.currency, wish?.user?.vat_amount_percentage || 0);
             const wishCurrency = (wish?.currency || "GBP").toUpperCase();
             const rate = rates?.[wishCurrency];
             const totalGbp = rate ? total / rate : total;
-            if (totalGbp > 50) {
-                errorAlert("Larger payments more than £50 need to login.");
-                window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
+            // ⚠️ The threshold is never named in the copy — see
+            // constants/riskMessages.js. The server refuses this too.
+            if (totalGbp > GUEST_VALUE_THRESHOLD_GBP) {
+                errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE"));
+                redirectToLoginWithMessage("GUEST_ACCOUNT_REQUIRED_VALUE");
                 return;
             }
         }
@@ -184,9 +186,8 @@ export default function SubCheckout(props) {
                 const allowed = res?.data?.guest_allowed !== false;
                 setGuestAllowed(allowed);
                 if (!allowed) {
-                    const msg = "Guest checkout is disabled. Please log in.";
-                    errorAlert(msg);
-                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                    errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED"));
+                    redirectToLoginWithMessage("GUEST_ACCOUNT_REQUIRED");
                 }
             })
             .catch(() => {

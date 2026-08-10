@@ -17,6 +17,7 @@ use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Support\NotificationRecorder;
+use App\Support\RiskMessages;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -859,7 +860,11 @@ class Helpers
             if (isset($limits['guest_allowed']) && $limits['guest_allowed'] === false) {
                 return [
                     'code' => 'GUEST_CHECKOUT_DISABLED',
-                    'message' => 'Guest checkout is disabled. Please log in.',
+                    // Wording lives in RiskMessages, never here. This refusal is
+                    // raised from six call sites and was worded three different
+                    // ways between them and the frontend copies of it.
+                    'message' => RiskMessages::get('GUEST_ACCOUNT_REQUIRED', RiskMessages::AUDIENCE_GUEST)['body'],
+                    'ui' => RiskMessages::get('GUEST_ACCOUNT_REQUIRED', RiskMessages::AUDIENCE_GUEST),
                 ];
             }
         } catch (\Throwable $e) {
@@ -871,9 +876,15 @@ class Helpers
 
         $convertedGbp = self::priceFormat($currency, $amount, 'GBP');
         if ($convertedGbp > $thresholdGbp) {
+            $ui = RiskMessages::get('GUEST_ACCOUNT_REQUIRED_VALUE', RiskMessages::AUDIENCE_GUEST);
+
             return [
                 'code' => 'HIGH_VALUE_GUEST',
-                'message' => 'Larger payments more than £50 need to login.',
+                // ⚠️ The old wording here was "Larger payments more than £50
+                // need to login." — it printed the exact threshold, which is
+                // the one thing the brief forbids outright.
+                'message' => $ui['body'],
+                'ui' => $ui,
             ];
         }
 

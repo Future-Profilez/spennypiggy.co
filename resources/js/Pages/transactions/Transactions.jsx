@@ -490,21 +490,55 @@ export default function Transactions(props) {
               </div>
             </div>
 
+            {/*
+              This is the panel the spend-cap message sends people to, so it
+              carries the `limits` anchor and `scroll-mt` — /history is several
+              screens tall and the answer sits well down it. Landing at the top
+              of the page is the dead end that produces a support ticket.
+
+              ⚠️ It renders for the signed-in owner only. `spend_summary` is
+              never built for a guest: guest limits are keyed to card
+              fingerprint, device and IP, so a running total on an
+              unauthenticated screen would be a live readout of exactly how much
+              headroom is left — which is what the guest variant of the message
+              exists to avoid.
+            */}
             {spend_summary && (
-              <div className="mt-6 p-6 rounded-[30px] bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)]">
-                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.15em] mb-4">Your Spend (Security Limits)</p>
+              <div id="limits" className="scroll-mt-24 mt-6 p-6 rounded-box bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)]">
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.15em] mb-2">Your spend and limits</p>
+                <p className="text-gray-600 text-[15px] leading-[1.55] mb-5">
+                  There's a cap on how much can be spent in a short window. It's there to protect
+                  people whose card details get stolen — and once in a while it catches someone
+                  genuinely generous instead. <span className="font-semibold text-gray-900">Each one lifts on its own, so there's nothing to do.</span>
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { label: 'Last 1 hour', spend: spend_summary.spend_1h, limit: spend_summary.limit_1h },
+                    { label: 'Last hour', spend: spend_summary.spend_1h, limit: spend_summary.limit_1h },
                     { label: 'Last 24 hours', spend: spend_summary.spend_24h, limit: spend_summary.limit_24h },
                     { label: 'Last 7 days', spend: spend_summary.spend_7d, limit: spend_summary.limit_7d },
-                  ].map((s) => (
-                    <div key={s.label} className="p-4 rounded-[20px] bg-gray-50 ring-1 ring-black/5">
-                      <p className="text-gray-500 font-semibold text-xs mb-1">{s.label}</p>
-                      <p className="text-gray-900 font-black text-xl tracking-tight">{formatMoney(s.spend)}</p>
-                      <p className="text-gray-400 font-medium text-xs mt-1">Limit {formatMoney(s.limit)}</p>
-                    </div>
-                  ))}
+                  ].map((s) => {
+                    // A bare pair of figures makes the reader do the division.
+                    // Guarded against a zero/absent limit so a misconfigured
+                    // window renders as "no data" rather than a full red bar.
+                    const limit = Number(s.limit) || 0;
+                    const spent = Number(s.spend) || 0;
+                    const pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : null;
+                    return (
+                      <div key={s.label} className="p-4 rounded-box-sm bg-gray-50 ring-1 ring-black/5">
+                        <p className="text-gray-500 font-semibold text-xs mb-1">{s.label}</p>
+                        <p className="text-gray-900 font-black text-xl tracking-tight">{formatMoney(s.spend)}</p>
+                        <p className="text-gray-400 font-medium text-xs mt-1">of {formatMoney(s.limit)}</p>
+                        {pct !== null && (
+                          <div className="mt-3 h-2 w-full rounded-full bg-black/10" aria-hidden="true">
+                            <div
+                              className={`h-2 rounded-full ${pct >= 100 ? 'bg-[#FF007F]' : 'bg-gray-900'}`}
+                              style={{ width: `${Math.max(pct, 2)}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
