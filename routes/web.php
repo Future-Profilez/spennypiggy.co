@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CreatorRiskController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TestRiskController;
 use App\Http\Controllers\AppController;
+use App\Http\Controllers\MaintenanceAccessController;
 use App\Http\Controllers\Auth\BillsController;
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\MembershipController;
@@ -352,6 +353,19 @@ Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->middle
 
 // Unified Stripe Webhook Endpoint
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
+
+/*
+ * Maintenance bypass — exchange the token for a cookie so the site can be checked
+ * while the wall is up for everyone else.
+ *
+ * ⚠️ Must stay ABOVE `require auth.php`, which ends with the `/{username}/{page?}`
+ * profile catch-all: declared below it, this single-segment-prefixed path is read
+ * as a username and answered with the profile 404, and `route:list` shows it
+ * either way. Exempt from the wall in MaintenanceMode::EXEMPT_PREFIXES.
+ */
+Route::get('/maintenance-access/{token}', MaintenanceAccessController::class)
+    ->middleware('throttle:10,1')
+    ->name('maintenance.access');
 
 // Deliverable Access Tracking
 Route::get('/deliverable/access/{uuid}', [DeliveriesController::class, 'access'])->name('deliverable.access');

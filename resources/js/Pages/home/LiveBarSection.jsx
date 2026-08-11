@@ -52,8 +52,8 @@ export default function LiveBarSection() {
 
            <div className="max-w-3xl mx-auto px-4">
            <Reveal3D rotate={18} y={60}>
-           <TiltCard max={4} scale={1.01} className="rounded-[24px]">
-           <div className="relative rounded-[24px] border-2 border-black bg-[#0c0c14] overflow-hidden">
+           <TiltCard max={4} scale={1.01} className="rounded-box">
+           <div className="relative rounded-box border-2 border-black bg-[#0c0c14] overflow-hidden">
               {/* browser chrome */}
               <div className="flex items-center gap-2 px-4 py-3 bg-black/50 border-b-2 border-white/10">
                 <span className="w-3 h-3 rounded-full bg-[#ff5f57]"></span>

@@ -48,6 +48,23 @@ export const SOCIAL_PLATFORMS = {
     validation: /^@?[A-Za-z0-9._]{1,30}$/,
     order: 2
   },
+  tiktok: {
+    id: 'tiktok',
+    label: 'TikTok',
+    type: 'handle',
+    baseUrl: 'https://tiktok.com/@',
+    icon: FaVideo,
+    color: 'text-[#FF007F]',
+    bgColor: 'bg-pink-50',
+    borderColor: 'border-pink-300',
+    focusColor: 'focus:border-[#FF007F]',
+    maxLength: 24,
+    placeholder: '@username',
+    hint: 'Enter your TikTok username (with or without @)',
+    // TikTok allows letters, digits, underscores and dots, 2–24 characters.
+    validation: /^@?[A-Za-z0-9._]{2,24}$/,
+    order: 3,
+  },
   youtube: {
     id: 'youtube',
     label: 'YouTube',
@@ -229,18 +246,47 @@ export const SOCIAL_PLATFORMS = {
 };
 
 // Get platforms sorted by order
+/**
+ * The platforms a creator may verify against — mirrors
+ * `App\Models\SocialLinks::ACCEPTED_PLATFORMS`, which is the real enforcement.
+ *
+ * 🚨 Narrowed to three on 11 Aug 2026 (client decision). The form used to offer
+ * thirteen, including Facebook and YouTube, while the published rule said
+ * "Instagram, X or TikTok only" — and TikTok was not even a field. A creator
+ * read the rule and was shown a Facebook box.
+ *
+ * ⚠️ SOCIAL_PLATFORMS itself keeps every platform, and deliberately so: a
+ * creator verified on YouTube before the narrowing still has that handle
+ * approved and rendered on their profile. This list governs what can be
+ * SUBMITTED; the map governs what can be DISPLAYED. Collapsing the two would
+ * make existing approved links disappear from live profiles.
+ */
+export const ACCEPTED_PLATFORM_IDS = ['twitter', 'instagram', 'tiktok'];
+
 export const getSortedPlatforms = () => {
   return Object.values(SOCIAL_PLATFORMS).sort((a, b) => a.order - b.order);
 };
 
-// Get primary platforms (main social media)
-export const getPrimaryPlatforms = () => {
-  return getSortedPlatforms().filter(platform => platform.order <= 8);
+// The platforms the form offers. Anything else is display-only.
+export const getAcceptedPlatforms = () => {
+  return ACCEPTED_PLATFORM_IDS
+    .map(id => SOCIAL_PLATFORMS[id])
+    .filter(Boolean)
+    .sort((a, b) => a.order - b.order);
 };
 
-// Get secondary platforms (adult content + other)
+export const isAcceptedPlatform = (id) => ACCEPTED_PLATFORM_IDS.includes(id);
+
+// Get primary platforms (the ones a creator can submit)
+export const getPrimaryPlatforms = () => {
+  return getAcceptedPlatforms();
+};
+
+// Retired: nothing sits outside the accepted list any more. Kept so the form's
+// existing import does not break, and returns an empty list rather than
+// rendering a second section of platforms nobody may use.
 export const getSecondaryPlatforms = () => {
-  return getSortedPlatforms().filter(platform => platform.order > 8);
+  return [];
 };
 
 // Get platform by ID

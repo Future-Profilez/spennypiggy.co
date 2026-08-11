@@ -24,8 +24,8 @@ export default function FeatureSuggestionSection({ auth }) {
                         <ScrollX from={0} to={0} rotate={18}>
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-[30px] flex items-center justify-center transform transition-transform duration-700 group-hover:scale-110">
-                                <FaLightbulb className="text-[#EFEA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(239,234,123,0.4)]" />
+                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-box flex items-center justify-center transform transition-transform duration-700 group-hover:scale-110">
+                                <FaLightbulb className="text-[#E6EA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(230,234,123,0.4)]" />
                             </div>
                         </div>
                         </ScrollX>

@@ -1,4 +1,5 @@
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { useReducedMotion } from 'framer-motion';
 import 'swiper/css';
 import 'swiper/css/free-mode';
 import { Autoplay, FreeMode } from 'swiper/modules';
@@ -31,6 +32,7 @@ export default function PaymentSlider() {
      left EMPTY WHITE PILLS scrolling in the marquee: the <img> came out in three
      places and its wrapper stayed. Repeating the array is what fills the track. */
   const track = [...logos, ...logos, ...logos];
+  const reduce = useReducedMotion();
 
   return (
     <div className="py-8 md:py-10">
@@ -57,8 +59,14 @@ export default function PaymentSlider() {
           loop
           grabCursor={false}
           allowTouchMove={false}
-          autoplay={{ delay: 0, disableOnInteraction: false }}
-          speed={3600}
+          /* ⚠️ `delay: 0` is perpetual motion with no user-initiated pause, and
+             this was the one motion surface on the homepage a reduced-motion
+             visitor could not escape — the marquee is CSS-transform driven inside
+             Swiper, so neither the global reduce block nor a `motion-reduce:`
+             utility can reach it. Under reduce the track simply stands still;
+             the logos are the content and they are all still legible. */
+          autoplay={reduce ? false : { delay: 0, disableOnInteraction: false }}
+          speed={reduce ? 0 : 3600}
           className="!px-1 !py-1"
         >
           {track.map((logo, i) => (

@@ -8,10 +8,13 @@ import FadeIn from '@/Components/animations/FadeIn';
  * already earning enough to negotiate — but it has to be found by them at a
  * glance while everyone else scrolls past, so it is loud rather than discreet.
  *
- * ⚠️ MINT IS THIS SECTION'S OWN COLOUR. The landing page runs black (hero) →
- * this → yellow (Earn more), and yellow and pink are already taken by other
- * bands. A quiet dark strip was tried here first and disappeared into the
- * hero's black tail — on a page this loud, restraint reads as absence.
+ * ⚠️ THIS SECTION NO LONGER HAS A BAND COLOUR, and the note that used to sit
+ * here ("MINT IS THIS SECTION'S OWN COLOUR… black hero → this → yellow") is
+ * void. `PageCanvas` replaced every full-bleed band with one continuous dark
+ * field, so the section is transparent and its contrast decisions are now made
+ * against dark, not mint. Every colour choice below was re-derived on that
+ * basis; do not restore a `bg-*` here — a section with its own background cuts
+ * the canvas and reintroduces the seams it removed.
  *
  * ⚠️ It advertises a NEGOTIATION, not a product. No percentages anywhere:
  * publishing a number turns a case-by-case arrangement into an expectation, and
@@ -61,8 +64,8 @@ export default function CustomPricingNote() {
 
             {/*
              * One column, left. The % owns the right half — a button floating on
-             * top of it left 300px of dead mint between the sentence and the
-             * action, and put the CTA's pink shadow over the graphic.
+             * top of it left a long dead gap between the sentence and the action,
+             * and put the CTA's shadow over the graphic.
              */}
             <div className="relative z-10 mx-auto max-w-6xl">
                 <div className="max-w-[640px]">
@@ -83,12 +86,13 @@ export default function CustomPricingNote() {
                                 Custom pricing
                                 <br />
                                 {/*
-                                 * ⚠️ The second line is BLACK, not pink. Pink on
-                                 * mint measures 2.53:1 — it fails even the 3:1
-                                 * large-text floor, and it would be the loudest
-                                 * element on the band. Pink carries the accent as
-                                 * a rule instead (the hero's own device under
-                                 * "WISHLIST"), where contrast does not apply.
+                                 * Pink carries the accent as a RULE, not as ink —
+                                 * the hero's own device under "WISHLIST". On the
+                                 * old mint band this was forced (pink on mint is
+                                 * 2.53:1, below even the 3:1 large-text floor); on
+                                 * the dark canvas pink text would now pass at
+                                 * 5.56:1, but the rule is kept because it matches
+                                 * the hero and keeps one accent doing one job.
                                  */}
                                 <span className="inline-block border-b-[6px] border-[#FF007F] pb-1 md:border-b-8">
                                     for high earners
@@ -106,15 +110,25 @@ export default function CustomPricingNote() {
 
                     <FadeIn y={20} delay={0.24} duration={0.6} className="mt-8">
                         {/*
-                         * The page's CTA pill is pink, which on a mint band is two
-                         * brand colours fighting for the same job. Black is the
-                         * page's other pill treatment, and pink moves to the
-                         * offset shadow where it still reads as the brand.
+                         * 🚨 THIS BUTTON WAS BLACK ON BLACK. The rationale that put
+                         * it there — "the page's CTA pill is pink, which on a mint
+                         * band is two brand colours fighting" — inverted the day
+                         * `PageCanvas` removed the mint band, and the button was
+                         * never revisited. Measured live it rendered
+                         * `background-color: rgb(0,0,0)` with `border-color:
+                         * rgb(0,0,0)` over a near-black canvas: the single action
+                         * aimed at the platform's highest-value creators was the
+                         * most recessive element in its own section.
+                         *
+                         * ⚠️ Pink fill takes BLACK ink, never white. White on
+                         * #FF007F is 3.78:1 and fails AA; black is 5.56:1 and
+                         * passes. Same rule as the `WaysToGetPaid` payout terminus,
+                         * which is the page's other filled pink block.
                          */}
                         <a
                             href="mailto:support@spennypiggy.co?subject=Custom%20pricing%20enquiry"
                             onClick={startChat}
-                            className="group inline-flex min-h-[44px] w-full shrink-0 items-center justify-center gap-3 rounded-full border-[3px] border-black bg-black px-7 py-3 font-gulfs text-base uppercase tracking-wide text-white transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:w-auto md:text-lg"
+                            className="group inline-flex min-h-[44px] w-full shrink-0 items-center justify-center gap-3 rounded-full border-[3px] border-[#FF007F] bg-[#FF007F] px-7 py-3 font-gulfs text-base uppercase tracking-wide text-black transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:w-auto md:text-lg"
                         >
                             Drop us a chat
                             <span

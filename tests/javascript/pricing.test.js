@@ -122,14 +122,24 @@ describe('supporterTotal', () => {
     it('matches the server for a £100 listing', () => {
         const adminFee = 1;
 
-        expect(supporterTotal(100, { platform: 17, compliance: 2, adminFee })).toBe(129.71);
-        expect(supporterTotal(100, { platform: 12, compliance: 2, adminFee })).toBe(121.91);
+        // 130.55, not 129.71: the card Stripe estimate was raised 2.9% -> 3.4%
+        // on 11 Aug 2026 so an international card can never leave the creator
+        // short. Both figures come from calculateStripeDirectChargeFlow.
+        expect(supporterTotal(100, { platform: 17, compliance: 2, adminFee })).toBe(130.55);
+        expect(supporterTotal(100, { platform: 12, compliance: 2, adminFee })).toBe(122.64);
     });
 
     it('rounds UP, never down — rounding down would leave the creator short', () => {
         const total = supporterTotal(100, { platform: 17, compliance: 2, adminFee: 1 });
+        const exact = (100 + 0.3 + 1) / (1 - (0.034 + 0.17 + 0.02));
 
-        expect(total).toBe(Math.ceil(total * 100) / 100);
+        // ⚠️ Compared against the UNROUNDED figure, not against
+        // Math.ceil(total * 100) / 100 — re-ceiling an already-ceiled value is
+        // not a rounding test, and it fails on any total whose float
+        // representation sits a hair above the penny (130.55 * 100 is
+        // 13055.000000000002, so it re-ceils to 130.56).
+        expect(total).toBeGreaterThanOrEqual(exact);
+        expect(total - exact).toBeLessThan(0.01);
     });
 
     it('drops the fixed fee for a zero-decimal currency and rounds to a whole unit', () => {
@@ -140,7 +150,7 @@ describe('supporterTotal', () => {
         // No 0.30 fixed fee in the numerator, and CEIL to a whole unit rather
         // than to 2dp — which is why this can exceed the 2dp figure rather than
         // simply being smaller.
-        expect(zeroDecimal).toBe(Math.ceil(1000 / (1 - (0.029 + 0.17 + 0.02))));
+        expect(zeroDecimal).toBe(Math.ceil(1000 / (1 - (0.034 + 0.17 + 0.02))));
         expect(Number.isInteger(zeroDecimal)).toBe(true);
     });
 

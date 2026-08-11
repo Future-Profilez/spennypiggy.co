@@ -288,6 +288,27 @@ class RiskMessages
             'cta' => null,
         ],
 
+        // 12 — Card refused for this purchase; Pay by Bank is the way through.
+        //
+        // ⚠️ NOT one of the brief's 18 states. Added 11 Aug 2026 on the client's
+        // own wording, when the decision on high-value card payments landed:
+        // instead of blocking card outright above the card ceiling, the buyer
+        // risk screen now runs there too, and a buyer who fails it is sent to
+        // Pay by Bank rather than refused. The first sentence of `body` is the
+        // client's copy verbatim.
+        //
+        // ⚠️ Says nothing about WHY, and above all names no amount. The reason
+        // this fires is a threshold plus a risk signal, and both are exactly
+        // what rule 1 exists to keep off the screen — "payments over £X need
+        // Pay by Bank" would tell a card tester precisely where to sit.
+        'CARD_UNAVAILABLE_USE_BANK' => [
+            'audience_class' => 'supporter',
+            'title' => "Let's do this one by bank 🏦",
+            'body' => "This payment can't be completed by card. Please pay securely using Pay by Bank.\n\nYou'll approve it inside your own banking app, so nothing sensitive comes near us — and it usually costs you less than paying by card. 🐷",
+            'next_step' => 'Choose Pay by Bank on the payment screen.',
+            'cta' => null,
+        ],
+
         // Hard block — an identity an admin has stopped by hand. Deliberately
         // gives no reason and no retry: there is nothing the person can do on
         // their own, and the chat is the only honest next step.

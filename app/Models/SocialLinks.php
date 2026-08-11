@@ -12,12 +12,31 @@ class SocialLinks extends Model
 
     protected $dates = ['deleted_at'];
 
+    /**
+     * The platforms a creator may verify against (client decision, 11 Aug 2026).
+     *
+     * 🚨 The ONE definition — the controller, the form and the tests all read it.
+     * The accepted list used to be written out by hand in the controller and had
+     * grown to thirteen, while the public documentation said three; that gap is
+     * exactly what this constant exists to close.
+     *
+     * ⚠️ The remaining columns below are NOT removed. Creators verified on them
+     * before the narrowing keep their approved handles, and their profiles keep
+     * rendering them — this list governs what can be SUBMITTED, not what exists.
+     */
+    public const ACCEPTED_PLATFORMS = [
+        'twitter',
+        'instagram',
+        'tiktok',
+    ];
+
     protected $fillable = [
         'uuid',
         'user_id',
         'whoyouinto',
         'twitter',
         'instagram',
+        'tiktok',
         'facebook',
         'youtube',
         'twitch',

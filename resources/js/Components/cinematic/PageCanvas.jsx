@@ -92,7 +92,7 @@ export default function PageCanvas() {
             {/* The one place light is allowed to pool: the top of the page, where
                 the hero is. It is a single source, not one per section. */}
             <div
-                className="absolute inset-x-0 top-0 h-[92vh]"
+                className="absolute inset-x-0 top-0 h-[92dvh]"
                 style={{
                     background:
                         'radial-gradient(70% 62% at 72% 0%, rgba(255,0,127,0.34) 0%, rgba(255,0,127,0.08) 46%, transparent 74%),'

@@ -97,8 +97,20 @@ export default function FAQ() {
                       <StaggerItem key={i} index={i} stagger={0.1}>
                       <Disclosure defaultOpen={i === 0}>
                         {({ open }) => (
-                          <div className={`bg-gray-900 border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px]     overflow-hidden`}>
-                            <Disclosure.Button className={`flex w-full justify-between px-4 py-4 md:px-6 md:py-6 text-left text-md md:text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
+                          /* `bg-gray-900` is a banned cool gray (#111827 carries a
+                             blue cast against the page's true black); the card ink
+                             is #0d0a16, as everywhere else on this page.
+                             ⚠️ A `{/* … *\/}` JSX comment is ILLEGAL here — as the
+                             first item inside a parenthesised arrow return it parses
+                             as a block, not a comment, and takes the whole module
+                             down with "Unexpected token, expected ','". */
+                          <div className={`bg-[#0d0a16] border-2 border-[#FF007F] rounded-box-sm md:rounded-box overflow-hidden`}>
+                            {/* 🚨 `focus:outline-none` with NO replacement ring. This
+                                accordion is the only keyboard-operable control on the
+                                homepage, so a keyboard user had no visible position
+                                anywhere on the page. WCAG 2.4.7. `text-yellow-400` is
+                                also off-palette — the allocated yellow is #E6EA7B. */}
+                            <Disclosure.Button className={`flex w-full justify-between px-4 py-4 md:px-6 md:py-6 text-left text-md md:text-xl font-gulfs uppercase tracking-wide focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF007F] ${open ? 'text-[#E6EA7B]' : 'text-white'}`}>
                               <span>{f.title}</span>
                               <ChevronUpIcon
                                 className={`${

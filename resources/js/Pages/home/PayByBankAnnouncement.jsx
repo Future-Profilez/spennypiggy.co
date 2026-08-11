@@ -36,7 +36,7 @@ export default function PayByBankAnnouncement() {
                         </div>
                     </FadeIn>
                     <FadeIn x={-80} y={0} delay={0.1} duration={0.7}>
-                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-">
+                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none">
                             Your money, <br />
                             <span className="uppercase text-gradient-wishlist tracking-[2px] ">cleared for takeoff.</span> <span className="animate-pulse">✈️</span> 
                         </h2>
@@ -52,9 +52,9 @@ export default function PayByBankAnnouncement() {
                 <FadeIn y={30} delay={0.15} duration={0.7}>
                     <div className="relative">
                         {/* mint glow */}
-                        <div className="pointer-events-none absolute -inset-3 bg-[#A2E4B8] opacity-15 blur-2xl rounded-[40px]" aria-hidden="true"></div>
+                        <div className="pointer-events-none absolute -inset-3 bg-[#A2E4B8] opacity-15 blur-2xl rounded-box" aria-hidden="true"></div>
 
-                        <div className="max-w-[800px] m-auto relative grid md:grid-cols-[1fr_auto] bg-gray-900 border-[3px] border-[#A2E4B8] rounded-[26px] overflow-hidden">
+                        <div className="max-w-[800px] m-auto relative grid md:grid-cols-[1fr_auto] bg-gray-900 border-[3px] border-[#A2E4B8] rounded-box overflow-hidden">
                             {/* Main pass */}
                             <div className="p-6 md:p-9">
                                 <div className="flex items-center justify-between mb-6">
@@ -114,7 +114,7 @@ export default function PayByBankAnnouncement() {
                                 <span aria-hidden="true" className="hidden md:block absolute -left-[13px] -bottom-[13px] w-6 h-6 rounded-full bg-black border-[3px] border-[#A2E4B8]"></span>
                                 {stamps.map((s, i) => (
                                     <StaggerItem key={s.code} index={i} y={16} rotate={0} stagger={0.12} duration={0.5}>
-                                        <div className={`transform ${s.tilt} border-[3px] border-dashed border-[#A2E4B8] rounded-2xl px-4 py-2.5 text-center min-w-[96px]`}>
+                                        <div className={`transform ${s.tilt} border-[3px] border-dashed border-[#A2E4B8] rounded-box-sm px-4 py-2.5 text-center min-w-[96px]`}>
                                             <div className="text-2xl leading-none !text-white">{s.flag}</div>
                                             <div className="font-mono font-black text-[#A2E4B8] text-base leading-none mt-1 tracking-wide">{s.code}</div>
                                             <div className="text-white/70 text-[11px] font-black uppercase tracking-[0.14em] mt-1">{s.rail}</div>

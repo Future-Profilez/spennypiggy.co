@@ -12,7 +12,7 @@ import useIsMobile from "@/Components/animations/useIsMobile";
  * Copy uses content/support language to stay aligned with Stripe content rules.
  */
 
-const PURPLE = "#8C52FF";
+const PURPLE = "#924DFF";
 const PINK = "#FF007F";
 
 // z = depth (px, + = toward viewer), ry = yaw toward centre, blur/dim = depth-of-field
@@ -112,17 +112,27 @@ function Shell({ children, className = "", accent = PINK }) {
     );
 }
 
-// glossy highlight + uppercase CTA with a trailing glyph
+/**
+ * 🚨 NOT A BUTTON — same rule as `WishlistPreview`'s CTA. This whole fan is an
+ * illustration (`role="list"`, "Example wishlist and supporter activity"), and
+ * these were five real `<button>` elements with no `onClick`: five phantom tab
+ * stops announced as buttons that did nothing. A keyboard user reached them and
+ * a screen-reader user was offered them.
+ *
+ * Glossy highlight + uppercase label with a trailing glyph. Do not turn it back
+ * into a button to "fix" the styling.
+ */
 function GlossButton({ children, glyph, accent }) {
     return (
-        <button
+        <span
+            aria-hidden="true"
             className="relative mt-auto w-full min-h-[44px] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
             style={{ background: accent }}
         >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>
             <span className="relative">{glyph}</span>
-        </button>
+        </span>
     );
 }
 
@@ -143,10 +153,17 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
                 <span className="absolute top-1.5 right-2 text-[11px] opacity-70 select-none" aria-hidden>✨</span>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wide text-white/45">
+            {/* `white/45` is 4.43:1 — a marginal AA fail, and this is 9.5px type,
+                which gets no small-print exemption. */}
+            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wide text-white/70">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }}></span>{tag}
             </span>
-            <h4 className="font-gulfs uppercase text-[14px] leading-tight text-white mt-1">{title}</h4>
+            {/* ⚠️ Was an <h4> directly under LiveBarSection's <h2> — a two-level
+                skip in the document outline, which is what a screen-reader user
+                navigates by. These are invented product names inside an
+                illustration; they are not document structure and should not be
+                headings at all. Styling is unchanged. */}
+            <p className="font-gulfs uppercase text-[14px] leading-tight text-white mt-1">{title}</p>
             <p className="font-black text-[18px] mt-1 mb-2.5" style={{ color: accent }}>{price}</p>
             <GlossButton glyph="→" accent={accent}>{cta}</GlossButton>
         </Shell>
@@ -172,7 +189,7 @@ function ThankYouCard() {
     return (
         <Shell accent={PURPLE}>
             <div className="flex items-start gap-2 mb-2.5">
-                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#8C52FF] to-[#FF007F]">JJ</span>
+                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
                 <p className="text-[11.5px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
                     <span className="font-black text-white">@legitjustjack</span> just supported your content! 🙌
                 </p>

@@ -13,7 +13,7 @@ import { fieldClass } from "@/Components/Checkout/FormKit";
 import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
-import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
@@ -49,8 +49,8 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
         const priceWithVat = listedPrice + vat;
 
         // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const stripeFeeRate = STRIPE_FEE_RATE;
+        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
         // Per-creator: a creator on a bespoke platform rate must be QUOTED
         // what checkout will CHARGE them. The global props cannot express that.
         const __rates = feeRatesFor(creatorIdOf(task), __pageProps);

@@ -215,7 +215,11 @@ export default function WaysToGetPaid() {
                                     ))}
                                 </ul>
                             </Bar>
-                            <p className="font-poppins text-[10.5px] uppercase tracking-[0.2em] text-white/30 mt-2.5">
+                            {/* ⚠️ Was `text-white/30` — 2.48:1, a hard AA failure, on
+                                the ONLY thing telling a phone user this rail scrolls.
+                                The least legible text in the section was the one
+                                explaining a hidden-scrollbar carousel. /70 is 8.1:1. */}
+                            <p className="font-poppins text-[10.5px] uppercase tracking-[0.2em] text-white/70 mt-2.5">
                                 Swipe &rarr;
                             </p>
                         </div>
@@ -256,9 +260,12 @@ export default function WaysToGetPaid() {
                         else would leave this reading as another card. */}
                     <FadeIn y={22} delay={0.1}>
                         <div className="mt-4 md:mt-5 rounded-box bg-[#FF007F] px-6 py-6 md:px-8 md:py-7 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                            {/* `black/40` on pink is 2.26:1 — aria-hidden so AA does
+                                not formally apply, but it was barely visible on the
+                                one block the section builds to. */}
                             <span
                                 aria-hidden="true"
-                                className="font-gulfs text-2xl md:text-3xl text-black/40 leading-[1] shrink-0"
+                                className="font-gulfs text-2xl md:text-3xl text-black/70 leading-[1] shrink-0"
                             >
                                 &darr;
                             </span>

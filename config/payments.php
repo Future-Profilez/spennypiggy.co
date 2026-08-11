@@ -37,11 +37,31 @@ return [
     'instant_fulfilment' => env('BANK_INSTANT_FULFILMENT', true),
 
     'fee_profiles' => [
+        // ⚠️ The Stripe estimate is what the supporter's price is grossed up
+        // from, and the platform's cut goes to Stripe as a FIXED application
+        // fee — so anything under-estimated here comes out of the CREATOR's
+        // net, not ours, and does so silently.
+        //
+        // Raised 2.9 → 3.4 on 11 Aug 2026 (client decision). Stripe UK charges
+        // roughly 1.5% + 20p on UK cards and 2.5% + 20p on EEA, both of which
+        // 2.9% + 30p covered comfortably — but ~3.25% + 20p on international
+        // cards, which it did not. Measured on a £100 listing, the creator was
+        // receiving £99.64 instead of £100.
+        //
+        // 3.4% + 30p covers international at every price point from £4.99 to
+        // £1,000 with margin to spare. The cost lands on the supporter: about
+        // +0.65% on the total, so +84p on a £100 listing, paid by UK supporters
+        // too. That trade — everyone pays slightly more, no creator is ever
+        // short — was chosen over reconciling each charge after the fact.
+        //
+        // 🚨 NOT covered: Stripe's +2% currency conversion, which applies when
+        // the charge currency differs from the connected account's settlement
+        // currency. No flat estimate at this level absorbs that.
         'card' => [
             'platform_rate' => (float) env('PLATFORM_FEE_PERCENTAGE', 17),
             'compliance_rate' => (float) env('TRANSACTION_FEE_PERCENTAGE', 2),
-            'stripe_rate' => 2.9,
-            'stripe_fixed_fee' => 0.30,
+            'stripe_rate' => (float) env('CARD_STRIPE_FEE_PERCENTAGE', 3.4),
+            'stripe_fixed_fee' => (float) env('CARD_STRIPE_FIXED_FEE', 0.30),
         ],
         // Bank methods: total platform take presented to the client as 15%
         // (platform 13% + compliance 2%), with Stripe's cheaper bank

@@ -35,15 +35,15 @@ export default function SetupSteps() {
                     </p>
                 </FadeIn>
 
-                <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 md:gap-6 max-w-6xl mx-auto">
+                <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10 max-w-6xl mx-auto">
                     {/* flow line connecting the steps (desktop) */}
                     <div aria-hidden className="hidden md:block absolute top-0 left-[16%] right-[16%] h-[3px] bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-40 z-0"></div>
 
                     {STEPS.map((s, i) => (
                         <StaggerItem key={i} index={i} stagger={0.12} y={32} className="relative z-10">
-                            <TiltCard max={6} className="rounded-[28px] h-full">
+                            <TiltCard max={6} className="rounded-box h-full">
                                 <div
-                                    className="relative h-full rounded-[28px] bg-[#0d0a16] border-2 p-7 md:p-8 pt-10 text-left flex flex-col"
+                                    className="relative h-full rounded-box bg-[#0d0a16] border-2 p-7 md:p-8 pt-10 text-left flex flex-col"
                                     style={{ borderColor: s.accent }}
                                 >
                                     <span

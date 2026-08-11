@@ -69,7 +69,7 @@ function UnlockToast({ reduceMotion }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 220, damping: 20 }}
-          className="flex items-center gap-2.5 bg-white border-2 border-black rounded-2xl pl-2 pr-3.5 py-2"
+          className="flex items-center gap-2.5 bg-white border-2 border-black rounded-box-sm pl-2 pr-3.5 py-2"
         >
           <span className="w-8 h-8 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center text-base leading-none">{u.emoji}</span>
           <span className="leading-tight">
@@ -88,7 +88,7 @@ function WishTile({ tile }) {
     <motion.div
       whileHover={{ scale: 1.06, rotate: 0, y: -6 }}
       transition={{ type: "spring", stiffness: 300, damping: 18 }}
-      className={`w-40 md:w-44 rounded-[20px] border-2 border-black overflow-visible cursor-pointer ${tile.rot}`}
+      className={`w-40 md:w-44 rounded-box-sm border-2 border-black overflow-visible cursor-pointer ${tile.rot}`}
       style={{ background: tile.bg }}
     >
       <div className="flex items-center justify-between px-3 pt-2.5">
@@ -216,7 +216,13 @@ export default function Hero({auth}) {
                     </a>
                   </li>
                   <li>
-                    <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
+                    {/* ⚠️ Was `#features`, an id that exists ONLY in `Membership.jsx`
+                        — an orphan file with no importer anywhere in the repo. So
+                        this tab was on screen for every logged-out mobile visitor
+                        and did nothing at all when tapped. `act-setup` is the real
+                        features chapter (setup steps → ways to get paid → the
+                        product mock-ups) and is declared in Welcome.jsx. */}
+                    <a href="#act-setup" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'act-setup' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'act-setup')}>
                       Features
                     </a>
                   </li>
@@ -245,7 +251,7 @@ export default function Hero({auth}) {
           ref={heroRef}
           onPointerMove={onHeroPointerMove}
           onPointerLeave={onHeroPointerLeave}
-          className="bg-transparent relative min-h-[88vh] lg:min-h-[92vh] flex items-center py-10 md:py-20 overflow-hidden"
+          className="bg-transparent relative min-h-[88dvh] lg:min-h-[92dvh] flex items-center py-10 md:py-20 overflow-hidden"
         >
           <div
             aria-hidden
@@ -297,7 +303,12 @@ export default function Hero({auth}) {
                           initial={{ opacity: 0, scale: 0.5, rotate: -5 }}
                           animate={{ opacity: 1, scale: 1, rotate: 0 }}
                           transition={{ type: "spring", stiffness: 180, damping: 15, delay: 0.35 }}
-                          className="relative inline-block bg-gradient-to-br from-[#FF6BB8] via-[#FF007F] to-[#C71585] bg-clip-text text-transparent drop-shadow-[0_6px_34px_rgba(255,0,127,0.35)]"
+                          /* ⚠️ `bg-clip-text` + `text-transparent` needs a
+                             forced-colors fallback. Windows High Contrast discards
+                             the background image and the text stays transparent, so
+                             the word "wishlist" disappears out of the page's only
+                             <h1>. Same exposure when printing. */
+                          className="relative inline-block bg-gradient-to-br from-[#FF6BB8] via-[#FF007F] to-[#C71585] bg-clip-text text-transparent drop-shadow-[0_6px_34px_rgba(255,0,127,0.35)] forced-colors:bg-none forced-colors:text-[CanvasText] print:bg-none print:text-black"
                         >
                           wishlist
                         </motion.span>

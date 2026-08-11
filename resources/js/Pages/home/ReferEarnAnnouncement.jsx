@@ -33,7 +33,7 @@ export default function ReferEarnAnnouncement() {
                         
                         <FadeIn y={20} delay={0.2}>
                             <p className="fading text-xl md:text-2xl text-white/65 max-w-3xl mx-auto font-medium leading-relaxed">
-                                Invite creators to Spenny Piggy. When they sign up using your link and reach £1,000 in lifetime GMV, you earn a £50 Stripe payout.
+                                Invite creators to Spenny Piggy. When they sign up using your link and earn £1,000 in total sales, you earn a £50 Stripe payout.
                             </p>
                         </FadeIn>
                     </div>
@@ -42,7 +42,7 @@ export default function ReferEarnAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3 md:gap-y-10 px-2 md:px-4">
                         
                         <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#E6EA7B] border-[3px] border-black mb-2 md:mb-0 rounded-[30px] p-6 relative group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="fading bg-[#E6EA7B] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group hover:-translate-y-1 transition-transform duration-300">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-12">
                                 <FaShareAlt />
                             </div>
@@ -54,7 +54,7 @@ export default function ReferEarnAnnouncement() {
                         </StaggerItem>
 
                         <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#05EFB8] border-[3px] border-black mb-2 md:mb-0 rounded-[30px] p-6 relative group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="fading bg-[#05EFB8] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group hover:-translate-y-1 transition-transform duration-300">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform -rotate-12">
                                 <FaUserPlus />
                             </div>
@@ -66,13 +66,17 @@ export default function ReferEarnAnnouncement() {
                         </StaggerItem>
 
                         <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#FF007F] border-[3px] border-black mb-2 md:mb-0 rounded-[30px] p-6 relative group hover:-translate-y-1 transition-transform duration-300">
+                        <div className="fading bg-[#FF007F] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group hover:-translate-y-1 transition-transform duration-300">
                             <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-6">
                                 <FaPoundSign />
                             </div>
-                            <h3 className="text-2xl font-gulfs text-white mb-2 uppercase">3. You Earn</h3>
-                            <p className="text-white/85 text-lg mb-6 leading-snug">
-                                Once they reach £1,000 lifetime GMV, you get a £50 reward ready for Stripe payout.
+                            {/* Black ink on the pink fill — white is 3.78:1 and fails
+                                AA. Matches the sibling cards in this row. */}
+                            <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">3. You Earn</h3>
+                            {/* "GMV" was unglossed jargon on a page aimed at creators
+                                who have never seen the term. */}
+                            <p className="text-black/80 text-lg mb-6 leading-snug">
+                                Once they have earned £1,000 in total sales, you get a £50 reward ready for Stripe payout.
                             </p>
                         </div>
                         </StaggerItem>
@@ -82,11 +86,11 @@ export default function ReferEarnAnnouncement() {
                     {/* CTA Section */}
                     <div className="mt-12 text-center relative">
                         <Link href="/refer-and-earn" 
-                            className="relative inline-flex items-center gap-4 bg-[#FF007F] text-white font-black text-md md:text-lg py-3 px-6 md:py-4: mdpx-12 rounded-full hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group" >
+                            className="relative inline-flex items-center gap-4 bg-[#FF007F] text-white font-black text-md md:text-lg py-3 px-6 md:py-4 md:px-12 rounded-full hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group" >
                             <span>Get Your Referral Link</span>
                             <FaRocket className="group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                         </Link>
-                        <div className="mt-6 flex justify-center items-center gap-2 text-white/45 text-sm font-bold uppercase tracking-widest">
+                        <div className="mt-6 flex justify-center items-center gap-2 text-white/70 text-sm font-bold uppercase tracking-widest">
                             No limit on how many creators you can refer!
                         </div>
                     </div>

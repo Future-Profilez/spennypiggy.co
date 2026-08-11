@@ -150,7 +150,7 @@ function Slip() {
                 dashed box around the whole section. It reads as a stamp on a
                 document, which is what "not issued yet" actually looks like. */}
             <span
-                className="absolute right-4 -bottom-3 font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-md border-2 rotate-[-5deg]"
+                className="absolute right-4 -bottom-3 font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-box-sm border-2 rotate-[-5deg]"
                 style={{
                     color: VIOLET_INK,
                     borderColor: `${VIOLET_INK}80`,
