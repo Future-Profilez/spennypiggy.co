@@ -122,7 +122,11 @@ class TwitterAuthService
      */
     public static function checkToken($token)
     {
-        if ($token->expires_at->isPast()) {
+        if (! $token) {
+            throw new Exception('Twitter token is null.');
+        }
+
+        if ($token->expires_at && $token->expires_at->isPast() && $token->refresh_token) {
             $token = self::refreshToken($token);
         }
 
@@ -161,7 +165,7 @@ class TwitterAuthService
         $payload = [
             'media_category' => 'tweet_image',
             'media_data' => $content,
-            'taged_user_ids' => [
+            'tagged_user_ids' => [
                 '1715527416569876480',
             ],
         ];

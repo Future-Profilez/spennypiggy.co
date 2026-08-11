@@ -160,27 +160,57 @@ class CreatorActivityService
 
             'wishes' => WishItem::where('user_id', $creator->id)
                 ->where('is_approved', 1)
-                ->where('created_at', '>=', $since)
+                // ⚠️ The date a listing went LIVE, not the day it was drafted. A listing
+                // scheduled three weeks out would otherwise spend most of its 28-day
+                // window unpublished and count for only the few days left — the gate
+                // would penalise a creator for planning a launch. `publish_at` is NULL
+                // on every listing that was never scheduled, so COALESCE keeps the old
+                // behaviour exactly.
+                ->whereRaw('COALESCE(publish_at, created_at) >= ?', [$since])
                 ->count(),
 
             'memberships' => Membership::where('user_id', $creator->id)
                 ->where('approved', 1)
-                ->where('created_at', '>=', $since)
+                // ⚠️ The date a listing went LIVE, not the day it was drafted. A listing
+                // scheduled three weeks out would otherwise spend most of its 28-day
+                // window unpublished and count for only the few days left — the gate
+                // would penalise a creator for planning a launch. `publish_at` is NULL
+                // on every listing that was never scheduled, so COALESCE keeps the old
+                // behaviour exactly.
+                ->whereRaw('COALESCE(publish_at, created_at) >= ?', [$since])
                 ->count(),
 
             'shops' => Shop::where('user_id', $creator->id)
                 ->where('approved', 1)
-                ->where('created_at', '>=', $since)
+                // ⚠️ The date a listing went LIVE, not the day it was drafted. A listing
+                // scheduled three weeks out would otherwise spend most of its 28-day
+                // window unpublished and count for only the few days left — the gate
+                // would penalise a creator for planning a launch. `publish_at` is NULL
+                // on every listing that was never scheduled, so COALESCE keeps the old
+                // behaviour exactly.
+                ->whereRaw('COALESCE(publish_at, created_at) >= ?', [$since])
                 ->count(),
 
             'bills' => Bills::where('user_id', $creator->id)
                 ->where('approved', 1)
-                ->where('created_at', '>=', $since)
+                // ⚠️ The date a listing went LIVE, not the day it was drafted. A listing
+                // scheduled three weeks out would otherwise spend most of its 28-day
+                // window unpublished and count for only the few days left — the gate
+                // would penalise a creator for planning a launch. `publish_at` is NULL
+                // on every listing that was never scheduled, so COALESCE keeps the old
+                // behaviour exactly.
+                ->whereRaw('COALESCE(publish_at, created_at) >= ?', [$since])
                 ->count(),
 
             'tasks' => Task::where('creator_id', $creator->id)
                 ->where('is_approved', 1)
-                ->where('created_at', '>=', $since)
+                // ⚠️ The date a listing went LIVE, not the day it was drafted. A listing
+                // scheduled three weeks out would otherwise spend most of its 28-day
+                // window unpublished and count for only the few days left — the gate
+                // would penalise a creator for planning a launch. `publish_at` is NULL
+                // on every listing that was never scheduled, so COALESCE keeps the old
+                // behaviour exactly.
+                ->whereRaw('COALESCE(publish_at, created_at) >= ?', [$since])
                 ->count(),
         ];
     }

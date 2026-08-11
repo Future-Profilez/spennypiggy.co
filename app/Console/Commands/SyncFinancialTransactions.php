@@ -105,18 +105,25 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Rye Products...');
 
-        $query = RyeProductPayment::query();
-        // Since RyeProductPayment doesn't have creator_id directly, we need to join with ProductOrderDetail
-        // or rely on metadata if available. For now, let's assume we can find it via ProductOrderDetail.
+        $query = RyeProductPayment::query()->where('status', 'succeeded');
 
-        $query->where('status', 'succeeded');
+        // Scope to a specific creator when $userId is provided (per-creator resync).
+        // RyeProductPayment has no direct creator_id column — scope via ProductOrderDetail.
+        if ($userId) {
+            $query->whereExists(function ($sub) use ($userId) {
+                $sub->selectRaw(1)
+                    ->from('product_order_details')
+                    ->whereColumn('product_order_details.order_id', 'rye_product_payments.id')
+                    ->where('product_order_details.creater_id', $userId);
+            });
+        }
 
         $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
-                // Try to find the creator from ProductOrderDetail
+                // Try to find the creator from ProductOrderDetail by the payment's numeric id,
+                // then fall back to searching by Stripe session ID if the direct link is broken.
                 $orderDetail = ProductOrderDetail::where('order_id', $payment->id)->first();
                 if (! $orderDetail || ! $orderDetail->creater_id) {
-                    // Fallback to searching by session if order_id link is broken
                     if ($payment->stripe_session_id) {
                         $orderDetail = ProductOrderDetail::where('session_id', $payment->stripe_session_id)->first();
                     }
@@ -129,6 +136,8 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $orderDetail->creater_id;
                 $creator = User::find($creatorId);
 
+                // After the WishitemController fix: amount = base creator net price,
+                // tax = application fee amount, total_paid = gross supporter total.
                 $amount = (float) $payment->amount;
                 $vat = (float) ($payment->vat_amount ?? 0);
                 $platformFee = (float) ($payment->tax ?? 0);
@@ -136,10 +145,19 @@ class SyncFinancialTransactions extends Command
                 $gross = $payment->total_paid && $payment->total_paid > 0
                     ? (float) $payment->total_paid
                     : ($amount + $vat + $platformFee + $stripeFee);
-                $creatorAmount = $amount; // For Rye, amount stored is usually what supporter paid?
-                // Wait, in WishitemController: $ryeProductPayment->amount = $finalTotalAmount;
-                // So for Rye, amount IS the gross amount.
-                // Let's refine this if needed, but for now follow the pattern.
+                $creatorAmount = $amount;
+
+                // Build a breakdown from stored rates so the rate-columns (fee_source,
+                // platform_fee_rate, compliance_fee_rate, fee_profile) are persisted
+                // on the ledger row — matching what every other sync method records.
+                $breakdown = Helpers::calculateStripeDirectChargeFlow(
+                    $amount + $vat,
+                    strtoupper($payment->currency ?? 'GBP'),
+                    0,
+                    $payment->fee_profile ?? 'card',
+                    null,
+                    Helpers::storedFeeRates($payment)
+                );
 
                 $riskData = $this->getPaymentRiskData($payment->stripe_session_id, 'pending', $payment->stripe_payment_intent_id);
                 $status = $riskData['status'];
@@ -156,6 +174,12 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // Persist the rate columns so history is immutable even if the
+                        // creator's deal changes after this payment.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
+                        'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
@@ -252,9 +276,26 @@ class SyncFinancialTransactions extends Command
 
                 $amount = (float) $item['amount'];
                 $vat = (float) ($item['vat_amount'] ?? 0);
-                $platformFee = (float) ($item['tax'] ?? 0);
-                $stripeFee = 0;
-                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $currency = strtoupper($payment->currency ?? 'GBP');
+
+                // Price this row the same way the main wish sync does. It used to read
+                // platform_fee straight off the metadata's `tax` key and hardcode
+                // stripe_fee to 0, so a recovered checkout reported a supporter charge
+                // lower than the card was actually debited and a creator fee total that
+                // was missing Stripe's cut entirely.
+                $breakdown = Helpers::calculateStripeDirectChargeFlow(
+                    $amount + $vat,
+                    $currency,
+                    0,
+                    $payment->fee_profile ?? 'card',
+                    null,
+                    Helpers::storedFeeRates($payment)
+                );
+                $platformFee = (float) $breakdown['application_fee'];
+                $stripeFee = (float) $breakdown['stripe_fee'];
+                $gross = (float) ($paymentItem->total_paid ?: 0) > 0
+                    ? (float) $paymentItem->total_paid
+                    : (float) $breakdown['total_supporter_pays'];
 
                 $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, StripePaymentItems::class, $paymentItem->id);
 
@@ -269,7 +310,10 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
-                        'fee_profile' => $payment->fee_profile ?? 'card',
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
+                        'fee_profile' => $breakdown['fee_profile'] ?? ($payment->fee_profile ?? 'card'),
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $amount,
@@ -559,7 +603,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
 
                 // Use actual fee breakdown for consistent display
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, 'card', null, Helpers::storedFeeRates($payment));
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -586,6 +630,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -632,10 +681,20 @@ class SyncFinancialTransactions extends Command
                 $vat = $this->calculateVatIfMissing($amount, $purchase->vat_amount, $purchase->creator);
 
                 $currency = strtoupper($purchase->currency ?? ($purchase->task?->currency ?? 'GBP'));
-                // TaskPurchase.platform_fee already includes the admin fee — it is
-                // recorded as finalTotal - creatorTransfer, and the pricing engine
-                // bakes the admin fee into the application fee. Adding it again
-                // inflated gross_amount/platform_fee on every task ledger row.
+
+                // Derive a full breakdown from stored rates so fee-rate columns,
+                // compliance_fee and admin_fee are recorded on the ledger row.
+                // TaskPurchase.platform_fee already includes the admin fee — so we
+                // use the breakdown only for the rate columns; the fee amounts are
+                // taken directly from the purchase record to avoid double-counting.
+                $breakdown = Helpers::calculateStripeDirectChargeFlow(
+                    $amount + $vat,
+                    $currency,
+                    0,
+                    $purchase->fee_profile ?? 'card',
+                    null,
+                    Helpers::storedFeeRates($purchase)
+                );
                 $platformFee = (float) ($purchase->platform_fee ?? 0);
                 $stripeFee = 0;
                 $gross = $purchase->total_paid && $purchase->total_paid > 0
@@ -662,6 +721,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $purchase->fee_profile ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -724,7 +788,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
 
                 // Use actual fee breakdown for consistent display
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, 'card', null, Helpers::storedFeeRates($payment));
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -751,6 +815,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -820,7 +889,7 @@ class SyncFinancialTransactions extends Command
 
                 // Use actual fee breakdown for consistent display (honour the
                 // fee profile the payment was actually priced with).
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $item->payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $item->payment->fee_profile ?? 'card', null, Helpers::storedFeeRates($item->payment));
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -847,6 +916,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -909,7 +983,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
 
                 // Use actual fee breakdown for consistent display
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $shippingAmount + $vat, $currency, 0, $payment->fee_profile ?? 'card', null, Helpers::storedFeeRates($payment));
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -936,6 +1010,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -989,7 +1068,7 @@ class SyncFinancialTransactions extends Command
                 $currency = strtoupper($payment->currency ?? 'GBP');
 
                 // Use actual fee breakdown for consistent display
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card', null, Helpers::storedFeeRates($payment));
                 $platformFee = $breakdown['application_fee'];
                 $stripeFee = $breakdown['stripe_fee'];
 
@@ -1016,6 +1095,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -1066,7 +1150,7 @@ class SyncFinancialTransactions extends Command
                 $amount = (float) ($payment->amount ?? 0);
                 $vat = (float) ($payment->vat_amount ?? 0);
 
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card');
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, $currency, 0, $payment->fee_profile ?? 'card', null, Helpers::storedFeeRates($payment));
                 $platformFee = (float) ($breakdown['application_fee'] ?? 0);
                 $stripeFee = (float) ($breakdown['stripe_fee'] ?? 0);
                 $gross = $payment->total_paid && $payment->total_paid > 0
@@ -1098,6 +1182,11 @@ class SyncFinancialTransactions extends Command
                         'type' => 'income',
                         'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
+                        // The rates that priced this charge, carried from the payment row so a
+                        // later change to the creator's deal cannot re-cost this ledger entry.
+                        ...Helpers::feeRateColumns($breakdown),
+                        'compliance_fee' => $breakdown['compliance_fee'] ?? null,
+                        'admin_fee' => $breakdown['admin_fee'] ?? null,
                         'fee_profile' => $breakdown['fee_profile'] ?? 'card',
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
@@ -1110,6 +1199,23 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Ensure the risk engine's Payment table has a row for this contribution
+                // so reserve-hold and payout visibility are consistent with every other
+                // payment type. This call was missing — PiggyPot payments were invisible
+                // to the risk ledger, meaning reserves could not be tracked or released.
+                if ($creator) {
+                    $this->ensureRiskLedgerPayment(
+                        $creator,
+                        $amount,
+                        $currency,
+                        $payment->session_id ? (string) $payment->session_id : null,
+                        $payment->payment_intent_id ? (string) $payment->payment_intent_id : null,
+                        $status,
+                        $payment->created_at,
+                        (float) ($reserve['amount'] ?? 0)
+                    );
+                }
             }
         });
     }

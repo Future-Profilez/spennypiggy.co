@@ -266,17 +266,15 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const profileRejectReason =
         creatorUser?.profile_reject_reason || user?.profile_reject_reason;
     const hasBasicDetails =
-        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
-    const isSubmittedForReview = profileStatusLock == 1 && hasBasicDetails;
-    const isProfileFullyApproved =
-        isSocialApproved &&
-        avatarStatus == 1 &&
-        bioStatus == 1 &&
-        hasSubscription;
+        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio && hasSubscription;
+    const isSubmittedForReview = profileStatusLock == 1;
     const canSubmitForReview =
         profileStatusLock != 1 &&
         profileStatusLock != 2 &&
-        isProfileFullyApproved;
+        hasBasicDetails &&
+        !isSocialRejected &&
+        avatarStatus != 2 &&
+        bioStatus != 2;
 
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -368,10 +366,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     // and the trial is active. Name what's still outstanding — a bare "Locked"
     // tells the creator nothing about why, or what would unlock it.
     const submitBlockers = [
-        !isSocialApproved && "socials",
-        avatarStatus != 1 && "photo",
-        bioStatus != 1 && "bio",
+        !hasAnySocialMedia && "socials",
+        !creatorUser?.avatar && "photo",
+        !creatorUser?.bio && "bio",
         !hasSubscription && "payment method",
+        (isSocialRejected || avatarStatus == 2 || bioStatus == 2) && "fixes for rejected items",
     ].filter(Boolean);
     const listItems = (items) =>
         items.length > 1
@@ -404,9 +403,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 ? "done"
                 : isSocialRejected
                   ? "rejected"
-                  : isSocialPending
-                    ? "pending"
+                  : hasAnySocialMedia
+                    ? (profileStatusLock == 1 ? "pending" : "done")
                     : "todo",
+            approvedState: isSocialApproved ? 1 : 0,
             reason: slinks?.reason,
             reviewNote: REVIEW_NOTE,
             action: (
@@ -433,9 +433,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ? "done"
                     : avatarStatus == 2
                       ? "rejected"
-                      : creatorUser?.avatar && avatarStatus == 0
-                        ? "pending"
+                      : creatorUser?.avatar
+                        ? (profileStatusLock == 1 ? "pending" : "done")
                         : "todo",
+            approvedState: avatarStatus == 1 ? 1 : 0,
             reviewNote: REVIEW_NOTE,
             action: (
                 <EditProfile
@@ -463,9 +464,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ? "done"
                     : bioStatus == 2
                       ? "rejected"
-                      : creatorUser?.bio && bioStatus == 0
-                        ? "pending"
+                      : creatorUser?.bio
+                        ? (profileStatusLock == 1 ? "pending" : "done")
                         : "todo",
+            approvedState: bioStatus == 1 ? 1 : 0,
             reason: creatorUser?.edit_bio_reason || user?.edit_bio_reason,
             reviewNote: REVIEW_NOTE,
             action: (
@@ -490,6 +492,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 "Cancel any time from your account settings",
             ],
             state: hasSubscription ? "done" : "todo",
+            approvedState: hasSubscription,
             action: (
                 <Link className={primaryBtn} href="/activate-subscription">
                     Add your card
@@ -502,7 +505,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             title: "Submit profile for review",
             mins: 1,
             description: canSubmitForReview
-                ? "Everything’s approved — send your profile for final verification."
+                ? "Everything’s ready — send your profile for final verification."
                 : "Send your profile to our team for final approval.",
             hint: [
                 "We check your socials, photo and bio together",
@@ -516,13 +519,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                       : profileRejectReason
                         ? "rejected"
                         : "todo",
+            approvedState: profileStatusLock == 2,
             reason: profileRejectReason,
             reviewNote: REVIEW_NOTE,
             locked: !canSubmitForReview && !profileRejectReason,
             lockReason: submitBlockers.length
-                ? `Unlocks once your ${listItems(submitBlockers)} ${
-                      submitBlockers.length > 1 ? "are" : "is"
-                  } approved.`
+                ? `Unlocks once you add or fix your ${listItems(submitBlockers)}.`
                 : null,
             action: (
                 <Link
@@ -535,12 +537,40 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             ),
         },
         {
+            key: "stripe",
+            label: "Payouts",
+            title: "Connect payments",
+            mins: 3,
+            description:
+                "Connect Stripe so supporters can pay you and money reaches your bank.",
+            hint: [
+                "Your country and bank details",
+                "Takes about 3 minutes on Stripe, then you come straight back",
+            ],
+            state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
+            // ⚠️ Connect comes BEFORE identity (31 July 2026). Stripe Identity
+            // bills the platform per check, so it was moved behind Connect — which
+            // costs us nothing and already demands bank details plus Stripe's own
+            // KYC. Locking Connect on identity would restore the old order and
+            // contradict the dashboard journey card, which reads the new one.
+            locked: profileStatusLock != 2 || !hasSubscription,
+            lockReason:
+                profileStatusLock != 2
+                    ? "Unlocks once your profile is approved."
+                    : "Needs an active subscription.",
+            action: (
+                <Link className={primaryBtn} href="/stripe/authorize">
+                    Connect with Stripe
+                </Link>
+            ),
+        },
+        {
             key: "identity",
             label: "Verify ID",
             title: "Verify your identity",
             mins: 3,
             description:
-                "A quick ID check by Stripe. This unlocks payments on your account.",
+                "A quick ID check by Stripe. You need this before you can list anything for sale.",
             hint: [
                 "A government photo ID — passports only",
                 "A quick selfie on your phone",
@@ -567,11 +597,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             fixSteps: identityError?.whatToDo || [],
             note: identityError?.note || null,
             reviewNote: "Stripe usually decides within a few minutes.",
-            locked: profileStatusLock != 2 || !hasSubscription,
-            lockReason:
-                profileStatusLock != 2
-                    ? "Unlocks once your profile is approved."
-                    : "Needs an active subscription.",
+            locked: creatorUser?.stripe_details_submitted != 1,
+            lockReason: "Unlocks once your payouts are connected.",
             action: (
                 <Link className={primaryBtn} href="/stripe/identity-verification">
                     {identityError
@@ -579,26 +606,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         : creatorUser?.identity_status == 2
                           ? "Check status"
                           : "Verify identity"}
-                </Link>
-            ),
-        },
-        {
-            key: "stripe",
-            label: "Get paid",
-            title: "Connect payments",
-            mins: 3,
-            description:
-                "Connect Stripe so supporters can pay you and money reaches your bank.",
-            hint: [
-                "Your country and bank details",
-                "Takes about 3 minutes on Stripe, then you come straight back",
-            ],
-            state: creatorUser?.stripe_details_submitted == 1 ? "done" : "todo",
-            locked: creatorUser?.identity_status != 1,
-            lockReason: "Unlocks once your identity is verified.",
-            action: (
-                <Link className={primaryBtn} href="/stripe/authorize">
-                    Connect with Stripe
                 </Link>
             ),
         },
@@ -750,7 +757,21 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             step={{
                                 ...s,
                                 note: null,
-                                chip: <StatusChip state="done">Approved</StatusChip>,
+                                chip: (
+                                    <StatusChip state="done">
+                                        {s.key === "trial"
+                                            ? "Connected"
+                                            : s.key === "stripe"
+                                              ? "Connected"
+                                              : s.key === "identity"
+                                                ? "Verified"
+                                                : s.key === "submit"
+                                                  ? "Verified"
+                                                  : s.approvedState === 1
+                                                    ? "Approved"
+                                                    : "Ready"}
+                                    </StatusChip>
+                                ),
                             }}
                         />
                     ))}

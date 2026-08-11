@@ -29,6 +29,10 @@ class TaskPurchase extends Model
     ];
 
     protected $fillable = [
+        'platform_fee_rate',
+        'compliance_fee_rate',
+        'fee_source',
+        'fee_override_id',
         'fee_profile',
         'uuid',
         'task_id',

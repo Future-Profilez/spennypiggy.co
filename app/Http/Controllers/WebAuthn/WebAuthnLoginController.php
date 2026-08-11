@@ -101,6 +101,18 @@ class WebAuthnLoginController extends Controller
                 ], 422);
             }
 
+            // Check if user is suspended
+            if ($user->suspended_account == 1) {
+                auth()->guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.',
+                ], 403);
+            }
+
             // Update credential with last used info
             $credentialId = $request->input('id');
 
@@ -114,6 +126,7 @@ class WebAuthnLoginController extends Controller
 
             if ($credential) {
                 $credential->update([
+                    'credential_id' => $credential->credential_id ?? $credentialId,
                     'last_used_at' => now(),
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),

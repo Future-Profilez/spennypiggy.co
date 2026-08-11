@@ -74,7 +74,7 @@ export default function PiggyPotsGrid({
                                 type="button"
                                 onClick={() => setActivePiggyPot(pot)}
                                 aria-label={`Open ${pot.title}`}
-                                className={`text-left cursor-pointer ${inPopup ? "" : "bg-white border-[3px] border-black hover:-translate-y-1 rounded-box"} transition-all p-4 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
+                                className={`text-left cursor-pointer ${inPopup ? "" : "bg-white border-[3px] border-black hover:-translate-y-1 rounded-box"} transition-all p-3 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
                             >
                                 <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
@@ -145,11 +145,11 @@ export default function PiggyPotsGrid({
                                     </div>
                                 )}
                                 <div className="mt-3 flex justify-between items-center flex-shrink-0">
-                                    <span className="text-xs font-black text-gray-600 uppercase tracking-wider">
-                                        Progress
+                                   
+                                    <span className="font-black text-sm text-pink-600">
+                                        {money(raised, pot.currency)} 
                                     </span>
-                                    <span className="font-black text-pink-600">
-                                        {money(raised, pot.currency)} /{" "}
+                                    <span className="font-black text-sm text-pink-600">
                                         {money(target, pot.currency)}
                                     </span>
                                 </div>

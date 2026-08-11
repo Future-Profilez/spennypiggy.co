@@ -6,6 +6,7 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\BillPayment;
 use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\Follow;
 use App\Models\MembershipPayment;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Models\WishItemSubscription;
 use App\Services\LeaderboardMovementService;
 use App\Services\VipScoreService;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -30,6 +32,19 @@ use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
 {
+    /**
+     * ⚠️ BUMP THE SUFFIX whenever the shape of a cached row changes.
+     *
+     * The board is cached for up to two hours, so a payload that gains a field
+     * keeps being served without it until the entry expires — and the frontend
+     * silently falls back. Adding `verified_badge` did exactly that: every
+     * creator on the leaderboard rendered the grey basic badge while their own
+     * profile, which is not cached, showed pink.
+     */
+    public const BOARD_CACHE_KEY = 'leaderboard_board_v2_';
+
+    public const BUNDLE_CACHE_KEY = 'leaderboard_bundle_v2';
+
     /** Every leaderboard period the platform offers, in display order. */
     public const PERIODS = ['daily', 'weekly', 'monthly', 'quarterly', 'annual', 'all'];
 
@@ -82,7 +97,7 @@ class LeaderBoardController extends Controller
     private function rankedBoard(?string $type): array
     {
         $period = $type ?: 'all';
-        $key = 'leaderboard_board_'.$period;
+        $key = self::BOARD_CACHE_KEY.$period;
 
         $cached = Cache::get($key);
         if (is_array($cached) && $cached !== []) {
@@ -101,7 +116,9 @@ class LeaderBoardController extends Controller
                 'rank' => $rank,
                 'name' => $user->name ?? '',
                 'username' => $user->username ?? '',
-                'profile_status_lock' => $user->profile_status_lock,
+                'profile_status_lock' => $user->profile_status_lockNone,
+                'verified_badge' => VerifiedBadge::tierFor($user),
+                'is_founder' => $user->is_founder ?? false,
                 'role' => $user->role,
                 'avatar' => $user->avatar_url,
                 'coverimg' => $user->cover_url,
@@ -284,7 +301,7 @@ class LeaderBoardController extends Controller
             'top_supporters' => fn () => $this->topSupportersByFrequency(),
         ];
 
-        $payload = Cache::get('leaderboard_bundle');
+        $payload = Cache::get(self::BUNDLE_CACHE_KEY);
 
         if (! is_array($payload)) {
             $payload = [];
@@ -305,7 +322,7 @@ class LeaderBoardController extends Controller
             // symptom, not a result. Caching it would hold the whole sidebar
             // dead for the full TTL after the cause had already cleared.
             if (array_filter($payload) !== []) {
-                Cache::put('leaderboard_bundle', $payload, 900);
+                Cache::put(self::BUNDLE_CACHE_KEY, $payload, 900);
             }
         }
 
@@ -329,7 +346,7 @@ class LeaderBoardController extends Controller
 
         // Their row has to appear or disappear now, not when the cache expires.
         foreach (self::PERIODS as $period) {
-            Cache::forget('leaderboard_board_'.$period);
+            Cache::forget(self::BOARD_CACHE_KEY.$period);
         }
 
         return response()->json([
@@ -444,7 +461,7 @@ class LeaderBoardController extends Controller
                 },
             ])
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency']);
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'default_currency']);
 
         $users->map(function ($user) {
             // Calculate monetary metrics (for backward compatibility)
@@ -549,7 +566,7 @@ class LeaderBoardController extends Controller
                 ])
                 ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips'))
                 ->take(3)
-                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role']);
+                ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role']);
 
             $data = [];
             $rank = 1;
@@ -560,7 +577,9 @@ class LeaderBoardController extends Controller
                     'username' => $query->username ?? '',
                     'avatar' => $query->avatar_url,
                     'coverimg' => $query->cover_url,
-                    'profile_status_lock' => $query->profile_status_lock,
+                    'profile_status_lock' => $query->profile_status_lockNone,
+                    'verified_badge' => VerifiedBadge::tierFor($query),
+                    'is_founder' => $query->is_founder ?? false,
                     'role' => $query->role,
                     'top' => $rank / 100,
                 ];
@@ -726,6 +745,8 @@ class LeaderBoardController extends Controller
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'amount' => $item->amount,
                         'currency' => $item->payment->currency,
                         'created_at' => $item->created_at,
@@ -755,6 +776,8 @@ class LeaderBoardController extends Controller
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'verified_badge' => VerifiedBadge::tierFor($user),
+                    'is_founder' => $user->is_founder ?? false,
                     'amount' => $sub->amount,
                     'currency' => $sub->currency,
                     'created_at' => $sub->created_at,
@@ -783,6 +806,8 @@ class LeaderBoardController extends Controller
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'verified_badge' => VerifiedBadge::tierFor($user),
+                    'is_founder' => $user->is_founder ?? false,
                     'amount' => $tip->amount,
                     'currency' => $tip->currency,
                     'created_at' => $tip->created_at,
@@ -811,6 +836,8 @@ class LeaderBoardController extends Controller
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'verified_badge' => VerifiedBadge::tierFor($user),
+                    'is_founder' => $user->is_founder ?? false,
                     'amount' => $member->amount,
                     'currency' => $member->currency,
                     'created_at' => $member->created_at,
@@ -839,6 +866,8 @@ class LeaderBoardController extends Controller
                     'cover_url' => $user->cover_url ?? 'Anonymous',
                     'role' => $user->role ?? 'Anonymous',
                     'profile_status_lock' => $user->profile_status_lock ?? 1,
+                    'verified_badge' => VerifiedBadge::tierFor($user),
+                    'is_founder' => $user->is_founder ?? false,
                     'amount' => $bill->amount,
                     'currency' => $bill->currency,
                     'created_at' => $bill->created_at,
@@ -1077,6 +1106,8 @@ class LeaderBoardController extends Controller
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'amount' => 0,
                         'currency' => 'GBP',
                     ];
@@ -1199,6 +1230,8 @@ class LeaderBoardController extends Controller
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'amount' => $amount,
                         'currency' => $currency,
                         'created_at' => $createdAt,
@@ -1313,7 +1346,9 @@ class LeaderBoardController extends Controller
                 'rank' => $rank,
                 'name' => $query->name ?? '',
                 'username' => $query->username ?? '',
-                'profile_status_lock' => $query->profile_status_lock,
+                'profile_status_lock' => $query->profile_status_lockNone,
+                'verified_badge' => VerifiedBadge::tierFor($query),
+                'is_founder' => $query->is_founder ?? false,
                 'role' => $query->role,
                 'avatar' => $query->avatar_url,
                 'coverimg' => $query->cover_url,
@@ -1382,6 +1417,8 @@ class LeaderBoardController extends Controller
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'gift_count' => 0,
                         'currency' => $currency,
                         'support_types' => [],
@@ -1522,7 +1559,28 @@ class LeaderBoardController extends Controller
             $incomeTx->whereBetween('transaction_date', [$start, $end]);
         }
 
-        $incomeTx = $incomeTx->get(['net_amount', 'currency', 'source_type']);
+        $incomeTx = $incomeTx->with(['source' => function ($morph) {
+            $morph->morphWith([
+                ShopPayment::class => ['shop'],
+            ]);
+        }])->get(['net_amount', 'currency', 'source_type', 'source_id', 'vat_amount']);
+
+        // Collect Shop session IDs to resolve physical item delivery status
+        $shopSessionIds = $incomeTx->where('source_type', 'App\Models\ShopPayment')
+            ->pluck('source.session_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $deliverableStatusBySession = empty($shopSessionIds)
+            ? []
+            : Deliverable::whereIn('session_id', $shopSessionIds)
+                ->orderBy('id')
+                ->get(['session_id', 'status'])
+                ->groupBy('session_id')
+                ->map(fn ($rows) => $rows->first()->status)
+                ->all();
 
         $allCurrencies = $incomeTx
             ->pluck('currency')
@@ -1580,6 +1638,23 @@ class LeaderBoardController extends Controller
 
         $buckets = [];
         foreach ($incomeTx as $tx) {
+            // Task Completion Logic: Only count if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $status = $deliverableStatusBySession[$tx->source->session_id] ?? null;
+                    if ($status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
             $meta = $labelForSource($tx->source_type);
             $tag = $meta['tag'];
             if (! isset($buckets[$tag])) {
@@ -1591,7 +1666,10 @@ class LeaderBoardController extends Controller
             }
 
             $from = strtoupper($tx->currency ?? 'GBP');
-            $amount = (float) ($tx->net_amount ?? 0);
+            $net = (float) ($tx->net_amount ?? 0);
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $amount = $net + $vat; // Gross earnings matches Gross Display!
+
             $buckets[$tag]['amount'] += $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         }
 
@@ -2110,6 +2188,145 @@ class LeaderBoardController extends Controller
         ]);
     }
 
+    public function topSupporters($type = 'all')
+    {
+        $user = User::where('id', Auth::id())->first();
+        [$start, $end] = $this->getRange($type);
+        $displayCurrency = strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'));
+
+        $supporterTx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->whereIn('status', ['completed', 'review_hold', 'disputed'])
+            ->whereBetween('transaction_date', [$start, $end])
+            ->whereNotNull('supporter_id')
+            ->with(['supporter:id,name,username,avatar', 'source' => function ($morph) {
+                $morph->morphWith([
+                    ShopPayment::class => ['shop'],
+                ]);
+            }])
+            ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date', 'status', 'source_id', 'vat_amount']);
+
+        $allCurrencies = $supporterTx
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
+
+        if (! isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+            $displayCurrency = 'GBP';
+        }
+
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) {
+                return $amount;
+            }
+            if (! isset($currencyMeta[$from]) || ! isset($currencyMeta[$to])) {
+                return null;
+            }
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
+            $gbp = $amount / $fromRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
+        };
+
+        // Collect Shop session IDs to resolve physical item delivery status
+        $shopSessionIds = $supporterTx->where('source_type', 'App\Models\ShopPayment')
+            ->pluck('source.session_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $deliverableStatusBySession = empty($shopSessionIds)
+            ? []
+            : Deliverable::whereIn('session_id', $shopSessionIds)
+                ->orderBy('id')
+                ->get(['session_id', 'status'])
+                ->groupBy('session_id')
+                ->map(fn ($rows) => $rows->first()->status)
+                ->all();
+
+        $supporters = [];
+        foreach ($supporterTx as $tx) {
+            // Task Completion Logic: Only count if completed
+            if ($tx->source_type === 'App\Models\TaskPurchase' && isset($tx->source->status)) {
+                if (! in_array($tx->source->status, ['completed', 'completed_accepted', 'paid_out'])) {
+                    continue;
+                }
+            }
+
+            // Shop Completion Logic: Only count if delivered (for physical items)
+            if ($tx->source_type === 'App\Models\ShopPayment' && isset($tx->source->shop)) {
+                if ($tx->source->shop->type === 'physical') {
+                    $status = $deliverableStatusBySession[$tx->source->session_id] ?? null;
+                    if ($status !== 'delivered') {
+                        continue;
+                    }
+                }
+            }
+
+            $supporter = $tx->supporter;
+            if (! $supporter) {
+                continue;
+            }
+
+            $username = $supporter->username;
+            if (! isset($supporters[$username])) {
+                $supporters[$username] = [
+                    'username' => $username,
+                    'name' => $supporter->name ?? 'Anonymous',
+                    'media' => $supporter->avatar_url,
+                    'amount' => 0.0,
+                    'has_hold' => false,
+                    'has_dispute' => false,
+                ];
+            }
+
+            // Only aggregate the amount if the transaction was completed successfully
+            if ($tx->status === 'completed') {
+                $from = strtoupper($tx->currency ?? 'GBP');
+                $net = (float) ($tx->net_amount ?? 0);
+                $vat = (float) ($tx->vat_amount ?? 0);
+                $gross = $net + $vat;
+
+                $supporters[$username]['amount'] += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
+            }
+
+            if ($tx->status === 'review_hold') {
+                $supporters[$username]['has_hold'] = true;
+            }
+            if ($tx->status === 'disputed') {
+                $supporters[$username]['has_dispute'] = true;
+            }
+        }
+
+        $resp = collect($supporters)
+            ->sortByDesc('amount')
+            ->take(5)
+            ->values()
+            ->all();
+
+        return response()->json([
+            'status' => true,
+            'data' => $resp,
+        ]);
+    }
+
     /**
      * Get category leaders for different types of support
      */
@@ -2165,7 +2382,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_payments,
                         'total_count' => $user->total_count,
@@ -2211,7 +2430,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_subscriptions,
                         'total_count' => $user->total_count,
@@ -2257,7 +2478,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_tips,
                         'total_count' => $user->total_count,
@@ -2303,7 +2526,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_memberships,
                         'total_count' => $user->total_count,
@@ -2349,7 +2574,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_bills,
                         'total_count' => $user->total_count,
@@ -2395,7 +2622,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'total_amount' => (float) $user->total_shop,
                         'total_count' => $user->total_count,
@@ -2463,6 +2692,8 @@ class LeaderBoardController extends Controller
                         'cover_url' => $user->cover_url ?? null,
                         'role' => $user->role ?? 0,
                         'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'total_amount' => 0,
                         'total_gifts' => 0,
                         'creators_supported' => [],
@@ -2725,7 +2956,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'supporters' => $user->followers_count,
                         'growth_percentage' => $growthPercent,
@@ -2754,7 +2987,9 @@ class LeaderBoardController extends Controller
                         'name' => $user->name,
                         'username' => $user->username,
                         'avatar_url' => $user->avatar_url,
-                        'profile_status_lock' => $user->profile_status_lock,
+                        'profile_status_lock' => $user->profile_status_lockNone,
+                        'verified_badge' => VerifiedBadge::tierFor($user),
+                        'is_founder' => $user->is_founder ?? false,
                         'role' => $user->role,
                         'supporters' => $user->followers_count,
                         'growth_percentage' => $growthPercent,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
+use App\Models\Concerns\HasScheduledPublishing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,11 +11,13 @@ use Ramsey\Uuid\Uuid;
 
 class Bills extends Model
 {
-    use HasFactory, HasRewardContract, SoftDeletes;
+    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     protected $table = 'bills';
 
     protected $fillable = [
+        'publish_at',
+        'schedule_released_at',
         'uuid',
         'user_id',
         'product_id',
@@ -51,6 +54,11 @@ class Bills extends Model
         'engagement_level',
         'trending_status',
         'is_suspended',
+    ];
+
+    protected $casts = [
+        'publish_at' => 'datetime',
+        'schedule_released_at' => 'datetime',
     ];
 
     protected $appends = [

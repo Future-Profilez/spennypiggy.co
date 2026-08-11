@@ -1,10 +1,10 @@
 import { Link } from "@inertiajs/react";
-import { RiVerifiedBadgeFill } from "react-icons/ri";
+import VerifiedBadge from "@/Components/VerifiedBadge";
 import FounderBadge from "@/Components/FounderBadge";
 
 const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
 
-export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick, nolink }) {
+export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, verified_badge, imageSrc, name, username, subhead, url, link, is_founder, onClick, nolink }) {
 
   return (
     <>
@@ -88,15 +88,19 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                   e.target.src = defaultAvatar;
                 }}
               />
-              {role && profile_status_lock && (
-                is_founder ? (
-                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-[4px_4px_0px_0px_#FF007F]l border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
-                ) : (
-                  <RiVerifiedBadgeFill
-                    size="1.5rem"
-                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-[4px_4px_0px_0px_#FF007F]l rounded-full border border-2 !border-[#FF007F] rounded-full p-[1px]"
-                  />
-                )
+              {/* 🚨 This used to read `role && profile_status_lock`, which is a
+                  TRUTHINESS check: `1` means "pending admin review", so every
+                  creator waiting to be approved was already wearing the verified
+                  tick. The tier now comes from the server, where 2 is the only
+                  value that means approved. */}
+              {is_founder ? (
+                <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+              ) : (
+                <VerifiedBadge
+                  user={{ role, profile_status_lock, verified_badge }}
+                  size="lg"
+                  className="absolute top-[-5px] right-[-5px] bg-white !shadow-xl rounded-full p-[1px]"
+                />
               )}
             </div>
             {hidename ? "" : 

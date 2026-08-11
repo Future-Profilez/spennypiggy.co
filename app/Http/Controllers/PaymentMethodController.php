@@ -27,6 +27,14 @@ class PaymentMethodController extends Controller
             'currency' => ['required', 'string', 'size:3'],
             'charge_currency' => ['nullable', 'string', 'size:3'],
             'reserve_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            // Whose listing this is. Without it a creator on a bespoke rate is
+            // QUOTED the standard price and CHARGED their own — the preview must
+            // resolve exactly what checkout will resolve.
+            //
+            // Safe on a public endpoint: it discloses nothing a visitor cannot
+            // already read off the listing page, and unlike `email` it cannot be
+            // used to probe anyone's risk state.
+            'creator_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $itemCurrency = strtoupper($validated['currency']);
@@ -38,7 +46,12 @@ class PaymentMethodController extends Controller
 
         $reserveRate = (float) ($validated['reserve_rate'] ?? 0);
 
-        $prices = PaymentMethodPricingService::dualPrices($listedPrice, $chargeCurrency, $reserveRate);
+        $prices = PaymentMethodPricingService::dualPrices(
+            $listedPrice,
+            $chargeCurrency,
+            $reserveRate,
+            isset($validated['creator_id']) ? (int) $validated['creator_id'] : null
+        );
 
         // Preview is non-binding and publicly reachable (throttle 60/min), so it
         // resolves tier rules from the AMOUNT ONLY — no buyer risk lookup. That

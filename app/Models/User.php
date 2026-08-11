@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\CreatorActivityService;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -87,6 +88,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'stripe_connected_at' => 'datetime',
         'content_posting_paused_at' => 'datetime',
         'content_posting_warned_at' => 'datetime',
+        // Deliberately NOT in $fillable: it is a Super Admin commercial control
+        // set from the admin app, and nothing on the website should be able to
+        // flip it through mass assignment. Write it with forceFill()->save().
+        'bonus_scheme_eligible' => 'boolean',
         // Written by CreatorJourneyService, read by the admin app's onboarding drip.
         'journey_step_at' => 'datetime',
         'journey_completed_at' => 'datetime',
@@ -122,6 +127,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'upcoming_payment_date',
         'subscription_end',
         'is_subscription_cancelled',
+        // Pure — it reads columns already on the row and issues no query, so
+        // unlike most of this list it is safe on a paginated payload. See
+        // `VerifiedBadge::COLUMNS` for what a builder has to select.
+        'verified_badge',
     ];
 
     protected $with = ['social_links'];
@@ -241,6 +250,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return Auth::check() && ! empty($this->id) && (int) Auth::id() === (int) $this->id;
     }
 
+    /**
+     * `basic` (grey), `creator` (pink), or null.
+     *
+     * ⚠️ Reads only columns on this row — no query — which is why it is safe in
+     * `$appends`. It is also why a builder that does not select
+     * `VerifiedBadge::COLUMNS` renders a verified creator as unverified: a
+     * missing attribute is null, and null is not approved.
+     */
+    public function getVerifiedBadgeAttribute(): ?string
+    {
+        return VerifiedBadge::tierFor($this);
+    }
+
     public function getAvatarUrlAttribute()
     {
         if (! $this->avatar || ! $this->profileMediaVisible('avatar_approved')) {
@@ -324,6 +346,14 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             // Find the currently active subscription period (same logic as account route)
             $now = Carbon::now();
             $subscription = MonthlyCharge::where('user_id', $this->id)
+                // ⚠️ A dead row must never describe the creator's current state.
+                // An abandoned checkout ('initiated') and a written-off period
+                // ('expired') both keep whatever trial dates they were given, so
+                // the date match below found an OLD one and returned its status
+                // while a newer, live row sat behind it — the creator was asked to
+                // add a card they had already added. `latest('id')` only orders
+                // WITHIN whatever this matches, so it cannot save us here.
+                ->whereNotIn('status', ['initiated', 'expired'])
                 ->where(function ($query) use ($now) {
                     $query->where(function ($q) use ($now) {
                         // Active subscription period
@@ -694,6 +724,62 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return $this->hasOne(GifterCardVerification::class, 'user_id');
     }
 
+    /**
+     * Is this account still blocked by the £500 spend gate?
+     *
+     * 🚨 THE ONE DEFINITION. It was previously spread across a middleware on five
+     * routes and an inline call in eight controllers that answered a different
+     * question — `Helpers::checkGifterCardVerificationStatus()` returned true only
+     * on the single request that flipped the flag from 0 to 1, so the next
+     * purchase went straight through. Shop, Paid Tasks, Piggy Pot and the Piggy
+     * Bank had no middleware at all, which meant the gate stopped somebody once
+     * and then never again.
+     *
+     * ⚠️ The two roles finish differently, and that is deliberate:
+     *
+     *  - a GIFTER must pay the charge AND wait for an admin to compare the
+     *    address they gave us against the one their bank returned. That review is
+     *    what `profile_status_lock = 2` records for them.
+     *  - a CREATOR only has to pay the charge. Their account is already approved
+     *    as a creator, and `profile_status_lock` for them means "your profile was
+     *    reviewed" — a state they usually reached long before they ever spent
+     *    anything. Reading it as the address verdict would either wave every
+     *    approved creator through unchecked or block them on a decision nobody is
+     *    being asked to take.
+     */
+    public function requiresCardVerification(): bool
+    {
+        if (! $this->is_500_limit_exceeded) {
+            return false;
+        }
+
+        if (! in_array((int) $this->role, [0, 1], true)) {
+            return false;
+        }
+
+        $verified = $this->gifterCardVerification()
+            ->where('status', 'success')
+            ->exists();
+
+        if (! $verified) {
+            return true;
+        }
+
+        return (int) $this->role === 0 && (int) $this->profile_status_lock !== 2;
+    }
+
+    /**
+     * The billing address the gifter typed themselves.
+     *
+     * Created at signup with `country` only; the rest is filled at the £500
+     * card-verification gate. Compared against `stripe_address` (what they typed
+     * into Stripe Checkout) by the admin app's gifter review.
+     */
+    public function gifterAddress()
+    {
+        return $this->hasOne(GifterAddress::class, 'user_id');
+    }
+
     public function creatorMonthlySubscription()
     {
         return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany('id');
@@ -909,10 +995,39 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     }
 
     /**
+     * Is this creator eligible for the standard bonus schemes and promotional
+     * incentives (Founder, Fast Start, referral payouts)?
+     *
+     * The single definition — every bonus path reads this rather than checking
+     * the column itself, so turning a creator off cannot be honoured in three
+     * places and missed in a fourth.
+     *
+     * Deliberately independent of custom pricing (client decision, 3 Aug 2026):
+     * a creator on a bespoke rate may still be bonus eligible, and a creator on
+     * standard pricing may be excluded. The two are separate Super Admin calls.
+     *
+     * A missing or NULL column reads as ELIGIBLE, matching the DB default and
+     * the rule used by every other preference flag on this model — a column that
+     * was not selected is not evidence of exclusion.
+     */
+    public function isBonusEligible(): bool
+    {
+        return (bool) ($this->bonus_scheme_eligible ?? true);
+    }
+
+    /**
      * Check if user is currently eligible for founder program qualification
      */
     public function isEligibleForFounder()
     {
+        // A creator on a bespoke commercial arrangement is excluded from the
+        // standard bonus schemes unless a Super Admin has explicitly said
+        // otherwise — the two are separate switches, so this reads the flag, not
+        // whether they happen to be on a custom rate.
+        if (! $this->isBonusEligible()) {
+            return false;
+        }
+
         if ($this->is_founder || $this->stripe_connected_at === null) {
             return false;
         }

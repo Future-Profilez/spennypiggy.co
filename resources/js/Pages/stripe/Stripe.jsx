@@ -6,9 +6,15 @@ import { useState, useEffect } from "react";
 import { useRef } from "react";
 
 // ── Journey rail ────────────────────────────────────────────────────────────
-// The five gates a creator crosses to get paid are a real ordered sequence, so
+// The gates a creator crosses to get paid are a real ordered sequence, so
 // numbering carries information (where you are, what's left). Completed segments
 // fill mint — the piggy filling up — which is the one signature note on the page.
+//
+// ⚠️ The steps come from the SERVER (`journey_steps`, built by
+// CreatorJourneyService::stepStates). This file used to hold its own array, and
+// it still listed identity before connect after that order was reversed on
+// 31 July 2026 — so the rail said "Identity verified — you're here" while the
+// panel beneath it said "Connect your payments". Never hardcode the order here.
 function StepNode({ index, done, current }) {
     const base =
         "relative z-10 grid place-items-center w-9 h-9 shrink-0 rounded-full border-2 border-black font-gulfs text-sm transition-colors";
@@ -30,7 +36,15 @@ function JourneyRail({ steps, activeIndex }) {
             {steps.map((s, i) => {
                 const current = i === activeIndex;
                 const last = i === steps.length - 1;
-                const status = s.done ? "Done" : current ? "You’re here" : "Next";
+                // "With us" is not "your turn" — a step the creator has finished
+                // and an admin has not yet approved must not read as a task.
+                const status = s.done
+                    ? "Done"
+                    : s.awaiting_review
+                      ? "With us"
+                      : current
+                        ? "You’re here"
+                        : "Next";
                 return (
                     <li key={s.key} className="relative flex gap-4 pb-5 last:pb-0">
                         {!last && (
@@ -100,8 +114,16 @@ const Spinner = ({ label }) => (
 );
 
 export default function Stripe(props) {
-    const { auth, user, success, mor_consent_given, mor_consent_details } =
-        props;
+    const {
+        auth,
+        user,
+        success,
+        mor_consent_given,
+        mor_consent_details,
+        has_account,
+        account_country,
+        journey_steps,
+    } = props;
     const checkRef = useRef();
     const creatorEmailReceiptAckRef = useRef();
     const { errorAlert, successAlert } = useAlerts();
@@ -143,20 +165,29 @@ export default function Stripe(props) {
     const [termsAccepted, setTermsAccepted] = useState(false);
 
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
-    const identityVerified = auth?.user?.identity_status == 1;
-    const connectDone = auth?.user?.stripe_details_submitted == 1;
     const creatorEmailReceiptAcked = !!auth?.user
         ?.creator_email_receipt_acknowledged_at;
 
-    // The whole journey, so a creator always sees where they are and what's left.
-    const steps = [
-        { key: "profile", label: "Profile approved", done: finalStepsUnlocked },
-        { key: "identity", label: "Identity verified", done: identityVerified },
-        { key: "agreement", label: "Seller agreement", done: !!mor_consent_given },
-        { key: "connect", label: "Connect payments", done: connectDone },
-        { key: "paid", label: "Ready to earn", done: connectDone },
-    ];
+    // ⚠️ Server-owned. See the JourneyRail comment — the order is a product
+    // decision and lives in CreatorJourneyService::STEPS, never here.
+    const steps = journey_steps || [];
     const activeIndex = steps.findIndex((s) => !s.done);
+
+    // Where "connect payouts" sits in the rail, so the panel heading can say the
+    // real step number instead of a literal that goes stale the moment a step is
+    // added — which is exactly how this page came to say "Step 4 of 5" while the
+    // rail beside it was pointing at a different row.
+    const connectIndex = steps.findIndex((s) => s.key === "stripe");
+    const stepLabel =
+        connectIndex >= 0
+            ? `Step ${connectIndex + 1} of ${steps.length}`
+            : "Connect payments";
+
+    // A creator who started onboarding and backed out already HAS an account, and
+    // an account's country is fixed at creation — so re-asking for one is a
+    // question with no effect. initConnect also skips the terms gate once an
+    // account exists, so the whole form collapses to a single resume action.
+    const resuming = !!has_account;
 
     // Show success message if redirected after consent AND scroll to top
     useEffect(() => {
@@ -168,13 +199,16 @@ export default function Stripe(props) {
 
     // Every gate the server also enforces, so the button can never be the only
     // thing standing between an un-consented creator and a Stripe account.
+    // Resuming skips the ones the server itself skips for an existing account.
     const canConnect =
         !connecting &&
         finalStepsUnlocked &&
         !!mor_consent_given &&
-        !!country &&
-        termsAccepted &&
-        (creatorEmailReceiptAcked || !!data.creator_email_receipt_ack);
+        (resuming ||
+            (!!country &&
+                termsAccepted &&
+                (creatorEmailReceiptAcked ||
+                    !!data.creator_email_receipt_ack)));
 
     // Only show consent details if consent was given before this session
     const showConsentDetails = mor_consent_details && !success;
@@ -210,10 +244,6 @@ export default function Stripe(props) {
     };
 
     const checkTerms = () => {
-        if (country == "") {
-            errorAlert("Please choose your country.");
-            return false;
-        }
         if (!finalStepsUnlocked) {
             errorAlert(
                 "Complete admin profile approval before connecting Stripe.",
@@ -224,24 +254,33 @@ export default function Stripe(props) {
             errorAlert("You must agree to the Merchant of Record terms first.");
             return false;
         }
-        if (!creatorEmailReceiptAcked && !data.creator_email_receipt_ack) {
-            errorAlert(
-                "Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.",
-            );
-            creatorEmailReceiptAckRef.current?.focus();
-            return false;
-        }
-        if (!termsAccepted) {
-            errorAlert("Please accept the terms & conditions to continue.");
-            checkRef.current?.focus();
-            return false;
+        // An existing account has already passed all of these on its first
+        // connect, and the server skips them too — asking again would be asking
+        // a creator to re-agree to things they cannot change.
+        if (!resuming) {
+            if (country == "") {
+                errorAlert("Please choose your country.");
+                return false;
+            }
+            if (!creatorEmailReceiptAcked && !data.creator_email_receipt_ack) {
+                errorAlert(
+                    "Please confirm you understand your creator e-mail address may appear on supporter transaction records and receipts.",
+                );
+                creatorEmailReceiptAckRef.current?.focus();
+                return false;
+            }
+            if (!termsAccepted) {
+                errorAlert("Please accept the terms & conditions to continue.");
+                checkRef.current?.focus();
+                return false;
+            }
         }
 
         setConnecting(true);
 
         post(
             route("stripe.connect", {
-                country: country,
+                country: resuming ? account_country : country,
                 currency: countryCurrency,
             }),
             {
@@ -406,14 +445,16 @@ export default function Stripe(props) {
                             </div>
                         </div>
                     ) : (
-                        // ── Step 4: Connect payments ──
+                        // ── Connect payments ──
                         <div className={cardCls}>
                             <div className="bg-black text-white px-6 py-4">
                                 <p className="text-[11px] font-bold uppercase tracking-widest text-mint">
-                                    Step 4 of 5
+                                    {stepLabel}
                                 </p>
                                 <h2 className="font-gulfs uppercase text-xl">
-                                    Connect your payments
+                                    {resuming
+                                        ? "Finish your Stripe setup"
+                                        : "Connect your payments"}
                                 </h2>
                             </div>
 
@@ -425,13 +466,15 @@ export default function Stripe(props) {
                                         <span className="font-bold">
                                             What happens next:
                                         </span>{" "}
-                                        we’ll take you to Stripe to verify your
-                                        details securely. It takes about 3 minutes,
-                                        then you’ll come straight back here.
+                                        {resuming
+                                            ? "we’ll take you back to Stripe, right where you left off. Nothing you already entered is lost."
+                                            : "we’ll take you to Stripe to verify your details securely. It takes about 3 minutes, then you’ll come straight back here."}
                                     </p>
                                 </div>
 
                                 {/* Content-only checklist (calm, not alarming) */}
+                                {!resuming && (
+                                    <>
                                 <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">
                                     Before you connect, keep your profile
                                     content-only
@@ -528,6 +571,8 @@ export default function Stripe(props) {
                                         profile.
                                     </span>
                                 </label>
+                                    </>
+                                )}
 
                                 <button
                                     onClick={checkTerms}
@@ -540,6 +585,8 @@ export default function Stripe(props) {
                                 >
                                     {connecting ? (
                                         <Spinner label="Taking you to Stripe…" />
+                                    ) : resuming ? (
+                                        "Resume Stripe setup"
                                     ) : (
                                         "Connect with Stripe"
                                     )}

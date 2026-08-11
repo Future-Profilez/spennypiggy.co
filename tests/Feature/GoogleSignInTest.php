@@ -6,7 +6,9 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Models\AllowedDomain;
 use App\Models\GifterAddress;
 use App\Models\User;
+use App\Models\UserBackupCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 use PragmaRX\Google2FALaravel\Google2FA;
@@ -216,8 +218,12 @@ class GoogleSignInTest extends TestCase
 
         // The address row carries country only; the rest arrives from Stripe at first purchase,
         // and reading those NULL encrypted columns must not throw.
+        //
+        // ⚠️ The ISO CODE, not the display label. This used to store "United Kingdom"
+        // until the first purchase replaced it with Stripe's "GB", so the same column
+        // meant two different things depending on how far through the funnel someone got.
         $address = GifterAddress::where('user_id', $user->id)->first();
-        $this->assertSame('United Kingdom', $address->country);
+        $this->assertSame('GB', $address->country);
         $this->assertNull($address->street_address);
     }
 
@@ -679,5 +685,181 @@ class GoogleSignInTest extends TestCase
             'javascript scheme' => ['javascript:alert(1)'],
             'whitespace padded' => ['  https://evil.example.com  '],
         ];
+    }
+
+    /**
+     * ⚠️ The 2FA branch used to `return` before the lines that read `google_signup_context`, so a
+     * referred or deep-linked sign-in silently lost both the redirect target and the attribution
+     * the moment the account had two-factor on. Nothing errored and nothing was logged, which is
+     * why it survived — the creator simply never got their credit.
+     */
+    public function test_a_2fa_signin_keeps_its_redirect_target_across_the_otp_step(): void
+    {
+        config(['services.google.client_id' => 'client_id', 'services.google.client_secret' => 'client_secret']);
+
+        User::factory()->create(['email' => 'twofa@gmail.com', 'is_2fa' => 1]);
+        $this->mockSocialiteGoogle(['email' => 'twofa@gmail.com']);
+
+        $this->withSession([
+            'google_signup_context' => ['redirect' => '/dashboard', 'ref' => 'creatorscode'],
+        ])->get('/auth/google/callback')->assertRedirect(route('login'));
+
+        $this->assertSame(
+            '/dashboard',
+            session('url.intended'),
+            'A 2FA sign-in must carry its redirect target across the OTP step.'
+        );
+    }
+
+    /** The spent context must not be left behind on the 2FA branch either. */
+    public function test_a_2fa_signin_clears_the_google_context(): void
+    {
+        config(['services.google.client_id' => 'client_id', 'services.google.client_secret' => 'client_secret']);
+
+        User::factory()->create(['email' => 'twofa@gmail.com', 'is_2fa' => 1]);
+        $this->mockSocialiteGoogle(['email' => 'twofa@gmail.com']);
+
+        $this->withSession([
+            'google_signup_context' => ['redirect' => '/dashboard'],
+        ])->get('/auth/google/callback');
+
+        $this->assertNull(session('google_signup_context'));
+    }
+
+    /** The redirect guard applies on this branch too — it must not become a way around it. */
+    public function test_a_2fa_signin_ignores_a_hostile_redirect_target(): void
+    {
+        config(['services.google.client_id' => 'client_id', 'services.google.client_secret' => 'client_secret']);
+
+        User::factory()->create(['email' => 'twofa@gmail.com', 'is_2fa' => 1]);
+        $this->mockSocialiteGoogle(['email' => 'twofa@gmail.com']);
+
+        $this->withSession([
+            'google_signup_context' => ['redirect' => 'https://evil.example.com/steal'],
+        ])->get('/auth/google/callback');
+
+        $this->assertNull(session('url.intended'));
+    }
+
+    /**
+     * 🚨 `signIn()` refuses a suspended account, but it does so up to
+     * `PENDING_TTL_MINUTES` (15) before the OTP is entered. An admin suspending someone inside
+     * that window was being overridden — the person still completed a full remembered session.
+     */
+    public function test_a_suspended_account_cannot_finish_the_google_2fa_login(): void
+    {
+        $secret = app(Google2FA::class)->generateSecretKey();
+
+        $user = User::factory()->create([
+            'email' => 'twofa@gmail.com',
+            'is_2fa' => 1,
+            'tfa_key' => $secret,
+        ]);
+
+        // Started the flow while in good standing…
+        $this->withSession([
+            'google_2fa_pending' => GoogleController::pending(['email' => 'twofa@gmail.com']),
+        ]);
+
+        // …then an admin suspends them. `suspended_account` is not fillable.
+        $user->forceFill(['suspended_account' => 1])->saveQuietly();
+
+        $this->postJson('/verify-2fa', [
+            'email' => 'twofa@gmail.com',
+            'otp' => app(Google2FA::class)->getCurrentOtp($secret),
+        ])->assertStatus(403);
+
+        $this->assertGuest();
+        $this->assertNull(session('google_2fa_pending'));
+    }
+
+    /** The password branch of the same endpoint had the hole from the other direction. */
+    public function test_a_suspended_account_cannot_finish_the_password_2fa_login(): void
+    {
+        $secret = app(Google2FA::class)->generateSecretKey();
+
+        $user = User::factory()->create([
+            'email' => 'twofa2@gmail.com',
+            'is_2fa' => 1,
+            'tfa_key' => $secret,
+            'password' => bcrypt('Spenny!2026x'),
+        ]);
+        $user->forceFill(['suspended_account' => 1])->saveQuietly();
+
+        $this->postJson('/verify-2fa', [
+            'email' => 'twofa2@gmail.com',
+            'password' => 'Spenny!2026x',
+            'otp' => app(Google2FA::class)->getCurrentOtp($secret),
+        ])->assertStatus(403);
+
+        $this->assertGuest();
+    }
+
+    /**
+     * ⚠️ A backup code is single-use. The check and the delete used to be two steps, so two
+     * concurrent requests could both pass before either delete committed. The delete is now the
+     * claim, and its affected-row count is the verdict.
+     */
+    public function test_a_backup_code_cannot_be_redeemed_twice(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'backup@gmail.com',
+            'is_2fa' => 1,
+            'tfa_key' => app(Google2FA::class)->generateSecretKey(),
+        ]);
+
+        UserBackupCode::create([
+            'user_id' => $user->id,
+            'code' => encrypt('ABCD-1234'),
+        ]);
+
+        $pending = fn () => GoogleController::pending(['email' => 'backup@gmail.com']);
+
+        $this->withSession(['google_2fa_pending' => $pending()])
+            ->postJson('/verify-2fa', ['email' => 'backup@gmail.com', 'backup_code' => 'ABCD-1234'])
+            ->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseCount('user_backup_codes', 0);
+
+        // Same code again. `/verify-2fa` sits in the `guest` group, so the session left by the
+        // successful login has to be torn down or the second request is redirected rather than
+        // answered — that would test the middleware, not the claim.
+        Auth::logout();
+        $this->flushSession();
+        $this->withSession(['google_2fa_pending' => $pending()])
+            ->postJson('/verify-2fa', ['email' => 'backup@gmail.com', 'backup_code' => 'ABCD-1234'])
+            ->assertJsonPath('status', false);
+    }
+
+    /**
+     * ⚠️ A refused sign-in must not spend a recovery code.
+     *
+     * The first version of the suspended guard sat inside `if ($valid)`, but the backup code was
+     * claimed while `$valid` was being computed — so a suspended creator lost one single-use code
+     * per attempt and got a 403 for it. Nothing may be spent until the sign-in is known to be
+     * allowed.
+     */
+    public function test_a_refused_login_does_not_burn_the_backup_code(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'burned@gmail.com',
+            'is_2fa' => 1,
+            'tfa_key' => app(Google2FA::class)->generateSecretKey(),
+        ]);
+
+        UserBackupCode::create([
+            'user_id' => $user->id,
+            'code' => encrypt('KEEP-ME-1234'),
+        ]);
+
+        $user->forceFill(['suspended_account' => 1])->saveQuietly();
+
+        $this->withSession(['google_2fa_pending' => GoogleController::pending(['email' => 'burned@gmail.com'])])
+            ->postJson('/verify-2fa', ['email' => 'burned@gmail.com', 'backup_code' => 'KEEP-ME-1234'])
+            ->assertStatus(403);
+
+        $this->assertGuest();
+        $this->assertDatabaseCount('user_backup_codes', 1);
     }
 }

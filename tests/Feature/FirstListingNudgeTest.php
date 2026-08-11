@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\SendEngagementNotification;
 use App\Models\Bills;
 use App\Models\Membership;
+use App\Models\MonthlyCharge;
 use App\Models\PiggyPot;
 use App\Models\Shop;
 use App\Models\Task;
@@ -232,7 +233,16 @@ class FirstListingNudgeTest extends TestCase
             'identity_status' => 1,
         ]);
 
-        $this->actingAs($creator)
+        // A card on file is its own step and sits before Connect (4 Aug 2026).
+        MonthlyCharge::create([
+            'user_id' => $creator->id,
+            'uuid' => (string) Str::uuid(),
+            'status' => 'trialing',
+            'amount' => 8.99,
+            'currency' => 'GBP',
+        ]);
+
+        $this->actingAs($creator->fresh())
             ->followingRedirects()
             ->get(route('dashboard'))
             ->assertOk()

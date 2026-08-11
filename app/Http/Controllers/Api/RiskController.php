@@ -61,6 +61,24 @@ class RiskController extends Controller
             return response()->json(['error' => 'Passkey verification failed. Device may not be registered.'], 400);
         }
 
+        // Check if user is suspended
+        if ($user->suspended_account == 1) {
+            auth()->guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json(['error' => 'Your account is suspended due to a policy violation or payout configuration issue. Please contact support.'], 403);
+        }
+
+        // Prevent cross-account verification bypass: verify checkout email matches passkey owner email
+        if ($request->filled('email') && strtolower($user->email) !== strtolower($request->email)) {
+            auth()->guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json(['error' => 'Passkey email does not match the checkout email.'], 400);
+        }
+
         // Update credential last used
         $credentialId = $request->input('id');
         $credential = WebAuthnCredential::where('credential_id', $credentialId)

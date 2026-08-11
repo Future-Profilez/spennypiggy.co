@@ -32,7 +32,7 @@ class FounderPayoutRejection extends Mailable
     {
         return new Envelope(
             subject: 'Founder Bonus Payout Issue - Action Required',
-            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            from: new Address(config('mail.from.address', 'noreply@spennypiggy.co'), config('mail.from.name', 'Spenny Piggy'))
         );
     }
 

@@ -38,8 +38,16 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories, all_user_categories } = usePage().props;
-    const { currency, item, text, editpop, openPop, setuped, customtext } =
-        props;
+    const {
+        currency,
+        item,
+        text,
+        editpop,
+        openPop,
+        setuped,
+        customtext,
+        hidetrigger,
+    } = props;
     const defaultCurrency =
         (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -436,7 +444,11 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             space="4"
             size="lg"
             classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] mb-4 text-center"}`}
-            text={customtext || <AddItem />}
+            /* `hidetrigger` renders NO trigger button — the caller owns the
+               open state and drives it through `openPop`. Popup only skips its
+               button when `text` is literally undefined, so null/false will
+               still fall through to <AddItem /> here. */
+            text={hidetrigger ? undefined : customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">
@@ -562,7 +574,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                     {new Intl.NumberFormat('en-GB', { 
                                                         style: 'currency', 
                                                         currency: defaultCurrency 
-                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
@@ -872,7 +884,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                     >
                                         Next
                                     </button>
@@ -880,7 +892,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
-                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-[4px_4px_0px_0px_#FF007F]ink-200"
+                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                         spinnerclass="fill-white"
                                     >
                                         {processing

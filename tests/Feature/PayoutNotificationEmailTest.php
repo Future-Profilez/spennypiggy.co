@@ -61,6 +61,54 @@ class PayoutNotificationEmailTest extends TestCase
         $mailable->assertSeeInHtml('10.00');
     }
 
+    public function test_initiated_email_shows_the_estimated_arrival_date(): void
+    {
+        $mailable = new PayoutInitiated(
+            creator: $this->creator(),
+            amount: 100.00,
+            currency: 'gbp',
+            sentAt: '20 Jul 2026',
+            arrivalDate: '22 Jul 2026',
+        );
+
+        $mailable->assertSeeInHtml('Estimated arrival');
+        $mailable->assertSeeInHtml('22 Jul 2026');
+    }
+
+    /**
+     * Stripe may omit arrival_date. Printing a date the bank never promised is
+     * worse than saying nothing, so the row and the specific-date copy are both
+     * absent and the generic "a few business days" line stands instead.
+     */
+    public function test_initiated_email_omits_the_arrival_row_when_stripe_gave_no_date(): void
+    {
+        $mailable = new PayoutInitiated(
+            creator: $this->creator(),
+            amount: 100.00,
+            currency: 'gbp',
+            sentAt: '20 Jul 2026',
+        );
+
+        $mailable->assertDontSeeInHtml('Estimated arrival');
+        $mailable->assertSeeInHtml('usually lands within a few business days');
+    }
+
+    public function test_initiated_email_sender_comes_from_config_not_env(): void
+    {
+        config()->set('mail.from.address', 'billing@example.test');
+        config()->set('mail.from.name', 'Configured Sender');
+
+        $envelope = (new PayoutInitiated(
+            creator: $this->creator(),
+            amount: 1.00,
+            currency: 'gbp',
+            sentAt: '20 Jul 2026',
+        ))->envelope();
+
+        $this->assertSame('billing@example.test', $envelope->from->address);
+        $this->assertSame('Configured Sender', $envelope->from->name);
+    }
+
     public function test_completed_email_reads_as_success_when_paid(): void
     {
         $mailable = new PayoutCompleted(

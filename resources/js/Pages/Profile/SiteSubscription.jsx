@@ -2,8 +2,7 @@ import { Link, usePage } from "@inertiajs/react";
 
 import { subscriptionPlan } from "@/constants/creatorSubscription";
 
-const PLAN = subscriptionPlan();
-const PRICE = PLAN.active_price_line;
+
 
 export default function SiteSubscription({
     children,
@@ -18,6 +17,13 @@ export default function SiteSubscription({
     const creatorUser = user ?? auth?.user;
 
     const page = usePage();
+
+    // ⚠️ Merge the SERVER plan. Read at module level with no argument this fell back
+    // to the hardcoded client constants, so `free_until_first_sale` was always true
+    // and the £0.00 promise rendered even with the policy switched off — i.e. while
+    // creators were being billed on day one.
+    const PLAN = subscriptionPlan(page.props?.subscriptionPlan);
+    const PRICE = PLAN.active_price_line;
     const finalMonthlyCharges =
         monthly_charges || page.props?.monthly_charges || null;
 
@@ -32,6 +38,25 @@ export default function SiteSubscription({
     const isSubscription =
         !!finalMonthlyCharges?.current_start_subscription_date &&
         !!finalMonthlyCharges?.current_end_subscription_date;
+
+    /**
+     * ⚠️ The free period is identified by STATUS, never by trial dates.
+     *
+     * Setup-mode checkout saves a card and creates no Stripe subscription, so it
+     * deliberately writes no trial dates — there is no trial for them to describe.
+     * Every surface here decided "is this creator in their free period?" by looking
+     * for those dates, so a creator who had just saved their card fell through to
+     * DEFAULT and was told to add the card they had already added, on the
+     * subscription page, the About chip and the Creator Studio row at once.
+     */
+    const FREE_PERIOD_STATUSES = ["trialing", "trial_ending"];
+    const isFreePeriod =
+        FREE_PERIOD_STATUSES.includes(finalMonthlyCharges?.status) &&
+        !isSubscription;
+
+    // A saved card with no subscription yet — nothing to expire.
+    const hasCardOnFile =
+        isFreePeriod && !!finalMonthlyCharges?.has_card;
 
     const hasTrial =
         !!finalMonthlyCharges?.current_start_trial_date &&
@@ -77,11 +102,13 @@ export default function SiteSubscription({
             ? isExpired
                 ? "SUBSCRIPTION_EXPIRED"
                 : "SUBSCRIPTION_ACTIVE"
-            : hasTrial
-              ? isExpired
-                  ? "TRIAL_EXPIRED"
-                  : "TRIAL_ACTIVE"
-              : "DEFAULT";
+            : hasCardOnFile
+              ? "CARD_ON_FILE"
+              : hasTrial
+                ? isExpired
+                    ? "TRIAL_EXPIRED"
+                    : "TRIAL_ACTIVE"
+                : "DEFAULT";
 
     /*
     |--------------------------------------------------------------------------
@@ -124,11 +151,22 @@ export default function SiteSubscription({
     */
     const THEMES = {
         SUBSCRIPTION_ACTIVE: {
-            badge: "Active",
-            badgeClass: "bg-[#A2E4B8] text-black",
-            meterFill: "bg-[#A2E4B8]",
-            headline: "Subscription active",
-            dateLabel: "Renews",
+            // ⚠️ A cancelled subscription is still `SUBSCRIPTION_ACTIVE` until its
+            // paid period runs out — deliberately, because the creator paid for that
+            // time and must keep selling through it. But every label here described
+            // a subscription that renews, so after cancelling the card read
+            // "ACTIVE · Subscription active · RENEWS 3 September" directly above the
+            // sentence saying auto-renewal was off. The one thing the creator needs
+            // to be sure of at that moment is that nothing will be taken again.
+            badge: isCancelled ? "Ending" : "Active",
+            badgeClass: isCancelled
+                ? "bg-[#FFD166] text-black"
+                : "bg-[#A2E4B8] text-black",
+            meterFill: isCancelled ? "bg-[#FFD166]" : "bg-[#A2E4B8]",
+            headline: isCancelled
+                ? "Subscription ending"
+                : "Subscription active",
+            dateLabel: isCancelled ? "Ends" : "Renews",
             cta: null,
         },
         TRIAL_ACTIVE: {
@@ -163,6 +201,25 @@ export default function SiteSubscription({
             dateLabel: "Failed",
             cta: `Update card and pay — ${PLAN.price_formatted}/month`,
         },
+        CARD_ON_FILE: {
+            badge: "Card saved",
+            badgeClass: "bg-[#A2E4B8] text-black",
+            meterFill: "bg-[#A2E4B8]",
+            // ⚠️ Branches on hasEverSold like TRIAL_ACTIVE does. A creator who has
+            // already sold is billed within 15 minutes by
+            // `subscription:activate-on-sale`, so "you're all set" beside a promise
+            // of no charge would be false for exactly the people reading it.
+            headline: hasEverSold ? "Billing starts shortly" : "You're all set",
+            dateLabel: null,
+            // No primary CTA — nothing is required of them, and a button asking for
+            // a card they already gave us is the bug this scenario exists to fix.
+            cta: null,
+            // ⚠️ But they DO need a way to replace a stale card. The free period is
+            // up to 730 days, longer than a card's expiry, and the saved method is
+            // charged off-session on the first sale — without this the only route to
+            // updating it is the FAILED screen, i.e. after it has already broken.
+            secondaryCta: "Update saved card",
+        },
         DEFAULT: {
             badge: "Not started",
             badgeClass: "bg-white text-black",
@@ -176,6 +233,20 @@ export default function SiteSubscription({
     const theme = THEMES[scenario];
 
     /**
+     * ⚠️ Whether cancelling ends access NOW.
+     *
+     * `StripeController::cancelMandatorySubscription` force-cancels and clears
+     * `is_subscribed` when the row has no `stripe_id` and nothing has been billed —
+     * which is exactly CARD_ON_FILE, and TRIAL_ACTIVE before a first sale. There is
+     * no period to run out and no auto-renewal to turn off, so both the button and
+     * the confirmation must say so; the old copy promised access "until the end of
+     * the current period" and the creator lost their tools on the spot.
+     */
+    const cancelsImmediately =
+        scenario === "CARD_ON_FILE" ||
+        (scenario === "TRIAL_ACTIVE" && !hasEverSold);
+
+    /**
      * The two states where the creator has not been charged yet — a brand new
      * account and one sitting in its free period. Both get the promise treatment;
      * an active or expired subscription is a different question and keeps the
@@ -184,12 +255,17 @@ export default function SiteSubscription({
     const showPromise =
         PLAN.free_until_first_sale &&
         !hasEverSold &&
-        (scenario === "DEFAULT" || scenario === "TRIAL_ACTIVE");
+        (scenario === "DEFAULT" ||
+            scenario === "TRIAL_ACTIVE" ||
+            scenario === "CARD_ON_FILE");
 
     const statusLine = {
         SUBSCRIPTION_ACTIVE: isCancelled
             ? `Auto-renewal is off. Access ends after ${formatDate(endDate)}.`
             : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in this billing period.`,
+        CARD_ON_FILE: hasEverSold
+            ? `Your card is saved. Billing starts from your next cycle — ${PRICE}.`
+            : `Your card is saved. Nothing is charged until you make your first sale — then ${PRICE}.`,
         TRIAL_ACTIVE: hasEverSold
             ? `Your subscription is active. Charging starts from your next billing cycle.`
             : `Nothing is charged until you make your first sale. Then ${PRICE}.`,
@@ -217,7 +293,7 @@ export default function SiteSubscription({
         return (
             <div className="mt-5">
                 <div
-                    className="h-4 w-full border-[3px] border-black rounded-full bg-white overflow-hidden"
+                    className=" h-4 w-full  rounded-full overflow-hidden bg-gray-300"
                     role="progressbar"
                     aria-valuemin={0}
                     aria-valuemax={100}
@@ -225,7 +301,7 @@ export default function SiteSubscription({
                     aria-label="Billing period elapsed"
                 >
                     <div
-                        className={`h-full ${theme.meterFill} border-r-[3px] border-black transition-[width] duration-500 motion-reduce:transition-none`}
+                        className={`h-full ${theme.meterFill} transition-[width] duration-500 motion-reduce:transition-none`}
                         style={{ width: `${elapsedPercent}%` }}
                     />
                 </div>
@@ -242,7 +318,7 @@ export default function SiteSubscription({
 
     return (
         <>
-            <div className="w-full finishs mb-6 bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 rounded-box">
+            <div className="w-full finishs mb-8 bg-white  rounded-box border-[3px] border-black p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3">
                     <h2 className="text-[22px] font-bold uppercase text-black">
@@ -333,12 +409,21 @@ export default function SiteSubscription({
                     by the steps above, so it is not repeated in the free period. */}
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-[3px] border-black/10 pt-4">
                     <p className="text-[13px] font-semibold text-black/70">
-                        {showPromise ? "Cancel any time — no exit fee" : PRICE}
+                        {/* ⚠️ Once cancelled, printing the monthly price reads as a
+                            charge that is still coming. It is the one thing a
+                            creator who has just cancelled is checking for. */}
+                        {isCancelled
+                            ? "No further charges"
+                            : showPromise
+                              ? "Cancel any time — no exit fee"
+                              : PRICE}
                     </p>
 
                     {scenario === "SUBSCRIPTION_ACTIVE" ||
-                    scenario === "TRIAL_ACTIVE" ? (
+                    scenario === "TRIAL_ACTIVE" ||
+                    scenario === "CARD_ON_FILE" ? (
                         !isCancelled ? (
+                            <>
                             <Link
                                 href={route("mandatory.cancel")}
                                 method="post"
@@ -346,14 +431,30 @@ export default function SiteSubscription({
                                 className="text-[13px] font-bold uppercase tracking-wider text-black/60 underline underline-offset-4 hover:text-[#FF3B30] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                                 onBefore={() =>
                                     confirm(
-                                        (scenario === "TRIAL_ACTIVE" && !hasEverSold)
+                                        cancelsImmediately
                                             ? "Cancel subscription? Your creator tools will be deactivated immediately."
                                             : "Turn off auto-renewal? You keep access until the end of the current period.",
                                     )
                                 }
                             >
-                                Turn off auto-renewal
+                                {cancelsImmediately
+                                    ? "Cancel subscription"
+                                    : "Turn off auto-renewal"}
                             </Link>
+
+                            {/* Quiet, secondary: nothing is required of them, but a
+                                saved card can expire long before the free period
+                                ends, and the only other route to replacing it is the
+                                FAILED screen — i.e. after it has already broken. */}
+                            {theme.secondaryCta && (
+                                <Link
+                                    href={route("activate-subscription")}
+                                    className="ms-4 text-[13px] font-bold uppercase tracking-wider text-black/50 underline underline-offset-4 hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                >
+                                    {theme.secondaryCta}
+                                </Link>
+                            )}
+                            </>
                         ) : (
                             <Link
                                 href={route("mandatory.resume")}

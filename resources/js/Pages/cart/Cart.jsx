@@ -1,17 +1,20 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { useState, lazy, useCallback, useMemo } from "react";
-import { Head } from "@inertiajs/react";
+import { useState, lazy, useCallback, useMemo, Suspense } from "react";
+import { Head, usePage } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useEffect, useRef } from "react";
 import Axios from "axios";
 import CartListing from "../rye/CartListing";
 import WhiteLoading from "@/includes/LoadingScreen";
+import PriceFormat from "@/includes/PriceFormat";
 const UserCarts = lazy(() => import("../cart/UserCarts"));
 import { GiCardboardBox } from "react-icons/gi";
 
 export default function Cart(props) {
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, user, carts } = props;
+    const { rates, global_currency } = usePage().props;
+    const { formatMultiPrice } = PriceFormat();
     const [cartsItems, setCartItems] = useState(carts);
     const [loading, setLoading] = useState(false);
     const isAuthenticated = useMemo(() => Boolean(auth?.user), [auth?.user?.id]);
@@ -115,6 +118,91 @@ export default function Cart(props) {
         };
     }, []);
 
+    // --- Multi-creator accordion -------------------------------------------
+    // Checkout is one Stripe session per creator (`/create-checkout-session/{ownerId}`),
+    // so a basket spanning several creators is several payments. Rendering every
+    // creator's form at once meant N message/email/name fields, N payment-method
+    // selectors each hitting /payments/price-preview, and N Turnstile widgets on
+    // one screen. Only the OPEN creator mounts its checkout.
+    const creatorIds = useMemo(
+        () => (cartsItems || []).map((c, i) => c?.user?.id ?? `idx-${i}`),
+        [cartsItems],
+    );
+    const [openId, setOpenId] = useState(null);
+
+    // Open the first creator by default, and never leave the accordion pointing
+    // at a creator who is no longer in the basket.
+    useEffect(() => {
+        if (!creatorIds.length) {
+            setOpenId(null);
+            return;
+        }
+        setOpenId((current) =>
+            current != null && creatorIds.includes(current)
+                ? current
+                : creatorIds[0],
+        );
+    }, [creatorIds]);
+
+    const toggleCreator = useCallback((id) => {
+        setOpenId((current) => (current === id ? null : id));
+    }, []);
+
+    // Each basket reports its own gross so the header can state the whole thing.
+    // Reported by the child rather than recomputed here — a second copy of the
+    // gross-up would drift from the figure the buyer is actually charged.
+    const [summaries, setSummaries] = useState({});
+    const reportSummary = useCallback((id, summary) => {
+        setSummaries((prev) => {
+            const before = prev[id];
+            if (
+                before &&
+                before.total === summary.total &&
+                before.currency === summary.currency &&
+                before.count === summary.count &&
+                before.cleared === summary.cleared
+            ) {
+                return prev;
+            }
+            return { ...prev, [id]: summary };
+        });
+    }, []);
+
+    // ⚠️ Baskets are converted into the viewer's display currency BEFORE they
+    // are added up. `formatMultiPrice` always renders in `global_currency`, so
+    // grouping by CHARGE currency and printing each group produced two figures
+    // in the same symbol sitting side by side — which reads as one total the
+    // reader is expected to add themselves. A creator charging USD and one
+    // charging GBP are one basket to the person paying.
+    const { basketTotal, itemCount, creatorCount } = useMemo(() => {
+        const display = (global_currency || "GBP").toUpperCase();
+        const displayRate = rates?.[display] || 1;
+        let total = 0;
+        let items = 0;
+        let creators = 0;
+        creatorIds.forEach((id) => {
+            const s = summaries[id];
+            if (!s || s.cleared) return;
+            creators += 1;
+            items += s.count || 0;
+            const cur = (s.currency || "GBP").toUpperCase();
+            const chargeRate = rates?.[cur];
+            // No rate is the same fallback each row already takes — the header
+            // and the rows under it must never disagree about one basket.
+            total +=
+                cur === display || !chargeRate || !isFinite(chargeRate)
+                    ? s.total || 0
+                    : ((s.total || 0) / chargeRate) * displayRate;
+        });
+        return {
+            basketTotal: total,
+            itemCount: items,
+            creatorCount: creators,
+        };
+    }, [creatorIds, summaries, rates, global_currency]);
+
+    const multiCreator = creatorIds.length > 1;
+
     return (
         <Authenticated auth={auth.user} user={user}>
             <div className="bg-white">
@@ -131,35 +219,84 @@ export default function Cart(props) {
                 )}
 
                 {cartsItems && cartsItems.length ? (
-                    <div className=" ">
-                        <div className="container pb-5 ">
-                            <h2 className="text-bl mb-6 font-GillSans pt-5 pt-3 pb-0 text-center text-3xl uppercase text-whites">
-                                Cart
-                            </h2>
-                            <div className="max-w-[800px] m-auto">
+                    // The fixed bottom nav covers the end of this page, and on
+                    // iOS standalone the home indicator covers that.
+                    <div
+                        className="pb-28"
+                        style={{
+                            paddingBottom: "calc(7rem + env(safe-area-inset-bottom))",
+                        }}
+                    >
+                        <div className="container">
+                            <div className="m-auto max-w-[820px] px-2 pt-5">
+                                <header className="mb-5">
+                                    <h1 className="font-gulfs text-2xl uppercase text-black md:text-3xl">
+                                        Your basket
+                                    </h1>
+                                    <p className="mt-1 text-sm text-black/60">
+                                        {itemCount} {itemCount === 1 ? "item" : "items"}
+                                        {creatorCount > 0
+                                            ? ` from ${creatorCount} ${creatorCount === 1 ? "creator" : "creators"}`
+                                            : ""}
+                                    </p>
+
+                                    {creatorCount > 0 ? (
+                                        <div className="mt-3 rounded-box-sm border-2 border-black bg-white p-4">
+                                            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                                <span className="text-sm font-bold uppercase tracking-wide text-black/70">
+                                                    Basket total
+                                                </span>
+                                                <span className="text-lg font-black text-black">
+                                                    {formatMultiPrice(
+                                                        basketTotal,
+                                                        global_currency || "GBP",
+                                                    )}
+                                                </span>
+                                            </div>
+                                            {multiCreator ? (
+                                                <p className="mt-2 text-xs leading-tight text-black/60">
+                                                    Each creator is paid separately, so you
+                                                    check out one creator at a time. Open a
+                                                    creator below to pay for their items.
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                </header>
+
                                 {loading ? <WhiteLoading /> : ""}
                                 {!loading && (
-                                    <>
-                                        {cartsItems && cartsItems.length ? (
-                                            <>
-                                                {cartsItems.map((c, i) => {
-                                                    return (
-                                                        <div key={`user-cart-${c?.user?.id ?? i}`}>
-                                                            {i > 0 ? <div className="w-full h-1 bg-gray-200 my-22 "></div> : ''}
-                                                            <UserCarts auth={auth} data={c} currency={c?.user?.default_currency || c?.user?.currency} />
-                                                        </div>
-                                                    );
-                                                })}
-                                            </>
-                                        ) : (
-                                            ""
-                                        )}
-
-                                        
-                                    </>
+                                    <div className="space-y-4">
+                                        {cartsItems.map((c, i) => {
+                                            const id = c?.user?.id ?? `idx-${i}`;
+                                            return (
+                                                <Suspense
+                                                    key={`user-cart-${id}`}
+                                                    fallback={
+                                                        <div className="h-20 animate-pulse rounded-box border-2 border-black bg-gray-100" />
+                                                    }
+                                                >
+                                                    <UserCarts
+                                                        auth={auth}
+                                                        data={c}
+                                                        currency={
+                                                            c?.user?.default_currency ||
+                                                            c?.user?.currency
+                                                        }
+                                                        creatorKey={id}
+                                                        collapsible={multiCreator}
+                                                        expanded={
+                                                            !multiCreator || openId === id
+                                                        }
+                                                        onToggle={toggleCreator}
+                                                        onSummary={reportSummary}
+                                                    />
+                                                </Suspense>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
-
                         </div>
                     </div>
                 ) : (
@@ -173,7 +310,9 @@ export default function Cart(props) {
                 !loading &&
                 !loading2 && (
                     <div className="py-5 text-center">
-                        <div className="containerbox h-[70vh] flex items-center justify-center">
+                        {/* dvh, never vh — a mobile/standalone viewport is not
+                            the height the browser reports for vh. */}
+                        <div className="containerbox flex min-h-[60dvh] items-center justify-center">
                             <div className="p-6">
                                 <div className="flex justify-center ">
                                     <GiCardboardBox className="text-center text-gray-500" size={100} />

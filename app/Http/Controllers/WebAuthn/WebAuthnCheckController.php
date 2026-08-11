@@ -103,7 +103,10 @@ class WebAuthnCheckController extends Controller
             $query = $user->webAuthnCredentials();
 
             if ($id) {
-                $query->where('id', $id);
+                $query->where(function ($q) use ($id) {
+                    $q->where('id', $id)
+                        ->orWhere('credential_id', $id);
+                });
             }
 
             $deleted = $query->delete();

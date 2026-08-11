@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendBioSocialUpdateEmail;
+use App\Models\ProfileChangeRequest;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
+use App\Support\ProfileAssetVisibility;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
@@ -93,16 +96,39 @@ class SocialLinksController extends Controller
             $data['status'] = 0;
             $data['reason'] = null;
 
-            // ✅ Update or create (DO NOT filter nulls)
-            SocialLinks::updateOrCreate(
-                ['user_id' => $userId],
-                array_merge($data, [
-                    'uuid' => Uuid::uuid4(),
-                ])
-            );
+            // ⚠️ `uuid` used to be regenerated here on every save, because it is
+            // fillable and was passed in the VALUES array rather than the match array.
+            // The row's public identifier changed each time a creator edited a handle.
+            $existing = SocialLinks::where('user_id', $userId)->first();
+
+            $user = Auth::user();
+
+            // Handles that are already published are edited through review — the
+            // approved set stays on the profile until an admin decides.
+            //
+            // ⚠️ The proposed map carries EXPLICIT NULLS. `social_links` is one row
+            // with one column per platform, and this controller deliberately writes
+            // every column, so "I removed my Instagram" is a change carried by a null.
+            // Filtering them out would silently drop deletions.
+            if (ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_SOCIALS)) {
+                ProfileChangeRequest::open(
+                    $user,
+                    ProfileChangeRequest::ASSET_SOCIALS,
+                    Arr::except($data, ['status', 'reason', 'updated_at']),
+                    $existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : [],
+                );
+            } else {
+                // ✅ Update or create (DO NOT filter nulls)
+                SocialLinks::updateOrCreate(
+                    ['user_id' => $userId],
+                    array_merge($data, [
+                        'uuid' => $existing->uuid ?? Uuid::uuid4(),
+                    ])
+                );
+            }
 
             // ✅ Verification logic
-            $role = Auth::user()->role;
+            $role = $user->role;
 
             UserVerificationStatus::updateOrCreate(
                 [
@@ -116,14 +142,22 @@ class SocialLinksController extends Controller
                 ]
             );
 
-            if (Auth::user()->profile_status_lock == 2) {
-                dispatch(new SendBioSocialUpdateEmail(Auth::user(), [
+            // 🚨 This used to also set `profile_status_lock = 1`. That is not "under
+            // review" — it takes the verified badge, removes the creator from Discover,
+            // search, trending and top-earners, DELISTS EVERY ITEM THEY SELL, and blocks
+            // Stripe onboarding; and nothing on the website ever sets it back to 2. A
+            // creator who corrected a typo in their Instagram handle disappeared from the
+            // platform until an admin noticed.
+            //
+            // `social_links.status = 0` above is the review signal, and
+            // `CreatorReviewService::queue()` already reads it.
+            if ($user->profile_status_lock == 2) {
+                dispatch(new SendBioSocialUpdateEmail($user, [
                     'bio' => false,
                     'social' => true,
                 ]));
             }
 
-            $user = Auth::user();
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             return response([

@@ -18,23 +18,29 @@ class PaymentMethodPricingService
 
     public const PROFILE_BANK = 'bank';
 
-    public static function breakdown(string $feeProfile, $listedPrice, string $currency = 'GBP', $reserveRate = 0): array
+    /**
+     * @param  int|null  $creatorId  Applies this creator's bespoke platform rate when
+     *                               they have one. Every supporter-facing quote must
+     *                               pass it, or the price shown differs from the price
+     *                               charged for exactly the creators on a custom deal.
+     */
+    public static function breakdown(string $feeProfile, $listedPrice, string $currency = 'GBP', $reserveRate = 0, ?int $creatorId = null): array
     {
-        return Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency, $reserveRate, $feeProfile);
+        return Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency, $reserveRate, $feeProfile, $creatorId);
     }
 
     /**
      * Card + bank supporter prices for one listed price, plus the saving.
      * bank is null when no bank method exists for the charge currency.
      */
-    public static function dualPrices($listedPrice, string $currency = 'GBP', $reserveRate = 0): array
+    public static function dualPrices($listedPrice, string $currency = 'GBP', $reserveRate = 0, ?int $creatorId = null): array
     {
-        $card = self::breakdown(self::PROFILE_CARD, $listedPrice, $currency, $reserveRate);
+        $card = self::breakdown(self::PROFILE_CARD, $listedPrice, $currency, $reserveRate, $creatorId);
 
         $bank = null;
         $saving = null;
         if (self::bankAvailable($currency)) {
-            $bank = self::breakdown(self::PROFILE_BANK, $listedPrice, $currency, $reserveRate);
+            $bank = self::breakdown(self::PROFILE_BANK, $listedPrice, $currency, $reserveRate, $creatorId);
             $saving = round(max(0, $card['total_supporter_pays'] - $bank['total_supporter_pays']), 2);
         }
 

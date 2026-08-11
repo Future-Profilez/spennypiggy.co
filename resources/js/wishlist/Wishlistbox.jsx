@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import ItemBadges from "@/Components/ItemBadges";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import ShareProfile from "./ShareProfile";
@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import CustomProgressBar from "@/Components/CustomProgressBar";
 import Wishlist from "@/Pages/Auth/Wishlist";
 import PriceFormat from "@/includes/PriceFormat";
+import { creatorIdOf } from "@/utils/pricing";
 const AddCart = lazy(() => import("./AddCart"));
 import { Menu, Transition } from "@headlessui/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -16,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import RemoveWish from "./RemoveWish";
 import { Link, usePage } from "@inertiajs/react";
 import SaveButton from "@/Components/SaveButton";
+import ScheduledBadge from "@/Components/ScheduledBadge";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
@@ -55,12 +57,32 @@ export default function Wishlistbox(props) {
     };
 
     const [open, setOpen] = useState();
+    const [editing, setEditing] = useState();
+    /* The edit form is a full uploader-carrying form — one per card would be
+       paid for on every render of a creator's whole wishlist. Mount on first
+       use and keep it after that. */
+    const [editMounted, setEditMounted] = useState(false);
     const openAddtocart = () => {
         setOpen(true);
         setTimeout(() => {
             setOpen();
         }, 1000);
     };
+
+    /* Same clear-after-open contract as openAddtocart: Popup only reacts to a
+       literal true, so the flag is cleared back to undefined a moment later or
+       a second click on an already-closed modal would do nothing. */
+    const openEdit = () => {
+        setEditMounted(true);
+        setEditing(true);
+        setTimeout(() => {
+            setEditing();
+        }, 1000);
+    };
+
+    /* The owner is looking at their own listing — a basket popup is the one
+       thing they cannot act on. Everyone else buys. */
+    const onCardClick = IsloggedIn ? openEdit : openAddtocart;
 
     useEffect(() => {
         if (itemid == itm.uuid) {
@@ -78,6 +100,8 @@ export default function Wishlistbox(props) {
             parseFloat(itm?.price || 0) *
                 (1 + (itm?.user?.vat_amount_percentage || 0) / 100),
             itm?.currency || "GBP",
+            0,
+            creatorIdOf(itm),
         )?.total_supporter_pays || itm?.price;
 
     const isSubscribable = itm?.subscription == 1;
@@ -96,6 +120,14 @@ export default function Wishlistbox(props) {
             } ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
         >
             <div className="bg-[#fdfbf7] rounded-[30px] overflow-hidden relative border-[3px] border-black w-full h-full flex flex-col">
+                {/* Owner only: a scheduled wish looks exactly like a live one here, and
+                    nobody can buy it yet. */}
+                {isCreator && itm?.publish_at && (
+                    <div className="px-4 pt-4">
+                        <ScheduledBadge publishAt={itm.publish_at} />
+                    </div>
+                )}
+
                 {/* Status Messages */}
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-4 rounded-[20px] !text-[12px] p-4">
@@ -181,6 +213,17 @@ export default function Wishlistbox(props) {
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={openEdit}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[20px] px-2 py-2 text-sm text-gray-900`}
+                                                >
+                                                    Edit Wish
+                                                </button>
+                                            )}
+                                        </Menu.Item>
+                                        <Menu.Item>
+                                            {({ active }) => (
                                                 <div
                                                     className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[20px] px-2 py-2 text-sm text-gray-900`}
                                                 >
@@ -200,8 +243,8 @@ export default function Wishlistbox(props) {
 
                 {/* Image */}
                 <div
-                    onClick={openAddtocart}
-                    className={`h-[160px] sm:h-[200px] wishbox overflow-hidden cursor-pointer p-3`}
+                    onClick={onCardClick}
+                    className={`h-[130px] sm:h-[150px] wishbox overflow-hidden cursor-pointer p-2.5`}
                 >
                     <LazyLoadImage
                         alt={itm?.wishname || "Wish image"}
@@ -213,8 +256,8 @@ export default function Wishlistbox(props) {
 
                 {/* Content */}
                 <div
-                    onClick={openAddtocart}
-                    className="wishlistdetial cursor-pointer flex-1 flex flex-col px-4 pb-4"
+                    onClick={onCardClick}
+                    className="wishlistdetial cursor-pointer flex-1 flex flex-col px-3 pb-3"
                 >
                     {/* Badges & Labels */}
                     <div className="flex flex-col items-center gap-1 mt-2">
@@ -236,19 +279,20 @@ export default function Wishlistbox(props) {
                         )}
                     </div>
 
-                    {/* Title */}
-                    <h4 className="text-xl font-black !text-black uppercase text-center mt-1">
+                    {/* Title — two lines are RESERVED, not just allowed. Creators
+                        name items whatever they like, so one card wrapping to two
+                        lines used to shift its price, CTA and byline out of step
+                        with every other card in the row. */}
+                    <h4
+                        title={itm.wishname}
+                        className="mt-0.5 line-clamp-2 min-h-[45px] text-center text-lg font-black uppercase leading-tight !text-black"
+                    >
                         {itm.wishname}
                     </h4>
 
-                    {/* Content Type Badge */}
-                    <p className="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                        Exclusive content · instant download
-                    </p>
-
                     {/* Price */}
-                    <div className="text-center mt-3">
-                        <h5 className="font-black font-poppins text-3xl text-black">
+                    <div className="text-center mt-1.5">
+                        <h5 className="font-black font-poppins text-2xl text-black">
                             {IsloggedIn
                                 ? formatMultiPrice(
                                       itm.price,
@@ -269,8 +313,8 @@ export default function Wishlistbox(props) {
 
                     {/* "You get" Section */}
                     {itm?.description && (
-                        <div className="mt-2 py-1.5 px-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-xs font-medium text-gray-700 text-center">
+                        <div className="mt-1.5 py-1 px-2.5 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-[11px] font-medium text-gray-700 text-center line-clamp-2">
                                 <span className="font-bold">You get:</span>{" "}
                                 {itm.description}
                             </p>
@@ -278,7 +322,14 @@ export default function Wishlistbox(props) {
                     )}
 
                     {/* Reward Hint */}
-                    <RewardHint item={itm} className="mt-2 max-w-full" />
+                    <RewardHint item={itm} className="mt-1.5 max-w-full" />
+
+                    {/* Content Type Badge — sits UNDER the reward line: it
+                        describes how the reward is delivered, so it reads as a
+                        footnote to it, not as the item's own subtitle. */}
+                    <p className="text-center text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">
+                        Exclusive content · instant download
+                    </p>
 
                     {/* Progress Bar for Subscription */}
                     {itm.subscription == "2" && (
@@ -294,21 +345,23 @@ export default function Wishlistbox(props) {
                         </div>
                     )}
 
-                    {/* Action Button */}
-                    <div className="flex justify-center items-center mt-4">
+                    {/* Action Button — mt-auto pins this and the byline below it to
+                        the card's floor, so the row shares one CTA line whatever
+                        optional blocks rendered above. */}
+                    <div className="mt-auto flex items-center justify-center pt-2.5">
                         {IsloggedIn ? (
                             <ShareProfile
                                 username={itm.wishname}
                                 custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`}
                             >
-                                <button className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-sm py-3 px-8 rounded-[14px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[200px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none">
+                                <button className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[11px] py-2 px-4 rounded-[12px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[130px] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none">
                                     Share Link
                                 </button>
                             </ShareProfile>
                         ) : (
                             <button
                                 onClick={openAddtocart}
-                                className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-sm py-3 px-8 rounded-[14px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[200px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none"
+                                className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-xs py-2.5 px-6 rounded-[12px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[170px] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none"
                             >
                                 Unlock
                             </button>
@@ -317,7 +370,7 @@ export default function Wishlistbox(props) {
 
                     {/* Creator Info */}
                     {itm.user && (
-                        <div className="flex justify-center items-center gap-1 mt-3 pt-2 border-t border-gray-200">
+                        <div className="flex justify-center items-center gap-1 mt-2 pt-1.5 border-t border-gray-200">
                             <span className="text-xs font-bold text-gray-600">
                                 By
                             </span>
@@ -337,6 +390,42 @@ export default function Wishlistbox(props) {
                 <div className="absolute top-1 left-1 text-xl">👀</div>
                 <div className="absolute bottom-2 right-2 text-xl">⭐</div>
             </div>
+
+            {/*
+              * 🚨 AddCart was imported and NEVER rendered, so every "Unlock" button
+              * on a wish card did nothing at all — no modal, no request, no console
+              * error. There was no working path to put a wish in the basket.
+              *
+              * `action={open}` is the same contract the rye twin (GiftListing) uses:
+              * `openAddtocart` sets it true, then clears it back to undefined a
+              * moment later so the NEXT click is a fresh true and Popup's effect
+              * fires again. undefined is neither true nor false, so clearing it does
+              * not close the modal the supporter is looking at.
+              */}
+            {/* ⚠️ Rendered OUTSIDE the dropdown on purpose: inside a Menu.Item
+                the menu closes on click and unmounts the modal before it can
+                open — the same fault the post editor had. */}
+            {IsloggedIn && editMounted && (
+                <Wishlist
+                    editpop
+                    hidetrigger
+                    openPop={editing}
+                    item={itm}
+                    currency={currency}
+                    setuped={setuped}
+                />
+            )}
+
+            <Suspense fallback={null}>
+                <AddCart
+                    action={open}
+                    uuid={itm?.uuid}
+                    item={itm}
+                    currency={currency}
+                    showall={showall}
+                    IsloggedIn={IsloggedIn}
+                />
+            </Suspense>
         </div>
     );
 }

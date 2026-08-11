@@ -13,9 +13,11 @@ import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import Turnstile from "@/Components/Turnstile";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
+import { feeRatesFor, supporterTotal, creatorIdOf } from "@/utils/pricing";
 
 export default function SubCheckout(props) {
     const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
+    const __pageProps = usePage().props;
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
@@ -23,11 +25,17 @@ export default function SubCheckout(props) {
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
     const turnstileRef = useRef(null);
     const [verified, setVerified] = useState(false);
-    // Stable identity so Turnstile's render effect doesn't remount the widget on re-render.
-    const onTurnstileVerify = useCallback((token) => {
-        setData("cf_turnstile_response", token || "");
-        setVerified(!!token);
-    }, [setData]);
+    /*
+     * 🚨 useForm MUST come before the useCallback below.
+     *
+     * A hook's dependency array is evaluated EAGERLY — it is a plain argument,
+     * unlike the callback body, which is deferred. So `[setData]` listed above
+     * this declaration read `setData` inside its temporal dead zone and threw
+     * "Cannot access 'm' before initialization" on EVERY render: this whole
+     * checkout was dead for every visitor, and the build could not see it.
+     *
+     * MemberCheckout.jsx already has the correct order — match it.
+     */
     const {data, setData, post, processing, errors} = useForm({
         name: name,
         email: email,
@@ -38,6 +46,12 @@ export default function SubCheckout(props) {
         payment_method: 'card',
         cf_turnstile_response: '',
     });
+
+    // Stable identity so Turnstile's render effect doesn't remount the widget on re-render.
+    const onTurnstileVerify = useCallback((token) => {
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
+    }, [setData]);
     const [previewPrices, setPreviewPrices] = useState(null);
 
     // Helper to identify zero decimal currencies
@@ -56,25 +70,19 @@ export default function SubCheckout(props) {
         const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
 
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
-        const adminFee = adminFeeInCurrency(curr); 
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
-        if (totalDeductionRate >= 1) return priceWithVat;
+        // The gross-up itself lives in ONE place (utils/pricing). This screen
+        // used to carry its own copy reading the GLOBAL fee props, which cannot
+        // express a per-creator rate — so a creator on a bespoke deal was QUOTED
+        // the standard price here while checkout CHARGED theirs.
+        const __rates = feeRatesFor(creatorIdOf(wish), __pageProps);
+        const totalSupporterPays = supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            isZeroDecimal,
+        });
 
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
+        return totalSupporterPays;
+};
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e){
@@ -523,6 +531,7 @@ export default function SubCheckout(props) {
                                             amount={(parseFloat(String(wish?.price || 0).replace(/,/g, '')) || 0) * (1 + (parseFloat(wish?.user?.vat_amount_percentage) || 0) / 100)}
                                             currency={wish?.currency || 'GBP'}
                                             email={data.email || auth?.user?.email}
+                                            creatorId={creatorIdOf(wish)}
                                             value={data.payment_method}
                                             onChange={(m) => setData('payment_method', m)}
                                             onPrices={setPreviewPrices}
@@ -549,7 +558,14 @@ export default function SubCheckout(props) {
                                 </ul>
                                 <div className="mt-4" >
                                     <PayButton
-                                        label={reccure == 'onetime' ? 'Subscribe Once' : `Subscribe ${wish.subscription_period}`}
+                                        label={
+                                            reccure == 'onetime'
+                                                ? 'Subscribe Once'
+                                                // ⚠️ A wish with subscription=0 has a NULL period, and this
+                                                // route is still reachable for it — the button read
+                                                // "Subscribe null" on the last screen before payment.
+                                                : `Subscribe${wish?.subscription_period ? ' ' + wish.subscription_period : ''}`
+                                        }
                                         processing={processing}
                                         disabled={!data.agree || !data.digital_waiver || (turnstileSiteKey && !verified)}
                                         onClick={submitCheckout}

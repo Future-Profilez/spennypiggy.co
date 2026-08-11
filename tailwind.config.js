@@ -68,7 +68,17 @@ export default {
                 slide: {
                     '0%': { transform: 'translateX(0%)' },
                     '100%': { transform: 'translateX(-50%)' },
-                }
+                },
+                /*
+                 * A rejected sign-in. `animate-shake` was already being set by
+                 * Login.jsx on a failed attempt and was defined in NO stylesheet, so
+                 * the class emitted nothing and the feedback never existed.
+                 */
+                shake: {
+                    '0%, 100%': { transform: 'translateX(0)' },
+                    '20%, 60%': { transform: 'translateX(-6px)' },
+                    '40%, 80%': { transform: 'translateX(6px)' },
+                },
             },
             animation: {
                 fading: 'fading both linear',
@@ -76,6 +86,7 @@ export default {
                 'float-delayed': 'float 6s ease-in-out 3s infinite',
                 wiggle: 'wiggle 0.5s ease-in-out infinite',
                 slide: 'slide 18s linear infinite',
+                shake: 'shake 0.4s ease-in-out 1',
             },
             zIndex: {
                 ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: i.toString() }), {}),

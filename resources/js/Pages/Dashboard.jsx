@@ -89,10 +89,14 @@ const EnableCardCapabilities = lazy(
 const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
 const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
 const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
+const SubscriptionNewsPopup = lazy(() => import("@/Components/SubscriptionNewsPopup"));
+// Small, always rendered on the creator's own About tab — not worth a lazy chunk.
 const FounderProgressTracker = lazy(
     () => import("@/Components/FounderProgressTracker"),
 );
 const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+import PendingChangesNotice from "@/Components/PendingChangesNotice";
+
 const CreatorRiskBanner = lazy(
     () => import("@/Components/Risk/CreatorRiskBanner"),
 );
@@ -146,6 +150,7 @@ export default function Dashboard(props) {
         founderData,
         monthly_charges,
         profile_overview,
+        pending_profile_changes,
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -217,6 +222,21 @@ export default function Dashboard(props) {
         );
     }, [stripe_requirements]);
 
+    // The ActionRequired panel and EnableCardCapabilities both send the creator
+    // to /stripe/enable_card_payments, so rendering both puts two copies of the
+    // same instruction on the page. The server now returns one card describing
+    // the actual state, which always says more than the generic block.
+    //
+    // `connection_error` is the exception: it means we could not READ Stripe, so
+    // it describes nothing about the account. Suppressing the standalone CTA on
+    // a transient Stripe outage would leave the creator with "we could not check
+    // your account" and no way forward.
+    const hasStripeActionPanel = useMemo(() => {
+        return (stripe_requirements?.requirements || []).some(
+            (r) => r.type !== "connection_error",
+        );
+    }, [stripe_requirements]);
+
     const shouldShowFounderBannerClient = useMemo(() => {
         // Only logged-in creators (role 1), never gifters
         if (!IsloggedIn || auth?.user?.role !== 1) return false;
@@ -271,9 +291,19 @@ export default function Dashboard(props) {
         // return () => controller.abort();
     }, [tab]);
 
+    // The activity card only exists once there is money to stop — Stripe
+    // connected AND identity verified. Same predicate gates the fetch and the
+    // render; two copies would drift and this one costs a request per page load
+    // for the largest cohort of creators (everyone still before Connect).
+    const canSeeActivityCard =
+        IsloggedIn &&
+        auth?.user?.role === 1 &&
+        auth?.user?.stripe_details_submitted == 1 &&
+        auth?.user?.identity_status == 1;
+
     // Fetch creator activity status
     const fetchActivityStatus = async () => {
-        if (!IsloggedIn || !auth?.user || auth?.user?.role !== 1) {
+        if (!canSeeActivityCard) {
             return;
         }
         setActivityLoading(true);
@@ -289,10 +319,12 @@ export default function Dashboard(props) {
 
     // Fetch activity status on component mount for logged-in creators
     useEffect(() => {
-        if (IsloggedIn && auth?.user?.role === 1) {
+        if (canSeeActivityCard) {
             fetchActivityStatus();
         }
-    }, [IsloggedIn, auth?.user?.role]);
+        // The predicate itself, not its inputs — a creator who finishes Connect
+        // or clears identity in this session gets the card without a full reload.
+    }, [canSeeActivityCard]);
 
     const currencyaction = (e) => {
         if (e == "open") {
@@ -392,8 +424,12 @@ export default function Dashboard(props) {
             if (typeof window === "undefined") return null;
             return new URLSearchParams(window.location.search).get("add");
         });
+        // `?add=menu` opens the chooser and NOTHING else — it is how a screen that is
+        // not this one (My Listings) sends a creator here to pick what to sell. The
+        // other values each open a specific form on top of the chooser, which is the
+        // wrong landing for "add something".
         const [showAdd, setShowAdd] = useState(
-            () => addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
+            () => addIntent === "menu" || addIntent === "wish" || addIntent === "shop" || addIntent === "digital" || addIntent === "physical",
         );
         const [wishOptions, setWishOptions] = useState(() => addIntent === "wish");
 
@@ -485,17 +521,25 @@ export default function Dashboard(props) {
                                   <div
                                       onClick={() => setShowAdd(false)}
                                       data-lenis-prevent
-                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain md:items-start md:py-6"
+                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain"
                                   >
+                                      {/* ⚠️ Full page on every size, like the post
+                                          composer. It was a 660px card whose option
+                                          list scrolled inside `max-h-[50vh]`, so a
+                                          creator was shown three of six ways to earn
+                                          and had to discover the rest by scrolling a
+                                          box inside a box. This is the menu the whole
+                                          product hangs off — all of it should be
+                                          visible at once. */}
                                       <div
                                           onClick={(e) => e.stopPropagation()}
-                                          className="w-full md:max-w-[520px] lg:max-w-[660px] md:px-6 md:py-4"
+                                          className="w-full"
                                       >
                                           <Suspense fallback={"Loading.."}>
                                               {/* Full-screen on mobile (min-h-dvh,
                                                   no rounding, no gap); a centred
                                                   card on desktop. */}
-                                              <div className="relative flex min-h-dvh w-full flex-col border-black bg-[#FFF6EC] p-6 md:min-h-0 md:rounded-[30px] md:border-[3px] md:p-8">
+                                              <div className="relative flex min-h-dvh w-full flex-col bg-[#FFF6EC] px-4 py-6 sm:px-6 md:px-8 md:py-10">
                                                   <button
                                                       type="button"
                                                       onClick={() =>
@@ -530,7 +574,7 @@ export default function Dashboard(props) {
                                                   ) : (
                                                       ""
                                                   )}
-                                                  <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 md:max-h-[50vh] md:flex-none md:px-4">
+                                                  <div className="mx-auto min-h-0 w-full max-w-4xl flex-1 overflow-y-auto pt-2 pb-24 md:overflow-visible md:pb-0">
                                                       {wishOptions ? (
                                                           <div>
                                                               <Wishlist
@@ -596,7 +640,10 @@ export default function Dashboard(props) {
                                                               <div
                                                                   className={`${AuthUserStripeConnected == 1 ? "block" : "disabled"}`}
                                                               >
-                                                                  <div className="w-full grid grid-cols-1 lg:grid-cols-1 gap-x-4 gap-y-1">
+                                                                  {/* Two columns from `md`: six earning routes in one
+                                                                      column made the page a list to scroll rather than a
+                                                                      menu to read. */}
+                                                                  <div className="grid w-full grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2">
                                                                       <div
                                                                           onClick={() =>
                                                                               setWishOptions(
@@ -857,36 +904,12 @@ export default function Dashboard(props) {
     const creatorPayoutAction =
         IsloggedIn && user && user.role == 1 ? (
             <>
-                {auth?.user?.role == 1 && AuthUserStripeConnected == 1 ? (
+                {auth?.user?.role == 1 && AuthUserStripeConnected == 1 &&  (
                     <PaymentDashboard
                         classes="w-full rounded-box-sm border-2 border-black bg-black !px-4 py-3 text-sm font-black uppercase tracking-wider text-white transition-colors hover:bg-gray-900"
                         text="Creator Payment Dashboard"
                     />
-                ) : (
-                    <>
-                        {auth?.user?.identity_status == 1 ? (
-                            <div className="finish block">
-                                <p className="mb-3 text-sm font-bold text-black">
-                                    Finish setting up your account to receive
-                                    funds.
-                                </p>
-                                <Link
-                                    disabled={
-                                        auth?.user?.monthly_charge_enabled
-                                            ? ""
-                                            : true
-                                    }
-                                    href={"/stripe"}
-                                    className="block w-full rounded-box-sm border-2 border-black bg-[#FF007F] p-3 text-center text-sm font-black uppercase tracking-widest text-white transition-colors hover:bg-[#E60072]"
-                                >
-                                    Finish Setup
-                                </Link>
-                            </div>
-                        ) : (
-                            ""
-                        )}
-                    </>
-                )}
+                )  || ''}
             </>
         ) : null;
 
@@ -1043,6 +1066,15 @@ export default function Dashboard(props) {
                                     )} */}
 
                                             {IsloggedIn && (
+                                                <PendingChangesNotice
+                                                    assets={
+                                                        pending_profile_changes
+                                                    }
+                                                    className="mb-3"
+                                                />
+                                            )}
+
+                                            {IsloggedIn && (
                                                 <CreatorRiskBanner />
                                             )}
 
@@ -1060,14 +1092,11 @@ export default function Dashboard(props) {
                                                         📈
                                                     </span>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="text-[12px] font-black uppercase tracking-widest text-[#FF007F]">
+                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-[#FF007F]">
                                                             Grow your income
                                                         </div>
-                                                        <div className="text-[17px] py-1 font-gulfs font-black uppercase tracking-widest text-black leading-tight">
-                                                            See your top
-                                                            supporters
-                                                        </div>
-                                                        <div className="text-[13px] font-semibold text-gray-600 mt-0.5">
+                                                        
+                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
                                                             Who spends the most,
                                                             who&apos;s gone
                                                             quiet, and how to
@@ -1075,6 +1104,36 @@ export default function Dashboard(props) {
                                                         </div>
                                                     </div>
                                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#05EFB8] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
+                                                        ›
+                                                    </span>
+                                                </Link>
+                                            )}
+
+                                            {/* Owner-only. The six module tabs below show one type
+ at a time; this is the only route to the whole catalogue,
+ which is where a rejected or expired listing surfaces. */}
+                                            {IsloggedIn && (
+                                                <Link
+                                                    href={route(
+                                                        "catalogue.index",
+                                                    )}
+                                                    className="group mt-3 flex items-center gap-4 rounded-[25px] border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                >
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] border-[3px] border-black bg-[#05EFB8] text-2xl">
+                                                        🗂️
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-black">
+                                                            My listings
+                                                        </div>
+                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
+                                                            Everything you sell
+                                                            in one place — and
+                                                            anything that is
+                                                            stuck.
+                                                        </div>
+                                                    </div>
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-white text-lg font-black transition-transform group-hover:translate-x-0.5">
                                                         ›
                                                     </span>
                                                 </Link>
@@ -1114,10 +1173,7 @@ export default function Dashboard(props) {
 
                                                             <div className="tabs-containers min-height">
                                                                 <>
-                                                                    {page ===
-                                                                        "about" ||
-                                                                    page ===
-                                                                        false ? (
+                                                                    {page === "about" || page === false ? (
                                                                         <Suspense
                                                                             fallback={
                                                                                 <LoadingScreen />
@@ -1168,8 +1224,13 @@ export default function Dashboard(props) {
                                                                                         <OfferAnnouncement variant="default" />
                                                                                     </Suspense>
                                                                                 )}
+                                                                                {/* ⚠️ empty:hidden. This column is `flex flex-col gap-4`, so a
+                                                                                    wrapper whose component renders null is still a flex item and
+                                                                                    still gets its 16px of gap — an empty band across the page with
+                                                                                    nothing in it. The ReturningSupporter wrapper below already
+                                                                                    carried the guard; this one did not. */}
                                                                                 {IsloggedIn && (
-                                                                                    <div>
+                                                                                    <div className="empty:hidden">
                                                                                         <ReferralBanner />
                                                                                     </div>
                                                                                 )}
@@ -1178,6 +1239,42 @@ export default function Dashboard(props) {
                                                                                 <div className="empty:hidden">
                                                                                     <ReturningSupporter />
                                                                                 </div>
+
+                                                                                {/* ⚠️ Above About me, deliberately, and there is only ONE of
+                                                                                    these. A creator whose subscription income had been paused
+                                                                                    for not posting could not learn that from their own
+                                                                                    profile — the only surface saying so sat ~1,000 lines
+                                                                                    further down the page behind a Stripe gate. A second
+                                                                                    strip was briefly added at the top instead, which left
+                                                                                    the page telling the creator the same thing twice in two
+                                                                                    different tones. This card is the one that carries BOTH
+                                                                                    payment rules, so it is the one that moved.
+
+                                                                                    ⚠️ Gated on Stripe connected AND identity verified
+                                                                                    (3 Aug 2026, client direction). It briefly ran for every
+                                                                                    creator on the reasoning that the component states its
+                                                                                    own "finish verifying" case — but its headline is "YOUR
+                                                                                    PAYMENTS ARE PAUSED", and a creator who has not finished
+                                                                                    Connect has no payments to pause. That reads as a fault
+                                                                                    on their account at the exact moment they are being asked
+                                                                                    to trust the platform with their bank details. The
+                                                                                    journey card is what speaks to a creator before this
+                                                                                    point; this card starts once there is money to stop. */}
+                                                                                {canSeeActivityCard &&
+                                                                                    activityStatus && (
+                                                                                        <Suspense
+                                                                                            fallback={
+                                                                                                null
+                                                                                            }
+                                                                                        >
+                                                                                            <CreatorActivityWidget
+                                                                                                activityStatus={
+                                                                                                    activityStatus
+                                                                                                }
+                                                                                                className="!mt-0"
+                                                                                            />
+                                                                                        </Suspense>
+                                                                                    )}
 
                                                                                 {/* About + earnings first: the two things a visitor looks for */}
                                                                                 <div>
@@ -1229,34 +1326,11 @@ export default function Dashboard(props) {
                                                                                         ]}
                                                                                     />
                                                                                 </div>
-                                                                                {IsloggedIn &&
-                                                                                    auth?.user &&
-                                                                                    auth
-                                                                                        ?.user
-                                                                                        ?.role ==
-                                                                                        1 &&
-                                                                                    UserStripeConnected ==
-                                                                                        1 && (
-                                                                                        <Suspense
-                                                                                            fallback={
-                                                                                                <div className="mb-4">
-                                                                                                    Loading
-                                                                                                    activity
-                                                                                                    status...
-                                                                                                </div>
-                                                                                            }
-                                                                                        >
-                                                                                            <CreatorActivityWidget
-                                                                                                activityStatus={
-                                                                                                    activityStatus
-                                                                                                }
-                                                                                                className=""
-                                                                                            />
-                                                                                        </Suspense>
-                                                                                    )}
-                                                                                {IsloggedIn &&
-                                                                                UserStripeConnected !==
-                                                                                    1 ? (
+                                                                                {/* The activity card moved to the top of this tab, above
+                                                                                    About me — it is the creator's payment status and was
+                                                                                    unreadable buried here. Rendering it in both places
+                                                                                    left the page saying the same thing twice. */}
+                                                                                {IsloggedIn && auth?.user?.role == 1 && auth?.user?.identity_status !== 1 ? (
                                                                                     <CreatorVerification
                                                                                         IsloggedIn={
                                                                                             IsloggedIn
@@ -1309,6 +1383,7 @@ export default function Dashboard(props) {
                                                                                         !card_capabilities &&
                                                                                         !isNeedToUpgrade &&
                                                                                         !hasPendingCardPayments &&
+                                                                                        !hasStripeActionPanel &&
                                                                                         (AuthUserStripeConnected ||
                                                                                             has_stripe_account) ? (
                                                                                             <EnableCardCapabilities />
@@ -1606,9 +1681,7 @@ export default function Dashboard(props) {
                                                                                     )}
 
                                                                                 <div className="w-full">
-                                                                                    {IsloggedIn &&
-                                                                                    UserStripeConnected ==
-                                                                                        1 ? (
+                                                                                    {IsloggedIn && UserStripeConnected == 1 ? (
                                                                                         <>
                                                                                             <Suspense
                                                                                                 fallback={
@@ -1651,7 +1724,9 @@ export default function Dashboard(props) {
                                                                                                 null
                                                                                             }
                                                                                         >
-                                                                                            <TipInner classes="" />
+                                                                                            <div className='pb-4'>
+                                                                                                <TipInner classes="" />
+                                                                                            </div>
                                                                                         </Suspense>
                                                                                     ) : (
                                                                                         ""
@@ -1709,9 +1784,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn ||
-                                                                    UserStripeConnected ==
-                                                                        1 ? (
+                                                                    {IsloggedIn || UserStripeConnected == 1 ? (
                                                                         <>
                                                                             {page ===
                                                                             "wishes" ? (
@@ -2518,6 +2591,10 @@ export default function Dashboard(props) {
                         />
                     </Suspense>
                 )}
+
+                <Suspense fallback={null}>
+                    <SubscriptionNewsPopup isOwnProfile={IsloggedIn} />
+                </Suspense>
 
                 <OldSubscribe />
             </Guest>

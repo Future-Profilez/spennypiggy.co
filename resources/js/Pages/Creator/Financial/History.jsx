@@ -8,6 +8,7 @@ import {
     ChevronRightIcon
 } from "@animateicons/react/lucide";
 import { ArrowLeftIcon, FileTextIcon } from "lucide-react";
+import DeliveryStatus from '@/Components/Transactions/DeliveryStatus';
 
 
 export default function History({ auth, transactions }) {
@@ -194,6 +195,9 @@ const TransactionRow = ({ tx, formatCurrency }) => {
                         Paid out
                     </div>
                 )}
+                {/* What the platform sent YOU about this sale. Your own messages
+                    only — never the supporter's. */}
+                <DeliveryStatus notifications={tx.notifications} className="mt-1.5" />
             </td>
             <td className="px-6 py-4 text-xs border-r-[2px] border-black text-center">
                 {tx.reserve_amount > 0 ? (

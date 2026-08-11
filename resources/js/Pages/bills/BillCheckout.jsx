@@ -13,6 +13,7 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import axios from "axios";
+import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
 
 export default function BillCheckout(props) {
     const {
@@ -24,6 +25,7 @@ export default function BillCheckout(props) {
         platform_fee_percentage,
         transaction_fee_percentage,
     } = usePage().props;
+    const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const {
@@ -84,8 +86,11 @@ export default function BillCheckout(props) {
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        // Per-creator: a creator on a bespoke platform rate must be QUOTED
+        // what checkout will CHARGE them. The global props cannot express that.
+        const __rates = feeRatesFor(creatorIdOf(bill), __pageProps);
+        const platformFeeRate = __rates.platform / 100;
+        const complianceFeeRate = __rates.compliance / 100;
         const adminFee = adminFeeInCurrency(curr);
         const totalDeductionRate =
             stripeFeeRate + platformFeeRate + complianceFeeRate;

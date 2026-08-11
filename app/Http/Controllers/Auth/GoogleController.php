@@ -140,33 +140,45 @@ class GoogleController extends Controller
                 ->with('error', 'Your account is suspended. Please contact support.');
         }
 
+        // ⚠️ Read the context BEFORE any branch returns.
+        //
+        // The 2FA branch below used to `return` without ever touching `google_signup_context`, so
+        // for any account with two-factor on: the `?redirect=` target was dropped, the referring
+        // creator was never credited, and the stale context sat in the session until a later OAuth
+        // attempt overwrote it. Silent — no error, nothing logged. That is the exact loss
+        // `CARRIED_QUERY` exists to prevent, left unfixed on one branch.
+        //
+        // `pull` rather than `get` + `forget`: the context is spent either way, and one call
+        // cannot be half-done by a branch that returns early.
+        $context = (array) $request->session()->pull('google_signup_context', []);
+        $target = $this->safeRedirect($context['redirect'] ?? null);
+
         // 🚨 Two-factor is not optional because the door is a different one. Signing this person
         // straight in would turn the Google button into a way around the second factor they
         // deliberately switched on.
         //
-        // They are sent to the password form rather than to an OTP screen, because the existing
-        // OTP step CANNOT complete a Google sign-in: `verify2FA` re-authenticates with
-        // `Auth::attempt(['email' => …, 'password' => …])`, and a Google user has no password to
-        // supply. Making it work needs a session-authorised login path — new authentication code
-        // that signs somebody in without a password, which is written deliberately and with tests,
-        // not as a side effect of adding a button. Tracked in TASKS.
+        // They go to the OTP screen, which completes the sign-in without a password by reading
+        // `google_2fa_pending`. That is safe only because the entry is written here — after Google
+        // reported the address verified — and `verify2FA` requires the posted email to match it.
+        // Google alone is not enough, and the authenticator alone is not enough.
         if ($user->is_2fa) {
             $request->session()->put('google_2fa_pending', self::pending([
                 'email' => $user->email,
             ]));
 
+            // Carried across the OTP step so a referred or deep-linked sign-in survives it.
+            // `verify2FA` finishes with `getRedirectUrl()`, which pulls this.
+            if ($target) {
+                $request->session()->put('url.intended', $target);
+            }
+
             return redirect()->route('login');
         }
-
-        $context = (array) $request->session()->get('google_signup_context', []);
 
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        // Clear the google context from session
-        $request->session()->forget('google_signup_context');
-
-        if ($target = $this->safeRedirect($context['redirect'] ?? null)) {
+        if ($target) {
             return redirect($target);
         }
 

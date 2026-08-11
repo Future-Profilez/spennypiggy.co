@@ -28,11 +28,40 @@ class EmailVerificationNotificationController extends Controller
     public function sendVerificationEmail()
     {
         $user = User::whereId(Auth::id())->first();
+
+        if (! $user) {
+            return response()->json(['status' => false, 'message' => 'Not signed in.'], 401);
+        }
+
+        // Already verified is not an error, but it must not send another mail.
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'status' => true,
+                'verified' => true,
+                'message' => 'Your email is already verified.',
+            ]);
+        }
+
         VerifyEmail::dispatch($user);
 
         return response()->json([
             'status' => true,
-            'message' => 'Verification link sent on your registred email address.',
+            'verified' => false,
+            'message' => 'Verification link sent to your registered email address.',
+        ]);
+    }
+
+    /**
+     * Cheap poll for the verification screen.
+     *
+     * The page used to `window.location.reload()` every 5 seconds forever while
+     * waiting — a full page load per tick, on every open tab, which also made the
+     * screen impossible to read.
+     */
+    public function status()
+    {
+        return response()->json([
+            'verified' => (bool) optional(Auth::user())->hasVerifiedEmail(),
         ]);
     }
 }

@@ -2,6 +2,7 @@ import { useState, lazy, useEffect } from "react";
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import CustomProgressBar from "../Components/CustomProgressBar";
+import { creatorIdOf } from "@/utils/pricing";
 const Popup = lazy(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
@@ -80,7 +81,9 @@ export default function AddCart(props) {
                                         {formatMultiPrice(
                                             calculateTotalSupporterPays(
                                                 (parseFloat(item.price || 0) * (1 + (item?.user?.vat_amount_percentage || 0) / 100)), 
-                                                item?.currency || 'USD'
+                                                item?.currency || 'USD',
+                                                0,
+                                                creatorIdOf(item)
                                             ).total_supporter_pays, 
                                             item?.currency || 'USD'
                                         )}
@@ -256,7 +259,7 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                         <ToCart
@@ -272,7 +275,7 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`button-pink btn-shadow shadow-[4px_4px_0px_0px_#FF007F]lack !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                     </div>

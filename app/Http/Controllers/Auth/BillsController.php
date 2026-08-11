@@ -36,6 +36,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -189,7 +190,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
 
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['total_fees'];
@@ -303,7 +304,7 @@ class BillsController extends Controller
         }
 
         $user = User::where('id', Auth::id())->first();
-        $bill = Bills::where('uuid', $id)->where('user_id', Auth::id())->first();
+        $bill = Bills::withScheduled()->where('uuid', $id)->where('user_id', Auth::id())->first();
 
         if (! $user || ! $bill) {
             return response()->json([
@@ -331,7 +332,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
 
         $taxamount = $breakdown['application_fee'];
         $totalAmount = $breakdown['total_supporter_pays'];
@@ -622,6 +623,8 @@ class BillsController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($bill->user, $bill->price);
 
             // Log the blocked payment for subscription issues
             Log::warning('Bill payment blocked due to subscription issue', [
@@ -662,7 +665,7 @@ class BillsController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate, 'card', $bill->user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -735,6 +738,9 @@ class BillsController extends Controller
                 'creator_currency' => $bill->currency,
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
+                // On a RECURRING row this is also the grandfathering record: the
+                // supporter keeps this rate at renewal unless a LOWER one is agreed.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             // Apply digital waiver confirmation
@@ -1056,7 +1062,7 @@ class BillsController extends Controller
                 $this->createBillDeliverable($bill_pay, $session);
 
                 // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency, 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
                 $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
 
                 // Dispatch mail jobs
@@ -1110,7 +1116,7 @@ class BillsController extends Controller
                         $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
                     }
                     // Use actual fee breakdown from the gross-up formula
-                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'));
+                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'), 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
                     $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
                     $stripeFee = $billBreakdown['stripe_fee'];
                     $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
@@ -1202,7 +1208,7 @@ class BillsController extends Controller
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use consistent fee calculation for creator net amount
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, $reserveRate);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, $reserveRate, $billPayment->fee_profile ?? 'card', null, Helpers::storedFeeRates($billPayment));
             $creatorNet = $breakdown['net_to_creator'];
 
             // Get payment intent ID from Stripe session if available
@@ -1921,7 +1927,7 @@ class BillsController extends Controller
     {
         try {
             $user = Auth::user();
-            $billIds = Bills::where('user_id', $user->id)->pluck('id')->toArray();
+            $billIds = Bills::withScheduled()->where('user_id', $user->id)->pluck('id')->toArray();
 
             $perPage = $request->get('per_page', 20);
 

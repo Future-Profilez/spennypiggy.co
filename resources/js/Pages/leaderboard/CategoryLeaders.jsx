@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "@inertiajs/react";
 import useBundleSection from './useBundle';
-import Avatar from '@/includes/Avatar';
+import VerifiedBadge from '@/Components/VerifiedBadge';
+import userphoto from "../../../assets/siteicon.png";
 import PriceFormat from '@/includes/PriceFormat';
 import { RiHeartLine, RiGiftLine, RiShoppingBagLine, RiBankCardLine, RiGroupLine, RiStarLine } from 'react-icons/ri';
 import { trackSearchClick } from "@/includes/Analytics";
@@ -30,46 +32,63 @@ export default function CategoryLeaders() {
         { key: 'shop', label: 'Shop', icon: RiShoppingBagLine, color: 'text-orange-600' }
     ];
 
-    const CategoryItem = ({ creator, rank }) => (
-        <div className="animate-fading category-item relative bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-3 mb-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center ">
-                    <div className="absolute top-2 left-2 z-10 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-                        {rank}
-                    </div>
-                    <Avatar
-                        name={creator.name}
-                        src={creator.avatar_url}
-                        role={creator.role}
-                        profile_status_lock={creator.profile_status_lock}
-                        username={creator.username}
-                        link={creator.username}
-                        size="md"
-                        onClick={() => trackSearchClick(creator.id, creator.username)}
+    /**
+     * Same row grammar as the board's own rail: rank, squircle avatar, name,
+     * then one wrapping meta line.
+     *
+     * The old card put "Last 3 months" and the transaction count in a right
+     * column with no width of its own, so on a phone they broke mid-phrase —
+     * "Last 3 / months", "4 / transactions" — while squeezing the name down to
+     * "Sachin…" beside a handle that still fitted in full. Only the figure
+     * stays on the right now, and it never wraps.
+     */
+    const CategoryItem = ({ creator, rank }) => {
+        const count = creator.total_count || creator.supporters_count || 0;
+        const countLabel = creator.supporters_count ? 'supporters' : 'transactions';
+
+        return (
+            <div className="animate-fading category-item flex items-center gap-2.5 border-b border-black/[0.06] py-3 last:border-b-0 sm:gap-3">
+                <span className="w-6 shrink-0 text-center font-gulfs text-15 leading-none text-black/25">
+                    {rank}
+                </span>
+
+                <Link
+                    href={`/${creator.username}`}
+                    onClick={() => trackSearchClick(creator.id, creator.username)}
+                    className="flex min-w-0 flex-1 items-center gap-2.5"
+                >
+                    <img
+                        src={creator.avatar_url || userphoto}
+                        alt=""
+                        loading="lazy"
+                        className="h-10 w-10 shrink-0 rounded-box-sm object-cover shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
                     />
-                    {/* <div>
-                        <h4 className="font-semibold text-gray-900">{creator.name}</h4>
-                        <p className="text-sm text-gray-600">@{creator.username}</p>
-                    </div> */}
-                </div>
-                <div className="text-right px-3">
-                    {/* Show engagement metrics if available, otherwise show monetary */}
-                    {creator.engagement_score ? (
-                        <>
-                            <p className="font-bold text-lg">👥 {creator.engagement_score}</p>
-                            <p className="text-sm text-gray-600">Engagement score</p>
-                        </>
-                    ) : (
-                        <>
-                            <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'GBP')}</p>
-                            <p className="text-sm text-gray-600">Last 3 months</p>
-                            <p className="text-xs text-gray-500">{creator.total_count || creator.supporters_count || 0} {creator.supporters_count ? 'supporters' : 'transactions'}</p>
-                        </>
-                    )}
-                </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="truncate text-14 font-semibold capitalize tracking-tight text-[#0B0B0C]">
+                                {creator.name}
+                            </span>
+                            <VerifiedBadge user={creator} size="sm" />
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-11 text-black/45">
+                            <span className="truncate">@{creator.username}</span>
+                            {!creator.engagement_score && (
+                                <span className="whitespace-nowrap">
+                                    {count} {countLabel} · last 3 months
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </Link>
+
+                <span className="shrink-0 whitespace-nowrap text-14 font-semibold tabular-nums text-[#0B0B0C]">
+                    {creator.engagement_score
+                        ? `${creator.engagement_score} pts`
+                        : formatMultiPrice(creator.total_amount, creator.currency || 'GBP')}
+                </span>
             </div>
-        </div>
-    );
+        );
+    };
 
     const EmptyState = ({ category }) => (
         <div className="animate-fading text-center py-12">

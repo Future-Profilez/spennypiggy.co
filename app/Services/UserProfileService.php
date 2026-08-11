@@ -69,6 +69,10 @@ class UserProfileService
                 'country',
                 'creator_category',
                 'identity_status',
+                // The badge tier is derived from these; an admin rejection of
+                // the identity check outranks Stripe's pass, and a suspended
+                // account carries no badge at all. See App\Support\VerifiedBadge.
+                'identity_admin_status',
                 'edit_bio_reason',
                 'profile_status_lock',
                 'is_subscribed',
@@ -150,10 +154,17 @@ class UserProfileService
     public function getOptimizedTasks(int $userId, bool $isOwner, ?int $limit = null): array
     {
         $query = Task::where('creator_id', $userId);
+
+        // ⚠️ The owner sees their own scheduled listings — they manage this page, and a
+        // listing that silently vanished until launch day would read as lost work. The
+        // public sees only what is on sale.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
         if (! $isOwner) {
             $query->where('status', 'active')->where('is_approved', 1)->where('is_suspended', 0);
         }
-        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description'])
+        $query = $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason', 'is_suspended', 'suspend_reason', 'reward_title', 'reward_type', 'reward_description', 'publish_at'])
             ->latest();
 
         $cacheKey = 'user_tasks_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -172,7 +183,7 @@ class UserProfileService
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner, int $limit = 20): array
     {
-        $query = WishItem::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -192,11 +203,39 @@ class UserProfileService
             'tax_amount',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+            'publish_at',
+        ];
+
+        // ⚠️ The owner edits a wish straight from their own card, and the edit
+        // form patches whatever it sends — a column absent from this payload
+        // loads as an empty field and is written back empty. `reward_body` is
+        // the paid deliverable of a message/link reward, so it is OWNER ONLY
+        // (the model hides it; HasRewardContract reveals it to the owner).
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'item_url',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+                'subscription_period',
+                'repeat_purchase',
+                'ai_generated',
+                'reward',
+            ]);
+        }
+
+        $query = WishItem::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('is_approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         if ($categoryId && $categoryId !== 'all') {
@@ -235,11 +274,15 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
+            'publish_at',
         ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_memberships_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -259,7 +302,7 @@ class UserProfileService
      */
     private function getOptimizedBills(int $userId, bool $isOwner, ?int $limit = null): array
     {
-        $query = Bills::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -275,11 +318,34 @@ class UserProfileService
             'created_at',
             'is_suspended',
             'suspend_reason',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            'goal_label',
+            'publish_at',
+        ];
+
+        // ⚠️ The owner edits a bill straight from their own card, and the edit
+        // form sends the whole reward object back — a column absent here loads
+        // empty, and `billEdit` then either refuses the save (a file/message
+        // reward is required) or writes the empty value. `reward_body` is the
+        // paid deliverable of a message/link reward, so it is OWNER ONLY.
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+            ]);
+        }
+
+        $query = Bills::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1)->where('is_suspended', 0);
+        } else {
+            // See getOptimizedTasks — the owner sees their own scheduled listings.
+            $query->withoutGlobalScope('published');
         }
 
         $cacheKey = 'user_bills_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
@@ -302,6 +368,11 @@ class UserProfileService
         $query = Shop::where('user_id', $userId)->where('status', 1)
             ->with('category')
             ->withCount('paidPayments');
+
+        // See getOptimizedTasks — the owner sees their own scheduled listings.
+        if ($isOwner) {
+            $query->withoutGlobalScope('published');
+        }
 
         if ($isOwner) {
             $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
@@ -368,10 +439,16 @@ class UserProfileService
             'is_pinned',
             'approved',
             'created_at',
+            // ⚠️ The publish-time scope filters on `scheduled_at`, and
+            // `is_scheduled` is appended from it — a select list without the
+            // column leaves every card claiming it is not scheduled.
+            'scheduled_at',
         ])->where('user_id', $userId);
 
         if (! $isOwner) {
             $query->where('approved', 1);
+        } else {
+            $query->withScheduled();
         }
 
         $viewerId = Auth::id() ?: 0;
@@ -577,6 +654,11 @@ class UserProfileService
         // Apply approval filter for non-owners
         if (! Auth::check() || Auth::id() !== $userId) {
             $query->where('approved', 1);
+        } else {
+            // The owner sees their own queue. `withScheduled()` lifts the global
+            // publish-time scope, and the card labels each one — a creator who
+            // schedules a post for Friday must be able to see that they did.
+            $query->withScheduled();
         }
 
         // Apply module filtering
@@ -1094,6 +1176,102 @@ class UserProfileService
             'purchases' => (int) $row->purchases,
             'since' => $row->first_purchase ? Carbon::parse($row->first_purchase)->format('M Y') : null,
         ];
+    }
+
+    /**
+     * Public supporter profile payload — engagement level, badges, activity.
+     *
+     * ⚠️ MONEY IS NEVER RETURNED. A supporter's lifetime spend is private: the
+     * engagement Level is already public (leaderboard + every creator's supporter
+     * wall), but the amount behind it is not, and a public profile is the one place
+     * it could leak to anyone with the URL. Counts only — purchases, creators,
+     * feature types. That also matches the Stripe compliance rule that supporters
+     * are ranked by purchase count, never by amount.
+     */
+    public function getGifterStats(int $userId): ?array
+    {
+        $user = User::select('id', 'created_at')->find($userId);
+        if (! $user) {
+            return null;
+        }
+
+        // Lifetime, from the canonical ledger. The VIP payload below is a rolling
+        // 90-day engagement window, so it cannot answer "how long have they been here".
+        $row = FinancialTransaction::query()
+            ->where('type', 'income')
+            ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+            ->where('supporter_id', $userId)
+            ->selectRaw('COUNT(*) as purchases, COUNT(DISTINCT user_id) as creators, MIN(transaction_date) as first_purchase')
+            ->first();
+
+        $vip = app(VipScoreService::class)->for($user);
+        unset($vip['totals']['amount_gbp'], $vip['breakdown']['spend']);
+
+        return [
+            'vip' => $vip,
+            'purchases' => (int) ($row->purchases ?? 0),
+            'creators' => (int) ($row->creators ?? 0),
+            'since' => $row?->first_purchase
+                ? Carbon::parse($row->first_purchase)->format('M Y')
+                : Carbon::parse($user->created_at)->format('M Y'),
+            'member_since' => Carbon::parse($user->created_at)->format('M Y'),
+        ];
+    }
+
+    /**
+     * The creators this supporter backs — OWNER ONLY.
+     *
+     * ⚠️ This is deliberately not public, and the caller must gate it. Each edge
+     * is already public from the other side (a creator's page lists its own
+     * supporters, the leaderboard lists VIPs), but collecting every creator one
+     * person buys from onto a single page is a different exposure: it is a taste
+     * profile, on a platform that hosts adult-adjacent work, and the supporter
+     * never opted into it. The public card shows the COUNT; only the owner sees
+     * who. Flip this only as a deliberate product decision.
+     */
+    public function getGifterCreators(int $userId, int $limit = 12): array
+    {
+        $rows = FinancialTransaction::query()
+            ->where('type', 'income')
+            ->whereNotIn('status', ['refunded', 'failed', 'cancelled', 'disputed'])
+            ->where('supporter_id', $userId)
+            // An income row's user_id IS the creator — there is no creator_id column.
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->selectRaw('user_id, COUNT(*) as purchases, MAX(transaction_date) as last_purchase')
+            ->orderByDesc('purchases')
+            ->limit($limit)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        // avatar_url is an accessor over a bare Uploadcare uuid and reads the
+        // approval flag, so the model must carry all four columns — a hand-built
+        // CDN string would serve unapproved avatars.
+        $creators = User::whereIn('id', $rows->pluck('user_id'))
+            ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'suspended_account'])
+            ->keyBy('id');
+
+        return $rows->map(function ($row) use ($creators) {
+            $creator = $creators->get($row->user_id);
+            if (! $creator) {
+                return null;
+            }
+
+            $suspended = (int) $creator->suspended_account === 1;
+
+            return [
+                'name' => $creator->name,
+                // A suspended creator's page answers 410, so the tile is shown
+                // without a link rather than dropped — the supporter did buy from
+                // them, and silently losing that is worse than an inert tile.
+                'username' => $suspended ? null : $creator->username,
+                'avatar' => $creator->avatar_url,
+                'purchases' => (int) $row->purchases,
+            ];
+        })->filter()->values()->all();
     }
 
     /**
@@ -1678,28 +1856,47 @@ class UserProfileService
 
         // Also update any local MonthlyCharge record for this user that thinks it's active
         // since Stripe has confirmed there is no active subscription whatsoever.
-        MonthlyCharge::where('user_id', $user->id)
-            ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
-            ->update([
-                'status' => 'expired',
-                'upcoming_payment' => null,
-                'updated_at' => now(),
-            ]);
+        //
+        // ⚠️ The same guard as above, and it is NOT optional. Under setup-mode
+        // checkout a creator has a saved card and no Stripe subscription until
+        // their first sale, so this sweep — every 15 minutes — found "no
+        // subscription" and expired the row. The creator was then told to add a
+        // card they had already added. Guarding only the is_subscribed flag above
+        // and not this write left exactly that bug.
+        if (! $awaitingFirstSale) {
+            MonthlyCharge::where('user_id', $user->id)
+                ->whereIn('status', ['paid', 'active', 'trialing', 'trial_ending', 'renew'])
+                ->update([
+                    'status' => 'expired',
+                    'upcoming_payment' => null,
+                    'updated_at' => now(),
+                ]);
+        }
 
         return null;
     }
 
     public function getOptimizedPiggyPots(int $userId, bool $isOwner, bool $onlyPinned = true): array
     {
-        $statuses = $isOwner
-            ? ['active', 'completed', 'expired', 'moderation_hold']
-            : ['active', 'completed'];
-
         $query = PiggyPot::where('user_id', $userId)
-            ->whereIn('status', $statuses)
             ->withSum(['contributions as total_raised' => function ($query) {
                 $query->where('status', 'paid');
             }], 'amount');
+
+        if ($isOwner) {
+            // The creator sees their whole shelf, closed pots included — hiding a
+            // creator's own row from them reads as data loss, and the dashboard is
+            // where they go to fix a lapsed deadline.
+            $query->whereIn('status', ['active', 'completed', 'expired', 'moderation_hold']);
+        } else {
+            // ⚠️ A status filter alone is NOT enough here. `expired` is written by
+            // an hourly sweep, so a pot whose deadline passed at midnight is still
+            // `active` until it runs — and `completed` was public despite being
+            // refused at checkout. Either way the profile advertised a pot that
+            // took the visitor to "this content is no longer available".
+            // PiggyPotStatusService is the single definition both halves read.
+            PiggyPotStatusService::scopePubliclyVisible($query);
+        }
 
         // The profile's featured slot shows the pinned pot. A creator who has
         // never pinned one — which is now every creator, because a pot is held
@@ -1707,6 +1904,11 @@ class UserProfileService
         // would otherwise have an empty slot even with live pots, and their
         // freshly approved pot would appear nowhere until they went and pinned
         // it by hand. Falling back to the newest live pot keeps the slot honest.
+        //
+        // ⚠️ Both branches run AFTER the visibility filter, so a pinned pot that
+        // has closed no longer wins the slot and silences the fallback — which is
+        // exactly how a creator's profile ended up featuring a pot that closed
+        // months earlier.
         if (! $isOwner && $onlyPinned) {
             $pinned = (clone $query)->where('is_pinned', true)->exists();
 

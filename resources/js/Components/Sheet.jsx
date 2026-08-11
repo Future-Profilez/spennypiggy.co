@@ -27,20 +27,16 @@ export default function Sheet({
     children,
     footer,
     header = null,
+    headerAction = null,
     size = "xl",
     initialFocus,
 }) {
     const fallbackFocus = useRef(null);
 
-    const maxWidth =
-        {
-            md: "md:max-w-md",
-            lg: "md:max-w-lg",
-            xl: "md:max-w-xl",
-            "2xl": "md:max-w-2xl",
-            "3xl": "md:max-w-3xl",
-            "4xl": "md:max-w-4xl",
-        }[size] || "md:max-w-3xl";
+    // `size` is accepted and ignored: the sheet is full-page now, and the inner
+    // content is what constrains its own measure. Kept in the signature so the
+    // half-dozen call sites that still pass it do not have to change.
+    void size;
 
     // An onClose that returns false vetoes the dismissal — forms use it to
     // confirm before discarding input.
@@ -85,7 +81,13 @@ export default function Sheet({
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
                 </Transition.Child>
 
-                <div className="fixed inset-0 flex items-stretch justify-center md:items-center md:p-6">
+                {/* ⚠️ Full page at EVERY size, matching the post composer.
+                    Selling something is the creator's main job, and it was being
+                    done in a `max-w-3xl` card capped at 88dvh — a stepped form
+                    with a preview column, a validation notice and a footer CTA
+                    all competing for a box two-thirds the height of the screen,
+                    with its own scrollbar inside the page's. */}
+                <div className="fixed inset-0 flex items-stretch justify-center">
                     <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-250"
@@ -96,55 +98,62 @@ export default function Sheet({
                         leaveTo="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
                     >
                         <Dialog.Panel
-                            // Mobile: a true full-screen surface (full width AND
-                            // height, no rounded top, no gap), so an add-item
-                            // form feels like a native screen rather than a card
-                            // floating on the page. Desktop stays a centred modal.
-                            className={`flex h-dvh w-full flex-col overflow-hidden border-[3px] border-black bg-white md:h-auto md:max-h-[88dvh] md:rounded-box md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] ${maxWidth}`}
+                            className="flex h-dvh w-full flex-col overflow-hidden bg-[#F2EFE7]"
                         >
-                            <header className="relative shrink-0 bg-[#FF007F] px-5 pb-4 text-white" style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}>
-                                {/* Decorative sheet handle — kept for the
-                                    familiar bottom-sheet look on mobile. */}
-                                <div
-                                    className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/70 md:hidden"
-                                    aria-hidden="true"
-                                />
-                                <div className="flex items-start gap-3 pr-12">
+                            {/* Black bar, same as the composer: this panel owns
+                                the whole screen, and a pink header edge-to-edge
+                                at 1440px is a wall of accent colour rather than a
+                                heading. Colour stays on the step meter and the
+                                CTA, where it means something. */}
+                            <header className="relative shrink-0 bg-black px-4 pb-4 text-white sm:px-6" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+                                <div className="mx-auto flex w-full max-w-6xl items-center gap-3">
+                                    <button
+                                        type="button"
+                                        ref={fallbackFocus}
+                                        onClick={requestClose}
+                                        aria-label="Close"
+                                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 border-white/25 text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                                    >
+                                        <X size={18} strokeWidth={3} />
+                                    </button>
+
                                     <div className="min-w-0 flex-1">
-                                        <Dialog.Title className="truncate text-left text-lg font-black uppercase tracking-wide">
+                                        <Dialog.Title className="truncate text-left font-GillSans text-lg uppercase leading-none tracking-wide sm:text-2xl">
                                             {title}
                                         </Dialog.Title>
                                         {subtitle && (
-                                            <p className="mt-0.5 text-left text-xs font-semibold text-white/80">
+                                            <p className="mt-1 truncate text-left text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
                                                 {subtitle}
                                             </p>
                                         )}
                                     </div>
+
+                                    {/* The primary action, kept at the top where
+                                        it is reachable without scrolling past the
+                                        whole form. The same action repeats at the
+                                        end of the flow; neither is pinned. */}
+                                    {headerAction}
                                 </div>
-                                <button
-                                    type="button"
-                                    ref={fallbackFocus}
-                                    onClick={requestClose}
-                                    aria-label="Close"
-                                    className="absolute right-4 top-3 grid h-11 w-11 place-items-center rounded-full border-[3px] border-black bg-white text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform active:translate-x-[1px] active:translate-y-[1px] md:top-4"
-                                >
-                                    <X size={18} strokeWidth={3} />
-                                </button>
-                                {header}
+                                {header && (
+                                    <div className="mx-auto mt-3 w-full max-w-6xl">{header}</div>
+                                )}
                             </header>
 
-                            <div className="customScrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6">
-                                {children}
-                            </div>
+                            {/* ⚠️ The footer scrolls WITH the form; it is not
+                                pinned. A fixed bar here overlaid the last option
+                                in the list — the tier picker's final row was cut
+                                in half by it — and on a phone it also stacked on
+                                top of the app's own fixed bottom navigation. */}
+                            <div
+                                className="customScrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 md:py-8"
+                                style={{ paddingBottom: "max(7rem, env(safe-area-inset-bottom))" }}
+                            >
+                                <div className="mx-auto w-full max-w-6xl">
+                                    {children}
 
-                            {footer && (
-                                <footer
-                                    className="shrink-0 border-t-[3px] border-black bg-white px-5 py-4"
-                                    style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-                                >
-                                    {footer}
-                                </footer>
-                            )}
+                                    {footer && <div className="mt-6">{footer}</div>}
+                                </div>
+                            </div>
                         </Dialog.Panel>
                     </Transition.Child>
                 </div>

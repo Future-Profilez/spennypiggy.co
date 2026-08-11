@@ -112,7 +112,7 @@ export default function MorConsent(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-900 rounded-[30px]  p-6 shadow-[4px_4px_0px_0px_#FF007F]l">
+                                <div className="bg-gray-900 rounded-[30px]  p-6 shadow-xl">
                                     <p className="text-white text-center font-bold text-sm leading-relaxed italic">
                                         "By continuing, I confirm that I have
                                         read, understood, and agree to this

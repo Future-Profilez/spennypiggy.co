@@ -7,6 +7,7 @@ use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
 use App\Models\Deliverable;
+use App\Models\FinancialTransaction;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\PiggyPot;
@@ -19,6 +20,8 @@ use App\Models\Task;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\WishItem;
+use App\Services\Ledger\LedgerRules;
+use App\Services\NotificationDeliveryService;
 use App\Services\VipScoreService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -64,7 +67,7 @@ class GifterHubController extends Controller
             'media_types' => $this->mediaTypeCounts($sources),
             'subscriptions' => $this->buildSubscriptions($sources),
             'unlocked' => $this->buildUnlocked($sources),
-            'spend_summary' => $this->buildSpendSummary($sources, $display),
+            'spend_summary' => $this->buildSpendSummary($buyer, $sources, $display),
         ], $this->surfaced($buyer, $sources, $display)));
     }
 
@@ -88,7 +91,7 @@ class GifterHubController extends Controller
             'media_types' => $this->mediaTypeCounts($sources),
             'subscriptions' => $this->buildSubscriptions($sources),
             'unlocked' => $this->buildUnlocked($sources),
-            'spend_summary' => $this->buildSpendSummary($sources, $display),
+            'spend_summary' => $this->buildSpendSummary($buyer, $sources, $display),
         ], $this->surfaced($buyer, $sources, $display)));
     }
 
@@ -206,6 +209,12 @@ class GifterHubController extends Controller
             ->latest()->limit(80)->get();
 
         foreach ($delis as $d) {
+            // Per-transaction reward: what did this purchase actually unlock?
+            // Wishes carry reward_body (text/link message) and reward_url (direct link).
+            // Shop items carry reward_file_url. Tasks carry deliverable_content.
+            // We surface all of them so the frontend can show contextual "What you got".
+            [$rewardText, $rewardUrl, $rewardType] = $this->resolveDeliverableReward($d);
+
             $out[] = [
                 'id' => "deliverable:{$d->id}",
                 'source_type' => $this->deliverableCat($d->product_type),
@@ -215,6 +224,10 @@ class GifterHubController extends Controller
                 'currency' => $d->payment_currency ?: 'GBP',
                 'date' => $this->ts($d->created_at),
                 'certificate_url' => $d->certificate_url,
+                // Reward fields — null when the purchase type has no digital reward
+                'reward_text' => $rewardText,
+                'reward_url' => $rewardUrl,
+                'reward_type' => $rewardType, // 'link' | 'text' | 'file' | null
             ];
         }
 
@@ -227,6 +240,10 @@ class GifterHubController extends Controller
             if (! $t->creator) {
                 continue;
             }
+            // Tips unlock the tipGoal's exclusive content (reward_url on the goal)
+            $rewardUrl = $t->tipGoal?->reward_url ?: null;
+            $rewardText = $t->tipGoal?->reward_body ?: $t->tipGoal?->reward_description ?: null;
+
             $out[] = [
                 'id' => "tip:{$t->id}",
                 'source_type' => 'tip',
@@ -236,12 +253,56 @@ class GifterHubController extends Controller
                 'currency' => $t->currency ?: 'GBP',
                 'date' => $this->ts($t->created_at),
                 'certificate_url' => $t->certificate_url,
+                'reward_text' => $rewardText,
+                'reward_url' => $rewardUrl,
+                'reward_type' => $rewardUrl ? 'link' : ($rewardText ? 'text' : null),
             ];
         }
 
         usort($out, fn ($a, $b) => strcmp((string) $b['date'], (string) $a['date']));
 
         return $out;
+    }
+
+    /**
+     * Resolve what a completed deliverable actually unlocked for the buyer.
+     *
+     * Returns [$rewardText, $rewardUrl, $rewardType].
+     * - Wish: reward_body (message/text) or reward_url (external link)
+     * - Shop: reward_file_url (digital download)
+     * - Task: deliverable_content (file/link uploaded by creator)
+     */
+    private function resolveDeliverableReward(Deliverable $d): array
+    {
+        switch ($d->product_type) {
+            case 'wish':
+                $wish = $d->wishItem;
+                if (! $wish) {
+                    return [null, null, null];
+                }
+                $url = $wish->reward_url ?: null;
+                $text = $wish->reward_body ?: $wish->reward_description ?: null;
+                $type = $url ? 'link' : ($text ? 'text' : null);
+
+                return [$text, $url, $type];
+
+            case 'shop_item':
+                $shop = $d->shop;
+                $url = $shop?->reward_file_url ?: null;
+
+                return [null, $url, $url ? 'file' : null];
+
+            case 'task':
+                $task = $d->task;
+                $url = $task?->deliverable_content ?: null;
+                // If it looks like a URL/link rather than a file UUID, treat as link
+                $isFile = $url && $this->looksLikeFile($url);
+
+                return [null, $url, $url ? ($isFile ? 'file' : 'link') : null];
+
+            default:
+                return [null, null, null];
+        }
     }
 
     /* ----------------------------------------------------------------- */
@@ -843,28 +904,28 @@ class GifterHubController extends Controller
             if (! $row->wish || ! $owner || ! $this->paidOk($row->payment?->payment_status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("wish:{$row->id}", 'wish', $row->wish->wishname, $owner, $row->created_at, 'wishes');
+            $out[] = $this->unlockedItem("wish:{$row->id}", 'wish', $row->wish->wishname, $owner, $row->created_at, 'wishes', $row->session_id);
         }
         foreach ($sources['shop'] as $row) {
             $owner = $row->shop?->user;
             if (! $row->shop || ! $owner || ! $this->paidOk($row->payment_status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("shop:{$row->id}", 'shop', $row->shop->name, $owner, $row->created_at, 'shop');
+            $out[] = $this->unlockedItem("shop:{$row->id}", 'shop', $row->shop->name, $owner, $row->created_at, 'shop', $row->session_id);
         }
         foreach ($sources['task'] as $row) {
             $owner = $row->task?->creator;
             if (! $row->task || ! $owner || ! $this->paidOk($row->status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("task:{$row->id}", 'task', $row->task->title, $owner, $row->created_at, 'tasks');
+            $out[] = $this->unlockedItem("task:{$row->id}", 'task', $row->task->title, $owner, $row->created_at, 'tasks', $row->stripe_session_id);
         }
         foreach ($sources['piggypot'] as $row) {
             $owner = $row->piggyPot?->user;
             if (! $row->piggyPot || ! $owner || ! $this->paidOk($row->status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("piggypot:{$row->id}", 'piggypot', $row->piggyPot->title, $owner, $row->created_at, 'piggy-pots');
+            $out[] = $this->unlockedItem("piggypot:{$row->id}", 'piggypot', $row->piggyPot->title, $owner, $row->created_at, 'piggy-pots', $row->session_id);
         }
         foreach ($sources['tip'] as $row) {
             $owner = $row->creator;
@@ -872,15 +933,17 @@ class GifterHubController extends Controller
                 continue;
             }
             $title = $row->tipGoal?->name ?: 'Exclusive content';
-            $out[] = $this->unlockedItem("tip:{$row->id}", 'tip', $title, $owner, $row->created_at, 'tips');
+            $out[] = $this->unlockedItem("tip:{$row->id}", 'tip', $title, $owner, $row->created_at, 'tips', $row->session_id);
         }
 
         usort($out, fn ($a, $b) => strcmp($b['unlocked_at'], $a['unlocked_at']));
 
+        $this->attachDeliveryStatus($out);
+
         return $out;
     }
 
-    private function unlockedItem($id, $sourceType, $title, $owner, $createdAt, $page): array
+    private function unlockedItem($id, $sourceType, $title, $owner, $createdAt, $page, $sessionId = null): array
     {
         // One-time content purchases grant lifetime access to the buyer's library.
         return [
@@ -892,14 +955,55 @@ class GifterHubController extends Controller
             'is_active' => true,
             'expires_at' => null,
             'open_link' => $this->openLink($owner, $page),
+            // Carried only far enough to key the delivery-status lookup below —
+            // never sent to the frontend (see attachDeliveryStatus).
+            '_session_id' => $sessionId,
         ];
+    }
+
+    /**
+     * "Were you told about this?" for every one-time purchase on the hub — the
+     * buyer's OWN messages only. Mutates `$items` in place, batched into ONE
+     * delivery-log query for the whole list rather than one per card.
+     *
+     * The `/history` feed and the creator ledger already show this; the hub
+     * was the one purchase surface that did not, despite being exactly where a
+     * buyer goes to ask "did I actually get a receipt for this?".
+     */
+    private function attachDeliveryStatus(array &$items): void
+    {
+        $sessionIds = collect($items)->pluck('_session_id')->filter()->unique()->values()->all();
+
+        $delivery = $sessionIds === []
+            ? []
+            : app(NotificationDeliveryService::class)->forSessionIds(Auth::id(), $sessionIds);
+
+        foreach ($items as &$item) {
+            $sessionId = $item['_session_id'] ?? null;
+            unset($item['_session_id']);
+            $item['notifications'] = $sessionId ? ($delivery[$sessionId] ?? null) : null;
+        }
+        unset($item);
     }
 
     /* ----------------------------------------------------------------- */
     /* Section 4 — spend summary */
     /* ----------------------------------------------------------------- */
 
-    private function buildSpendSummary(array $sources, string $display): array
+    /**
+     * Spend is read from the LEDGER, not from the seven payment tables.
+     *
+     * This hub used to sum `total_paid ?: amount` straight off each payment row while
+     * Support History summed the ledger's gross — two implementations of "what this
+     * person has spent", which disagreed whenever a row was refunded, still settling,
+     * or priced differently in the two places. The ledger is what the creator side,
+     * the payout engine and Support History all read, so the buyer reads it too.
+     *
+     * Rows the ledger has not caught up with yet are still counted (see
+     * unsyncedSpend()) — a purchase must never be missing from the buyer's own record
+     * because a background command has not run.
+     */
+    private function buildSpendSummary($buyer, array $sources, string $display): array
     {
         $byType = [
             'wish' => 0.0, 'shop' => 0.0, 'task' => 0.0,
@@ -908,6 +1012,10 @@ class GifterHubController extends Controller
         $count = 0;
         $thisMonth = 0.0;
         $creators = [];
+        $refunded = 0.0;
+        $refundedCount = 0;
+        $pending = 0.0;
+        $pendingCount = 0;
         $monthStart = Carbon::now()->startOfMonth();
 
         // Rolling 12 months, seeded so a quiet month renders as a zero bar rather than
@@ -917,70 +1025,76 @@ class GifterHubController extends Controller
             $byMonth[Carbon::now()->startOfMonth()->subMonths($i)->format('Y-m')] = 0.0;
         }
 
-        $add = function ($type, $row, $currency, $owner) use (&$byType, &$count, &$thisMonth, &$creators, &$byMonth, $display, $monthStart) {
-            $gross = (float) ($row->total_paid ?: $row->amount ?: 0);
-            if ($gross <= 0) {
+        $add = function (string $type, float $value, $date, $creatorId) use (
+            &$byType, &$count, &$thisMonth, &$creators, &$byMonth, $monthStart
+        ) {
+            if ($value <= 0) {
                 return;
             }
-            $value = $this->convert($currency, $gross, $display);
             $byType[$type] += $value;
             $count++;
-            if ($owner) {
-                $creators[$owner->id ?? $owner] = true;
+            if ($creatorId) {
+                $creators[$creatorId] = true;
             }
-            if ($row->created_at) {
-                if ($row->created_at >= $monthStart) {
+            if ($date) {
+                $date = Carbon::parse($date);
+                if ($date >= $monthStart) {
                     $thisMonth += $value;
                 }
-                $key = Carbon::parse($row->created_at)->format('Y-m');
+                $key = $date->format('Y-m');
                 if (array_key_exists($key, $byMonth)) {
                     $byMonth[$key] += $value;
                 }
             }
         };
 
-        foreach ($sources['wish'] as $row) {
-            if (! $this->paidOk($row->payment?->payment_status)) {
+        $ledgerRows = FinancialTransaction::where('supporter_id', $buyer->id)
+            ->where('type', 'income')
+            ->whereIn('status', LedgerRules::VISIBLE_STATUSES)
+            ->get([
+                'id', 'user_id', 'source_type', 'source_id', 'status', 'currency',
+                'gross_amount', 'net_amount', 'vat_amount', 'platform_fee', 'stripe_fee',
+                'transaction_date', 'created_at',
+            ]);
+
+        $seen = [];
+
+        foreach ($ledgerRows as $ft) {
+            $type = self::LEDGER_TYPE_MAP[$ft->source_type] ?? null;
+            if ($type === null) {
                 continue;
             }
-            $add('wish', $row, $row->payment?->currency, $row->payment?->owner);
-        }
-        foreach ($sources['shop'] as $row) {
-            if (! $this->paidOk($row->payment_status)) {
+
+            $seen[$ft->source_type.'#'.$ft->source_id] = true;
+
+            $value = $this->convert($ft->currency, LedgerRules::buyerPaid($ft), $display);
+            $date = $ft->transaction_date ?: $ft->created_at;
+            $status = (string) $ft->status;
+
+            // Money that came back is reported separately, never netted off the total.
+            // A supporter needs to see both "you spent £120" and "£20 of it was refunded";
+            // a single blended figure answers neither question.
+            if (in_array($status, LedgerRules::REVERSED_STATUSES, true)) {
+                if ($status !== 'failed') {
+                    $refunded += $value;
+                    $refundedCount++;
+                }
+
                 continue;
             }
-            $add('shop', $row, $row->currency, $row->shop?->user);
-        }
-        foreach ($sources['task'] as $row) {
-            if (! $this->paidOk($row->status)) {
+
+            if (in_array($status, LedgerRules::IN_FLIGHT_STATUSES, true)) {
+                $pending += $value;
+                $pendingCount++;
+
                 continue;
             }
-            $add('task', $row, $row->currency, $row->task?->creator);
+
+            $add($type, $value, $date, $ft->user_id);
         }
-        foreach ($sources['piggypot'] as $row) {
-            if (! $this->paidOk($row->status)) {
-                continue;
-            }
-            $add('piggypot', $row, $row->currency, $row->piggyPot?->user);
-        }
-        foreach ($sources['membership'] as $row) {
-            if (! $this->paidOk($row->status)) {
-                continue;
-            }
-            $add('membership', $row, $row->currency, $row->membership?->user);
-        }
-        foreach ($sources['bill'] as $row) {
-            if (! $this->paidOk($row->status)) {
-                continue;
-            }
-            $add('bill', $row, $row->currency, $row->bill?->user);
-        }
-        foreach ($sources['tip'] as $row) {
-            if (! $this->paidOk($row->status)) {
-                continue;
-            }
-            $add('tip', $row, $row->currency, $row->creator);
-        }
+
+        // Anything the ledger has no row for yet.
+        $unsynced = $this->unsyncedSpend($sources, $seen, $display, $add);
 
         $byType = array_map(fn ($v) => round($v, 2), $byType);
 
@@ -998,7 +1112,96 @@ class GifterHubController extends Controller
             'last_month' => round($byMonth[$lastMonthKey] ?? 0, 2),
             'purchase_count' => $count,
             'creators_supported' => count($creators),
+            'refunded_total' => round($refunded, 2),
+            'refunded_count' => $refundedCount,
+            'pending_total' => round($pending, 2),
+            'pending_count' => $pendingCount,
+            'awaiting_ledger_count' => $unsynced,
         ];
+    }
+
+    /** Ledger source_type → the hub's own product key. */
+    private const LEDGER_TYPE_MAP = [
+        StripePaymentItems::class => 'wish',
+        ShopPayment::class => 'shop',
+        TaskPurchase::class => 'task',
+        PiggyPotContribution::class => 'piggypot',
+        MembershipPayment::class => 'membership',
+        BillPayment::class => 'bill',
+        TipGoalsPayment::class => 'tip',
+    ];
+
+    /**
+     * Count purchases the ledger has not recorded yet.
+     *
+     * `finance:sync-transactions` reconciles every 30 minutes, so a payment whose
+     * webhook did not write a ledger row is invisible to Support History until it
+     * runs. The buyer's own record must not have that hole — their money left their
+     * account, and "where is my purchase?" is the single worst question this page can
+     * provoke. These rows are added to the totals and reported as a count so the
+     * `finance:audit-ledger` command has something to reconcile against.
+     *
+     * @param  array<string, bool>  $seen  keys "SourceClass#id" already in the ledger
+     */
+    private function unsyncedSpend(array $sources, array $seen, string $display, callable $add): int
+    {
+        $missing = 0;
+
+        $walk = function (string $type, string $class, iterable $rows, callable $status, callable $currency, callable $creator) use (&$missing, $seen, $display, $add) {
+            foreach ($rows as $row) {
+                if (isset($seen[$class.'#'.$row->id])) {
+                    continue;
+                }
+                if (! $this->paidOk($status($row))) {
+                    continue;
+                }
+
+                $gross = (float) ($row->total_paid ?: $row->amount ?: 0);
+                if ($gross <= 0) {
+                    continue;
+                }
+
+                $missing++;
+                $add($type, $this->convert($currency($row), $gross, $display), $row->created_at, $creator($row));
+            }
+        };
+
+        $walk('wish', StripePaymentItems::class, $sources['wish'],
+            fn ($r) => $r->payment?->payment_status,
+            fn ($r) => $r->payment?->currency,
+            fn ($r) => $r->payment?->owner?->id);
+
+        $walk('shop', ShopPayment::class, $sources['shop'],
+            fn ($r) => $r->payment_status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->shop?->user?->id);
+
+        $walk('task', TaskPurchase::class, $sources['task'],
+            fn ($r) => $r->status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->task?->creator?->id);
+
+        $walk('piggypot', PiggyPotContribution::class, $sources['piggypot'],
+            fn ($r) => $r->status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->piggyPot?->user?->id);
+
+        $walk('membership', MembershipPayment::class, $sources['membership'],
+            fn ($r) => $r->status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->membership?->user?->id);
+
+        $walk('bill', BillPayment::class, $sources['bill'],
+            fn ($r) => $r->status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->bill?->user?->id);
+
+        $walk('tip', TipGoalsPayment::class, $sources['tip'],
+            fn ($r) => $r->status,
+            fn ($r) => $r->currency,
+            fn ($r) => $r->creator?->id);
+
+        return $missing;
     }
 
     /* ----------------------------------------------------------------- */

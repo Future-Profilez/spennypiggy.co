@@ -103,7 +103,7 @@ export default function PrideLanding() {
                         ✨ The Ultimate Creator Infrastructure ✨
                     </span>
                 </div>
-                <h1 className="font-gulfs text-6xl md:text-6xl lg:text-7xl leading-[1.1] tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 mb-3 drop-shadow-[4px 4px 0px 0px rgb(255 0 127)]l">
+                <h1 className="font-gulfs text-6xl md:text-6xl lg:text-7xl leading-[1.1] tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 mb-3 drop-shadow-xl">
                     THINK YOU'RE <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF007F] via-[#ff4da6] to-[#FF007F] neon-text-pink">SEXY?</span>
                 </h1>

@@ -32,7 +32,7 @@ class SurpriseTweet implements ShouldQueue
     public function handle(): void
     {
         $user = User::find($this->payment_data->cart->owner_id);
-        if (! empty($user->twitter_token->token)) {
+        if ($user && $user->twitter_token && ! empty($user->twitter_token->token)) {
             $payload = [
                 'name' => $this->payment_data->payment->name ?? 'Someone',
                 'amount' => Helpers::getCurrency($this->payment_data->payment->currency).$this->payment_data->amount,

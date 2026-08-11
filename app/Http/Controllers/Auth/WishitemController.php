@@ -45,6 +45,8 @@ use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
+use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -182,7 +184,7 @@ class WishitemController extends Controller
             $currency = $user->default_currency ?? 'gbp';
 
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency, 0, 'card', $user->id);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -380,7 +382,7 @@ class WishitemController extends Controller
         $currency = $user->default_currency ?? 'gbp';
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency, 0, 'card', $user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -492,7 +494,7 @@ class WishitemController extends Controller
 
     public function updateWishItem(Request $request, $uuid = null)
     {
-        $wish = WishItem::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
+        $wish = WishItem::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
         $old_wish = $wish->subscription;
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
@@ -537,7 +539,7 @@ class WishitemController extends Controller
 
         if (! empty($request->price)) {
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency, 0, 'card', $user->id);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -546,7 +548,7 @@ class WishitemController extends Controller
             $createpriceid = $finalTotalAmount;
         } else {
             // Re-calculate with current price to ensure gross-up logic is applied if it wasn't before
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($wish->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($wish->price, $currency, 0, 'card', $user->id);
             $taxamount = $breakdown['application_fee'];
             $price = $wish->price;
             $createpriceid = $breakdown['total_supporter_pays'];
@@ -891,7 +893,7 @@ class WishitemController extends Controller
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
         $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)
             ->with(['user' => function ($q) {
-                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account']);
+                $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'is_founder', 'role', 'gender', 'suspended_account']);
             }])
             ->whereHas('user', function ($q) use ($tag) {
                 $q->whereNull('deleted_at')
@@ -962,7 +964,7 @@ class WishitemController extends Controller
                 $join->on('user_intros.id', '=', 'latest_intros.latest_id');
             })
                 ->with(['user' => function ($q) use ($gender) {
-                    $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'gender', 'suspended_account'])
+                    $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'is_founder', 'role', 'gender', 'suspended_account'])
                         ->where('suspended_account', 0)
                         ->whereNotNull('username')
                         ->where('username', '!=', '');
@@ -1007,6 +1009,8 @@ class WishitemController extends Controller
                         'username' => $intro->user->username,
                         'role' => $intro->user->role,
                         'profile_status_lock' => $intro->user->profile_status_lock,
+                        'verified_badge' => VerifiedBadge::tierFor($intro->user),
+                        'is_founder' => $intro->user->is_founder ?? false,
                         'avatar_url' => $intro->user->avatar_url,
                     ],
                 ];
@@ -1101,6 +1105,10 @@ class WishitemController extends Controller
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($wishitem->user);
 
         if (! $subscriptionCheck['eligible']) {
+            // ⚠️ This gate refused sales silently — it had no notification of any
+            // kind, so a creator lost wish purchases and was never told.
+            BlockedPaymentAlert::record($wishitem->user, $wishitem->price ?? 0);
+
             return response()->json([
                 'success' => false,
                 'msg' => app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null),
@@ -1143,7 +1151,7 @@ class WishitemController extends Controller
 
             $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
                 $amountWithVat = $amount + (($amount * $vatPercent) / 100);
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $wishitem->user_id);
 
                 return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
             };
@@ -1188,7 +1196,7 @@ class WishitemController extends Controller
             $priceWithVat = $basePrice + $vatAmount;
 
             $itemCurrency = $wishitem->currency ?: ($wishitem->user->default_currency ?: 'GBP');
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $itemCurrency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $itemCurrency, 0, 'card', $wishitem->user_id);
 
             if ($wishitem->subscription == 2) {
                 // For crowdfunding, we need to calculate the gross-up total for the requested amount
@@ -1197,7 +1205,7 @@ class WishitemController extends Controller
                 $priceWithVatCrowdfund = $price + $vatAmountCrowdfund;
 
                 // Use new gross-up flow for consistent fee calculation
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $itemCurrency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCrowdfund, $itemCurrency, 0, 'card', $wishitem->user_id);
 
                 $total = $breakdown['total_supporter_pays'];
                 $tax = $breakdown['total_fees'];
@@ -1700,6 +1708,8 @@ class WishitemController extends Controller
             if (! $subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $orderDetails->creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+                // Recorded and counted: one lost sale is a warning, six is a reason.
+                BlockedPaymentAlert::record($orderDetails->creator, $request->amount ?? 0);
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Rye product payment blocked due to subscription issue', [
@@ -1804,7 +1814,7 @@ class WishitemController extends Controller
             // Use gross-up flow helper in creator's currency
             $basePriceStore = $totalAmount / 100; // Convert cents to major unit
             $basePrice = Helpers::priceFormat('usd', $basePriceStore, $chargeCurrency);
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency, 0, 'card', $orderDetails->creator->id ?? null);
 
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
@@ -1832,7 +1842,8 @@ class WishitemController extends Controller
             $ryeProductPayment = new RyeProductPayment;
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $chargeCurrency;
-            $ryeProductPayment->amount = $finalTotalAmount; // Store total paid by supporter
+            $ryeProductPayment->amount = $basePrice;
+            $ryeProductPayment->tax = $applicationFeeAmount;
             $ryeProductPayment->total_paid = $finalTotalAmount;
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;
@@ -2666,7 +2677,7 @@ class WishitemController extends Controller
                     $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                     if (! empty($v['wish'])) {
                         $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                         $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                     } else {
                         $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -2777,7 +2788,7 @@ class WishitemController extends Controller
                 $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                 if (! empty($v['wish'])) {
                     $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                     $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                 } else {
                     $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -2988,7 +2999,7 @@ class WishitemController extends Controller
                     $itemCurrency = strtoupper($cart[$key]['items'][$k]['currency'] ?? ($cart[$key]['user']['default_currency'] ?? 'GBP'));
                     if (! empty($v['wish'])) {
                         $amountWithVat = (float) $price + (((float) $price * $vatPercent) / 100);
-                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency);
+                        $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $itemCurrency, 0, 'card', $cart[$key]['user']['id'] ?? null);
                         $cart[$key]['items'][$k]['supporter_total'] = (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                     } else {
                         $cart[$key]['items'][$k]['supporter_total'] = (float) round(((float) $price + (float) $tax), 2, PHP_ROUND_HALF_UP);
@@ -3050,7 +3061,7 @@ class WishitemController extends Controller
         // Use new gross-up flow for consistent fee calculation
         $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
         $priceWithVat = $price + (($price * $vatPercent) / 100);
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $owner->default_currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $owner->default_currency, 0, 'card', $owner->id);
         $total = $breakdown['total_supporter_pays'];
         $tax = $breakdown['total_fees'];
 
@@ -3119,7 +3130,7 @@ class WishitemController extends Controller
 
                         $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
                             $amountWithVat = $amount + (($amount * $vatPercent) / 100);
-                            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $owner->id);
 
                             return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
                         };
@@ -3305,7 +3316,7 @@ class WishitemController extends Controller
         $item = WishItem::where('id', $wish_id)->first();
 
         if ($item->user_id == Auth::id()) {
-            WishItem::where('user_id', Auth::id())->update(['is_pin' => 0]);
+            WishItem::withScheduled()->where('user_id', Auth::id())->update(['is_pin' => 0]);
 
             $item->is_pin = 1;
             $item->save();

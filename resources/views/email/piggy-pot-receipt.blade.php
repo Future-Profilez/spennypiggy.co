@@ -203,4 +203,5 @@
         </table>
     </td>
 </tr>
+@include('email.guest-purchase-hint', ['isGuest' => empty($pay->user_id)])
 @endsection

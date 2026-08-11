@@ -627,7 +627,7 @@ export default function AddItem(props) {
                                                             <div className="text-right">
                                                                 <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Fans Pay</p>
                                                                 <p className="text-lg font-bold text-gray-600">
-                                                                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency).total_supporter_pays)}
+                                                                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                                 </p>
                                                             </div>
                                                         </div>

@@ -9,8 +9,8 @@ use App\Jobs\SendContractMail;
 use App\Models\AuthRedirect;
 use App\Models\FanContract;
 use App\Models\FounderBonus;
-use App\Models\MonthlyCharge;
 use App\Models\Post;
+use App\Models\ProfileChangeRequest;
 use App\Models\RyeProduct;
 use App\Models\SocialLinks;
 use App\Models\User;
@@ -21,8 +21,9 @@ use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\SeoTemplateService;
+use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
-use App\StripeControl;
+use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,6 @@ use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
 use PragmaRX\Recovery\Recovery;
 use Ramsey\Uuid\Uuid;
-use Stripe\Exception\InvalidRequestException;
 use Uploadcare\Configuration;
 use Uploadcare\Uploader\Uploader;
 
@@ -282,49 +282,10 @@ class AuthenticatedSessionController extends Controller
 
             $this->setSeoMetaTags($user, $username);
 
-            $now = Carbon::now();
-            $subscription = MonthlyCharge::where('user_id', $user->id)
-                ->where(function ($query) use ($now) {
-                    $query->where(function ($q) use ($now) {
-                        $q->whereDate('current_start_subscription_date', '<=', $now)
-                            ->whereDate('current_end_subscription_date', '>=', $now);
-                    })->orWhere(function ($q) use ($now) {
-                        $q->whereDate('current_start_trial_date', '<=', $now)
-                            ->whereDate('current_end_trial_date', '>=', $now);
-                    });
-                })
-                ->newestFirst()
-                ->first();
-
-            if (! $subscription) {
-                $subscription = MonthlyCharge::where('user_id', $user->id)
-                    ->newestFirst()
-                    ->first();
-            }
-
-            $monthlyCharges = null;
-            if ($subscription) {
-                $fmt = function ($date) {
-                    try {
-                        return $date ? Carbon::parse($date)->format('d F Y') : null;
-                    } catch (\Throwable $e) {
-                        return null;
-                    }
-                };
-
-                $monthlyCharges = [
-                    'id' => $subscription->id,
-                    'uuid' => $subscription->uuid,
-                    'status' => $subscription->status ?? 'pending',
-                    'amount' => (float) ($subscription->amount ?? 0),
-                    'currency' => $subscription->currency ?? 'GBP',
-                    'current_start_trial_date' => $fmt($subscription->current_start_trial_date),
-                    'current_end_trial_date' => $fmt($subscription->current_end_trial_date),
-                    'current_start_subscription_date' => $fmt($subscription->current_start_subscription_date),
-                    'current_end_subscription_date' => $fmt($subscription->current_end_subscription_date),
-                    'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                ];
-            }
+            // ⚠️ One builder for BOTH page payloads — see App\Support\SubscriptionPayload.
+            // The account page had its own copy of this array and the two drifted.
+            $subscription = SubscriptionPayload::currentRow($user);
+            $monthlyCharges = SubscriptionPayload::for($subscription);
 
             $sociallinks = null;
             $userIntro = null;
@@ -346,10 +307,12 @@ class AuthenticatedSessionController extends Controller
                 $userIntro = $user->intro;
             }
 
-            $migrationStatus = ['needs_migration' => false, 'show_warning' => false];
-            if ($page === 'about') {
-                $migrationStatus = $this->getMigrationStatus($user);
-            }
+            // Derived from the state already read above, never re-fetched. It used
+            // to call checkAccountMigrationNeeds(), which retrieves the same
+            // account a FIFTH time behind its own separately-cached key — so the
+            // page could show a migration warning and a capability panel built
+            // from two different reads taken minutes apart.
+            $migrationStatus = $this->getMigrationStatus($user, $isNeedToUpgrade);
             $founderData = $this->getFounderData($user);
 
             $blockData = [
@@ -411,6 +374,31 @@ class AuthenticatedSessionController extends Controller
                 'viewer_support' => $user->role == 1
                     ? $this->profileService->getViewerSupportHistory($user->id, Auth::id())
                     : null,
+                // Supporter (role 0) profiles: engagement level + activity counts.
+                // Only on the About page — the other tabs never render it.
+                'gifter_stats' => $user->role == 0 && $page === 'about'
+                    ? $this->profileService->getGifterStats($user->id)
+                    : null,
+                // ⚠️ OWNER ONLY — see getGifterCreators(). The card shows the
+                // count to everyone; who they back is the supporter's own view.
+                'gifter_creators' => $user->role == 0 && $page === 'about' && Auth::id() === $user->id
+                    ? $this->profileService->getGifterCreators($user->id)
+                    : null,
+                // ⚠️ OWNER ONLY, and one query only for them. An edit to a live
+                // asset leaves the published version on the page, so a creator who
+                // has just uploaded a new photo lands here and sees the old one —
+                // with nothing saying why, they upload it again.
+                //
+                // Deliberately NOT an accessor: `avatar_url` is in `User::$appends`
+                // and is serialised on every rail, feed and queue row, so a query
+                // there would run for every card on the site.
+                'pending_profile_changes' => Auth::id() === $user->id
+                    ? ProfileChangeRequest::query()
+                        ->where('user_id', $user->id)
+                        ->where('status', ProfileChangeRequest::STATUS_PENDING)
+                        ->pluck('asset')
+                        ->all()
+                    : [],
             ];
         };
         $data = $getData();
@@ -462,60 +450,15 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Get Stripe account capabilities with caching
+     * Get Stripe account capabilities with caching.
+     *
+     * One retrieve, one cache, one implementation — this block and the identical
+     * copy in OptimizedProfileController both made four sequential Stripe calls
+     * against the same account while the page render waited on them.
      */
     private function getStripeCapabilities($user): array
     {
-        if (empty($user->account_id)) {
-            return [false, false, []];
-        }
-
-        try {
-            $cacheKey = 'stripe_caps_v1_'.$user->account_id;
-
-            return Cache::remember($cacheKey, 300, function () use ($user) {
-                StripeControl::getAccount($user->account_id);
-
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-
-                $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-
-                $requirements = StripeControl::getAccountRequirements($user->account_id);
-
-                if ($isNeedToUpgrade) {
-                    $requirements['has_requirements'] = true;
-                    $requirements['requirements'][] = [
-                        'type' => 'legacy_upgrade',
-                        'severity' => 'high',
-                        'title' => 'Account Upgrade Required',
-                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                        'action' => 'Upgrade your Stripe account now.',
-                        'action_url' => '/stripe/upgrade-express-account',
-                    ];
-                }
-
-                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
-            });
-        } catch (\Exception $e) {
-            // Only disable stripe connected details if the account was explicitly deleted from Stripe (404)
-            if ($e instanceof InvalidRequestException && $e->getHttpStatus() === 404) {
-                $user->update(['stripe_details_submitted' => 0]);
-            }
-
-            return [false, false, [
-                'has_requirements' => true,
-                'requirements' => [[
-                    'type' => 'connection_error',
-                    'severity' => 'critical',
-                    'title' => 'Account Connection Issue',
-                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
-                    'action' => 'Refresh the page or contact support.',
-                    'action_url' => null,
-                ]],
-                'account_status' => [],
-            ]];
-        }
+        return StripeAccountState::for($user);
     }
 
     /**
@@ -546,37 +489,28 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Check if user's Stripe account needs migration for cross-border payments
+     * Check if user's Stripe account needs migration for cross-border payments.
+     *
+     * Takes the answer already computed by StripeAccountState rather than
+     * retrieving the account again — see the call site.
      */
-    private function getMigrationStatus($user): array
+    private function getMigrationStatus($user, bool $needsMigration): array
     {
-        // Only check for logged-in users viewing their own profile
+        // Only surface this to a creator looking at their own profile.
         if (! Auth::check() || Auth::id() !== $user->id) {
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
-        try {
-            $cacheKey = 'stripe_migration_status_v1_'.$user->id;
-
-            return Cache::remember($cacheKey, 300, function () use ($user) {
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-
-                return [
-                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                    'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available',
-                ];
-            });
-        } catch (\Exception $e) {
-            return [
-                'needs_migration' => false,
-                'show_warning' => false,
-                'error' => 'Unable to check migration status',
-            ];
-        }
+        return [
+            'needs_migration' => $needsMigration,
+            'show_warning' => $needsMigration,
+            'current_agreement' => $needsMigration ? 'recipient' : null,
+            'required_agreement' => 'full',
+            'country' => $user->country,
+            'reason' => $needsMigration
+                ? 'Your payment account is on an older agreement and needs upgrading to accept card payments.'
+                : 'Account is correctly configured',
+        ];
     }
 
     /**
@@ -641,15 +575,11 @@ class AuthenticatedSessionController extends Controller
      */
     private function setSeoMetaTags($user, string $username): void
     {
-        $defaultImage = url('/og-image.png');
-        $image = $defaultImage;
-        if (! empty($user->social_image)) {
-            $image = "https://ucarecdn.com/{$user->social_image}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (! empty($user->cover)) {
-            $image = "https://ucarecdn.com/{$user->cover}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        } elseif (! empty($user->avatar)) {
-            $image = "https://ucarecdn.com/{$user->avatar}/-/scale_crop/1200x630/center/-/format/jpg/-/quality/smart/";
-        }
+        // ⚠️ This was a verbatim second copy of SeoTemplateService::getCreatorOgImage,
+        // and it was the LIVE one — so when the service learned to check approval
+        // flags, the tag every link unfurl actually reads would still have carried an
+        // unreviewed photo. One implementation, not two.
+        $image = SeoTemplateService::getCreatorOgImage($user);
 
         $isWishPage = request()->routeIs('wish.show');
         $wish = null;
@@ -1025,10 +955,26 @@ class AuthenticatedSessionController extends Controller
      */
     public function verify2FA(Request $request)
     {
-        $email = $request->input('email');
+        // ⚠️ Matched case-insensitively, and soft-deleted rows included, because
+        // every other door into this account does the same: `LoginRequest` lowercases
+        // in `prepareForValidation`, `verifyUser` matches on `LOWER(email)`, and
+        // `GoogleController` matches on a lowercased address. A stored address with
+        // any uppercase in it therefore passed the password step and then found no
+        // user here — a 2FA account that could never finish signing in.
+        $email = Str::lower(trim((string) $request->input('email')));
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->first();
+        $user = User::withTrashed()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+        // A deactivated account must not be able to complete the second factor.
+        if ($user && method_exists($user, 'trashed') && $user->trashed()) {
+            $request->session()->forget('google_2fa_pending');
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'This account is deactivated. Please contact support.',
+            ], 403);
+        }
 
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');
@@ -1039,6 +985,25 @@ class AuthenticatedSessionController extends Controller
             return response()->json(['status' => false, 'msg' => 'Invalid verification code.'], 422);
         }
 
+        // 🚨 Refuse a suspended account BEFORE anything is validated or spent.
+        //
+        // `signIn()` refuses one too, but it does so up to PENDING_TTL_MINUTES (15)
+        // before the OTP is entered — so an admin suspending someone inside that
+        // window was overridden and the person still completed a full remembered
+        // session. The password branch had the same hole from the other direction.
+        //
+        // ⚠️ It must sit ABOVE the code checks, not inside `if ($valid)`: a backup
+        // code is claimed while `$valid` is being computed, so a guard placed lower
+        // spent one single-use recovery code per refused attempt.
+        if ((int) ($user->suspended_account ?? 0) === 1) {
+            $request->session()->forget('google_2fa_pending');
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'This account has been suspended. Contact support for help.',
+            ], 403);
+        }
+
         $valid = false;
 
         if (! empty($otp)) {
@@ -1046,13 +1011,26 @@ class AuthenticatedSessionController extends Controller
         }
 
         if (! empty($backup_code)) {
-            $backup = UserBackupCode::where('user_id', $user->id)->get();
-            foreach ($backup as $value) {
-                $code = decrypt($value->code);
+            // ⚠️ The DELETE is the claim, and its affected-row count is the verdict.
+            // Checking and then deleting are two steps, so two concurrent requests
+            // could both pass before either delete committed and one code would sign
+            // in twice.
+            foreach (UserBackupCode::where('user_id', $user->id)->get() as $value) {
+                try {
+                    $code = decrypt($value->code);
+                } catch (\Throwable $e) {
+                    continue;
+                }
+
                 // Constant-time comparison to avoid timing side-channels.
                 if (hash_equals((string) $code, (string) $backup_code)) {
-                    $valid = true;
-                    $value->delete();
+                    $claimed = UserBackupCode::where('id', $value->id)->delete();
+
+                    if ($claimed > 0) {
+                        $valid = true;
+                    }
+
+                    break;
                 }
             }
         }

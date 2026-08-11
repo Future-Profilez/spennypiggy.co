@@ -26,6 +26,7 @@ class AnnounceSubscriptionPolicy extends Command
         {--user= : Send to one creator only (id, username or email) — ignores the dedup claim}
         {--resend= : Send again to everyone as a NEW round (blank = today\'s date as the label)}
         {--preview= : Write the rendered email to this path and send nothing}
+        {--force : Send even to creators who already received an earlier round}
         {--dry-run : List who would receive it and send nothing}';
 
     protected $description = 'Tell creators the subscription is no longer charged until their first sale';
@@ -39,6 +40,22 @@ class AnnounceSubscriptionPolicy extends Command
 
     /** Dedup key for the original send. */
     private const FIRST_ROUND = 'announcement';
+
+    /**
+     * 🚨 A creator who received ANY round within this many days is skipped.
+     *
+     * The atomic claim alone is not enough, because it relies on the unique index
+     * on `engagement_notifications` rejecting the duplicate insert. Where that
+     * index is absent the insert simply succeeds, `claim()` returns true every
+     * time, and a re-run mails the same people again — with `--max` and the id
+     * ordering, it is the SAME first N creators on every run. Reported live: one
+     * creator received this announcement three times.
+     *
+     * This guard is an explicit lookup, so it holds whatever the schema looks like.
+     * A genuine resend months later still goes out; an accidental re-run this week
+     * does not. `--force` overrides.
+     */
+    private const RECENT_DAYS = 30;
 
     public function handle(): int
     {
@@ -102,6 +119,22 @@ class AnnounceSubscriptionPolicy extends Command
                 $optedOut++;
 
                 continue;
+            }
+
+            // ⚠️ Checked BEFORE the claim and independently of it — see RECENT_DAYS.
+            // Covers every round, so a second `--resend` in the same month cannot
+            // reach someone who already has the message.
+            if (! $this->option('user') && ! $this->option('force')) {
+                $recent = EngagementNotification::where('user_id', $creator->id)
+                    ->where('type', self::CLAIM_TYPE)
+                    ->where('sent_at', '>=', now()->subDays(self::RECENT_DAYS))
+                    ->exists();
+
+                if ($recent) {
+                    $alreadySent++;
+
+                    continue;
+                }
             }
 
             // The claim IS the insert, so two runs racing cannot both win. Skipped
@@ -256,6 +289,18 @@ class AnnounceSubscriptionPolicy extends Command
                     // alone would report a fresh resend round as already complete,
                     // because everyone still carries their first-round claim.
                     ->where('engagement_notifications.dedup_key', $round);
+            })
+            // ⚠️ …but the RECENT_DAYS guard skips people across every round, so the
+            // headline number has to apply it too. A count that does not match what
+            // the run actually sends is worse than no count.
+            ->when(! $this->option('force'), function ($query) {
+                $query->whereNotExists(function ($q) {
+                    $q->select(DB::raw(1))
+                        ->from('engagement_notifications')
+                        ->whereColumn('engagement_notifications.user_id', 'users.id')
+                        ->where('engagement_notifications.type', self::CLAIM_TYPE)
+                        ->where('engagement_notifications.sent_at', '>=', now()->subDays(self::RECENT_DAYS));
+                });
             })
             ->count();
     }

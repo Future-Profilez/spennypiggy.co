@@ -4,7 +4,7 @@
     <td align="center" style="padding:32px 28px 8px 28px;">
         <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-            {{-- Gift emoji badge --}}
+            {{-- Purchase badge — content-first, never a gift/wish emoji. --}}
             <tr>
                 <td align="center" style="padding:0 0 18px 0;">
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
@@ -12,7 +12,7 @@
                             <td align="center" valign="middle" bgcolor="#FFE6F2"
                                 style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
                                        -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
-                                🎁
+                                🛍️
                             </td>
                         </tr>
                     </table>
@@ -24,7 +24,7 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
                            line-height:30px;padding:0 0 10px 0;text-align:center;">
-                    New Wish Granted!
+                    New Purchase!
                 </td>
             </tr>
 
@@ -34,24 +34,31 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    <strong style="color:#FF007F;">Lucky you!</strong><br><br>
+                    <strong style="color:#FF007F;">You made a sale.</strong><br><br>
                     @if ($data->payment->anonymous == 0)
+                    {{--
+                        ⚠️ THIS FIGURE IS THE CREATOR'S EARNINGS, NOT THE SUPPORTER'S CHARGE.
+                        The two are ~20-30% apart because fees are grossed up on top of the
+                        listed price. Say "you earned" — the previous wording read as the
+                        amount the supporter paid, which is a different and larger number.
+                    --}}
                     <strong style="color:#1A1A1A;">{{
                         $anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname)
-                    }}</strong> just sent you a treat on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    }}</strong> just bought from you on Spenny Piggy — <strong style="color:#8C52FF;">you earned {{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🥳
                     @else
-                    An <strong style="color:#1A1A1A;">anonymous user</strong> just sent you a treat on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous supporter</strong> just bought from you on Spenny Piggy — <strong style="color:#8C52FF;">you earned {{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🥳
                     @endif
                 </td>
                 @else
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    <strong style="color:#FF007F;">Lucky you!</strong><br><br>
+                    <strong style="color:#FF007F;">You made a sale.</strong><br><br>
                     @if ($data->payment->anonymous == 0)
-                    <strong style="color:#1A1A1A;">{{$anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname) }}</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'a treat' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    {{-- Same rule as the branch above: the figure is the CREATOR's earnings. --}}
+                    <strong style="color:#1A1A1A;">{{$anon == false ? ucwords($data->cart?->user?->name ?? $data->payment?->user?->name ?? 'Someone') : ucwords($anonname) }}</strong> just bought <em>"{{ $data->wish->wishname ?? 'your content' }}"</em> on Spenny Piggy — <strong style="color:#8C52FF;">you earned {{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🥳
                     @else
-                    An <strong style="color:#1A1A1A;">anonymous user</strong> just granted your wish <em>"{{ $data->wish->wishname ?? 'a treat' }}"</em> on Spenny Piggy for <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🎁🥳
+                    An <strong style="color:#1A1A1A;">anonymous supporter</strong> just bought <em>"{{ $data->wish->wishname ?? 'your content' }}"</em> on Spenny Piggy — <strong style="color:#8C52FF;">you earned {{ $symbol }}{{ number_format($data->amount, 2) }}</strong> 🥳
                     @endif
                 </td>
                 @endif
@@ -97,11 +104,16 @@
                                 style="background-color:#FF007F;
                                        background-image:linear-gradient(135deg,#FF007F 0%,#8C52FF 100%);
                                        border-radius:50px;-webkit-border-radius:50px;">
-                                <a href={{ env('APP_URL') . '/history' }}
+                                {{--
+                                    ⚠️ config(), never env() — Vapor caches config on every
+                                    deploy, after which env() returns null and this link
+                                    renders as a bare "/history" with no host.
+                                --}}
+                                <a href="{{ rtrim(config('app.url'), '/') . '/history' }}"
                                     style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
                                            font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
                                            border-radius:50px;-webkit-border-radius:50px;">
-                                    See your granted wish →
+                                    See your sale →
                                 </a>
                             </td>
                         </tr>

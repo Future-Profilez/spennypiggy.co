@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Link, usePage } from "@inertiajs/react";
+import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import {
     Sparkles,
     PiggyBank,
@@ -94,7 +95,11 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
 
     if (!user || user.role != 1) return null;
 
-    const isVerified = user?.profile_status_lock == 2;
+    // 🚨 The old row read "Verified creator / Identity verified" for anyone
+    // whose PROFILE was approved — a claim about a Stripe identity check that
+    // may never have happened. The two tiers now say two different things.
+    const verifiedLevel = verifiedTier(user);
+    const isVerified = Boolean(verifiedLevel);
     const hasPremium = (ov?.wishes || 0) > 0 || (ov?.shops || 0) > 0;
     const hasListings =
         (ov?.wishes || 0) +
@@ -116,10 +121,14 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     <div className={compact ? "" : "sm:grid sm:grid-cols-2 sm:gap-x-6"}>
                     {isVerified && (
                         <HighlightRow
-                            icon={<BadgeCheck size={16} className="text-[#12A150]" />}
-                            iconBg="bg-[#12A150]/10"
-                            title="Verified creator"
-                            subtitle="Identity verified"
+                            icon={<VerifiedBadge tier={verifiedLevel} size="md" />}
+                            iconBg={verifiedLevel === "creator" ? "bg-[#FF007F]/10" : "bg-black/[0.06]"}
+                            title={verifiedLevel === "creator" ? "Verified creator" : "Verified profile"}
+                            subtitle={
+                                verifiedLevel === "creator"
+                                    ? "Identity confirmed and payouts set up"
+                                    : "Reviewed and approved by our team"
+                            }
                         />
                     )}
                     {user?.is_founder ? (
@@ -211,35 +220,6 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     )}
                 </div>
             ) : null}
-
-            {/* Membership promo — only when there is a membership to join */}
-            {show("membership") && ov?.memberships > 0 && (
-                <div className="relative overflow-hidden rounded-box bg-gradient-to-br from-[#FF007F] to-[#9333EA] p-5 text-white border-0 shadow-none md:border-2 md:border-black sm:flex sm:items-center sm:justify-between sm:gap-6">
-                    <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-                    <div className="min-w-0">
-                        <h3 className="text-lg font-black uppercase leading-tight tracking-wide">
-                            Join the inner circle
-                        </h3>
-                        <ul className="mt-2.5 space-y-1 text-[12px] font-semibold text-white/90 sm:flex sm:items-center sm:gap-4 sm:space-y-0">
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Premium content
-                            </li>
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Early access
-                            </li>
-                            <li className="flex items-center gap-1.5">
-                                <BadgeCheck size={13} /> Member-only posts
-                            </li>
-                        </ul>
-                    </div>
-                    <Link
-                        href={`/${user?.username}/memberships`}
-                        className="mt-4 flex w-full items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 py-2.5 text-[12px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5 sm:mt-0 sm:w-auto sm:shrink-0 sm:px-6"
-                    >
-                        View memberships
-                    </Link>
-                </div>
-            )}
 
             {/* Quick actions — icon tiles, visitors only */}
             {show("quick") && !IsloggedIn && (

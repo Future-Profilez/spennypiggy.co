@@ -6,6 +6,9 @@ import Nocontent from '@/includes/Nocontent';
 import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
+import LedgerBreakdown, { StateChip } from '@/Components/Transactions/LedgerBreakdown';
+import DeliveryStatus from '@/Components/Transactions/DeliveryStatus';
+import RefreshRecordsButton from '@/Components/RefreshRecordsButton';
 import { FaTwitter } from 'react-icons/fa';
 import Modal from '@/Components/Modal';
 import Popup from '@/Components/Popup';
@@ -39,6 +42,15 @@ export default function Transactions(props) {
       maximumFractionDigits: displayDigits,
     }).format(amount);
   };
+
+  // The breakdown is stated in the transaction's OWN currency, not the viewer's
+  // display currency — a fee split converted at today's rate would not add up to the
+  // charge the supporter actually saw.
+  const formatInCurrency = (value, currency) =>
+    new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: (currency || displayCurrency || 'GBP').toUpperCase(),
+    }).format(Number(value || 0));
 
   const lifetimeStats = data?.stats || { received: {}, sent: {} };
 
@@ -438,6 +450,7 @@ export default function Transactions(props) {
                 <h1 className="font-black text-3xl md:text-4xl text-gray-900 tracking-tight">Support History</h1>
                 <p className="text-gray-700 font-medium mt-2">Every purchase — and exactly what was delivered with it.</p>
               </div>
+              <RefreshRecordsButton className="w-full md:w-auto shrink-0 bg-white text-gray-800 border border-gray-200 hover:bg-gray-100 shadow-sm" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -645,17 +658,13 @@ export default function Transactions(props) {
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ring-1 ring-black/5 ${e.category === 'sent' ? 'bg-pink-50 text-[#FF2D8B]' : 'bg-emerald-50 text-emerald-600'}`}>
                               {e.category === 'sent' ? 'Sent' : 'Received'}
                             </span>
-                            {e?.status ? (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                e.status === 'completed' ? 'bg-emerald-50 text-emerald-600'
-                                  : (e.status === 'initiated' || e.status === 'pending') ? 'bg-amber-50 text-amber-600'
-                                  : 'bg-red-50 text-red-600'
-                              }`}>
-                                <span className={`h-1.5 w-1.5 rounded-full ${
-                                  e.status === 'completed' ? 'bg-emerald-500'
-                                    : (e.status === 'initiated' || e.status === 'pending') ? 'bg-amber-500'
-                                    : 'bg-red-500'
-                                }`} />
+                            {/* One state, named the same way on every surface. The raw DB
+                                status used to be printed here, so "review_hold" and
+                                "awaiting delivery" both reached the reader as jargon. */}
+                            {e?.state ? (
+                              <StateChip state={e.state} label={e.state_label} />
+                            ) : e?.status ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600">
                                 {String(e.status).replaceAll('_', ' ')}
                               </span>
                             ) : null}
@@ -675,7 +684,7 @@ export default function Transactions(props) {
                                 {e.payment_method === 'bank' ? '🏦 Bank' : '💳 Card'}
                               </div>
                             ) : null}
-                            {e?.status && e.status !== 'completed' ? (
+                            {e?.is_included_in_totals === false ? (
                               <div className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide mt-1">Not in totals</div>
                             ) : null}
                           </div>
@@ -707,6 +716,18 @@ export default function Transactions(props) {
                           <span className="text-gray-300">·</span>
                           <p className="text-gray-400 font-medium text-xs">{e.created_at}</p>
                         </div>
+
+                        {/* What WE sent YOU about this purchase. Your own messages
+                            only — the server never returns the other party's. */}
+                        <DeliveryStatus notifications={e.notifications} />
+
+                        {/* The full arithmetic behind the figure above, from the same
+                            server payload the creator's ledger and the Purchase Hub read. */}
+                        <LedgerBreakdown
+                          breakdown={e.breakdown}
+                          variant={e.category === 'sent' ? 'supporter' : 'creator'}
+                          money={(v) => formatInCurrency(v, e?.breakdown?.currency)}
+                        />
 
                         {e.ask_question && e.payment_id ? (
                           <div className="p-4 bg-pink-50/60 ring-1 ring-[#FF2D8B]/10 rounded-[20px]">

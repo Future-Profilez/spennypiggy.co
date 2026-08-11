@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
+use App\Models\Concerns\HasScheduledPublishing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class Task extends Model
 {
-    use HasFactory, HasRewardContract, SoftDeletes;
+    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     /**
      * The paid deliverable when the reward is a message or a link — entitled
@@ -21,6 +22,8 @@ class Task extends Model
     ];
 
     protected $fillable = [
+        'publish_at',
+        'schedule_released_at',
         'payment_methods_accepted',
         'uuid',
         'creator_id',
@@ -45,6 +48,11 @@ class Task extends Model
         'stripe_price_id',
         'is_approved',
         'is_suspended',
+    ];
+
+    protected $casts = [
+        'publish_at' => 'datetime',
+        'schedule_released_at' => 'datetime',
     ];
 
     public function scopeApproved($query)

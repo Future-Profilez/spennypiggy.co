@@ -21,7 +21,7 @@ class ActivateSubscriptionsOnFirstSale extends Command
 {
     protected $signature = 'subscription:activate-on-sale
         {--max= : Stop after activating this many creators}
-        {--user= : Only this creator (id or username)}
+        {--user= : Only this creator (id, username or email)}
         {--dry-run : Report what would happen without calling Stripe}';
 
     protected $description = 'End the free period for creators who have made their first sale';
@@ -40,8 +40,12 @@ class ActivateSubscriptionsOnFirstSale extends Command
         $query = $service->dueQuery();
 
         if ($only = $this->option('user')) {
+            // Email too — it is the obvious thing to reach for, the announcement
+            // command already accepts it, and without it `--user=<email>` silently
+            // matched nobody and reported "Examined 0" as though the sweep had
+            // correctly found nothing to do.
             $query->where(function ($q) use ($only) {
-                $q->where('username', $only);
+                $q->where('username', $only)->orWhere('email', $only);
                 if (ctype_digit((string) $only)) {
                     $q->orWhere('id', (int) $only);
                 }

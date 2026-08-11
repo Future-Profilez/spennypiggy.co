@@ -37,6 +37,7 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -195,7 +196,7 @@ class MembershipController extends Controller
             ]);
         }
 
-        $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
+        $exist = Membership::withScheduled()->where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
         if (in_array($request->level, $exist)) {
             return response()->json([
@@ -218,7 +219,7 @@ class MembershipController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
         $totalPrice = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['total_fees']; // Store total fees (Platform + Stripe) for consistency
 
@@ -331,7 +332,7 @@ class MembershipController extends Controller
         } else {
             try {
                 $user = User::where('id', Auth::id())->first();
-                $mem = Membership::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+                $mem = Membership::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
                 if (empty($mem)) {
                     return redirect()->back()->with('error', 'Membership not found.');
@@ -354,7 +355,7 @@ class MembershipController extends Controller
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate, 'card', $user->id);
                 $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
                 $totalTaxAmount = $breakdown['application_fee'];
 
@@ -646,6 +647,8 @@ class MembershipController extends Controller
         // return $subscriptionCheck;
         if (! $subscriptionCheck['eligible']) {
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($membership->user, $membership->price);
 
             return redirect()->back()->with(
                 'error',
@@ -691,7 +694,7 @@ class MembershipController extends Controller
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate, 'card', $membership->user->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -795,6 +798,9 @@ class MembershipController extends Controller
                 'creator_currency' => $membership->currency,
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
+                // On a RECURRING row this is also the grandfathering record: the
+                // supporter keeps this rate at renewal unless a LOWER one is agreed.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             // Apply digital waiver confirmation
@@ -1081,7 +1087,7 @@ class MembershipController extends Controller
         $metrics = app(RiskService::class)->recalculateMetrics((string) $membership->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
-        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate);
+        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate, 'card', $membership->user->id);
 
         // Update membership object for view (this doesn't save to DB)
         // We include both application fee and stripe fee in the "tax_amount" for display so the total is closer to reality
@@ -1160,7 +1166,7 @@ class MembershipController extends Controller
                 $total_amount = $mem->membership->price + $mem->vat_tax_amount;
 
                 // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency, 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
                 $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
 
                 MembershipMail::dispatch($mem, $creatorNetAmount);
@@ -1256,7 +1262,7 @@ class MembershipController extends Controller
                         $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
                     }
                     // Use actual fee breakdown from the gross-up formula
-                    $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'));
+                    $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'), 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
                     $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
                     $stripeFee = $memBreakdown['stripe_fee'];
                     $gross = $mem->total_paid && $mem->total_paid > 0

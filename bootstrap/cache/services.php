@@ -49,6 +49,7 @@
     45 => 'App\\Providers\\RouteServiceProvider',
     46 => 'App\\Providers\\PerformanceServiceProvider',
     47 => 'Intervention\\Image\\ImageServiceProvider',
+    48 => 'App\\Providers\\NotificationLogServiceProvider',
   ),
   'eager' => 
   array (
@@ -84,6 +85,7 @@
     29 => 'App\\Providers\\RouteServiceProvider',
     30 => 'App\\Providers\\PerformanceServiceProvider',
     31 => 'Intervention\\Image\\ImageServiceProvider',
+    32 => 'App\\Providers\\NotificationLogServiceProvider',
   ),
   'deferred' => 
   array (

@@ -282,7 +282,7 @@ export default function SupportStory({ creator, gifter }) {
               {ev.media_url ? (
                 <div className="mt-3">
                   <Popup
-                    modalclass="pinkmodal shadow-[4px_4px_0px_0px_#FF007F]ink"
+                    modalclass="pinkmodal shadow-pink"
                     space="0"
                     size="md"
                     action={false}

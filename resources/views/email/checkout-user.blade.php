@@ -24,7 +24,13 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:800;font-size:22px;color:#1A1A1A;
                            line-height:30px;padding:0 0 10px 0;text-align:center;">
-                    Thank You for Granting<br>{{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'their' }}'s Wish!
+                    {{--
+                        ⚠️ Content-first: this reads as a PURCHASE, never a gift, wish
+                        granted, treat or donation. A receipt is the most Stripe-facing
+                        surface the platform sends — see CLAUDE.md "Stripe content-first
+                        compliance" before rewording anything here.
+                    --}}
+                    Thank you for your purchase from<br>{{ isset($data->owner) && isset($data->owner->name) ? $data->owner->name : 'this creator' }}
                 </td>
             </tr>
 
@@ -33,55 +39,18 @@
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-weight:400;font-size:15px;color:#666666;
                            line-height:22px;padding:0 0 24px 0;text-align:center;">
-                    @php
-                        // Set default values with comprehensive error handling
-                        $convertedAmount = 0;
-                        $decimalPlaces = 2;
-                        $currencySymbol = '£'; // Default currency symbol
-
-                        try {
-                            // Get amount from various possible sources
-                            if (isset($data->total_paid) && is_numeric($data->total_paid)) {
-                                $convertedAmount = $data->total_paid;
-                            } elseif (isset($data->amount_subtotal) && is_numeric($data->amount_subtotal)) {
-                                $convertedAmount = $data->amount_subtotal;
-                            } elseif (isset($data->amount) && is_numeric($data->amount)) {
-                                $convertedAmount = $data->amount;
-                            } elseif (isset($data->amount_total) && is_numeric($data->amount_total)) {
-                                $convertedAmount = $data->amount_total;
-                            }
-
-                            // Handle currency symbol
-                            if (isset($curr) && !empty($curr)) {
-                                $currencySymbol = $curr;
-                                // Try to get currency details for formatting
-                                try {
-                                    $displayCurrency = \App\Models\Currency::where('symbol', $curr)->first();
-                                    if ($displayCurrency && isset($displayCurrency->ISOdigits) && is_numeric($displayCurrency->ISOdigits)) {
-                                        $decimalPlaces = $displayCurrency->ISOdigits;
-                                    }
-
-                                    // Convert amount if needed
-                                    if ($displayCurrency && isset($data->currency) && $displayCurrency->ISO !== $data->currency) {
-                                        $convertedAmount = \App\Helpers::priceFormat($data->currency, $convertedAmount, $displayCurrency->ISO);
-                                    }
-                                } catch (\Exception $e) {
-                                    // If currency conversion fails, use default values
-                                    \Log::warning('Currency conversion failed in email template', ['error' => $e->getMessage()]);
-                                }
-                            }
-
-                            // Ensure amount is positive
-                            $convertedAmount = max(0, $convertedAmount);
-
-                        } catch (\Exception $e) {
-                            \Log::error('Error processing email template data', ['error' => $e->getMessage()]);
-                            $convertedAmount = 0;
-                            $decimalPlaces = 2;
-                            $currencySymbol = '£';
-                        }
-                    @endphp
-                    Your generous gift of <strong style="color:#8C52FF;">{{ $currencySymbol }}{{ number_format($convertedAmount, $decimalPlaces) }}</strong> has made their day brighter 🎁✨
+                    {{--
+                        🚨 The amount is resolved in CheckoutToUser::buyerCharge(), NOT here.
+                        This block used to pick it from a fallback chain
+                        (total_paid → amount_subtotal → amount → amount_total) and was wrong
+                        for every shape: `stripe_payment_details` has no `total_paid` column
+                        so it always printed `amount_subtotal` — the CREATOR's net, not what
+                        the buyer paid — and `stripe_payment_items.total_paid` is never
+                        written, so an item printed 0.00. It also looked the currency up by
+                        SYMBOL, and `$` matches 8 currencies, so a USD receipt was silently
+                        converted to BMD. Do not reintroduce amount logic in this template.
+                    --}}
+                    Your purchase of <strong style="color:#8C52FF;">{{ $buyerCurrencySymbol }}{{ number_format(max(0, (float) $buyerPaid), $buyerCurrencyDigits) }}</strong> is confirmed ✨
                 </td>
             </tr>
 
@@ -410,4 +379,5 @@
         </table>
     </td>
 </tr>
+@include('email.guest-purchase-hint', ['isGuest' => empty($data->user_id)])
 @endsection

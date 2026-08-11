@@ -162,21 +162,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                             isProfileView={true}
                         />
                     ))}
-                    {hasMore && (
-                        <div className="text-center py-4">
-                            {isLoadingMore ? (
-                                <LoadMoreSkeleton />
-                            ) : (
-                                <button
-                                    onClick={handleLoadMore}
-                                    className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg  hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all  rounded-[30px] duration-200"
-                                    disabled={isLoadingMore}
-                                >
-                                    Load More Posts
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    
                 </div>
             ) : (
                 <PostEmptyState
@@ -184,6 +170,21 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                     onFilterChange={handleFilterChange}
                     username={user?.name}
                 />
+            )}
+            {hasMore && (
+                <div className="text-center py-4">
+                    {isLoadingMore ? (
+                        <LoadMoreSkeleton />
+                    ) : (
+                        <button
+                            onClick={handleLoadMore}
+                            className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg  hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all  rounded-[30px] duration-200"
+                            disabled={isLoadingMore}
+                        >
+                            Load More Posts
+                        </button>
+                    )}
+                </div>
             )}
         </>
     );

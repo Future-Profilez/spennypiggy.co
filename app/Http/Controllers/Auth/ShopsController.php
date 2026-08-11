@@ -41,6 +41,8 @@ use App\Services\Risk\RiskService;
 use App\Services\StockWaitlistService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Exception;
@@ -72,7 +74,7 @@ class ShopsController extends Controller
 
         $isOwner = Auth::check() && Auth::id() === $user->id;
 
-        $query = Shop::where('user_id', $user->id);
+        $query = Shop::withScheduled()->where('user_id', $user->id);
 
         // If not the owner, only show approved and active items
         if (! $isOwner) {
@@ -415,7 +417,9 @@ class ShopsController extends Controller
         $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate);
+        // Creator id resolves their bespoke platform rate, if they have one — the
+        // listing's advertised price has to match what checkout will charge.
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate, 'card', $user->id);
 
         $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -468,7 +472,7 @@ class ShopsController extends Controller
     {
         $user = User::find(Auth::id());
 
-        $shop = Shop::where('uuid', $uuid)->where('user_id', $user->id)->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', $user->id)->first();
 
         if (! $shop) {
             return response()->json([
@@ -632,7 +636,7 @@ class ShopsController extends Controller
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate, 'card', $user->id);
 
             $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -720,7 +724,7 @@ class ShopsController extends Controller
 
     public function deleteShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
 
         if (! $shop) {
             return response()->json([
@@ -1058,6 +1062,8 @@ class ShopsController extends Controller
             if (! $subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $shop->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $shop->price));
+                // Recorded and counted: one lost sale is a warning, six is a reason.
+                BlockedPaymentAlert::record($shop->user, $shop->price);
 
                 // Log the blocked payment for subscription issues
                 Log::warning('Shop payment blocked due to subscription issue', [
@@ -1210,7 +1216,7 @@ class ShopsController extends Controller
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use new gross-up flow with the full price the creator expects to receive
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate, $methodResolution['fee_profile']);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate, $methodResolution['fee_profile'], $shop->user->id);
             $applicationFeeAmount = $breakdown['application_fee'] ?? 0;
 
             $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
@@ -1258,6 +1264,9 @@ class ShopsController extends Controller
                 // never calculated from.
                 'quantity' => $requestedQuantity,
                 'shipping_info' => $shipping_info ?? null,
+                // The rates this charge was priced at. Read back by every recompute
+                // path so a later change to the creator's deal cannot re-price it.
+                ...Helpers::feeRateColumns($breakdown),
             ]);
 
             // Apply digital waiver confirmation
@@ -1391,6 +1400,15 @@ class ShopsController extends Controller
 
                     return redirect()->back()->with('error', 'Invalid payment ID.');
                 }
+
+                NotificationContext::for([
+                    'context_type' => 'shop',
+                    'context_id' => $stripeid->shop_id,
+                    'stripe_session_id' => $stripeid->session_id,
+                    'buyer_id' => $stripeid->user_id,
+                    'buyer_email' => $stripeid->user->email ?? $stripeid->guest_email ?? null,
+                    'creator_id' => $stripeid->shop->user_id ?? null,
+                ]);
 
                 // Delayed-settlement bank methods (SEPA/ACH): don't fulfil on the
                 // redirect while the debit is still clearing — the
@@ -1709,7 +1727,7 @@ class ShopsController extends Controller
 
     public function deactivateShop($uuid)
     {
-        $shop = Shop::where('uuid', $uuid)->where('user_id', Auth::id())->first();
+        $shop = Shop::withScheduled()->where('uuid', $uuid)->where('user_id', Auth::id())->first();
         if (! empty($shop)) {
             if ($shop->status == 1) {
                 $shop->status = 0;

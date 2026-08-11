@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
 use App\Services\VisitTracker;
+use App\Support\GifterVerificationCharge;
 use App\Support\PresetCovers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -396,12 +397,26 @@ class RegisteredUserController extends Controller
         }
 
         if ($request->role == 0) {
-            // Country only. The rest of the row is filled by
-            // `successCheckout`'s `updateOrCreate` from Stripe's
-            // `customer_details.address` on the first purchase.
+            // Country only. The rest of the row is filled by the gifter themselves at
+            // the £500 card-verification gate (`saveVerificationAddress`), which is
+            // also the only place it is ever read.
+            //
+            // ⚠️ This comment used to say `successCheckout` filled the rest from
+            // Stripe on the first purchase. It never did — no checkout on this
+            // platform has ever written these columns, and none of the seven asks
+            // Stripe for a billing address in the first place. From the day signup
+            // stopped collecting one, every new gifter's address stayed NULL and the
+            // admin's £500 match report had nothing on its own side to compare, which
+            // made approving a gifter a rubber stamp. Verify before repeating it.
+            //
+            // ⚠️ The ISO CODE, not the label. The form posts both (`country` is the
+            // display name, `country_code` the ISO code) and this wrote the label —
+            // so the column held "United Kingdom" until the first purchase replaced
+            // it with Stripe's "GB", and the same column meant two different things
+            // depending on how far through the funnel someone got.
             GifterAddress::create([
                 'user_id' => $user->id,
-                'country' => $request->country,
+                'country' => $request->country_code ?: $request->country,
             ]);
         }
 
@@ -451,17 +466,22 @@ class RegisteredUserController extends Controller
      */
     public function checkUsername(Request $request)
     {
+        // ⚠️ Mirrors the rule `store()` actually enforces. `alpha_num` here rejected
+        // full stops and underscores, which registration allows — so a handle like
+        // `jane.doe` came back as a validation error from the availability check
+        // even though it was perfectly registrable.
         $request->validate([
             'username' => [
                 'required',
                 'string',
-                'alpha_num',
+                'lowercase',
+                'regex:/^[a-zA-Z0-9_\.]+$/',
                 'not_regex:/@/',
                 'min:5',
                 'max:20',
             ],
         ]);
-        $exist = User::whereUsername($request->username)->first();
+        $exist = User::withTrashed()->whereUsername(strtolower($request->username))->first();
 
         return response()->json([
             'available' => empty($exist),
@@ -470,18 +490,17 @@ class RegisteredUserController extends Controller
 
     public function checkCouponCode($code)
     {
-        $promocode = PromoCode::whereCode($code)->get();
-        if (! empty($promocode)) {
-            return response()->json([
-                'status' => true,
-                'message' => 'promo code available',
-            ]);
-        } else {
-            return response()->json([
-                'status' => false,
-                'message' => 'promo code not available',
-            ]);
-        }
+        // ⚠️ This used `! empty($collection)`, and an Eloquent Collection is an
+        // OBJECT — always truthy, empty or not — so every code ever typed came back
+        // "available", including ones that do not exist. The key was `message` while
+        // the register form reads `msg`, so the text never rendered either.
+        $promocode = PromoCode::whereCode($code)->first();
+
+        return response()->json([
+            'status' => (bool) $promocode,
+            'msg' => $promocode ? 'Code applied.' : "That code isn't valid.",
+            'message' => $promocode ? 'Code applied.' : "That code isn't valid.",
+        ]);
     }
 
     /**
@@ -503,6 +522,25 @@ class RegisteredUserController extends Controller
                 'message' => 'Unauthorized.',
             ], 401);
         }
+
+        // 🚨 No address, no charge.
+        //
+        // The whole point of this £1 charge is that Stripe hands back the address
+        // the gifter types into Checkout, which an admin then compares against the
+        // one they gave US. With nothing on our side every field reads `unknown`,
+        // the mismatch count is always 0, and the review an admin performs before
+        // letting somebody spend past £500 is a rubber stamp.
+        //
+        // Enforced HERE and not only in the form, because the button is one
+        // `axios.get` away for anyone who opens a console.
+        if (! ($user->gifterAddress?->isComplete() ?? false)) {
+            return response()->json([
+                'status' => false,
+                'error' => 'Please add your billing address before verifying your card.',
+                'needs_address' => true,
+            ], 422);
+        }
+
         $stripe = new StripeClient(config('services.stripe.secret'));
 
         // Ensure Stripe customer
@@ -527,21 +565,12 @@ class RegisteredUserController extends Controller
         //     ]);
         // }
 
-        // Static base amount in GBP
-        $baseAmount = 1.00;
-
-        // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($baseAmount, 'GBP');
-
-        $finalTotalAmount = $breakdown['total_supporter_pays'];
-
-        // Convert final amount to selected currency if not GBP
-        if ($currency !== 'GBP') {
-            $convertedAmount = Helpers::priceFormat('gbp', $finalTotalAmount, $currency);
-            $finalUnitAmount = intval(round($convertedAmount * 100));
-        } else {
-            $finalUnitAmount = intval(round($finalTotalAmount * 100));
-        }
+        // 🚨 The SAME call the screen quotes from, so the figure on the button and
+        // the figure on the card are one number by construction. They used to be two:
+        // the page said "a one-time verification fee of £1" and this charged the
+        // grossed-up £2.95.
+        $quote = GifterVerificationCharge::quote($currency);
+        $finalUnitAmount = $quote['minor'];
 
         // Create Stripe Checkout session
         $session = $stripe->checkout->sessions->create([
@@ -613,6 +642,80 @@ class RegisteredUserController extends Controller
             'status' => true,
             'checkout_url' => $session->url,
             'verification' => $verification,
+        ]);
+    }
+
+    /**
+     * The gifter's own billing address, typed once at the £500 gate.
+     *
+     * Kept apart from `stripe_address` on purpose: that one is what they type into
+     * Stripe Checkout moments later, and the admin review is only worth running
+     * because the two are entered independently. Merge them and the check becomes
+     * a copy of itself.
+     */
+    public function saveVerificationAddress(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! ($user instanceof User) || (int) $user->role !== 0) {
+            return response()->json([
+                'status' => false,
+                'error' => 'Unauthorized.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'street_address' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:120'],
+            // ⚠️ Deliberately optional. Many countries have no state and some have no
+            // postcode; this is the gate that unblocks a gifter's spending, so a field
+            // they cannot fill must never be able to trap them behind it. The admin
+            // comparison reads a blank as `unknown`, never as a mismatch.
+            'state' => ['nullable', 'string', 'max:120'],
+            'postal_code' => ['nullable', 'string', 'max:32'],
+            // 🚨 The ISO code, never the display label. `gifter_addresses.country` is
+            // compared against Stripe's ISO code, and the signup form once wrote
+            // "United Kingdom" here — which put "India" against "IN" and flagged every
+            // gifter in the admin queue, a red chip on all of them being the same as
+            // no signal at all.
+            'country' => ['required', 'string', 'regex:/^[A-Za-z]{2}$/'],
+        ], [
+            'country.regex' => 'Please choose your country from the list.',
+        ]);
+
+        // ⚠️ NO `min:20` on the street. The signup form it replaces had exactly that,
+        // and it refused a genuine short address — "12 High St" is eleven characters.
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'error' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        // `firstOrNew`, not `updateOrCreate`: signup creates this row with `country`
+        // only, but a gifter whose role changed — or any legacy account — may have no
+        // row at all, and failing at the gate with "address not found" gives them
+        // nothing to do about it.
+        $address = GifterAddress::firstOrNew(['user_id' => $user->id]);
+
+        $address->fill([
+            'street_address' => trim($data['street_address']),
+            'city' => trim($data['city']),
+            'state' => filled($data['state'] ?? null) ? trim($data['state']) : null,
+            'postal_code' => filled($data['postal_code'] ?? null) ? trim($data['postal_code']) : null,
+            'country' => strtoupper($data['country']),
+        ]);
+
+        // ⚠️ `stripe_address` is never touched here. It is the second, independent
+        // record and belongs to `cardVerificationSuccess`.
+        $address->save();
+
+        return response()->json([
+            'status' => true,
+            'address' => $address->toFormArray(),
         ]);
     }
 
@@ -737,6 +840,17 @@ class RegisteredUserController extends Controller
 
         if (! $user) {
             return redirect()->route('login')->with('error', 'User not found.');
+        }
+
+        // 🚨 Same IDOR guard as `cardVerificationSuccess`, which had one while this
+        // did not. A uuid is a public identifier — it travels in profile payloads and
+        // item URLs all over this platform — so without this any signed-in account
+        // could flip another gifter's latest verification to `failed` by visiting
+        // their uuid. The victim, who may have paid minutes earlier and be waiting on
+        // an admin, is then shown "Payment Failed or Canceled" about a charge that
+        // succeeded.
+        if (! Auth::check() || (int) $user->id !== (int) Auth::id()) {
+            abort(403);
         }
 
         // Update the latest verification record for the user

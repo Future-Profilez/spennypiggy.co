@@ -59,7 +59,7 @@ class TwitterController extends Controller
         $user = Auth::user();
         $state = Session::pull('x_state', 'NONE');
         $challenge = Session::pull('x_challenge');
-        if (! empty($data['code'] and $data['state'] == $state)) {
+        if (! empty($data['code']) && isset($data['state']) && $data['state'] === $state) {
             try {
                 $resp = TwitterAuthService::getAuthToken($data['code'], $challenge, route('x.handle'));
                 Session::remove('x_state');

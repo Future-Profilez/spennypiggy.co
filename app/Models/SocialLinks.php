@@ -30,7 +30,12 @@ class SocialLinks extends Model
         'manyvids',
         'other',
         'status',
-        'other',
+        // ⚠️ `reason` was missing here while `saveSocialLinks()` passes
+        // `'reason' => null` on every save, so mass assignment silently dropped it
+        // and a previous admin rejection reason survived the re-save — the profile
+        // then showed a stale rejection next to a pending status. The admin app's
+        // copy of this model has always carried it; the two had drifted.
+        'reason',
         'deleted_at',
     ];
 

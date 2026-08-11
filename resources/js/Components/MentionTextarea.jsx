@@ -26,11 +26,67 @@ export default function MentionTextarea({
     max = 5,
 }) {
     const ref = useRef(null);
+    const mirrorRef = useRef(null);
     const [query, setQuery] = useState(null); // null = menu closed
     const [results, setResults] = useState([]);
     const [active, setActive] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [menuPos, setMenuPos] = useState({ top: 0, flip: false });
     const anchor = useRef({ start: 0, end: 0 });
+
+    /** Height the menu is allowed to take; also the flip threshold. */
+    const MENU_MAX = 256;
+
+    /**
+     * Where the caret actually is, in pixels inside the textarea.
+     *
+     * ⚠️ The menu used to have no `top` at all, so it fell into normal flow and
+     * rendered at the BOTTOM of the box. That was survivable at 150px tall; in
+     * the full-page composer the textarea is 280px, and the suggestions appeared
+     * a third of a screen below the word being typed — far enough that they read
+     * as belonging to something else entirely, and far enough to be clipped by
+     * the composer sheet's `overflow-hidden`.
+     *
+     * Measured with a mirror element rather than by counting newlines: lines
+     * WRAP, so a line count puts the menu on the wrong row the moment someone
+     * writes a real sentence.
+     */
+    const measureCaret = () => {
+        const ta = ref.current;
+        const mirror = mirrorRef.current;
+        if (!ta || !mirror) return;
+
+        const cs = window.getComputedStyle(ta);
+        [
+            "fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing",
+            "lineHeight", "textTransform", "wordSpacing", "textIndent",
+            "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+            "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+            "boxSizing",
+        ].forEach((p) => {
+            mirror.style[p] = cs[p];
+        });
+        mirror.style.width = `${ta.clientWidth}px`;
+
+        mirror.textContent = ta.value.slice(0, ta.selectionStart);
+        const marker = document.createElement("span");
+        marker.textContent = "​";
+        mirror.appendChild(marker);
+
+        const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4;
+        const caretTop = marker.offsetTop - ta.scrollTop;
+        // Below the caret's own line, so the menu never covers what is being typed.
+        const below = caretTop + lineHeight + 4;
+        const flip = below + MENU_MAX > ta.clientHeight && caretTop > MENU_MAX;
+
+        setMenuPos({ top: flip ? caretTop - 4 : below, flip });
+    };
+
+    // Re-measured on every keystroke that keeps the menu open: the caret moves.
+    useEffect(() => {
+        if (query !== null) measureCaret();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [query, value]);
 
     const mentionCount = useMemo(
         () => new Set((value?.match(/(?:^|[\s(])@([a-zA-Z0-9_.]{2,50})/g) || []).map((m) => m.trim().toLowerCase())).size,
@@ -138,8 +194,24 @@ export default function MentionTextarea({
                 className={className}
             />
 
+            {/* Hidden twin of the textarea, used only to find the caret. Kept in
+                the DOM rather than built per keystroke so the browser is not
+                asked to re-resolve fonts on every character. */}
+            <div
+                ref={mirrorRef}
+                aria-hidden="true"
+                className="pointer-events-none invisible absolute left-0 top-0 -z-10 whitespace-pre-wrap break-words"
+            />
+
             {query !== null && (
-                <div className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-y-auto rounded-box-sm border border-gray-200 bg-white shadow-lg">
+                <div
+                    style={
+                        menuPos.flip
+                            ? { bottom: `calc(100% - ${menuPos.top}px)` }
+                            : { top: `${menuPos.top}px` }
+                    }
+                    className="absolute left-0 z-30 max-h-64 w-full max-w-[360px] overflow-y-auto rounded-box-sm border-2 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                >
                     {loading && results.length === 0 ? (
                         <p className="px-3 py-3 text-sm text-gray-500">Searching creators…</p>
                     ) : results.length === 0 ? (

@@ -752,6 +752,7 @@ export default function PiggyPotWidget({
                                     amount={parseFloat(data.amount) || 0}
                                     currency={potCurrency}
                                     email={data.email || auth?.user?.email}
+                                    creatorId={featuredCreatorId}
                                     value={data.payment_method}
                                     onChange={(m) =>
                                         setData("payment_method", m)

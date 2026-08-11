@@ -282,3 +282,25 @@ body:has(.retro-bottom-bar) main {
     filter: none;
   }
 }
+/* Chat launcher clearance.
+   The bar is 80px + the safe-area inset and is mobile-only (md:hidden), while
+   Intercom's launcher is docked at bottom:20px — so on a phone it sat on top of
+   the nav. Lifted above the bar here rather than via Intercom's `vertical_padding`
+   because that is a single number applied at boot and cannot be responsive, and
+   the bar does not exist at md+. Intercom sets its position inline, hence the
+   !important. Covers the lightweight pre-load launcher and the booted one. */
+@media (max-width: 767px) {
+  .intercom-lightweight-app-launcher,
+  .intercom-namespace .intercom-launcher,
+  .intercom-namespace .intercom-launcher-frame,
+  #intercom-container .intercom-launcher,
+  #intercom-launcher-frame {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  /* The open messenger has to clear it too, or its footer hides behind the nav. */
+  .intercom-namespace .intercom-messenger-frame,
+  #intercom-container .intercom-messenger-frame {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100dvh - 132px - env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

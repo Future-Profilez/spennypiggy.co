@@ -8,6 +8,7 @@ import { Menu, Transition } from "@headlessui/react";
 import RemoveMembership from "@/Pages/membership/RemoveMembership";
 import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
+import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
 
 const rewards_lists = [
     { title: "Green Circle Insta", value: "green_circle_insta" },
@@ -29,6 +30,7 @@ export default function MembershipItem({
 }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
         usePage().props;
+    const __pageProps = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [rewards, setrewards] = useState(
         item?.rewards ? JSON.parse(item.rewards) : [],
@@ -75,8 +77,11 @@ export default function MembershipItem({
         const priceWithVat = listedPrice + vatAmount;
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100;
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        // Per-creator: a creator on a bespoke platform rate must be QUOTED
+        // what checkout will CHARGE them. The global props cannot express that.
+        const __rates = feeRatesFor(creatorIdOf(item), __pageProps);
+        const platformFeeRate = __rates.platform / 100;
+        const complianceFeeRate = __rates.compliance / 100;
         const adminFee = adminFeeInCurrency(curr);
         const totalDeductionRate =
             stripeFeeRate + platformFeeRate + complianceFeeRate;

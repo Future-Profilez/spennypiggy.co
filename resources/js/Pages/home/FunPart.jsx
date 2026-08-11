@@ -45,7 +45,7 @@ export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, ecla
   <div className={`${classes} md:flex ${reverse ? "flex-row-reverse" : ''} ${mainbg ? mainbg : 'bg-black'} box-border justify-between items-stretch relative`}>
     {!mainbg && (
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className={`absolute ${reverse ? 'bottom-0 left-0' : 'top-0 right-0'} w-96 h-96 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-10 floating-shape`}></div>
+            <div className={`absolute ${reverse ? 'bottom-0 left-0' : 'top-0 right-0'} w-96 h-96 bg-[#FF007F] rounded-full mix-blend-screen filter blur-3xl opacity-10 floating-shape`}></div>
         </div>
     )}
     <FadeIn x={reverse ? -60 : 60} y={0} duration={0.7} className={`${reverse ? 'border-r-2' : 'border-l-2'} border-black overflow-hidden ${eclasses} ${reverse ? "justify-start" : "justify-end"} pb-0 md:w-1/2 relative`}>

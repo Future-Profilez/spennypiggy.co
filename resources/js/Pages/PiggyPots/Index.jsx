@@ -13,6 +13,7 @@ import RewardEditor, {
 } from '@/Components/Reward/RewardEditor';
 import RewardPreview from '@/Components/Reward/RewardPreview';
 import { IMAGE_ACCEPT } from '@/constants/rewards';
+import PotVisibilityNotice from './PotVisibilityNotice';
 
 const DEFAULT_COVER = 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/';
 
@@ -432,11 +433,22 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                             key={pot.id}
                                             className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
                                         >
+                                            {/* ⚠️ A pinned pot that has closed is still pinned — the flag is
+                                                the creator's intent and is kept, so extending the deadline
+                                                restores the slot. But a plain "⭐ Pinned" on a pot the profile
+                                                stopped showing is the badge telling them the opposite of the
+                                                truth, which is how a lapsed pot went unnoticed for months. */}
                                             {pot.is_pinned && (
                                                 <div className="absolute top-4 right-4 z-20">
-                                                    <span className="bg-pink-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
-                                                        <span>⭐</span> Pinned
-                                                    </span>
+                                                    {pot.visibility && !pot.visibility.visible ? (
+                                                        <span className="bg-gray-200 text-gray-700 text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
+                                                            <span aria-hidden="true">⭐</span> Pinned · not showing
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-pink-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
+                                                            <span aria-hidden="true">⭐</span> Pinned
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
 
@@ -475,25 +487,15 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                 <h4 className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight">
                                                     {pot.title}
                                                 </h4>
-                                                {/* Every pot now waits for review before it is public, so the
-                                                    ordinary case must not look like a problem. Only a pot the
-                                                    image check actually flagged carries a reason — and only that
-                                                    one gets the red treatment and something to act on. */}
-                                                {pot.status === 'moderation_hold' && (
-                                                    pot.moderation_reason ? (
-                                                        <div className="mb-3 rounded-box-sm border-2 border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-                                                            ⚠️ Under review — not visible to buyers.
-                                                            <span className="block font-medium text-red-600 mt-0.5">
-                                                                {pot.moderation_reason}
-                                                            </span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="mb-3 rounded-box-sm border-2 border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                                                            ⏳ Waiting for review — it goes live once our team has
-                                                            checked it. Nothing for you to do.
-                                                        </div>
-                                                    )
-                                                )}
+                                                {/* Covers every reason a pot is off the profile — under review,
+                                                    deadline lapsed, goal reached, archived, or simply not the
+                                                    featured one — because each needs a different action and a
+                                                    status chip tells the creator none of them. Silent when live. */}
+                                                <PotVisibilityNotice
+                                                    visibility={pot.visibility}
+                                                    moderationReason={pot.moderation_reason}
+                                                    onFix={() => openEditModal(pot)}
+                                                />
                                                 <p className="text-gray-600 font-medium text-sm mb-6 line-clamp-2 flex-grow">
                                                     {pot.description || 'No description'}
                                                 </p>

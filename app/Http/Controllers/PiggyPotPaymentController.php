@@ -16,6 +16,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\PiggyPotStatusService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
 use App\Services\Risk\RiskEngineService;
@@ -23,6 +24,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\NotificationContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -91,17 +93,17 @@ class PiggyPotPaymentController extends Controller
         }
 
         // Don't allow purchases into a pot that is under moderation review or closed.
-        if (in_array($piggyPot->status, ['moderation_hold', 'archived', 'completed', 'expired'], true)) {
+        if (in_array($piggyPot->status, PiggyPotStatusService::UNPURCHASABLE_STATUSES, true)) {
             return response()->json([
                 'status' => false,
                 'msg' => 'This content is currently unavailable for purchase.',
             ]);
         }
 
-        // A passed deadline closes the listing. Nothing flips `status` to
-        // `expired` on a schedule, so without this check a pot stays
-        // purchasable forever via a direct POST even once the UI hides it.
-        if ($piggyPot->deadline && $piggyPot->deadline->copy()->endOfDay()->isPast()) {
+        // A passed deadline closes the listing. `piggy-pots:expire` flips `status`
+        // hourly, so this covers the gap between the deadline passing and that
+        // sweep running — and a direct POST at any time thereafter.
+        if (PiggyPotStatusService::deadlinePassed($piggyPot->deadline)) {
             return response()->json([
                 'status' => false,
                 'msg' => 'This content is no longer available — the creator\'s deadline has passed.',
@@ -231,7 +233,16 @@ class PiggyPotPaymentController extends Controller
             ]);
         }
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $sourceCurrency, 0, $methodResolution['fee_profile']);
+        // Pass $creator->id as the 5th arg so the pricing engine picks up the
+        // creator's live bespoke deal (if any) — this is the correct pattern for
+        // new-charge paths. Recompute paths use $rateOverride (6th arg) instead.
+        $breakdown = Helpers::calculateStripeDirectChargeFlow(
+            $basePrice,
+            $sourceCurrency,
+            0,
+            $methodResolution['fee_profile'],
+            $creator->id
+        );
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -302,6 +313,9 @@ class PiggyPotPaymentController extends Controller
                     'total_paid' => $finalTotalAmount,
                     'message' => $request->message ?? null,
                     'is_anonymous' => $request->anonymous ?? 0,
+                    // The rates this charge was priced at. Read back by every recompute
+                    // path so a later change to the creator's deal cannot re-price it.
+                    ...Helpers::feeRateColumns($breakdown),
                 ]);
             });
         } catch (\RuntimeException $e) {
@@ -437,6 +451,18 @@ class PiggyPotPaymentController extends Controller
         // would be written url-less and nothing ever revisits it).
         $pay->load(['creator', 'user', 'piggyPot' => fn ($q) => $q->withTrashed()]);
 
+        // Labels every receipt/push this request sends with the contribution
+        // behind it — see App\Support\NotificationContext.
+        NotificationContext::for([
+            'context_type' => 'piggy_pot',
+            'context_id' => $pay->piggy_pot_id,
+            'stripe_session_id' => $pay->session_id,
+            'stripe_payment_intent_id' => $pay->payment_intent_id,
+            'buyer_id' => $pay->user_id,
+            'buyer_email' => $pay->user->email ?? $pay->guest_email ?? null,
+            'creator_id' => $pay->creator_id,
+        ]);
+
         $redirectUrl = $request->query('redirect');
 
         try {
@@ -513,6 +539,18 @@ class PiggyPotPaymentController extends Controller
                             'gross_amount' => $gross,
                             'fee_profile' => $pay->fee_profile ?? 'card',
                             'platform_fee' => $platformFee,
+                            // Carry the rate columns from the stored payment row so a
+                            // later change to the creator's deal cannot re-price this entry.
+                            ...Helpers::feeRateColumns(Helpers::calculateStripeDirectChargeFlow(
+                                (float) $pay->amount,
+                                strtoupper($pay->currency ?? 'GBP'),
+                                0,
+                                $pay->fee_profile ?? 'card',
+                                null,
+                                Helpers::storedFeeRates($pay)
+                            )),
+                            'compliance_fee' => null,
+                            'admin_fee' => null,
                             'stripe_fee' => $stripeFee,
                             'vat_amount' => $vatAmt,
                             'net_amount' => (float) $pay->amount,

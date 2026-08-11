@@ -49,14 +49,17 @@ export default function HappyCreators() {
     ];
 
     return (
-        <section id="reviews" className="bg-transparent relative py-20 md:py-28">
+        <section
+            id="reviews"
+            className="bg-transparent relative py-12 md:py-28"
+        >
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
+                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float"></div>
+                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
-            <div className="containerbox relative ">
+            <div className="containerbox relative">
                 <FadeIn y={30} duration={0.6}>
                 <h2 className="fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-gradient-wishlist">Creators</span>
@@ -76,7 +79,7 @@ export default function HappyCreators() {
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
                                            
-                                          className="fading min-h-[245px] rounded-[30px]   bg-gray-900 border-2 border-gray-800 p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F] md:shadow-[8px_8px_0px_0px_#FF007F] hover:translate-y-[-5px] transition-transform duration-300"
+                                          className="fading min-h-[245px] rounded-[30px] bg-gray-900 border-2 border-gray-800 p-6 md:p-8 hover:translate-y-[-5px] transition-transform duration-300"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">

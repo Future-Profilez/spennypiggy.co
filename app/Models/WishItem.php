@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
+use App\Models\Concerns\HasScheduledPublishing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,11 +12,13 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, HasRewardContract, SoftDeletes;
+    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
+        'publish_at',
+        'schedule_released_at',
         'payment_methods_accepted',
         'user_id',
         'stripe_product_id',
@@ -70,6 +73,8 @@ class WishItem extends Model
     ];
 
     protected $casts = [
+        'publish_at' => 'datetime',
+        'schedule_released_at' => 'datetime',
         'twitter_response' => 'array',
     ];
 

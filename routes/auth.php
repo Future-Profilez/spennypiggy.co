@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CreatorExpenseController;
 use App\Http\Controllers\CreatorFinancialController;
 use App\Http\Controllers\DeliveriesController;
@@ -51,6 +52,7 @@ use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\DiscoveryService;
 use App\Services\SubscriptionActivationService;
+use App\Support\SubscriptionPayload;
 use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -91,10 +93,25 @@ Route::middleware('guest')->group(function () {
         ->name('login');
     Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
     Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->middleware('throttle:5,1')->name('verify2FA');
-    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
-    Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage']);
-    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])->name('changePassword');
+    // ⚠️ Throttled: this endpoint answers "does an account exist with this email?"
+    // to anyone, unauthenticated, and it is the pre-step of every password login —
+    // without a limit it is a free account-enumeration oracle against the whole
+    // user table.
+    Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])
+        ->middleware('throttle:10,1')
+        ->name('verifyUser');
+    // Throttled because it both enumerates addresses and SENDS MAIL on every hit —
+    // unlimited, it is a mail bomb aimed at any address the caller names.
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.email');
+    Route::get('forgot-password/{uuid}', [PasswordResetLinkController::class, 'forgotPasswordPage'])
+        ->name('password.reset.uuid');
+    // Throttled: the token is single-use and verified server-side, but the endpoint
+    // is unauthenticated and a limit stops it being brute-forced.
+    Route::post('change-password/{uuid}', [PasswordResetLinkController::class, 'changePassword'])
+        ->middleware('throttle:10,1')
+        ->name('changePassword');
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
     Route::get('verify-token/{token}', [AuthenticatedSessionController::class, 'authRedirects']);
@@ -157,11 +174,18 @@ if (app()->environment('local', 'testing')) {
 Route::prefix('webauthn')->group(function () {
 
     // CHECK ROUTE - Check if user has passkey
-    Route::post('/check', [WebAuthnCheckController::class, 'check'])->name('webauthn.check');
+    // ⚠️ Throttled: it answers a question about an arbitrary email address to an
+    // unauthenticated caller, and the login page fires it on every keystroke
+    // (debounced), so it is both an enumeration surface and a traffic source.
+    Route::post('/check', [WebAuthnCheckController::class, 'check'])
+        ->middleware('throttle:30,1')
+        ->name('webauthn.check');
 
     // LOGIN ROUTES
     // Email-based login
-    Route::post('/login/options', [WebAuthnLoginController::class, 'options'])->name('webauthn.login.options');
+    Route::post('/login/options', [WebAuthnLoginController::class, 'options'])
+        ->middleware('throttle:30,1')
+        ->name('webauthn.login.options');
 
     // Userless login (THIS IS THE MISSING ROUTE)
     Route::post('/login/options-userless', [WebAuthnLoginController::class, 'optionsUserless'])->name('webauthn.login.userless.options');
@@ -382,8 +406,15 @@ Route::middleware('auth')->group(function () {
 
     /* send surprise amount */
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
+    // Throttled: it sends mail on every hit and the verification page calls it on
+    // mount, so an open loop here is a self-inflicted mail bomb.
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->middleware('throttle:3,10')
         ->name('verification.email');
+    // Cheap poll for the verification screen, so it can stop reloading the whole page
+    // every 5 seconds while it waits.
+    Route::get('email/verification-status', [EmailVerificationNotificationController::class, 'status'])
+        ->name('verification.status');
 
     // Content creation routes - NO subscription requirements.
     //
@@ -493,6 +524,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
+            // The gifter's own billing address, typed before the £1 verification charge.
+            // Throttled because it is an authenticated write reachable from a console.
+            Route::post('gifter-verification-address', [RegisteredUserController::class, 'saveVerificationAddress'])
+                ->middleware('throttle:20,1')
+                ->name('gifter.verification.address');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
@@ -522,30 +558,11 @@ Route::middleware('auth')->group(function () {
                     $auto_tweet = (int) ($user->auto_tweet ?? 0) === 1;
                     $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
-                    // Find the currently active subscription period
-                    $now = Carbon::now();
-                    $subscription = MonthlyCharge::where('user_id', $user->id)
-                        ->where(function ($query) use ($now) {
-                            $query->where(function ($q) use ($now) {
-                                // Active subscription period
-                                $q->whereDate('current_start_subscription_date', '<=', $now)
-                                    ->whereDate('current_end_subscription_date', '>=', $now);
-                            })->orWhere(function ($q) use ($now) {
-                                // Active trial period
-                                $q->whereDate('current_start_trial_date', '<=', $now)
-                                    ->whereDate('current_end_trial_date', '>=', $now);
-                            });
-                        })
-                        // Newest period first (created_at ties are not reliable here)
-                        ->newestFirst()
-                        ->first();
-
-                    // If no active period found, get the most recent one
-                    if (! $subscription) {
-                        $subscription = MonthlyCharge::where('user_id', $user->id)
-                            ->newestFirst()
-                            ->first();
-                    }
+                    // ⚠️ One builder for BOTH page payloads — App\Support\SubscriptionPayload.
+                    // This screen hosts the Platform Subscription popup, and its own copy of
+                    // the array had no `has_card`, so a creator who had just saved their card
+                    // was still told to add one — right under a row reading "Card saved".
+                    $subscription = SubscriptionPayload::currentRow($user);
 
                     // Get complete subscription history for the user
                     $historyCollection = MonthlyCharge::where('user_id', $user->id)
@@ -629,20 +646,7 @@ Route::middleware('auth')->group(function () {
                         'auto_tweet' => $auto_tweet,
                         'site_subscription' => $site_subscription,
                         'subscription_history' => $subscription_history,
-                        'monthly_charges' => $subscription ? [
-                            'id' => $subscription->id,
-                            'uuid' => $subscription->uuid,
-                            'user_id' => $subscription->user_id,
-                            'status' => $subscription->status,
-                            'amount' => (float) ($subscription->amount ?? 0),
-                            'currency' => $subscription->currency ?? 'GBP',
-                            'current_start_trial_date' => $subscription->current_start_trial_date ? Carbon::parse($subscription->current_start_trial_date)->format('d F Y') : null,
-                            'current_end_trial_date' => $subscription->current_end_trial_date ? Carbon::parse($subscription->current_end_trial_date)->format('d F Y') : null,
-                            'current_start_subscription_date' => $subscription->current_start_subscription_date ? Carbon::parse($subscription->current_start_subscription_date)->format('d F Y') : null,
-                            'current_end_subscription_date' => $subscription->current_end_subscription_date ? Carbon::parse($subscription->current_end_subscription_date)->format('d F Y') : null,
-                            'upcoming_payment' => $subscription->upcoming_payment ? Carbon::parse($subscription->upcoming_payment)->format('d F Y H:i') : null,
-                            'created_at' => $subscription->created_at ? Carbon::parse($subscription->created_at)->format('d F Y') : null,
-                        ] : null,
+                        'monthly_charges' => SubscriptionPayload::for($subscription),
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                         'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
@@ -851,6 +855,30 @@ Route::middleware('auth')->group(function () {
             Route::delete('/expenses/{expense}', [CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
         });
 
+        // "My Listings" — the creator's whole catalogue in one screen.
+        //
+        // ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}` profile
+        // catch-all at the end of this file. Declared after it, Laravel reads
+        // `my-listings` as a username and answers with the profile 404 — and
+        // `route:list` shows the route either way, which is what makes that hard to see.
+        Route::get('/my-listings', [CatalogueController::class, 'index'])->name('catalogue.index');
+
+        // Duplicate a listing. POST, and rate-limited: each press creates a real Stripe
+        // product on the creator's connected account, so an unthrottled button is a cheap
+        // way to fill it with junk. `identityBeforeListing` because this CREATES a
+        // listing — the same gate as every other create route.
+        // Set or clear a scheduled publish time. POST — it changes when real money can
+        // start being taken, and a GET carries no CSRF token.
+        Route::post('/my-listings/{type}/{id}/schedule', [CatalogueController::class, 'schedule'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1')
+            ->name('catalogue.schedule');
+
+        Route::post('/my-listings/{type}/{id}/duplicate', [CatalogueController::class, 'duplicate'])
+            ->whereNumber('id')
+            ->middleware(['identityBeforeListing', 'throttle:10,1'])
+            ->name('catalogue.duplicate');
+
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
@@ -860,6 +888,7 @@ Route::middleware('auth')->group(function () {
             Route::get('top-bill/{type?}', [LeaderBoardController::class, 'topBill'])->name('top-bill');
             Route::get('top-shop/{type?}', [LeaderBoardController::class, 'topShop'])->name('top-shop');
             Route::get('top-piggy-bank/{type?}', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
+            Route::get('top-supporters/{type?}', [LeaderBoardController::class, 'topSupporters'])->name('top-supporters');
         });
 
         Route::get('/shop', function () {
@@ -956,7 +985,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('shop')->group(function () {
     Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
-    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
+    Route::match(['get', 'post'], '/buy/{uuid}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item')->middleware('mustCompletedCardVerification');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
@@ -992,12 +1021,12 @@ Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class,
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
 
 Route::prefix('tip-jar')->name('tip-jar.')->group(function () {
-    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay');
+    Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
 Route::prefix('piggy-pot')->name('piggy-pot.')->group(function () {
-    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay');
+    Route::post('pay/{piggy_pot_uuid}/', [PiggyPotPaymentController::class, 'contributeToPiggyPot'])->name('pay')->middleware('mustCompletedCardVerification');
     Route::get('/handle/{uuid}/{status?}', [PiggyPotPaymentController::class, 'handlePiggyPotPayment'])->name('handle');
 });
 
@@ -1005,7 +1034,9 @@ Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class,
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
-Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify']);
+// Named so the mail can mint a SIGNED link for it. The signature is verified inside
+// the controller (readable message on an expired link, not a bare 403).
+Route::get('user/{uuid}', [VerifyEmailController::class, 'emailVerify'])->name('email.verify.uuid');
 
 // Legacy /how-it-works → canonical /how-spenny-piggy-works (preserve old URL + SEO)
 Route::get('/how-it-works', function () {
@@ -1117,7 +1148,7 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/dashboard', [TaskController::class, 'index'])->name('dashboard');
     Route::get('/create', [TaskController::class, 'create'])->name('create');
     Route::post('/', [TaskController::class, 'store'])->middleware('identityBeforeListing')->name('store');
-    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase');
+    Route::post('/{uuid}/purchase', [TaskController::class, 'purchase'])->name('purchase')->middleware('mustCompletedCardVerification');
     Route::get('/{uuid}/success', [TaskController::class, 'success'])->name('success');
     Route::get('/{uuid}/download', [TaskController::class, 'download'])->name('download');
     Route::get('/order/{uuid}', [TaskController::class, 'order'])->name('order');

@@ -53,7 +53,14 @@ class CreatorSetupService
     public function hasAnyListing(User $creator): bool
     {
         foreach (self::LISTING_SOURCES as $model => $ownerColumn) {
-            if ($model::where($ownerColumn, $creator->id)->exists()) {
+            // ⚠️ withScheduled(): a listing the creator SCHEDULED is work they have done.
+            // The `published` global scope hides it from the public, and without this
+            // opt-out it would also hide it from every "have you listed anything yet?"
+            // check — so a creator who prepared a launch would be told to publish their
+            // first item, emailed the first-listing nudge, and left stuck on that step of
+            // their own journey. Being asked for work you have already done is how a
+            // creator learns to ignore the next message.
+            if ($model::withScheduled()->where($ownerColumn, $creator->id)->exists()) {
                 return true;
             }
         }
@@ -104,7 +111,11 @@ class CreatorSetupService
             $table = (new $model)->getTable();
 
             $query->whereNotExists(
-                $model::query()
+                // ⚠️ withScheduled() for the same reason as hasAnyListing(): this
+                // subquery is closed with toBase(), so EVERY global scope applies —
+                // which is deliberate for soft-deletes and wrong for scheduling. A
+                // scheduled listing must still count as a listing.
+                $model::withScheduled()
                     ->selectRaw('1')
                     ->whereColumn($table.'.'.$ownerColumn, 'users.id')
                     ->toBase()
@@ -151,7 +162,11 @@ class CreatorSetupService
             // hasAnyListing() (which does respect the scope) said the opposite. The two
             // must not be able to disagree.
             $query->whereNotExists(
-                $model::query()
+                // ⚠️ withScheduled() for the same reason as hasAnyListing(): this
+                // subquery is closed with toBase(), so EVERY global scope applies —
+                // which is deliberate for soft-deletes and wrong for scheduling. A
+                // scheduled listing must still count as a listing.
+                $model::withScheduled()
                     ->selectRaw('1')
                     ->whereColumn($table.'.'.$ownerColumn, 'users.id')
                     ->toBase()

@@ -7,6 +7,7 @@ import StackedCard from '@/Components/animations/StackedCard';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
 import WishlistPreview from './home/WishlistPreview';
 import { ChapterNav, ActIntro, Reveal, Parallax } from '@/Components/cinematic/Cinematic';
+import PageCanvas from '@/Components/cinematic/PageCanvas';
 
 const FUN_CARDS = [
     {
@@ -55,6 +56,7 @@ const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
 const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
+const CustomPricingNote = lazy(() => import("./home/CustomPricingNote"));
 const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
 const FounderProgramAnnouncement = lazy(() => import("./home/FounderProgramAnnouncement"));
 const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
@@ -66,9 +68,9 @@ const FeatureShowcase = lazy(() => import('./home/FeatureShowcase'));
 
 // Scroll-telling chapters for the fixed right-edge ChapterNav rail.
 const CHAPTERS = [
+    { id: 'act-proof', label: 'Proof' },
     { id: 'act-earn', label: 'Earn' },
     { id: 'act-setup', label: 'Set up' },
-    { id: 'act-proof', label: 'Proof' },
     { id: 'act-build', label: 'Build' },
     { id: 'act-love', label: 'Love' },
     { id: 'act-join', label: 'Join' },
@@ -118,6 +120,12 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         </Head>
 
         <Guest auth={auth.user} user={auth.user}>
+            {/* One background for the whole page. Everything below it is transparent —
+                see PageCanvas: a section with its own background colour cuts the field
+                and reintroduces the seams this replaced. */}
+            <div className="relative">
+            <PageCanvas />
+            <div className="relative z-10">
             <ScrollProgressBar />
             <LiveBar reps={15} classes={'blackbg barouter'}
                 livebartest={[
@@ -139,16 +147,31 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
              />
             <Hero auth={auth} />
 
+            {/* Aimed at a handful of creators, so it sits under the hero rather
+                than inside it — visible early without displacing the pitch that
+                every other visitor came for. */}
+            <Suspense fallback={null}>
+                <CustomPricingNote />
+            </Suspense>
+
             <ChapterNav chapters={CHAPTERS} />
 
             <Suspense fallback={<div className="h-20" />}>
+                {/* ── Chapter 03 · The proof ── */}
+                <CreatorShowcase
+                    trending={trendingCreators}
+                    newVerified={newVerifiedCreators}
+                    topEarners={topEarners}
+                    topEarnersLabel={topEarnersLabel}
+                />
+
                 {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ── */}
                 <div id="act-earn">
                     <EarnMoreAnnouncement founderBonus={founderBonus} />
                     <PayByBankAnnouncement />
                     <PaidTasksAnnouncement />
                     <ReferEarnAnnouncement />
-                    <FounderProgramAnnouncement founderBonus={founderBonus} />
+                    {/* <FounderProgramAnnouncement founderBonus={founderBonus} /> */}
                 </div>
 
                 <LiveBarSection />
@@ -159,14 +182,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     <SetupSteps />
                     <FeatureShowcase />
                 </div>
-
-                {/* ── Chapter 03 · The proof — pinned horizontal creator gallery ── */}
-                <CreatorShowcase
-                    trending={trendingCreators}
-                    newVerified={newVerifiedCreators}
-                    topEarners={topEarners}
-                    topEarnersLabel={topEarnersLabel}
-                />
 
                 {/* ── Chapter 04 · Build your world ── */}
                 <div id="act-build">
@@ -198,6 +213,8 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 </div>
                 <SitelinksSearchBox />
             </Suspense>
+            </div>
+            </div>
         </Guest>
     </>
 }

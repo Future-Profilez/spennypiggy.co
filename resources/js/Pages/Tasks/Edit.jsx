@@ -290,7 +290,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
                                                         <span className="font-black text-xl text-black">
-                                                            {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                            {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">

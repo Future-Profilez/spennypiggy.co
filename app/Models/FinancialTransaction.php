@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FreezesLedgerFx;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,9 +10,15 @@ use Illuminate\Support\Str;
 
 class FinancialTransaction extends Model
 {
-    use HasFactory, SoftDeletes;
+    use FreezesLedgerFx, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'platform_fee_rate',
+        'compliance_fee_rate',
+        'fee_source',
+        'fee_override_id',
+        'compliance_fee',
+        'admin_fee',
         'fee_profile',
         'uuid',
         'user_id',
@@ -30,6 +37,9 @@ class FinancialTransaction extends Model
         'reserve_released_at',
         'reserve_payout_id',
         'currency',
+        'gbp_amount',
+        'gbp_rate',
+        'refunded_amount',
         'status',
         'description',
         'transaction_date',
@@ -41,8 +51,12 @@ class FinancialTransaction extends Model
         'gross_amount' => 'decimal:2',
         'platform_fee' => 'decimal:2',
         'stripe_fee' => 'decimal:2',
+        'compliance_fee' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
         'vat_amount' => 'decimal:2',
         'net_amount' => 'decimal:2',
+        'gbp_amount' => 'decimal:2',
+        'refunded_amount' => 'decimal:2',
     ];
 
     protected static function boot()

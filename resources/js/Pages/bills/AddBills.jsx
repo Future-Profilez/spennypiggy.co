@@ -46,11 +46,20 @@ export default function AddBills(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { global_currency, auth } = usePage().props;
     const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
-    const { item, isEdit, editpop, text, classes, fetchBills } = props;
+    const { item, isEdit, editpop, text, classes, fetchBills, hidetrigger, openPop } =
+        props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth?.user?.default_currency || "USD";
 
     const [open, setOpen] = useState(false);
+
+    /* `openPop` lets a caller drive the sheet without rendering the trigger
+       button (see `hidetrigger`). Only a literal true opens it — the caller
+       clears the flag back to undefined so the NEXT click opens it again. */
+    useEffect(() => {
+        if (openPop === true) setOpen(true);
+    }, [openPop]);
+
     const [loading, setLoading] = useState(false);
     // The form posts via axios, so Inertia's `errors` bag never fills — server
     // field errors are kept locally to render inline.
@@ -345,7 +354,7 @@ export default function AddBills(props) {
                                             style: "currency",
                                             currency: defaultCurrency,
                                         }).format(
-                                            calculateTotalSupporterPays(data.price, defaultCurrency)
+                                            calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id)
                                                 .total_supporter_pays,
                                         )}
                                     </span>
@@ -420,18 +429,20 @@ export default function AddBills(props) {
 
     return (
         <>
-            <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className={
-                    classes ||
-                    (editpop
-                        ? "editpop"
-                        : "addop w-full font-bold bg-white rounded-box p-3 mb-2 text-center")
-                }
-            >
-                {text || <AddItemTrigger />}
-            </button>
+            {!hidetrigger && (
+                <button
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className={
+                        classes ||
+                        (editpop
+                            ? "editpop"
+                            : "addop w-full font-bold bg-white rounded-box p-3 mb-2 text-center")
+                    }
+                >
+                    {text || <AddItemTrigger />}
+                </button>
+            )}
 
             <ItemFormShell
                 open={open}

@@ -4,6 +4,7 @@ import coverimage from "../../../assets/img/wishlistbannerimg.png";
 import editicon from "../../../assets/img/editicon.png";
 import Popup from "@/Components/Popup";
 import { useForm, usePage } from "@inertiajs/react";
+import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import { useAlerts } from "@/Components/Alerts";
 import UpdateAvatar from "./UpdateAvatar";
 import LoaderButton from "@/Components/LoaderButton";
@@ -22,9 +23,36 @@ export default function EditProfile({
     updateProfileSteps,
     global_currency,
 }) {
+
+
+    console.log("user", user);
+
     // SSR Guard for usePage().props
     const pageProps = usePage().props;
     const auth = pageProps.auth;
+
+    const profileUser = {
+        ...(auth?.user ?? {}),
+        ...(user ?? {}),
+        date_of_birth: user?.date_of_birth ?? auth?.user?.date_of_birth,
+        creator_category: user?.creator_category ?? auth?.user?.creator_category,
+        country: user?.country ?? auth?.user?.country,
+        min_surprise_amount: user?.min_surprise_amount ?? auth?.user?.min_surprise_amount,
+        social_handle: user?.social_handle ?? auth?.user?.social_handle,
+    };
+
+    const formatDate = (value) => {
+        if (!value) {
+            return "";
+        }
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return "";
+        }
+
+        return parsed.toISOString().slice(0, 10);
+    };
 
     // SSR Guard for window usage
     const isSSR = typeof window === "undefined";
@@ -43,25 +71,59 @@ export default function EditProfile({
     }, [socialFile]);
 
     const { data, setData, post, processing, errors } = useForm({
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        bio: user?.bio || "",
+        name: profileUser.name,
+        username: profileUser.username,
+        email: profileUser.email,
+        bio: profileUser?.bio || "",
         avatar: null,
         cover: null,
-        gender: user?.gender || "he",
-        date_of_birth: user?.date_of_birth ? String(user.date_of_birth).substring(0, 10) : "",
-        creator_category: user?.creator_category
-            ? typeof user.creator_category === "string"
-                ? JSON.parse(user.creator_category)
-                : user.creator_category
+        gender: profileUser?.gender || "he",
+        date_of_birth: formatDate(profileUser?.date_of_birth),
+        creator_category: profileUser?.creator_category
+            ? typeof profileUser.creator_category === "string"
+                ? JSON.parse(profileUser.creator_category)
+                : profileUser.creator_category
             : [],
-        country: user?.country || "",
+        country: profileUser?.country || "",
         social_image: null,
-        min_surprise_amount: user?.min_surprise_amount || 5,
-        social_handle: user?.social_handle || "",
+        min_surprise_amount: profileUser?.min_surprise_amount || 5,
+        social_handle: profileUser?.social_handle || "",
         profilepage: profilepage || false,
     });
+
+    useEffect(() => {
+        setData("name", profileUser.name);
+        setData("username", profileUser.username);
+        setData("email", profileUser.email);
+        setData("bio", profileUser?.bio || "");
+        setData("gender", profileUser?.gender || "he");
+        setData(
+            "date_of_birth",
+            formatDate(profileUser?.date_of_birth),
+        );
+        setData(
+            "creator_category",
+            profileUser?.creator_category
+                ? typeof profileUser.creator_category === "string"
+                    ? JSON.parse(profileUser.creator_category)
+                    : profileUser.creator_category
+                : [],
+        );
+        setData("country", profileUser?.country || "");
+        setData("min_surprise_amount", profileUser?.min_surprise_amount || 5);
+        setData("social_handle", profileUser?.social_handle || "");
+    }, [
+        profileUser.name,
+        profileUser.username,
+        profileUser.email,
+        profileUser.bio,
+        profileUser.gender,
+        profileUser.date_of_birth,
+        profileUser.creator_category,
+        profileUser.country,
+        profileUser.min_surprise_amount,
+        profileUser.social_handle,
+    ]);
 
     const [loading, setLoading] = useState(processing);
     const generateCardAndUpload = async (avataruid, load) => {
@@ -91,8 +153,10 @@ export default function EditProfile({
                     }
                 })()
               : [];
+        // Two categories, not three. Three joined with " · " runs the pill to the
+        // card's right edge and the 10px uppercase text reads as a cramped strip.
         const cardCategory = catList.length
-            ? catList.slice(0, 3).join(" · ")
+            ? catList.slice(0, 2).join(" · ")
             : "Exclusive content";
 
         const esc = (s) =>
@@ -119,6 +183,32 @@ export default function EditProfile({
         // artwork was covered in gift boxes and a money bag, which is the framing the
         // content-first compliance rules removed from every other surface — and this
         // is the most-shared asset the platform produces.
+        // Shared by the markup and the shrink-to-fit loop below — if the two ever
+        // disagree the fitter measures against a line box the card does not use.
+        const NAME_FONT_SIZE = 43;
+        const NAME_LINE_HEIGHT = 1.02;
+
+        // 🚨 NOTHING BELOW MAY USE `vertical-align: middle` TO CENTRE TEXT.
+        //
+        // html2canvas draws a text run near the BOTTOM of its line box rather than
+        // on the browser's baseline, and it does so whichever way the box is
+        // centred — `vertical-align: middle` on a table-cell and an explicit
+        // `line-height` equal to the box height both rendered the same. Measured on
+        // the raster: the pill's label sat 6.75px below the pill's centre and the
+        // URL 9.5px below the bar's centre, which is what "the badge text and the
+        // URL are not aligned" was.
+        //
+        // So each of these boxes has an explicit HEIGHT and a deliberately SHORTER
+        // `line-height`, chosen so the text lands centred in the exported PNG. The
+        // offset moves ~0.5px for every 1px of line-height, which is how these were
+        // derived. Consequence, and it is the whole point: the live DOM now looks
+        // slightly wrong while the PNG looks right. Only the PNG is ever seen —
+        // this element is generated off-screen and thrown away. Verify a change
+        // here by measuring the CANVAS, never by looking at the DOM.
+        //
+        // Verified good state (authored px, offset from box centre):
+        // pill label 0.25 · dot vs label -0.25 · URL -0.25 · VISIT -0.25
+
         const arc = (r, alpha) =>
             `<div style="position:absolute;width:${r * 2}px;height:${r * 2}px;left:${620 - r}px;top:${352 - r}px;border-radius:50%;background:rgba(255,255,255,${alpha});"></div>`;
 
@@ -132,32 +222,51 @@ export default function EditProfile({
 
                 <div style="position:absolute;inset:0;z-index:2;padding:27px 32px;display:flex;flex-direction:column;justify-content:center;">
 
-                    <div style="display:flex;align-items:center;gap:19px;">
-                        <div style="width:108px;height:108px;flex:none;border-radius:50%;padding:4px;background:linear-gradient(150deg,#A2E4B8,#E6EA7B 62%,#A2E4B8);box-shadow:0 9px 20px rgba(0,0,0,0.42);">
-                            <img
-                                src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
-                                alt="Profile"
-                                crossorigin="anonymous"
-                                style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;"
-                            />
+                    <!--
+                        This row is a table, not a flex row, and that is load-bearing.
+                        html2canvas mis-places a flex child sized by \`flex:1\` + \`gap\`:
+                        measured on the exported PNG the name was drawn ~53px LEFT of
+                        its column and overlapped the avatar, while the pill beneath it
+                        — same parent — landed correctly. A fixed table layout gives
+                        both children the same deterministic box, and \`table-layout:fixed\`
+                        means the name can never widen the cell and push itself out.
+                    -->
+                    <div style="display:table;width:100%;table-layout:fixed;">
+                        <div style="display:table-cell;width:127px;vertical-align:middle;">
+                            <div style="width:108px;height:108px;border-radius:50%;padding:4px;background:linear-gradient(150deg,#A2E4B8,#E6EA7B 62%,#A2E4B8);box-shadow:0 9px 20px rgba(0,0,0,0.42);">
+                                <img
+                                    src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
+                                    alt="Profile"
+                                    crossorigin="anonymous"
+                                    style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;"
+                                />
+                            </div>
                         </div>
-                        <div style="min-width:0;flex:1;">
-                            <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:0.9;text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
-                            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:5px 11px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">
-                                <span style="width:5px;height:5px;border-radius:50%;background:#0B2B1A;display:block;"></span>${esc(cardCategory)}
+                        <div style="display:table-cell;vertical-align:middle;overflow:hidden;">
+                            <!--
+                                The gap under the name is 26px of margin for ~14px of
+                                VISIBLE space: measured on the raster, \`gulfs\` ink runs
+                                about 12px past the bottom of its own line box, so the
+                                CSS gap and the optical gap are not the same number.
+                                At the original 10px the pill sat on the letters; at 14
+                                it still read as touching (2px of daylight).
+                                line-height must also stay >= 1 for the same reason.
+                            -->
+                            <div id="card-name" style="font-family:'gulfs',system-ui,sans-serif;font-size:43px;line-height:${NAME_LINE_HEIGHT};text-transform:uppercase;letter-spacing:0.5px;color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,0.34);overflow-wrap:break-word;">${esc(cardName)}</div>
+                            <div style="display:inline-block;margin-top:26px;background:#A2E4B8;color:#0B2B1A;border-radius:999px;padding:0 12px;height:25px;line-height:13px;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;max-width:100%;overflow:hidden;">
+                                <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#0B2B1A;margin-right:6px;margin-bottom:-5px;vertical-align:baseline;"></span><span style="vertical-align:baseline;">${esc(cardCategory)}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-                        <span style="font-size:16.5px;color:rgba(255,255,255,0.92);">is now on</span>
-                        <img src="${spennypiggy}" alt="Spenny Piggy" crossorigin="anonymous" style="height:30px;width:auto;display:block;" />
-                    </div>
+                    <div style="margin-top:12px;">
+                        <span style="font-size:16.5px;color:rgba(255,255,255,0.92);vertical-align:middle;">is now on</span><img src="${spennypiggy}" alt="Spenny Piggy" crossorigin="anonymous" style="height:30px;width:auto;display:inline-block;vertical-align:middle;margin-left:10px;" /></div>
 
-                    <div style="display:flex;align-items:stretch;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
-                        <div style="background:#0B0B0C;color:#fff;display:flex;align-items:center;padding:0 13px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
-                        <div style="flex:1;background:#fff;color:#0B0B0C;display:flex;align-items:center;padding:11px 8px 11px 15px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
-                        <div style="background:#fff;display:flex;align-items:center;padding:0 13px 0 3px;">
+                    <!-- Table for the same reason as the row above: no flex:1. -->
+                    <div style="display:table;width:100%;margin-top:19px;border-radius:11px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,0.36);">
+                        <div style="display:table-cell;width:62px;background:#0B0B0C;color:#fff;vertical-align:top;text-align:center;padding:0 13px;height:44px;line-height:32px;font-size:9.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Visit</div>
+                        <div style="display:table-cell;background:#fff;color:#0B0B0C;vertical-align:top;padding:0 8px 0 15px;height:44px;line-height:24px;font-size:17px;font-weight:700;letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;">spennypiggy.co/<span style="color:#C21367;">${esc(cardUsername)}</span></div>
+                        <div style="display:table-cell;width:82px;background:#fff;vertical-align:top;padding:12px 13px 13px 3px;">
                             <img src="${spennypiggy}" alt="" crossorigin="anonymous" style="height:19px;width:auto;display:block;" />
                         </div>
                     </div>
@@ -199,8 +308,8 @@ export default function EditProfile({
         // than a slightly smaller name. Two lines max, then step the size down.
         const nameEl = card.querySelector("#card-name");
         if (nameEl) {
-            const maxHeight = 2 * 43 * 0.9; // two lines at the starting size
-            let size = 43;
+            const maxHeight = 2 * NAME_FONT_SIZE * NAME_LINE_HEIGHT; // two lines at the starting size
+            let size = NAME_FONT_SIZE;
             while (size > 20 && nameEl.scrollHeight > maxHeight) {
                 size -= 2;
                 nameEl.style.fontSize = `${size}px`;
@@ -467,19 +576,14 @@ export default function EditProfile({
                         : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
             >
-                Profile Info
+                Profile
             </button>
 
-            <button
-                onClick={() => setActiveTab("appearance")}
-                className={`py-2 px-6 text-sm   font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
-                    activeTab === "appearance"
-                        ? "bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                        : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
-                }`}
-            >
-                Appearance
-            </button>
+            {/* Appearance is no longer its own tab. Photos, bio and name are one
+                job — "how my profile looks" — and splitting them meant a creator
+                changing their avatar and their display name had to save, switch
+                tab and save again. The photos now open the merged tab, above the
+                fields, because they are what a visitor sees first. */}
             <button
                 onClick={() => setActiveTab("settings")}
                 className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
@@ -583,12 +687,30 @@ export default function EditProfile({
                     <>
                         {renderTabs()}
 
-                        <form onSubmit={updateProfile}>
+                        <form onSubmit={updateProfile} className="flex flex-col">
+                            {/* ⚠️ Read straight off the page props rather than
+                                taken as a prop: this form is embedded in five
+                                different parents, and threading it through each
+                                is five chances for one of them to forget. Absent
+                                on a page that does not send it, so it renders
+                                nothing rather than guessing. */}
+                            <PendingChangesNotice
+                                assets={pageProps?.pending_profile_changes}
+                                className="mt-6"
+                            />
+                            {/* Merging the two tabs left the photos block running
+                                straight into "Display Name" with nothing between
+                                them, so the page read as one undifferentiated
+                                scroll. A rule and a heading say where one job
+                                ends and the next begins. */}
                             <div
                                 className={
                                     activeTab === "profile" ? "block" : "hidden"
                                 }
                             >
+                                <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                                    Your details
+                                </h3>
                                 <ul>
                                     <li className="mb-4">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -652,18 +774,18 @@ export default function EditProfile({
                                         <div className="relative">
                                             <select
                                                 className="
-                w-full
-                border border-gray-300
-                px-4 py-3 pr-12
-                rounded-[15px]
-                focus:outline-none
-                focus:border-[#FF007F]
-                focus:ring-1
-                focus:ring-pink-500
-                bg-white
-                appearance-none
-                cursor-pointer
-            "
+                                                    w-full
+                                                    border border-gray-300
+                                                    px-4 py-3 pr-12
+                                                    rounded-[15px]
+                                                    focus:outline-none
+                                                    focus:border-[#FF007F]
+                                                    focus:ring-1
+                                                    focus:ring-pink-500
+                                                    bg-white
+                                                    appearance-none
+                                                    cursor-pointer
+                                                "
                                                 value={data.gender}
                                                 onChange={(e) =>
                                                     setData(
@@ -811,13 +933,21 @@ export default function EditProfile({
                                 </ul>
                             </div>
 
+                            {/* ⚠️ `order-first`, not a code move. This block is
+                                ~110 lines of upload wiring and cutting/pasting it
+                                above the fields is the kind of edit that silently
+                                drops a handler; the form is a flex column, so the
+                                order is expressed where it is read. */}
                             <div
                                 className={
-                                    activeTab === "appearance"
-                                        ? "block"
+                                    activeTab === "profile"
+                                        ? "order-first block"
                                         : "hidden"
                                 }
                             >
+                                <h3 className="mb-4 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                                    How your profile looks
+                                </h3>
                                 <div className="mainprofile mb-8 relative w-full">
                                     <div className="profilePhotoImg cover group relative">
                                         <img
@@ -869,8 +999,13 @@ export default function EditProfile({
                                     </div>
                                 </div>
 
+                                {/* mt-8, not mt-16: this card used to be the last
+                                    thing on its own tab, so a large gap above it
+                                    separated it from nothing. It now has fields
+                                    beneath it and the outsized margin read as a
+                                    broken layout. */}
                                 {user?.role == 1 && (
-                                    <div className="bg-gray-50 p-6 rounded-[30px]  border border-gray-200 mt-16 text-center">
+                                    <div className="bg-gray-50 p-6 rounded-box border border-gray-200 mt-8 text-center">
                                         <h4 className="text-lg font-gulfs uppercase text-gray-800 mb-2">
                                             Social Media Banner
                                         </h4>

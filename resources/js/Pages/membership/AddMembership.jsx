@@ -217,6 +217,8 @@ export default function AddMembership({ item, text, classes }) {
                                             calculateTotalSupporterPays(
                                                 data.month_price,
                                                 defaultCurrency,
+                                                0,
+                                                auth?.user?.id,
                                             ).total_supporter_pays,
                                         )}
                                     </span>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Auth\LeaderBoardController;
 use App\Models\LeaderboardSnapshot;
 use App\Services\LeaderboardMovementService;
 use Carbon\Carbon;
@@ -131,16 +132,16 @@ class LeaderboardMovementTest extends TestCase
         // The bug this guards: Cache::remember stored whatever the callback
         // returned, so one bad moment pinned "0 creators ranked" on the page
         // for the full two-hour TTL after the query had already recovered.
-        Cache::forget('leaderboard_board_all');
+        Cache::forget(LeaderBoardController::BOARD_CACHE_KEY.'all');
 
         $this->get('/leaderboard')->assertOk();
 
-        $this->assertNull(Cache::get('leaderboard_board_all'));
+        $this->assertNull(Cache::get(LeaderBoardController::BOARD_CACHE_KEY.'all'));
     }
 
     public function test_a_cached_board_is_served_without_recomputing(): void
     {
-        Cache::put('leaderboard_board_all', [[
+        Cache::put(LeaderBoardController::BOARD_CACHE_KEY.'all', [[
             'id' => 7,
             'rank' => 1,
             'name' => 'Cached Creator',
@@ -170,7 +171,7 @@ class LeaderboardMovementTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('period', 'all'));
 
-        $this->assertNull(Cache::get('leaderboard_board_not-a-period'));
+        $this->assertNull(Cache::get(LeaderBoardController::BOARD_CACHE_KEY.'not-a-period'));
     }
 
     public function test_a_re_run_on_the_same_day_corrects_the_capture_instead_of_duplicating_it(): void

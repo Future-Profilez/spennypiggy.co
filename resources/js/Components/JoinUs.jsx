@@ -34,7 +34,7 @@ export default function JoinUs() {
                 </div>
 
                 <FadeIn y={40} scale={0.95} duration={0.7}>
-                <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px]    pt-6 sm:p-10 text-center shadow-lg">
+                <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-gradient-to-br from-[#a557ff] to-[#924dff] rounded-[30px] pt-6 sm:p-10 text-center">
                     <h2
                         
                         className="headingSm font-gulfs !text-white !text-3xl sm:!text-[50px] shadow-none stroke-none mb-6 text-center"
@@ -56,7 +56,7 @@ export default function JoinUs() {
                     >
                         <Link
                             href={route("register")}
-                            className="font-anton shadow-[4px_4px_0px_0px_#FF007F]lack font-medium uppercase text-xl bg-white rounded-full px-4 py-2 mb-4"
+                            className="font-anton font-medium uppercase text-xl bg-white rounded-full px-4 py-2 mb-4"
                         >
                             Join the Spenny Piggy party!{" "}
                         </Link>
@@ -64,33 +64,13 @@ export default function JoinUs() {
                 </div>
                 </FadeIn>
             </section>
-            <div className="bg-black w-full hidden md:flex justify-end  sm:mr-16">
+            <div className="bg-black w-full hidden md:flex justify-end sm:mr-16">
                 <img
                     src={bottomImg}
                     className="relative bottom-[-10px] z-[30] max-w-[140px] sm:max-w-[200px]"
                     alt="Decorative"
                 />
             </div>
-
-            {/* Old Code */}
-            {/* <div className="joinus blackbg ">
-                <h2 className="headingSm shadow-none stroke-none mb-3 text-center mb-6 ">
-                    Join thousands of creators
-                </h2>
-                <p className=" mb-6 text-center mb-16 text-wh mb-5">
-                    Create your wishlist, sell exclusive content or offer
-                    bespoke memberships! Whatever it is, start accepting support
-                    from your fans instantly!
-                </p>
-                <div className=" text-center flex items-center  justify-center content-center w-full">
-                    <Link
-                        href={route("register")}
-                        className="btn-pink lg w-80 shadow-mint border-mint mb-4 mb-lg-0"
-                    >
-                        Join SpennyPiggy{" "}
-                    </Link>
-                </div>
-            </div> */}
         </>
     );
 }

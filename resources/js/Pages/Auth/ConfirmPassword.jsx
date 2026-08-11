@@ -8,23 +8,33 @@ import LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from "@/Components/Alerts";
 
 export default function ConfirmPassword(props) {
-    const { uuid, auth } = props;
+    const { uuid, token = "", auth } = props;
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
 
+    // `token` is the single-use reset token from the emailed link. The uuid alone is
+    // a public identifier and proves nothing — the server refuses without this.
     const { data, setData, post, processing, errors, reset } = useForm({
         password: "",
-        confirmpassword: "",
+        password_confirmation: "",
+        token,
     });
 
     useEffect(() => {
         return () => {
             reset("password");
-            reset("confirmpassword");
+            reset("password_confirmation");
         };
     }, []);
 
     const submit = (e) => {
         e.preventDefault();
+        if (processing) return;
+        if (!token) {
+            errorAlert(
+                "This reset link is missing its security token. Please open the link from your email again, or request a new one.",
+            );
+            return;
+        }
         post(route("changePassword", { uuid: uuid }), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -51,7 +61,7 @@ export default function ConfirmPassword(props) {
 
     return (
         <GuestLayout auth={auth && auth.user} user={auth && auth.user}>
-            <Head title="Confirm Password" />
+            <Head title="Set a new password" />
 
             <div className="loginPage blackbg py-14">
                 <div className="containerbox ">
@@ -62,15 +72,19 @@ export default function ConfirmPassword(props) {
                                 <span className="w-5 h-5 rounded-full bg-[#8B5CF6] border-2 border-black"></span>
 
                                 <h2 className="text-white text-xl font-black tracking-wide ml-2">
-                                    Confirm Password
+                                    Set a new password
                                 </h2>
                             </div>
                         </div>
 
                         <form onSubmit={submit} className="p-6 md:p-8">
+                            {/* This screen resets a forgotten password — it is not the
+                                "confirm your password to continue" gate the old copy
+                                described, which is a different flow entirely. */}
                             <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                                This is a secure area of the application. Please
-                                confirm your password before continuing.
+                                Choose a new password for your account. This link
+                                works once, and any "remember me" sessions will
+                                need to sign in again.
                             </p>
 
                             <ul>
@@ -103,27 +117,28 @@ export default function ConfirmPassword(props) {
                                 <li>
                                     <div className="mb-5">
                                         <label
-                                            htmlFor="confirmpassword"
+                                            htmlFor="password_confirmation"
                                             className="block text-sm font-bold text-gray-800 mb-2"
                                         >
                                             Confirm Password
                                         </label>
                                         <TextInput
-                                            id="confirmpassword"
+                                            id="password_confirmation"
                                             type="password"
-                                            name="confirmpassword"
-                                            value={data.confirmpassword}
+                                            name="password_confirmation"
+                                            value={data.password_confirmation}
                                             className="mt-1 block w-full"
-                                            isFocused={true}
                                             onChange={(e) =>
                                                 setData(
-                                                    "confirmpassword",
+                                                    "password_confirmation",
                                                     e.target.value,
                                                 )
                                             }
                                         />
                                         <InputError
-                                            message={errors.confirmpassword}
+                                            message={
+                                                errors.password_confirmation
+                                            }
                                             className="mt-2"
                                         />
                                     </div>

@@ -39,6 +39,16 @@ class PostsController extends Controller
     /**
      * Validation rules shared by savePost/editPost.
      */
+    /**
+     * How far ahead a post may be scheduled. Long enough for a real content
+     * calendar, short enough that a post cannot be queued against a profile,
+     * a price or a membership tier that no longer exists when it fires.
+     */
+    private const MAX_SCHEDULE_DAYS = 90;
+
+    /** How many posts one creator may have waiting to publish at once. */
+    private const MAX_QUEUED_POSTS = 20;
+
     private function postRules(): array
     {
         return [
@@ -49,7 +59,59 @@ class PostsController extends Controller
             'title' => ['nullable', 'string', 'max:150'],
             'content' => ['nullable', 'string', 'max:5000'],
             'ai_generated' => ['sometimes', 'boolean'],
+            // A publish time. Absent or null = publish as soon as it is approved,
+            // which is every post that existed before scheduling shipped.
+            'scheduled_at' => ['sometimes', 'nullable', 'date'],
         ];
+    }
+
+    /**
+     * Resolve the requested publish time, or an error string to hand back.
+     *
+     * ⚠️ The clock is the SERVER's. The picker sends a local wall-clock time and
+     * the browser's timezone; trusting a raw string would publish a post at 9am
+     * in whichever timezone the server happens to run in, which is nobody's 9am.
+     *
+     * @return array{0: ?Carbon, 1: ?string} [publish time or null, error or null]
+     */
+    private function resolveScheduledAt(Request $request, ?Post $ignore = null): array
+    {
+        if (! $request->filled('scheduled_at')) {
+            return [null, null];
+        }
+
+        try {
+            $when = Carbon::parse($request->input('scheduled_at'));
+        } catch (\Throwable $e) {
+            return [null, 'That publish time could not be read. Pick a date and time again.'];
+        }
+
+        // A minute of slack: the creator picked a time, then spent a moment
+        // uploading, and refusing them for that is nonsense.
+        if ($when->lt(now()->subMinute())) {
+            return [null, 'Pick a publish time in the future.'];
+        }
+
+        if ($when->gt(now()->addDays(self::MAX_SCHEDULE_DAYS))) {
+            return [null, 'You can schedule up to '.self::MAX_SCHEDULE_DAYS.' days ahead.'];
+        }
+
+        // Already due — treat as "publish now" rather than queueing something the
+        // sweep would release seconds later.
+        if ($when->lte(now())) {
+            return [null, null];
+        }
+
+        $queued = Post::onlyScheduled()
+            ->where('user_id', Auth::id())
+            ->when($ignore, fn ($q) => $q->where('id', '!=', $ignore->id))
+            ->count();
+
+        if ($queued >= self::MAX_QUEUED_POSTS) {
+            return [null, 'You already have '.self::MAX_QUEUED_POSTS.' posts waiting to publish. Publish or remove one first.'];
+        }
+
+        return [$when, null];
     }
 
     /**
@@ -100,6 +162,11 @@ class PostsController extends Controller
             ], 422);
         }
 
+        [$scheduledAt, $scheduleError] = $this->resolveScheduledAt($request);
+        if ($scheduleError) {
+            return response()->json(['status' => false, 'msg' => $scheduleError], 422);
+        }
+
         $post = Post::create([
             'user_id' => Auth::id(),
             'type' => $request->type,
@@ -109,7 +176,18 @@ class PostsController extends Controller
             'image' => $request->image ?: null,
             'media' => $request->media ?: null,
             'ai_generated' => $request->boolean('ai_generated'),
+            'scheduled_at' => $scheduledAt,
         ]);
+
+        // ⚠️ `created_at` IS the publish time for a scheduled post, set here
+        // rather than mutated later. Every feed, sitemap and cadence window on
+        // this platform orders and filters posts by `created_at`, so a post that
+        // kept its drafting date would go live already buried down its own
+        // creator's feed and would count toward the posting window from a day it
+        // was not visible on.
+        if ($scheduledAt) {
+            $post->forceFill(['created_at' => $scheduledAt])->saveQuietly();
+        }
 
         // Resolve @handles into real creators. Nobody is told yet — mentions are
         // notified once the post is approved (see mentions:notify).
@@ -125,7 +203,10 @@ class PostsController extends Controller
         return response()->json([
             'status' => true,
             'uuid' => $post->uuid,
-            'msg' => 'Post saved. It will appear to your audience once approved.',
+            'scheduled_at' => $post->scheduled_at?->toIso8601String(),
+            'msg' => $scheduledAt
+                ? 'Scheduled for '.$scheduledAt->format('j M \a\t g:ia').'. It publishes then, once it has been checked.'
+                : 'Post saved. It will appear to your audience once approved.',
         ]);
     }
 
@@ -139,7 +220,10 @@ class PostsController extends Controller
             'image.required_without' => 'Add an image or video for this post.',
         ]);
 
-        $post = Post::where('uuid', $uuid)->first();
+        // ⚠️ withScheduled(): the global scope hides a post whose publish time has
+        // not arrived, so without this a creator could not edit, reschedule or
+        // cancel the post they had just scheduled — it would answer "not found".
+        $post = Post::withScheduled()->where('uuid', $uuid)->first();
 
         if (empty($post)) {
             return response()->json(['status' => false, 'msg' => 'Post not found.'], 404);
@@ -189,6 +273,33 @@ class PostsController extends Controller
         $post->ai_generated = $request->boolean('ai_generated');
         $post->approved = 0;
 
+        // Rescheduling, and cancelling a schedule.
+        //
+        // ⚠️ Only touched when the field is actually present in the request. An
+        // edit form that does not carry a schedule picker must not silently
+        // publish a queued post by omitting it — several callers post a partial
+        // payload, and "absent" is not "the creator cleared it".
+        if ($request->has('scheduled_at')) {
+            [$scheduledAt, $scheduleError] = $this->resolveScheduledAt($request, $post);
+            if ($scheduleError) {
+                return response()->json(['status' => false, 'msg' => $scheduleError], 422);
+            }
+
+            $post->scheduled_at = $scheduledAt;
+
+            // created_at follows the publish time in both directions: rescheduled
+            // later it moves out, cancelled it comes back to now, so the post
+            // never lands in the feed dated to a moment it was not visible.
+            $post->created_at = $scheduledAt ?: now();
+
+            // A post that has already been released cannot be re-queued — the
+            // release claim would still be set and the sweep would skip it, so it
+            // would sit hidden forever.
+            if ($scheduledAt && $post->schedule_released_at) {
+                $post->schedule_released_at = null;
+            }
+        }
+
         // A retitled post gets a URL that matches its new title. The old slug is
         // kept in post_slug_history so every link already shared — and everything
         // already indexed — redirects instead of 404ing.
@@ -236,8 +347,10 @@ class PostsController extends Controller
 
     public function deletePost($uuid)
     {
-
-        $post = Post::where('uuid', $uuid)->first();
+        // withScheduled(): a queued post must be cancellable. Without it the
+        // creator's only route out of a scheduled post would be to wait for it
+        // to publish and then delete it.
+        $post = Post::withScheduled()->where('uuid', $uuid)->first();
 
         if (empty($post)) {
             return response()->json(['status' => false, 'msg' => 'Data not found.'], 404);
@@ -944,7 +1057,7 @@ class PostsController extends Controller
 
     public function togglePin($uuid)
     {
-        $post = Post::where('uuid', $uuid)->first();
+        $post = Post::withScheduled()->where('uuid', $uuid)->first();
         if (empty($post)) {
             return response()->json(['status' => false, 'msg' => 'Post not found.'], 404);
         }

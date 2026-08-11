@@ -1,4 +1,5 @@
 import { rewardLines } from "@/constants/rewards";
+import { feeRatesFor, supporterTotal, creatorIdOf } from "@/utils/pricing";
 import React from 'react';
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ import axios from "axios";
 
 export default function SubCheckout(props) {
     const { flash, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
+    const __pageProps = usePage().props;
     const turnstileRef = useRef(null);
     const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -57,25 +59,19 @@ export default function SubCheckout(props) {
         const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
 
-        // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = (platform_fee_percentage || 17) / 100; 
-        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
-        const adminFee = adminFeeInCurrency(curr); 
-        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
-        if (totalDeductionRate >= 1) return priceWithVat;
+        // The gross-up itself lives in ONE place (utils/pricing). This screen
+        // used to carry its own copy reading the GLOBAL fee props, which cannot
+        // express a per-creator rate — so a creator on a bespoke deal was QUOTED
+        // the standard price here while checkout CHARGED theirs.
+        const __rates = feeRatesFor(creatorIdOf(membership), __pageProps);
+        const totalSupporterPays = supporterTotal(priceWithVat, {
+            ...__rates,
+            adminFee: adminFeeInCurrency(curr),
+            isZeroDecimal,
+        });
 
-        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
-        // Rounding logic to match backend (Helpers.php)
-        if (!isZeroDecimal) {
-            return Math.ceil(totalSupporterPays * 100) / 100;
-        } else {
-            return Math.ceil(totalSupporterPays);
-        }
-    };
+        return totalSupporterPays;
+};
 
     const finalTotalAmount = calculateTotalSupporterPays(
         membership?.price, 

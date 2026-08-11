@@ -32,12 +32,14 @@ class MakeAutoTweets implements ShouldQueue
     public function handle(): void
     {
         $token = TwitterToken::where('user_id', $this->user->id)->latest()->first();
-        $tweet = "It's time to drop some coins! Checkout my wishlist, Send me a 🎁 ".env('APP_URL').'/'.$this->user->username;
-        $res = TwitterAuthService::postTweet($token, $tweet);
+        if ($token) {
+            $tweet = "It's time to drop some coins! Checkout my wishlist, Send me a 🎁 ".env('APP_URL').'/'.$this->user->username;
+            $res = TwitterAuthService::postTweet($token, $tweet);
 
-        // $res = json_encode($res);
+            // $res = json_encode($res);
 
-        // Mail::to('saurav@futureprofilez.com')
-        // ->send(new TestingMail($res));
+            // Mail::to('saurav@futureprofilez.com')
+            // ->send(new TestingMail($res));
+        }
     }
 }

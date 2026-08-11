@@ -2,6 +2,7 @@ import Guest from "@/Layouts/GuestLayout";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useState, useEffect, useRef } from "react";
 import PriceFormat from "../../includes/PriceFormat";
+import { creatorIdOf } from "@/utils/pricing";
 import BuyShopItem from "./BuyShopItem";
 import { 
     ChevronLeftIcon 
@@ -292,7 +293,9 @@ export default function ShopDetailItem(props) {
                                                     {formatMultiPrice(
                                                         calculateTotalSupporterPays(
                                                             baseSpecialPriceToGrossUp,
-                                                            shop?.currency || "GBP"
+                                                            shop?.currency || "GBP",
+                                                            0,
+                                                            creatorIdOf(shop)
                                                         ).total_supporter_pays,
                                                         shop?.currency || "GBP",
                                                     )}{" "}
@@ -371,9 +374,9 @@ export default function ShopDetailItem(props) {
                                                             ) : (
                                                                 <div className="flex flex-col">
                                                                         <div className="flex items-baseline">
-                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency).total_supporter_pays, itemCurrency)}</span>
+                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}</span>
                                                                             <span className="line-through text-gray-400 text-xl ml-2">
-                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency).total_supporter_pays, itemCurrency)}
+                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}
                                                                             </span>
                                                                         </div>
                                                                         <span className="text-sm font-bold text-green-600 mt-1 uppercase tracking-wide flex items-center gap-1">
@@ -400,7 +403,9 @@ export default function ShopDetailItem(props) {
                                                                         {formatMultiPrice(
                                                                             calculateTotalSupporterPays(
                                                                                 baseRegularPriceToGrossUp,
-                                                                                itemCurrency
+                                                                                itemCurrency,
+                                                                                0,
+                                                                                creatorIdOf(shop)
                                                                             ).total_supporter_pays,
                                                                             itemCurrency
                                                                         )}

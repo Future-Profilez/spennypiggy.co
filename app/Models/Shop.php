@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
+use App\Models\Concerns\HasScheduledPublishing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,9 +12,11 @@ use Ramsey\Uuid\Uuid;
 
 class Shop extends Model
 {
-    use HasFactory, HasRewardContract, SoftDeletes;
+    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     protected $fillable = [
+        'publish_at',
+        'schedule_released_at',
         'payment_methods_accepted',
         'user_id',
         'type',
@@ -54,6 +57,11 @@ class Shop extends Model
         'rising_score',
         'engagement_level',
         'trending_status',
+    ];
+
+    protected $casts = [
+        'publish_at' => 'datetime',
+        'schedule_released_at' => 'datetime',
     ];
 
     /**

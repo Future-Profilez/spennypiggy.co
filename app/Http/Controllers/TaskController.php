@@ -35,6 +35,8 @@ use App\Services\Risk\RiskService;
 use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\BlockedPaymentAlert;
+use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -57,7 +59,7 @@ class TaskController extends Controller
 
     public function index()
     {
-        $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
+        $tasks = Task::withScheduled()->where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
 
         $orders = TaskPurchase::where('creator_id', Auth::id())
             ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'])
@@ -230,7 +232,7 @@ class TaskController extends Controller
 
     public function edit($uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {
@@ -249,7 +251,7 @@ class TaskController extends Controller
 
     public function update(Request $request, $uuid)
     {
-        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $task = Task::withScheduled()->where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
 
         // Lock edits if task has been purchased
         if (TaskPurchase::where('task_id', $task->id)->exists()) {
@@ -495,6 +497,8 @@ class TaskController extends Controller
         if (! $subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $task->price));
+            // Recorded and counted: one lost sale is a warning, six is a reason.
+            BlockedPaymentAlert::record($creator, $task->price);
 
             // Log the blocked payment for subscription issues
             Log::warning('Task payment blocked due to subscription issue', [
@@ -598,7 +602,7 @@ class TaskController extends Controller
             return back()->with('error', $methodResolution['message']);
         }
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, 0, $methodResolution['fee_profile']);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, 0, $methodResolution['fee_profile'], $creator->id);
 
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -671,6 +675,13 @@ class TaskController extends Controller
             'transfer_amount' => (string) round($creatorTransferAmount * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
             'fee_profile' => $methodResolution['fee_profile'],
+            // The rate travels WITH the charge so both fulfilment paths (the
+            // redirect handler and the webhook) record what actually priced it,
+            // rather than re-resolving a rate that may have changed since.
+            'platform_fee_rate' => (string) ($breakdown['platform_fee_rate'] ?? ''),
+            'compliance_fee_rate' => (string) ($breakdown['compliance_fee_rate'] ?? ''),
+            'fee_source' => (string) ($breakdown['fee_source'] ?? ''),
+            'fee_override_id' => (string) ($breakdown['fee_override_id'] ?? ''),
             'digital_waiver_confirmed_at' => now()->toDateTimeString(),
             'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
             'gifter_message' => Str::limit((string) ($gifterMessage ?? ''), 450),
@@ -771,6 +782,16 @@ class TaskController extends Controller
             $sessionId,
             ['stripe_account' => $task->creator->account_id]
         );
+
+        NotificationContext::for([
+            'context_type' => 'task',
+            'context_id' => $task->id,
+            'stripe_session_id' => $session->id,
+            'stripe_payment_intent_id' => $session->payment_intent ?? null,
+            'buyer_id' => Auth::id(),
+            'buyer_email' => $session->customer_details->email ?? null,
+            'creator_id' => $task->creator_id,
+        ]);
 
         $purchase = null;
 
@@ -949,6 +970,7 @@ class TaskController extends Controller
                 'status' => 'paid', // Always paid in sync handler (and especially for local dev)
                 'payment_type' => $metadata->payment_type ?? 'STANDARD',
                 'fee_profile' => $metadata->fee_profile ?? 'card',
+                ...Helpers::feeRateColumnsFromMetadata($metadata),
                 'gifter_message' => $metadata->gifter_message ?? null,
                 'admin_fee' => $adminFee,
                 'platform_fee' => $platformFee,
