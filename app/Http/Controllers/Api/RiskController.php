@@ -17,6 +17,7 @@ use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\Risk\VerificationService;
 use App\StripeControl;
+use App\Support\BlockedPaymentNotice;
 use App\Support\RiskMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -471,6 +472,10 @@ class RiskController extends Controller
                 'GENERIC_HOLD',
                 RiskMessages::audienceFor($context['is_guest'] ?? null)
             );
+
+            // Same reasoning as the shared trait: on-screen only is nothing at
+            // all to someone who navigates away. Send-once, never throws.
+            BlockedPaymentNotice::send($ui, $context['email'] ?? null, $request->user());
 
             return response()->json([
                 'error' => $ui['body'],

@@ -9,6 +9,7 @@ use App\Services\Risk\RiskEngineService;
 use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\Risk\VerificationService;
+use App\Support\BlockedPaymentNotice;
 use App\Support\RiskMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -116,6 +117,11 @@ trait RiskEnforcement
                 'GENERIC_HOLD',
                 RiskMessages::audienceFor($context['is_guest'])
             );
+
+            // On-screen only left anyone who navigated away with nothing at all,
+            // and a guest with no account to come back to. Send-once per address
+            // per day, and never throws — see BlockedPaymentNotice.
+            BlockedPaymentNotice::send($ui, $context['email'] ?? null, Auth::user());
 
             if ($isJsonResponse) {
                 return response()->json([
