@@ -8,13 +8,21 @@ import FadeIn from '@/Components/animations/FadeIn';
 
 
 export default function HappyCreators() {
-    const [width, setWidth] = useState(window && window.innerWidth);
-    function windowWidth() {
-        const w = window && window.innerWidth;
-        setWidth(w);
-    }
+    /**
+     * ⚠️ Three faults here, all fixed: the listener was added with NO cleanup (a
+     * new one on every mount, never removed); `window.innerWidth` was read during
+     * state initialisation, which throws under SSR; and the consumer below
+     * compared this number against the STRING "1199", so the comparison was
+     * doing type coercion rather than what it looked like.
+     */
+    const [width, setWidth] = useState(() =>
+        typeof window === "undefined" ? 1200 : window.innerWidth
+    );
     useEffect(() => {
-        window.addEventListener("resize", windowWidth);
+        if (typeof window === "undefined") return;
+        const onResize = () => setWidth(window.innerWidth);
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
     }, []);
 
     const msg = [
@@ -39,13 +47,19 @@ export default function HappyCreators() {
             message:
                 "I honestly didn’t realize how much I needed spenny piggy in my life! I’ve had loads of purchases come through already, from supporters I’d never even met! I didn’t realize how easy and simple it could be to get backed by my fans!",
         },
-        {
-            id: 4,
-            name: "_thrasytrashybitch",
-            date: "Nov 08, 2023, 11:45 pm",
-            message:
-                "Getting to keep everything I earn has been crazy next level! This site has been key in supporting me and my goals!! Genuinely so so impressed! And it’s sexy AF to look at too! x",
-        },
+        /*
+         * ⚠️ A FOURTH QUOTE WAS REMOVED, NOT REWRITTEN.
+         *
+         * It ran under the handle "@_thrasytrashybitch" and ended "…it's sexy AF
+         * to look at too! x", on a page whose second-strongest claim is "Strictly
+         * SFW" and which is read by Stripe reviewers. Both the handle and the sign
+         * -off cut directly against the positioning the rest of the page is built
+         * on. Putting different words in a named creator's mouth is not an option
+         * — a testimonial is a quotation — so it is dropped rather than edited.
+         *
+         * Its substance ("getting to keep everything I earn") is already made by
+         * quotes 1 and 2, so nothing is lost but the conflict.
+         */
     ];
 
     return (
@@ -53,10 +67,11 @@ export default function HappyCreators() {
             id="reviews"
             className="bg-transparent relative py-12 md:py-28"
         >
-            {/* Decorative Background Elements */}
+            {/* No ambient orbs here. `PageCanvas` is the page's one light source —
+            a per-section orb bloomed where its section was and faded before
+            the next, which is what made scrolling read as a row of coloured
+            stops instead of one continuous field. */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float"></div>
-                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-[#FF007F] rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
             <div className="containerbox relative">
@@ -72,14 +87,14 @@ export default function HappyCreators() {
                             spaceBetween={20}
                             pagination={{ clickable: true }}
                             modules={[Pagination]}
-                            slidesPerView={width < "1199" ? 1 : 2}
+                            slidesPerView={width < 1199 ? 1 : 2}
                         >
                             {msg &&
                                 msg.map((m, i) => (
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
                                            
-                                          className="fading min-h-[245px] rounded-[30px] bg-gray-900 border-2 border-gray-800 p-6 md:p-8 hover:translate-y-[-5px] transition-transform duration-300"
+                                          className="fading min-h-[245px] rounded-box bg-gray-900 border-2 border-gray-800 p-6 md:p-8 hover:translate-y-[-5px] transition-transform duration-300"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">
@@ -88,10 +103,18 @@ export default function HappyCreators() {
                                                     </strong>
                                                 </div>
                                             </div>
-                                            <p className="font-poppins text-gray-300">{m.message}</p>
-                                            <div className="text-base not-italic font-normal leading-[140%] mt-[30px] font-gulfs text-gray-400">
-                                                {m.date}
-                                            </div>
+                                            <p className="font-poppins text-white/80">{m.message}</p>
+                                            {/* ⚠️ THE DATE IS DELIBERATELY NOT RENDERED.
+                                                Every quote below is dated Oct–Nov 2023 and
+                                                they were being printed prominently, so the
+                                                freshest social proof on the site announced
+                                                itself as roughly three years old — which
+                                                reads as "nobody has said anything good
+                                                since". The quotes are still true; the
+                                                stamp was the only part doing damage.
+                                                Restore this only alongside real, recent
+                                                testimonials. `date` is kept on the data so
+                                                nothing is silently lost. */}
                                         </div>
                                     </SwiperSlide>
                                 ))}

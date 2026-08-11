@@ -14,6 +14,7 @@ import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
 import toast, { Toaster } from "react-hot-toast";
 import { creatorIdOf } from "@/utils/pricing";
+import { riskMessageBody, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
 
 export default function UserCarts(props) {
     const {
@@ -570,7 +571,7 @@ export default function UserCarts(props) {
         }
         if (!auth?.user) {
             if (guestAllowed === false) {
-                const msg = "Guest checkout is currently disabled. Please log in to continue.";
+                const msg = riskMessageBody("GUEST_ACCOUNT_REQUIRED");
                 pushDebug("blocked_guest_disabled", { msg });
                 toast.error(msg);
                 router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
@@ -579,9 +580,10 @@ export default function UserCarts(props) {
             const upCurrency = (chargeCurrency || "GBP").toUpperCase();
             const rate = rates?.[upCurrency];
             const totalGbp = rate ? (fee + subtotal) / rate : fee + subtotal;
-            if (totalGbp > 50) {
+            // ⚠️ The threshold is never printed — see constants/riskMessages.js.
+            if (totalGbp > GUEST_VALUE_THRESHOLD_GBP) {
                 pushDebug("blocked_guest_high_value", { totalGbp });
-                const msg = "Payments over £50 need an account — please log in to continue.";
+                const msg = riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE");
                 toast.error(msg);
                 router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
                 return;

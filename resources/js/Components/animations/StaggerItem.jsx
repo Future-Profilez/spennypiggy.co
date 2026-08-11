@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 /**
  * Animates grid/list items with staggered fade-in on scroll.
@@ -25,6 +26,24 @@ export default function StaggerItem({
     rotate = 0,
     className = "",
 }) {
+    /**
+     * 🚨 This was ungated. It is the most-used motion wrapper on the homepage —
+     * dozens of instances across 10+ sections — and it animated opacity, x, y,
+     * scale AND rotate regardless of `prefers-reduced-motion`, in direct breach
+     * of the project rule that framer-motion is always gated. The global CSS
+     * reduce block cannot reach it either: framer-motion writes inline styles.
+     *
+     * Reduced motion still gets the state change (the item appears) — it just
+     * arrives without travel, rotation or scale. A `0.01ms`-style kill that
+     * destroys the reveal entirely is not the alternative wanted here.
+     */
+    const reduce = useReducedMotion();
+    const [done, setDone] = useState(false);
+
+    if (reduce) {
+        return <div className={className}>{children}</div>;
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, x, y, scale, rotate }}
@@ -35,7 +54,15 @@ export default function StaggerItem({
                 delay: index * stagger,
                 ease: [0.22, 1, 0.36, 1],
             }}
-            style={{ willChange: "transform, opacity" }}
+            /**
+             * ⚠️ `willChange` is set ONLY while the reveal is running, then
+             * released. It used to be a static style prop, so every one of these
+             * wrappers held a compositor layer for the entire life of the page —
+             * `will-change` is a targeted hint for a known-imminent animation,
+             * not a baseline, and left on at rest it is pure memory cost.
+             */
+            style={done ? undefined : { willChange: "transform, opacity" }}
+            onAnimationComplete={() => setDone(true)}
             className={className}
         >
             {children}

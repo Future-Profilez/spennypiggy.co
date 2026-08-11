@@ -16,7 +16,6 @@ import {
 
 import {
     getPrimaryPlatforms,
-    getSecondaryPlatforms,
     getPlatform,
     SOCIAL_PLATFORMS,
 } from "@/utils/socialPlatforms";
@@ -352,11 +351,15 @@ export default function AddSocial({
         );
     };
 
+    // The three platforms a creator may verify against — Twitter, Instagram,
+    // TikTok (client decision, 11 Aug 2026). The registry still holds every
+    // platform so an existing creator's approved handle keeps rendering on
+    // their profile; only submission is narrowed.
+    //
+    // `getSecondaryPlatforms()` and its `hasSecondaryData` flag were computed
+    // here and rendered nowhere — dead since before the narrowing, and now
+    // empty by definition.
     const primaryPlatforms = getPrimaryPlatforms();
-    const secondaryPlatforms = getSecondaryPlatforms();
-    const hasSecondaryData = secondaryPlatforms.some(
-        (platform) => data[platform.id]
-    );
 
     return (
         <Popup

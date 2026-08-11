@@ -183,11 +183,15 @@
 
     {{-- PWA and App metadata --}}
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    {{-- ⚠️ black-translucent, not default. `default` paints a WHITE status bar
+         strip above a dark app; this lets the header colour run underneath
+         it instead. It requires the header to pad for env(safe-area-inset-top)
+         — see Header.jsx — or the logo sits under the clock. --}}
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#A2E4B8">
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#A2E4B8">
+    <meta name="theme-color" content="#9E0048">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#9E0048">
     <meta name="application-name" content="Spenny Piggy">
     
     {{-- Prevent rubber-banding and zooming for native app feel --}}
@@ -236,7 +240,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ URL::asset('/favicon-192x192.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ URL::asset('/apple-touch-icon.png') }}">
     
-    <meta name="msapplication-TileColor" content="#05EFB8" />
+    <meta name="msapplication-TileColor" content="#9E0048" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     
     {{-- Minimal critical CSS --}}

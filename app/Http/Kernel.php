@@ -12,6 +12,7 @@ use App\Http\Middleware\EnforceEmulationTimeBox;
 use App\Http\Middleware\EnsureCsrfCookie;
 use App\Http\Middleware\EnsureIdentityVerifiedForListings;
 use App\Http\Middleware\EnsureRyeEnabled;
+use App\Http\Middleware\EnsureSiteAvailable;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleCorsForAssets;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -67,6 +68,19 @@ class Kernel extends HttpKernel
         HandleCors::class,
         HandleCorsForAssets::class,
         PreventRequestsDuringMaintenance::class,
+        /*
+         * DB-driven maintenance wall, toggled from the admin app.
+         *
+         * Sits here on purpose: after TrustProxies (the IP allowlist needs the
+         * real client address) and before StartSession/Inertia, so a refused
+         * request never builds a session or a page of shared props against a
+         * database that may be exactly what is being worked on.
+         *
+         * PreventRequestsDuringMaintenance above is Laravel's file-marker version
+         * and is inert on Vapor — Lambda filesystems are ephemeral and
+         * per-instance, so `php artisan down` marks one container and not the next.
+         */
+        EnsureSiteAvailable::class,
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,

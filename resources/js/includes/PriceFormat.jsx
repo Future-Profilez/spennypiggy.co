@@ -1,5 +1,5 @@
 import { usePage } from "@inertiajs/react";
-import { feeRatesFor } from "@/utils/pricing";
+import { feeRatesFor, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 
 export default function PriceFormat() {
     // ✅ Hook called at top level (LEGAL)
@@ -35,8 +35,8 @@ export default function PriceFormat() {
         const isZeroDecimal = targetCurrency?.ISOdigits === 0;
         
         // Stripe fees
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const stripeFeeRate = STRIPE_FEE_RATE;
+        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
         
         // Platform fees — per creator, falling back to the global props.
         const rates = feeRatesFor(creatorId, pageProps);

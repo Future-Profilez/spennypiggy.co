@@ -170,10 +170,40 @@ final class LedgerRules
         return (float) ($ft->platform_fee ?? 0) + (float) ($ft->stripe_fee ?? 0);
     }
 
-    /** The creator's net — the canonical payable figure. */
+    /** The creator's net — their own earnings, before any VAT they collected. */
     public static function creatorNet(FinancialTransaction $ft): float
     {
         return (float) ($ft->net_amount ?? 0);
+    }
+
+    /**
+     * What a payout run owes for this row: the creator's net PLUS the VAT they
+     * charged and must remit themselves.
+     *
+     * 🚨 The payout used to pay `net_amount` alone (client decision reversed it
+     * on 11 Aug 2026). VAT was charged to the supporter, landed in the creator's
+     * connected-account balance — and then nothing released it. It was not
+     * separated, it was stranded: no code path anywhere paid it out, so it
+     * simply accumulated in Stripe for every VAT-registered creator.
+     *
+     * It also put two of our own screens in disagreement. `creatorGross()` is
+     * `net + VAT` and is what the earnings dashboard shows, while the run paid
+     * the figure without it — so a creator's dashboard and their bank statement
+     * could never match. Deliberately the same number as `creatorGross()` for
+     * exactly that reason; the two names exist so the payout's intent is
+     * readable at its call site, not so they can drift apart.
+     *
+     * ⚠️ RESERVE IS NOT TAKEN ON VAT. A reserve is withheld from the creator's
+     * own earnings; VAT is tax they hold on HMRC's behalf, and holding a
+     * percentage of it back would leave them unable to remit in full through no
+     * fault of their own. `reserve_amount` stays computed on `net_amount`, and
+     * the payout subtracts it from this figure rather than from a VAT-inclusive
+     * base. The same reasoning keeps VAT out of every bonus base — those read
+     * `net_amount` directly and are untouched by this.
+     */
+    public static function payable(FinancialTransaction $ft): float
+    {
+        return self::creatorGross($ft);
     }
 
     /**

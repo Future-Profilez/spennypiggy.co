@@ -66,6 +66,10 @@ class ProfileChangeRequest extends Model
         'whoyouinto',
         'twitter',
         'instagram',
+        // Accepted since 11 Aug 2026. A field missing from this snapshot is a
+        // field an approval silently drops — the creator's edit would be
+        // reviewed and then not applied.
+        'tiktok',
         'facebook',
         'youtube',
         'twitch',

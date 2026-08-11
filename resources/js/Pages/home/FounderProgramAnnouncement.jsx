@@ -43,7 +43,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                         </FadeIn>
 
                         {/* Heading lines scrub in opposite directions with the scroll */}
-                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-">
+                        <h2 className="uppercase fading text-3xl md:text-4xl lg:text-5xl font-gulfs tracking-[2px] text-white mb-6 leading-none">
                             <span className="block">JOIN THE</span>
                             <span className="block mt-2">
                                 <span className="uppercase text-[#E6EA7B] tracking-[2px] drop-shadow-[0_0_25px_rgba(230,234,123,0.45)]">
@@ -65,8 +65,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
                         {/* Card 1: Monthly Bonus */}
                         <ScrollX from={-45} to={0} rotate={2} fade className="h-full">
-                        <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                        <TiltCard max={8} className="rounded-box h-full">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-box p-6 md:p-8 relative group flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
                                 <FaTrophy />
                             </div>
@@ -74,7 +74,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
                                 Boost your earnings with a permanent {config.bonusPercentage}% monthly bonus on all revenue. Every membership, sale, and unlock automatically triggers an extra payout.
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                            <div className="fading bg-gray-800 rounded-box p-3 flex items-center gap-3 w-fit mt-auto">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#E6EA7B] animate-pulse"></div>
                                 <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Extra Payouts</span>
                             </div>
@@ -84,8 +84,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
                         {/* Card 2: Founder Status (drifts vertically, sits lower) */}
                         <Parallax speed={22} className="h-full md:mt-12">
-                        <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                        <TiltCard max={8} className="rounded-box h-full">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-box p-6 md:p-8 relative group flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform -rotate-12">
                                 <FaCrown />
                             </div>
@@ -93,7 +93,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
                                 Gain exclusive recognition with a unique founder badge, priority search ranking, and VIP support. Establish your authority as a leading creator.
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                            <div className="fading bg-gray-800 rounded-box p-3 flex items-center gap-3 w-fit mt-auto">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F] animate-pulse"></div>
                                 <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">VIP Perks</span>
                             </div>
@@ -103,8 +103,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
                         {/* Card 3: Priority Qualification */}
                         <ScrollX from={45} to={0} rotate={-2} fade className="h-full md:col-span-3 lg:col-span-1">
-                        <TiltCard max={8} className="rounded-[30px] h-full">
-                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[30px] p-6 md:p-8 relative group flex flex-col h-full">
+                        <TiltCard max={8} className="rounded-box h-full">
+                        <div className="bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-box p-6 md:p-8 relative group flex flex-col h-full">
                             <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-6">
                                 <FaGift />
                             </div>
@@ -112,7 +112,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             <p className="fading text-gray-400 text-base md:text-lg mb-6 leading-snug flex-grow">
                                 Earn {config.currencySymbol}{config.minMonthlyEarnings.toLocaleString()} in your first 30 days to automatically unlock lifetime bonuses and rewards. Act fast—only {config.maxFounderSeats} seats available.
                             </p>
-                            <div className="fading bg-gray-800 rounded-[30px] p-3 flex items-center gap-3 w-fit mt-auto">
+                            <div className="fading bg-gray-800 rounded-box p-3 flex items-center gap-3 w-fit mt-auto">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8] animate-pulse"></div>
                                 <span className="text-xs md:text-sm font-bold text-gray-300 uppercase">Limited Seats</span>
                             </div>

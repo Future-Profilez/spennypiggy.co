@@ -259,8 +259,12 @@ window.addEventListener('vite:preloadError', (event) => {
 });
 
 createInertiaApp({
+    // ⚠️ This suffix is appended to EVERY page title on the site, so it is
+    // printed in search results and social cards for all of them — which makes it
+    // a Stripe-facing surface, and the content-first ban list applies in full. It
+    // read "…Gifts, Memberships, Exclusive Content & More." until 10 Aug 2026.
     title: (title) =>
-        `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,
+        `${title || "Spenny Piggy"} - The Everything Wishlist - Content, Memberships & Custom Requests.`,
     resolve: (name) => {
         return resolvePageComponent(
             `./Pages/${name}.jsx`,

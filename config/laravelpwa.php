@@ -5,11 +5,19 @@ return [
         'name' => 'Spenny Piggy',
         'short_name' => 'Spenny Piggy',
         'start_url' => '/',
-        'background_color' => '#ffffff',
-        'theme_color' => '#5D25FD',
+        // 🚨 background_color is the SPLASH SCREEN, and it was #ffffff — so an
+        // installed app whose every screen is dark opened on a full white flash
+        // before the first paint. It is the top of the page's own gradient now.
+        'background_color' => '#0B0413',
+        // ⚠️ theme_color tints the system chrome around the app, so it must match
+        // the HEADER, not the page. Four different colours were declared across
+        // the manifest and the meta tags (#5D25FD here, #A2E4B8 twice in the
+        // blade, #05EFB8 on the tile) and none of them was a colour the site
+        // actually used. They are all #9E0048 now — the header bar.
+        'theme_color' => '#9E0048',
         'display' => 'standalone',
         'orientation' => 'any',
-        'status_bar' => '#000000',
+        'status_bar' => '#9E0048',
         'icons' => [
             '72x72' => [
                 'path' => '/favicon-32x32.png',
@@ -58,7 +66,7 @@ return [
         ],
         'shortcuts' => [
             [
-                'name' => 'Spenny Piggy - Financial Gifts, Exclusive Content & Memberships - Spenny Piggy',
+                'name' => 'Spenny Piggy - Exclusive Content, Memberships & Custom Requests',
                 'description' => 'Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!',
                 'url' => '/',
                 'icons' => [

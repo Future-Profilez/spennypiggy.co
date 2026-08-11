@@ -87,8 +87,30 @@ class PaymentTierService
                 }
             }
         } elseif ($tier === self::TIER_BANK_REQUIRED) {
-            // Bank required; card only as a 3DS-forced fallback.
+            // Above the card ceiling, card is always 3DS-forced — and the buyer
+            // risk screen runs here too (client decision, 11 Aug 2026).
+            //
+            // ⚠️ It did NOT run at this tier before, which meant the LARGEST
+            // payments on the platform were the only ones taking card with no
+            // buyer-side screen at all: a payer with a blocked payment in the
+            // last 90 days or an open dispute sailed through at £5,000 while
+            // being stopped at £300. Backwards, and silent.
+            //
+            // ⚠️ Deliberately NOT an outright block. The client's flow is
+            // "allow the good ones, route the rest to Pay by Bank" — refusing
+            // every card above the ceiling loses sales from buyers who have
+            // done nothing wrong, and Radar still scores the payment at
+            // confirmation whatever we decide here.
             $force3ds = true;
+
+            if (! self::passesBuyerRiskChecks($buyer, $guestEmail) && $bankAvailable) {
+                $cardAllowed = false;
+                $promptBank = true;
+            }
+
+            // No bank rail for this currency (anything outside GBP/EUR/USD):
+            // the sale goes through on card with 3DS rather than leaving the
+            // buyer no way to pay at all. Client decision, 11 Aug 2026.
         }
 
         return [

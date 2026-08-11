@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\SendSuspendedMailForSubscription;
+use App\Mail\CreatorAccountNotice;
 use App\Models\Logs;
 use App\Models\MonthlyCharge;
 use App\Models\User;
+use App\Support\RiskMessages;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -144,10 +145,40 @@ class AutoSuspendAccount extends Command
             Log::warning('Auto-suspend log row failed: '.$e->getMessage(), ['user_id' => $user->id]);
         }
 
+        // 🚨 This email was BROKEN and failing silently. The old mailable
+        // rendered `email.account-suspend`, a view that does not exist in this
+        // repository — so every send threw "View [email.account-suspend] not
+        // found", the throw was swallowed by this very try/catch, and the
+        // creator was locked out of their account and never told. The only
+        // trace was one warning line.
+        //
+        // ⚠️ And its whole message was the subject: "Your account is
+        // suspended!" with no reason at all. That is precisely what the 9 Aug
+        // messaging brief singles out — "Account status issue on its own is
+        // exactly what we're trying to get away from" — so the reason is now
+        // required by the message itself, not optional.
         try {
-            Mail::to($user->email)->send(new SendSuspendedMailForSubscription);
+            $ui = RiskMessages::get('CREATOR_ACCOUNT_ISSUE', RiskMessages::AUDIENCE_CREATOR, [
+                'reason' => 'Your platform subscription is not active, so payments cannot come through.',
+            ]);
+
+            Mail::to($user->email)->send(new CreatorAccountNotice(
+                ui: $ui,
+                firstName: self::firstNameOf($user),
+            ));
         } catch (\Throwable $e) {
             Log::warning('Auto-suspend email failed: '.$e->getMessage(), ['user_id' => $user->id]);
         }
+    }
+
+    /**
+     * `users.name` is a DISPLAY name and may be a stage or shop name, so it is
+     * used only as a greeting.
+     */
+    private static function firstNameOf($user): ?string
+    {
+        $name = trim((string) ($user->name ?? ''));
+
+        return $name === '' ? null : explode(' ', $name)[0];
     }
 }

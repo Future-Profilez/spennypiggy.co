@@ -1,7 +1,7 @@
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
-import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
@@ -47,8 +47,8 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
         const vat = parseFloat(vatAmount || 0);
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const priceWithVat = listedPrice + vat;
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
+        const stripeFeeRate = STRIPE_FEE_RATE;
+        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
         // Per-creator: a creator on a bespoke platform rate must be QUOTED
         // what checkout will CHARGE them. The global props cannot express that.
         const __rates = feeRatesFor(creatorIdOf(task) ?? profileUser?.id, __pageProps);

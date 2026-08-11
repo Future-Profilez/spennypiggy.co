@@ -276,7 +276,9 @@ class PayoutService
                     $sum = 0;
                     foreach ($fts as $ft) {
                         $from = strtolower((string) ($ft->currency ?? 'gbp'));
-                        $sum += Helpers::toMinorUnits($convert((float) $ft->net_amount, $from, $creatorCurrency), $creatorCurrency);
+                        // Same basis as the payout itself, or the "pending" figure
+                        // a creator is shown would not match what eventually lands.
+                        $sum += Helpers::toMinorUnits($convert(LedgerRules::payable($ft), $from, $creatorCurrency), $creatorCurrency);
                     }
 
                     return $sum;
@@ -347,7 +349,12 @@ class PayoutService
                 if ($fts->isNotEmpty()) {
                     foreach ($fts as $ft) {
                         $ftCurrency = strtolower((string) ($ft->currency ?? 'gbp'));
-                        $netAmt = (float) $ft->net_amount;
+                        // 🚨 net + VAT. The creator is owed their listed price AND the
+                        // VAT they collected, which they remit themselves. Paying
+                        // `net_amount` alone left the VAT stranded in their Stripe
+                        // balance with nothing to release it. Reserve is still taken
+                        // on net only — see LedgerRules::payable().
+                        $netAmt = LedgerRules::payable($ft);
                         $resAmt = (float) $ft->reserve_amount;
 
                         $convertedNet = $convert($netAmt, $ftCurrency, $creatorCurrency);
@@ -391,7 +398,10 @@ class PayoutService
                 if ($fts->isNotEmpty()) {
                     foreach ($fts as $ft) {
                         $ftCurrency = strtolower((string) ($ft->currency ?? 'gbp'));
-                        $netAmt = (float) $ft->net_amount;
+                        // Deducted on the SAME basis it was paid: a refunded sale
+                        // returns the VAT too, so clawing back net alone would leave
+                        // the creator holding VAT on a sale that no longer exists.
+                        $netAmt = LedgerRules::payable($ft);
                         $convertedNet = $convert($netAmt, $ftCurrency, $creatorCurrency);
                         $refundDisputeAmount += Helpers::toMinorUnits($convertedNet, $creatorCurrency);
                     }
@@ -1204,7 +1214,9 @@ class PayoutService
             }
 
             $currency = strtoupper((string) ($ft->currency ?: 'GBP'));
-            $net = (float) ($ft->net_amount ?? 0);
+            // The preview's whole job is to state what Friday pays, so it reads
+            // the payout's own definition rather than the bare net column.
+            $net = LedgerRules::payable($ft);
             $reserve = (float) ($ft->reserve_amount ?? 0);
             // Reserve is held back 30 days post-transaction — it is NOT part of this Friday's
             // payout. We surface it for context, but the payable figure excludes it.

@@ -138,23 +138,39 @@ class CreatorFeeOverridePricingTest extends TestCase
     }
 
     /**
-     * A row written before these columns existed re-costs at the config rates,
-     * which is what priced it at the time.
+     * A row written before these columns existed re-costs at the rates that
+     * priced it at the time — never at a rate agreed since, and never at a
+     * config value that has moved since.
+     *
+     * ⚠️ This used to assert `storedFeeRates()` returned NULL for such a row.
+     * It no longer does, and the change is deliberate: NULL meant "fall through
+     * to config", and on 11 Aug 2026 the card Stripe estimate stopped being the
+     * value that priced these rows (2.9% → 3.4%). Falling through would have
+     * re-costed every pre-change transaction at the new estimate on the next
+     * `finance:sync-transactions` run. The intent this test protects is
+     * unchanged; only the mechanism is.
      */
-    public function test_a_legacy_row_with_no_stored_rate_falls_back_to_the_config_rates(): void
+    public function test_a_legacy_row_with_no_stored_rate_falls_back_to_the_rates_that_priced_it(): void
     {
         $creator = $this->creator();
         $this->agree($creator, bank: 4.0, card: 4.0);
 
         $legacy = (object) ['platform_fee_rate' => null, 'compliance_fee_rate' => null];
+        $rates = Helpers::storedFeeRates($legacy);
 
-        $this->assertNull(Helpers::storedFeeRates($legacy));
+        // The creator's bespoke 4% was agreed AFTER this row was charged and
+        // must not reach back over it.
+        $this->assertSame(17.0, $rates['platform_rate']);
+
+        // And the Stripe estimate is the historical one, not today's.
+        $this->assertSame(Helpers::LEGACY_CARD_STRIPE_RATE, $rates['stripe_rate']);
 
         $recomputed = Helpers::calculateStripeDirectChargeFlow(
-            100, 'GBP', 0, 'card', null, Helpers::storedFeeRates($legacy)
+            100, 'GBP', 0, 'card', null, $rates
         );
 
         $this->assertSame(17.0, $recomputed['platform_fee_rate']);
+        $this->assertSame(129.71, $recomputed['total_supporter_pays'], 'a pre-change row must reproduce its original charge');
     }
 
     /**
@@ -288,7 +304,11 @@ class CreatorFeeOverridePricingTest extends TestCase
         $this->assertGreaterThanOrEqual(120, (float) $b['net_to_creator']);
 
         // Known-good totals: unchanged by the shortfall guard.
-        $this->assertSame(129.71, (float) Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card')['total_supporter_pays']);
+        //
+        // Card is 130.55 rather than 129.71 since 11 Aug 2026 — the Stripe
+        // estimate was raised 2.9% → 3.4% so an international card can never
+        // leave the creator short. Bank is untouched by that change.
+        $this->assertSame(130.55, (float) Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'card')['total_supporter_pays']);
         $this->assertSame(120.31, (float) Helpers::calculateStripeDirectChargeFlow(100, 'GBP', 0, 'bank')['total_supporter_pays']);
     }
 

@@ -184,34 +184,50 @@ export default function Header({ classMagicword }) {
 
     return (
         <>
-            <div className="bg-[#1a1a1a] headermain fixed top-0 left-0 w-full z-[100] py-4 ">
+            {/* ── Deep teal, three zones ───────────────────────────────────
+                The header was a flat `#1a1a1a` charcoal band — a colour that
+                appears nowhere else on the site, which is what made it read as a
+                separate object sitting on the page rather than part of it.
+
+                🚨 THE LOGO CHOSE THE COLOUR. It is pink lettering with a yellow
+                outline, so on a PINK bar the lettering disappears and on a YELLOW
+                bar the outline does — both were ruled out however good they look
+                as a swatch. Mint at full strength (#05EFB8) is a LIGHT ground, so every control on
+                it is black — white on mint is 1.6:1 and invisible. Black on mint
+                measures 12.8:1.
+
+                ⚠️ Do NOT re-tint the logo. It used to carry `brightness(0)` to
+                force it dark; that throws away the asset. It is used at full
+                colour and the ground is chosen to suit it, not the other way round.
+
+                ── Placement ──
+                The old bar put NINE things in one row at one weight: menu, star,
+                wordmark, logo, currency, search, basket and two buttons — three
+                utilities, three destinations, three actions, evenly spaced and
+                therefore unreadable as groups. It is now THREE ZONES separated by
+                real space: brand, then where you can go, then what you can do.
+
+                ⚠️ The 🌟 emoji became the word "Leaderboard" — it linked there
+                already, and an emoji beside a text link to the same place was the
+                duplication that made the left group look like three unrelated
+                things. No destination was removed. */}
+            <div className="headermain fixed top-0 left-0 w-full z-[100] py-[17px] bg-[#FF007F]">
                 <div className="container mx-auto px-4">
-                    <div className="header flex w-full items-center justify-between ">
-                        <div className="md:flex hidden leftspaces items-center justify-start">
+                    <div className="header flex w-full items-center gap-3">
+                        {/* ── Zone 1 · brand ── */}
+                        <div className="flex items-center gap-2 shrink-0">
                             <div
-                                className="menu-toggle cursor-pointer cartLink relative"
+                                className="menu-toggle cursor-pointer cartLink relative hidden md:block"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon size={48} color="#FF007F" />
+                                <MenuIcon size={48} color="#FFFFFF" />
                             </div>
-                            <Link
-                                className="hidden md:block focus:border-0 ml-3 text-[30px]"
-                                href={"/leaderboard"}
-                            >
-                                🌟
-                            </Link>
-                            <Link
-                                className="hidden md:block ml-3"
-                                href={"/giftstore"}
-                            >
-                                <span className="flex items-center text-xl !font-light tracking-wider uppercase text-white font-gulfs">
-                                    Oink Store
-                                </span>
-                            </Link>
-                        </div>
 
                         <div className="spennylogo">
-                            <Link href={route("home")}>
+                            {/* The logo is a link home, so it is a tap target and
+                                the PWA floor applies — it measured 34px tall. The
+                                image is unchanged; only the hit area grows. */}
+                            <Link href={route("home")} className="inline-flex items-center min-h-[44px] [&>img]:max-w-[168px] md:[&>img]:max-w-[178px]">
                                 <img
                                     alt="Spenny Piggy - Exclusive Content, Memberships & Creator Support"
                                     height={60}
@@ -221,8 +237,40 @@ export default function Header({ classMagicword }) {
                                 />
                             </Link>
                         </div>
+                        </div>
 
-                        <div className="leftspaces cartLogin">
+                        <span className="flex-1" aria-hidden="true"></span>
+
+                        {/* ── Zone 2 · where you can go ──
+                            Words, not icons. These three destinations existed only
+                            behind the hamburger (or as a bare emoji), so a visitor
+                            could not see where to go without opening something.
+                            Below `lg` they fold back into the drawer, which already
+                            lists all three. */}
+                        <nav className="hidden lg:flex items-center gap-7 shrink-0">
+                            {[
+                                { label: "Discover", href: route("discover"), active: url.startsWith("/discover") },
+                                { label: "Leaderboard", href: "/leaderboard", active: url.startsWith("/leaderboard") },
+                                { label: "Oink Store", href: "/giftstore", active: url.startsWith("/giftstore") },
+                            ].map((item) => (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    className={`font-gulfs uppercase text-[16px] tracking-wider transition-colors ${
+                                        item.active
+                                            ? "text-[#E6EA7B]"
+                                            : "text-white hover:text-white"
+                                    }`}
+                                >
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </nav>
+
+                        <span className="flex-1" aria-hidden="true"></span>
+
+                        {/* ── Zone 3 · what you can do ── */}
+                        <div className="cartLogin shrink-0">
                             <ChangeCurrency
                                 defaultvalue={global_currency}
                                 changer={true}
@@ -243,7 +291,12 @@ export default function Header({ classMagicword }) {
                                 href={route("discover")}
                                 className="ms-2 md:ms-3 discover-icon"
                             >
-                                <div className="bg-[#FF007F] rounded-full !p-3 md:!p-2 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                {/* ⚠️ Ghost, not a solid fill. These were three
+                                    saturated pink circles, which is three accents —
+                                    and three accents is no accent. Sign Up is the
+                                    only filled control on the bar, because it is the
+                                    one thing the page is trying to cause. */}
+                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white/[0.12] border border-white/25 hover:bg-white/20 transition-colors">
                                     <SearchIcon color="#ffffff" />
                                 </div>
                             </Link>
@@ -258,7 +311,7 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
-                                <div className="bg-[#FF007F] p-3 md:p-2 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
+                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white/[0.12] border border-white/25 hover:bg-white/20 transition-colors">
                                     <ShoppingCartIcon color="#ffffff" />
                                 </div>
                                 {count > 0 ? (
@@ -276,13 +329,19 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
-                                        className="bg-white uppercase text-lg font-gulfs rounded-full px-4 py-2"
+                                        className="uppercase text-lg font-gulfs rounded-full px-5 py-2 text-white border border-white/30 hover:border-white/55 hover:bg-white/[0.08] transition-colors"
                                     >
                                         Login
                                     </Link>
+                                    {/* ⚠️ MINT, and it cannot be pink. The bar is
+                                        pink and the logo's lettering is pink, so a
+                                        third pink would be invisible between them.
+                                        Mint is the widest gap from this ground in
+                                        the whole palette and carries black type at
+                                        12.8:1 — the one filled action on the bar. */}
                                     <Link
                                         href={route("register")}
-                                        className="btn-shadow hidden xl:block bg-[#FF007F] text-white uppercase text-lg font-gulfs rounded-full px-4 py-2"
+                                        className="hidden xl:block bg-[#05EFB8] text-[#04120E] uppercase text-lg font-gulfs rounded-full px-5 py-2 hover:brightness-105 transition-[filter]"
                                     >
                                         Sign Up
                                     </Link>
@@ -292,13 +351,19 @@ export default function Header({ classMagicword }) {
                                 className="block ps-2 mt-[10px] me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon size={48} color="#05EFB8" />
+                                <MenuIcon size={48} color="#FFFFFF" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="h-[75px] sm:h-[75px] md:h-[80px] lg:h-[82px] xl:h-[92px]"></div>
+            {/* Clears the fixed header. ⚠️ It must include the SAME safe-area inset the
+                header pads by, or in an installed iOS app the first content sits
+                under the bar by exactly the height of the status bar. */}
+            <div
+                className="h-[75px] sm:h-[75px] md:h-[80px] lg:h-[82px] xl:h-[92px]"
+                style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+            ></div>
 
             {isActive ? (
                 <div

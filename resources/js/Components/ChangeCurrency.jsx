@@ -82,7 +82,14 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <Menu as="div" className="relative inline-block text-left">
             <div>
                <Menu.Button className="inline-flex justify-center w-full rounded-[30px]   border border-transparent px-2 md:px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-                  {selectedCurrency ? selectedCurrency : "N/A"}
+                  {/* ⚠️ Was `: "N/A"`. `defaultvalue` is `global_currency`, which is
+                      empty for a logged-out visitor — so the header of the public
+                      homepage rendered a chip reading "N/A" to every first-time
+                      visitor, on a page whose subject is money. "Not applicable" is
+                      never true of a display currency: there is always one in force,
+                      and when the session has not chosen it is the platform default.
+                      GBP matches `SubscriptionPlan::currency()`. */}
+                  {selectedCurrency || 'GBP'}
                </Menu.Button>
             </div>
             <Transition

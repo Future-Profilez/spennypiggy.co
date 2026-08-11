@@ -58,8 +58,12 @@ export default function Footer(props) {
                                         className="cursor-pointer max-w-[160px] md:max-w-[200px]"
                                     />
                                 </Link>
+                                {/* ⚠️ This line appears on every page. It used to sell
+                                    "manage wishlists", the store-item framing the platform
+                                    is moving away from. What it keeps: the SFW position and
+                                    the 18+ gate, both of which belong in a site footer. */}
                                 <p className="text-gray-200 font-poppins text-md leading-relaxed ">
-                                    The ultimate platform for creators to connect with fans, manage wishlists, and grow their community with <span className="text-[#EFEA7B] font-bold underline decoration-[#924DFF] decoration-4 underline-offset-4">100% payouts</span>.
+                                    The strictly SFW platform where creators sell content, take custom requests and get paid properly &mdash; keeping <span className="text-[#EFEA7B] font-bold underline decoration-[#924DFF] decoration-4 underline-offset-4">100% of what they list</span>. 18+ only.
                                 </p>
                             </div>
                             

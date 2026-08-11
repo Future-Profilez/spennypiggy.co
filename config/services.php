@@ -72,6 +72,24 @@ return [
         'identity_secret' => env('INTERCOM_IDENTITY_VERIFICATION_SECRET'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Blocked-payment notice
+    |--------------------------------------------------------------------------
+    |
+    | Emails a supporter when their payment was stopped before it reached
+    | Stripe. On-screen only left anyone who navigated away with nothing, and a
+    | guest with no account to return to (9 Aug messaging brief, Qs 5 and 9).
+    |
+    | ⚠️ A guest's address is UNVERIFIED — they typed it into a checkout minutes
+    | earlier — so this is send-once per address per state per day. The switch
+    | exists so the whole thing can be stopped without a deploy.
+    |
+    */
+    'blocked_payment_notice' => [
+        'enabled' => env('BLOCKED_PAYMENT_NOTICE_ENABLED', true),
+    ],
+
     'risk_engine' => [
         'enabled' => env('RISK_ENGINE_ENABLED', true),
     ],

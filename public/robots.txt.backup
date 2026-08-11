@@ -8,6 +8,7 @@ Disallow: /debug*/
 Disallow: /seed*/
 Disallow: /*-test
 Disallow: /pwa-debug
+Disallow: https://dev.spennypiggy.co
 
 # Allow main content
 Allow: /

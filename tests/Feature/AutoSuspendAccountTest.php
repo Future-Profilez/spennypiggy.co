@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Mail\SendSuspendedMailForSubscription;
+use App\Mail\CreatorAccountNotice;
 use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Support\SubscriptionPlan;
@@ -94,7 +94,15 @@ class AutoSuspendAccountTest extends TestCase
         $this->runSuspend();
 
         $this->assertSame(1, (int) $creator->fresh()->suspended_account);
-        Mail::assertSent(SendSuspendedMailForSubscription::class);
+        // ⚠️ The mailable this replaces rendered a view that does not exist, so
+        // every real send threw and was swallowed — and this assertion passed
+        // anyway, because Mail::fake() never renders. So the mail is RENDERED
+        // here as well as asserted, and the reason has to reach the reader.
+        Mail::assertSent(CreatorAccountNotice::class, function ($mail) {
+            $html = $mail->render();
+
+            return str_contains($html, 'subscription is not active');
+        });
     }
 
     public function test_a_failed_card_is_suspended(): void

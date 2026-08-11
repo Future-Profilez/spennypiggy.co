@@ -11,7 +11,6 @@ export default function PaidTasksAnnouncement() {
             <section
             className="relative bg-transparent py-12 md:py-28 px-4 overflow-x-hidden"
         >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-[#FF007F] rounded-full blur-3xl opacity-10 pointer-events-none z-0"></div>
 
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
@@ -39,7 +38,7 @@ export default function PaidTasksAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
 
                         <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
                             <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
@@ -57,7 +56,7 @@ export default function PaidTasksAnnouncement() {
 
                         {/* Card 2: Custom */}
                         <StaggerItem index={1} x={-80} y={0} rotate={1} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
                             <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform -rotate-12">
                                 <FaMagic />
                             </div>
@@ -78,7 +77,7 @@ export default function PaidTasksAnnouncement() {
 
                         {/* Card 3: Safe */}
                         <StaggerItem index={2} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-[24px] p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
                             <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-6">
                                 <FaShieldAlt />
                             </div>

@@ -15,6 +15,8 @@ import Turnstile from "@/Components/Turnstile";
 import { OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import confetti from "canvas-confetti";
+import { riskMessageBody } from '@/constants/riskMessages';
+import StepUpModal from '@/Components/Risk/StepUpModal';
 
 const MIN_AMOUNT = 4.99;
 const MAX_AMOUNT = 500;
@@ -36,6 +38,11 @@ export default function PiggyPotWidget({
     const [selectegTag, setselectegTag] = useState(0);
     const [fieldErrors, setFieldErrors] = useState({});
     const [prices, setPrices] = useState(null);
+    // Step-up (one-time code). Reachable on pots since the risk enforcement was
+    // repaired — see handleContribute.
+    const [showStepUp, setShowStepUp] = useState(false);
+    const [stepUpUi, setStepUpUi] = useState(null);
+    const [stepUpContext, setStepUpContext] = useState(null);
 
     const { auth, turnstileSiteKey } = usePage().props;
     const { errorAlert } = useAlerts();
@@ -237,10 +244,30 @@ export default function PiggyPotWidget({
                 return;
             }
 
+            // 🚨 The key is `step_up_required`, not `step_up`. This screen used
+            // to check `step_up`, which the trait has never sent — and it was
+            // harmless only because Piggy Pot's risk enforcement was broken and
+            // STEP_UP could never be reached. Now that it can (a contribution
+            // over the step-up threshold, or several rapid payments — both well
+            // inside the £4.99–£500 pot range), a missed branch here is a
+            // supporter told their payment failed while holding a valid code.
+            if (res.data.step_up_required) {
+                setStepUpUi(res.data.ui || null);
+                setStepUpContext(res.data.step_up_context || null);
+                setShowStepUp(true);
+                // Reset the captcha so backing out of the modal leaves a
+                // working form rather than a permanently disabled button.
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
+                setVerified(false);
+                setData("cf_turnstile_response", "");
+                setLoading(false);
+                return;
+            }
+
             if (res.data.card_verification_required) {
                 errorAlert(res.data.msg);
-            } else if (res.data.step_up) {
-                errorAlert("Verification required. Please contact support.");
             } else {
                 errorAlert(
                     res.data.msg ||
@@ -856,6 +883,25 @@ export default function PiggyPotWidget({
                     </div>
                 ) : null}
             </div>
+
+            {/* Rendered OUTSIDE the form so backing out of it leaves the
+                contribution exactly as it was — the amount, the email and the
+                accepted terms all survive, and one more attempt completes. */}
+            <StepUpModal
+                open={showStepUp}
+                ui={stepUpUi}
+                context={stepUpContext}
+                fallbackEmail={data.email}
+                fallbackDeviceId={data.device_id}
+                onClose={() => setShowStepUp(false)}
+                onVerified={() => {
+                    // The server consumes the verification from the session on
+                    // the next attempt, so this simply re-submits.
+                    setShowStepUp(false);
+                    setStepUpContext(null);
+                    handleContribute();
+                }}
+            />
         </div>
     );
 }

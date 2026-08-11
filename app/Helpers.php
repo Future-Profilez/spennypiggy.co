@@ -17,6 +17,7 @@ use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Support\NotificationRecorder;
+use App\Support\RiskMessages;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -477,11 +478,28 @@ class Helpers
      *
      * @return array{platform_fee_rate: float|null, compliance_fee_rate: float|null, fee_source: string|null, fee_override_id: int|null}
      */
+    /**
+     * The card Stripe estimate as it stood before 11 Aug 2026.
+     *
+     * 🚨 Never replace these with a config read. They exist precisely so a row
+     * carrying no stored Stripe rate is costed at what it was actually charged
+     * at, rather than at whatever the estimate has since been changed to.
+     */
+    public const LEGACY_CARD_STRIPE_RATE = 2.9;
+
+    public const LEGACY_CARD_STRIPE_FIXED_FEE = 0.30;
+
     public static function feeRateColumns(array $breakdown): array
     {
         return [
             'platform_fee_rate' => $breakdown['platform_fee_rate'] ?? null,
             'compliance_fee_rate' => $breakdown['compliance_fee_rate'] ?? null,
+            // The Stripe estimate the supporter's price was grossed up from.
+            // Frozen for the same reason as the other two: the estimate is
+            // configurable per market and was raised on 11 Aug 2026, and without
+            // this every recompute would restate historical fees at the new rate.
+            'stripe_fee_rate' => $breakdown['stripe_fee_rate'] ?? null,
+            'stripe_fixed_fee' => $breakdown['stripe_fixed_fee'] ?? null,
             'fee_source' => $breakdown['fee_source'] ?? null,
             'fee_override_id' => $breakdown['fee_override_id'] ?? null,
         ];
@@ -500,6 +518,8 @@ class Helpers
         return [
             'platform_fee_rate' => $row->platform_fee_rate ?? null,
             'compliance_fee_rate' => $row->compliance_fee_rate ?? null,
+            'stripe_fee_rate' => $row->stripe_fee_rate ?? null,
+            'stripe_fixed_fee' => $row->stripe_fixed_fee ?? null,
             'fee_source' => $row->fee_source ?? null,
             'fee_override_id' => $row->fee_override_id ?? null,
         ];
@@ -528,6 +548,8 @@ class Helpers
         return [
             'platform_fee_rate' => $get('platform_fee_rate') !== null ? (float) $get('platform_fee_rate') : null,
             'compliance_fee_rate' => $get('compliance_fee_rate') !== null ? (float) $get('compliance_fee_rate') : null,
+            'stripe_fee_rate' => $get('stripe_fee_rate') !== null ? (float) $get('stripe_fee_rate') : null,
+            'stripe_fixed_fee' => $get('stripe_fixed_fee') !== null ? (float) $get('stripe_fixed_fee') : null,
             'fee_source' => $get('fee_source'),
             'fee_override_id' => $get('fee_override_id') !== null ? (int) $get('fee_override_id') : null,
         ];
@@ -542,8 +564,10 @@ class Helpers
      * letting the rate resolve live, or changing a creator's deal would re-price
      * everything they have ever sold — silently, with no error.
      *
-     * Returns NULL when the row predates these columns, which correctly falls
-     * back to the standard config rates that priced it at the time.
+     * Returns NULL only when there is no row at all. A row that predates any of
+     * these columns still gets an explicit answer per component, because
+     * "unstored" and "today's config" stopped meaning the same thing the moment
+     * the card estimate was raised — see LEGACY_CARD_STRIPE_* below.
      */
     public static function storedFeeRates($row): ?array
     {
@@ -551,17 +575,49 @@ class Helpers
             return null;
         }
 
+        // ⚠️ Every read is `?? null`, never a bare property access. An Eloquent
+        // model answers null for a column it did not select, but a plain object
+        // — which several recompute paths and every test fixture pass — raises
+        // "Undefined property" and takes the whole run down. A row loaded with
+        // an explicit select() that omits these columns behaves the same way.
         $platform = $row->platform_fee_rate ?? null;
-
-        if ($platform === null) {
-            return null;
-        }
+        $compliance = $row->compliance_fee_rate ?? null;
+        $stripeRate = $row->stripe_fee_rate ?? null;
+        $stripeFixed = $row->stripe_fixed_fee ?? null;
+        $profile = strtolower((string) ($row->fee_profile ?? 'card')) === 'bank' ? 'bank' : 'card';
 
         return [
-            'platform_rate' => (float) $platform,
-            'compliance_rate' => $row->compliance_fee_rate === null
-                ? (float) config('payments.fee_profiles.card.compliance_rate', 2)
-                : (float) $row->compliance_fee_rate,
+            // Unstored platform/compliance rates fall back to config, which is
+            // correct: those rates have not moved, and a bespoke deal is always
+            // stored on the row that used it.
+            'platform_rate' => $platform === null
+                ? (float) config("payments.fee_profiles.$profile.platform_rate", 17)
+                : (float) $platform,
+
+            'compliance_rate' => $compliance === null
+                ? (float) config("payments.fee_profiles.$profile.compliance_rate", 2)
+                : (float) $compliance,
+
+            // 🚨 The Stripe estimate does NOT fall back to config. It was raised
+            // on 11 Aug 2026 (2.9% → 3.4% on card, to cover international cards),
+            // and `finance:sync-transactions` recomputes fees on existing ledger
+            // rows every 30 minutes — so reading today's value here would restate
+            // the recorded fees on every pre-change transaction, silently, on the
+            // screens the platform reports its own margin from.
+            //
+            // Bank is unchanged, so its config value IS its historical one.
+            'stripe_rate' => $stripeRate === null
+                ? ($profile === 'card'
+                    ? self::LEGACY_CARD_STRIPE_RATE
+                    : (float) config('payments.fee_profiles.bank.stripe_rate', 0.8))
+                : (float) $stripeRate,
+
+            'stripe_fixed_fee' => $stripeFixed === null
+                ? ($profile === 'card'
+                    ? self::LEGACY_CARD_STRIPE_FIXED_FEE
+                    : (float) config('payments.fee_profiles.bank.stripe_fixed_fee', 0.30))
+                : (float) $stripeFixed,
+
             'fee_source' => $row->fee_source ?? 'standard',
             'fee_override_id' => $row->fee_override_id ?? null,
         ];
@@ -615,7 +671,10 @@ class Helpers
         // An explicit override wins: this is how a historical transaction is
         // re-costed at the rate it was actually charged, never today's.
         if (is_array($rateOverride)) {
-            foreach (['platform_rate', 'compliance_rate'] as $key) {
+            // `stripe_rate` / `stripe_fixed_fee` are here for the same reason as
+            // the other two: a recompute must cost the charge at the estimate it
+            // was priced with, never at today's.
+            foreach (['platform_rate', 'compliance_rate', 'stripe_rate', 'stripe_fixed_fee'] as $key) {
                 if (isset($rateOverride[$key]) && is_numeric($rateOverride[$key])) {
                     $profile[$key] = (float) $rateOverride[$key];
                 }
@@ -733,6 +792,10 @@ class Helpers
             // admin can read a fee back as a percentage rather than a bare figure.
             'platform_fee_rate' => round($platformFeeRate * 100, 2),
             'compliance_fee_rate' => round($complianceFeeRate * 100, 2),
+            // Returned so the caller can persist them via feeRateColumns() and
+            // this charge can be re-costed later at its own estimate.
+            'stripe_fee_rate' => round($stripeFeeRate * 100, 3),
+            'stripe_fixed_fee' => round($stripeFixedFee, 2),
             'fee_source' => $profile['fee_source'] ?? 'standard',
             'fee_override_id' => $profile['fee_override_id'] ?? null,
             'listed_price' => round($listedPrice, $precision),
@@ -859,7 +922,11 @@ class Helpers
             if (isset($limits['guest_allowed']) && $limits['guest_allowed'] === false) {
                 return [
                     'code' => 'GUEST_CHECKOUT_DISABLED',
-                    'message' => 'Guest checkout is disabled. Please log in.',
+                    // Wording lives in RiskMessages, never here. This refusal is
+                    // raised from six call sites and was worded three different
+                    // ways between them and the frontend copies of it.
+                    'message' => RiskMessages::get('GUEST_ACCOUNT_REQUIRED', RiskMessages::AUDIENCE_GUEST)['body'],
+                    'ui' => RiskMessages::get('GUEST_ACCOUNT_REQUIRED', RiskMessages::AUDIENCE_GUEST),
                 ];
             }
         } catch (\Throwable $e) {
@@ -871,9 +938,15 @@ class Helpers
 
         $convertedGbp = self::priceFormat($currency, $amount, 'GBP');
         if ($convertedGbp > $thresholdGbp) {
+            $ui = RiskMessages::get('GUEST_ACCOUNT_REQUIRED_VALUE', RiskMessages::AUDIENCE_GUEST);
+
             return [
                 'code' => 'HIGH_VALUE_GUEST',
-                'message' => 'Larger payments more than £50 need to login.',
+                // ⚠️ The old wording here was "Larger payments more than £50
+                // need to login." — it printed the exact threshold, which is
+                // the one thing the brief forbids outright.
+                'message' => $ui['body'],
+                'ui' => $ui,
             ];
         }
 

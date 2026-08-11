@@ -12,15 +12,29 @@ import useIsMobile from "@/Components/animations/useIsMobile";
  * Copy uses content/support language to stay aligned with Stripe content rules.
  */
 
-const PURPLE = "#8C52FF";
+const PURPLE = "#924DFF";
 const PINK = "#FF007F";
 
 // z = depth (px, + = toward viewer), ry = yaw toward centre, blur/dim = depth-of-field
+//
+// 🚨 THESE MUST BE THINGS THE PLATFORM ACTUALLY SELLS. Until 10 Aug 2026 the four
+// product cards were AirPods Max £499, Stanley Tumbler £49.99, iPhone 16 Pro
+// £1,200 and Ninja Slushie £349.99 — store goods for the "anything from any
+// store, delivered to your door" wishlist, which is not built and is not
+// scheduled until 2027. They are also brand names, which
+// `App\Rules\NoExpenseOrBrandName` REJECTS on a real listing: the homepage's most
+// animated element was modelling a listing the platform's own validation refuses.
+//
+// ⚠️ It hid from a text sweep because the fan is 3D-transformed and lazy-loaded
+// below the fold. Grep the source, not the rendered page, when clearing copy.
+//
+// Prices stay inside the real per-feature limits (`Helpers::priceWithinLimits`):
+// min £4.99 everywhere, £500 wish, £100/mo membership, £10,000 paid task.
 const CARDS = [
     { z: -120, ry: 24, top: "42%", left: "5%", blur: 0.9, dim: 0.84, dur: "6.5s", delay: "0s",
-      render: () => <ProductCard emoji="🎧" tag="Added by 1,200 creators" title="AirPods Max" price="£499.00" cta="Add to wishlist" accent={PURPLE} /> },
+      render: () => <ProductCard emoji="📸" tag="Added by 1,200 creators" title="Photo set" price="£25.00" cta="Add to page" accent={PURPLE} /> },
     { z: -55, ry: 16, top: "50%", left: "20%", blur: 0.4, dim: 0.93, dur: "7.5s", delay: "0.5s",
-      render: () => <ProductCard emoji="🥤" tag="Trending this week" title="Stanley Tumbler" price="£49.99" cta="Add to wishlist" accent={PINK} /> },
+      render: () => <ProductCard emoji="🎬" tag="Trending this week" title="Custom video" price="£75.00" cta="Add to page" accent={PINK} /> },
     { z: 30, ry: 8, top: "55%", left: "35%", blur: 0, dim: 1, dur: "6s", delay: "1s",
       render: () => <ShareCard handle="spennypiggy.co/justjack" /> },
     { z: 95, ry: 0, top: "57%", left: "50%", blur: 0, dim: 1, dur: "5.5s", delay: "0.2s",
@@ -28,9 +42,9 @@ const CARDS = [
     { z: 30, ry: -8, top: "55%", left: "65%", blur: 0, dim: 1, dur: "6.8s", delay: "0.8s",
       render: () => <SupportCard handle="@legitjustjack" amount="£1,000.00" /> },
     { z: -55, ry: -16, top: "50%", left: "80%", blur: 0.4, dim: 0.93, dur: "7.2s", delay: "1.3s",
-      render: () => <ProductCard emoji="📱" tag="Most requested" title="iPhone 16 Pro" price="£1,200.00" cta="Add to wishlist" accent={PURPLE} /> },
+      render: () => <ProductCard emoji="💎" tag="Most requested" title="Gold tier" price="£15.00" cta="Add to page" accent={PURPLE} /> },
     { z: -120, ry: -24, top: "42%", left: "95%", blur: 0.9, dim: 0.84, dur: "6.3s", delay: "0.4s",
-      render: () => <ProductCard emoji="🍧" tag="Added by 3,000 creators" title="Ninja Slushie" price="£349.99" cta="Add to wishlist" accent={PINK} /> },
+      render: () => <ProductCard emoji="🎧" tag="Added by 3,000 creators" title="Voice note" price="£10.00" cta="Add to page" accent={PINK} /> },
 ];
 
 export default function WishlistShowcase() {
@@ -98,17 +112,27 @@ function Shell({ children, className = "", accent = PINK }) {
     );
 }
 
-// glossy highlight + uppercase CTA with a trailing glyph
+/**
+ * 🚨 NOT A BUTTON — same rule as `WishlistPreview`'s CTA. This whole fan is an
+ * illustration (`role="list"`, "Example wishlist and supporter activity"), and
+ * these were five real `<button>` elements with no `onClick`: five phantom tab
+ * stops announced as buttons that did nothing. A keyboard user reached them and
+ * a screen-reader user was offered them.
+ *
+ * Glossy highlight + uppercase label with a trailing glyph. Do not turn it back
+ * into a button to "fix" the styling.
+ */
 function GlossButton({ children, glyph, accent }) {
     return (
-        <button
+        <span
+            aria-hidden="true"
             className="relative mt-auto w-full min-h-[44px] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
             style={{ background: accent }}
         >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>
             <span className="relative">{glyph}</span>
-        </button>
+        </span>
     );
 }
 
@@ -129,10 +153,17 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
                 <span className="absolute top-1.5 right-2 text-[11px] opacity-70 select-none" aria-hidden>✨</span>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wide text-white/45">
+            {/* `white/45` is 4.43:1 — a marginal AA fail, and this is 9.5px type,
+                which gets no small-print exemption. */}
+            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wide text-white/70">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }}></span>{tag}
             </span>
-            <h4 className="font-gulfs uppercase text-[14px] leading-tight text-white mt-1">{title}</h4>
+            {/* ⚠️ Was an <h4> directly under LiveBarSection's <h2> — a two-level
+                skip in the document outline, which is what a screen-reader user
+                navigates by. These are invented product names inside an
+                illustration; they are not document structure and should not be
+                headings at all. Styling is unchanged. */}
+            <p className="font-gulfs uppercase text-[14px] leading-tight text-white mt-1">{title}</p>
             <p className="font-black text-[18px] mt-1 mb-2.5" style={{ color: accent }}>{price}</p>
             <GlossButton glyph="→" accent={accent}>{cta}</GlossButton>
         </Shell>
@@ -158,7 +189,7 @@ function ThankYouCard() {
     return (
         <Shell accent={PURPLE}>
             <div className="flex items-start gap-2 mb-2.5">
-                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#8C52FF] to-[#FF007F]">JJ</span>
+                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
                 <p className="text-[11.5px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
                     <span className="font-black text-white">@legitjustjack</span> just supported your content! 🙌
                 </p>

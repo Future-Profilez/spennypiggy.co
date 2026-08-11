@@ -18,7 +18,14 @@ class StaticPageSeoMiddleware
         $url = url($request->path());
         $image = url('/og-image.png');
 
-        SeoMeta::setRobots('index,follow');
+        // ⚠️ A non-production host is never indexable, whatever the path rules
+        // below say. dev.spennypiggy.co served the same pages as production and
+        // was fully indexed. The meta tag alone is not enough — a link unfurler
+        // or a fetcher that never renders the markup only sees headers — so the
+        // response carries `X-Robots-Tag` as well, applied below.
+        $indexable = (bool) config('seo.indexable');
+
+        SeoMeta::setRobots($indexable ? 'index,follow' : 'noindex,nofollow,noarchive');
 
         // A page only belongs in the index if a stranger arriving from a search
         // result gets something useful. Everything below is either signed-in-only,
@@ -74,9 +81,13 @@ class StaticPageSeoMiddleware
         }
 
         $seoData = [
+            // ⚠️ Meta copy is a Stripe-facing surface — it is printed in search
+            // results and social cards, so the content-first ban list applies in
+            // full. Both of these said "tips" until 10 Aug 2026, which is the one
+            // word the platform renamed a whole feature to avoid.
             '/' => [
-                'title' => 'Spenny Piggy — Creator Monetisation Platform 🐷 Memberships, Wishlists & Tips',
-                'description' => 'Creator monetisation done right. Memberships, wishlists, paid tasks and tips in one place. Set your price — supporters cover platform fees. UK, US & global. 🐷',
+                'title' => 'Spenny Piggy — Creator Monetisation Platform 🐷 Content, Memberships & Paid Requests',
+                'description' => 'Creator monetisation done right. Sell content, memberships, paid requests and your own products in one place. Set your price — supporters cover platform fees. UK, US & global. 🐷',
             ],
             'register' => [
                 'title' => 'Sign Up as a Creator on Spenny Piggy — Free in 5 Minutes',
@@ -91,8 +102,8 @@ class StaticPageSeoMiddleware
                 'description' => 'Set your price, supporters cover platform fees at checkout. No hidden costs, no surprises. See exactly how Spenny Piggy pricing works for creators.',
             ],
             'features' => [
-                'title' => 'Spenny Piggy Features — Memberships, Wishlists, Paid Tasks & Tips',
-                'description' => 'Everything creators need to monetise: memberships, wishlists, paid tasks, tips, fraud protection, and real human support. All in one platform.',
+                'title' => 'Spenny Piggy Features — Memberships, Wishlists, Paid Tasks & Piggy Bank',
+                'description' => 'Everything creators need to monetise: memberships, wishlists, paid tasks, exclusive content, fraud protection, and real human support. All in one platform.',
             ],
             'about' => [
                 'title' => 'About Spenny Piggy — Built for Serious Creators 🐷',
@@ -152,7 +163,7 @@ class StaticPageSeoMiddleware
             ],
             'creators' => [
                 'title' => 'Monetise Your Content with Spenny Piggy — Built for Creators 🐷',
-                'description' => 'Join Spenny Piggy to start earning from your content. Offer memberships, wishlists, paid tasks, and tips. Set your price, keep your earnings, and let supporters cover the fees.',
+                'description' => 'Join Spenny Piggy to start earning from your content. Offer memberships, wishlists, paid tasks, and exclusive content. Set your price, keep your earnings, and let supporters cover the fees.',
             ],
             'creators/stripe-safe' => [
                 'title' => 'Stripe Safe Payments for Creators — Spenny Piggy',
@@ -164,7 +175,7 @@ class StaticPageSeoMiddleware
             ],
             'creators/features' => [
                 'title' => 'Creator Features — Memberships, Wishlists & Paid Tasks 🐷',
-                'description' => 'Discover all the tools Spenny Piggy offers to grow your income. From monthly memberships and custom wishlists to paid tasks and one-off tips.',
+                'description' => 'Discover all the tools Spenny Piggy offers to grow your income. From monthly memberships and custom wishlists to paid tasks and one-off content sales.',
             ],
             'creators/disputes' => [
                 'title' => 'Chargeback & Dispute Protection for Creators — Spenny Piggy',
@@ -265,6 +276,15 @@ class StaticPageSeoMiddleware
             SeoMeta::addBreadcrumbJsonLd($breadcrumbs);
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // The header covers what the meta tag cannot: fetchers that read headers
+        // and never render the page. Set on the whole response, not per path,
+        // because on a non-production host nothing on it belongs in an index.
+        if (! $indexable && method_exists($response, 'header')) {
+            $response->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        }
+
+        return $response;
     }
 }

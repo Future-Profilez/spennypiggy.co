@@ -13,7 +13,7 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import SummaryReceipt, { PayButton, SectionLabel } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
 import axios from "axios";
-import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 
 export default function BillCheckout(props) {
     const {
@@ -84,8 +84,8 @@ export default function BillCheckout(props) {
         const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
+        const stripeFeeRate = STRIPE_FEE_RATE;
+        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
         // Per-creator: a creator on a bespoke platform rate must be QUOTED
         // what checkout will CHARGE them. The global props cannot express that.
         const __rates = feeRatesFor(creatorIdOf(bill), __pageProps);
