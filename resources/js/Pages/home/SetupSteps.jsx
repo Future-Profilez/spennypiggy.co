@@ -2,19 +2,23 @@ import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
 import TiltCard from '@/Components/animations/TiltCard';
 
-/* Chapter 01 — the "set up in minutes" promise, made concrete as 3 steps. */
+/* Chapter 01 — the "set up in minutes" promise, made concrete as 3 steps.
+ *
+ * ⚠️ Step 3 must never say "No fees, ever." It is not true — there is a platform
+ * fee and a monthly subscription — and an unqualified free claim is a Google Ads
+ * policy flag on a page that runs paid acquisition. The honest version is the
+ * stronger one anyway: the creator keeps 100% of the price they LISTED, because
+ * the supporter's total is grossed up at checkout to cover the fees. */
 const STEPS = [
-    { n: '1', emoji: '🎯', title: 'Add your items', text: 'Drop in anything from any store. Big or small, it all lives on one page.', accent: '#E6EA7B' },
+    { n: '1', emoji: '🎯', title: 'Add your items', text: 'List your content, your custom work, your products. Big or small, it all lives on one page.', accent: '#E6EA7B' },
     { n: '2', emoji: '🔗', title: 'Share your link', text: 'One link for your bio. Fans see exactly what you love.', accent: '#FF007F' },
-    { n: '3', emoji: '💸', title: 'Get paid', text: 'Secure, trackable income with protection built in. No fees, ever.', accent: '#05EFB8' },
+    { n: '3', emoji: '💸', title: 'Get paid', text: 'Secure, trackable income with protection built in. You keep 100% of your listed price — supporters cover the fees at checkout.', accent: '#05EFB8' },
 ];
 
 export default function SetupSteps() {
     return (
         <section className="relative bg-transparent py-12 md:py-28 overflow-hidden">
-            <div aria-hidden className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[420px] bg-[#FF007F] rounded-full blur-[170px] opacity-[0.14]"></div>
-            </div>
+            
 
             <div className="container relative z-10 px-4 mx-auto text-center">
                 <FadeIn y={20}>

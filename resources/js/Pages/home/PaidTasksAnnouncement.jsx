@@ -11,7 +11,6 @@ export default function PaidTasksAnnouncement() {
             <section
             className="relative bg-transparent py-12 md:py-28 px-4 overflow-x-hidden"
         >
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-[#FF007F] rounded-full blur-3xl opacity-10 pointer-events-none z-0"></div>
 
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">

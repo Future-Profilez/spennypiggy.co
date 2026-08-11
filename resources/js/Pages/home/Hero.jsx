@@ -6,7 +6,7 @@ import { RocketIcon, HouseIcon } from "@animateicons/react/lucide";
 import FadeIn from '@/Components/animations/FadeIn';
 import WordReveal from '@/Components/animations/WordReveal';
 import Magnetic from '@/Components/animations/Magnetic';
-import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
+import { PRICE_FORMATTED, SUBSCRIPTION_COPY, FREE_UNTIL_FIRST_SALE } from "@/constants/creatorSubscription";
 import {
   motion,
   AnimatePresence,
@@ -21,19 +21,36 @@ import {
 // box, price chip, heart badge, pink action pill. These USED to sit at 10%
 // opacity behind the headline; the redesign promotes them to full strength on
 // the right side of the split.
+//
+// ⚠️ These must show what the platform ACTUALLY sells. They previously showed
+// store goods (Sneakers £179, Gaming £479, Travel £650) — the "anything from any
+// store, delivered to your door" wishlist, which is not built. Prices stay inside
+// the real per-feature limits (`Helpers::priceWithinLimits`): min £4.99
+// everywhere, £500 wish, £100/mo membership, £10,000 paid task.
 const TILES = [
-  { emoji: "👟", label: "Sneakers", price: "£179", bg: "#E6EA7B", dark: true,  pos: "left-0 top-2 md:top-4",          rot: "-rotate-6", z: "z-20", delay: 0.45 },
-  { emoji: "🎮", label: "Gaming",   price: "£479", bg: "#05EFB8", dark: false, pos: "right-0 top-24 md:top-28",       rot: "rotate-5",  z: "z-30", delay: 0.30 },
-  { emoji: "✈️", label: "Travel",   price: "£650", bg: "#05EFB8", dark: true,  pos: "left-6 bottom-2 md:left-10",     rot: "rotate-3",  z: "z-10", delay: 0.60 },
+  { emoji: "📸", label: "Photo set",    price: "£25",    bg: "#E6EA7B", dark: true,  pos: "left-0 top-2 md:top-4",    rot: "-rotate-6", z: "z-20", delay: 0.45 },
+  { emoji: "🎬", label: "Custom video", price: "£75",    bg: "#05EFB8", dark: false, pos: "right-0 top-24 md:top-28", rot: "rotate-5",  z: "z-30", delay: 0.30 },
+  { emoji: "💎", label: "Gold tier",    price: "£15/mo", bg: "#05EFB8", dark: true,  pos: "left-6 bottom-2 md:left-10", rot: "rotate-3", z: "z-10", delay: 0.60 },
 ];
 
 // Live "just unlocked" social proof — cycles through real catalogue items so the
 // hero demonstrates the product in motion instead of sitting static.
 const UNLOCKS = [
-  { name: "Mia R.",    item: "Sneakers", emoji: "👟" },
-  { name: "Jordan T.", item: "Gaming",   emoji: "🎮" },
-  { name: "Priya S.",  item: "Travel",   emoji: "✈️" },
-  { name: "Leah K.",   item: "Makeup",   emoji: "💄" },
+  { name: "Mia R.",    item: "Photo set",        emoji: "📸" },
+  { name: "Jordan T.", item: "Custom video",     emoji: "🎬" },
+  { name: "Priya S.",  item: "Gold tier",        emoji: "💎" },
+  { name: "Leah K.",   item: "Behind the scenes", emoji: "🎞️" },
+];
+
+// The four things a creator most needs to know before scrolling. The free-period
+// promise is a CONFIG SWITCH (`creator_subscription.free_until_first_sale`), not a
+// permanent fact — it drops out of the line rather than being retyped as a
+// constant, so the page cannot advertise it the day the policy is switched off.
+const TRUST_POINTS = [
+  ...(FREE_UNTIL_FIRST_SALE ? [SUBSCRIPTION_COPY.promise] : []),
+  "Strictly SFW",
+  "Paid every Friday",
+  "Every creator ID-verified",
 ];
 
 function UnlockToast({ reduceMotion }) {
@@ -242,8 +259,6 @@ export default function Hero({auth}) {
           {/* Single signature pink glow + faint violet floor light */}
           <motion.div style={{ y: reduceMotion ? 0 : blobsY }} className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
               <motion.div style={reduceMotion ? {} : { x: blobX, y: blobY }} className="absolute inset-0">
-                <div className="absolute top-[6%] right-[8%] w-[360px] md:w-[640px] h-[380px] bg-[#FF007F] rounded-full filter blur-[160px] opacity-25"></div>
-                <div className="absolute -bottom-24 left-[2%] w-80 h-80 bg-[#05EFB8] rounded-full filter blur-[150px] opacity-[0.18]"></div>
               </motion.div>
           </motion.div>
 
@@ -325,16 +340,23 @@ export default function Hero({auth}) {
                     {/* The promise, not a footnote. "No charge until your first
                         sale" is the single strongest thing this page can say to a
                         creator, and it spent its life set in 11px grey under the
-                        fold as an asterisk. */}
-                    <p className="flex items-center justify-center lg:justify-start gap-2 text-center lg:text-left max-w-[520px] font-gulfs uppercase tracking-[0.12em] text-[13px] xl:text-[15px] text-white">
-                      <span aria-hidden="true" className="inline-block w-2 h-2 rounded-full bg-[#05EFB8] flex-shrink-0"></span>
-                      {SUBSCRIPTION_COPY.promise}
-                    </p>
+                        fold as an asterisk. It now sits alongside the other three
+                        facts a creator weighs before signing up. */}
+                    <ul className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 max-w-[560px] font-gulfs uppercase tracking-[0.1em] text-[12px] xl:text-[14px] text-white">
+                      {TRUST_POINTS.map((point) => (
+                        <li key={point} className="flex items-center gap-2">
+                          <span aria-hidden="true" className="inline-block w-1.5 h-1.5 rounded-full bg-[#05EFB8] flex-shrink-0"></span>
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
 
                     <TrustBox />
 
                     <p className="uppercase text-center lg:text-left max-w-[520px] text-gray-400 font-poppins text-[11px] xl:text-[12px] tracking-wider">
-                      *{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs.
+                      {FREE_UNTIL_FIRST_SALE
+                        ? <>*{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs.</>
+                        : <>*A monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs. No commission on your sales.</>}
                     </p>
                   </div>
                 </FadeIn>

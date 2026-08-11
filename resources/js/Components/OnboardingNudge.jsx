@@ -66,7 +66,7 @@ export default function OnboardingNudge() {
     );
 
     return (
-        <div className={waiting ? "bg-neutral-800 text-white" : "bg-[#FF007F] text-white"}>
+        <div className={waiting ? "bg-neutral-800 text-white" : "bg-green-500 text-white"}>
             <div className="containerbox mx-auto flex items-center justify-between gap-3 px-4 py-2">
                 {href ? <Link href={href}>{Body}</Link> : Body}
                 <button

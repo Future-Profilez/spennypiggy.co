@@ -697,7 +697,10 @@ Route::get('/new-service-worker.js', function () {
 
 Route::get('/site.webmanifest', function () {
     $assetRoot = rtrim(asset('/'), '/');
-    $content = file_get_contents(resource_path('proxy/site.webmanifest.json'));
+    // ⚠️ The file is `site.webmanifest`, with no extension. This read asked for
+    // `site.webmanifest.json`, so the route answered 500 on every request —
+    // silently, because nothing renders a manifest failure.
+    $content = file_get_contents(resource_path('proxy/site.webmanifest'));
     $content = Str::replace('[ASSET_ROOT]', $assetRoot, $content);
 
     return response($content, 200, [

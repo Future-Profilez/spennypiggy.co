@@ -16,11 +16,25 @@ const PURPLE = "#8C52FF";
 const PINK = "#FF007F";
 
 // z = depth (px, + = toward viewer), ry = yaw toward centre, blur/dim = depth-of-field
+//
+// 🚨 THESE MUST BE THINGS THE PLATFORM ACTUALLY SELLS. Until 10 Aug 2026 the four
+// product cards were AirPods Max £499, Stanley Tumbler £49.99, iPhone 16 Pro
+// £1,200 and Ninja Slushie £349.99 — store goods for the "anything from any
+// store, delivered to your door" wishlist, which is not built and is not
+// scheduled until 2027. They are also brand names, which
+// `App\Rules\NoExpenseOrBrandName` REJECTS on a real listing: the homepage's most
+// animated element was modelling a listing the platform's own validation refuses.
+//
+// ⚠️ It hid from a text sweep because the fan is 3D-transformed and lazy-loaded
+// below the fold. Grep the source, not the rendered page, when clearing copy.
+//
+// Prices stay inside the real per-feature limits (`Helpers::priceWithinLimits`):
+// min £4.99 everywhere, £500 wish, £100/mo membership, £10,000 paid task.
 const CARDS = [
     { z: -120, ry: 24, top: "42%", left: "5%", blur: 0.9, dim: 0.84, dur: "6.5s", delay: "0s",
-      render: () => <ProductCard emoji="🎧" tag="Added by 1,200 creators" title="AirPods Max" price="£499.00" cta="Add to wishlist" accent={PURPLE} /> },
+      render: () => <ProductCard emoji="📸" tag="Added by 1,200 creators" title="Photo set" price="£25.00" cta="Add to page" accent={PURPLE} /> },
     { z: -55, ry: 16, top: "50%", left: "20%", blur: 0.4, dim: 0.93, dur: "7.5s", delay: "0.5s",
-      render: () => <ProductCard emoji="🥤" tag="Trending this week" title="Stanley Tumbler" price="£49.99" cta="Add to wishlist" accent={PINK} /> },
+      render: () => <ProductCard emoji="🎬" tag="Trending this week" title="Custom video" price="£75.00" cta="Add to page" accent={PINK} /> },
     { z: 30, ry: 8, top: "55%", left: "35%", blur: 0, dim: 1, dur: "6s", delay: "1s",
       render: () => <ShareCard handle="spennypiggy.co/justjack" /> },
     { z: 95, ry: 0, top: "57%", left: "50%", blur: 0, dim: 1, dur: "5.5s", delay: "0.2s",
@@ -28,9 +42,9 @@ const CARDS = [
     { z: 30, ry: -8, top: "55%", left: "65%", blur: 0, dim: 1, dur: "6.8s", delay: "0.8s",
       render: () => <SupportCard handle="@legitjustjack" amount="£1,000.00" /> },
     { z: -55, ry: -16, top: "50%", left: "80%", blur: 0.4, dim: 0.93, dur: "7.2s", delay: "1.3s",
-      render: () => <ProductCard emoji="📱" tag="Most requested" title="iPhone 16 Pro" price="£1,200.00" cta="Add to wishlist" accent={PURPLE} /> },
+      render: () => <ProductCard emoji="💎" tag="Most requested" title="Gold tier" price="£15.00" cta="Add to page" accent={PURPLE} /> },
     { z: -120, ry: -24, top: "42%", left: "95%", blur: 0.9, dim: 0.84, dur: "6.3s", delay: "0.4s",
-      render: () => <ProductCard emoji="🍧" tag="Added by 3,000 creators" title="Ninja Slushie" price="£349.99" cta="Add to wishlist" accent={PINK} /> },
+      render: () => <ProductCard emoji="🎧" tag="Added by 3,000 creators" title="Voice note" price="£10.00" cta="Add to page" accent={PINK} /> },
 ];
 
 export default function WishlistShowcase() {

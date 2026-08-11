@@ -106,10 +106,12 @@ const CustomNotificationItem = ({ notification }) => {
   return (
     <div className={`p-4 mb-3 rounded-[20px] relative border transition-all mx-3 mt-2 group ${
       isUnread ? 'bg-white border-pink-100 shadow-sm' : 'bg-[#F8F9FA] border-gray-100'
-    } hover:shadow-md hover:border-pink-200`}>
+    } hover:shadow-md hover:border-pink-200 `}>
       <div className="flex items-start gap-3">
         {/* Unread Indicator */}
+        ajhf
         {isUnread && (
+
           <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#FF007F] rounded-full border-2 border-white shadow-[0_0_8px_rgba(249,79,150,0.6)] z-10" />
         )}
         

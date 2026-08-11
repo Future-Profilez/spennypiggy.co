@@ -1,37 +1,72 @@
 {
-    "theme_color": "#A2E4B8", 
-    "background_color": "#000000", 
-    "display": "standalone", 
-    "orientation": "portrait", 
-    "scope": "/", 
-    "start_url": "/?source=pwa", 
-    "lang": "en", 
-    "dir": "ltr", 
-    "categories": ["social", "entertainment"], 
-    "prefer_related_applications": false, 
-    "name": "Spenny Piggy - Exclusive Content, Memberships & Creator Support",
-    "short_name": "Spenny Piggy", 
-    "description":"Join Memberships, adopt bills & more. Safe for Creators who receive 100% payouts!", 
-    "shortcuts": [ 
-      { 
-        "name": "Wallet", 
-        "short_name": "Wallet", 
-        "description": "View your wallet and transactions", 
-        "url": "/wallet", 
-        "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"}] 
-      }, 
-      { 
-        "name": "Discover", 
-        "short_name": "Discover", 
-        "description": "Discover new creators and items", 
-        "url": "/discover", 
-        "icons": [{"src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"}] 
-      }
+    "theme_color": "#FF007F",
+    "background_color": "#0B0413",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/?source=pwa",
+    "lang": "en",
+    "dir": "ltr",
+    "categories": [
+        "social",
+        "entertainment"
     ],
-    "icons": [ 
-        {"src":"/favicon-16x16.png","sizes":"16x16","type":"image/png","purpose":"any"}, 
-        {"src":"/favicon-32x32.png","sizes":"32x32","type":"image/png","purpose":"any"}, 
-        {"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"}, 
-        {"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"} 
+    "prefer_related_applications": false,
+    "name": "Spenny Piggy - Exclusive Content, Memberships & Creator Support",
+    "short_name": "Spenny Piggy",
+    "description": "Join Memberships, adopt bills & more. Safe for Creators who receive 100% payouts!",
+    "shortcuts": [
+        {
+            "name": "Wallet",
+            "short_name": "Wallet",
+            "description": "View your wallet and transactions",
+            "url": "/wallet",
+            "icons": [
+                {
+                    "src": "/android-chrome-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Discover",
+            "short_name": "Discover",
+            "description": "Discover new creators and items",
+            "url": "/discover",
+            "icons": [
+                {
+                    "src": "/android-chrome-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "icons": [
+        {
+            "src": "/favicon-16x16.png",
+            "sizes": "16x16",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-32x32.png",
+            "sizes": "32x32",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
     ]
-} 
+}

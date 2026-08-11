@@ -13,19 +13,21 @@ import WishlistPreview from "./WishlistPreview";
 const FEATURES = [
     {
         variant: "wishlist",
+        // ⚠️ This sold the store-item wishlist ("any online store… delivered to
+        // you"), which is not built. Everything named here is a live product.
         eyebrow: "The Wishlist",
         title: "Add anything you want",
-        desc: "Drop a link to anything from any store. Fans unlock the items you actually want, delivered to your door.",
+        desc: "Build one page with everything you offer — exclusive content, custom requests, memberships, your own products. Supporters unlock what they want, you get paid for it.",
         accent: "#E6EA7B",
-        bullets: ["Any online store", "No setup, no fees", "Delivered to you"],
+        bullets: ["Content, custom work or products", "Set your own prices", "No commission on your sales"],
     },
     {
         variant: "gifts",
         eyebrow: "From your fans",
         title: "Watch support roll in",
-        desc: "A live feed of everything your supporters buy. Secure, trackable, and 100% yours to keep.",
+        desc: "A live feed of everything your supporters buy. Secure, trackable, and 100% yours to keep — then say thank you without leaving the page.",
         accent: "#FF007F",
-        bullets: ["Live updates", "Keep 100%", "Chargeback protection"],
+        bullets: ["Live updates", "Keep 100%", "Post a thank-you in one tap"],
     },
     {
         variant: "shop",

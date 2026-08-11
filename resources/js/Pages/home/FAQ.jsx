@@ -2,24 +2,74 @@ import { Disclosure, Transition } from '@headlessui/react';
 import { ChevronUpIcon } from '@heroicons/react/20/solid';
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
+import { PRICE_FORMATTED, FREE_UNTIL_FIRST_SALE, SUBSCRIPTION_COPY } from '@/constants/creatorSubscription';
+import { STABLECOIN_TIPS_ANNOUNCED, STABLECOIN_TIPS_LIVE } from '@/constants/stablecoinTips';
 
+/**
+ * ⚠️ THIS IS A PUBLIC STATEMENT OF PRICING AND PAYOUT TERMS. The version it
+ * replaced said "service fee, starting at just 8%", "£29.99 per month", and a
+ * "2-day roll" / "7-day roll" payout timing — none of which have been true for a
+ * long time, all of it published, and all of it findable in search.
+ *
+ * ⚠️ The price and the free-period promise are READ FROM CONFIG, never retyped.
+ * The free period is a switch (`creator_subscription.free_until_first_sale`), so
+ * the answer branches on it rather than asserting it.
+ *
+ * ⚠️ Stablecoin Tips is ANNOUNCED, NOT BUILT. Its sentences are gated on the
+ * announcement flag and are written in future tense until the feature is live.
+ * They deliberately do NOT claim it settles faster than the weekly payout run —
+ * the agreed specification says Coinflow payouts should follow the normal Friday
+ * rhythm where practical, and whether that is even supported is unconfirmed.
+ */
 export default function FAQ() {
-  const faqs =[
+  const costAnswer = FREE_UNTIL_FIRST_SALE
+    ? `Nothing until your first sale. After that it's ${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`
+    : `${PRICE_FORMATTED} + VAT a month — flat, whatever you earn, cancel any time. There's no commission on your sales. Supporters cover the platform fee at checkout and see the full total before they pay.`;
+
+  const payoutAnswer = 'Every Friday. Your earnings run Friday to Thursday and go out the following Friday, usually landing in your bank on Monday. Paid straight into your own Stripe account, in your name.'
+    + (STABLECOIN_TIPS_ANNOUNCED
+      ? (STABLECOIN_TIPS_LIVE
+        ? ' Stablecoin Tips settle on their own rail, separately from your Stripe earnings.'
+        : ' Stablecoin Tips are coming, and will settle on their own rail, separately from your Stripe earnings.')
+      : '');
+
+  const currencyAnswer = 'You can set your display currency, and supporters can view prices in theirs. Bank payments are available across the UK, parts of Europe and the US, depending on the method.'
+    + (STABLECOIN_TIPS_ANNOUNCED ? ' Stablecoin Tips are in USDC.' : '');
+
+  const faqs = [
     {
       "title": "What is Spenny Piggy?",
-      "description": "Spenny Piggy is your one-stop party platform for every type of creator out there! Get those financial love taps, whip up a wishlist, dish out free and exclusive goodies, and even roll out bespoke memberships and custom commissions. It's the ultimate creator playground! 🚀"
+      "description": "The Everything Wishlist — and a whole lot more. Sell exclusive content, run memberships, take custom requests, and sell your own products, all from one page and one link. You set your prices and you keep 100% of them."
+    },
+    {
+      // Second by design: the answer a creator and a payment reviewer both want,
+      // visible without expanding anything.
+      "title": "Is this a SFW platform?",
+      "description": "Yes — strictly, and it's actively enforced. No nudity, no explicit content, no exceptions. Every upload is reviewed by a real person before it goes live, and every creator is identity-verified with a passport before they can earn a penny. Adult creators are welcome here for their SFW work; what you do elsewhere is your business. It's also why our payments stay switched on when other creator platforms lose theirs."
     },
     {
       "title": "How do I get paid?",
-      "description": "Bag those bucks effortlessly with automatic Stripe payments! Your payment dashboard lets you be the money maestro, changing payout details on a whim. Initial payouts may take 7-14 days but are usually quick. In the United States/Aus, it's a snappy 2-day roll—charge Monday, party Wednesday. UK/European pals, enjoy a slick 7-day roll—the Monday magic. Keep in mind, payout dates may change based on your account status. If in doubt, reach out to Stripe and us for help! 💰"
+      "description": payoutAnswer
     },
     {
       "title": "How much does it cost?",
-      "description": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
+      "description": costAnswer
     },
     {
       "title": "What currencies do you offer?",
-      "description": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
+      "description": currencyAnswer
+    },
+    {
+      "title": "Do I need a business to start?",
+      "description": "No. Most creators start as individuals and register once they approach their country's tax threshold. Your full earnings history is exportable whenever you need it."
+    },
+    {
+      "title": "How long does verification take?",
+      "description": "We review 11am–6pm, seven days a week. Most creators are live within a day or two."
+    },
+    {
+      "title": "Can I use this alongside other platforms?",
+      "description": "Yes. Nothing here is exclusive."
     }
   ];
 
@@ -29,11 +79,10 @@ export default function FAQ() {
       id={`faq`}
       className='bg-transparent py-12 md:py-28 relative'
     >
-      {/* Decorative Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-[#FF007F] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-float-delayed"></div>
-      </div>
+      {/* No ambient orbs here. `PageCanvas` is the page's one light source —
+      a per-section orb bloomed where its section was and faded before
+      the next, which is what made scrolling read as a row of coloured
+      stops instead of one continuous field. */}
 
       <div className='containerbox relative  ' >
           <FadeIn y={30} duration={0.6}>

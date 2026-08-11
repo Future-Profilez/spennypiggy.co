@@ -23,8 +23,6 @@ export default function PayByBankAnnouncement() {
             className="bg-transparent py-12 md:py-28 px-4 relative overflow-x-hidden"
         >
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                <div className="absolute top-10 right-10 w-40 h-40 bg-[#A2E4B8] rounded-full mix-blend-screen filter blur-2xl opacity-25 floating-shape"></div>
-                <div className="absolute -bottom-10 left-1/4 w-64 h-64 bg-[#FF007F] rounded-full mix-blend-screen filter blur-2xl opacity-20 floating-shape" style={{ animationDelay: '2s' }}></div>
             </div>
 
             <div className="max-w-5xl mx-auto relative z-10">

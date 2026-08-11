@@ -9,6 +9,7 @@ import bottomImg from "../../assets/new/joinBottomImage.png";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
+import { FREE_UNTIL_FIRST_SALE, SUBSCRIPTION_COPY } from '@/constants/creatorSubscription';
 
 export default function JoinUs() {
     return (
@@ -41,18 +42,22 @@ export default function JoinUs() {
                     >
                         What are you waiting for?
                     </h2>
+                    {/* ⚠️ "get showered with gifts" was the old gifting framing.
+                        Every user-facing surface reads as a purchase of creator
+                        content, and this is the loudest one on the site. The
+                        free-period line is a config switch, not a fact — see
+                        `constants/creatorSubscription`. */}
                     <p
-                        
-                        className="mb-4 sm:mb-16 text-center text-wh !text-base font-poppins"
+
+                        className="mb-4 sm:mb-12 text-center text-wh !text-base font-poppins"
                     >
-                        Build your Wishlist, share it with your fans, and get
-                        showered with gifts—no waiting, no hassle, just pure
-                        love!
+                        Build your Wishlist, share it with your fans, and get paid properly
+                        for what you make.{FREE_UNTIL_FIRST_SALE ? ` ${SUBSCRIPTION_COPY.promise}.` : ''}
                     </p>
 
                     <div
-                        
-                        className="text-center flex items-center justify-center content-center w-full"
+
+                        className="text-center flex flex-col items-center justify-center content-center w-full"
                     >
                         <Link
                             href={route("register")}
@@ -60,6 +65,9 @@ export default function JoinUs() {
                         >
                             Join the Spenny Piggy party!{" "}
                         </Link>
+                        <p className="text-center text-white/80 font-poppins text-xs sm:text-sm mb-4">
+                            No commission. No hidden fees. No nudes. 🐷
+                        </p>
                     </div>
                 </div>
                 </FadeIn>

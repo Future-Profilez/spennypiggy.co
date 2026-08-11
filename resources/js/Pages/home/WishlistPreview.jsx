@@ -33,12 +33,18 @@ function CTA({ children, glyph }) {
     );
 }
 
-/* 1 — Wishlist: add dream items + share (Option A — progress + dream-total meta) */
+/* 1 — Wishlist: list what you sell + share (progress + listed-total meta)
+ *
+ * ⚠️ The items are what the platform ACTUALLY sells. They were branded store
+ * goods (AirPods Max, Stanley Tumbler, iPhone 16 Pro) — which is both the unbuilt
+ * store wishlist and, separately, wording `App\Rules\NoExpenseOrBrandName` would
+ * reject on a real listing. The homepage must not model a listing the platform's
+ * own validation refuses. */
 function WishlistMock() {
     const items = [
-        { e: "🎧", n: "AirPods Max", p: "£499", tint: PURPLE, done: true },
-        { e: "🥤", n: "Stanley Tumbler", p: "£49", tint: PINK, done: true },
-        { e: "📱", n: "iPhone 16 Pro", p: "£1,200", tint: YELLOW, done: false },
+        { e: "📸", n: "Photo set", p: "£25", tint: PURPLE, done: true },
+        { e: "🎬", n: "Custom video", p: "£75", tint: PINK, done: true },
+        { e: "💎", n: "Gold tier", p: "£15", tint: YELLOW, done: false },
     ];
     const inCount = items.filter((it) => it.done).length;
     const pct = Math.round((inCount / items.length) * 100);
@@ -48,7 +54,7 @@ function WishlistMock() {
                 <Avatar />
                 <div className="leading-tight min-w-0">
                     <p className="font-gulfs uppercase text-[13px] text-black">@justjack</p>
-                    <p className="text-[9.5px] font-bold uppercase text-gray-500 truncate">3 items · £1,748 dream list</p>
+                    <p className="text-[9.5px] font-bold uppercase text-gray-500 truncate">3 items · £115 listed</p>
                 </div>
                 <span className="ml-auto text-[11px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: TEAL }}>Share</span>
             </div>
@@ -57,7 +63,7 @@ function WishlistMock() {
                 <div className="flex-1 h-2.5 rounded-full border-2 border-black bg-gray-100 overflow-hidden">
                     <div className="h-full rounded-r-full" style={{ width: `${pct}%`, background: TEAL }}></div>
                 </div>
-                <span className="text-[11px] font-black uppercase whitespace-nowrap">{inCount}/{items.length} in</span>
+                <span className="text-[11px] font-black uppercase whitespace-nowrap">{inCount}/{items.length} sold</span>
             </div>
             <div className="space-y-2">
                 {items.map((it, i) => (
@@ -65,7 +71,7 @@ function WishlistMock() {
                         <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black flex items-center justify-center text-base" style={{ background: `${it.tint}33` }}>{it.e}</span>
                         <span className="text-[11.5px] font-black uppercase text-black flex-1 min-w-0 truncate">{it.n}</span>
                         <span className="font-black text-[11px] text-[#FF007F]">{it.p}</span>
-                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: TEAL } : undefined}>{it.done ? "✓" : ""}</span>
+                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: TEAL } : undefined} title={it.done ? "Sold" : "Not sold yet"}>{it.done ? "✓" : ""}</span>
                     </div>
                 ))}
                 <div className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-300 rounded-[12px] py-2 text-[11px] font-black uppercase text-gray-400">＋ Add item</div>
@@ -77,9 +83,11 @@ function WishlistMock() {
 
 /* 2 — Gifts: activity feed led by a weekly total */
 function GiftsMock() {
+    // ⚠️ "sent" reads as a gift, which is banned framing on every user-facing
+    // surface — every line here is a purchase of creator content.
     const feed = [
-        { e: "🎧", who: "@jack", what: "sent AirPods", p: "£499" },
-        { e: "🥤", who: "@mia", what: "sent a Stanley", p: "£49" },
+        { e: "📸", who: "@jack", what: "unlocked Photo set", p: "£25" },
+        { e: "💎", who: "@mia", what: "joined Gold tier", p: "£15" },
     ];
     return (
         <Frame>
@@ -94,7 +102,7 @@ function GiftsMock() {
             <div className="rounded-[14px] border-[3px] border-black p-3 mb-3" style={{ background: `linear-gradient(135deg, ${PINK}, #c4006a)` }}>
                 <p className="text-[11px] font-black uppercase tracking-wide text-white/80">This week from fans</p>
                 <p className="font-gulfs text-[26px] leading-none text-white mt-0.5">£1,548</p>
-                <p className="text-[11px] font-bold uppercase text-white/85 mt-1">🎉 12 items sent from any store</p>
+                <p className="text-[11px] font-bold uppercase text-white/85 mt-1">🎉 12 unlocks this week</p>
             </div>
             <div className="space-y-1.5">
                 {feed.map((f, i) => (

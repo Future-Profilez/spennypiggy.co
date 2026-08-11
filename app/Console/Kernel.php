@@ -192,8 +192,17 @@ class Kernel extends ConsoleKernel
 
         // Daily job to process founder payouts (only picks bonuses whose
         // estimated_payout_date has arrived, so cadence is safe)
+        //
+        // 10:03, not 10:00. Every scheduled command due in one minute runs
+        // sequentially inside a SINGLE schedule:run invocation, and on Vapor that
+        // invocation dies at `cli-timeout`. Minute :00 already carries six hourly
+        // commands plus every */5, */10 and */15 tick, so anything added there is
+        // queueing behind all of them. Verified in CloudWatch on 7 Aug 2026: the
+        // 10:00 invocation was killed at exactly 120,000 ms on BOTH production and
+        // development, and — because output is only flushed when the invocation
+        // ends — that minute logged nothing at all.
         $schedule->job(new ProcessFounderPayouts)
-            ->dailyAt('10:00')
+            ->dailyAt('10:03')
             ->withoutOverlapping(30);
 
         $schedule->job(new ProcessFounderMonthlyBonuses)
@@ -335,9 +344,19 @@ class Kernel extends ConsoleKernel
             ->everyThreeHours()
             ->withoutOverlapping(10);
 
-        // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
+        // Risk Engine: Weekly Payout Run (Fridays)
+        //
+        // 10:07, not 10:00 — see the note on ProcessFounderPayouts above. This is
+        // the command that exposed the problem: on 7 Aug 2026 the 10:00 invocation
+        // was killed at the Lambda timeout on both environments, so the run never
+        // started and left no trace, which reads exactly like a scheduler that
+        // never fired. It is also the longest-running command in the schedule (a
+        // Stripe round trip per creator), so it must not share a minute with the
+        // hourly pile-up.
+        //
+        // Both halves matter: the quiet minute, and cli-timeout in vapor.yml.
         $schedule->command('payout:run-weekly')
-            ->weeklyOn(5, '10:00')
+            ->weeklyOn(5, '10:07')
             ->withoutOverlapping();
 
         // Risk Engine: Release held reserves 30 days after each transaction (daily)

@@ -3,56 +3,24 @@ import { lazy, Suspense, useEffect } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
-import StackedCard from '@/Components/animations/StackedCard';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
-import WishlistPreview from './home/WishlistPreview';
-import { ChapterNav, ActIntro, Reveal, Parallax } from '@/Components/cinematic/Cinematic';
+import { ChapterNav, Reveal } from '@/Components/cinematic/Cinematic';
 import PageCanvas from '@/Components/cinematic/PageCanvas';
 
-const FUN_CARDS = [
-    {
-        variant: 'wishlist',
-        reverse: true,
-        bg: 'bg-[#EFEA7B]',
-        textcolor: 'text-black',
-        heading: 'Effortlessly add your dream items, share your page, and get going in minutes!',
-    },
-    {
-        variant: 'gifts',
-        reverse: false,
-        bg: 'bg-[#FF007F]',
-        textcolor: '',
-        heading: 'Let your fans unlock and buy the things on your list, from any store.',
-        story: [
-            { title: 'Pick anything', text: 'Add items from any store to your page — no catalogue, no limits.' },
-            { title: 'Fans unlock it', text: 'They buy the things you actually want, straight from your list.' },
-            { title: 'You get paid', text: 'Secure, trackable income with protection built in.' },
-        ],
-    },
-    {
-        variant: 'shop',
-        reverse: true,
-        bg: 'bg-[#EFEA7B]',
-        textcolor: 'text-black',
-        heading: "Build your profile shop — the creative way to sell anything that doesn't fit a regular store.",
-        story: [
-            { title: 'Open your shop', text: 'Digital or physical, services or one-offs — your rules.' },
-            { title: 'Price it your way', text: 'From a fiver to a feature drop, you set the number.' },
-            { title: 'Deliver and earn', text: 'Every sale tracks a deliverable, so payouts stay clean.' },
-        ],
-    },
-];
+// ⚠️ `FUN_CARDS` was removed here (10 Aug 2026). It was dead — declared, never
+// rendered — but carried the store-item copy the page is being cleared of
+// ("Let your fans unlock and buy the things on your list, from any store"),
+// which is both an unbuilt feature and wording `App\Rules\NoExpenseOrBrandName`
+// rejects on a real listing. Dead copy is the copy that gets pasted back in.
 
 // Lazy load components that are "below the fold"
 const ComingNext = lazy(() => import("./home/ComingNext"));
 const LiveBarSection = lazy(() => import("./home/LiveBarSection"));
 const ForCreators = lazy(() => import("./home/ForCreators"));
 const FunPart = lazy(() => import('./home/FunPart'));
-const WhyLove = lazy(() => import('./home/WhyLove'));
 const HappyCreators = lazy(() => import('./home/HappyCreators'));
 const FeatureSuggestionSection = lazy(() => import('./home/FeatureSuggestionSection'));
 const JoinUs = lazy(() => import('@/Components/JoinUs'));
-const NotForBusiness = lazy(() => import("./home/NotForBusiness"));
 const FAQ = lazy(() => import("./home/FAQ"));
 const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
 const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
@@ -65,13 +33,20 @@ const ReferEarnAnnouncement = lazy(() => import('./home/ReferEarnAnnouncement'))
 const CreatorShowcase = lazy(() => import('./home/CreatorShowcase'));
 const SetupSteps = lazy(() => import('./home/SetupSteps'));
 const FeatureShowcase = lazy(() => import('./home/FeatureShowcase'));
+const WaysToGetPaid = lazy(() => import('./home/WaysToGetPaid'));
+const PricingSection = lazy(() => import('./home/PricingSection'));
+const StablecoinTipsAnnouncement = lazy(() => import('./home/StablecoinTipsAnnouncement'));
 
 // Scroll-telling chapters for the fixed right-edge ChapterNav rail.
+//
+// ⚠️ Every id here must exist in the markup below. `act-build` was removed with
+// the section it wrapped ("How it works", the SECOND one — see `NotForBusiness`
+// in git history); leaving its entry would have left the rail with a stop that
+// scrolls nowhere, and `route:list`-style checks do not exist for anchors.
 const CHAPTERS = [
     { id: 'act-proof', label: 'Proof' },
     { id: 'act-earn', label: 'Earn' },
     { id: 'act-setup', label: 'Set up' },
-    { id: 'act-build', label: 'Build' },
     { id: 'act-love', label: 'Love' },
     { id: 'act-join', label: 'Join' },
 ];
@@ -123,10 +98,17 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             {/* One background for the whole page. Everything below it is transparent —
                 see PageCanvas: a section with its own background colour cuts the field
                 and reintroduces the seams this replaced. */}
+            {/* 🚨 OUTSIDE the `relative z-10` wrapper, deliberately. That wrapper
+                is a stacking context with z-index 10, so anything inside it — however
+                high its own z-index — competes with the fixed header (z-100) as
+                z-10 and loses. The bar carried z-110 and was still painted behind
+                the header at every scroll position, which is why it was never
+                visible. A z-index only ranks against siblings in its own context. */}
+            <ScrollProgressBar />
+
             <div className="relative">
             <PageCanvas />
             <div className="relative z-10">
-            <ScrollProgressBar />
             <LiveBar reps={15} classes={'blackbg barouter'}
                 livebartest={[
                     "🤑 Keep 100% of what you earn!",
@@ -165,32 +147,35 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     topEarnersLabel={topEarnersLabel}
                 />
 
-                {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ── */}
+                {/* ── Chapter 01 · Earn more — announcements enter as cinematic curtain reveals ──
+                    Order is the client's, 10 Aug 2026: the three bonus schemes read
+                    together (bonuses, then the referral bonus), pricing answers the
+                    question they raise, and the two payment rails sit side by side. */}
                 <div id="act-earn">
-                    <EarnMoreAnnouncement founderBonus={founderBonus} />
-                    <PayByBankAnnouncement />
                     <PaidTasksAnnouncement />
+                    <EarnMoreAnnouncement founderBonus={founderBonus} />
                     <ReferEarnAnnouncement />
+                    <PricingSection />
+                    <PayByBankAnnouncement />
+                    <StablecoinTipsAnnouncement />
                     {/* <FounderProgramAnnouncement founderBonus={founderBonus} /> */}
                 </div>
 
                 <LiveBarSection />
                 <PaymentSlider />
 
-                {/* ── Chapter 02 · Set up in minutes — sticky-stack story cards ── */}
+                {/* ── Chapter 02 · Set up in minutes — sticky-stack story cards ──
+                    The ways-to-earn rail sits between the three setup steps and the
+                    feature showcase: it is the answer to "paid for what, exactly?",
+                    which the steps raise and the showcase then demonstrates. */}
                 <div id="act-setup">
                     <SetupSteps />
+                    <WaysToGetPaid />
                     <FeatureShowcase />
-                </div>
-
-                {/* ── Chapter 04 · Build your world ── */}
-                <div id="act-build">
-                    <Parallax amount={50}><NotForBusiness /></Parallax>
                 </div>
 
                 {/* ── Chapter 05 · Why creators love it ── */}
                 <div id="act-love">
-                    <Reveal><WhyLove /></Reveal>
                     <Reveal delay={0.05}><HappyCreators /></Reveal>
                 </div>
 

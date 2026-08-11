@@ -12,9 +12,11 @@ export default function LiveBarSection() {
     <section
       className='bg-transparent pb-14 md:pb-24 relative overflow-hidden'
     >
-       {/* Decorative Background Elements */}
+       {/* No ambient orbs here. `PageCanvas` is the page's one light source —
+       a per-section orb bloomed where its section was and faded before
+       the next, which is what made scrolling read as a row of coloured
+       stops instead of one continuous field. */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#FF007F] rounded-full mix-blend-screen filter blur-[128px] opacity-20 floating-shape"></div>
         </div>
 
       <div className="relative container px-4 mx-auto pt-6 lg:pt-10">
@@ -34,8 +36,10 @@ export default function LiveBarSection() {
             <Parallax speed={-70} className="absolute right-[5%] top-[20%]">
               <span className="text-5xl inline-block rotate-12 opacity-80">💸</span>
             </Parallax>
+            {/* ⚠️ Was 🎁 — a literal gift box, which is the framing every
+                user-facing surface here is held away from. */}
             <Parallax speed={60} className="absolute right-[10%] bottom-[10%]">
-              <span className="text-5xl inline-block rotate-6 opacity-80">🎁</span>
+              <span className="text-5xl inline-block rotate-6 opacity-80">🔓</span>
             </Parallax>
           </div>
 
@@ -61,9 +65,14 @@ export default function LiveBarSection() {
               <Lightbox classes="block w-full" images={[{ src: spennys }]} text={<>
                 <div className="relative aspect-video cursor-pointer group overflow-hidden"
                      style={{ background: "radial-gradient(120% 120% at 50% 0%, #2a0f4a 0%, #14082a 45%, #0c0c14 100%)" }}>
-                    <span className="absolute top-6 left-8 text-3xl opacity-70 -rotate-12 select-none" aria-hidden>🎧</span>
-                    <span className="absolute top-10 right-10 text-3xl opacity-70 rotate-12 select-none" aria-hidden>📱</span>
-                    <span className="absolute bottom-10 left-12 text-3xl opacity-60 rotate-6 select-none" aria-hidden>🎁</span>
+                    {/* ⚠️ Content, not store goods. These were 🎧 📱 🎁 💸 — a
+                        literal gift box and two products from the "anything from
+                        any store" wishlist that is not built. The poster is the
+                        first thing on the section that explains what the platform
+                        IS, so it cannot illustrate something it does not do. */}
+                    <span className="absolute top-6 left-8 text-3xl opacity-70 -rotate-12 select-none" aria-hidden>📸</span>
+                    <span className="absolute top-10 right-10 text-3xl opacity-70 rotate-12 select-none" aria-hidden>🎬</span>
+                    <span className="absolute bottom-10 left-12 text-3xl opacity-60 rotate-6 select-none" aria-hidden>🔓</span>
                     <span className="absolute bottom-8 right-14 text-2xl opacity-60 -rotate-6 select-none" aria-hidden>💸</span>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                         <span className="relative flex items-center justify-center w-20 h-20">
