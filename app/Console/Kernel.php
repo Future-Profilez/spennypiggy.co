@@ -432,6 +432,15 @@ class Kernel extends ConsoleKernel
             ? $recovery->everyMinute()
             : $recovery->hourlyAt(20);
 
+        // A creator whose payouts an admin has paused was told nothing at all —
+        // their only signal was the money not arriving on Friday. Hourly rather
+        // than daily: `payout_paused_at` is written by the ADMIN app, so this
+        // sweep is the only thing that can observe it, and a day's silence about
+        // held money is a day of support tickets.
+        $schedule->command('payouts:notify-holds')
+            ->hourlyAt(25)
+            ->withoutOverlapping();
+
         // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence
         $schedule->command('app:enforce-posting-cadence')
             ->dailyAt('11:00')
