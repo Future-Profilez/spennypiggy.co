@@ -338,19 +338,6 @@ router.on('before', (event) => {
     }
 });
 
-// GA4 page views on Inertia navigation.
-// The gtag snippet only fires once, on the initial document load — this is an SPA,
-// so without this every page after the first is invisible and the property reports
-// one page view per session. No-ops when GA is not configured.
-router.on('navigate', () => {
-    if (typeof window.gtag !== 'function') return;
-    window.gtag('event', 'page_view', {
-        page_location: window.location.href,
-        page_path: window.location.pathname + window.location.search,
-        page_title: document.title,
-    });
-});
-
 // Global UTM Tracking - Save UTM parameters to localStorage
 if (typeof window !== 'undefined') {
     const searchParams = new URLSearchParams(window.location.search);

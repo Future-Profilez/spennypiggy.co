@@ -22,6 +22,11 @@ environments:
     runtime: "php-8.2:al2"
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
+    # NOTE (11 Aug 2026): do not add `database-proxy: true` here. Vapor has
+    # deprecated database proxies and `vapor database:proxy` refuses to create
+    # one, so this environment cannot mirror production's proxy setup. The
+    # production proxy (vapor-spennypiggy-db-1750157979) predates the
+    # deprecation and still runs; it just can no longer be reproduced on dev.
     cache: spenny-piggy-redis-caches
     health-checks: false
     assets:

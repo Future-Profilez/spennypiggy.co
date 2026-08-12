@@ -12,20 +12,6 @@ export default function Footer(props) {
     const { auth } = props;
     const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
-    async function confgureGtag() {
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-        gtag("js", new Date());
-        gtag("config", "G-9F1M3QZZB3");
-    }
-
-
-    useEffect(() => {
-        confgureGtag();
-    }, []);
-
     const date = new Date();
     const [IsPWA, setIsPWA] = useState(false);
     useEffect(() => {

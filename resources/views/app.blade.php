@@ -489,22 +489,17 @@
             html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
         }
     </style>
-    {{-- GA4. Renders nothing when GOOGLE_ANALYTICS_ID is unset, so local and dev
-         never write into the production property. Loaded async and placed last in
-         <head> so it never blocks first paint. --}}
-    @if(config('services.google.analytics_id'))
-        {{-- Inline @php(...) is NOT usable in this project's Blade setup: it compiles
-             to a bare `<?php(...)` with no closing tag and silently swallows the rest
-             of the template (every page 500s with "expecting endif"). Call config()
-             directly, or use a full @php ... @endphp block. --}}
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', @json(config('services.google.analytics_id')));
-        </script>
-    @endif
+    {{-- Google tag (gtag.js) — Google Ads conversion/remarketing.
+         This is the only Google tag on the site; do not add a second gtag.js loader
+         anywhere else (a duplicate loader re-registers the dataLayer and double-counts).
+         Loaded async and placed last in <head> so it never blocks first paint. --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-11395921981');
+    </script>
 
     @inertiaHead
 </head>

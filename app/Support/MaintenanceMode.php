@@ -254,6 +254,67 @@ class MaintenanceMode
         return bin2hex(random_bytes(24));
     }
 
+    /**
+     * The brand faces as `@font-face` rules with the woff2 INLINED as data: URIs.
+     *
+     * 🚨 The wall cannot fetch a font over the network. `vapor.yml` uploads only
+     * `public/build/**` to S3/CloudFront, so anything else under `public/` ships
+     * inside the Lambda and is never served: a request for `/fonts/newfont.woff2`
+     * reaches the router, falls through to the `/{username}` profile catch-all and
+     * 404s. Locally PHP serves `public/` directly, so it looked correct right up
+     * until it was live — the page rendered in the system sans on production and
+     * in the brand face on every developer's machine.
+     *
+     * Referencing the BUILT copies is not an option either: they are
+     * content-hashed (`newfont-BRfniQek.woff2`), and a wall that reads the Vite
+     * manifest breaks on exactly the deploy that raised it.
+     *
+     * So the bytes travel in the document. ~25 KB of woff2 becomes ~33 KB of
+     * base64 on a page that has no other assets at all, and the result cannot be
+     * broken by an asset host, a CDN, or a `vapor.yml` edit.
+     *
+     * Fails open: a missing or unreadable file returns nothing and the page falls
+     * back to the system stack. A wall in the wrong typeface is a cosmetic
+     * problem; a wall that will not render is not.
+     */
+    public static function fontCss(): string
+    {
+        static $css = null;
+
+        if ($css !== null) {
+            return $css;
+        }
+
+        $faces = [
+            'gulfs' => 'newfont.woff2',
+            'CeraGR' => 'CeraGRMedium.woff2',
+        ];
+
+        $out = '';
+
+        foreach ($faces as $family => $file) {
+            try {
+                $path = resource_path('assets/fonts/optimized/'.$file);
+
+                if (! is_readable($path)) {
+                    continue;
+                }
+
+                $data = base64_encode((string) file_get_contents($path));
+
+                $out .= sprintf(
+                    "@font-face{font-family:'%s';font-display:swap;src:url(data:font/woff2;base64,%s) format('woff2');}",
+                    $family,
+                    $data
+                );
+            } catch (Throwable $e) {
+                Log::warning('Maintenance font could not be inlined ('.$file.'): '.$e->getMessage());
+            }
+        }
+
+        return $css = $out;
+    }
+
     private static function asIso(mixed $value): ?string
     {
         if (! $value) {

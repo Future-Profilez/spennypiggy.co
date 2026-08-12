@@ -8,9 +8,11 @@
     worked on — so it depends on nothing built. All CSS is inline and the only
     JavaScript is the countdown.
 
-    ⚠️ The two brand faces are loaded from /fonts/, NOT from the Vite build. The
-    built copies are content-hashed (newfont-BRfniQek.woff2), and a wall that reads
-    the manifest is a wall that breaks on exactly the deploy that raised it.
+    🚨 The two brand faces are INLINED as data: URIs, not fetched. `vapor.yml`
+    uploads only `public/build/**` to the asset host, so a `/fonts/…` URL 404s in
+    production while working perfectly on every developer's machine — and the built
+    copies are content-hashed, so reading the Vite manifest would break the wall on
+    exactly the deploy that raised it. See MaintenanceMode::fontCss().
 
     Everything interpolated is escaped: `message` is admin-authored free text on an
     unauthenticated page, which is stored XSS the moment it is rendered raw.
@@ -25,18 +27,10 @@
     <title>Back soon — Spenny Piggy</title>
     <link rel="icon" href="/favicon.ico">
     <style>
-        /* Brand faces, from a stable public path — see the note at the top. */
-        @font-face {
-            font-family: 'gulfs';
-            font-display: swap;
-            src: url('/fonts/newfont.woff2') format('woff2');
-        }
-
-        @font-face {
-            font-family: 'CeraGR';
-            font-display: swap;
-            src: url('/fonts/CeraGRMedium.woff2') format('woff2');
-        }
+        {{-- Brand faces, inlined as data: URIs — see MaintenanceMode::fontCss().
+             Unescaped because it is CSS this application generates from its own
+             font files; nothing here comes from a request or from an admin. --}}
+        {!! \App\Support\MaintenanceMode::fontCss() !!}
 
         :root {
             --black: #000;
