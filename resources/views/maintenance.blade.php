@@ -39,6 +39,18 @@
             --mint: #05EFB8;
             --violet: #8C52FF;
             --muted: rgba(255, 255, 255, .64);
+            /* ⚠️ The house radii, copied. This page is standalone Blade — it must
+               render when the app is half-deployed or mid-migration, so it cannot
+               load resources/css/theme.css and carries its own copy. Keep in step. */
+            --sp-radius-box: 24px;
+            --sp-radius-box-sm: 16px;
+        }
+
+        @media (min-width: 768px) {
+            :root {
+                --sp-radius-box: 30px;
+                --sp-radius-box-sm: 20px;
+            }
         }
 
         * { box-sizing: border-box; }
@@ -185,14 +197,17 @@
         .unit {
             background: var(--white);
             border: 2px solid var(--black);
-            border-radius: 20px;
+            border-radius: var(--sp-radius-box-sm);
             padding: 13px 10px 10px;
             min-width: 96px;
         }
 
-        .unit:nth-child(1) { box-shadow: 6px 6px 0 0 var(--pink); }
-        .unit:nth-child(2) { box-shadow: 6px 6px 0 0 var(--mint); }
-        .unit:nth-child(3) { box-shadow: 6px 6px 0 0 var(--violet); }
+        /* 🚨 No shadows (client direction, 14 Aug 2026) — the offset that used to
+           be this page's signature is now an accent BORDER, one per unit, which
+           is the same three-colour idea carried by line work instead. */
+        .unit:nth-child(1) { border-color: var(--pink); }
+        .unit:nth-child(2) { border-color: var(--mint); }
+        .unit:nth-child(3) { border-color: var(--violet); }
 
         .unit .n {
             font-family: 'gulfs', sans-serif;

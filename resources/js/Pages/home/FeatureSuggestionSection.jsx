@@ -24,7 +24,7 @@ export default function FeatureSuggestionSection({ auth }) {
                         <ScrollX from={0} to={0} rotate={18}>
                         <div className="relative group cursor-default">
                             <div className="absolute inset-0 bg-yellow-400/20 blur-2xl rounded-full group-hover:bg-yellow-400/40 transition-all duration-700"></div>
-                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-box flex items-center justify-center transform transition-transform duration-700 group-hover:scale-110">
+                            <div className="relative w-16 h-16 md:w-24 md:h-24 bg-[#0d0d0d] border-2 border-white/10 rounded-box flex items-center justify-center transition-colors duration-500 group-hover:border-white/25">
                                 <FaLightbulb className="text-[#E6EA7B] text-3xl md:text-5xl drop-shadow-[0_0_15px_rgba(230,234,123,0.4)]" />
                             </div>
                         </div>
@@ -49,7 +49,7 @@ export default function FeatureSuggestionSection({ auth }) {
                         <Magnetic strength={0.3}>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="group relative inline-flex items-center gap-3 md:gap-6 bg-white text-black font-gulfs uppercase text-base md:text-xl py-3 px-7 md:py-4 md:px-10 rounded-full hover:scale-105 hover:-rotate-1 transition-all duration-500 overflow-hidden"
+                            className="group relative inline-flex min-h-[48px] items-center gap-3 md:gap-6 bg-white text-black font-gulfs uppercase text-base md:text-xl py-3 px-7 md:py-4 md:px-10 rounded-full transition-[filter] duration-300 active:brightness-95 overflow-hidden"
                         >
                             <span className="relative z-10">Suggest a Feature</span>
                             <FaRocket className="relative z-10 text-xl group-hover:translate-x-3 group-hover:-translate-y-3 transition-transform duration-500" />

@@ -98,7 +98,7 @@ export default function ForgotPassword(props) {
                 classes inside the fake browser window (traffic-light dots) that login
                 has just lost, so the flow changed appearance halfway through.
             */}
-            <div className="relative flex min-h-[85vh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
+            <div className="relative flex min-h-[85dvh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
                 <div
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0 opacity-20"
@@ -167,7 +167,7 @@ export default function ForgotPassword(props) {
                             </p>
                         )}
 
-                        <div className="rounded-box border-[3px] border-black bg-white p-4 shadow-black sm:p-6">
+                        <div className="rounded-box border-[3px] border-black bg-white p-4 sm:p-6">
                             {sentTo ? (
                                 /*
                                     A state, not a toast. It names the address the mail

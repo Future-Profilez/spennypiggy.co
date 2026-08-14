@@ -35,7 +35,7 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
             href={`/${row.username}`}
             onClick={() => trackSearchClick(row.id, row.username)}
             style={{ background: tint, boxShadow: `inset 0 0 0 1px ${ring}` }}
-            className={`group relative flex flex-col items-center overflow-hidden rounded-box text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.28)] ${
+            className={`group relative flex flex-col items-center overflow-hidden rounded-box text-center transition-all duration-300 hover:-translate-y-1 ${
                 dense ? "px-3 py-5" : "px-5 py-7"
             } ${first && !dense ? "sm:-mt-10" : ""}`}
         >
@@ -54,7 +54,7 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
                 {ordinal}
             </span>
             <span
-                className="mt-1 text-9 font-semibold uppercase tracking-[0.26em]"
+                className="mt-1 text-12 font-semibold uppercase tracking-[0.26em]"
                 style={{ color: metal }}
             >
                 {label}
@@ -82,14 +82,14 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
                 </span>
                 <VerifiedBadge user={row} size="sm" />
             </div>
-            <span className="mt-0.5 max-w-full truncate text-11 text-black/45">@{row.username}</span>
+            <span className="mt-0.5 max-w-full truncate text-12 text-black/60">@{row.username}</span>
 
             {/* The standing itself — a rank without its percentile tells you the
                 order, not how far up the board it sits. */}
             {tier.label && (
                 <span
                     className={`mt-3 rounded-full px-2.5 py-1 font-semibold uppercase tracking-[0.1em] ${
-                        dense ? "text-10" : "text-11"
+                        dense ? "text-12" : "text-12"
                     } ${tier.className}`}
                 >
                     {tier.label}
@@ -97,7 +97,7 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
             )}
 
             <div
-                className={`mt-3 flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-3 text-11 text-black/50 ${
+                className={`mt-3 flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-3 text-12 text-black/60 ${
                     dense ? "" : "border-t"
                 }`}
                 style={dense ? undefined : { borderColor: ring }}

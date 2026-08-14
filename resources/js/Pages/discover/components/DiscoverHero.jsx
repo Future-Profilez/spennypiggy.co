@@ -46,8 +46,8 @@ export default function DiscoverHero({
             .filter((c) => c.length)
             .map((c) => {
                 const filled = [...c];
-                while (filled.length < 4) filled.push(...c);          // never a short column
-                return [...filled, ...filled];                        // duplicate = seamless loop
+ while (filled.length < 4) filled.push(...c); // never a short column
+ return [...filled, ...filled]; // duplicate = seamless loop
             });
     }, [faces]);
 
@@ -81,7 +81,7 @@ export default function DiscoverHero({
 
     return (
         <section className="container max-w-7xl mx-auto px-4 pt-6 pb-2 md:pt-8">
-            <div className="relative overflow-hidden rounded-[30px] bg-[#0E0E12] shadow-[0_16px_40px_-16px_rgba(0,0,0,0.55)]">
+ <div className="relative overflow-hidden rounded-box bg-[#0E0E12] ">
                 {/* ambient light, kept behind everything */}
                 <div className="pointer-events-none absolute -left-24 top-0 h-[380px] w-[380px] rounded-full bg-[#FF007F]/20 blur-[120px]" aria-hidden />
                 <div className="pointer-events-none absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[#A2E4B8]/10 blur-[100px]" aria-hidden />
@@ -89,12 +89,12 @@ export default function DiscoverHero({
                 <div className="relative flex">
                     {/* ── Left: the pitch ───────────────────────────── */}
                     <div className="relative z-10 w-full lg:w-[58%] px-6 py-10 md:px-10 md:py-14">
-                        <div className="inline-flex items-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur">
+ <div className="inline-flex items-center gap-2 rounded-box-sm border border-white/10 bg-white/[0.04] px-3 py-1.5 backdrop-blur">
                             <span className="relative flex h-2 w-2">
                                 {!reduce && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF007F] opacity-70" />}
                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FF007F]" />
                             </span>
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+ <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-white/70">
                                 {creatorCount > 0 ? `${creatorCount} creators live` : 'Happening now'}
                             </span>
                         </div>
@@ -117,13 +117,13 @@ export default function DiscoverHero({
                         <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
                             <button
                                 onClick={onExplore}
-                                className="group inline-flex min-h-[44px] items-center gap-2 rounded-[20px] bg-[#FF007F] px-6 text-sm font-bold text-white shadow-[0_8px_30px_-6px_rgba(255,0,127,0.6)] transition-all hover:bg-[#ff1a8c] hover:shadow-[0_10px_40px_-6px_rgba(255,0,127,0.75)]"
+ className="group inline-flex min-h-[44px] items-center gap-2 rounded-box-sm bg-[#FF007F] px-6 text-sm font-bold text-black transition-all hover:brightness-110 "
                             >
                                 Explore creators
                                 <span className="transition-transform group-hover:translate-x-0.5">→</span>
                             </button>
                             {(creatorCount > 0 || wishCount > 0) && (
-                                <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/40">
+ <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
                                     {creatorCount > 0 && `${creatorCount} trending`}
                                     {creatorCount > 0 && wishCount > 0 && ' · '}
                                     {wishCount > 0 && `${wishCount} wishes live`}
@@ -153,7 +153,7 @@ export default function DiscoverHero({
                 {loop.length > 0 && (
                     <div className="relative z-10 border-t border-white/[0.06] bg-[#0B0B0F]/80 backdrop-blur">
                         <div className="flex items-stretch">
-                            <div className="hidden shrink-0 items-center gap-1.5 px-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF007F] sm:flex">
+ <div className="hidden shrink-0 items-center gap-1.5 px-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#FF007F] sm:flex">
                                 <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" /> Live
                             </div>
                             <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#0B0B0F] to-transparent" aria-hidden />
@@ -187,7 +187,7 @@ function FaceColumn({ col, up, reduce, index }) {
     const inner = tiles.map((f, i) => (
         <div
             key={`${f.username}-${i}`}
-            className="relative mb-3 overflow-hidden rounded-[20px] border border-white/10 bg-[#16161C]"
+ className="relative mb-3 overflow-hidden rounded-box-sm border border-white/10 bg-[#16161C]"
         >
             <img
                 src={f.img}
@@ -200,14 +200,14 @@ function FaceColumn({ col, up, reduce, index }) {
             {/* the handle is the point of the tile — give it a real chip so it
                 stays legible on a bright photo, not grey text on grey pixels */}
             <span
-                className={`absolute bottom-2 left-2 right-2 flex items-center gap-1.5 truncate rounded-[20px] border px-2 py-1 backdrop-blur-md ${
+ className={`absolute bottom-2 left-2 right-2 flex items-center gap-1.5 truncate rounded-box-sm border px-2 py-1 backdrop-blur-md ${
                     f.hot
-                        ? 'border-[#FF007F]/60 bg-[#FF007F]/20 shadow-[0_0_16px_-4px_rgba(255,0,127,0.8)]'
+ ? 'border-[#FF007F]/60 bg-[#FF007F]/20 '
                         : 'border-white/15 bg-black/55'
                 }`}
             >
-                {f.hot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF007F] shadow-[0_0_8px_2px_rgba(255,0,127,0.7)]" />}
-                <span className="truncate text-[11px] font-bold tracking-wide text-white">@{f.username}</span>
+ {f.hot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF007F] " />}
+ <span className="truncate text-[12px] font-bold tracking-wide text-white">@{f.username}</span>
             </span>
         </div>
     ));
@@ -230,7 +230,7 @@ function FaceColumn({ col, up, reduce, index }) {
 
 function TickerItem({ e }) {
     return (
-        <Link href={e.to} className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-white/50 transition-colors hover:text-white/90">
+ <Link href={e.to} className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-white/60 transition-colors hover:text-white/90">
             <span className="text-[#FF007F]">{e.mark}</span>
             <span>{e.text}</span>
         </Link>

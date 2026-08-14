@@ -44,7 +44,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
             }`}
         >
             <p
-                className={`text-[11px] font-black uppercase tracking-[0.14em] ${
+                className={`text-[12px] font-black uppercase tracking-[0.14em] ${
                     tone === "warn" ? "text-[#8A6100]" : "text-[#B42318]"
                 }`}
             >
@@ -131,7 +131,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                     <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
                         {showBio && (
                             <>
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                                <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black">
                                     About me
                                 </h3>
                                 <p className="mt-3 text-[15px] font-semibold leading-relaxed text-gray-800">
@@ -148,7 +148,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                         : ""
                                 }
                             >
-                                <h3 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                                <h3 className="mb-3 text-[12px] font-black uppercase tracking-[0.16em] text-black">
                                     Find me on
                                 </h3>
                                 <SocialLinks
@@ -232,7 +232,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                             🚫 You blocked this user.
                                         </p>
 
-                                        <p className="mt-4 text-gray-600 font-semibold ">
+                                        <p className="mt-4 text-black/80 font-semibold ">
                                             You can still browse this user's
                                             public profile, but following,
                                             messaging, sending gifts and tips
@@ -245,7 +245,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                             🚫 This user has blocked you.
                                         </p>
 
-                                        <p className="mt-4 text-gray-600 font-semibold">
+                                        <p className="mt-4 text-black/80 font-semibold">
                                             This user has blocked you. You can
                                             view their public profile, but all
                                             interactions are currently
@@ -273,10 +273,9 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                                             py-3
                                             font-black
                                             text-white
-                                            hover:translate-x-[2px]
-                                            hover:translate-y-[2px]
-                                            hover:
-                                            transition-all
+                                            min-h-[44px]
+                                            transition-colors
+                                            duration-200
                                         "
                                     >
                                         <Unlock className="w-5 h-5" />
@@ -411,7 +410,7 @@ export default function Gifter({ IsloggedIn, sLinks, blockData, username }) {
                             Unblock User
                         </h2>
 
-                        <p className="mt-4 text-gray-600 font-semibold leading-7">
+                        <p className="mt-4 text-black/80 font-semibold leading-[1.6]">
                             Are you sure you want to unblock this user?
                         </p>
 

@@ -64,12 +64,12 @@ export default function SupporterLevel({ isOwner }) {
 
                 <div className="relative pl-7 pr-5 pt-5 sm:pl-9 sm:pr-7 sm:pt-6">
                     <div className="flex items-start justify-between gap-4">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/55">
+                        <span className="text-[12px] font-black uppercase tracking-[0.2em] text-white/60">
                             Spenny Piggy · Supporter
                         </span>
                         {!vip.next_level && (
                             <span
-                                className="shrink-0 rounded-full border-2 border-black px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-black"
+                                className="shrink-0 rounded-full border-2 border-black px-2.5 py-0.5 text-[12px] font-black uppercase tracking-[0.14em] text-black"
                                 style={{ background: tier }}
                             >
                                 Top level
@@ -116,7 +116,7 @@ export default function SupporterLevel({ isOwner }) {
                                     }}
                                 />
                             </div>
-                            <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/55">
+                            <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.12em] text-white/60">
                                 {vip.to_next} points to {vip.next_level} · last{" "}
                                 {vip.window_days} days
                             </p>
@@ -135,7 +135,7 @@ export default function SupporterLevel({ isOwner }) {
                     {stamps.map((s, i) => (
                         <li
                             key={s.label}
-                            className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-black ${STICKER_TILT[i % STICKER_TILT.length]}`}
+                            className={`inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-white px-3 py-1.5 text-[12px] font-black uppercase tracking-wider text-black ${STICKER_TILT[i % STICKER_TILT.length]}`}
                         >
                             <span aria-hidden="true">{s.mark}</span>
                             {s.label}
@@ -149,7 +149,7 @@ export default function SupporterLevel({ isOwner }) {
                 <div className="mt-4">
                     <Link
                         href="/creators"
-                        className="inline-flex items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                        className="inline-flex items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                     >
                         Find creators to support
                     </Link>
@@ -169,7 +169,7 @@ export default function SupporterLevel({ isOwner }) {
 function Field({ label, value, mono }) {
     return (
         <div>
-            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/55">
+            <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">
                 {label}
             </div>
             <div

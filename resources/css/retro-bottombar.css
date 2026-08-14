@@ -1,7 +1,74 @@
+/* ============================================================================
+   Mobile bottom navigation (logged in, < md).
+
+   Four places you can go and one thing you can do. Three signals, each meaning
+   exactly one thing:
+
+     shape   squircle = go somewhere · circle = do something
+     colour  yellow   = where you are · mint  = the one action
+     weight  outline glyph = elsewhere · solid glyph = here (RetroIcons swaps it)
+
+   ⚠️ NO SHADOWS anywhere in this file (client direction). The house offset
+   shadow is the platform's usual way of lifting a block, so the separation here
+   is carried by line work and geometry instead.
+   Do not reintroduce `box-shadow` to "make it pop".
+
+   ⚠️ NO SCALE on press (client direction, sitewide). Brightness and opacity
+   carry the touch feedback with no layout cost — a control that resizes reads
+   as a wobble on a bar this small.
+   ============================================================================ */
+
+:root {
+  /* 🚨 ONE definition of the bar's height. THREE things clear it — the page's
+     own bottom padding, the Intercom launcher and the open Intercom messenger —
+     and before this they were three unrelated magic numbers (80 / 96 / 132)
+     that had to be re-derived by hand every time the bar changed. Change the
+     row height, change `--sp-bottombar-h` to match, and all three follow.
+
+     ⚠️ The row height is ASSERTED on the button, never left to add up from
+     padding + icon + label. `retro-enhancements.css` used to set
+     `.retro-nav-button { padding: 10px 8px }` at the same specificity and a
+     later import, so the bar silently rendered 6px taller than this file
+     claimed and every clearance below was short by the difference.
+
+     ⚠️ The total is a `calc`, not a typed number, so it CANNOT drift from the
+     row again. The bar sets no explicit height, and `box-sizing` only applies
+     once one is set — so the 1px top rule is added to the painted height and
+     has to be counted here. Measured: 4 + 48 + 4 + 1 = 57.
+
+     🚨 SIZED AGAINST iOS, NOT AGAINST THE DESIGN IN ISOLATION. The bar was a
+     56px row in 6px padding = 69px, and the safe-area inset is added ON TOP by
+     each consumer — so on any phone with a home indicator it painted 69 + 34 =
+     **103px**, a sixth of a 390×844 screen, and read as a slab rather than as a
+     tab bar. Apple's own tab bar is 49pt of content over the same 34pt inset
+     (83pt total). At 48 + 8 + 1 = 57 the painted height is 91px on that phone —
+     within a few px of native, and the row still clears the 44px touch floor on
+     its own. Do not push the row below 44.
+
+     The safe-area inset is NOT included here — it is a property of the device
+     rather than of the bar, so each consumer adds it. */
+  --sp-bottombar-row: 48px;
+  --sp-bottombar-h: calc(var(--sp-bottombar-row) + 9px);
+
+  /* The mint circle's DIAMETER. It is drawn by `.retro-nav-add::before`, not by
+     the button itself, so it no longer governs anything's layout — but keep it
+     <= `--sp-bottombar-row` anyway: at 48px it is exactly the row's height,
+     which is what makes the circle read as the same object as the tabs beside
+     it rather than as a badge floating in the bar. */
+  --sp-bottombar-circle: 48px;
+}
+
 /* When the docked bar is on screen (logged-in mobile), give the page enough
-   bottom padding that content can scroll clear of it. */
+   bottom padding that content can scroll clear of it.
+
+   ⚠️ The +8px is BREATHING ROOM, not clearance — the bar's own height and the
+   safe-area inset are already counted, so this is the only part that is a
+   judgement call. It was 16px, which reads as a band of dead page above the bar
+   on a phone; the bar is a hard edge of its own and does not need a margin to
+   separate it from content. Do not fold the inset or the bar height into this
+   number: they come from the variable so all three consumers stay in step. */
 body:has(.retro-bottom-bar) main {
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--sp-bottombar-h) + 8px + env(safe-area-inset-bottom, 0px));
 }
 @media (min-width: 768px) {
   body:has(.retro-bottom-bar) main {
@@ -9,13 +76,23 @@ body:has(.retro-bottom-bar) main {
   }
 }
 
-/* Bottom nav — docked, app-style. Flush to the screen edge on iOS (Safari
-   "Add to Home Screen") and Android alike; the safe-area inset lives INSIDE
-   the bar as padding so the home indicator floats over mint, never over a gap. */
+/* The bar — docked, app-style. Flush to the screen edge on iOS ("Add to Home
+   Screen") and Android alike; the safe-area inset lives INSIDE the bar as
+   padding, so the home indicator floats over pink, never over a gap.
+
+   ⚠️ BRAND PINK IN BOTH THEMES — deliberately no `prefers-color-scheme` block.
+   It used to repaint itself black on a dark-OS phone, so most people never saw
+   the brand bar and the app's top (pink header) and bottom disagreed. The
+   colour is the platform's, not the operating system's preference.
+
+   ⚠️ The top edge is a HAIRLINE, not the house 3px slab. A 3px black rule turns
+   a 64px bar into a framed object sitting on the page; at this size the pink
+   block separates itself and the rule only needs to define the edge on the few
+   light-background screens. */
 .retro-bottom-bar {
-  background: #05EFB8;
+  background: #FF007F;
   border: none !important;
-  border-top: 3px solid #000000 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.18) !important;
   border-radius: 0 !important;
   position: fixed !important;
   bottom: 0 !important;
@@ -25,282 +102,320 @@ body:has(.retro-bottom-bar) main {
   max-width: none !important;
   margin: 0 !important;
   z-index: 999999 !important;
-  box-shadow: 0px -4px 16px rgba(0, 0, 0, 0.12) !important;
-  padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
-  overflow: hidden !important;
-  will-change: transform;
+  /* ⚠️ 4px, and `--sp-bottombar-h` counts it as 4 + 4 + 1. Changing this number
+     without changing that calc is exactly the silent drift the calc exists to
+     prevent. */
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-
-/* .retro-bottom-bar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    #FF007F 25%, 
-    #8C52FF 50%, 
-    #05EFB8 75%, 
-    transparent 100%
-  );
-  animation: neon-flow 3s ease-in-out infinite;
-} */
-
-/* Retro grid pattern overlay */
-/* .retro-bottom-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(rgba(249, 79, 151, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140, 82, 255, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  pointer-events: none;
-  opacity: 0.3;
-} */
-
+/* Targets tile the full width rather than sitting in a row of islands — on a
+   phone the gaps between islands are dead space your thumb still aims at. The
+   visible pill is drawn by ::before and is deliberately NARROWER than the tap
+   area, so the target stays edge-to-edge while the indicator keeps its
+   proportions. */
 .retro-nav-button {
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 20px;
-  padding: 6px 10px;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden; 
-  min-width: 54px;
-  min-height: 44px; /* PWA touch-target floor */
+  gap: 3px;
+  min-width: 0;
+  /* ⚠️ An explicit height, and `padding` defended with `!important` for the same
+     reason `margin` and `border` already are — this file is imported at
+     `app.css` line 2, so a same-specificity rule in almost any other stylesheet
+     beats it on source order alone. Comfortably past the 44px touch floor. */
+  height: var(--sp-bottombar-row);
+  min-height: var(--sp-bottombar-row);
   margin: 0 !important;
+  /* 🚨 The 7px BOTTOM padding is the active marker's lane, and it is reserved on
+     EVERY item, not just the current one — otherwise the rule under the active
+     tab is drawn into space the label already occupies. Measured before this:
+     label bottom 834.5, marker top 835 — a **0.5px** gap, so the yellow rule sat
+     on the label's descender line and read as a mis-rendered underline rather
+     than as a position marker. With the lane reserved the gap is 4px.
+
+     ⚠️ The content stack (icon + 3px + label = 37px) therefore centres in 41px,
+     not 48px, so it sits 3.5px above the row's centre. That is correct, not a
+     regression: the marker is part of the item, and content + marker together
+     span 794–838 whose centre IS the row centre. Do not "fix" this by removing
+     the padding — that reinstates the collision. */
+  padding: 0 2px 7px !important;
+  background: none;
+  border: 0;
+  border-radius: var(--sp-radius-box-sm);
+  transition: opacity 0.12s ease;
 }
 
-/* .retro-nav-button::before {
-  content: '';
+/* Where you are. A squircle pill sitting cleanly INSIDE the bar.
+
+   ⚠️ It used to hang off the bar's top rule — flat top, no top border, pulled up
+   by a negative margin that had to stay exactly equal to the bar's padding, and
+   clipped by `overflow: hidden` if it drifted. That geometry is what made the
+   bar read as unfinished: a tab with two square corners and two round ones,
+   half in the bar and half out of it, misaligned by a pixel on any change.
+   The pill is now a plain inset rectangle with the house control radius. */
+.retro-nav-button::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, 
-    rgba(249, 79, 151, 0.1) 0%, 
-    rgba(140, 82, 255, 0.1) 50%, 
-    rgba(5, 239, 184, 0.1) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 12px;
-} */
+  inset: 0 6px;
+  border-radius: var(--sp-radius-box-sm);
+  background: transparent;
+  transition: background-color 0.18s ease;
+}
 
-/* .retro-nav-button:hover::before,
+/* ⚠️ NO FILLED PILL (client direction, 14 Aug 2026). The current tab used to be
+   a solid #E6EA7B squircle, which made one of five items a block of colour and
+   read as a button sitting in the bar rather than as a position marker. The tab
+   now marks itself with the accent COLOUR plus a rule under it, and the bar
+   keeps one flat ground. */
 .retro-nav-button.active::before {
-  opacity: 1;
-} */
-/* 
-.retro-nav-button:hover {
-  transform: translateY(-3px);
-  border-color: rgba(230, 234, 123, 0.6);
-  background: rgba(42, 42, 42, 0.5);
-  box-shadow: 
-    0 6px 12px rgba(249, 79, 151, 0.3),
-    0 0 25px rgba(140, 82, 255, 0.2),
-    inset 0 1px 0 rgba(230, 234, 123, 0.2);
-} */
-/* Active indicator styling for Neo-brutalism */
-.retro-nav-button.active {
-  background: #E6EA7B;
-  border: 2px solid #000;
-  border-radius: 12px;
-  box-shadow: 2px 2px 0px rgba(0, 0, 0, 1);
-  transform: translate(-2px, -2px);
-} 
+  background: transparent;
+}
 
+/* The marker: a short yellow rule pinned to the item's own bottom edge. It is
+   what carries the state at a glance, and it works in greyscale as a position
+   even when the hue does not read.
+
+   ⚠️ Its clearance comes from the button's reserved bottom padding, NOT from
+   this offset — `bottom` resolves against the padding box, so changing the
+   padding above moves the label and leaves this rule where it is. Measured
+   live: label bottom 831, marker 835–838, i.e. a 4px gap and 2px to the row's
+   bottom edge. Its 22px width deliberately matches the icon's, so the rule
+   reads as belonging to the glyph rather than to the (wider) label. */
 .retro-nav-button.active::after {
-  display: none;
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 22px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #E6EA7B;
 }
 
-/* Retro Icon Animations */
+/* Icon and label sit above the pill. */
+.retro-icon-wrapper,
+.retro-nav-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* Black on pink. ⚠️ Measured: 0.85 alpha is 5.09:1 against #FF007F, which clears
+   AA for the 10px label as well as the 3:1 graphics floor; the old 0.7 was
+   4.15:1 — fine for a glyph, under AA the moment the label exists. White would
+   be 3.78:1 and is the wrong direction. */
 .retro-icon-wrapper {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #000000;
+  color: #000;
   opacity: 0.7;
+  transition: opacity 0.12s ease, color 0.12s ease;
 }
 
-.retro-nav-button:hover .retro-icon-wrapper {
-  transform: translateY(-2px);
-  color: #000000;
-  opacity: 1;
-}
-
+/* The current tab wears the accent.
+   ⚠️ MEASURED: #E6EA7B on #FF007F is 2.95:1, which does not clear AA for the
+   10px label — that is why this was a filled pill before. It is the client's
+   call (14 Aug 2026), so the yellow is kept and the state is carried by THREE
+   cues rather than by hue alone: the colour, the rule under the item, and the
+   icon switching from its outline to its filled variant (`HiOutlineHome` →
+   `HiHome`, which the components already do). `aria-current="page"` is what
+   actually answers it for a screen reader either way. */
 .retro-nav-button.active .retro-icon-wrapper {
-  transform: translateY(0px);
-  color: #000000;
+  color: #E6EA7B;
   opacity: 1;
-  filter: none;
 }
 
-/* Retro Counter Badge */
-.retro-counter {
-  background: linear-gradient(135deg, #FF007F 0%, #8C52FF 50%, #05EFB8 100%);
+/* The label. Both iOS HIG and Material 3 label their tabs, and this bar has two
+   person-shaped glyphs (your page, your account) that are indistinguishable
+   without one. Uppercase and tracked so it reads as chrome rather than as body
+   copy at this size. */
+.retro-nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.12s ease;
+}
+
+.retro-nav-button.active .retro-nav-label {
   color: #E6EA7B;
-  font-family: 'gulfs', monospace;
-  font-size: 11px;
-  font-weight: bold;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
+}
+
+/* The one action. A circle, so it can never be mistaken for one more place to
+   go, and deliberately unlabelled — the four labels around it are places, and a
+   fifth word here would flatten the distinction the shape is making.
+
+   🚨 THE ACTION TAKES A FULL SLOT, EXACTLY LIKE A TAB — the circle is drawn by
+   `::before`, the button itself is just the slot.
+
+   It used to be `flex: 0 0 auto` at 48px wide with 6px margins, i.e. 60px in a
+   row whose four tabs were 78.5px each. So the five items were NOT evenly
+   spaced: measured at 390px the centres fell at 47.3 / 125.8 / 195 / 264.3 /
+   342.8 — outer gaps 78.5px against inner gaps of 69.2px, so the circle crowded
+   Basket and Discover by 9.3px while the two outer pairs sat further apart. It
+   read as a bar whose middle had been squeezed. Same fault at 320px (64.5 vs
+   59.2). With every item on `flex: 1 1 0` the five slots are identical and the
+   gaps are equal by construction at any width.
+
+   ⚠️ This also puts the action on the same rule as the tabs above: targets tile
+   the full width rather than sitting as an island, because the blank pink either
+   side of the circle is dead space a thumb still aims at. The visible circle
+   stays its own size — same trick as `.retro-nav-button::before`. */
+.retro-nav-add {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #E6EA7B;
-  box-shadow: 
-    0 0 12px rgba(249, 79, 151, 0.8),
-    0 0 20px rgba(140, 82, 255, 0.4),
-    inset 0 0 6px rgba(230, 234, 123, 0.4);
-  animation: pulse-counter 2s ease-in-out infinite;
-  text-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.9),
-    0 0 6px rgba(230, 234, 123, 0.6);
-  backdrop-filter: blur(2px);
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--sp-bottombar-row);
+  min-height: var(--sp-bottombar-row);
+  border: 0;
+  /* Matches the tabs so a focus ring is the same shape across the row; the
+     circle's own radius lives on ::before. */
+  border-radius: var(--sp-radius-box-sm);
+  background: none;
+  color: #000;
+  /* ⚠️ MUST match `.retro-nav-button`'s horizontal padding. With `flex-basis: 0`
+     the free space is shared equally between the CONTENT boxes and each item's
+     padding is then added on top — so a slot with no padding comes out 4px
+     narrower than its neighbours. Measured with `padding: 0` here: tabs 75.6px
+     against the action's 71.6px, i.e. gaps of 75.6 / 73.6 / 73.6 / 75.6 — the
+     same "squeezed middle" the flex change was made to remove, just 5px smaller.
+     With the paddings equal every slot is 74.8px and every gap is identical. */
+  padding: 0 2px;
+  margin: 0 !important;
+  transition: filter 0.12s ease;
 }
 
-/* Retro Button Press Effect */
-.retro-nav-button:active {
-  transform: translateY(0) scale(0.95);
-  transition: all 0.1s ease;
-}
-
-.retro-nav-button:active .retro-icon {
-  transform: scale(1.05) rotate(1deg);
-}
-
-/* Scanline effect */
-@keyframes scanline {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100vw);
-  }
-}
-
-.retro-bottom-bar .scanline {
+/* The circle itself. Centred in the slot, so it lands exactly on the slot's
+   centre line and therefore exactly on the bar's centre — which is what makes
+   the (+) line up with the four icons either side of it. */
+.retro-nav-add::before {
+  content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, 
-    transparent 0%, 
-    #05EFB8 50%, 
-    transparent 100%
-  );
-  animation: scanline 4s linear infinite;
-  opacity: 0.6;
+  top: 50%;
+  left: 50%;
+  width: var(--sp-bottombar-circle);
+  height: var(--sp-bottombar-circle);
+  transform: translate(-50%, -50%);
+  border: 2px solid #000;
+  border-radius: 999px;
+  background: #05EFB8;
 }
 
-/* Neon glow animation */
-@keyframes neon-flow {
-  0%, 100% {
-    opacity: 1;
-    filter: blur(0px);
-  }
-  50% {
-    opacity: 0.8;
-    filter: blur(1px);
-  }
+/* ⚠️ The glyph must be lifted above the circle, or the absolutely-positioned
+   ::before paints over it (it is declared after the svg in paint order). */
+.retro-nav-add svg {
+  position: relative;
+  z-index: 1;
 }
 
-@keyframes retro-glow {
-  0% {
-    filter: 
-      drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))
-      drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-  }
-  100% {
-    filter: 
-      drop-shadow(0 0 12px rgba(255, 255, 255, 0.8))
-      drop-shadow(0 0 20px rgba(0, 0, 0, 0.2))
-      drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-  }
+/* Touch feedback darkens; it does not resize. */
+.retro-nav-button:active {
+  opacity: 0.7;
 }
 
-@keyframes pulse-counter {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 
-      0 0 8px rgba(249, 79, 151, 0.6),
-      inset 0 0 4px rgba(230, 234, 123, 0.3);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow: 
-      0 0 15px rgba(249, 79, 151, 0.8),
-      0 0 25px rgba(140, 82, 255, 0.4),
-      inset 0 0 6px rgba(230, 234, 123, 0.5);
-  }
+.retro-nav-add:active {
+  filter: brightness(0.9);
 }
 
-/* Responsive adjustments */
-@media (max-width: 375px) {
-  .retro-nav-button {
-    padding: 6px 8px;
-  }
-  
-  .retro-counter {
-    min-width: 16px;
-    height: 16px;
-    font-size: 9px;
-  }
+/* Basket count. Static — a pulsing badge is one accessory too many on a bar
+   that already carries a filled tab and a filled action. */
+.retro-counter {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
+/* Small phones (iPhone SE and down). The pill loses most of its side inset
+   before the label loses a pixel — a cramped indicator is survivable, an
+   unreadable label is not. */
+@media (max-width: 360px) {
   .retro-bottom-bar {
-    background: #000000;
-    border-top: 2px solid #333 !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
   }
-  .retro-nav-button.active {
-    background: #E6EA7B;
-    border-color: #fff;
-    box-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+  .retro-nav-button::before {
+    inset: 0 3px;
   }
+  .retro-nav-label {
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+  /* ⚠️ No `.retro-nav-add` override here any more. It used to re-declare
+     width/height/min-width/margin, which now belong to the slot and the
+     ::before circle respectively — setting a width on the slot would break the
+     even distribution again, at exactly the widths where it is tightest. The
+     circle is `--sp-bottombar-circle` at every size; at 320px each slot is
+     62.4px, so a 48px circle still clears its neighbours by 7.2px. */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-nav-button,
+  .retro-nav-button::before,
+  .retro-nav-label,
+  .retro-nav-add,
   .retro-icon-wrapper {
-    color: #ffffff;
-    opacity: 0.6;
+    transition: none;
   }
-  .retro-nav-button:hover .retro-icon-wrapper {
-    color: #ffffff;
+  .retro-nav-button:active {
     opacity: 1;
   }
-  .retro-nav-button.active .retro-icon-wrapper {
-    color: #000000;
+  .retro-nav-add:active {
     filter: none;
   }
 }
-/* Chat launcher clearance.
-   The bar is 80px + the safe-area inset and is mobile-only (md:hidden), while
-   Intercom's launcher is docked at bottom:20px — so on a phone it sat on top of
-   the nav. Lifted above the bar here rather than via Intercom's `vertical_padding`
-   because that is a single number applied at boot and cannot be responsive, and
-   the bar does not exist at md+. Intercom sets its position inline, hence the
-   !important. Covers the lightweight pre-load launcher and the booted one. */
+
+/* Chat launcher clearance — THE ONLY PLACE THE LAUNCHER'S OFFSET IS SET.
+   The bar is mobile-only (md:hidden) while Intercom docks its launcher at
+   bottom:20px — so on a phone it sat on top of the nav. Lifted here rather than
+   via Intercom's `vertical_padding`, because that is a single number applied at
+   boot and cannot be responsive, and the bar does not exist at md+. Intercom
+   sets its position from its own injected stylesheet, hence the !important.
+   ⚠️ Every offset here is derived from `--sp-bottombar-h`, never retyped.
+
+   🚨 INTERCOM SWAPS THE LAUNCHER FOR A DIFFERENT ELEMENT WHEN IT BOOTS, and the
+   two must land on the same pixel or the icon visibly jumps mid-session — which
+   is exactly how this read as "sometimes high, sometimes low":
+
+     before boot  <div class="intercom-lightweight-app-launcher intercom-launcher">
+     after boot   a div inside #intercom-container whose ONLY classes are emotion
+                  build hashes — measured live 14 Aug 2026: `intercom-with-namespace-4wz414
+                  edrs4yi0`. No `intercom-launcher`, no `#intercom-launcher-frame`.
+
+   🚨 So the class/id list alone matched NOTHING once the messenger booted, and
+   the real launcher kept Intercom's own bottom:20px — 37px INSIDE the bar, over
+   the ACCOUNT tab. `intercom-with-namespace` is emotion's LABEL (authored by
+   Intercom, stable); only the hash after it changes per build, so the attribute
+   match is on the label and never on a hash. Do not swap it for the full class
+   name — that is the MagicBell `css-1j56y57` trap.
+
+   ⚠️ `margin-bottom: 0` is load-bearing, not tidiness. `app.blade.php` used to
+   carry `margin-bottom: 90px !important` for the lightweight launcher, which
+   STACKED on this offset (159px up, floating 102px clear of the bar). A margin
+   here is an offset nobody can see in this file. */
 @media (max-width: 767px) {
   .intercom-lightweight-app-launcher,
-  .intercom-namespace .intercom-launcher,
-  .intercom-namespace .intercom-launcher-frame,
-  #intercom-container .intercom-launcher,
-  #intercom-launcher-frame {
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  .intercom-launcher,
+  .intercom-launcher-frame,
+  #intercom-launcher-frame,
+  #intercom-container [class*="intercom-with-namespace"],
+  .intercom-namespace [class*="intercom-with-namespace"] {
+    bottom: calc(var(--sp-bottombar-h) + 12px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-bottom: 0 !important;
   }
-  /* The open messenger has to clear it too, or its footer hides behind the nav. */
+  /* The open messenger has to clear it too, or its footer hides behind the nav.
+     It is matched by the rule above as well (same offset, deliberately); this
+     one exists for the height, which is its own problem. */
   .intercom-namespace .intercom-messenger-frame,
   #intercom-container .intercom-messenger-frame {
-    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100dvh - 132px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100dvh - var(--sp-bottombar-h) - 48px - env(safe-area-inset-bottom, 0px)) !important;
   }
 }

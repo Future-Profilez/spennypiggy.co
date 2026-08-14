@@ -11,7 +11,7 @@ import socialbg from "../../assets/social-bg.png";
  */
 export function renderProfileCard({ avatarUid, name, username }) {
     return `
-        <div id="card-to-capture" class="dot-pattern relative my-[300px] flex items-center p-6 w-[600px] h-[337.5px] text-white shadow-2xl">
+        <div id="card-to-capture" class="dot-pattern relative my-[300px] flex items-center p-6 w-[600px] h-[337.5px] text-white ">
             <img src="${socialbg}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
 
             <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
@@ -21,7 +21,7 @@ export function renderProfileCard({ avatarUid, name, username }) {
 
             <div class="inner-image w-full">
                 <div class="flex items-center justify-center mb-4">
-                    <div class="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden shadow-lg">
+                    <div class="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden ">
                         <img src="https://ucarecdn.com/${avatarUid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                     </div>
                     <div class="ps-3">
@@ -34,7 +34,7 @@ export function renderProfileCard({ avatarUid, name, username }) {
                 <p class="text-white text-xl font-bold me-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
                 <img src="${spennypiggy}" alt="Logo" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
 
-                <div class="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[30px]   text-center text-[20px] shadow-md">
+                <div class="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[30px]   text-center text-[20px] ">
                     https://spennypiggy.co/${username}
                 </div>
             </div>

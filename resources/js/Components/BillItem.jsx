@@ -12,6 +12,7 @@ import RemoveBill from "@/Pages/bills/RemoveBill";
 import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import ScheduledBadge from "@/Components/ScheduledBadge";
+import ItemStatusBadge from "@/Components/ItemStatusBadge";
 
 function BillItem(props) {
     useAlerts();
@@ -132,31 +133,46 @@ function BillItem(props) {
         [itm?.period],
     );
 
+    /**
+     * ⚠️ Suspended outranks waiting-for-review: a suspended listing that is also
+     * unapproved is a SUSPENDED listing, and "waiting for approval" would be
+     * false. ⚠️ Note the column here is `approved`, not the wish card's
+     * `is_approved` — the two tables genuinely differ, so this cannot be lifted
+     * into a shared helper without checking each one.
+     */
+    const billStatusNotices = [
+        Number(itm?.is_suspended) === 1 && {
+            state: "suspended",
+            reason: itm?.suspend_reason,
+        },
+        IsloggedIn &&
+            Number(itm?.approved) === 0 && { state: "in_review", reason: null },
+    ].filter(Boolean);
+
     return (
         <div
             ref={setNodeRef}
             {...attributes}
             {...listeners}
             style={IsloggedIn ? style : stylenone}
-            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
+            className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} transition-colors duration-200 hover:bg-black/[0.03]`}
         >
             <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full">
-                {itm && itm.is_suspended == 1 ? (
-                    <div className="absolute top-[100px] left-[0px] bg-red-600 text-white text-xs font-bold px-3 py-2 text-center group/suspend cursor-help w-full z-[20]">
-                        Suspended
-                        {itm.suspend_reason && (
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-box-sm pointer-events-none z-30">
-                                Reason: {itm.suspend_reason}
-                            </div>
-                        )}
+                {/* 🚨 Same two faults the wish card had, and the same fix.
+                    The approval notice carried `approvalmessge membership`,
+                    which `home.css:531` pins `position:absolute; top:0; left:0`
+                    — so it painted over the card whatever margin it was given.
+                    The suspend banner was worse: hardcoded `top-[100px]` with a
+                    hover-only tooltip carrying the reason, so on a phone (no
+                    hover) the reason was UNREACHABLE, and the 100px offset is a
+                    guess that lands wherever the card's content happens to be. */}
+                {billStatusNotices.length > 0 && (
+                    <div className="px-3 pt-3">
+                        <ItemStatusBadge
+                            notices={billStatusNotices}
+                            itemName={itm?.name}
+                        />
                     </div>
-                ) : IsloggedIn && itm && itm.approved === 0 ? (
-                    <div className="!bg-yellow-600 approvalmessge membership m-3 rounded-box-sm p-3 py-2 mb-2 !text-white">
-                        Bill item waiting for approval. Currently only you can
-                        see this bill.
-                    </div>
-                ) : (
-                    ""
                 )}
 
                 {/* Not on sale yet, however finished it looks. */}
@@ -175,11 +191,11 @@ function BillItem(props) {
                         effect="blur"
                         height={193}
                         src={imageSrc}
-                        className="!rounded-[20px] object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
+                        className="!rounded-box object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
                         width={220}
                     />
 
-                    <div className="absolute bottom-[14px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[10px] font-black px-3 py-1 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10">
+                    <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
                         {periodDisplay} Subscribable
                     </div>
 
@@ -212,7 +228,7 @@ function BillItem(props) {
                                 leaveFrom="transform opacity-100 scale-100"
                                 leaveTo="transform opacity-0 scale-95"
                             >
-                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-box bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-box bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
@@ -266,14 +282,14 @@ function BillItem(props) {
                 >
                     <div>
                         {itm.goal_label ? (
-                            <p className="text-[11px] font-bold text-center text-gray-500 uppercase tracking-wide mb-0.5">
+                            <p className="max-w-full truncate text-[10px] font-bold text-center text-black/60 uppercase tracking-wide mb-0.5 sm:text-[12px]">
                                 🎯 {itm.goal_label}
                             </p>
                         ) : null}
-                        <h4 className="text-lg font-black !text-black text-center el1 uppercase tracking-wide leading-tight">
+                        <h4 className="text-[13px] font-black !text-black text-center el1 uppercase tracking-wide leading-tight sm:text-lg">
                             {itm.name}
                         </h4>
-                        <h5 className="text-center font-black text-2xl text-black mt-0.5 mb-0.5 titleprice">
+                        <h5 className="text-center font-black text-[17px] text-black mt-0.5 mb-0.5 titleprice sm:text-2xl">
                             {isCreator ? (
                                 formatMultiPrice(
                                     itm.price,
@@ -290,7 +306,7 @@ function BillItem(props) {
                                         ),
                                         itm?.currency || "GBP",
                                     )}
-                                    <div className="text-[10px] text-gray-600 font-bold mt-1 leading-tight text-center">
+                                    <div className="text-[12px] text-black/80 font-bold mt-1 leading-tight text-center">
                                         *Includes platform and payment
                                         processing fees
                                     </div>
@@ -303,7 +319,12 @@ function BillItem(props) {
                     {/* Sits UNDER the reward line: it describes how the reward
                         is delivered, so it reads as a footnote to it, not as
                         the item's own subtitle. */}
-                    <p className="text-[9px] mt-1 text-center font-semibold text-gray-400 uppercase tracking-wide">
+                    {/* ⚠️ Hidden at two columns. It is the same sentence on every
+                        bill card, so it distinguishes nothing, and at ~170px it
+                        wraps to three lines — the same reason the wish card's
+                        "Exclusive content · instant download" gives way. The
+                        period is already on the badge over the image. */}
+                    <p className="mt-1 hidden text-[12px] text-center font-semibold text-black/60 uppercase tracking-wide sm:block">
                         {periodDisplay} content membership · min. 3 posts/month
                     </p>
 
@@ -317,7 +338,7 @@ function BillItem(props) {
                                A second hidden <AddBills> would be a second
                                sheet with its own form state. */
                             <AddBills
-                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[11px] py-1.5 px-4 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                classes="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[11px] py-1 px-2 sm:text-[12px] sm:py-1.5 sm:px-4 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
                                 text="Edit bill"
                                 item={itm}
                                 isEdit={true}
@@ -330,7 +351,7 @@ function BillItem(props) {
                                 href={route("bill.checkout", {
                                     uuid: itm.uuid,
                                 })}
-                                className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-xs py-2 px-6 rounded-box-sm hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95"
                             >
                                 Subscribe
                             </Link>

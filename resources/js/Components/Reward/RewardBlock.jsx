@@ -41,13 +41,13 @@ export default function RewardBlock({
 
     return (
         <section
-            className={`rounded-box border-[3px] border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${className}`}
+            className={`rounded-box border-[3px] border-black bg-white p-5 ${className}`}
         >
             <header className="mb-4 flex items-center gap-2">
-                <span className="grid h-8 w-8 place-items-center rounded-box-sm border-2 border-black bg-[#FF007F] text-white">
+                <span className="grid h-8 w-8 place-items-center rounded-box-xs border-2 border-black bg-[#FF007F] text-black">
                     <Gift size={16} strokeWidth={2.5} />
                 </span>
-                <h3 className="text-[11px] font-black uppercase tracking-[0.14em]">{label}</h3>
+                <h3 className="text-[12px] font-black uppercase tracking-[0.14em]">{label}</h3>
             </header>
 
             <p className="text-left text-lg font-black leading-tight">{reward.title}</p>
@@ -56,7 +56,7 @@ export default function RewardBlock({
                 <p className="mt-1 text-left text-sm font-medium text-neutral-500">{reward.description}</p>
             )}
 
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#A2E4B8] px-3 py-1 text-[11px] font-black uppercase tracking-wide">
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border-2 border-black bg-[#A2E4B8] px-3 py-1 text-[12px] font-black uppercase tracking-wide">
                 {typeLabel(reward)}
             </p>
 
@@ -84,7 +84,7 @@ export default function RewardBlock({
 
             {(reward.perks?.length > 0 || reward.post_access) && (
                 <div className="pt-4">
-                    <p className="mb-3 text-left text-[11px] font-black uppercase tracking-[0.14em]">
+                    <p className="mb-3 text-left text-[12px] font-black uppercase tracking-[0.14em]">
                         Every month, while you're subscribed
                     </p>
                     <ul className="space-y-2">

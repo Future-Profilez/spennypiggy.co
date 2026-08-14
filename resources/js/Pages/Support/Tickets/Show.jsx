@@ -208,12 +208,12 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
       `}</style>
       <div className=" h-[calc(100dvh-133px)] md:h-[calc(100dvh-80px)] bg-[#fdfbf7] font-cera-medium flex flex-col overflow-hidden  md:px-6  md:py-6">
         <div className="max-w-[1400px] mx-auto w-full flex flex-col h-full gap-4 relative min-h-0">
-          <div className="flex-1 flex flex-col bg-white md:border-[1px] md:border-black md:rounded-[30px]  overflow-hidden min-h-0 relative lg:h-full">
+          <div className="flex-1 flex flex-col bg-white md:border-[1px] md:border-black md:rounded-box  overflow-hidden min-h-0 relative lg:h-full">
             <div className="bg-yellow-300 text-white border-b-[1px] border-black !border-t-0 !border-l-0 !border-r-0 p-4 flex items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-3">
                 <Link
                   href={viewer?.role === 'creator' ? '/creator/disputes' : '/history'}
-                  className="w-10 h-10 flex items-center justify-center rounded-full border-[3px] border-black bg-white text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  className="w-10 h-10 flex items-center justify-center rounded-full border-[3px] border-black bg-white text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                 >
                   <ChevronLeft size={20} strokeWidth={3} />
                 </Link>
@@ -223,14 +223,14 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                   </h1>
                 </div>
               </div>
-              <div className={`text-center px-2 md:px-4 py-2 rounded-full border-[3px] border-black text-black text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${getStatusColor()}`}>
+              <div className={`text-center px-2 md:px-4 py-2 rounded-full border-[3px] border-black text-black text-[12px] md:text-[12px] font-black uppercase tracking-widest ${getStatusColor()}`}>
                 {statusLabel}
               </div>
             </div>
 
             <div className="flex-1 flex flex-col lg:flex-row  overflow-auto lg:overflow-hidden min-h-0">
               <div className="w-full lg:w-1/3 p-4 overflow-y-auto customScrollbar space-y-6 shrink-0  bg-[#fdfbf7]">
-                <div className="bg-white border-[3px] border-black rounded-[20px] overflow-hidden w-full">
+                <div className="bg-white border-[3px] border-black rounded-box-sm overflow-hidden w-full">
                   <div className="bg-yellow-100 p-3 md:p-4 border-b-[3px] border-black !border-t-0 !border-l-0 !border-r-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-[#FF007F] font-black uppercase tracking-wide">
                       <AlertCircle size={20} strokeWidth={3} />
@@ -239,19 +239,19 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                   </div>
                   <div className="p-4 md:p-5 space-y-4">
                     {ticket.sla_deadline && !['resolved', 'refunded', 'rejected'].includes(ticket.status) && (
-                      <div className="flex items-center gap-1 text-[10px] md:text-xs font-black text-yellow-800 uppercase tracking-widest bg-yellow-300 px-3 py-1.5 rounded-full border-2 border-black">
+                      <div className="flex items-center gap-1 text-[12px] md:text-xs font-black text-yellow-800 uppercase tracking-widest bg-yellow-300 px-3 py-1.5 rounded-full border-2 border-black">
                         <Clock size={14} strokeWidth={3} /> SLA: {format(new Date(ticket.sla_deadline), 'MMM do, h:mm a')}
                       </div>
                     )}
                     {['resolved', 'refunded'].includes(ticket.status) && ticket.resolved_at && (
-                      <div className="flex items-center gap-1 text-[10px] md:text-xs font-black text-green-800 uppercase tracking-widest bg-green-300 px-3 py-1.5 rounded-full border-2 border-black">
+                      <div className="flex items-center gap-1 text-[12px] md:text-xs font-black text-green-800 uppercase tracking-widest bg-green-300 px-3 py-1.5 rounded-full border-2 border-black">
                         <CheckCircle size={14} strokeWidth={3} /> Resolved: {format(new Date(ticket.resolved_at), 'MMM do, h:mm a')}
                       </div>
                     )}
                     {ticket.reason && (
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Reason</div>
-                        <div className="text-sm font-bold text-black bg-gray-100 p-3 rounded-[15px] border-2 border-black">
+                        <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-1">Reason</div>
+                        <div className="text-sm font-bold text-black bg-gray-100 p-3 rounded-box-sm border-2 border-black">
                           {ticket.reason}
                         </div>
                       </div>
@@ -259,18 +259,18 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
                     {transaction && (
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Transaction Details</div>
-                        <div className="bg-gray-50 rounded-[15px] border-2 border-black p-4 space-y-2">
+                        <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-2">Transaction Details</div>
+                        <div className="bg-gray-50 rounded-box-sm border-2 border-black p-4 space-y-2">
                           <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date</span>
+                            <span className="text-[12px] font-black uppercase tracking-widest text-black/60">Date</span>
                             <span className="text-sm font-bold text-black">{transaction.date}</span>
                           </div>
                           <div className="flex justify-between items-center border-b-2 border-dashed border-gray-300 pb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Amount</span>
+                            <span className="text-[12px] font-black uppercase tracking-widest text-black/60">Amount</span>
                             <span className="text-sm font-bold text-black">{transaction.currency} {Number(viewer?.role === 'creator' ? (transaction.net_amount || transaction.amount || 0) : (transaction.amount || 0)).toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between items-center pt-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Item</span>
+                            <span className="text-[12px] font-black uppercase tracking-widest text-black/60">Item</span>
                             <span className="text-sm font-bold text-black text-right">{transaction.description}</span>
                           </div>
                         </div>
@@ -279,8 +279,8 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
                     {transaction?.message && (
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Supporter's Note</div>
-                        <div className="text-sm font-bold text-black bg-purple-100 p-3 rounded-[15px] border-2 border-black">
+                        <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-1">Supporter's Note</div>
+                        <div className="text-sm font-bold text-black bg-purple-100 p-3 rounded-box-sm border-2 border-black">
                           {transaction.message}
                         </div>
                       </div>
@@ -288,40 +288,40 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
                     {evidence ? (
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Evidence</div>
-                        <div className="bg-gray-50 rounded-[15px] border-2 border-black p-4">
+                        <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-2">Evidence</div>
+                        <div className="bg-gray-50 rounded-box-sm border-2 border-black p-4">
                           <details>
                             <summary className="cursor-pointer text-xs font-black uppercase tracking-widest text-black select-none">View Evidence</summary>
                             <div className="mt-3 space-y-3">
                               <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
                                 <div className="flex items-start justify-between gap-3">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">IP</div>
+                                  <div className="text-[12px] font-black uppercase tracking-widest text-black/60">IP</div>
                                   <div className="text-right break-all">{evidence?.last?.ip || evidence?.created?.ip || 'N/A'}</div>
                                 </div>
                                 <div className="flex items-start justify-between gap-3">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">User-Agent</div>
+                                  <div className="text-[12px] font-black uppercase tracking-widest text-black/60">User-Agent</div>
                                   <div className="text-right break-all">{evidence?.last?.user_agent || evidence?.created?.user_agent || 'N/A'}</div>
                                 </div>
                                 <div className="flex items-start justify-between gap-3">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Session</div>
+                                  <div className="text-[12px] font-black uppercase tracking-widest text-black/60">Session</div>
                                   <div className="text-right break-all">{evidence?.last?.session_id || evidence?.created?.session_id || 'N/A'}</div>
                                 </div>
                               </div>
 
                               {evidence?.stripe ? (
                                 <div className="pt-3 border-t-2 border-dashed border-gray-300">
-                                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Stripe</div>
+                                  <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-2">Stripe</div>
                                   <div className="grid grid-cols-1 gap-2 text-xs font-bold text-gray-800">
                                     <div className="flex items-start justify-between gap-3">
-                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">PI Status</div>
+                                      <div className="text-[12px] font-black uppercase tracking-widest text-black/60">PI Status</div>
                                       <div className="text-right break-all">{evidence?.stripe?.payment_intent?.status || 'N/A'}</div>
                                     </div>
                                     <div className="flex items-start justify-between gap-3">
-                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Risk</div>
+                                      <div className="text-[12px] font-black uppercase tracking-widest text-black/60">Risk</div>
                                       <div className="text-right break-all">{evidence?.stripe?.charge?.outcome?.risk_level || 'N/A'}</div>
                                     </div>
                                     <div className="flex items-start justify-between gap-3">
-                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">3DS</div>
+                                      <div className="text-[12px] font-black uppercase tracking-widest text-black/60">3DS</div>
                                       <div className="text-right break-all">{evidence?.stripe?.charge?.card?.three_d_secure?.result || 'N/A'}</div>
                                     </div>
                                   </div>
@@ -334,8 +334,8 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                     ) : null}
 
                     {canActOnRefund && viewer?.role === 'supporter' && (
-                      <div className="mt-4 bg-yellow-100 p-3 rounded-[15px] border-2 border-black text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-800">
+                      <div className="mt-4 bg-yellow-100 p-3 rounded-box-sm border-2 border-black text-center">
+                        <p className="text-[12px] font-black uppercase tracking-widest text-yellow-800">
                           Refund Request Pending: The creator must respond before the SLA deadline.
                         </p>
                       </div>
@@ -347,7 +347,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                           type="button"
                           onClick={resolveTicket}
                           disabled={acting}
-                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-green-400 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-70 text-center"
+                          className="w-full px-6 py-3 rounded-box-sm border-[3px] border-black font-black uppercase tracking-widest text-xs bg-green-400 text-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-70 text-center"
                         >
                           Mark as Resolved
                         </button>
@@ -359,7 +359,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                         <button
                           type="button"
                           onClick={() => setShowActionBox(true)}
-                          className="w-full px-6 py-3 rounded-[15px] border-[3px] border-black font-black uppercase tracking-widest text-xs bg-yellow-300 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all text-center"
+                          className="w-full px-6 py-3 rounded-box-sm border-[3px] border-black font-black uppercase tracking-widest text-xs bg-yellow-300 text-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all text-center"
                         >
                           Take Action
                         </button>
@@ -372,7 +372,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                               <textarea
                                 value={actionMessage}
                                 onChange={(e) => setActionMessage(e.target.value)}
-                                className="w-full min-h-[100px] bg-white border-2 border-black rounded-[15px] p-3 font-bold text-sm resize-y focus:ring-0 customScrollbar"
+                                className="w-full min-h-[100px] bg-white border-2 border-black rounded-box-sm p-3 font-bold text-sm resize-y focus:ring-0 customScrollbar"
                                 placeholder="Add a note (required for rejection)…"
                               />
                               <div className="flex justify-end gap-3 shrink-0">
@@ -398,7 +398,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
                 <div className="flex-1 h-full lg:overflow-y-auto p-4 md:p-6 space-y-6 bg-[#fdfbf7] customScrollbar relative">
                   {(!localMessages || !localMessages.length) ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <div className="flex flex-col items-center justify-center h-full text-black/60">
                       <MessageSquare size={48} strokeWidth={2} className="mb-3 opacity-50" />
                       <p className="text-sm font-bold uppercase tracking-widest">No messages yet</p>
                     </div>
@@ -409,10 +409,10 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                         <div key={m.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                           {m.sender_role !== 'admin' && m.sender?.avatar ? (
                             <div className="mt-[5px] flex-shrink-0">
-                              <img src={m.sender.avatar} alt="Avatar" className="w-10 h-10 object-cover rounded-[10px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] " />
+                              <img src={m.sender.avatar} alt="Avatar" className="w-10 h-10 object-cover rounded-box-sm border-2 border-black " />
                             </div>
                           ) : (
-                            <div className="mt-[5px] flex-shrink-0 w-10 h-10 rounded-[10px] border-2 border-black bg-purple-200 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mt-[5px] flex-shrink-0 w-10 h-10 rounded-box-sm border-2 border-black bg-purple-200 flex items-center justify-center ">
                               <span className="font-black text-black text-xs uppercase">
                                 {m.sender_role.charAt(0)}
                               </span> 
@@ -421,14 +421,14 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
 
                           <div className={`max-w-[80%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                             <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-800">
+                              <span className="text-[12px] font-black uppercase tracking-widest text-gray-800">
                                 {m.sender_role === 'admin' ? 'Admin / Support' : m?.sender?.username ? `@${m.sender.username}` : (m.sender_role === 'supporter' ? 'Guest Supporter' : m.sender_role)}
                               </span>
-                              <span className="text-[9px] font-bold text-gray-500">
+                              <span className="text-[12px] font-bold text-black/60">
                                 {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                               </span>
                             </div>
-                            <div className={`min-w-[100px] p-3 md:p-4 rounded-[20px] border-2 border-black text-sm font-bold whitespace-pre-wrap ${
+                            <div className={`min-w-[100px] p-3 md:p-4 rounded-box-sm border-2 border-black text-sm font-bold whitespace-pre-wrap ${
                               isMe 
                                 ? 'bg-yellow-300 text-black rounded-tr-sm ' 
                                 : m.sender_role === 'admin'
@@ -451,7 +451,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                                             href={url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className={`block rounded-[14px] border-2 border-black overflow-hidden ${isMe ? 'bg-white/60' : 'bg-yellow-50'}`}
+                                            className={`block rounded-box-sm border-2 border-black overflow-hidden ${isMe ? 'bg-white/60' : 'bg-yellow-50'}`}
                                           >
                                             <img src={url} alt={typeof a === 'string' ? 'Attachment' : (a?.name || 'Attachment')} className="w-full h-auto object-cover max-h-[250px]" />
                                           </a>
@@ -464,10 +464,10 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                                           href={url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className={`rounded-[14px] border-2 border-black px-3 py-2 text-xs font-black flex items-center justify-between gap-3 ${isMe ? 'bg-white/60 text-black' : 'bg-yellow-50 text-black'}`}
+                                          className={`rounded-box-sm border-2 border-black px-3 py-2 text-xs font-black flex items-center justify-between gap-3 ${isMe ? 'bg-white/60 text-black' : 'bg-yellow-50 text-black'}`}
                                         >
                                           <span className="truncate">{typeof a === 'string' ? url.split('/').pop() : (a?.name || 'Attachment')}</span>
-                                          <span className="text-[10px] font-black uppercase tracking-widest">File</span>
+                                          <span className="text-[12px] font-black uppercase tracking-widest">File</span>
                                         </a>
                                       );
                                     })}
@@ -486,7 +486,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                 <div className="bg-white z-20 absolute lg:sticky bottom-0 w-full">
                   {['resolved', 'refunded', 'rejected'].includes(ticket.status) ? (
                     <div className="bg-gray-100 p-4 text-center shrink-0">
-                      <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+                      <p className="text-xs font-black uppercase tracking-widest text-black/60">
                         This ticket is closed and cannot receive new messages.
                       </p>
                     </div>
@@ -500,22 +500,22 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                     <div className="w-full max-h-[250px] overflow-y-auto customScrollbar">
                       {attachments.length ? (
                         <div className="p-3 bg-[#fdfbf7]">
-                          <div className="p-3 border-2 border-black rounded-[15px] bg-white">
+                          <div className="p-3 border-2 border-black rounded-box-sm bg-white">
                             <div className="flex items-center justify-between gap-4 mb-2">
-                              <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Attachments</div>
-                              <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">{attachments.length}/5</div>
+                              <div className="text-[12px] font-black uppercase tracking-widest text-black/60">Attachments</div>
+                              <div className="text-[12px] font-black uppercase tracking-widest text-black/60">{attachments.length}/5</div>
                             </div>
                             <div className="space-y-2">
                               {attachments.map((a, idx) => (
                                 <div key={`${a.uuid || a.url || 'file'}-${idx}`} className="flex items-center justify-between gap-3">
                                   <div className="min-w-0">
                                     <div className="text-xs font-black truncate">{a.name || 'Attachment'}</div>
-                                    <div className="text-[10px] font-bold text-gray-600">{a.size ? `${Math.ceil(a.size / 1024)} KB` : ''}</div>
+                                    <div className="text-[12px] font-bold text-gray-600">{a.size ? `${Math.ceil(a.size / 1024)} KB` : ''}</div>
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => removeAttachment(idx)}
-                                    className="h-9 px-3 rounded-[12px] border-2 border-black font-black uppercase tracking-widest text-[10px] bg-white"
+                                    className="h-9 px-3 rounded-box-sm border-2 border-black font-black uppercase tracking-widest text-[12px] bg-white"
                                   >
                                     Remove
                                   </button>
@@ -541,7 +541,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                         <button
                           type="button"
                           onClick={() => setShowAttachmentPicker(true)}
-                          className="absolute right-[85px] top-[13px] w-[40px] h-[40px] rounded-[15px] border-[2px] border-black bg-white text-black flex items-center justify-center transition-all hover:bg-gray-100"
+                          className="absolute right-[85px] top-[13px] w-[40px] h-[40px] rounded-box-sm border-[2px] border-black bg-white text-black flex items-center justify-center transition-all hover:bg-gray-100"
                           title="Attach file"
                         >
                           <Paperclip size={18} strokeWidth={3} />
@@ -550,7 +550,7 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                           type="button"
                           disabled={sending || !text.trim()}
                           onClick={sendMessage}
-                          className="px-3 py-2 absolute right-5 top-[13px] flex-shrink-0 h-[40px] rounded-[15px] border-[2px] border-black bg-[#FF007F] text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pink-600"
+                          className="px-3 py-2 absolute right-5 top-[13px] flex-shrink-0 h-[40px] rounded-box-sm border-[2px] border-black bg-[#FF007F] text-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
                         >
                           <Send size={18} strokeWidth={3} className="mr-1" />
                         </button>
@@ -563,12 +563,12 @@ export default function Show({ auth, ticket, transaction, messages, viewer }) {
                   <div className="bg-white p-4">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <div className="text-xs font-black uppercase tracking-widest text-gray-500">Attachments</div>
+                        <div className="text-xs font-black uppercase tracking-widest text-black/60">Attachments</div>
                         <div className="text-lg font-black mt-1">Choose file</div>
-                        <div className="text-[10px] font-bold text-gray-600 mt-1">Up to 5 files. Max 5MB each.</div>
+                        <div className="text-[12px] font-bold text-gray-600 mt-1">Up to 5 files. Max 5MB each.</div>
                       </div>
                     </div>
-                    <div className="mt-4 rounded-[18px] border-2 border-black bg-gray-50 p-3">
+                    <div className="mt-4 rounded-box-sm border-2 border-black bg-gray-50 p-3">
                       <div className="w-full">
                         <GlobalUploader
                           ref={uploaderRef}

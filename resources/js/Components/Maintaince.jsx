@@ -5,7 +5,7 @@ export default function Maintaince() {
          body {padding-bottom: 0px !important;}
       `}</style>
       <div className="min-h-dvh md:py-12 overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF007F] via-[#EFEA7B] to-white p-6">
-         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-[30px]   md:rounded-[30px]   shadow-xl p-6 sm:p-8 md:p-12 text-center relative">
+         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-box md:rounded-box p-6 sm:p-8 md:p-12 text-center relative">
             <div className="absolute inset-x-0 -bottom-10 opacity-10 pointer-events-none">
                   <div className="h-24 bg-repeat-x bg-[radial-gradient(circle_at_1px_1px,#F94F96_1px,transparent_0)]" />
             </div>
@@ -22,21 +22,21 @@ export default function Maintaince() {
             <p className="text-gray-700 mb-2">
                   This page is temporarily unavailable while we roll out some upgrades.
             </p>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-black/60 mb-6">
                   Your account, payments and wishlist data are safe. We are just doing a little housekeeping so things run smoother next time you visit.
             </p>
             <div className="w-full max-w-md mx-auto mb-6">
                   <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
                      <div className="h-full w-2/3 bg-gradient-to-r from-[#FF007F] to-[#EFEA7B] animate-pulse" />
                   </div>
-                  <p className="mt-2 text-xs text-gray-400">
+                  <p className="mt-2 text-xs text-black/60">
                      Spenny Piggy engineers are shuffling coins and polishing pages.
                   </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-3">
                   <button
                      type="button"
-                     className="px-6 py-2.5 rounded-full bg-[#FF007F] text-white font-semibold shadow hover:bg-[#E23F85] transition"
+                     className="px-6 py-2.5 rounded-full bg-[#FF007F] text-black font-semibold hover:brightness-110 transition"
                      onClick={() => {
                         if (window.history.length > 1) {
                               window.history.back();
@@ -54,7 +54,7 @@ export default function Maintaince() {
                      Go to homepage
                   </a>
             </div>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[12px] text-black/60">
                   If this message does not go away after a few minutes, please try again later or reach out through our usual support channels.
             </p>
          </div>

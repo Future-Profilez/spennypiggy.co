@@ -1,0 +1,79 @@
+/* Pull-to-refresh indicator (PWA standalone only — see PullToRefresh.jsx).
+
+   House style: flat white block, 2px black rule, no shadow. The phase is carried
+   by the FILL, so the point of no return is unmissable without reading the label:
+   white while you are still pulling, mint the moment releasing would refresh. */
+
+.ptr-indicator {
+  position: fixed;
+  left: 50%;
+  /* Parked just above the screen; the pull pushes it down into view. Offset by
+     the safe area or it emerges from under the status bar in standalone. */
+  top: calc(env(safe-area-inset-top, 0px) - 48px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 2px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.ptr-indicator[data-phase="pull"],
+.ptr-indicator[data-phase="ready"],
+.ptr-indicator[data-phase="refresh"] {
+  opacity: 1;
+}
+
+/* Releasing now WILL refresh. */
+.ptr-indicator[data-phase="ready"] {
+  background: #05EFB8;
+}
+
+.ptr-indicator[data-phase="refresh"] {
+  background: #E6EA7B;
+}
+
+/* ⚠️ Transform is only eased when the indicator is moving on its own — snapping
+   back, or settling into the refresh position. While the finger is down it must
+   track the finger exactly, so `pull` and `ready` deliberately have no transform
+   transition. */
+.ptr-indicator[data-phase="idle"],
+.ptr-indicator[data-phase="refresh"] {
+  transition: transform 0.22s ease, opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.ptr-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: #FF007F;
+  border-radius: 50%;
+}
+
+.ptr-indicator[data-phase="refresh"] .ptr-spinner {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptr-indicator {
+    transition: opacity 0.12s ease;
+  }
+  .ptr-spinner {
+    animation: none !important;
+  }
+}

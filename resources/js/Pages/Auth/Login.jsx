@@ -507,7 +507,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
     };
 
     const getPasskeyButtonStyle = () => {
-        return "bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition-all duration-200 active:shadow-none active:translate-x-[1px] active:translate-y-[1px]";
+ return "bg-white border-2 border-black hover:bg-gray-50 transition-all duration-200 active:translate-x-[1px] active:translate-y-[1px]";
     };
 
     const handlePasskeyAction = (e) => {
@@ -533,7 +533,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                 `Header` already renders its own 75px spacer, so this only adds
                 breathing room on top of it.
             */}
-            <div className="relative flex min-h-[85vh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
+ <div className="relative flex min-h-[85dvh] flex-col justify-center overflow-hidden bg-[#0B0B0C] px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12 lg:py-16">
                 <div
                     aria-hidden="true"
                     /* Follows the content now the page centres it — pinned to top-0 it
@@ -596,7 +596,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                     )}
 
                     <div
-                        className={`${animate} motion-reduce:animate-none rounded-box border-[3px] border-black bg-white p-4 shadow-black sm:p-6`}
+ className={`${animate} motion-reduce:animate-none rounded-box border-[3px] border-black bg-white p-4 sm:p-6`}
                     >
                         <div>
                             <form onSubmit={checkTFA} className="space-y-4" noValidate>
@@ -679,7 +679,10 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                                     stacked under the password — all the same weight, so
                                     none of them was findable. */}
                                 <div className="flex items-center justify-between gap-3 pt-1">
-                                    <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-black/70">
+ {/* ⚠️ min-h-[44px] on the LABEL, not the box. Measured at
+ 390px the row was 20px tall; the checkbox itself stays
+ small because the label is the real tap target. */}
+ <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-2 text-sm text-black/70">
                                         <input
                                             type="checkbox"
                                             name="remember"
@@ -700,7 +703,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                                         <Link
                                             method="get"
                                             href={route("password.request")}
-                                            className="text-sm font-semibold text-black underline decoration-2 underline-offset-4 hover:text-[#FF007F]"
+ className="inline-flex min-h-[44px] items-center text-sm font-semibold text-black underline decoration-2 underline-offset-4 transition-colors hover:text-[#FF007F]"
                                         >
                                             Forgot password?
                                         </Link>
@@ -739,7 +742,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                                                 <div className="w-full border-t border-gray-200"></div>
                                             </div>
                                             <div className="relative flex justify-center text-xs uppercase">
-                                                <span className="px-2 bg-white text-gray-500">
+ <span className="px-2 bg-white text-black/60">
                                                     Or use passkey
                                                 </span>
                                             </div>
@@ -773,9 +776,13 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                     <aside className="lg:col-start-1 lg:row-start-2 lg:self-start">
                     <p className="text-center text-sm text-white/60 lg:text-left">
                         New to Spenny Piggy?{" "}
+ {/* ⚠️ This link sits INSIDE a sentence, so it cannot take a 44px
+ height without breaking the line. `py-3 -my-3` grows the hit
+ area to ~44px and pulls the same amount back off the layout,
+ so the tap target is real and nothing moves. */}
                         <Link
                             href={route("register")}
-                            className="font-semibold text-[#05EFB8] underline decoration-2 underline-offset-4"
+ className="inline-block py-3 -my-3 font-semibold text-[#05EFB8] underline decoration-2 underline-offset-4"
                         >
                             Create an account
                         </Link>
@@ -820,11 +827,11 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                     }
                 }}
             />
-            <SetupPasskeyPrompt 
-                isOpen={showSetupPrompt} 
-                email={promptEmail} 
-                onSkip={handlePromptClose} 
-                onSuccess={handlePromptClose} 
+            <SetupPasskeyPrompt
+                isOpen={showSetupPrompt}
+                email={promptEmail}
+                onSkip={handlePromptClose}
+                onSuccess={handlePromptClose}
                 silent={true}
             />
         </GuestLayout>

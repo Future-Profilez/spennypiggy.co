@@ -42,8 +42,60 @@ class VisitTracker
         'creator_share',
     ];
 
-    /** Page kinds. The two funnels start in different places. */
-    public const PAGE_TYPES = ['landing', 'creator_profile', 'other'];
+    /**
+     * The paid-ads landing pages, route name => page type.
+     *
+     * These six URLs are the ONLY destinations the Google Ads campaigns send
+     * traffic to, so they get a counter each rather than sharing `landing` with
+     * the home page — "which advert is working" is not answerable from a single
+     * bucket.
+     *
+     * ⚠️ The key is the ROUTE NAME, never the path. `/{username}/{page?}` is a
+     * catch-all declared later in `web.php`, so path matching cannot tell
+     * `/creators` from a creator called "creators".
+     *
+     * ⚠️ The values are also written to `users.signup_landing_page`, and the
+     * admin funnel joins on them. Renaming one orphans every signup already
+     * attributed to it — add a new key instead.
+     */
+    public const AD_LANDING_ROUTES = [
+        'creators' => 'ad_creators',
+        'creators.features' => 'ad_features',
+        'creators.stripe-safe' => 'ad_stripe_safe',
+        'creators.disputes' => 'ad_disputes',
+        'creators.founder-bonus' => 'ad_founder_bonus',
+        'creators.keep-100' => 'ad_keep_100',
+    ];
+
+    /**
+     * Page kinds. The two funnels start in different places.
+     *
+     * ⚠️ Written out rather than derived from `AD_LANDING_ROUTES` — a constant
+     * expression cannot contain a function call, so `array_values()` here is a
+     * fatal parse error, not a tidier spelling. `flush()` enumerates this list,
+     * so a page type missing from it is a counter that is written and never
+     * collected. `AdLandingPageTypesTest` asserts the two stay in step.
+     */
+    public const PAGE_TYPES = [
+        'landing',
+        'creator_profile',
+        'other',
+        'ad_creators',
+        'ad_features',
+        'ad_stripe_safe',
+        'ad_disputes',
+        'ad_founder_bonus',
+        'ad_keep_100',
+    ];
+
+    /**
+     * Cookie holding the FIRST ad landing page a visitor arrived on.
+     *
+     * Separate from the source cookie because they answer different questions:
+     * the source is the channel that paid for the click, this is the argument
+     * that earned it. Both are first-touch and share the same window.
+     */
+    public const LANDING_COOKIE = 'sp_lp';
 
     /** The creator profile page — a catch-all route, so name-matching is the
      * only exact way to tell a profile from an app page. */
@@ -289,12 +341,40 @@ class VisitTracker
         $routeName = $request->route()?->getName();
 
         if ($routeName !== null) {
+            if (isset(self::AD_LANDING_ROUTES[$routeName])) {
+                return self::AD_LANDING_ROUTES[$routeName];
+            }
+
             return $routeName === self::PROFILE_ROUTE ? 'creator_profile' : 'other';
         }
 
         // No matched route (called outside the request lifecycle, e.g. a test):
         // fall back to shape, single segment = probably a username.
         return str_contains($path, '/') ? 'other' : 'creator_profile';
+    }
+
+    /**
+     * The ad landing page this request is on, or null if it is not one.
+     *
+     * Used by the middleware to set the first-touch landing cookie, and by
+     * registration to validate whatever that cookie holds. A cookie is
+     * visitor-supplied, so its value is only ever accepted when it appears in
+     * `AD_LANDING_ROUTES` — otherwise anyone could write an arbitrary string
+     * into `users.signup_landing_page`.
+     */
+    public function resolveAdLanding(Request $request): ?string
+    {
+        $routeName = $request->route()?->getName();
+
+        return $routeName !== null
+            ? (self::AD_LANDING_ROUTES[$routeName] ?? null)
+            : null;
+    }
+
+    /** Whether a value is one of the known ad landing page types. */
+    public static function isAdLanding(?string $value): bool
+    {
+        return $value !== null && in_array($value, self::AD_LANDING_ROUTES, true);
     }
 
     /**

@@ -23,9 +23,9 @@ export default function PlatformAnalytics() {
         <div className="stat-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-6">
             <div className="flex items-start justify-between mb-4 gap-2">
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide break-words">{title}</h3>
+                    <h3 className="text-sm font-medium text-black/80 uppercase tracking-wide break-words">{title}</h3>
                     <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-                    {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+                    {subtitle && <p className="text-sm text-black/80 mt-1">{subtitle}</p>}
                 </div>
                 <div className="shrink-0 p-3 rounded-box bg-gray-100 flex items-center justify-center min-w-[48px]">
                     <Icon size={24} className={color} />
@@ -52,12 +52,12 @@ export default function PlatformAnalytics() {
                     </div>
                 )}
             </div>
-            <p className="text-sm text-gray-600 mb-3">{milestone.description}</p>
+            <p className="text-sm text-black/80 mb-3">{milestone.description}</p>
             <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-900">
                     {milestone.current?.toLocaleString()} / {milestone.target?.toLocaleString()}
                 </span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-black/80">
                     {Math.round((milestone.current / milestone.target) * 100)}%
                 </span>
             </div>
@@ -74,18 +74,18 @@ export default function PlatformAnalytics() {
         <div className="country-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                    <div className="rank-badge flex h-6 w-6 items-center justify-center rounded-full font-gulfs text-12 leading-none text-black/40 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+                    <div className="rank-badge flex h-6 w-6 items-center justify-center rounded-full font-gulfs text-12 leading-none text-black/60 ">
                         {rank}
                     </div>
                     <div className="text-2xl">{country.flag}</div>
                     <div>
                         <h4 className="font-semibold text-gray-900">{country.name}</h4>
-                        <p className="text-sm text-gray-600">{country.creators} creators</p>
+                        <p className="text-sm text-black/80">{country.creators} creators</p>
                     </div>
                 </div>
                 <div className="text-right">
                     <p className="font-bold text-lg">{country.supporters?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-gray-600">supporters</p>
+                    <p className="text-sm text-black/80">supporters</p>
                 </div>
             </div>
         </div>
@@ -107,7 +107,7 @@ export default function PlatformAnalytics() {
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors ml-2 text-sm" 
+                        className="py-1 border border-red-500 text-red-500 inline-flex items-center min-h-[44px] px-3 rounded-box-sm hover:bg-red-50 transition-colors ml-2 text-sm" 
                         onClick={fetchAnalytics}
                     >
                         Retry
@@ -120,7 +120,7 @@ export default function PlatformAnalytics() {
     return (
         <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
             <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📊 Platform Analytics</h2>
-            <p className="text-gray-500 mb-6">Insights into platform performance and growth</p>
+            <p className="text-black/60 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
@@ -180,8 +180,8 @@ export default function PlatformAnalytics() {
                                     <div className="text-2xl">{achievement.icon}</div>
                                     <div>
                                         <h4 className="font-semibold text-gray-900">{achievement.title}</h4>
-                                        <p className="text-sm text-gray-600">{achievement.description}</p>
-                                        <p className="text-xs text-gray-500 mt-1">{achievement.date}</p>
+                                        <p className="text-sm text-black/80">{achievement.description}</p>
+                                        <p className="text-xs text-black/60 mt-1">{achievement.date}</p>
                                     </div>
                                 </div>
                             </div>

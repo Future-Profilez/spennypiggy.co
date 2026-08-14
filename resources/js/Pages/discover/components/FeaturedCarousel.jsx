@@ -33,11 +33,11 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
             <div className="pt-4 mb-6 flex items-end justify-between gap-4">
                 <div className="min-w-0">
                     {kicker && (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#FF007F]">
+                        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.18em] text-[#FF007F]">
                             <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" />
                             {kicker}
                             {!isLoading && items?.length ? (
-                                <span className="ml-1 rounded-[20px] bg-black/[0.06] px-2 py-0.5 text-[10px] font-bold text-black/60">
+                                <span className="ml-1 rounded-box-sm bg-black/[0.06] px-2 py-0.5 text-[12px] font-bold text-black/60">
                                     {items.length}
                                 </span>
                             ) : null}
@@ -48,12 +48,12 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
                         <p className="mt-1.5 max-w-xl text-[13px] font-medium leading-snug text-black/60">{subtitle}</p>
                     )}
                 </div>
-                <Link href={route('discover', { contentType: linkContentType })} className="shrink-0 inline-flex min-h-[44px] items-center text-xs md:text-sm font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-4 rounded-[20px] hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
+                <Link href={route('discover', { contentType: linkContentType })} className="shrink-0 inline-flex min-h-[44px] items-center text-xs md:text-sm font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-4 rounded-box-sm hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
             </div>
             <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : type === 'creator' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4'}`}>
                 {isLoading ? (
                     skeletonItems.map((_, index) => (
-                        <div key={`skeleton-${index}`} className="h-[200px] bg-black/5 animate-pulse border border-black/10 rounded-[30px]" />
+                        <div key={`skeleton-${index}`} className="h-[200px] bg-black/5 animate-pulse border border-black/10 rounded-box" />
                     ))
                 ) : (
                     <>
@@ -79,7 +79,7 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
                         </div>
                     ))}
                     <div className='flex justify-center sm:hidden col-span-full !mt-2'>
-                        <Link href={route('discover', { contentType: linkContentType })} className="text-xs font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-5 py-2 rounded-[20px] hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
+                        <Link href={route('discover', { contentType: linkContentType })} className="text-xs font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white inline-flex items-center min-h-[44px] px-5 py-2 rounded-box-sm hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
                     </div>
                     </>
                      

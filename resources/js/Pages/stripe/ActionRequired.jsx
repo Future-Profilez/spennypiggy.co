@@ -94,7 +94,7 @@ function RequirementCard({ requirement }) {
 
     return (
         <div
-            className={`mb-4 w-full overflow-hidden rounded-box bg-white ring-1 ring-inset ${tone.ring} shadow-sm`}
+            className={`mb-4 w-full overflow-hidden rounded-box bg-white ring-1 ring-inset ${tone.ring} `}
         >
             <div className="flex">
                 <div className={`w-1.5 shrink-0 ${tone.bar}`} aria-hidden="true" />
@@ -119,7 +119,7 @@ function RequirementCard({ requirement }) {
                         </div>
                     </div>
 
-                    <p className="mb-4 text-[15px] leading-relaxed text-gray-600">
+                    <p className="mb-4 text-[15px] leading-relaxed text-black/80">
                         {requirement.message}
                     </p>
 
@@ -128,7 +128,7 @@ function RequirementCard({ requirement }) {
                             className={`mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-box-sm px-4 py-3 text-sm ${
                                 deadline.urgent
                                     ? "bg-red-50 text-red-800"
-                                    : "bg-gray-50 text-gray-700"
+                                    : "bg-gray-50 text-black/80"
                             }`}
                         >
                             <span className="font-semibold">
@@ -140,7 +140,7 @@ function RequirementCard({ requirement }) {
 
                     {fields.length > 0 && (
                         <div className="mb-4 rounded-box-sm bg-gray-50 p-4">
-                            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-black/60">
                                 {requirement.type === "requirement_errors"
                                     ? "What Stripe said"
                                     : "What Stripe still needs"}
@@ -165,7 +165,7 @@ function RequirementCard({ requirement }) {
                     {requirement.action_url ? (
                         <a
                             href={requirement.action_url}
-                            className="flex min-h-[48px] w-full items-center justify-center rounded-box-sm bg-[#FF007F] px-6 py-3 text-center font-gulfs text-sm uppercase text-white transition-colors hover:bg-pink-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF007F] md:text-[17px]"
+                            className="flex min-h-[48px] w-full items-center justify-center rounded-box-sm bg-[#FF007F] px-6 py-3 text-center font-gulfs text-sm uppercase text-black transition-colors hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF007F] md:text-[17px]"
                         >
                             {requirement.action_label || "Resolve this now"}
                         </a>
@@ -178,7 +178,7 @@ function RequirementCard({ requirement }) {
                         </a>
                     ) : null}
 
-                    <p className="mt-3 text-sm text-gray-500">{requirement.action}</p>
+                    <p className="mt-3 text-sm text-black/60">{requirement.action}</p>
                 </div>
             </div>
         </div>

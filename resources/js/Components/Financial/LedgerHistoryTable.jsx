@@ -32,7 +32,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
         let days = 999;
         try { days = (Date.now() - new Date(tx.transaction_date).getTime()) / 86400000; } catch (e) { /* noop */ }
         if (days < 7) return { key: 'pending', label: 'Clearing (7-day hold)', cls: 'bg-amber-50 text-amber-700 border-amber-200' };
-        return { key: 'queued', label: 'Queued', cls: 'bg-gray-50 text-gray-600 border-gray-200' };
+        return { key: 'queued', label: 'Queued', cls: 'bg-gray-50 text-black/80 border-gray-200' };
     };
 
     // Subtle row wash keyed to the payout state, NOT zebra striping — so a creator can scan
@@ -75,13 +75,13 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
     );
 
     return (
-        <div className="bg-white rounded-[30px] border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-box border border-gray-200 overflow-hidden ">
             <div className="p-5 md:p-6 border-b border-gray-100 flex flex-wrap justify-between items-center gap-3">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 tracking-tight">
-                    <FileTextIcon className="text-gray-400" size={20} />
+                    <FileTextIcon className="text-black/60" size={20} />
                     Ledger history {active_tab === 'overview' ? `(${tax_year})` : '(all time)'}
                 </h2>
-                <Link href={route('financial.history', { year: tax_year?.split('-')[0] })} className="text-[11px] text-[#FF007F] hover:text-[#d83a7c] font-semibold uppercase tracking-wide flex items-center gap-1 group">
+                <Link href={route('financial.history', { year: tax_year?.split('-')[0] })} className="text-[12px] text-[#FF007F] hover:text-[#d83a7c] font-semibold uppercase tracking-wide flex items-center gap-1 group">
                     Full history <ChevronRightIcon size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>
@@ -96,11 +96,11 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                             type="button"
                             onClick={() => setFilter(f.key)}
                             className={`px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
-                                active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black/80 hover:bg-gray-200'
                             }`}
                         >
                             {f.label}
-                            <span className={`ml-1.5 tabular-nums ${active ? 'text-white/60' : 'text-gray-400'}`}>{counts[f.key] ?? 0}</span>
+                            <span className={`ml-1.5 tabular-nums ${active ? 'text-white/60' : 'text-black/60'}`}>{counts[f.key] ?? 0}</span>
                         </button>
                     );
                 })}
@@ -109,7 +109,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50">
-                        <tr className="text-gray-500 text-[11px] uppercase font-semibold tracking-wide">
+                        <tr className="text-black/60 text-[12px] uppercase font-semibold tracking-wide">
                             <th className="px-5 md:px-6 py-3.5">Supporter</th>
                             <th className="px-5 md:px-6 py-3.5">Activity</th>
                             <th className="px-5 md:px-6 py-3.5 text-right">Amount</th>
@@ -119,7 +119,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                     <tbody className="divide-y divide-gray-100">
                         {visible.length === 0 ? (
                             <tr>
-                                <td colSpan="4" className="px-6 py-12 text-center text-gray-400 text-sm font-medium">
+                                <td colSpan="4" className="px-6 py-12 text-center text-black/60 text-sm font-medium">
                                     Nothing here yet.
                                 </td>
                             </tr>
@@ -133,17 +133,17 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                         {tx.supporter ? (
                                             <Link href={route('user.show', { username: tx.supporter.username })} className="flex flex-col group/supp">
                                                 <span className="text-gray-900 font-semibold capitalize group-hover/supp:text-[#FF007F] transition-colors leading-tight">{tx.supporter.name}</span>
-                                                <span className="text-[12px] text-gray-400 group-hover/supp:text-[#FF007F]/70 transition-colors">@{tx.supporter.username}</span>
+                                                <span className="text-[12px] text-black/60 group-hover/supp:text-[#FF007F]/70 transition-colors">@{tx.supporter.username}</span>
                                             </Link>
                                         ) : (
                                             <div className="flex flex-col">
                                                 <span className="text-gray-900 font-semibold capitalize leading-tight">{tx.guest_name || 'Guest'}</span>
-                                                {!tx.guest_name && <span className="text-gray-400 italic text-[12px]">Guest user</span>}
+                                                {!tx.guest_name && <span className="text-black/60 italic text-[12px]">Guest user</span>}
                                             </div>
                                         )}
-                                        <div className="text-[12px] text-gray-500 font-medium mt-1.5 tabular-nums">
+                                        <div className="text-[12px] text-black/60 font-medium mt-1.5 tabular-nums">
                                             {new Date(tx.transaction_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                                            <span className="ms-2 text-gray-400">{new Date(tx.transaction_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span className="ms-2 text-black/60">{new Date(tx.transaction_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
                                     </td>
 
@@ -151,7 +151,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                     <td className="px-5 md:px-6 py-4 align-top min-w-[220px]">
                                         <div className="font-semibold text-gray-900 line-clamp-2 leading-snug">{tx.description}</div>
                                         <div className="mt-1.5">
-                                            <span className={`inline-block whitespace-nowrap text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide border ${
+                                            <span className={`inline-block whitespace-nowrap text-[12px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide border ${
                                                 ['digital', 'instant'].includes(tx.item_type)
                                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                                                     : 'bg-blue-50 border-blue-200 text-blue-600'
@@ -171,17 +171,17 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                             platform's cut was invisible on the one screen a
                                             creator opens to understand their money. */}
                                         {tx.type === 'income' && Number(tx.buyer_paid || 0) > 0 && (
-                                            <div className="text-[11px] text-gray-400 font-medium mt-1 tabular-nums">
+                                            <div className="text-[12px] text-black/60 font-medium mt-1 tabular-nums">
                                                 supporter paid {formatCurrency(tx.buyer_paid, tx.currency)}
                                             </div>
                                         )}
                                         {tx.shipping_amount > 0 && (
-                                            <div className="text-[11px] text-gray-400 font-medium mt-1 tabular-nums">
+                                            <div className="text-[12px] text-black/60 font-medium mt-1 tabular-nums">
                                                 incl. {formatCurrency(tx.shipping_amount, tx.currency)} shipping
                                             </div>
                                         )}
                                         {tx.reserve_amount > 0 && !pending && (
-                                            <div className="text-[11px] font-semibold mt-1 tabular-nums flex items-center justify-end gap-1">
+                                            <div className="text-[12px] font-semibold mt-1 tabular-nums flex items-center justify-end gap-1">
                                                 {tx.reserve_status === 'released' ? (
                                                     <span className="text-emerald-600">✓ {formatCurrency(tx.reserve_amount, tx.currency)} reserve settled</span>
                                                 ) : (
@@ -196,15 +196,15 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                     {/* Single payout badge (+ order status / evidence only when relevant) */}
                                     <td className="px-5 md:px-6 py-4 text-right align-top">
                                         <div className="flex flex-col items-end gap-1.5">
-                                            <span className={`px-2.5 py-1 whitespace-nowrap rounded-full text-[10px] font-semibold uppercase tracking-wide border ${po.cls}`}>
+                                            <span className={`px-2.5 py-1 whitespace-nowrap rounded-full text-[12px] font-semibold uppercase tracking-wide border ${po.cls}`}>
                                                 {po.label}
                                             </span>
                                             {tx.item_status && (
-                                                <span className={`px-2 py-0.5 whitespace-nowrap rounded-full text-[10px] font-medium tracking-wide ${
+                                                <span className={`px-2 py-0.5 whitespace-nowrap rounded-full text-[12px] font-medium tracking-wide ${
                                                     ['complete', 'delivered', 'accepted'].some((s) => tx.item_status.endsWith(s)) ? 'text-emerald-600' :
                                                     tx.item_status === 'pending' || tx.item_status === 'processing' ? 'text-amber-600' :
                                                     tx.item_status === 'shipped' ? 'text-blue-600' :
-                                                    'text-gray-500'
+                                                    'text-black/60'
                                                 }`}>{tx.item_status.replace('_', ' ')}</span>
                                             )}
                                             {tx.type === 'income' && tx.status === 'disputed' && tx.uuid && !String(tx.uuid).startsWith('exp-') && (
@@ -212,7 +212,7 @@ export default function LedgerHistoryTable({ transactions, tax_year, active_tab,
                                                     href={route('financial.evidence-pack', { uuid: tx.uuid })}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-[10px] font-semibold uppercase tracking-wide text-[#FF007F]/80 hover:text-[#FF007F] transition-colors"
+                                                    className="text-[12px] font-semibold uppercase tracking-wide text-[#FF007F]/80 hover:text-[#FF007F] transition-colors"
                                                 >
                                                     Evidence pack →
                                                 </a>

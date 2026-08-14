@@ -107,7 +107,7 @@ export default function PricingSection() {
                                 >
                                     {f.figure}
                                 </p>
-                                <p className="font-poppins text-gray-400 text-sm leading-relaxed mt-3">
+                                <p className="font-poppins text-white/60 text-sm leading-relaxed mt-3">
                                     {f.label}
                                 </p>
                             </div>
@@ -116,7 +116,7 @@ export default function PricingSection() {
                 </div>
 
                 <FadeIn y={16} delay={0.1}>
-                    <p className="font-poppins text-gray-400 text-xs md:text-sm text-center max-w-2xl mx-auto mt-8 leading-relaxed">
+                    <p className="font-poppins text-white/60 text-xs md:text-sm text-center max-w-2xl mx-auto mt-8 leading-relaxed">
                         Supporters cover a platform fee at checkout and see the full total before they pay
                         &mdash;{' '}
                         <a

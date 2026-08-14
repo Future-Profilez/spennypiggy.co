@@ -12,11 +12,11 @@ export default function AddMoreTile({
             <button
                 type="button"
                 onClick={onClick}
-                className={`group relative billbox wish-item-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all w-full ${className}`}
+                className={`group relative billbox wish-item-box transition-colors duration-200 hover:bg-black/[0.03] w-full ${className}`}
             >
-                <div className="mb-3 sm:mb-4 bg-white h-full relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black overflow-hidden w-full">
+                <div className="mb-3 sm:mb-4 bg-white h-full relative !rounded-box !border-[3px] border-black overflow-hidden w-full">
                     <div className="relative !overflow-hidden !bg-white p-3 !pb-0">
-                        <div className="relative !rounded-[20px] object-cover border-2 border-black w-full h-[180px] mx-auto bg-gradient-to-br from-white via-pink-50 to-yellow-50 flex items-center justify-center overflow-hidden">
+                        <div className="relative !rounded-box-sm object-cover border-2 border-black w-full h-[180px] mx-auto bg-gradient-to-br from-white via-pink-50 to-yellow-50 flex items-center justify-center overflow-hidden">
                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/10" />
                             <div className="relative z-10 w-20 h-12 bg-[#FF007F] rounded-full border-[3px] border-black flex items-center justify-center">
                                 <span className="text-black font-black text-3xl mb-1">
@@ -37,17 +37,17 @@ export default function AddMoreTile({
                         </div>
 
                         {subtitle ? (
-                            <p className="text-xs mt-3 text-center font-bold text-gray-800">
+                            <p className="text-xs mt-3 text-center font-bold text-black/80">
                                 {subtitle}
                             </p>
                         ) : (
-                            <p className="text-xs mt-3 text-center font-bold text-gray-800">
+                            <p className="text-xs mt-3 text-center font-bold text-black/80">
                                 Create another bill for your supporters.
                             </p>
                         )}
 
                         <div className="flex justify-center mt-auto mb-2 pt-5">
-                            <div className="bg-[#FF007F] border-[3px] border-black text-white font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl">
+                            <div className="bg-[#FF007F] border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-box-sm">
                                 Create Bill
                             </div>
                         </div>
@@ -71,12 +71,12 @@ export default function AddMoreTile({
             <button
                 type="button"
                 onClick={onClick}
-                className={`group w-full bg-[#fdfbf7] rounded-[30px] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`}
+                className={`group w-full bg-[#fdfbf7] rounded-box border-[3px] border-black transition-colors duration-200 hover:bg-black/[0.03] ${className}`}
             >
                 <div className="p-5 md:p-6 lg:flex items-center space-y-4 lg:gap-6">
                     <div className="relative shrink-0">
                         <div className="absolute -inset-2 rounded-full" />
-                        <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full border-[3px] border-black bg-white flex items-center justify-center group-hover:-translate-y-1 transition-transform">
+                        <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full border-[3px] border-black bg-white flex items-center justify-center transition-colors duration-200 group-hover:bg-black/[0.04]">
                             <span className="text-black font-black text-3xl md:text-4xl mb-1">
                                 +
                             </span>
@@ -88,14 +88,14 @@ export default function AddMoreTile({
                             {title}
                         </div>
                         {subtitle ? (
-                            <div className="mt-1 text-sm font-bold text-gray-700 max-w-[520px]">
+                            <div className="mt-1 text-sm font-bold text-black/80 max-w-[520px]">
                                 {subtitle}
                             </div>
                         ) : null}
                     </div>
 
                     <div className="shrink-0">
-                        <div className="bg-[#FF007F] border-[3px] border-black px-5 py-2 rounded-full transition-all font-bold text-white uppercase text-sm text-black">
+                        <div className="bg-[#FF007F] border-[3px] border-black px-5 py-2 rounded-full font-bold text-black uppercase text-sm">
                             Add New
                         </div>
                     </div>
@@ -105,7 +105,7 @@ export default function AddMoreTile({
     }
 
     const isCompact = density === "compact";
-    const buttonClasses = `group bg-[#fdfbf7] rounded-[30px] border-[3px] border-black overflow-hidden w-full ${minHeightClass} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${className}`;
+    const buttonClasses = `group bg-[#fdfbf7] rounded-box border-[3px] border-black overflow-hidden w-full ${minHeightClass} transition-colors duration-200 hover:bg-black/[0.03] ${className}`;
 
     return (
         <button type="button" onClick={onClick} className={buttonClasses}>
@@ -117,7 +117,7 @@ export default function AddMoreTile({
                 <div className="relative">
                     <div className="absolute -inset-2 rounded-full" />
                     <div
-                        className={`relative rounded-full border-[3px] border-black bg-white flex items-center justify-center group-hover:-translate-y-1 transition-transform ${
+                        className={`relative rounded-full border-[3px] border-black bg-white flex items-center justify-center transition-colors duration-200 group-hover:bg-black/[0.04] ${
                             isCompact ? "w-16 h-16" : "w-20 h-20"
                         }`}
                     >
@@ -140,7 +140,7 @@ export default function AddMoreTile({
                 </div>
                 {subtitle ? (
                     <div
-                        className={`font-bold text-gray-700 max-w-[260px] ${
+                        className={`font-bold text-black/80 max-w-[260px] ${
                             isCompact ? "text-xs" : "text-sm"
                         }`}
                     >
@@ -149,7 +149,7 @@ export default function AddMoreTile({
                 ) : null}
 
                 <div
-                    className={`bg-[#FF007F] border-[3px] border-black rounded-full transition-all text-white font-bold uppercase text-black ${
+                    className={`bg-[#FF007F] border-[3px] border-black rounded-full text-black font-bold uppercase ${
                         isCompact
                             ? "mt-2 px-5 py-2 text-xs"
                             : "mt-2 px-6 py-2 text-sm"

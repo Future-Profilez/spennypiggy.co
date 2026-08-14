@@ -21,7 +21,10 @@ export default function Modal({ children, show = false, maxWidth = '2xl', closea
             <Dialog
                 as="div"
                 id="modal"
-                className="popupmodal fixed inset-0 flex overflow-y-auto px-4 py-6 sm:px-0 items-center z-50 transform transition-all"
+                // Safe-area padding: installed as a PWA this dialog reaches the
+                // physical screen edges, so a plain py-6 puts the panel under the
+                // status bar / home indicator.
+                className="popupmodal fixed inset-0 flex overflow-y-auto px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-0 items-center z-50 transform transition-all"
                 onClose={close}
             >
                 <Transition.Child
@@ -46,7 +49,10 @@ export default function Modal({ children, show = false, maxWidth = '2xl', closea
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <Dialog.Panel
-                        className={`mb-6 bg-white rounded-[30px]    overflow-hidden shadow-xl transform transition-all sm:w-full sm:mx-auto ${maxWidthClass}`}
+                        // Capped so a tall child can never push its own close/submit
+                        // row off the bottom of a phone; the panel takes the scroll.
+                        // dvh, never vh — mobile viewports lie.
+                        className={`mb-6 max-h-[85dvh] overflow-y-auto bg-white rounded-box transform transition-all sm:w-full sm:mx-auto ${maxWidthClass}`}
                     >
                         {children}
                     </Dialog.Panel>

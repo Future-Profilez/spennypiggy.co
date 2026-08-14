@@ -54,7 +54,7 @@ export default function SetupSteps() {
                                     </span>
                                     <span className="text-4xl mb-4 leading-none">{s.emoji}</span>
                                     <h3 className="font-gulfs uppercase text-white text-2xl mb-2 leading-tight">{s.title}</h3>
-                                    <p className="font-poppins text-gray-400 text-sm md:text-base leading-relaxed">{s.text}</p>
+                                    <p className="font-poppins text-white/60 text-sm md:text-base leading-relaxed">{s.text}</p>
                                 </div>
                             </TiltCard>
                         </StaggerItem>

@@ -49,12 +49,12 @@ export default function ItemFunnelLine({ funnel, className = "" }) {
                     }
                     fallback={
                         viewState === "none" ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase leading-tight text-yellow-700">
+                            <span className="inline-flex items-center gap-1 text-[12px] font-black uppercase leading-tight text-yellow-700">
                                 <EyeOff size={12} strokeWidth={2.6} />
                                 No views
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase leading-tight text-gray-400">
+                            <span className="inline-flex items-center gap-1 text-[12px] font-black uppercase leading-tight text-black/60">
                                 <Clock size={12} strokeWidth={2.6} />
                                 Counting
                             </span>
@@ -110,7 +110,7 @@ function Sources({ sources }) {
     if (!sources?.length) return null;
 
     return (
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+        <p className="mt-1 text-[12px] font-bold uppercase tracking-wide text-black/60">
             From{" "}
             {sources.map((s, i) => (
                 <span key={s.source}>
@@ -141,7 +141,7 @@ function Cell({ value, label, title, fallback, bordered = false, tone = "plain" 
                     </span>
                 )}
             </div>
-            <div className="mt-1 text-[9px] font-black uppercase leading-tight tracking-wide text-gray-500">
+            <div className="mt-1 text-[12px] font-black uppercase leading-tight tracking-wide text-black/60">
                 {label}
             </div>
         </div>
@@ -158,7 +158,7 @@ function Cell({ value, label, title, fallback, bordered = false, tone = "plain" 
 function Verdict({ viewState, viewers, started, sold, viewToSale, windowDays }) {
     if (viewState === "none") {
         return (
-            <p className="mt-1.5 text-[11px] font-bold leading-snug text-yellow-800">
+            <p className="mt-1.5 text-[12px] font-bold leading-snug text-yellow-800">
                 Nobody found this in {windowDays} days. Share the link — it is not being seen.
             </p>
         );
@@ -166,7 +166,7 @@ function Verdict({ viewState, viewers, started, sold, viewToSale, windowDays }) 
 
     if (viewState !== "ok") {
         return (
-            <p className="mt-1.5 text-[11px] font-bold leading-snug text-gray-400">
+            <p className="mt-1.5 text-[12px] font-bold leading-snug text-black/60">
                 View counting has just started. Checkout and sales are already accurate.
             </p>
         );
@@ -179,7 +179,7 @@ function Verdict({ viewState, viewers, started, sold, viewToSale, windowDays }) 
 
     if (sold === 0 && started === 0) {
         return (
-            <p className="mt-1.5 text-[11px] font-bold leading-snug text-yellow-800">
+            <p className="mt-1.5 text-[12px] font-bold leading-snug text-yellow-800">
                 {viewers} people looked and none reached checkout — usually the price or the description.
             </p>
         );
@@ -187,14 +187,14 @@ function Verdict({ viewState, viewers, started, sold, viewToSale, windowDays }) 
 
     if (sold === 0) {
         return (
-            <p className="mt-1.5 text-[11px] font-bold leading-snug text-yellow-800">
+            <p className="mt-1.5 text-[12px] font-bold leading-snug text-yellow-800">
                 {started} reached checkout and none finished. Worth checking the total they see at payment.
             </p>
         );
     }
 
     return (
-        <p className="mt-1.5 text-[11px] font-bold leading-snug text-gray-600">
+        <p className="mt-1.5 text-[12px] font-bold leading-snug text-black/80">
             <span className="font-black text-black">{viewToSale}%</span> of people who saw this bought it.
         </p>
     );

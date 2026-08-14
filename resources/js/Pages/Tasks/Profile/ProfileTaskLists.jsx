@@ -52,7 +52,7 @@ export default function ProfileTaskLists({
                         <div className="text-center mt-4">
                             <Link
                                 href={route("task.create")}
-                                className="bg-[#FF007F] text-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block px-6 py-3 font-black rounded-xl border-4 border-black uppercase tracking-wider"
+                                className="bg-[#FF007F] text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 inline-flex items-center justify-center min-h-[44px] px-6 py-3 font-black rounded-box-sm border-4 border-black uppercase tracking-wider"
                             >
                                 Create Your First Task
                             </Link>

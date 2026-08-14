@@ -8,7 +8,7 @@ import { TimeFormat } from '@/includes/TimeFormat';
 import OrderDetail from './OrderDetail';
 
 const OrderCardSkeleton = () => (
-   <div className="bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden p-3 md:p-4 animate-pulse">
+ <div className="bg-white border-[3px] border-black rounded-box overflow-hidden p-3 md:p-4 animate-pulse">
       <div className="h-[130px] sm:h-[160px] w-full bg-gray-200 rounded-box-sm border border-black" />
       <div className="h-4 bg-gray-200 rounded-box-sm mt-4 w-3/4" />
       <div className="h-3 bg-gray-200 rounded-box-sm mt-2 w-1/2" />
@@ -104,15 +104,15 @@ export default function OrdersLists({ type = 'sales' }) {
 
       {type === 'sales' && (
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' >
-         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+ <div className='bg-white p-6 border-[3px] border-black rounded-box ' >
             <h2 className='font-black text-3xl mb-1' >{claims}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Claims</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+ <div className='bg-white p-6 border-[3px] border-black rounded-box ' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(monthEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-6 border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' >
+ <div className='bg-white p-6 border-[3px] border-black rounded-box ' >
             <h2 className='font-black text-3xl mb-1' >{formatMultiPrice(allEarning, userCurrency)}</h2>
             <p className='text-gray-700 font-bold uppercase text-sm tracking-wide'>All Time</p>
          </div>
@@ -129,7 +129,7 @@ export default function OrdersLists({ type = 'sales' }) {
                value={search}
                onChange={(e) => setSearch(e.target.value)}
                placeholder={type === 'sales' ? 'Search by item or buyer…' : 'Search by item or creator…'}
-               className='w-full bg-white border-[3px] border-black rounded-box-sm px-4 py-3 min-h-[44px] font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] placeholder:text-gray-400'
+ className='w-full bg-white border-[3px] border-black rounded-box-sm px-4 py-3 min-h-[44px] font-bold text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] placeholder:text-black/60'
             />
             {search && (
                <button
@@ -146,7 +146,7 @@ export default function OrdersLists({ type = 'sales' }) {
                   key={t.key}
                   onClick={() => setStatusFilter(t.key)}
                   aria-pressed={statusFilter === t.key}
-                  className={`whitespace-nowrap px-4 py-2 min-h-[40px] rounded-box-sm border-2 border-black font-black uppercase text-[11px] tracking-wide transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${statusFilter === t.key ? 'bg-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-black'}`}
+ className={`whitespace-nowrap px-4 py-2 min-h-[40px] rounded-box-sm border-2 border-black font-black uppercase text-[12px] tracking-wide transition-all active:translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] ${statusFilter === t.key ? 'bg-black text-white ' : 'bg-white text-black'}`}
                >
                   {t.label}
                </button>
@@ -155,16 +155,16 @@ export default function OrdersLists({ type = 'sales' }) {
       </div>
 
       {orders && orders.length > 0 && (
-         <div  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {orders.map((item) =>
-                  <article 
+                  <article
                     key={item.uuid ?? item.id}
-                    className="relative bg-white border-[3px] border-black rounded-box  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
+ className="relative bg-white border-[3px] border-black rounded-box hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between"
                   >
                     <div className="p-3 md:p-4">
                         <div className="relative">
                             <div className="block border border-black rounded-box-sm overflow-hidden relative">
-                                <span className={`absolute top-2 left-2 text-[11px] px-3 py-1 rounded-box-sm border-2 border-black font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+ <span className={`absolute top-2 left-2 text-[12px] px-3 py-1 rounded-box-sm border-2 border-black font-black uppercase z-[5] ${item?.shop?.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                     {item?.shop?.type === 'physical' ? 'Physical' : 'Digital'}
                                 </span>
                                 
@@ -186,17 +186,17 @@ export default function OrdersLists({ type = 'sales' }) {
                                     />
                                  <div className="absolute top-2 right-2 flex items-center gap-2">
                                        {item.payment_status === 'refunded' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-gray-200 text-gray-700 uppercase">Refunded</span>
                                        ) : item.status === 'delivered' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-green-100 text-green-700 uppercase">Completed</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-green-100 text-green-700 uppercase">Completed</span>
                                        ) : item.status === 'shipped' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-blue-100 text-blue-700 uppercase">Shipped</span>
                                        ) : item.status === 'processing' ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-indigo-100 text-indigo-700 uppercase">Processing</span>
                                        ) : item.is_delayed ? (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-red-100 text-red-700 uppercase">Delayed</span>
                                        ) : (
-                                          <span className="text-[11px] font-black px-2 py-1 rounded-box-sm border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
+ <span className="text-[12px] font-black px-2 py-1 rounded-box-sm border border-black bg-yellow-100 text-yellow-700 uppercase">Pending</span>
                                        )}
                                  </div>
                                 </Link>
@@ -209,7 +209,7 @@ export default function OrdersLists({ type = 'sales' }) {
                             </h2>
                             <div className="flex flex-col gap-1 text-[13px] sm:text-sm font-bold text-gray-700">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-gray-500 uppercase text-[11px]">{type === 'sales' ? 'Buyer' : 'Seller'}:</span>
+ <span className="text-gray-500 uppercase text-[12px]">{type === 'sales' ? 'Buyer' : 'Seller'}:</span>
                                     {item.username ? (
                                         <Link href={`/${item.username}`} className="text-blue-500 hover:underline">
                                             @{item.username}
@@ -244,31 +244,31 @@ export default function OrdersLists({ type = 'sales' }) {
                                                  */
                                                 item.total_paid ||
                                                 calculateTotalSupporterPays(
-                                                    ((Number(item.gross_amount || item.amount || 0)) + 
-                                                    (Number(item.tax_amount || 0)) + 
-                                                    (Number(item.vat_tax_amount || 0)) + 
+                                                    ((Number(item.gross_amount || item.amount || 0)) +
+                                                    (Number(item.tax_amount || 0)) +
+                                                    (Number(item.vat_tax_amount || 0)) +
                                                     (Number(item.shipping_amount || 0))),
                                                     item?.currency || userCurrency
-                                                ).total_supporter_pays, 
+                                                ).total_supporter_pays,
                                                 item?.currency || userCurrency
                                             )
                                         )
                                     ) : "FREE"}
                                 </h2>
-                                <div className="text-gray-500 text-[11px] font-bold uppercase">
+ <div className="text-gray-500 text-[12px] font-bold uppercase">
                                     <TimeFormat dateString={item.created_at} />
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-auto">
-                            <OrderDetail 
-                                date={<TimeFormat dateString={item.created_at} />} 
+                            <OrderDetail
+                                date={<TimeFormat dateString={item.created_at} />}
                                 item={item}
                                 type={type}
-                                text={'View Info'} 
-                                classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase text-center block" 
-                                onSuccess={fetchorders} 
+                                text={'View Info'}
+ classes="w-full font-black cursor-pointer bg-gray-100 border-2 border-black px-4 py-3 min-h-[44px] rounded-box-sm hover:bg-gray-200 active:translate-x-[2px] active:translate-y-[2px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-sm sm:text-base uppercase text-center block" 
+                                onSuccess={fetchorders}
                             />
                         </div>
                     </div>
@@ -283,7 +283,7 @@ export default function OrdersLists({ type = 'sales' }) {
             <button
                onClick={() => fetchorders(page + 1, true)}
                disabled={loadingMore}
-               className='font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50'
+ className='font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black disabled:opacity-50'
             >
                {loadingMore ? 'Loading…' : 'Load more'}
             </button>
@@ -305,7 +305,7 @@ export default function OrdersLists({ type = 'sales' }) {
             <div className="text-center mt-4">
                <button
                   onClick={fetchorders}
-                  className="font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000]"
+ className="font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm "
                >
                   Try again
                </button>

@@ -13,10 +13,10 @@ const BANDS = [
     { max: 1, name: "Top 1%", className: "bg-[#C9A227]/12 text-[#8A6F1B] ring-1 ring-inset ring-[#C9A227]/30" },
     { max: 10, name: "Top 10%", className: "bg-brandPink/[0.08] text-brandPink ring-1 ring-inset ring-brandPink/20" },
     { max: 25, name: "Top 25%", className: "bg-black/[0.04] text-black/70 ring-1 ring-inset ring-black/10" },
-    { max: 50, name: "Top 50%", className: "bg-black/[0.03] text-black/55 ring-1 ring-inset ring-black/[0.07]" },
+    { max: 50, name: "Top 50%", className: "bg-black/[0.03] text-black/60 ring-1 ring-inset ring-black/[0.07]" },
 ];
 
-const OUTSIDE = "bg-transparent text-black/40 ring-1 ring-inset ring-black/[0.07]";
+const OUTSIDE = "bg-transparent text-black/60 ring-1 ring-inset ring-black/[0.07]";
 
 export function rankTier(top) {
     const value = Number(top);

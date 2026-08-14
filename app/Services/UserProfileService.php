@@ -23,6 +23,7 @@ use App\Models\UserCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Support\MediaUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -33,6 +34,9 @@ use Stripe\Subscription;
 
 class UserProfileService
 {
+    /** Per-request memo of creator id => watermark uuid (see stampWatermark). */
+    private array $watermarkUuids = [];
+
     /**
      * Get user with optimized relationships
      */
@@ -228,7 +232,7 @@ class UserProfileService
         }
 
         $query = WishItem::select($columns)
-            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->where('user_id', $userId);
 
         if (! $isOwner) {
@@ -275,7 +279,7 @@ class UserProfileService
             'is_suspended',
             'suspend_reason',
             'publish_at',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->where('user_id', $userId);
 
         if (! $isOwner) {
@@ -338,7 +342,7 @@ class UserProfileService
         }
 
         $query = Bills::select($columns)
-            ->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->where('user_id', $userId);
 
         if (! $isOwner) {
@@ -375,7 +379,7 @@ class UserProfileService
         }
 
         if ($isOwner) {
-            $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage']);
+            $query->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn()]);
         } else {
             $query->select([
                 'id',
@@ -400,7 +404,7 @@ class UserProfileService
                 'is_suspended',
                 'suspend_reason',
             ])
-                ->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                ->with(['shop_shipping_info', 'user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn()])
                 ->where('approved', 1)->where('is_suspended', 0);
         }
 
@@ -471,7 +475,62 @@ class UserProfileService
         }
 
         // We DO NOT cache this because the 'liked_exists' is specific to the viewer
-        return $query->latest()->limit($limit)->get()->toArray();
+        $posts = $query->latest()->limit($limit)->get();
+
+        return $this->stampWatermark($posts, $userId)->toArray();
+    }
+
+    /**
+     * Hand every post the owner's watermark uuid.
+     *
+     * 🚨 Deliberately NOT `->with('user')`. Loading that relation would also
+     * SERIALISE it, and `User` carries ~15 appended accessors — several of them
+     * querying per row — which on a paginated feed is the documented
+     * 206-query blow-up. Every post here shares one owner, so this is a single
+     * scalar lookup, memoised for the request, instead of a relation per row.
+     */
+    public function stampWatermark($posts, int $userId)
+    {
+        if (! MediaUrl::enabled()) {
+            return $posts;
+        }
+
+        $uuid = $this->ownerWatermarkUuid($userId);
+
+        if ($uuid === null) {
+            return $posts;
+        }
+
+        // `creatorWatermarkOverride` feeds the server-side `image_url` accessor
+        // (single-image posts); `watermark_ops` is serialised into the payload
+        // for the client-rendered media carousel (multi-image posts). Both
+        // surfaces exist, so both need answering from the same lookup.
+        $ops = MediaUrl::opsFor($uuid);
+
+        foreach ($posts as $post) {
+            $post->creatorWatermarkOverride = $uuid;
+            $post->setAttribute('watermark_ops', $ops);
+        }
+
+        return $posts;
+    }
+
+    private function ownerWatermarkUuid(int $userId): ?string
+    {
+        if (! array_key_exists($userId, $this->watermarkUuids)) {
+            try {
+                $uuid = User::where('id', $userId)->value('watermark_uuid');
+            } catch (\Throwable $e) {
+                // The column may not exist yet on a database that has not run
+                // the migration. An unwatermarked feed is the right answer;
+                // a 500 on every profile is not.
+                $uuid = null;
+            }
+
+            $this->watermarkUuids[$userId] = is_string($uuid) && $uuid !== '' ? $uuid : null;
+        }
+
+        return $this->watermarkUuids[$userId];
     }
 
     /**
@@ -482,7 +541,7 @@ class UserProfileService
         $callback = function () use ($userId, $categoryId, $perPage) {
             $isOwner = Auth::check() && Auth::id() === $userId;
 
-            $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage')
+            $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
                 ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
                     $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
                 });
@@ -685,6 +744,10 @@ class UserProfileService
 
         $posts = $query->orderBy('is_pinned', 'desc')->latest()->paginate($perPage, ['*'], 'page', $page);
 
+        // Attribution watermark — one scalar lookup for the page, never a
+        // relation per row (see stampWatermark).
+        $this->stampWatermark($posts->getCollection(), $userId);
+
         // Check subscription access for each post
         $currentUser = Auth::user();
         $isOwner = $currentUser && $currentUser->id === $userId;
@@ -792,7 +855,7 @@ class UserProfileService
     {
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            $query = Membership::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
+            $query = Membership::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn());
             if (! $isOwner) {
                 $query->where('approved', 1)->where('is_suspended', 0);
             }
@@ -815,7 +878,7 @@ class UserProfileService
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
 
-            $query = Bills::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
+            $query = Bills::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn());
 
             if (! $isOwner) {
                 $query->where('approved', 1)->where('is_suspended', 0);
@@ -840,7 +903,7 @@ class UserProfileService
             $isOwner = Auth::check() && Auth::id() === $userId;
 
             $query = Shop::where('user_id', $userId)->where('status', 1)
-                ->with(['shop_shipping_info', 'category', 'user:id,name,username,suspended_account,vat_amount_percentage'])
+                ->with(['shop_shipping_info', 'category', 'user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn()])
                 ->withCount('paidPayments');
 
             if (! $isOwner) {
@@ -1030,6 +1093,85 @@ class UserProfileService
                 'earned_target' => (float) $earnings['target'],
             ];
         });
+    }
+
+    /**
+     * May THIS viewer see the creator's earnings figures?
+     *
+     * The owner always sees their own — a placeholder on their own screen reads as
+     * "the data failed to load". Everyone else waits on users.show_piggy_bank, the
+     * toggle the account settings screen has always labelled "Show earnings goal on
+     * profile" (MyGoal has honoured it since it shipped).
+     */
+    public function earningsVisibleTo(User $creator): bool
+    {
+        if (Auth::check() && Auth::id() === $creator->id) {
+            return true;
+        }
+
+        return (int) ($creator->show_piggy_bank ?? 0) === 1;
+    }
+
+    /**
+     * Redact the money out of a cached overview for a viewer who may not see it.
+     *
+     * The cache is deliberately viewer-agnostic (one entry per creator, shared by
+     * everyone), so the gate is applied HERE, at the call site, and never inside
+     * the cached closure — baking the viewer into the key would multiply the entry
+     * by every visitor.
+     *
+     * Hidden keeps the milestone bar and its percentage and drops the figures, so
+     * the progress device survives without publishing the amount.
+     */
+    public function overviewForViewer(array $overview, User $creator): array
+    {
+        if ($this->earningsVisibleTo($creator)) {
+            return $overview;
+        }
+
+        $earned = (float) ($overview['earned'] ?? 0);
+        $target = (float) ($overview['earned_target'] ?? 0);
+
+        unset($overview['earned'], $overview['earned_target']);
+
+        $overview['earnings_hidden'] = true;
+        $overview['earned_percent'] = $target > 0
+            ? (int) round(min(100, max(0, ($earned / $target) * 100)))
+            : 0;
+
+        return $overview;
+    }
+
+    /**
+     * The `goal` body of /user/tip/goal/{username}, gated for this viewer.
+     *
+     * Lives here because TWO controllers answer that shape — the live
+     * AuthenticatedSessionController and the (currently unrouted)
+     * OptimizedProfileController. Gating one and not the other is a hole that
+     * opens the moment the second is wired up, and the endpoint is public, so
+     * hiding the figure in the component alone leaves it a URL away.
+     *
+     * Hidden keeps the percentage and drops the money, matching overviewForViewer.
+     */
+    public function goalPayloadFor(User $creator): array
+    {
+        $earnings = $this->getUserEarnings($creator->id);
+        $target = (float) $earnings['target'];
+
+        if (! $this->earningsVisibleTo($creator)) {
+            return [
+                'hidden' => true,
+                'percent' => $target > 0
+                    ? (int) round(min(100, max(0, ((float) $earnings['fulfilled'] / $target) * 100)))
+                    : 0,
+            ];
+        }
+
+        return [
+            'fullfilled' => $earnings['fulfilled'],
+            'target' => $earnings['target'],
+            'currency' => $creator->default_currency,
+        ];
     }
 
     /**

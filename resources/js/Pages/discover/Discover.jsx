@@ -275,7 +275,7 @@ export default function Discover(props) {
                     onQuickFilter={handleQuickFilter}
                 />
 
-                <div className="container max-w-7xl mx-auto px-4 pb-6 pt-0 md:pb-6 md:pt-6 relative z-0">
+                <div className="container max-w-7xl mx-auto px-4 pb-28 pt-0 md:pb-6 md:pt-6 relative z-0">
                     <div className={`min-w-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                         {!isSearching && (
                             <>
@@ -404,10 +404,10 @@ export default function Discover(props) {
                         {isSearching ? (
                             searchLoading ? (
                                 <div className="space-y-12 py-10">
-                                    <div className="h-8 w-64 bg-black/5 animate-pulse border border-black/10 rounded-[20px]" />
+                                    <div className="h-8 w-64 bg-black/5 animate-pulse border border-black/10 rounded-box-sm" />
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                         {Array(4).fill(0).map((_, i) => (
-                                            <div key={i} className="h-64 bg-black/5 animate-pulse border border-black/10 rounded-[30px]" />
+                                            <div key={i} className="h-64 bg-black/5 animate-pulse border border-black/10 rounded-box" />
                                         ))}
                                     </div>
                                 </div>
@@ -558,10 +558,10 @@ export default function Discover(props) {
                                     )}
 
                                     {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !displayedTasks?.length && !displayedShops?.length) && (
-                                        <div className="text-center py-20 px-10 bg-white rounded-[30px] border border-dashed border-black/15">
-                                            <div className="text-gray-400 text-5xl mb-4">🔍</div>
+                                        <div className="text-center py-20 px-10 bg-white rounded-box border border-dashed border-black/15">
+                                            <div className="text-black/60 text-5xl mb-4">🔍</div>
                                             <h3 className="text-lg font-semibold text-gray-900 mb-2">No matches found</h3>
-                                            <p className="text-gray-600">Try adjusting your search or filters to find what you're looking for.</p>
+                                            <p className="text-black/80">Try adjusting your search or filters to find what you're looking for.</p>
                                         </div>
                                     )}
                                 </div>

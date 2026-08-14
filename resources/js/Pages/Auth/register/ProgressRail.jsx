@@ -59,7 +59,7 @@ export default function ProgressRail({
                                 }}
                             />
                             <span
-                                className={`mt-2 hidden text-[11px] font-semibold uppercase tracking-[0.14em] sm:block ${
+                                className={`mt-2 hidden text-[12px] font-semibold uppercase tracking-[0.14em] sm:block ${
                                     active ? "text-white" : "text-white/60"
                                 }`}
                             >
@@ -70,7 +70,7 @@ export default function ProgressRail({
                 })}
             </ol>
 
-            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+            <span className="shrink-0 text-[12px] font-semibold uppercase tracking-[0.14em] text-white/60">
                 {index + 1}/{steps.length}
             </span>
         </div>

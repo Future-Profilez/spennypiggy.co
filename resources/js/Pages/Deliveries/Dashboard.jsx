@@ -41,7 +41,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px]    p-6">
+                        <div className="bg-white overflow-hidden sm:rounded-box p-6">
                             <div className="flex items-center">
                                 <FiPackage className="w-8 h-8 text-blue-500 mr-3" />
                                 <div>
@@ -51,7 +51,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px]    p-6">
+                        <div className="bg-white overflow-hidden sm:rounded-box p-6">
                             <div className="flex items-center">
                                 <FiCheckCircle className="w-8 h-8 text-green-500 mr-3" />
                                 <div>
@@ -61,7 +61,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px]    p-6">
+                        <div className="bg-white overflow-hidden sm:rounded-box p-6">
                             <div className="flex items-center">
                                 <FiClock className="w-8 h-8 text-yellow-500 mr-3" />
                                 <div>
@@ -71,7 +71,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px]    p-6">
+                        <div className="bg-white overflow-hidden sm:rounded-box p-6">
                             <div className="flex items-center">
                                 <FiXCircle className="w-8 h-8 text-red-500 mr-3" />
                                 <div>
@@ -83,12 +83,104 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                     </div>
 
                     {/* Deliveries Table */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px]   ">
+                    <div className="bg-white overflow-hidden sm:rounded-box ">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Deliveries</h3>
                             
                             {deliverables.data.length > 0 ? (
-                                <div className="overflow-x-auto">
+                                <>
+                                {/* MOBILE CARDS — seven nowrap columns scrolled sideways on a
+                                    phone, and downloading what you paid for is a primary flow,
+                                    not something to hunt for off-screen. Same desktop-table +
+                                    mobile-card split the bills/membership tables already use. */}
+                                <div className="lg:hidden space-y-3">
+                                    {deliverables.data.map((delivery) => (
+                                        <div
+                                            key={delivery.id}
+                                            className="rounded-box-sm border border-gray-200 bg-white p-4"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900 capitalize">
+                                                        {delivery.deliverable_type}
+                                                    </p>
+                                                    {delivery.payment_id && (
+                                                        <p
+                                                            className="mt-0.5 truncate font-mono text-[12px] text-black/60"
+                                                            title={delivery.payment_id}
+                                                        >
+                                                            {delivery.payment_id}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${delivery.status_class}`}>
+                                                    {getStatusIcon(delivery.status)}
+                                                    <span className="ml-1">{delivery.status}</span>
+                                                </span>
+                                            </div>
+
+                                            <div className="mt-3 flex items-baseline justify-between gap-3">
+                                                <span className="text-base font-bold text-gray-900">
+                                                    {delivery.formatted_amount}
+                                                </span>
+                                                <span className="text-[12px] text-black/60">
+                                                    {delivery.created_at}
+                                                </span>
+                                            </div>
+
+                                            <p className="mt-2 text-[12px] text-black/60">
+                                                {delivery.is_creator
+                                                    ? `You (Creator) · Buyer: ${delivery.gifter_name || delivery.customer_email}`
+                                                    : `You (Buyer) · Creator: ${delivery.creator_name}`}
+                                            </p>
+
+                                            {delivery.delivered_at && (
+                                                <p className="mt-1 text-[12px] text-green-600">
+                                                    Delivered: {delivery.delivered_at}
+                                                </p>
+                                            )}
+                                            {delivery.accessed_at && (
+                                                <p className="mt-1 text-[12px] font-semibold text-blue-600">
+                                                    Accessed: {delivery.accessed_at}
+                                                    {delivery.access_count > 1 && ` (${delivery.access_count} times)`}
+                                                </p>
+                                            )}
+
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {delivery.deliverable_url && delivery.status.toLowerCase() === 'delivered' && (
+                                                    <a
+                                                        href={delivery.deliverable_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-box-sm border border-gray-200 px-4 text-sm font-medium text-[#FF007F] transition-opacity duration-200 hover:opacity-70"
+                                                    >
+                                                        <FiDownload className="h-4 w-4" />
+                                                        Download
+                                                    </a>
+                                                )}
+                                                {delivery.certificate_url && (
+                                                    <a
+                                                        href={delivery.certificate_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-box-sm border border-gray-200 px-4 text-sm font-medium text-green-600 transition-opacity duration-200 hover:opacity-70"
+                                                    >
+                                                        <FiCheckCircle className="h-4 w-4" />
+                                                        Certificate
+                                                    </a>
+                                                )}
+                                                {(!delivery.deliverable_url && !delivery.certificate_url) && (
+                                                    <span className="text-[12px] text-black/60">
+                                                        {delivery.status.toLowerCase() === 'pending' ? 'Processing…' : 'N/A'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* DESKTOP TABLE */}
+                                <div className="hidden lg:block overflow-x-auto">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -120,11 +212,17 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                                 <tr key={delivery.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                         {delivery.payment_id ? (
-                                                            <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                                                                {delivery.payment_id.substring(0, 20)}...
+                                                            /* Let CSS truncate: pre-cutting in JS
+                                                               destroys the value before the DOM
+                                                               sees it, so nothing can recover it. */
+                                                            <span
+                                                                className="block max-w-[220px] truncate rounded-box-sm bg-gray-100 px-2 py-1 font-mono text-xs"
+                                                                title={delivery.payment_id}
+                                                            >
+                                                                {delivery.payment_id}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-gray-400">N/A</span>
+                                                            <span className="text-black/60">N/A</span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -177,7 +275,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                                                     href={delivery.deliverable_url}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
+                                                                    className="text-[#FF007F] transition-opacity duration-200 hover:opacity-70 inline-flex items-center"
                                                                 >
                                                                     <FiDownload className="w-4 h-4 mr-1" />
                                                                     Download
@@ -195,7 +293,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                                                 </a>
                                                             )}
                                                             {(!delivery.deliverable_url && !delivery.certificate_url) && (
-                                                                <span className="text-gray-400">
+                                                                <span className="text-black/60">
                                                                     {delivery.status.toLowerCase() === 'pending' ? 'Processing...' : 'N/A'}
                                                                 </span>
                                                             )}
@@ -206,9 +304,10 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                         </tbody>
                                     </table>
                                 </div>
+                                </>
                             ) : (
                                 <div className="text-center py-12">
-                                    <FiPackage className="mx-auto h-12 w-12 text-gray-400" />
+                                    <FiPackage className="mx-auto h-12 w-12 text-black/60" />
                                     <h3 className="mt-2 text-sm font-medium text-gray-900">No deliveries</h3>
                                     <p className="mt-1 text-sm text-gray-500">
                                         You haven't made or received any deliveries yet.
@@ -223,7 +322,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                         {deliverables.prev_page_url && (
                                             <Link
                                                 href={deliverables.prev_page_url}
-                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[30px]   text-gray-700 bg-white hover:bg-gray-50"
+                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-box   text-gray-700 bg-white hover:bg-gray-50"
                                             >
                                                 Previous
                                             </Link>
@@ -231,7 +330,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                         {deliverables.next_page_url && (
                                             <Link
                                                 href={deliverables.next_page_url}
-                                                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[30px]   text-gray-700 bg-white hover:bg-gray-50"
+                                                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-box   text-gray-700 bg-white hover:bg-gray-50"
                                             >
                                                 Next
                                             </Link>
@@ -250,7 +349,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                             </p>
                                         </div>
                                         <div>
-                                            <nav className="relative z-0 inline-flex rounded-[30px]   shadow-sm -space-x-px" aria-label="Pagination">
+                                            <nav className="relative z-0 inline-flex rounded-box -space-x-px" aria-label="Pagination">
                                                 {deliverables.prev_page_url && (
                                                     <Link
                                                         href={deliverables.prev_page_url}

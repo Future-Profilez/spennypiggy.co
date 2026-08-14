@@ -44,7 +44,7 @@ export default function GoogleButton({
     return (
         <a
             href={href}
-            className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-box-sm border-[3px] border-black bg-white px-5 text-sm font-bold text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:hover:translate-y-0 ${className}`}
+            className={`flex min-h-[52px] w-full items-center justify-center gap-3 rounded-box-sm border-[3px] border-black bg-white px-5 text-sm font-bold text-black transition-colors duration-200 hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:hover:translate-y-0 ${className}`}
         >
             <GoogleMark />
             {label}
@@ -67,7 +67,7 @@ export function AuthDivider({ label = "or", tone = "dark" }) {
         <div className="my-5 flex items-center gap-3" aria-hidden="true">
             <span className={`h-px flex-1 ${line}`} />
             <span
-                className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${text}`}
+                className={`text-[12px] font-semibold uppercase tracking-[0.14em] ${text}`}
             >
                 {label}
             </span>

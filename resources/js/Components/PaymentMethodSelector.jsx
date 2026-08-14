@@ -115,7 +115,7 @@ export default function PaymentMethodSelector({
             aria-label="How you pay"
             className={`select-none ${className}`}
         >
-            <p className="font-black uppercase tracking-widest text-[11px] mb-2 text-black/80">
+            <p className="font-black uppercase tracking-widest text-[12px] mb-2 text-black/80">
                 How you pay
             </p>
 
@@ -128,13 +128,13 @@ export default function PaymentMethodSelector({
                     onClick={() => onChange?.("bank")}
                     className={`relative w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         value === "bank"
-                            ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+ ? "bg-[#A2E4B8] translate-x-[2px] translate-y-[2px]"
+ : "bg-white hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     {/* Signature: tilted save sticker */}
                     {prices.saving > 0 && (
-                        <span className="absolute -top-3 right-3 rotate-[-4deg] bg-[#FF007F] text-white border-[3px] border-black rounded-box-sm px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] pointer-events-none">
+                        <span className="absolute -top-3 right-3 rotate-[-4deg] bg-[#FF007F] text-black border-[3px] border-black rounded-box-sm px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wider pointer-events-none">
                             Save {fmt(prices.saving)}
                         </span>
                     )}
@@ -145,13 +145,13 @@ export default function PaymentMethodSelector({
                             <span className="block font-black uppercase tracking-wide text-sm leading-tight">
                                 Pay by bank
                             </span>
-                            <span className="block text-[11px] font-bold text-black/60 mt-0.5">
+                            <span className="block text-[12px] font-bold text-black/60 mt-0.5">
                                 {rules.bank_recommended
                                     ? "Lower fees · higher limits"
                                     : "Approve in your banking app"}
                             </span>
                             {preview.delayed_settlement && (
-                                <span className="block text-[11px] font-bold text-black/60 mt-0.5">
+                                <span className="block text-[12px] font-bold text-black/60 mt-0.5">
                                     Content unlocks once your bank confirms —
                                     usually 1–2 days
                                 </span>
@@ -162,7 +162,7 @@ export default function PaymentMethodSelector({
                                 {fmt(prices.bank)}
                             </span>
                             {prices.saving > 0 && (
-                                <span className="block text-[11px] font-bold text-black/60 line-through mt-1">
+                                <span className="block text-[12px] font-bold text-black/60 line-through mt-1">
                                     {fmt(prices.card)}
                                 </span>
                             )}
@@ -179,10 +179,10 @@ export default function PaymentMethodSelector({
                     disabled={cardDisabled}
                     className={`w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         cardDisabled
-                            ? "bg-gray-100 border-black/30 cursor-not-allowed"
+ ? "bg-black/5 border-black/30 cursor-not-allowed"
                             : value === "card"
-                            ? "bg-[#A2E4B8] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[2px] translate-y-[2px]"
-                            : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+ ? "bg-[#A2E4B8] translate-x-[2px] translate-y-[2px]"
+ : "bg-white hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
                     }`}
                 >
                     <span className={`flex items-center gap-3 ${cardDisabled ? "opacity-50" : ""}`}>
@@ -191,7 +191,7 @@ export default function PaymentMethodSelector({
                             <span className="block font-black uppercase tracking-wide text-sm leading-tight">
                                 Card · Apple Pay
                             </span>
-                            <span className="block text-[11px] font-bold text-black/60 mt-0.5">
+                            <span className="block text-[12px] font-bold text-black/60 mt-0.5">
                                 {cardDisabled
                                     ? "Not available for this purchase — use Pay by bank"
                                     : rules.force_3ds

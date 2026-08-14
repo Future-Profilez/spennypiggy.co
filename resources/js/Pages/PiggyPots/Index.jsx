@@ -18,8 +18,8 @@ import PotVisibilityNotice from './PotVisibilityNotice';
 const DEFAULT_COVER = 'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/';
 
 const FIELD =
-    'w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]';
-const FIELD_LABEL = 'mb-2 block text-left text-[11px] font-black uppercase tracking-[0.14em]';
+    'w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium focus:outline-none focus:ring-0 ';
+const FIELD_LABEL = 'mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]';
 
 export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -224,7 +224,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                         type="button"
                                         onClick={() => setData('cover_media', '')}
                                         aria-label="Remove cover image"
-                                        className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-xl font-black text-red-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                        className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-xl font-black text-red-600 "
                                     >
                                         ✕
                                     </button>
@@ -388,7 +388,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                             <button
                                 type="button"
                                 onClick={openCreateModal}
-                                className="text-lg w-full md:w-auto min-h-[48px] inline-flex items-center justify-center px-4 border border-black rounded-box-sm !text-black bg-yellow-300 shadow-[3px_3px_0px_#000]"
+                                className="text-lg w-full md:w-auto min-h-[48px] inline-flex items-center justify-center px-4 border border-black rounded-box-sm !text-black bg-yellow-300 "
                             >
                                 + Create New Pot
                             </button>
@@ -406,7 +406,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                         />
 
                         {piggyPots.length === 0 ? (
-                            <div className="text-center py-10 px-6 bg-white border border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box mt-4">
+                            <div className="text-center py-10 px-6 bg-white border border-black rounded-box mt-4">
                                 <div className="text-4xl mb-3">🐷</div>
                                 <p className="text-gray-500 text-lg mb-6">
                                     You haven't created any Piggy Pots yet.
@@ -414,7 +414,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                 <button
                                     type="button"
                                     onClick={openCreateModal}
-                                    className="inline-flex items-center justify-center min-h-[48px] px-8 border-2 border-black rounded-box-sm bg-yellow-300 text-black font-black uppercase tracking-widest shadow-[3px_3px_0px_#000] hover:-translate-y-1"
+                                    className="inline-flex items-center justify-center min-h-[48px] px-8 border-2 border-black rounded-box-sm bg-yellow-300 text-black font-black uppercase tracking-widest transition-colors duration-200 hover:brightness-110"
                                 >
                                     + Create your first Pot
                                 </button>
@@ -431,7 +431,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                     return (
                                         <div
                                             key={pot.id}
-                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-[40px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col group overflow-hidden"
+                                            className="bg-[#fdfbf7] border-[3px] border-black rounded-box relative transition-colors duration-200 hover:bg-black/[0.03] flex flex-col h-full group overflow-hidden"
                                         >
                                             {/* ⚠️ A pinned pot that has closed is still pinned — the flag is
                                                 the creator's intent and is kept, so extending the deadline
@@ -441,11 +441,11 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                             {pot.is_pinned && (
                                                 <div className="absolute top-4 right-4 z-20">
                                                     {pot.visibility && !pot.visibility.visible ? (
-                                                        <span className="bg-gray-200 text-gray-700 text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
+                                                        <span className="bg-gray-200 text-gray-700 text-xs font-black px-4 py-1.5 rounded-full border-2 border-black uppercase tracking-widest flex items-center gap-1">
                                                             <span aria-hidden="true">⭐</span> Pinned · not showing
                                                         </span>
                                                     ) : (
-                                                        <span className="bg-pink-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black uppercase tracking-widest flex items-center gap-1">
+                                                        <span className="bg-pink-500 text-white text-xs font-black px-4 py-1.5 rounded-full border-2 border-black uppercase tracking-widest flex items-center gap-1">
                                                             <span aria-hidden="true">⭐</span> Pinned
                                                         </span>
                                                     )}
@@ -458,21 +458,21 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                         pot.cover_media ||
                                                         'https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/'
                                                     }
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="w-full h-full object-cover transition-[filter,opacity] duration-500 group-hover:brightness-[1.08]"
                                                     alt={pot.title}
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
                                                 <div className="absolute bottom-4 left-4 z-10">
                                                     <span
-                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                                                            pot.status === 'completed'
-                                                                ? 'bg-[#FFD700] text-black'
-                                                                : pot.status === 'active'
-                                                                ? 'bg-[#A2E4B8] text-black'
-                                                                : pot.status === 'moderation_hold'
-                                                                ? 'bg-red-200 text-black'
-                                                                : 'bg-gray-200 text-gray-800'
-                                                        }`}
+                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-black uppercase tracking-widest border-2 border-black ${
+ pot.status === 'completed'
+ ? 'bg-[#FFD700] text-black'
+ : pot.status === 'active'
+ ? 'bg-[#A2E4B8] text-black'
+ : pot.status === 'moderation_hold'
+ ? 'bg-red-200 text-black'
+ : 'bg-gray-200 text-gray-800'
+ }`}
                                                     >
                                                         {pot.status === 'completed' ? '✓ completed' : pot.status}
                                                     </span>
@@ -480,11 +480,14 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                             </div>
 
                                             <div className="p-6 flex flex-col flex-grow relative">
-                                                <div className="absolute -top-10 right-6 w-16 h-16 bg-white border-[3px] border-black rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-3xl z-20">
+                                                <div className="absolute -top-10 right-6 w-16 h-16 bg-white border-[3px] border-black rounded-full flex items-center justify-center text-3xl z-20">
                                                     🐷
                                                 </div>
 
-                                                <h4 className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight">
+                                                <h4
+                                                    className="font-black font-GillSans uppercase text-2xl mb-2 pr-12 text-black tracking-wide leading-tight line-clamp-2 min-h-[60px]"
+                                                    title={pot.title}
+                                                >
                                                     {pot.title}
                                                 </h4>
                                                 {/* Covers every reason a pot is off the profile — under review,
@@ -496,14 +499,14 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                     moderationReason={pot.moderation_reason}
                                                     onFix={() => openEditModal(pot)}
                                                 />
-                                                <p className="text-gray-600 font-medium text-sm mb-6 line-clamp-2 flex-grow">
+                                                <p className="text-black/80 font-medium text-sm mb-6 line-clamp-2 flex-grow">
                                                     {pot.description || 'No description'}
                                                 </p>
 
-                                                <div className="bg-white rounded-[24px] p-4 mb-5 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                                                <div className="bg-white rounded-box-sm p-4 mb-5 border-2 border-black relative overflow-hidden">
                                                     <div className="flex justify-between items-end mb-3 relative z-10">
                                                         <div>
-                                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">
+                                                            <p className="text-[12px] text-gray-500 uppercase font-black tracking-widest mb-1">
                                                                 Progress Goal
                                                             </p>
                                                             <p className="font-black text-xl text-black">
@@ -511,7 +514,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">
+                                                            <p className="text-[12px] text-gray-500 uppercase font-black tracking-widest mb-1">
                                                                 Progress So Far
                                                             </p>
                                                             <p className="font-black text-xl text-pink-500">
@@ -534,14 +537,14 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => openEditModal(pot)}
-                                                        className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-white hover:bg-gray-100 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                        className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-white hover:bg-gray-100 text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                                                     >
                                                         Edit
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDelete(pot)}
-                                                        className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-red-100 hover:bg-red-200 text-red-600 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                        className="px-5 py-2.5 border-[3px] border-black rounded-full text-sm font-black uppercase tracking-wider bg-red-100 hover:bg-red-200 text-red-600 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                                                     >
                                                         Delete
                                                     </button>

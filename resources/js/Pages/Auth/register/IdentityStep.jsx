@@ -121,7 +121,7 @@ export default function IdentityStep({
                     ) : (
                         <>
                             <div className="mb-2 flex items-baseline justify-between gap-3">
-                                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/60">
+                                <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60">
                                     Your username
                                 </span>
                                 <button

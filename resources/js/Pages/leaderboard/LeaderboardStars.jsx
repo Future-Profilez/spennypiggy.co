@@ -40,7 +40,7 @@ export default function LeaderboardStars() {
         </div>
       </div>
       <div className="rank-stats pl-2">
-        <p className="toppercentage income">
+        <p className="toppercentage income tabular-nums">
           {formatMultiPrice(gift.amount, gift.currency || 'gbp')}
         </p>
       </div>
@@ -65,7 +65,7 @@ export default function LeaderboardStars() {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           {error}
           <button 
-            className="px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors ml-2" 
+            className="py-1 border border-red-500 text-red-500 inline-flex items-center min-h-[44px] px-3 rounded-box-sm hover:bg-red-50 transition-colors ml-2" 
             onClick={fetchGifts}
           >
             Retry
@@ -79,7 +79,7 @@ export default function LeaderboardStars() {
    <>
     {lists.length > 0 ?  <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
       <h2 className=" text-19 font-semibold tracking-tight text-[#0B0B0C] text-left">🏅 Top Supporters</h2>
-      <p className='text-gray-500  mb-3'>Fans who have shown the most support for their creators.</p>
+      <p className='text-black/60  mb-3'>Fans who have shown the most support for their creators.</p>
         <>
           {lists.length ? (
             lists.map((gift, index) => (

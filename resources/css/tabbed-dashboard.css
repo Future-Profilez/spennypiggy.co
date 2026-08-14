@@ -6,7 +6,6 @@
     scrollbar-width: none; /* Firefox */
 }
 
-
 .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
 }
@@ -176,13 +175,10 @@
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(5, 239, 184, 0.7);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(5, 239, 184, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(5, 239, 184, 0);
     }
 }
 

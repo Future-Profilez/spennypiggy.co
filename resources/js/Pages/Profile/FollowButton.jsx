@@ -47,7 +47,7 @@ const FollowButton = ({ targetUserId, isInitiallyFollowing, classes }) => {
             className={
                 classes
                     ? `${classes} ${isFollowing ? "bg-white text-black" : "bg-black text-white"}`
-                    : `uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-[3px] border-black px-4 md:px-6 py-2 md:py-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-60 ${isFollowing ? "bg-white text-black" : "bg-black text-white"}`
+                    : `uppercase font-bold text-xs md:text-sm whitespace-nowrap rounded-box-sm border-[3px] border-black px-4 md:px-6 py-2 md:py-3 hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-60 ${isFollowing ? "bg-white text-black" : "bg-black text-white"}`
             } > {isFollowing ? "Following" : "Follow"}
         </button>
     );

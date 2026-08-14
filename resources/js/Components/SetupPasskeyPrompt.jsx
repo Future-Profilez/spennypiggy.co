@@ -169,7 +169,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md px-6 ">
-            <div className="bg-[#ffffff] border !border-2 border-black  rounded-[50px] md:rounded-[50px] p-4 md:p-8 max-w-[400px] w-full shadow-[5px_5px_0px_rgba(0,0,0,0.9)] relative overflow-hidden">
+            <div className="bg-[#ffffff] border !border-2 border-black rounded-box p-4 md:p-8 max-w-[400px] w-full max-h-[85dvh] overflow-y-auto relative overflow-hidden">
                 {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div> */}
                 
                 <div className="text-center mb-8">
@@ -179,7 +179,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
                         </svg>
                     </div>
                     <h3 className="text-lg md:text-xl text-black mb-2  uppercase font-bold">Faster Login Next Time?</h3>
-                    <p className="text-gray-400">
+                    <p className="text-black/60">
                         Set up a Passkey to use FaceID, Fingerprint, or Windows Hello for instant login instead of typing your password.
                     </p>
                 </div>
@@ -189,7 +189,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
                         type="button"
                         onClick={handleSetup}
                         disabled={loading}
-                        className="w-full !border-0  !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wide py-3 px-6 rounded-full transition-all transform hover:scale-[1.02] shadow-lg text-normal md:text-normal flex justify-center items-center"
+                        className="w-full min-h-[44px] !border-0 !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wide py-3 px-6 rounded-full transition-colors duration-200 text-normal md:text-normal flex justify-center items-center"
                         spinnerclass="fill-white"
                     >
                         {loading ? "SETTING UP..." : "SET UP PASSKEY"}
@@ -198,7 +198,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, s
                         type="button"
                         onClick={onSkip}
                         disabled={loading}
-                        className="w-full bg-transparent text-gray-400 hover:text-black font-medium py-2 px-4 rounded-full transition-colors focus:outline-none"
+                        className="w-full min-h-[44px] bg-transparent text-black/60 hover:text-black font-medium py-2 px-4 rounded-full transition-colors duration-200 focus:outline-none"
                     >
                         Skip for now
                     </button>

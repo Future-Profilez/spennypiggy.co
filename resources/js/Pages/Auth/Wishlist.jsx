@@ -420,9 +420,9 @@ export default function Wishlist(props) {
 
     const AddItem = () => {
         return (
-            <div className=" flex items-center p-3 rounded-[30px]  border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <div className="p-1 !rounded-[30px]  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+ <div className=" flex items-center p-3 rounded-box border-4 border-black 
+border-4 border-black ">
+ <div className="p-1 !rounded-box bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
@@ -443,17 +443,17 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             action={close}
             space="4"
             size="lg"
-            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] mb-4 text-center"}`}
+ classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-box mb-4 text-center"}`}
             /* `hidetrigger` renders NO trigger button — the caller owns the
                open state and drives it through `openPop`. Popup only skips its
                button when `text` is literally undefined, so null/false will
                still fall through to <AddItem /> here. */
             text={hidetrigger ? undefined : customtext || <AddItem />}
         >
-            <div className="editprofileModal  wishlistModal  ">
+ <div className="editprofileModal wishlistModal ">
                 <div className="editprofileModalInner ">
-                    <div className="wishinfo !p-0 lg:!p-4  ">
-                        <h2 className="mb-4 !text-start font-GillSans uppercase text-large  mb-1 pr-5">
+ <div className="wishinfo !p-0 lg:!p-4 ">
+ <h2 className="mb-4 !text-start font-GillSans uppercase text-large mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
 
@@ -461,7 +461,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             {/* Step 1: Basic Info & Category */}
                             <div className={step === 1 ? "block" : "hidden"}>
                                     {item && item.is_suspended == 1 && (
-                                        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+ <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-box-sm">
                                             <div className="flex">
                                                 <div className="flex-shrink-0">
                                                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -479,7 +479,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             </div>
                                         </div>
                                     )}
-                                <p className="p-4 mb-4 text-normal text-yellow-800 rounded-[20px]   border border-yellow-500 bg-yellow-50">
+ <p className="p-4 mb-4 text-normal text-yellow-800 rounded-box-sm border border-yellow-500 bg-yellow-50">
                                     Describe the content the supporter receives
                                     (e.g. "Exclusive photo set"). Do not list
                                     personal items, gifts, expenses, or
@@ -493,7 +493,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="mb-4">
                                     <label className="mb-2 text-left block font-semibold text-gray-700">
                                         Goal{" "}
-                                        <span className="text-gray-400 font-normal">(optional)</span>
+ <span className="text-black/60 font-normal">(optional)</span>
                                     </label>
                                     <input
                                         id="goal_label"
@@ -502,12 +502,12 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         maxLength={60}
                                         placeholder="Eg. New camera fund"
                                         value={data.goal_label}
-                                        className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
+ className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
                                         onChange={(e) =>
                                             setData("goal_label", e.target.value)
                                         }
                                     />
-                                    <p className="mt-1 text-xs text-gray-500 text-left">
+ <p className="mt-1 text-xs text-black/60 text-left">
                                         A goal you're working toward (e.g. "studio
                                         upgrade"). Shown as context only — it's never
                                         what the supporter buys. Don't name a bill, debt
@@ -530,7 +530,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         type="text"
                                         placeholder="Eg. Exclusive photo set"
                                         value={data.wishname}
-                                        className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm px-4 py-3"
+ className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box px-4 py-3"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -549,7 +549,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         Price ({defaultCurrency})
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">
+ <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-black/60">
                                             {defaultCurrency}
                                         </span>
                                         <input
@@ -559,7 +559,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step="0.01"
-                                            className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-[30px]  shadow-sm pl-16 pr-4 py-3"
+ className="w-full border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 rounded-box pl-16 pr-4 py-3"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -567,32 +567,32 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         />
                                     </div>
                                     {data.price > 0 && (
-                                        <div className="mt-3 p-3 bg-gray-50 rounded-[30px]  border border-gray-100">
+ <div className="mt-3 p-3 bg-gray-50 rounded-box border border-gray-100">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-sm text-gray-600">Fans pay:</span>
                                                 <span className="font-bold text-gray-900">
-                                                    {new Intl.NumberFormat('en-GB', { 
-                                                        style: 'currency', 
-                                                        currency: defaultCurrency 
+                                                    {new Intl.NumberFormat('en-GB', {
+                                                        style: 'currency',
+                                                        currency: defaultCurrency
                                                     }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-gray-600">You receive:</span>
                                                 <span className="font-bold text-green-600">
-                                                    {new Intl.NumberFormat('en-GB', { 
-                                                        style: 'currency', 
-                                                        currency: defaultCurrency 
+                                                    {new Intl.NumberFormat('en-GB', {
+                                                        style: 'currency',
+                                                        currency: defaultCurrency
                                                     }).format(data.price)}
                                                 </span>
                                             </div>
-                                            <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                            <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+ <p className="mt-2 text-xs text-black/60 font-medium">Fans only see the total price to improve conversion</p>
+ <p className="mt-1 text-xs text-black/60 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
                                         </div>
                                     )}
                                     {defaultCurrency !== global_currency &&
                                         data.price > 0 && (
-                                            <p className="mt-2 text-sm text-gray-500">
+ <p className="mt-2 text-sm text-black/60">
                                                 ≈{" "}
                                                 {formatMultiPrice(
                                                     data.price,
@@ -641,7 +641,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             htmlFor={
                                                                 "categories" + i
                                                             }
-                                                            className="block cursor-pointer select-none rounded-[15px] border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-white peer-checked:border-[#FF007F] hover:bg-gray-50"
+ className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-white peer-checked:border-[#FF007F] hover:bg-gray-50"
                                                         >
                                                             {c.category}
                                                         </label>
@@ -649,7 +649,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                 );
                                             })
                                         ) : (
-                                            <p className="text-gray-500 text-sm">
+ <p className="text-black/60 text-sm">
                                                 No categories found.
                                             </p>
                                         )}
@@ -661,11 +661,11 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             type="text"
                                             ref={inputRef}
                                             placeholder="New Category"
-                                            className="flex-1 border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 !rounded-[10px] shadow-sm p-3 text-sm"
+ className="flex-1 border-gray-300 focus:border-[#FF007F] focus:ring-pink-500 !rounded-box-sm p-3 text-sm"
                                         />
                                         <button
                                             type="button"
-                                            className="bg-gray-900 text-white p-3 px-6 !rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors"
+ className="bg-gray-900 text-white p-3 px-6 !rounded-box-sm text-sm font-medium hover:bg-gray-800 transition-colors"
                                             onClick={AddCategory}
                                         >
                                             {adding ? "Adding..." : "Add"}
@@ -684,13 +684,18 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     {thumbnail ? (
                                         <div className="relative mb-4 group">
                                             <img
-                                                className="w-full h-64 object-cover rounded-[30px]  border border-gray-200 shadow-sm"
+ className="w-full h-64 object-cover rounded-box border border-gray-200 "
                                                 src={`https://ucarecdn.com/${thumbnail}/`}
                                                 alt="Wish Thumbnail"
                                             />
                                             <button
                                                 type="button"
-                                                className="absolute top-4 right-4 bg-white/90 text-red-600 p-2 rounded-full shadow-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+ aria-label="Remove thumbnail"
+                                                /* Always visible on touch: hover is the ONLY
+ way to reach this on the old class, so on a
+ phone the thumbnail could not be removed at
+ all. Hover-reveal is a desktop enhancement. */
+ className="absolute top-4 right-4 grid h-11 w-11 place-items-center bg-white/90 text-red-600 rounded-full hover:bg-red-50 transition-opacity duration-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                                                 onClick={() => setThumbnail("")}
                                             >
                                                 <RiCloseLine size={20} />
@@ -698,8 +703,8 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            <div className="bg-gray-50 p-4 rounded-[30px] ">
-                                                <h4 className="text-sm font-medium text-gray-500 mb-3 text-center">
+ <div className="bg-gray-50 p-4 rounded-box ">
+ <h4 className="text-sm font-medium text-black/60 mb-3 text-center">
                                                     Select from Default
                                                 </h4>
                                                 <Swiper
@@ -716,19 +721,19 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                         Navigation,
                                                     ]}
                                                     slidesPerView={1}
-                                                    className="rounded-[20px] overflow-hidden"
+ className="rounded-box-sm overflow-hidden"
                                                 >
                                                     {imageLinks &&
                                                         imageLinks.map(
                                                             (image) => (
                                                                 <SwiperSlide
                                                                     key={`swiper-item-${image}`}
-                                                                    className="rounded-[20px] overflow-hidden"
+ className="rounded-box-sm overflow-hidden"
                                                                 >
                                                                     <div className="aspect-w-16 aspect-h-9">
                                                                         <img
                                                                             src={`https://ucarecdn.com/${image}/`}
-                                                                            className="w-full h-52 object-cover rounded-[20px]"
+ className="w-full h-52 object-cover rounded-box-sm"
                                                                             alt="Default"
                                                                         />
                                                                     </div>
@@ -746,7 +751,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                     <div className="w-full border-t border-gray-300"></div>
                                                 </div>
                                                 <div className="relative flex justify-center">
-                                                    <span className="bg-white px-2 text-sm text-gray-500">
+ <span className="bg-white px-2 text-sm text-black/60">
                                                         OR UPLOAD NEW
                                                     </span>
                                                 </div>
@@ -790,9 +795,9 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <button
                                             type="button"
                                             onClick={() => setSubs(0)}
-                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px]  border font-medium transition-all ${
+ className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 0
-                                                    ? "border-[#FF007F] bg-pink-50 text-pink-700 shadow-sm"
+ ? "border-[#FF007F] bg-pink-50 text-pink-700 "
                                                     : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                                             }`}
                                         >
@@ -801,9 +806,9 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <button
                                             type="button"
                                             onClick={() => setSubs(1)}
-                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[30px]  border font-medium transition-all ${
+ className={`w-full mb-2 flex-1 py-3 px-4 rounded-box border font-medium transition-all ${
                                                 data.subscription === 1
-                                                    ? "border-[#FF007F] bg-pink-50 text-pink-700 shadow-sm"
+ ? "border-[#FF007F] bg-pink-50 text-pink-700 "
                                                     : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                                             }`}
                                         >
@@ -812,7 +817,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     </div>
 
                                     {data.subscription === 0 ? (
-                                        <div className="bg-gray-50 p-4 rounded-[20px]">
+ <div className="bg-gray-50 p-4 rounded-box-sm">
                                             <label className="flex items-center gap-3 cursor-pointer">
                                                 <input
                                                     type="checkbox"
@@ -824,13 +829,13 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                     Allow Repeat Purchases
                                                 </span>
                                             </label>
-                                            <p className="text-xs text-gray-500 mt-2 ml-8">
+ <p className="text-xs text-black/60 mt-2 ml-8">
                                                 If checked, fans can buy this
                                                 item multiple times.
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="bg-gray-50 p-6 rounded-[20px]">
+ <div className="bg-gray-50 p-6 rounded-box-sm">
                                             <label className="block text-sm font-medium text-gray-700 mb-3">
                                                 Billing Period
                                             </label>
@@ -855,7 +860,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
-                                                        <div className="px-4 py-2 rounded-[30px]  border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+ <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
                                                             {period}
                                                         </div>
                                                     </label>
@@ -874,7 +879,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={prevStep}
-                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-gray-200 transition-colors"
+ className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:bg-gray-200 transition-colors"
                                     >
                                         Back
                                     </button>
@@ -884,7 +889,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="flex-1 py-3 px-4 bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+ className="border-[3px] border-black flex-1 py-3 px-4 bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:brightness-110 transition-colors"
                                     >
                                         Next
                                     </button>
@@ -892,7 +897,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
-                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[30px]  hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+ className="border-[3px] border-black !mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:bg-pink-600 transition-colors"
                                         spinnerclass="fill-white"
                                     >
                                         {processing

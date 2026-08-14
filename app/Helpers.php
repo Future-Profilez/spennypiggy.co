@@ -17,6 +17,7 @@ use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
 use App\Support\NotificationRecorder;
+use App\Support\PushReachability;
 use App\Support\RiskMessages;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,15 @@ use Ramsey\Uuid\Uuid;
 class Helpers
 {
     const DIGITAL_WAIVER_TEXT = 'I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.';
+
+    /**
+     * The platform-wide minimum price, GBP-equivalent, for every paid feature.
+     *
+     * Named so it can be quoted somewhere other than a validation message —
+     * App\Support\HelpTokens reads it for {{price.min}} rather than letting a
+     * help article retype the figure and go stale.
+     */
+    public const MIN_PRICE_GBP = 4.99;
 
     public static function applyDigitalWaiver($model, bool $confirmed): void
     {
@@ -241,38 +251,6 @@ class Helpers
     }
 
     /**
-     * Stripe compliance — the payment-facing item field (checkout line item, receipt line,
-     * bank statement descriptor) must describe CONTENT, never the creator's goal/expense/wish/
-     * brand or any gift/donation wording. The card headline (goal/expense/wish) is NOT validated
-     * here — only the item text the buyer sees as "what they are purchasing".
-     *
-     * Use this to guard the line-item / receipt text, NOT the listing title field.
-     *
-     * @param  string|null  $text  The payment-facing item text
-     * @return string|null Error message if a disallowed token is present, else null
-     */
-    public static function validateItemField(?string $text): ?string
-    {
-        if ($text === null || $text === '') {
-            return null;
-        }
-
-        // Words that signal the item is being sold as a gift/expense/wish rather than content.
-        $disallowed = [
-            'gift', 'donation', 'donate', 'contribution', 'contribute', 'tribute',
-            'bill', 'rent', 'mortgage', 'wish',
-        ];
-
-        foreach ($disallowed as $word) {
-            if (preg_match("/\b".preg_quote($word, '/')."\b/i", $text)) {
-                return "The item field must describe content, not '{$word}'.";
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Stripe compliance — per-feature price limits, evaluated in GBP-equivalent.
      * Minimum £4.99 applies to every paid feature; per-feature maximums:
      * £500 (Wish/Piggy Pot) · £100/mo (Bills/Memberships) · £10,000 (Tasks/Sell Something).
@@ -283,7 +261,7 @@ class Helpers
      * @param  float|null  $maxGbp  Maximum allowed, GBP equivalent (null = no max)
      * @return string|null Error message if out of range, else null
      */
-    public static function priceWithinLimits($value, ?string $currency, float $minGbp = 4.99, ?float $maxGbp = null): ?string
+    public static function priceWithinLimits($value, ?string $currency, float $minGbp = self::MIN_PRICE_GBP, ?float $maxGbp = null): ?string
     {
         $currency = strtoupper($currency ?: 'GBP');
         $priceGBP = self::priceFormat($currency, (float) $value, 'GBP');
@@ -1226,7 +1204,24 @@ class Helpers
             Log::info('MagicBell API response status: '.$response->status());
 
             if ($response->successful()) {
-                NotificationRecorder::push($title, $content, $email, NotificationLog::STATUS_SENT);
+                // 🚨 A 200 here means MAGICBELL ACCEPTED the notification, NOT that
+                // a device received it — MagicBell answers 200 whether or not the
+                // recipient has any push subscription at all, which is exactly why
+                // this log could read `sent` beside an empty phone. The note says
+                // what we could not confirm.
+                //
+                // ⚠️ Still recorded as SENT, and the send above still happened.
+                // A subscription lives in the browser and at MagicBell and does not
+                // die with our session, so a stale heartbeat is "unconfirmed", not
+                // "absent" — downgrading the status or skipping the call on the
+                // strength of it would be its own false claim.
+                NotificationRecorder::push(
+                    $title,
+                    $content,
+                    $email,
+                    NotificationLog::STATUS_SENT,
+                    PushReachability::logNoteFor($email),
+                );
 
                 return true;
             }

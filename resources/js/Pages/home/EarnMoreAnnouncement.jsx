@@ -22,7 +22,9 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
             <div className="max-w-7xl mx-auto relative z-10">
                 <div className="text-center mb-10 md:mb-14">
                     <FadeIn x={-60} y={0} duration={0.6}>
-                        <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                        {/* Static tilt is the design; the hover straighten is not —
+                            rotate-on-hover is the same banned gimmick as scale. */}
+                        <div className="inline-block transform -rotate-2">
                             <span className="bg-[#E6EA7B] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full mb-4 inline-block">
                                 Bonuses & Rewards
                             </span>
@@ -121,7 +123,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                         <Magnetic strength={0.3}>
                         <Link
                             href="/register"
-                            className="relative inline-flex items-center gap-3 bg-[#E6EA7B] text-black font-black text-base md:text-lg py-3 px-7 rounded-full hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
+                            className="relative inline-flex min-h-[48px] items-center gap-3 bg-[#E6EA7B] text-black font-black text-base md:text-lg py-3 px-7 rounded-full transition-[filter] duration-200 hover:brightness-95 active:brightness-90 uppercase tracking-wide group"
                         >
                             {/* ⚠️ ONE LABEL FOR ONE ACTION. The homepage had four
                                 for /register — "Create your page", "Start Selling

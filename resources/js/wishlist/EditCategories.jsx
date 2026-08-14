@@ -76,7 +76,7 @@ export default function EditCategories({username, fetch_categories}) {
          <Popup size="md" text={<><RiEdit2Line className="me-2" size='18' /> Edit Categories</>} space={4}
             action={close}
             modalclass="pinkmodal"
-            classes="me-2 flex items-center !text-sm font-bold wish-tags uppercase tracking-widest cursor-pointer edit text-nowrap !bg-black !text-gray-200 !rounded-xl !px-4 !py-[6px]" >
+            classes="me-2 flex items-center !text-sm font-bold wish-tags uppercase tracking-widest cursor-pointer edit text-nowrap !bg-black !text-gray-200 !rounded-full !px-4 !py-[6px]" >
                <h2 className="font-GillSans text-bl  uppercase text-lg relative z-1 "> Edit Categories </h2>
                {data && data.map((s, i)=>{
                   return <Item item={s} />

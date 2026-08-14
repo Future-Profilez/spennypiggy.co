@@ -1,6 +1,5 @@
 import { Head, usePage } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import SubscriptionEarnings from "./SubscriptionEarnings";
 import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
@@ -15,16 +14,18 @@ import TopSupporters from "./TopSupporters";
 import MonthlyRevenue from "./MonthlyRevenue";
 import PaidTask from "./PaidTask";
 import ReserveWidget from "@/Components/Creator/ReserveWidget";
+import StatStrip from "@/Components/UI/StatStrip";
+import SectionHead from "@/Components/UI/SectionHead";
+import { ACCENT, TYPE } from "@/Components/UI/tokens";
+
+const PERIODS = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "Week" },
+    { key: "month", label: "Month" },
+    { key: "all", label: "All time" },
+];
 
 export default function Earnings(props) {
-    const colors = [
-        "#FF007F",
-        "#10b981",
-        "#8b5cf6",
-        "#f59e0b",
-        "#3b82f6",
-        "#ef4444",
-    ];
     const { formatMultiPrice } = PriceFormat();
     const { auth, global_currency } = usePage().props;
 
@@ -60,311 +61,228 @@ export default function Earnings(props) {
         fetchingStats();
     }, [earnType]);
 
-    const EARNER = ({ data, i }) => {
-        const color = colors[i % colors.length];
-
-        if (loading || isChanging) {
-            return (
-                <article className="p-5 bg-white rounded-[24px] shadow-sm border border-gray-100 flex flex-col justify-between h-[120px] animate-pulse">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100"></div>
-                        <div className="w-12 h-5 rounded-full bg-gray-50"></div>
-                    </div>
-                    <div>
-                        <div className="w-20 h-2 bg-gray-100 rounded mb-2"></div>
-                        <div className="w-28 h-6 bg-gray-100 rounded"></div>
-                    </div>
-                </article>
-            );
-        }
-
-        return (
-            <article className="relative overflow-hidden p-5 bg-white rounded-[24px] shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 group flex flex-col justify-between ">
-                <div
-                    className="absolute top-0 right-0 -mt-2 -mr-2 w-28 h-28 bg-gradient-to-br opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rounded-full pointer-events-none"
-                    style={{ backgroundColor: color }}
-                ></div>
-
-                <header className="flex items-center justify-between mb-2">
-                    <div
-                        className="p-2.5 rounded-xl shadow-sm"
-                        style={{ backgroundColor: `${color}15` }}
-                    >
-                        <svg
-                            width="28"
-                            height="28"
-                            viewBox="0 0 56 56"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <circle cx="28" cy="28" r="28" fill={color} />
-                            <path
-                                d="M27.5003 16.8333L24.167 22.6666H16.667L20.8337 28.4999L16.667 34.3333H24.167L27.5003 40.1666L30.8337 34.3333H38.3337L34.167 28.4999L38.3337 22.6666H30.8337L27.5003 16.8333Z"
-                                fill="white"
-                            />
-                        </svg>
-                    </div>
-                    {data.percent > 0 && (
-                        <div className="text-[14px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/50 shadow-sm">
-                            {data.percent}%
-                        </div>
-                    )}
-                </header>
-                <div className="relative z-10">
-                    <h2 className="text-[12px] md:text-[13px] font-extrabold uppercase tracking-[1px] text-gray-500 leading-4 min-h-[36px]">
-                        {data.title}
-                    </h2>
-                    <p className="text-3xl lg:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
-                        {formatMultiPrice(
-                            data && data.amount,
-                            global_currency || "gbp",
-                        )}
-                    </p>
-                </div>
-            </article>
-        );
-    };
+    const busy = loading || isChanging;
+    const currency = global_currency || auth?.user?.default_currency || "gbp";
 
     const grossTotal = Array.isArray(lists)
         ? lists.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0)
         : 0;
 
+    /*
+     * Every income stream is a tile in ONE joined strip rather than its own
+     * bordered card. That is the argument the page is making: a creator earns
+     * from several places and it is one income — the same device the landing
+     * page's "ways to get paid" section uses, for the same reason.
+     *
+     * ⚠️ The skeleton keeps the same tile count and the same frame, so the page
+     * does not reflow when the figures land.
+     */
+    const streamTiles = busy
+        ? Array.from({ length: 4 }, (_, i) => ({
+              label: "",
+              value: (
+                  <span className="block h-7 w-24 rounded bg-black/10 animate-pulse" />
+              ),
+              sub: null,
+              key: `skeleton-${i}`,
+          }))
+        : (Array.isArray(lists) ? lists : []).map((row) => ({
+              label: row.title,
+              value: formatMultiPrice(row?.amount, currency),
+              sub: row.percent > 0 ? `${row.percent}% of income` : null,
+          }));
+
     return (
         <Authenticated auth={auth?.user || ""}>
-            <Head title="Earnings Dashboard" />
+            <Head title="Earnings" />
 
-            <div className="bg-black pt-10 pb-20 relative border-b border-white/5">
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-brandPink/5 rounded-full blur-[120px]"></div>
-                    <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-brandYellow/5 rounded-full blur-[100px]"></div>
-                </div>
-
-                <div className="containerbox relative z-10">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-                        <div className="max-w-xl">
-                            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full mb-4 backdrop-blur-md">
-                                <span className="relative flex h-1.5 w-1.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandYellow opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brandYellow"></span>
-                                </span>
-                                <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest">
-                                    Live Dashboard
-                                </span>
-                            </div>
-                            <h1 className="text-white font-black text-4xl md:text-5xl tracking-tight mb-2">
-                                Your{" "}
-                                <span className="text-brandYellow">
-                                    Earnings
-                                </span>
-                            </h1>
-                            <p className="text-gray-400 text-sm md:text-base">
-                                Track your revenue and celebrate your success
-                                across all channels.
-                            </p>
-                            <div className="mt-4">
-                                <a
-                                    href="/financial/dashboard"
-                                    className="inline-flex items-center gap-2 text-brandYellow hover:text-white transition-colors text-sm font-semibold uppercase tracking-wider"
-                                >
-                                    View Financial Dashboard
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M5 12h14"></path>
-                                        <path d="M12 5l7 7-7 7"></path>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div className="w-full md:w-auto md:flex md:flex-col md:items-end md:gap-3">
-                            <div className="bg-[#111] p-1 rounded-full border border-white/10 flex items-center shadow-inner">
-                                {["today", "week", "month", "all"].map(
-                                    (type) => (
-                                        <button
-                                            key={type}
-                                            onClick={() => handleEarnings(type)}
-                                            disabled={loading || isChanging}
-                                            className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex-1 whitespace-nowrap ${
-                                                earnType === type
-                                                    ? "bg-brandYellow text-black shadow-md"
-                                                    : "text-gray-500 hover:text-white hover:bg-white/5"
-                                            } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-                                        >
-                                            {type === "all" ? "All Time" : type}
-                                        </button>
-                                    ),
-                                )}
-                            </div>
-                            <RefreshRecordsButton className="mt-3 w-full md:mt-0 md:w-auto bg-[#111] text-white border border-white/10 hover:bg-white/10" />
-                        </div>
-                    </div>
-
-                    {/* Total Earnings Banner */}
-                    <div
-                        className={`relative group transition-all duration-500 ${isChanging ? "opacity-50 blur-sm" : "opacity-100"}`}
-                    >
-                        {/* Decorative Background Glow */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-brandPink/20 to-brandYellow/20 rounded-[32px] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-
-                        <div className="relative bg-[#0F0F0F] border border-white/10 rounded-[28px] p-6 md:p-8 shadow-[4px_4px_0px_0px_#FF007F]xl overflow-hidden">
-                            {/* Abstract Background Pattern */}
-                            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-brandYellow/5 rounded-full blur-3xl"></div>
-                            <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-brandPink/5 rounded-full blur-3xl"></div>
-
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                                <div className="flex items-center gap-8 w-full md:w-auto">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 bg-brandPink blur-xl opacity-20 animate-pulse"></div>
-                                        <div className="relative w-20 h-20 rounded-[30px]  bg-gradient-to-br from-brandPink/20 to-brandPink/5 flex items-center justify-center border border-brandPink/30 shadow-inner">
-                                            <svg
-                                                className="w-10 h-10 text-brandPink"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={1.5}
-                                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em] mb-2">
-                                            Total Earnings
-                                        </p>
-                                        <div className="flex items-center gap-4">
-                                            {loading || isChanging ? (
-                                                <div className="h-14 w-64 bg-white/5 rounded-[30px]  animate-pulse"></div>
-                                            ) : (
-                                                <h2 className="text-white mt-3 text-3xl md:text-4xl font-black tabular-nums font-poppins tracking-tighter bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent leading-none">
-                                                    {formatMultiPrice(
-                                                        grossTotal,
-                                                        global_currency ||
-                                                            "gbp",
-                                                    )}
-                                                </h2>
-                                            )}
-                                            {!loading && !isChanging && (
-                                                <div className="hidden lg:flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-                                                    <svg
-                                                        className="w-3.5 h-3.5 text-emerald-500"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={3}
-                                                            d="M5 10l7-7m0 0l7 7m-7-7v18"
-                                                        />
-                                                    </svg>
-                                                    <span className="text-emerald-500 text-[10px] font-black uppercase tracking-wider">
-                                                        Growth
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Secondary Stat Info */}
-                                <div className="hidden xl:flex items-center gap-12 pr-4">
-                                    <div className="h-12 w-px bg-white/10"></div>
-                                    <div className="text-right">
-                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">
-                                            Active Streams
-                                        </p>
-                                        <p className="text-white text-2xl font-black tracking-tight">
-                                            {lists?.length || 0}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">
-                                            Currency
-                                        </p>
-                                        <p className="text-brandYellow text-2xl font-black tracking-tight uppercase">
-                                            {global_currency ||
-                                                auth?.user?.default_currency ||
-                                                "GBP"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="pb-24 bg-[#FAFAFA] min-h-dvh pt-10">
+            {/* ── The one statement: what this creator has earned ────────── */}
+            <header className="bg-[#0B0B0C] pt-10 pb-12">
                 <div className="containerbox">
-                    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-10">
-                        {lists &&
-                            lists.map((e, i) => {
-                                return (
-                                    <div key={`earn-stat-${i}`}>
-                                        <EARNER data={e} i={i} />
-                                    </div>
-                                );
-                            })}
+                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
+                        <div className="max-w-xl">
+                            <p
+                                className={`${TYPE.eyebrow} mb-3`}
+                                style={{ color: ACCENT.mint.hex }}
+                            >
+                                Your earnings
+                            </p>
+                            <h1
+                                className={`${TYPE.display} text-white text-[30px] md:text-[42px] leading-[0.95]`}
+                            >
+                                Everything you
+                                <br className="hidden md:block" /> have earned
+                            </h1>
+                            {/*
+                             * ⚠️ This paragraph, the two figures in the strip below and the
+                             * period buttons were all `text-black/60` on this black band —
+                             * five places rendering invisible text on the live page.
+                             */}
+                            <p className="mt-3 text-[15px] leading-[1.55] text-white/60">
+                                Across every way you sell. Money you have been
+                                paid, money still clearing, all of it.
+                            </p>
+                            <a
+                                href="/financial/dashboard"
+                                className="mt-4 inline-flex items-center gap-2 font-gulfs uppercase tracking-[0.1em] text-[12px] text-white transition-opacity duration-200 hover:opacity-70"
+                                style={{ color: ACCENT.mint.hex }}
+                            >
+                                Financial dashboard
+                                <span aria-hidden="true">→</span>
+                            </a>
+                        </div>
+
+                        <div className="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col lg:items-end gap-3">
+                            {/*
+                             * The period control is the house frame in miniature: one black
+                             * box, the selected period filled. It was a pill rail whose
+                             * unselected labels were black on black.
+                             */}
+                            <div className="grid grid-cols-4 gap-px bg-black border-[3px] border-black rounded-box-sm overflow-hidden">
+                                {PERIODS.map((p) => {
+                                    const active = earnType === p.key;
+                                    return (
+                                        <button
+                                            key={p.key}
+                                            type="button"
+                                            onClick={() => handleEarnings(p.key)}
+                                            disabled={busy}
+                                            aria-pressed={active}
+                                            className={[
+                                                "min-h-[44px] px-3 md:px-4 font-gulfs uppercase tracking-[0.08em] text-[11px] md:text-[12px] leading-none",
+                                                "transition-colors duration-200 disabled:opacity-60",
+                                                active
+                                                    ? "text-black"
+                                                    : "bg-[#15161C] text-white/70 hover:bg-[#1E2029]",
+                                            ].join(" ")}
+                                            style={
+                                                active
+                                                    ? {
+                                                          backgroundColor:
+                                                              ACCENT.mint.hex,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            {p.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/*
+                             * ⚠️ Only frame and colour here — the component already
+                             * sets its own `min-h-[44px]`, `text-sm`, `font-poppins`
+                             * and `rounded-box-sm`, and a second value for any of
+                             * those is a conflicting-utility pair that
+                             * `npm run check` fails the build on. Which one wins is
+                             * decided by stylesheet order, not by source order.
+                             */}
+                            <RefreshRecordsButton className="w-full sm:w-auto border-[3px] border-black bg-[#15161C] uppercase tracking-[0.08em] text-white hover:bg-[#1E2029]" />
+                        </div>
                     </div>
-                    <div className="pb-12">
+
+                    {/* The total, and the two facts that qualify it, as one object. */}
+                    <div
+                        className={`grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1fr] gap-px bg-white/12 border-[3px] border-black rounded-box overflow-hidden transition-opacity duration-300 ${
+ isChanging ? "opacity-60" : "opacity-100"
+ }`}
+                    >
+                        <div className="bg-[#15161C] p-5 md:p-7">
+                            <p className={`${TYPE.eyebrow} text-white/55`}>
+                                Total earned
+                            </p>
+                            {busy ? (
+                                <div className="mt-3 h-12 w-56 rounded bg-white/10 animate-pulse" />
+                            ) : (
+                                <p
+                                    className={`${TYPE.figure} mt-3 text-white text-[40px] md:text-[60px]`}
+                                >
+                                    {formatMultiPrice(grossTotal, currency)}
+                                </p>
+                            )}
+                        </div>
+
+                        <Fact label="Active streams" value={lists?.length || 0} />
+                        <Fact
+                            label="Currency"
+                            value={currency.toUpperCase()}
+                            accent
+                        />
+                    </div>
+                </div>
+            </header>
+
+            {/* ── Where it came from ─────────────────────────────────────── */}
+            <main className="bg-[#FAFAFA] min-h-dvh pt-10 pb-24">
+                <div className="containerbox">
+                    <SectionHead
+                        eyebrow="By source"
+                        title="Where the money came from"
+                        accent="pink"
+                    />
+
+                    <StatStrip items={streamTiles} cols={4} className="mb-10" />
+
+                    <div className="mb-12">
                         <ReserveWidget />
                     </div>
 
-                    <div className="space-y-10">
-                        <div
-                            className={`transition-opacity duration-300 ${isChanging ? "opacity-50 blur-sm" : "opacity-100"}`}
-                        >
-                            <MonthlyRevenue />
-                        </div>
+                    <div
+                        className={`mb-12 transition-opacity duration-300 ${
+                            isChanging ? "opacity-60" : "opacity-100"
+                        }`}
+                    >
+                        <MonthlyRevenue />
+                    </div>
 
-                        <div className="relative">
-                            <div className="flex items-center gap-4 mb-10">
-                                <h2 className="text-2xl lg:text-3xl font-black text-gray-900 tracking-tight    ">
-                                    Performance Breakdown
-                                </h2>
-                                <div className="flex-grow h-[1px] bg-gray-200"></div>
-                            </div>
+                    <SectionHead
+                        eyebrow="Detail"
+                        title="Performance breakdown"
+                        accent="violet"
+                    />
 
-                            <div
-                                className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 transition-opacity duration-300 ${isChanging ? "opacity-50 blur-sm" : "opacity-100"}`}
-                            >
-                                <TopEarnPiggyPots
-                                    currency={props?.global_currency || "gbp"}
-                                    earnType={earnType}
-                                />
-                                <TopEarnWishes
-                                    currency={props?.global_currency || "gbp"}
-                                    earnType={earnType}
-                                />
-                                <TopEarnShop
-                                    currency={props?.global_currency || "gbp"}
-                                    earnType={earnType}
-                                />
-                                <TopEarnMemberships
-                                    currency={props?.global_currency || "gbp"}
-                                    earnType={earnType}
-                                />
-                                <PaidTask auth={auth} earnType={earnType} />
-                                <TopEarnBills earnType={earnType} />
-                                <TopSupporters earnType={earnType} />
-                            </div>
-                        </div>
+                    <div
+                        className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6 transition-opacity duration-300 ${
+                            isChanging ? "opacity-60" : "opacity-100"
+                        }`}
+                    >
+                        <TopEarnPiggyPots
+                            currency={props?.global_currency || "gbp"}
+                            earnType={earnType}
+                        />
+                        <TopEarnWishes
+                            currency={props?.global_currency || "gbp"}
+                            earnType={earnType}
+                        />
+                        <TopEarnShop
+                            currency={props?.global_currency || "gbp"}
+                            earnType={earnType}
+                        />
+                        <TopEarnMemberships
+                            currency={props?.global_currency || "gbp"}
+                            earnType={earnType}
+                        />
+                        <PaidTask auth={auth} earnType={earnType} />
+                        <TopEarnBills earnType={earnType} />
+                        <TopSupporters earnType={earnType} />
                     </div>
                 </div>
-            </div>
+            </main>
         </Authenticated>
+    );
+}
+
+function Fact({ label, value, accent = false }) {
+    return (
+        <div className="bg-[#15161C] p-5 md:p-7 flex flex-col justify-end">
+            <p className={`${TYPE.eyebrow} text-white/55`}>{label}</p>
+            <p
+                className={`${TYPE.figure} mt-2 text-[22px] md:text-[28px]`}
+                style={{ color: accent ? ACCENT.mint.hex : "#FFFFFF" }}
+            >
+                {value}
+            </p>
+        </div>
     );
 }

@@ -13,7 +13,7 @@ import PriceFormat from '@/includes/PriceFormat';
 import ScheduledBadge from "@/Components/ScheduledBadge";
 
 const ProductCardSkeleton = () => (
-   <div className="overflow-hidden rounded-box border-[3px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-pulse">
+   <div className="overflow-hidden rounded-box border-[3px] border-black bg-white animate-pulse">
       <div className="aspect-[16/10] w-full border-b-[3px] border-black bg-gray-200" />
       <div className="p-4">
          <div className="h-4 w-3/4 rounded-full bg-gray-200" />
@@ -42,9 +42,9 @@ const StatusStrip = ({ tone, label, detail }) => {
 
    return (
       <div className={`border-b-[3px] border-black px-4 py-2 ${tones[tone]}`}>
-         <p className="text-[11px] font-black uppercase leading-tight tracking-wide">{label}</p>
+         <p className="text-[12px] font-black uppercase leading-tight tracking-wide">{label}</p>
          {detail && (
-            <p className="mt-0.5 text-[11px] font-medium normal-case leading-snug opacity-90">{detail}</p>
+            <p className="mt-0.5 text-[12px] font-medium normal-case leading-snug opacity-90">{detail}</p>
          )}
       </div>
    );
@@ -156,7 +156,7 @@ export default function MyShopProducts({lists, loading, update}) {
                               end level and every Edit button lands on the same line. The old
                               markup put mt-auto inside a non-flex child, so it did nothing
                               and short listings left a gap under their button. */
-                           className={`relative flex h-full flex-col overflow-hidden rounded-box border-[2px] border-black bg-white  transition-transform hover:translate-x-[-2px] hover:translate-y-[-2px] ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
+                           className={`relative flex h-full flex-col overflow-hidden rounded-box border-[2px] border-black bg-white transition-colors duration-200 hover:bg-black/[0.03] ${isDeactivated ? 'opacity-60 grayscale' : ''} ${isPending ? 'pointer-events-none opacity-50' : ''}`}
                         >
                            {/* Media bleeds to the card edge. One rule under it replaces the
                                old border-inside-a-border-inside-a-border stack. */}
@@ -164,12 +164,12 @@ export default function MyShopProducts({lists, loading, update}) {
                               href={s.perma_link ? itemUrl : '#'}
                               className="group/img relative block aspect-[16/10] overflow-hidden border-b-[1px]  !border-t-[0px]  !border-r-[0px]  !border-l-[0px] border-black bg-gray-100"
                            >
-                              <span className={`absolute left-3 top-3 z-[5] rounded-full border-2 border-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${s.type === 'physical' ? 'bg-blue-300' : 'bg-[#A2E4B8]'}`}>
+                              <span className={`absolute left-3 top-3 z-[5] rounded-full border-2 border-black px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wide ${s.type === 'physical' ? 'bg-blue-300' : 'bg-[#A2E4B8]'}`}>
                                  {s.type === 'physical' ? 'Physical' : 'Digital'}
                               </span>
 
                               <img
-                                 className="h-full w-full object-cover transition-transform duration-500 group-hover/img:scale-105"
+                                 className="h-full w-full object-cover transition-[filter,opacity] duration-500 group-hover/img:brightness-[1.08]"
                                  src={s.perma_link}
                                  alt={s.name}
                                  onError={(e) => {
@@ -182,14 +182,14 @@ export default function MyShopProducts({lists, loading, update}) {
                               />
 
                               {s.ai_generated == 1 && (
-                                 <span className="absolute bottom-3 left-3 rounded-full bg-[#FF007F] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
+                                 <span className="absolute bottom-3 left-3 rounded-full bg-[#FF007F] px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wide text-black">
                                     Made with AI
                                  </span>
                               )}
 
                               {/* Always visible — hover is not available on touch. Quiet:
                                   it is a way out of the card, not an action on it. */}
-                              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-black">
+                              <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[12px] font-black uppercase tracking-wide text-black">
                                  View <ArrowUpRight size={11} strokeWidth={3} />
                               </span>
                            </Link>
@@ -218,7 +218,13 @@ export default function MyShopProducts({lists, loading, update}) {
 
                            <div className="flex flex-1 flex-col p-4">
                               <div className="flex items-start justify-between gap-1">
-                                 <h3 className="pt-1.5 text-base font-black uppercase leading-tight tracking-wide text-black line-clamp-2 sm:text-lg">
+                                 {/* Reserve both lines: a one-line name would otherwise
+                                     shunt this card's price and meta a row higher than
+                                     its neighbours' and the grid reads as misaligned. */}
+                                 <h3
+                                    className="pt-1.5 text-base font-black uppercase leading-tight tracking-wide text-black line-clamp-2 min-h-[40px] sm:min-h-[45px] sm:text-lg"
+                                    title={s.name}
+                                 >
                                     {s.name}
                                  </h3>
 
@@ -310,13 +316,13 @@ export default function MyShopProducts({lists, loading, update}) {
                                  */}
                                  {tracked ? (
                                     <span
-                                       className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${soldOut ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}`}
+                                       className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-black uppercase tracking-wide ${soldOut ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}`}
                                        title={`${soldCount} sold, ${Math.max(0, stockLeft)} left`}
                                     >
                                        {soldOut ? 'Sold out' : `${stockLeft} left`}
                                     </span>
                                  ) : soldCount > 0 ? (
-                                    <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-gray-500">
+                                    <span className="shrink-0 text-[12px] font-black uppercase tracking-wide text-gray-500">
                                        {soldCount} sold
                                     </span>
                                  ) : null}
@@ -329,7 +335,7 @@ export default function MyShopProducts({lists, loading, update}) {
 
                               {soldOut && (
                                  <div className='mt-3 flex flex-wrap items-center justify-between gap-2 rounded-box-sm bg-red-50 px-3 py-2'>
-                                    <span className='text-[11px] font-black uppercase leading-tight tracking-wide text-red-700'>Raise the limit to keep selling</span>
+                                    <span className='text-[12px] font-black uppercase leading-tight tracking-wide text-red-700'>Raise the limit to keep selling</span>
                                     {/* The demand the creator could not see before. This number is
                                         the whole reason the waitlist exists on the supply side. */}
                                     <WaitingCount count={Number(s.waiting_count || 0)} />
@@ -337,16 +343,16 @@ export default function MyShopProducts({lists, loading, update}) {
                               )}
 
                               {s.type === 'physical' && shippingDetails && (
-                                 <dl className='mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px]'>
+                                 <dl className='mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12px]'>
                                     {shippingDetails.domestic && (
                                        <div className="flex items-baseline gap-1.5">
-                                          <dt className="font-black uppercase tracking-wide text-gray-400">Domestic</dt>
+                                          <dt className="font-black uppercase tracking-wide text-black/60">Domestic</dt>
                                           <dd className="font-bold tabular-nums text-gray-700">{shippingDetails.domestic}</dd>
                                        </div>
                                     )}
                                     {shippingDetails.worldwide && (
                                        <div className="flex items-baseline gap-1.5">
-                                          <dt className="font-black uppercase tracking-wide text-gray-400">Worldwide</dt>
+                                          <dt className="font-black uppercase tracking-wide text-black/60">Worldwide</dt>
                                           <dd className="font-bold tabular-nums text-gray-700">{shippingDetails.worldwide}</dd>
                                        </div>
                                     )}
@@ -359,7 +365,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                  <div className="flex-1" ref={(el) => editButtonRefs.current[s.uuid] = el}>
                                     <AddItem
                                        update={update}
-                                       classes="block w-full cursor-pointer rounded-box-sm border-2 border-black bg-blue-300 px-4 py-3 min-h-[44px] text-center text-sm font-black uppercase tracking-wide text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:bg-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                                       classes="block w-full cursor-pointer rounded-box-sm border-2 border-black bg-blue-300 px-4 py-3 min-h-[44px] text-center text-sm font-black uppercase tracking-wide text-black transition-all hover:bg-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] "
                                        pre_title={s.name} title="Edit item"
                                        pre_description={s.description}
                                        pre_price={s.price}
@@ -373,11 +379,11 @@ export default function MyShopProducts({lists, loading, update}) {
                                     onClick={() => handleCopy(s.uuid, `${window.location.origin}${itemUrl}`)}
                                     aria-label={`Copy the link to ${s.name}`}
                                     title="Copy the link to this listing"
-                                    className={`inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
-                                       isCopied ? 'bg-[#A2E4B8] text-black'
-                                       : needsSharing ? 'bg-[#FF007F] text-white hover:bg-[#e00070]'
-                                       : 'bg-white text-black hover:bg-gray-100'
-                                    }`}
+                                    className={`inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-box-sm border-2 border-black transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-black active:translate-x-[2px] active:translate-y-[2px] ${
+ isCopied ? 'bg-[#A2E4B8] text-black'
+ : needsSharing ? 'bg-[#FF007F] text-black hover:bg-[#e00070]'
+ : 'bg-white text-black hover:bg-gray-100'
+ }`}
                                  >
                                     {isCopied ? <Check size={18} strokeWidth={3} /> : <Share2 size={17} strokeWidth={2.6} />}
                                  </button>

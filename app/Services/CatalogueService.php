@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Membership;
 use App\Models\User;
 use App\Support\CatalogueRegistry;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -244,7 +246,11 @@ class CatalogueService
             'type' => $type,
             'type_label' => $config['label'],
             'title' => $title,
-            'thumbnail' => $this->thumbnail($item->{$config['image']} ?? null, (bool) $config['image_is_url']),
+            'thumbnail' => $this->thumbnail(
+                $item->{$config['image']} ?? null,
+                (bool) $config['image_is_url'],
+                $this->fallbackUuid($item, $type),
+            ),
             'price' => $this->price($item, $type),
             'currency' => strtoupper((string) ($item->currency ?? $creator->default_currency ?? 'GBP')),
             'status' => $status,
@@ -463,21 +469,53 @@ class CatalogueService
      *
      * ⚠️ `-/quality/smart/`, never `-/quality/85/` — the numeric form is not a valid
      * Uploadcare operation and the CDN answers 400.
+     *
+     * ⚠️ An empty or unusable column falls back to the platform placeholder rather than
+     * returning null. Every module's own card already does this through its `perma_link`
+     * accessor; the catalogue builds its own square crop from plain arrays (models are
+     * never returned here — the 206-query trap), so it had no fallback at all and drew a
+     * broken-image glyph. Measured on live data: EVERY paid request, 6 of 13 bills and 5
+     * of 14 memberships store no image, so that glyph was most of the page — and to a
+     * creator it reads as their own upload having failed.
      */
-    private function thumbnail(?string $raw, bool $isUrl): ?string
+    private function thumbnail(?string $raw, bool $isUrl, ?string $fallbackUuid = null): ?string
     {
         $raw = trim((string) $raw);
 
-        if ($raw === '') {
-            return null;
+        if ($raw !== '') {
+            if (preg_match('/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $raw, $match)) {
+                return $this->cdnThumbnail($match[1]);
+            }
+
+            // A non-Uploadcare absolute url is used as-is; anything else is unusable.
+            if ($isUrl && str_starts_with($raw, 'http')) {
+                return $raw;
+            }
         }
 
-        if (preg_match('/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $raw, $match)) {
-            return "https://ucarecdn.com/{$match[1]}/-/scale_crop/240x240/center/-/format/jpeg/-/quality/smart/";
+        return $fallbackUuid !== null ? $this->cdnThumbnail($fallbackUuid) : null;
+    }
+
+    private function cdnThumbnail(string $uuid): string
+    {
+        return MediaUrl::CDN."{$uuid}/-/scale_crop/240x240/center/-/format/jpeg/-/quality/smart/";
+    }
+
+    /**
+     * Which stand-in a listing with no image of its own gets.
+     *
+     * ⚠️ A Membership falls back to its TIER art, never to the generic placeholder — the
+     * tier IS the product, and five identical piggy tiles say nothing about which one a
+     * creator is looking at. The uuids live on `Membership::defaultThumbnailUuid()`, the
+     * one definition; `level` is this type's title column so it is always selected.
+     */
+    private function fallbackUuid(Model $item, string $type): string
+    {
+        if ($type === 'membership') {
+            return Membership::defaultThumbnailUuid($item->level ?? null) ?? MediaUrl::FALLBACK_THUMBNAIL;
         }
 
-        // A non-Uploadcare absolute url is used as-is; anything else is unusable.
-        return $isUrl && str_starts_with($raw, 'http') ? $raw : null;
+        return MediaUrl::FALLBACK_THUMBNAIL;
     }
 
     /**
@@ -491,7 +529,12 @@ class CatalogueService
     {
         return match ($type) {
             'task' => route('task.edit', ['uuid' => $item->uuid]),
-            'shop' => route('shop-list', ['username' => $creator->username]),
+            // 🚨 `shop-list` is a JSON API (`ShopsController::shopList` returns
+            // `response()->json`), NOT a page. This is a plain <Link>, so the browser
+            // navigated straight to it and rendered the raw JSON payload on screen.
+            // The creator's shop screen is `route('shop')` → Inertia `shop/ShopPage`,
+            // which is also what CreatorJourneyCard's two shop paths use.
+            'shop' => route('shop'),
             'piggy_pot' => route('piggy-pots.index'),
             default => route('user.show', ['username' => $creator->username, 'page' => CatalogueRegistry::config($type)['manage_page']]),
         };

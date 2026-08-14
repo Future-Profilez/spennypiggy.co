@@ -16,7 +16,7 @@ export default function PaymentMethodsAcceptedField({ value = "both", onChange, 
             <p className="font-black uppercase tracking-widest text-xs mb-1">
                 Payment methods for this item
             </p>
-            <p className="text-[11px] font-bold text-black/60 mb-2">
+ <p className="text-[12px] font-bold text-black/60 mb-2">
                 Accept Bank Payments and your supporters pay less while you
                 still receive the same payout.
             </p>
@@ -26,16 +26,16 @@ export default function PaymentMethodsAcceptedField({ value = "both", onChange, 
                         key={opt.key}
                         type="button"
                         onClick={() => onChange?.(opt.key)}
-                        className={`border-[3px] border-black rounded-xl p-2 text-left transition-all ${
+ className={`border-[3px] border-black rounded-box-sm p-2 text-left transition-all ${
                             value === opt.key
-                                ? "bg-[#A2E4B8] shadow-[3px_3px_0px_rgba(0,0,0,1)]"
-                                : "bg-white hover:shadow-[3px_3px_0px_rgba(0,0,0,1)]"
+ ? "bg-[#A2E4B8] "
+ : "bg-white "
                         }`}
                     >
-                        <span className="block font-black uppercase text-[11px]">
+ <span className="block font-black uppercase text-[12px]">
                             {opt.label}
                         </span>
-                        <span className="block text-[10px] font-bold text-black/60 mt-0.5">
+ <span className="block text-[12px] font-bold text-black/60 mt-0.5">
                             {opt.hint}
                         </span>
                     </button>

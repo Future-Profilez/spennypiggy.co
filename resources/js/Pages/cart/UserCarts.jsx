@@ -12,9 +12,9 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import { PayButton } from "@/Components/Checkout/SummaryReceipt";
 import { TextField, TextAreaField, fieldClass } from "@/Components/Checkout/FormKit";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { creatorIdOf } from "@/utils/pricing";
-import { riskMessageBody, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
+import { riskMessageBody, riskMessageTitle, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
 
 export default function UserCarts(props) {
     const {
@@ -563,7 +563,7 @@ export default function UserCarts(props) {
             creator_id: datas?.user?.id,
         });
         if (!card_capabilities) {
-            toast.error("This creator cannot accept payments at the moment.");
+            toast.error(riskMessageBody("CREATOR_UNAVAILABLE"));
             if (debugEnabled) {
                 console.warn("DEBUG: creator card_capabilities missing");
             }
@@ -852,7 +852,7 @@ export default function UserCarts(props) {
                     {formatMultiPrice(displayTotal || "", chargeCurrency)}
                 </span>
                 {collapsible ? (
-                    <span className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wide text-[#FF007F]">
+                    <span className="mt-0.5 flex items-center justify-end gap-1 text-[12px] font-bold uppercase tracking-wide text-[#FF007F]">
                         {expanded ? "Close" : "Checkout"}
                         <svg
                             className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -910,7 +910,7 @@ export default function UserCarts(props) {
                             basket" directly under the page heading of the same
                             name. */}
                         <div className="mb-4 rounded-box-sm border-2 border-black/10 bg-black/[0.03] p-3">
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-black/60">
+                            <p className="text-[12px] font-bold uppercase tracking-wide text-black/60">
                                 What you get
                             </p>
                             <ul className="mt-1.5 space-y-1">
@@ -973,12 +973,9 @@ export default function UserCarts(props) {
                                 role="alert"
                             >
                                 <p className="font-bold">
-                                    Payments Unavailable
+                                    {riskMessageTitle("CREATOR_UNAVAILABLE")}
                                 </p>
-                                <p>
-                                    This creator cannot accept payments at the
-                                    moment (Card Payments capability missing).
-                                </p>
+                                <p>{riskMessageBody("CREATOR_UNAVAILABLE")}</p>
                             </div>
                         )}
                         <div className="CartItemBox">
@@ -1056,7 +1053,7 @@ export default function UserCarts(props) {
                                     {formatMultiPrice(displayTotal || "", chargeCurrency)}
                                 </strong>
                             </div>
-                            <div className="mt-1 text-right text-[10px] font-normal leading-tight text-black/60">
+                            <div className="mt-1 text-right text-[12px] font-normal leading-tight text-black/60">
                                 *Includes platform and payment processing fees
                             </div>
                         </div>
@@ -1254,7 +1251,7 @@ export default function UserCarts(props) {
                                     setShowStepUp(false);
                                     setSkipCaptcha(false);
                                 }}
-                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                className="border-2 border-black w-full main-button !bg-white !text-black !border-black"
                             >
                                 Cancel
                             </button>

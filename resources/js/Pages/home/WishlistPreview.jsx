@@ -53,7 +53,7 @@ function Avatar({ size = "w-9 h-9" }) {
  */
 function CTA({ children, glyph }) {
     return (
-        <span aria-hidden="true" className="relative w-full mt-3.5 bg-[#FF007F] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-box-sm border-[3px] border-black overflow-hidden flex items-center justify-center gap-1.5">
+        <span aria-hidden="true" className="relative w-full mt-3.5 bg-[#FF007F] text-black text-[12px] font-black uppercase tracking-wide py-2.5 rounded-box-sm border-[3px] border-black overflow-hidden flex items-center justify-center gap-1.5">
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>{glyph && <span className="relative">{glyph}</span>}
         </span>
@@ -81,7 +81,7 @@ function WishlistMock() {
                 <Avatar />
                 <div className="leading-tight min-w-0">
                     <p className="font-gulfs uppercase text-[13px] text-black">@justjack</p>
-                    <p className="text-[9.5px] font-bold uppercase text-gray-500 truncate">3 items · £115 listed</p>
+                    <p className="text-[9.5px] font-bold uppercase text-black/60 truncate">3 items · £115 listed</p>
                 </div>
                 <span className="ml-auto text-[11px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: MINT }}>Share</span>
             </div>
@@ -98,10 +98,10 @@ function WishlistMock() {
                         <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black flex items-center justify-center text-base" style={{ background: `${it.tint}33` }}>{it.e}</span>
                         <span className="text-[11.5px] font-black uppercase text-black flex-1 min-w-0 truncate">{it.n}</span>
                         <span className="font-black text-[11px] text-[#FF007F]">{it.p}</span>
-                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-gray-300"}`} style={it.done ? { background: MINT } : undefined} title={it.done ? "Sold" : "Not sold yet"}>{it.done ? "✓" : ""}</span>
+                        <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-black/30"}`} style={it.done ? { background: MINT } : undefined} title={it.done ? "Sold" : "Not sold yet"}>{it.done ? "✓" : ""}</span>
                     </div>
                 ))}
-                <div className="flex items-center justify-center gap-1.5 border-2 border-dashed border-gray-300 rounded-[12px] py-2 text-[11px] font-black uppercase text-gray-400">＋ Add item</div>
+                <div className="flex items-center justify-center gap-1.5 border-2 border-dashed border-black/30 rounded-[12px] py-2 text-[11px] font-black uppercase text-black/60">＋ Add item</div>
             </div>
             <CTA glyph="🔗">Share your page</CTA>
         </Frame>
@@ -120,7 +120,7 @@ function ActivityMock() {
         <Frame>
             <div className="flex items-center gap-2.5 mb-3">
                 <Avatar size="w-8 h-8" />
-                <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">From your fans</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-black/60">From your fans</p>
                 <span className="ml-auto inline-flex items-center gap-1 text-[8.5px] font-black uppercase border-2 border-black rounded-full px-2 py-0.5" style={{ background: MINT }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span>Live
                 </span>
@@ -135,7 +135,7 @@ function ActivityMock() {
                 {feed.map((f, i) => (
                     <div key={i} className="flex items-center gap-2 bg-gray-50 border-2 border-black rounded-[10px] px-2 py-1.5" style={{ transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)` }}>
                         <span className="w-7 h-7 shrink-0 rounded-full border-2 border-black bg-white flex items-center justify-center text-sm">{f.e}</span>
-                        <p className="text-[10.5px] uppercase leading-tight flex-1 min-w-0 truncate"><span className="font-black text-black">{f.who}</span> <span className="text-gray-500">{f.what}</span></p>
+                        <p className="text-[10.5px] uppercase leading-tight flex-1 min-w-0 truncate"><span className="font-black text-black">{f.who}</span> <span className="text-black/60">{f.what}</span></p>
                         <span className="font-black text-[11px] text-[#FF007F]">{f.p}</span>
                     </div>
                 ))}

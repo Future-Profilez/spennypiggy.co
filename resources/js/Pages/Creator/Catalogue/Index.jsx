@@ -1,7 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
-import { Search, PackageOpen, Plus } from "lucide-react";
+import {
+    Search,
+    PackageOpen,
+    Plus,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import ListingRow from "@/Components/Catalogue/ListingRow";
 
@@ -19,7 +25,7 @@ import ListingRow from "@/Components/Catalogue/ListingRow";
  */
 
 const CARD = "bg-white border border-gray-200 rounded-box";
-const LABEL = "text-[11px] font-semibold uppercase tracking-wide text-gray-500";
+const LABEL = "text-[12px] font-semibold uppercase tracking-wide text-black/60";
 const CONTROL =
     "min-h-[44px] rounded-box-sm border border-gray-200 bg-white px-3 text-[14px] font-medium text-gray-800 focus:border-gray-400 focus:outline-none";
 
@@ -47,7 +53,7 @@ function Chip({ active, label, count, onClick }) {
             {label}
             <span
                 className={`tabular-nums text-[13px] ${
-                    active ? "text-white/70" : "text-gray-400"
+                    active ? "text-white/70" : "text-black/60"
                 }`}
             >
                 {count}
@@ -96,6 +102,101 @@ export default function CatalogueIndex() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search]);
 
+    // ── Chip strip overflow ────────────────────────────────────────────────
+    // Eight chips do not fit the column. The strip used to clip the last one and
+    // show a native horizontal scrollbar running the full page width, which reads
+    // as a broken page rather than as "there is more". Nothing below changes the
+    // strip's WIDTH: the arrows are absolutely positioned over the fades, because
+    // an arrow that takes layout width narrows the strip, which can stop it
+    // overflowing, which hides the arrow, which makes it overflow again.
+    const chipsRef = useRef(null);
+    const [chipOverflow, setChipOverflow] = useState({
+        left: false,
+        right: false,
+    });
+
+    const measureChips = useCallback(() => {
+        const el = chipsRef.current;
+        if (!el) return;
+        // 1px slack: sub-pixel widths otherwise leave a permanent phantom arrow.
+        setChipOverflow({
+            left: el.scrollLeft > 1,
+            right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+        });
+    }, []);
+
+    const scrollChips = useCallback((direction) => {
+        const el = chipsRef.current;
+        if (!el) return;
+        const reduced = window.matchMedia?.(
+            "(prefers-reduced-motion: reduce)",
+        ).matches;
+        el.scrollBy({
+            left: direction * Math.max(160, el.clientWidth * 0.7),
+            behavior: reduced ? "auto" : "smooth",
+        });
+    }, []);
+
+    useEffect(() => {
+        const el = chipsRef.current;
+        if (!el) return;
+
+        measureChips();
+        el.addEventListener("scroll", measureChips, { passive: true });
+
+        const ro =
+            typeof ResizeObserver !== "undefined"
+                ? new ResizeObserver(measureChips)
+                : null;
+        ro?.observe(el);
+
+        // ⚠️ ResizeObserver watches the CONTAINER, so a content-width change alone
+        // never fires it — and the chip labels are set in a late-loading webfont.
+        // On first paint they measure with the fallback, fit, and the arrow is
+        // never shown; the real font then lands and they overflow in silence.
+        let cancelled = false;
+        document.fonts?.ready
+            .then(() => {
+                if (!cancelled) measureChips();
+            })
+            .catch(() => {});
+
+        return () => {
+            cancelled = true;
+            el.removeEventListener("scroll", measureChips);
+            ro?.disconnect();
+        };
+    }, [measureChips]);
+
+    // A vertical wheel over the strip scrolls it sideways. This IS the "scrolling
+    // is difficult" complaint: on a desktop mouse the only way to move a
+    // horizontal strip is shift+wheel, which nobody discovers.
+    // 🚨 Registered natively with { passive: false } — React attaches wheel
+    // listeners as passive, so preventDefault() from an onWheel prop is ignored
+    // and this silently does nothing.
+    useEffect(() => {
+        const el = chipsRef.current;
+        if (!el) return;
+
+        const onWheel = (e) => {
+            // Leave a genuine horizontal gesture (trackpad swipe) alone, and never
+            // hijack the page's vertical scroll when nothing overflows.
+            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+            if (el.scrollWidth <= el.clientWidth) return;
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+        };
+
+        el.addEventListener("wheel", onWheel, { passive: false });
+        return () => el.removeEventListener("wheel", onWheel);
+    }, []);
+
+    // Re-measure when the chip set itself changes (a type appearing/disappearing
+    // from the payload changes the content width without resizing the container).
+    useEffect(() => {
+        measureChips();
+    }, [types, counts, measureChips]);
+
     const rows = listings?.data || [];
     const hasAnyListing = (counts?.all || 0) > 0;
     const isFiltered =
@@ -114,7 +215,7 @@ export default function CatalogueIndex() {
                             <h1 className="text-[26px] font-bold tracking-tight text-gray-900">
                                 My Listings
                             </h1>
-                            <p className="mt-1 text-[14px] text-gray-500">
+                            <p className="mt-1 text-[14px] text-black/60">
                                 Everything you sell, in one place.
                                 {counts?.attention > 0 && (
                                     <>
@@ -139,7 +240,7 @@ export default function CatalogueIndex() {
                                 username: auth?.user?.username,
                                 add: "menu",
                             })}
-                            className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm bg-[#FF007F] px-4 text-[14px] font-bold text-white"
+                            className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm bg-[#FF007F] px-4 text-[14px] font-bold text-black"
                         >
                             <Plus size={16} /> Add something
                         </Link>
@@ -151,42 +252,96 @@ export default function CatalogueIndex() {
                         vanishing when empty reads as the feature being broken rather
                         than as nothing waiting. A zero is information.
                     */}
-                    <div className="mt-4 -mx-4 overflow-x-auto px-4">
-                        <div className="flex w-max gap-2 pb-1">
-                            <Chip
-                                label="Everything"
-                                count={counts?.all || 0}
-                                active={!filters?.type && filters?.status !== "attention"}
-                                onClick={() => visit({ type: null, status: null })}
-                            />
-                            <Chip
-                                label="Needs attention"
-                                count={counts?.attention || 0}
-                                active={filters?.status === "attention"}
-                                onClick={() =>
-                                    visit({ type: null, status: "attention" })
-                                }
-                            />
-                            <span className="mx-1 self-center text-gray-200">|</span>
-                            {(types || []).map((t) => (
+                    <div className="relative -mx-4 mt-4">
+                        {/* ⚠️ The horizontal padding is on the INNER flex, not on the
+                            scroller. A `w-max` child inside a padded scroll container
+                            drops the container's trailing padding, so the last chip
+                            ends flush against the edge with no breathing room. */}
+                        <div
+                            ref={chipsRef}
+                            className="no-scrollbar overflow-x-auto"
+                        >
+                            <div className="flex w-max gap-2 px-4 pb-1">
                                 <Chip
-                                    key={t.key}
-                                    label={t.plural}
-                                    count={counts?.by_type?.[t.key] || 0}
-                                    active={filters?.type === t.key}
+                                    label="Everything"
+                                    count={counts?.all || 0}
+                                    active={
+                                        !filters?.type &&
+                                        filters?.status !== "attention"
+                                    }
                                     onClick={() =>
-                                        visit({ type: t.key, status: null })
+                                        visit({ type: null, status: null })
                                     }
                                 />
-                            ))}
+                                <Chip
+                                    label="Needs attention"
+                                    count={counts?.attention || 0}
+                                    active={filters?.status === "attention"}
+                                    onClick={() =>
+                                        visit({ type: null, status: "attention" })
+                                    }
+                                />
+                                <span className="mx-1 self-center text-gray-200">
+                                    |
+                                </span>
+                                {(types || []).map((t) => (
+                                    <Chip
+                                        key={t.key}
+                                        label={t.plural}
+                                        count={counts?.by_type?.[t.key] || 0}
+                                        active={filters?.type === t.key}
+                                        onClick={() =>
+                                            visit({ type: t.key, status: null })
+                                        }
+                                    />
+                                ))}
+                            </div>
                         </div>
+
+                        {/* The fade is the page's own gray-50, so the strip dissolves
+                            into the page rather than ending in a hard cut — a clipped
+                            chip reads as a bug, a fading one reads as "keep going".
+                            pointer-events-none: it sits over real chips. */}
+                        {chipOverflow.left && (
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50 to-transparent"
+                            />
+                        )}
+                        {chipOverflow.right && (
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-gray-50 to-transparent"
+                            />
+                        )}
+
+                        {chipOverflow.left && (
+                            <button
+                                type="button"
+                                onClick={() => scrollChips(-1)}
+                                aria-label="Scroll filters left"
+                                className="absolute left-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-box-xs border-2 border-black bg-white text-black transition-colors hover:bg-black/[0.06]"
+                            >
+                                <ChevronLeft size={16} strokeWidth={2.5} />
+                            </button>
+                        )}
+                        {chipOverflow.right && (
+                            <button
+                                type="button"
+                                onClick={() => scrollChips(1)}
+                                aria-label="Scroll filters right"
+                                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-box-xs border-2 border-black bg-white text-black transition-colors hover:bg-black/[0.06]"
+                            >
+                                <ChevronRight size={16} strokeWidth={2.5} />
+                            </button>
+                        )}
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         <div className="relative min-w-[200px] flex-1">
                             <Search
                                 size={16}
-                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black/60"
                             />
                             <input
                                 type="search"
@@ -256,7 +411,7 @@ export default function CatalogueIndex() {
                         <div className={`${CARD} mt-4 p-8 text-center`}>
                             <PackageOpen
                                 size={28}
-                                className="mx-auto text-gray-300"
+                                className="mx-auto text-black/60"
                             />
                             {/*
                                 "Nothing matched your filter" and "you have not listed
@@ -269,7 +424,7 @@ export default function CatalogueIndex() {
                                     ? "Nothing matches that"
                                     : "You have not listed anything yet"}
                             </h2>
-                            <p className="mt-1 text-[14px] text-gray-500">
+                            <p className="mt-1 text-[14px] text-black/60">
                                 {isFiltered
                                     ? "Try a different type or status."
                                     : "Publish something and it will show up here."}
@@ -290,7 +445,7 @@ export default function CatalogueIndex() {
                                         username: auth?.user?.username,
                                         add: "menu",
                                     })}
-                                    className="mt-4 inline-flex min-h-[44px] items-center rounded-box-sm bg-[#FF007F] px-4 text-[14px] font-bold text-white"
+                                    className="mt-4 inline-flex min-h-[44px] items-center rounded-box-sm bg-[#FF007F] px-4 text-[14px] font-bold text-black"
                                 >
                                     Add your first item
                                 </Link>
@@ -310,7 +465,7 @@ export default function CatalogueIndex() {
                             >
                                 Previous
                             </button>
-                            <span className="text-[13px] text-gray-500">
+                            <span className="text-[13px] text-black/60">
                                 Page {listings.current_page} of{" "}
                                 {listings.last_page}
                             </span>

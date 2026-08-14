@@ -57,7 +57,7 @@ const TEMPLATES = [
 ];
 
 const TILE_CLASSES =
-   'w-full font-bold text-lg shop-start-box shadow-[6px_6px_0px_#000] border-2 border-black px-4 py-4 md:px-6 md:py-8 min-h-[44px] text-center bg-white rounded-box hover:shadow-[4px_4px_0px_#000] transition-all';
+ 'w-full font-bold text-lg shop-start-box border-2 border-black px-4 py-4 md:px-6 md:py-8 min-h-[44px] text-center bg-white rounded-box transition-all';
 
 const ROW_CLASSES = [
    'grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3',

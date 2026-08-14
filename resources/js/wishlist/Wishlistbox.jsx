@@ -18,6 +18,7 @@ import RemoveWish from "./RemoveWish";
 import { Link, usePage } from "@inertiajs/react";
 import SaveButton from "@/Components/SaveButton";
 import ScheduledBadge from "@/Components/ScheduledBadge";
+import ItemStatusBadge from "@/Components/ItemStatusBadge";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
@@ -37,6 +38,32 @@ export default function Wishlistbox(props) {
 
     const effectiveAuth = auth || globalAuth;
     const isCreator = Number(effectiveAuth?.user?.id) === Number(itm?.user_id);
+
+    /**
+     * EVERY state that applies, not just the worst — a listing can be suspended
+     * AND carry an admin's change request, and hiding the second leaves the
+     * creator fixing one problem while the other keeps it off sale. The badge
+     * ranks them and shows the rest behind a count.
+     *
+     * ⚠️ Only the signed-in owner is told any of this: the approval branch is
+     * gated on `IsloggedIn`, and a supporter never receives a held listing at all
+     * (the profile query filters them out), so a public viewer must never be
+     * shown a chip about somebody else's moderation state.
+     */
+    const editedReason = (itm?.edited_reason || "").trim();
+    const statusNotices = [
+        Number(itm?.is_suspended) === 1 && {
+            state: "suspended",
+            reason: itm?.suspend_reason,
+        },
+        IsloggedIn &&
+            Number(itm?.is_approved) === 0 && {
+                // A reason means an admin looked and refused; no reason means
+                // nobody has reached it yet. Two different things to do.
+                state: editedReason ? "changes" : "in_review",
+                reason: editedReason || null,
+            },
+    ].filter(Boolean);
 
     const sortableId = itm?.id || itm?.uuid;
 
@@ -117,9 +144,9 @@ export default function Wishlistbox(props) {
             }
             className={`wish-item-box !p-0 ${classes} ${
                 isDragging ? "dragging opacity-30" : ""
-            } ${!isDragging && !isOverlay ? "hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all" : ""}`}
+            } ${!isDragging && !isOverlay ? "transition-[filter] duration-200 hover:brightness-[0.98]" : ""}`}
         >
-            <div className="bg-[#fdfbf7] rounded-[30px] overflow-hidden relative border-[3px] border-black w-full h-full flex flex-col">
+            <div className="bg-[#fdfbf7] rounded-box overflow-hidden relative border-[3px] border-black w-full h-full flex flex-col">
                 {/* Owner only: a scheduled wish looks exactly like a live one here, and
                     nobody can buy it yet. */}
                 {isCreator && itm?.publish_at && (
@@ -129,38 +156,30 @@ export default function Wishlistbox(props) {
                 )}
 
                 {/* Status Messages */}
-                {IsloggedIn && itm && itm.is_approved === 0 && (
-                    <div className="approvalmessge membership m-4 rounded-[20px] !text-[12px] p-4">
-                        {itm.edited_reason &&
-                        itm.edited_reason.trim() !== "" ? (
-                            <>
-                                <p className="font-semibold mb-1 text-red-600">
-                                    Edit requested by admin reason:
-                                </p>
-                                <p className="opacity-90">
-                                    {itm.edited_reason}
-                                </p>
-                            </>
-                        ) : (
-                            <p>
-                                Wish item waiting for approval. Currently only
-                                you can see this wish.
-                            </p>
-                        )}
-                    </div>
-                )}
+                {/* 🚨 The status is a CHIP the creator taps, not a block of text
+                    on the card. It used to carry `approvalmessge membership`,
+                    and `home.css:531` gives that pair
+                    `position:absolute; top:0; left:0` — so the notice was never
+                    in flow whatever margin it was given, and painted over the
+                    image, the drag handle, the save button and the kebab. An
+                    admin's reason is also arbitrary-length, so any inline form
+                    is one long sentence away from pushing this card's price and
+                    CTA out of step with its neighbour in the row. The chip is a
+                    fixed height whatever the message says. */}
 
-                {itm && itm.is_suspended == 1 && (
-                    <div className="absolute top-18 w-full bg-red-600 text-white text-xs font-bold px-3 py-2 text-center z-20">
-                        Suspended
-                        {itm.suspend_reason && (
-                            <div className="mt-1 text-[10px]">
-                                {itm.suspend_reason}
-                            </div>
-                        )}
-                    </div>
-                )}
+                {/* 🚨 In NORMAL FLOW, not `absolute top-18`. That offset was tuned
+                    for a card with nothing above the image — with an approval or
+                    edit-reason block rendered, the banner landed on top of it, and
+                    a suspend reason of any length made it worse. */}
 
+                {/* Image.
+                    🚨 The drag handle and the action buttons live INSIDE this box,
+                    not on the card. Anchored to the card they sat at `top-4` — the
+                    same pixels as the first status message in flow above the image,
+                    so on any wish awaiting approval the move icon and the kebab menu
+                    were drawn straight through the admin's reason text. Anchored to
+                    the image they are correct whatever renders above it. */}
+                <div className="relative">
                 {/* Drag Handle */}
                 {IsloggedIn && (
                     <div
@@ -182,7 +201,17 @@ export default function Wishlistbox(props) {
 
                 {/* Action Buttons */}
                 <div className="absolute top-4 right-4 z-10 flex gap-2">
-                    {IsloggedIn && !isCreator && itm?.id && (
+                    {/* 🚨 `!IsloggedIn`, not `IsloggedIn && !isCreator`. On this
+                        card `IsloggedIn` means OWNER VIEW — it is what switches
+                        the CTA between "Share link" and "Unlock" — so the old
+                        condition read "owner view AND not the creator", which is
+                        a contradiction. `isCreator` was resolving false (the
+                        parent passes `auth` in a shape where `effectiveAuth.user`
+                        is not the signed-in user), so the owner was shown a
+                        save-for-later heart on their OWN listing. Save is
+                        buy-later intent; it only makes sense to someone who could
+                        buy it. */}
+                    {!IsloggedIn && itm?.id && (
                         <SaveButton
                             productType="wish"
                             itemId={itm.id}
@@ -209,14 +238,14 @@ export default function Wishlistbox(props) {
                                 leaveFrom="transform opacity-100 scale-100"
                                 leaveTo="transform opacity-0 scale-95"
                             >
-                                <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-[20px] bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-box-sm bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <button
                                                     type="button"
                                                     onClick={openEdit}
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[20px] px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
                                                 >
                                                     Edit Wish
                                                 </button>
@@ -225,7 +254,7 @@ export default function Wishlistbox(props) {
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <div
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-[20px] px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
                                                 >
                                                     <RemoveWish
                                                         uuid={itm.uuid}
@@ -241,39 +270,69 @@ export default function Wishlistbox(props) {
                     )}
                 </div>
 
-                {/* Image */}
-                <div
-                    onClick={onCardClick}
-                    className={`h-[130px] sm:h-[150px] wishbox overflow-hidden cursor-pointer p-2.5`}
-                >
-                    <LazyLoadImage
-                        alt={itm?.wishname || "Wish image"}
-                        effect="blur"
-                        className="block w-full h-full object-cover rounded-[20px] overflow-hidden border-[3px] border-black"
-                        src={itm?.perma_link ? itm?.perma_link : uploadedimg}
-                    />
+                    <div
+                        onClick={onCardClick}
+                        /* The picture is the product. At two columns it was the
+                           only thing that had been shrunk without earning it —
+                           the card's other cuts removed duplicate or boilerplate
+                           TEXT, whereas a smaller image just makes the listing
+                           harder to recognise. */
+                        className={`h-[132px] sm:h-[150px] wishbox overflow-hidden cursor-pointer p-1.5 sm:p-2.5`}
+                    >
+                        <LazyLoadImage
+                            alt={itm?.wishname || "Wish image"}
+                            effect="blur"
+                            className="block w-full h-full object-cover rounded-box-sm overflow-hidden border-[3px] border-black"
+                            src={itm?.perma_link ? itm?.perma_link : uploadedimg}
+                        />
+                    </div>
+
+                    {/* Anchored to the IMAGE's lower edge, not to the card — and
+                        that distinction is what makes an overlay safe here. The
+                        documented rule is that anything pinned to the CARD
+                        collides the moment an optional block renders above it;
+                        this sits inside the box it labels, so nothing can push
+                        onto it. It also reclaims the row it used to occupy above
+                        the picture.
+                        ⚠️ Bottom-LEFT: the drag handle owns top-left and the save
+                        button and kebab own top-right, so the lower edge is the
+                        only corner of this image with nothing in it. */}
+                    {statusNotices.length > 0 && (
+                        <div
+                            className="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex sm:bottom-4 sm:left-4 sm:right-4"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <ItemStatusBadge
+                                notices={statusNotices}
+                                itemName={itm?.wishname}
+                                block={false}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Content */}
                 <div
                     onClick={onCardClick}
-                    className="wishlistdetial cursor-pointer flex-1 flex flex-col px-3 pb-3"
+                    className="wishlistdetial cursor-pointer flex-1 flex flex-col px-2 pb-2.5 sm:px-3 sm:pb-3"
                 >
                     {/* Badges & Labels */}
-                    <div className="flex flex-col items-center gap-1 mt-2">
+                    <div className="flex flex-col items-center gap-1 mt-1.5 sm:mt-2">
                         <ItemBadges
                             createdAt={itm?.created_at}
                             className="justify-center"
                         />
 
+                        {/* The goal label is context, never what is being bought —
+                            one line at this width, truncated rather than wrapped. */}
                         {itm.goal_label && (
-                            <p className="text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                            <p className="max-w-full truncate text-center text-[10px] font-bold uppercase tracking-wide text-gray-500 sm:text-[12px]">
                                 🎯 {itm.goal_label}
                             </p>
                         )}
 
                         {isSubscribable && (
-                            <span className="bg-yellow-400 text-black text-[10px] font-bold px-3 py-1 rounded-full">
+                            <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold text-black sm:px-3 sm:py-1 sm:text-[12px]">
                                 Subscribable
                             </span>
                         )}
@@ -285,14 +344,21 @@ export default function Wishlistbox(props) {
                         with every other card in the row. */}
                     <h4
                         title={itm.wishname}
-                        className="mt-0.5 line-clamp-2 min-h-[45px] text-center text-lg font-black uppercase leading-tight !text-black"
+                        /* ONE line at two columns (client direction), two from `sm`.
+                           ⚠️ The reserved height goes with it — `min-h` existed to
+                           stop a two-line name shifting that card's price and CTA
+                           out of step with its neighbour, and at one line the
+                           clamp already guarantees it. Keep `min-h` matched to the
+                           clamp: reserving two lines while clamping to one leaves
+                           a dead row under every title. */
+                        className="mt-0.5 line-clamp-1 min-h-[17px] text-center text-[13px] font-black uppercase leading-tight !text-black sm:line-clamp-2 sm:min-h-[45px] sm:text-lg"
                     >
                         {itm.wishname}
                     </h4>
 
                     {/* Price */}
-                    <div className="text-center mt-1.5">
-                        <h5 className="font-black font-poppins text-2xl text-black">
+                    <div className="text-center mt-1 sm:mt-1.5">
+                        <h5 className="font-black font-poppins text-[17px] text-black sm:text-2xl">
                             {IsloggedIn
                                 ? formatMultiPrice(
                                       itm.price,
@@ -304,30 +370,50 @@ export default function Wishlistbox(props) {
                                   )}
                         </h5>
 
+                        {/* ⚠️ Two wordings of the same disclosure, not two rules.
+                            The full sentence runs to three lines in a 147px column
+                            and buries the price it belongs to; the short form says
+                            the same thing and the checkout states it in full before
+                            anyone pays. Never drop it entirely — the price shown to
+                            a logged-out visitor IS the grossed-up one. */}
                         {!IsloggedIn && (
-                            <p className="text-[10px] text-gray-500 font-normal mt-0.5 leading-tight">
-                                *Includes platform and payment processing fees
-                            </p>
+                            <>
+                                <p className="mt-0.5 text-[10px] font-normal leading-tight text-gray-500 sm:hidden">
+                                    *Fees included
+                                </p>
+                                <p className="mt-0.5 hidden text-[12px] font-normal leading-tight text-gray-500 sm:block">
+                                    *Includes platform and payment processing fees
+                                </p>
+                            </>
                         )}
                     </div>
 
-                    {/* "You get" Section */}
+                    {/* 🚨 TWO "You get" blocks used to render together — this one
+                        and `RewardHint` directly below it, which is the house
+                        component for exactly this question and is already on the
+                        bill, membership, shop and task cards. At two columns there
+                        is no room for the duplicate, so the creator's free-text
+                        `description` is the one that gives way: `RewardHint` reads
+                        the reward contract (`reward_title`/`reward_description`),
+                        which is what the supporter is actually buying. */}
                     {itm?.description && (
-                        <div className="mt-1.5 py-1 px-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-[11px] font-medium text-gray-700 text-center line-clamp-2">
+                        <div className="mt-1.5 hidden rounded-box-sm border border-gray-200 bg-gray-50 px-2.5 py-1 sm:block">
+                            <p className="text-[12px] font-medium text-gray-700 text-center line-clamp-2">
                                 <span className="font-bold">You get:</span>{" "}
                                 {itm.description}
                             </p>
                         </div>
                     )}
 
-                    {/* Reward Hint */}
+                    {/* Reward Hint — the ONE "what do I get" line at this width. */}
                     <RewardHint item={itm} className="mt-1.5 max-w-full" />
 
-                    {/* Content Type Badge — sits UNDER the reward line: it
-                        describes how the reward is delivered, so it reads as a
-                        footnote to it, not as the item's own subtitle. */}
-                    <p className="text-center text-[9px] font-semibold text-gray-400 uppercase tracking-wide mt-1">
+                    {/* ⚠️ Hidden at two columns because it is BOILERPLATE — the
+                        identical sentence on every wish card, so it distinguishes
+                        nothing while costing three wrapped lines in a 147px column.
+                        It stays from `sm`, where it reads as a footnote to the
+                        reward line above it. */}
+                    <p className="mt-1 hidden text-center text-[12px] font-semibold uppercase tracking-wide text-black/60 sm:block">
                         Exclusive content · instant download
                     </p>
 
@@ -348,20 +434,29 @@ export default function Wishlistbox(props) {
                     {/* Action Button — mt-auto pins this and the byline below it to
                         the card's floor, so the row shares one CTA line whatever
                         optional blocks rendered above. */}
-                    <div className="mt-auto flex items-center justify-center pt-2.5">
+                    <div className="mt-auto flex items-center justify-center pt-2 sm:pt-2.5">
                         {IsloggedIn ? (
                             <ShareProfile
                                 username={itm.wishname}
                                 custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`}
                             >
-                                <button className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[11px] py-2 px-4 rounded-[12px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[130px] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none">
+                                {/* ⚠️ Full width at two columns — a `max-w` here
+                                    leaves the button floating in a 147px column
+                                    with dead space either side, and the target is
+                                    already the narrowest it should get. */}
+                                {/* ⚠️ Shorter at two columns, but NOT below the
+                                    44px touch floor on the buyer's button below —
+                                    this one is the creator's own share action on
+                                    their own card, where a miss costs nothing and
+                                    the row's height is the thing being managed. */}
+                                <button className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-1 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[130px] sm:px-4 sm:py-2 sm:text-[12px]">
                                     Share Link
                                 </button>
                             </ShareProfile>
                         ) : (
                             <button
                                 onClick={openAddtocart}
-                                className="bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-xs py-2.5 px-6 rounded-[12px] border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all w-full max-w-[170px] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none"
+                                className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-2 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[170px] sm:px-6 sm:py-2.5 sm:text-xs"
                             >
                                 Unlock
                             </button>
@@ -370,15 +465,15 @@ export default function Wishlistbox(props) {
 
                     {/* Creator Info */}
                     {itm.user && (
-                        <div className="flex justify-center items-center gap-1 mt-2 pt-1.5 border-t border-gray-200">
-                            <span className="text-xs font-bold text-gray-600">
+                        <div className="mt-1.5 flex items-center justify-center gap-1 border-t border-gray-200 pt-1.5 sm:mt-2">
+                            <span className="text-[10px] font-bold text-gray-600 sm:text-xs">
                                 By
                             </span>
                             <Link
                                 href={route("user.show", {
                                     username: itm.user.username,
                                 })}
-                                className="text-xs font-bold text-[#FF007F] hover:underline uppercase hover:opacity-80 transition-opacity"
+                                className="min-w-0 truncate text-[10px] font-bold uppercase text-[#FF007F] transition-opacity hover:underline hover:opacity-80 sm:text-xs"
                             >
                                 @{itm.user.username}
                             </Link>
@@ -386,9 +481,14 @@ export default function Wishlistbox(props) {
                     )}
                 </div>
 
-                {/* Decorative Elements */}
-                <div className="absolute top-1 left-1 text-xl">👀</div>
-                <div className="absolute bottom-2 right-2 text-xl">⭐</div>
+                {/* ⚠️ Decoration only, and hidden at two columns: both are
+                    absolutely positioned against the CARD, so at 171px the eyes
+                    land on the status notices and the star on the byline — the
+                    documented rule that anything anchored to the card rather than
+                    to the thing it labels collides the moment an optional block
+                    renders. */}
+                <div className="absolute top-1 left-1 hidden text-xl sm:block">👀</div>
+                <div className="absolute bottom-2 right-2 hidden text-xl sm:block">⭐</div>
             </div>
 
             {/*

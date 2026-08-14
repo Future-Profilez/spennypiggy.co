@@ -131,7 +131,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                     </p>
                     <button
                         onClick={() => fetchPosts(filter, 1, false)}
-                        className="bg-yellow-300 text-black border-2 border-black font-black uppercase tracking-wider px-6 py-3 rounded-lg  hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all"
+ className="bg-yellow-300 text-black border-2 border-black font-black uppercase tracking-wider px-6 py-3 min-h-[44px] rounded-box-sm transition-colors duration-200 hover:bg-yellow-400"
                     >
                         Try Again
                     </button>
@@ -143,7 +143,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
     return (
         <>
             {displayPosts && displayPosts.length > 5 && (
-                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4"> 
+                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4">
                     <PostFilterTabs
                         filters={FILTER_OPTIONS}
                         activeFilter={filter}
@@ -154,7 +154,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
             )}
 
             {displayPosts.length > 0 ? (
-                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4"> 
+                <div className=" m-auto grid grid-cols-1 md:grid-cols-2 gap-x-4">
                     {displayPosts.map((post, i) => (
                         <Post
                             key={`post-${post.uuid || post.id || i}`}
@@ -178,7 +178,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = "all" }) {
                     ) : (
                         <button
                             onClick={handleLoadMore}
-                            className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 rounded-lg  hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all  rounded-[30px] duration-200"
+ className="bg-yellow-300 text-black border-[3px] !text-xs border-black font-black uppercase tracking-widest px-4 py-2 min-h-[44px] rounded-box-sm transition-colors duration-200 hover:bg-yellow-400"
                             disabled={isLoadingMore}
                         >
                             Load More Posts
@@ -198,7 +198,7 @@ function PostFilterTabs({
     disabled = false,
 }) {
     return (
-        <div className="flex gap-3 mb-3 overflow-auto hideScroll pb-2   px-1">
+ <div className="flex gap-3 mb-3 overflow-auto hideScroll pb-2 px-1">
             {filters.map(({ key, label }) => (
                 <button
                     key={key}
@@ -207,7 +207,7 @@ function PostFilterTabs({
                     className={`px-5 py-2 text-sm font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
                         activeFilter === key
                             ? "bg-yellow-300 text-black "
-                            : "bg-white text-black hover:bg-yellow-100 shadow-none  hover:translate-x-[-1px] hover:translate-y-[-1px]"
+ : "bg-white text-black hover:bg-yellow-100 "
                     } ${
                         disabled
                             ? "opacity-50 cursor-not-allowed"

@@ -9,7 +9,10 @@ function ShowcaseCard({ c, cat }) {
   return (
     <Link
       href={`/${c.username}`}
-      className="group relative flex flex-col overflow-hidden rounded-box border-2 bg-[#0d0a16] transition-transform duration-300 hover:-translate-y-1.5 motion-reduce:transform-none motion-reduce:transition-none"
+      /* ⚠️ No hover lift, no hover scale (client rule, site-wide). A card surface
+         signals hover with its own background, which costs no reflow and works
+         identically under `prefers-reduced-motion`. */
+      className="group relative flex h-full flex-col overflow-hidden rounded-box border-2 bg-[#0d0a16] transition-colors duration-200 hover:bg-[#17102a] motion-reduce:transition-none"
       style={{ borderColor: cat.accent }}
     >
       {/* Cover — the creator's own banner, and now the whole card's image. */}
@@ -19,7 +22,7 @@ function ShowcaseCard({ c, cat }) {
             src={c.cover_url}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
+            className="h-full w-full object-cover transition-[filter,opacity] duration-500 ease-out group-hover:brightness-[1.08] motion-reduce:transition-none"
           />
         ) : (
           <div
@@ -32,7 +35,7 @@ function ShowcaseCard({ c, cat }) {
         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[#0d0a16]" />
 
         <span
-          className="absolute left-3 top-3 rounded-full border-2 border-black px-3 py-1 font-poppins text-[11px] font-semibold uppercase tracking-[0.14em] text-black"
+          className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border-2 border-black px-3 py-1 font-poppins text-[12px] font-semibold uppercase tracking-[0.14em] text-black"
           style={{ background: cat.accent }}
         >
           {cat.badge(c)}
@@ -55,10 +58,12 @@ function ShowcaseCard({ c, cat }) {
             />
           </div>
           <div className="min-w-0">
-            <h3 className="truncate font-gulfs text-[17px] uppercase leading-tight tracking-wide text-white">
+            {/* `truncate` must keep the value recoverable — a creator name cut at
+                the card edge with no `title` is simply lost. */}
+            <h3 title={c.name} className="truncate font-gulfs text-[17px] uppercase leading-tight tracking-wide text-white">
               {c.name}
             </h3>
-            <p className="truncate font-poppins text-xs text-white/50">@{c.username}</p>
+            <p title={`@${c.username}`} className="truncate font-poppins text-xs text-white/60">@{c.username}</p>
           </div>
           <span
             aria-hidden

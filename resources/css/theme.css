@@ -7,7 +7,6 @@
   unicode-range: U+0020-007F,U+00A0-00FF,U+0100-017F,U+2010-2027,U+00A2-00A5,U+20AC,U+00A3;
 }
 
-
 @font-face {
   font-family: 'CeraGRMedium';
   font-display: swap;
@@ -44,7 +43,58 @@
   unicode-range: U+0000-001F, U+0080-009F, U+0180-024F, U+2028-FFFF;
 }
 
+/* ============================================================================
+   HOUSE CORNER RADII — the single source, and they are RESPONSIVE.
 
+   A radius is only ever read against the size of the thing it is on. 30px on a
+   1440px card is a quiet curve; the same 30px on a 358px phone card is a third
+   of its own width and reads as a completely different shape. Apple sizes a
+   corner to its element for exactly this reason, and holding one fixed number
+   across both is what made this UI look inconsistent between desktop and phone.
+
+   Three steps, each scaled down on small screens:
+
+     --sp-radius-box      containers — cards, panels, modals, sections
+     --sp-radius-box-sm   things inside one — buttons, inputs, chips, tiles
+     --sp-radius-box-xs   genuinely small things — badges, counters, 24–32px tiles
+
+   ⚠️ These are consumed by `tailwind.config.js` as `rounded-box` /
+   `rounded-box-sm` / `rounded-box-xs`, so EVERY existing use in the app follows
+   automatically. Change the numbers here, never at a call site.
+
+   ⚠️ The breakpoint is 768px to match Tailwind's `md`, which is where the app's
+   layouts already switch from one column to two.
+
+   ⚠️ Standalone pages that cannot load this stylesheet — `public/offline.html`
+   and the maintenance Blade — carry their own copy of these values and their own
+   media query. Keep them in step.
+   ============================================================================ */
+:root {
+  --sp-radius-box: 24px;
+  --sp-radius-box-sm: 16px;
+  --sp-radius-box-xs: 10px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --sp-radius-box: 30px;
+    --sp-radius-box-sm: 20px;
+    --sp-radius-box-xs: 12px;
+  }
+}
+
+/* ============================================================================
+   NO ELEVATION TOKENS — deliberately (client direction, 14 Aug 2026).
+
+   This file briefly carried a responsive offset-shadow scale (`--sp-shadow*`).
+   The direction is now that nothing on this site casts a shadow: a frame is a
+   LINE. The radius tokens above stay, because a radius is a shape; a shadow is
+   a lighting model, and mixing a hard offset with the blurred ones the app had
+   collected is what made one screen read as two systems.
+
+   A block that needs to separate itself gets — in this order — a heavier
+   border, an accent border, or more space around it.
+   ============================================================================ */
 
 body {
   --white:#ffffff;
@@ -55,6 +105,14 @@ body {
   --pink:#FF007F;
   --yellow:#E6EA7B;
   --lightpink:#e93790;
+  /* Routing progress bar.
+     ⚠️ NOT pink. The bar is `position: fixed; top: 0` and the site header is a
+     solid #FF007F band pinned to the same edge — so on every page the loading
+     bar was drawn pink on pink and was invisible exactly when it had a job to
+     do. Mint is the highest-contrast brand colour against that header and
+     still reads on a black page. One definition; app.css and app.jsx both
+     reference it. */
+  --progress:#05EFB8;
   --voilet: #8C52FF;
   --purple: #8C52FF;
   --body-font:'gulfs';

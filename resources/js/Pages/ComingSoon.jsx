@@ -7,9 +7,9 @@ import LiveBar from "@/includes/LiveBar";
 // House offset-shadow colours, cycled across the highlight cards. A black offset
 // shadow disappears on the black page, so these carry the neo-brutalist frame.
 const ACCENTS = [
-    { shadow: "shadow-pink", chip: "bg-[#FF007F] text-white" },
-    { shadow: "shadow-mint", chip: "bg-[#05EFB8] text-black" },
-    { shadow: "shadow-voilet", chip: "bg-[#8C52FF] text-white" },
+ { shadow: "", chip: "bg-[#FF007F] text-white" },
+ { shadow: "", chip: "bg-[#05EFB8] text-black" },
+ { shadow: "", chip: "bg-[#8C52FF] text-white" },
 ];
 
 const ICONS = [Truck, PackageCheck, ShieldCheck];
@@ -40,7 +40,7 @@ export default function ComingSoon({
 
                 <div className="containerbox relative z-10 px-4">
                     <div className="mx-auto max-w-3xl text-center">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-[#FF007F] px-4 py-1.5 text-sm font-black uppercase tracking-widest text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+ <span className="border-2 border-black inline-flex items-center gap-2 rounded-full bg-[#FF007F] px-4 py-1.5 text-sm font-black uppercase tracking-widest text-black">
                             <Sparkles size={16} aria-hidden="true" />
                             Coming soon
                         </span>
@@ -66,7 +66,7 @@ export default function ComingSoon({
                             Coming soon
                         </div>
                     ) : (
-                        <LiveBar reps={20} color="yellowbg" classes="border-y-2 border-black" text="  Coming Soon      " />
+ <LiveBar reps={20} color="yellowbg" classes="border-y-2 border-black" text=" Coming Soon " />
                     )}
                 </div>
 
@@ -99,7 +99,7 @@ export default function ComingSoon({
                     <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
                         <Link
                             href="/discover"
-                            className="inline-flex min-h-[44px] items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] px-8 py-3 font-gulfs text-lg uppercase tracking-wider text-white shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#000] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white"
+ className="inline-flex min-h-[44px] items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] px-8 py-3 font-gulfs text-lg uppercase tracking-wider text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white"
                         >
                             Explore Discover
                         </Link>

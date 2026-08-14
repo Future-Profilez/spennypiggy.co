@@ -58,7 +58,7 @@ export default function JoinUs() {
                     is now the one sanctioned #924DFF. */}
                 <div className="px-3.5 sm:pt-16 sm:pb-20 w-full max-w-5xl bg-[#924DFF] rounded-box pt-6 sm:p-10 text-center">
                     <h2
-                        className="headingSm font-gulfs !text-black !text-3xl sm:!text-[50px] shadow-none stroke-none mb-6 text-center"
+                        className="headingSm font-gulfs !text-black !text-3xl sm:!text-[50px] stroke-none mb-6 text-center"
                     >
                         What are you waiting for?
                     </h2>
@@ -85,7 +85,7 @@ export default function JoinUs() {
                             neither, and it is the page's terminal action. */}
                         <Link
                             href={route("register")}
-                            className="font-gulfs uppercase tracking-wide text-xl bg-white text-black rounded-full px-8 py-3 min-h-[44px] inline-flex items-center justify-center mb-4 transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                            className="font-gulfs uppercase tracking-wide text-xl bg-white text-black rounded-full px-8 py-3 min-h-[44px] inline-flex items-center justify-center mb-4 transition-colors duration-200 hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black motion-reduce:transition-none"
                         >
                             {/* One label for one action — see the note in
                                 EarnMoreAnnouncement. The personality lives in the

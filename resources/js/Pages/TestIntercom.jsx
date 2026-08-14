@@ -67,7 +67,7 @@ export default function TestIntercom() {
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-3xl font-bold text-gray-900 mb-6">Intercom Test Page</h1>
                     
-                    <div className="bg-white rounded-[30px]    shadow-md p-6 mb-6">
+                    <div className="bg-white rounded-[30px] p-6 mb-6">
                         <h2 className="text-xl font-semibold mb-4">Intercom Status</h2>
                         <p className="text-gray-600 mb-4">
                             This page tests the new IntercomProvider integration. Check the browser console for detailed logs.
@@ -99,7 +99,7 @@ export default function TestIntercom() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-[30px]    shadow-md p-6">
+                    <div className="bg-white rounded-[30px] p-6">
                         <h2 className="text-xl font-semibold mb-4">Configuration Details</h2>
                         <div className="space-y-2 text-sm">
                             <p><strong>User Authenticated:</strong> {props.auth?.user ? 'Yes' : 'No'}</p>

@@ -303,8 +303,31 @@ class AuthenticatedSessionController extends Controller
             if ($sociallinks && $sociallinks->status != 1 && (! Auth::check() || Auth::id() !== $user->id)) {
                 $sociallinks = null;
             }
-            if ($page == 'about') {
-                $userIntro = $user->intro;
+            // Loaded on EVERY tab, not just About. The intro card moved out of the
+            // About tab into the sticky identity rail (31 July 2026), so it renders
+            // on every page of the profile — but this stayed gated on `about`, and
+            // AddIntro reads the `intro` PAGE PROP, not `user.intro`. Publishing a
+            // post navigates to ?page=feed, so the creator's own verification video
+            // silently turned back into an empty "Add Verification Video" card the
+            // moment they posted.
+            //
+            // ⚠️ The appended `poster_url` accessor makes a SYNCHRONOUS Uploadcare
+            // request (up to 3s, plus a generateThumb + save when no poster exists
+            // yet). That was survivable while this ran on one tab; on every tab it
+            // would be a blocking round trip on every profile page load. Strip the
+            // append and use the model's own `posterUrlNonBlocking()` — the same
+            // path the Discover intros rail takes, which returns the stored poster
+            // instantly and warms a missing one on the queue (frontend already
+            // falls back to the creator's avatar while it is null).
+            $userIntro = $user->intro;
+            if ($userIntro) {
+                // Serialised to an array deliberately: putting the value back on the
+                // model would land it in $attributes, where Laravel re-applies the
+                // accessor on toArray() and the blocking call happens anyway.
+                $userIntro->setAppends(['perma_link']);
+                $userIntro = $userIntro->toArray() + [
+                    'poster_url' => $user->intro->posterUrlNonBlocking(),
+                ];
             }
 
             // Derived from the state already read above, never re-fetched. It used
@@ -369,7 +392,12 @@ class AuthenticatedSessionController extends Controller
                 ...$pageData,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],
                 'founderData' => $founderData,
-                'profile_overview' => $user->role == 1 ? $this->profileService->getProfileOverview($user->id) : null,
+                'profile_overview' => $user->role == 1
+                    ? $this->profileService->overviewForViewer(
+                        $this->profileService->getProfileOverview($user->id),
+                        $user
+                    )
+                    : null,
                 'social_proof' => $user->role == 1 ? $this->profileService->getProfileSocialProof($user->id) : null,
                 'viewer_support' => $user->role == 1
                     ? $this->profileService->getViewerSupportHistory($user->id, Auth::id())
@@ -661,15 +689,11 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        $earnings = $this->profileService->getUserEarnings($user->id);
-
+        // Public endpoint — gating the component alone would leave the figure a
+        // URL away. Hidden keeps the progress percentage and drops the money.
         return response()->json([
             'success' => true,
-            'goal' => [
-                'fullfilled' => $earnings['fulfilled'],
-                'target' => $earnings['target'],
-                'currency' => $user->default_currency,
-            ],
+            'goal' => $this->profileService->goalPayloadFor($user),
         ]);
     }
 

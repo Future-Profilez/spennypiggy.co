@@ -53,7 +53,7 @@ export default function RiskTestPanel({ auth }) {
             <Head title="Risk Test Panel" />
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <div className="bg-white overflow-hidden sm:rounded-lg p-6">
                         <h1 className="text-2xl font-bold mb-6 text-gray-800">Risk Engine Test Panel</h1>
 
                         {!unlocked ? (
@@ -64,14 +64,14 @@ export default function RiskTestPanel({ auth }) {
                                 <div className="flex gap-2">
                                     <input
                                         type="password"
-                                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                        className=" appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none "
                                         value={pin}
                                         onChange={(e) => setPin(e.target.value)}
                                         placeholder="PIN"
                                     />
                                     <button
                                         onClick={checkPin}
-                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none "
                                     >
                                         Unlock
                                     </button>

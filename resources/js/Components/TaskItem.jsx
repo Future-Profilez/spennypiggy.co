@@ -93,7 +93,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                     router.visit(url);
                 }
             }}
-            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[2px] !border-black"
+            className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 transition-colors duration-200 hover:bg-black/[0.03] border-[2px] !border-black"
         >
             <Link
                 href={url}
@@ -111,24 +111,24 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {task?.is_suspended == 1 && (
                     <div className="relative group/suspend cursor-help">
-                        <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black bg-red-600 text-white">
+                        <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-red-600 text-white">
                             Suspended
                         </span>
                         {task.suspend_reason && (
-                            <div className="absolute top-full left-0 mt-2 w-48 bg-black text-white text-[10px] p-2 rounded-lg opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none z-10">
+                            <div className="absolute top-full left-0 mt-2 w-48 bg-black text-white text-[12px] p-2 rounded-box-sm opacity-0 group-hover/suspend:opacity-100 transition-opacity pointer-events-none z-10">
                                 Reason: {task.suspend_reason}
                             </div>
                         )}
                     </div>
                 )}
                 {isPending && task?.is_suspended != 1 && (
-                    <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black bg-yellow-300 text-black">
+                    <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-yellow-300 text-black">
                         Pending Approval
                     </span>
                 )}
                 {task?.status && String(task.status).trim() !== "" && (
                     <span
-                        className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black ${
+                        className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black ${
                             task.status === "active"
                                 ? "bg-[#A2E4B8] text-black"
                                 : "bg-yellow-300 text-black"
@@ -137,17 +137,17 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                         {task.status}
                     </span>
                 )}
-                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black bg-blue-300 text-black">
+                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-blue-300 text-black">
                     {task.type} Delivery
                 </span>
                 {task?.sla_hours ? (
-                    <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black bg-yellow-300 text-black">
+                    <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-yellow-300 text-black">
                         {task.sla_hours} Hours
                     </span>
                 ) : (
                     ""
                 )}
-                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black border-2 border-black bg-[#b892ff] text-black">
+                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-black border-2 border-black bg-[#b892ff] text-black">
                     {task.category || "Paid Task"}
                 </span>
             </div>
@@ -177,7 +177,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                                   )}
                         </p>
                         {!isCreator && (
-                            <span className="mt-1 block text-[10px] font-bold leading-tight text-gray-500">
+                            <span className="mt-1 block text-[12px] font-bold leading-tight text-gray-500">
                                 Includes platform & processing fees
                             </span>
                         )}
@@ -186,7 +186,7 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
                         <Link
                             href={`/task/${task.uuid}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="shrink-0 whitespace-nowrap text-xs sm:text-sm inline-block px-4 py-2.5 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-box-sm hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                            className="shrink-0 whitespace-nowrap text-xs sm:text-sm inline-block px-4 py-2.5 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-box-sm transition-colors duration-200 hover:brightness-105"
                         >
                             {task.type === "instant"
                                 ? "Pay to Access 🔓"

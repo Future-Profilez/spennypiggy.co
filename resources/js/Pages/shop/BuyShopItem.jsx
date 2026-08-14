@@ -302,7 +302,7 @@ export default function BuyShopItem({
         // fire a second checkout session.
         if (loading || checking) return false;
         if (!card_capabilities) {
-             errorAlert("This creator cannot accept payments at the moment.");
+             errorAlert(riskMessageBody("CREATOR_UNAVAILABLE"));
              return false;
         }
         if (email.trim() === "" || name.trim() === "") {
@@ -532,7 +532,7 @@ export default function BuyShopItem({
                                         href={s.reward_file_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#FF007F] text-white font-black uppercase text-sm px-4 py-3 min-h-[44px] rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
+                                        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#FF007F] text-black font-black uppercase text-sm px-4 py-3 min-h-[44px] rounded-box-sm border-2 border-black active:translate-x-[2px] active:translate-y-[2px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
                                     >
                                         ⬇ Download your content
                                     </a>
@@ -563,7 +563,7 @@ export default function BuyShopItem({
                                             <button
                                                 onClick={sendReply}
                                                 disabled={posting}
-                                                className="pinkbg text-center text-white px-4 py-3 min-h-[44px] mt-3 mx-auto block rounded-full active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
+                                                className="pinkbg text-center text-black px-4 py-3 min-h-[44px] mt-3 mx-auto block rounded-full active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -651,7 +651,7 @@ export default function BuyShopItem({
                                                 {formatMultiPrice(totalSupporterPays, itemCurrency)}
                                             </strong>
                                         </div>
-                                        <p className="text-[11px] text-black/60 font-normal mt-2 leading-tight">
+                                        <p className="text-[12px] text-black/60 font-normal mt-2 leading-tight">
                                             You will be charged in {itemCurrency}.
                                         </p>
                                     </>
@@ -925,7 +925,7 @@ export default function BuyShopItem({
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                className="border-2 border-black w-full main-button !bg-white !text-black !border-black"
                             >
                                 Cancel
                             </button>

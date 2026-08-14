@@ -19,7 +19,7 @@ const daysUntil = (value) => {
 };
 
 const chip =
-    "inline-flex items-center gap-1 rounded-full border-2 border-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider";
+    "inline-flex items-center gap-1 rounded-full border-2 border-black px-2.5 py-0.5 text-[12px] font-black uppercase tracking-wider";
 
 /**
  * Honest urgency, read from columns the item already carries — nothing here is a
@@ -57,7 +57,7 @@ export default function ItemBadges({
                         </span>
                     )}
                     {lowStock && (
-                        <span className={`${chip} bg-[#FF007F] text-white`}>
+                        <span className={`${chip} bg-[#FF007F] text-black`}>
                             <Flame size={10} strokeWidth={3} />
                             Only {left} left
                         </span>

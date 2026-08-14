@@ -52,7 +52,7 @@ export default function ReferralBanner({ onDismiss }) {
                 type="button"
                 onClick={handleDismiss}
                 aria-label="Dismiss referral offer"
-                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/25 text-white transition-colors hover:bg-black/45"
+                className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/25 text-white transition-colors hover:bg-black/45"
             >
                 <X size={15} strokeWidth={3} />
             </button>
@@ -63,7 +63,7 @@ export default function ReferralBanner({ onDismiss }) {
                     <span className="font-gulfs text-[34px] leading-none tracking-tight sm:text-[40px]">
                         £50
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/70">
+                    <span className="text-[12px] font-black uppercase tracking-[0.18em] text-white/70">
                         per creator
                     </span>
                 </div>
@@ -83,7 +83,7 @@ export default function ReferralBanner({ onDismiss }) {
 
                     <Link
                         href="/refer-and-earn"
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5"
+                        className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-white px-5 py-2 text-[12px] font-black uppercase tracking-wide text-black transition-colors duration-200 hover:bg-white/90"
                     >
                         Get your link
                         <ArrowRight size={13} strokeWidth={3} />

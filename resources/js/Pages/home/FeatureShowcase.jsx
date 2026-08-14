@@ -59,7 +59,12 @@ function Mockup({ f }) {
     return (
         <div className="relative flex items-center justify-center">
             <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-[360px] h-[360px] md:w-[440px] md:h-[440px] rounded-full blur-[120px] opacity-25" style={{ background: f.accent }}></div>
+                {/* ⚠️ `w-[360px]` on a 390px phone (≈358px of column after `px-4`)
+                    overflowed its centring flex by a couple of pixels and put a
+                    horizontal scrollbar on the page. The section has no
+                    `overflow-hidden`, so the glow has to constrain itself. Identical
+                    from `sm:` up. */}
+                <div className="w-full max-w-[360px] h-[360px] md:max-w-[440px] md:h-[440px] rounded-full blur-[120px] opacity-25" style={{ background: f.accent }}></div>
             </div>
             {/* ⚠️ Was `md:w-autorelative` — two classes run together, so `md:w-auto`
                 never applied AND `relative` was lost, which silently made the

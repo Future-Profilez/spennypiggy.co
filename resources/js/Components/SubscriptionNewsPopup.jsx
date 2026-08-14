@@ -124,16 +124,16 @@ export default function SubscriptionNewsPopup({ isOwnProfile = false }) {
                     className="fixed z-[60] left-3 right-3 bottom-[calc(11rem+env(safe-area-inset-bottom))]
                                sm:right-auto sm:left-6 sm:bottom-6 sm:w-[380px]"
                 >
-                    <div className="rounded-box border-[3px] border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="rounded-box border-[3px] border-black bg-white ">
                         <div className="flex items-start justify-between gap-3 px-5 pt-4">
-                            <span className="rounded-full border-[3px] border-black bg-[#E6EA7B] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-black">
+                            <span className="rounded-full border-[3px] border-black bg-[#E6EA7B] px-2.5 py-0.5 text-[12px] font-black uppercase tracking-[0.16em] text-black">
                                 New
                             </span>
                             <button
                                 type="button"
                                 onClick={dismiss}
                                 aria-label="Dismiss"
-                                className="-mr-1 -mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-black/40 transition-colors hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                className="-mr-1 -mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-black/60 transition-colors hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                             >
                                 <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -151,16 +151,16 @@ export default function SubscriptionNewsPopup({ isOwnProfile = false }) {
                                 announcement email, so a creator who saw both
                                 recognises it. */}
                             <div className="mt-4 flex items-center gap-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8]/30 px-3.5 py-3">
-                                <span className="text-[14px] font-bold tabular-nums text-black/35 line-through">
+                                <span className="text-[14px] font-bold tabular-nums text-black/60 line-through">
                                     {TOTAL_FORMATTED}
                                 </span>
-                                <svg aria-hidden="true" className="h-3.5 w-3.5 flex-shrink-0 text-black/40" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                                <svg aria-hidden="true" className="h-3.5 w-3.5 flex-shrink-0 text-black/60" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M4 12h15" />
                                 </svg>
                                 <span className="font-gulfs text-[26px] leading-none tabular-nums text-black">
                                     £0.00
                                 </span>
-                                <span className="ml-auto text-[10px] font-black uppercase leading-tight tracking-wider text-black/50">
+                                <span className="ml-auto text-[12px] font-black uppercase leading-tight tracking-wider text-black/60">
                                     Today
                                 </span>
                             </div>
@@ -176,14 +176,14 @@ export default function SubscriptionNewsPopup({ isOwnProfile = false }) {
                                 <Link
                                     href="/activate-subscription"
                                     onClick={dismiss}
-                                    className="w-full sm:flex-1 rounded-box-sm border-[3px] border-black bg-[#FF007F] px-4 py-3 text-center text-[13px] font-black uppercase tracking-widest text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                    className="w-full sm:flex-1 rounded-box-sm border-[3px] border-black bg-[#FF007F] px-4 py-3 text-center text-[13px] font-black uppercase tracking-widest text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                                 >
                                     Set up my card
                                 </Link>
                                 <button
                                     type="button"
                                     onClick={dismiss}
-                                    className="w-full py-1.5 text-center sm:w-auto sm:flex-shrink-0 sm:px-1 sm:py-0 text-[12px] font-bold uppercase tracking-wider text-black/45 underline underline-offset-4 transition-colors hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                    className="w-full py-1.5 text-center sm:w-auto sm:flex-shrink-0 sm:px-1 sm:py-0 text-[12px] font-bold uppercase tracking-wider text-black/60 underline underline-offset-4 transition-colors hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                                 >
                                     Not now
                                 </button>

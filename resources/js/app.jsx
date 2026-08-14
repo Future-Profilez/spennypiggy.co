@@ -6,7 +6,14 @@ window.route = route;
 
 import "../css/fonts-optimized.css";
 import "../css/theme.css";
-import "../css/core-web-vitals.css";
+/*
+ * `core-web-vitals.css` was removed here (14 Aug 2026). It shipped 245 lines on
+ * every page load and a class-by-class census found ZERO live users of any of
+ * its 23 selectors — the two apparent hits were a React `key` string and a
+ * filename in an examples blade, not classNames. It also carried the last
+ * `:hover { transform: scale(1.05) }` in the stylesheets, which the sitewide
+ * no-scale rule bans. Do not re-add it; write the rule where it is used.
+ */
 import "../css/index.css";
 import "../css/home.css";
 import "../css/app.css";
@@ -25,6 +32,7 @@ import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
 import SmoothScroll from "./Components/SmoothScroll.jsx";
 import OnboardingOverlay from "./Components/Onboarding/OnboardingOverlay.jsx";
+import NavigationProgress from "./Components/NavigationProgress.jsx";
 import { initGlobalHaptics } from "./utils/hapticsGlobal";
 import { initAppBadge } from "./utils/appBadge";
 
@@ -255,7 +263,23 @@ window.addEventListener('vite:preloadError', (event) => {
     }
 
     event.preventDefault();
-    window.location.reload();
+
+    // ⚠️ Drop the cached document before reloading. A reload is a navigation, so
+    // it goes through the service worker — and while the HTML route was
+    // StaleWhileRevalidate that meant being handed back the very document whose
+    // chunks had just failed to load. The reload changed nothing, the cooldown
+    // above then suppressed every further attempt, and the user sat on a blank
+    // screen. The route is NetworkFirst now (`public/sw.js`), but this also
+    // clears a stale entry already sitting in a user's cache from before that
+    // change, and it keeps the recovery correct if the network is slow enough to
+    // hit NetworkFirst's timeout and fall back to cache.
+    const reload = () => window.location.reload();
+
+    if (typeof caches !== 'undefined' && caches.delete) {
+        caches.delete('pages-v1').then(reload, reload);
+    } else {
+        reload();
+    }
 });
 
 createInertiaApp({
@@ -283,22 +307,65 @@ createInertiaApp({
                     </GlobalErrorBoundary>
                 </Suspense>
                 <OnboardingOverlay />
+                {/* Sibling of <App>, never inside it: it must survive the page
+                    component being swapped out, which is the whole moment it
+                    exists to cover. Runs in every context; it self-throttles by
+                    waiting longer in a browser tab, which already has the top
+                    bar and the OS tap highlight. */}
+                <NavigationProgress />
             </>
         );
         
-        // Hide initial loading screen once React app is mounted
-        setTimeout(() => {
+        // 🚨 The launch screen comes down when the app has PAINTED, not when it has
+        // mounted. `<Suspense fallback={null}>` above means a lazy page chunk renders
+        // NOTHING while it loads, so the old fixed 100ms handed the user an empty
+        // `#app` over the black body for as long as that chunk took — reported from
+        // the installed app as "a black screen after 3-4 seconds", and as a black
+        // band along the bottom of the launch screen while the webview was still
+        // painting. Neither was a splash bug; both were the gap after it.
+        const revealApp = () => {
+            // Returns the installed app's window backdrop to black. See the
+            // `sp-launched` note in app.blade.php — while the launch screen is up
+            // the backdrop is pink, so an unpainted region cannot show as black.
+            document.documentElement.classList.add('sp-launched');
             document.body.classList.add('app-loaded');
-            // Remove the loading screen element after transition
             setTimeout(() => {
                 const loadingScreen = document.getElementById('initial-loading-screen');
                 if (loadingScreen) {
                     loadingScreen.style.display = 'none';
                     loadingScreen.remove();
                 }
-            }, 500); // Wait for CSS transition to complete
-        }, 100); // Small delay to ensure app is rendered
-        
+            }, 500); // Wait for the CSS transition to complete
+        };
+
+        // ⚠️ CAPPED, and the 8s boot watchdog in app.blade.php is still the final
+        // backstop. A page that legitimately renders nothing — or a chunk that never
+        // arrives — must never be able to trap someone behind the launch screen.
+        const REVEAL_TIMEOUT_MS = 6000;
+        const waitedFrom = Date.now();
+
+        const hasPainted = () => {
+            // #app is in normal flow, so it only gains height once a page component
+            // has actually rendered content. A fixed-position sibling (the nav
+            // progress bar) is out of flow and cannot satisfy this by itself.
+            const height = el?.getBoundingClientRect?.().height ?? 0;
+
+            return height > 0;
+        };
+
+        const waitForPaint = () => {
+            if (hasPainted() || Date.now() - waitedFrom > REVEAL_TIMEOUT_MS) {
+                revealApp();
+
+                return;
+            }
+
+            requestAnimationFrame(waitForPaint);
+        };
+
+        requestAnimationFrame(waitForPaint);
+
+
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
 
@@ -320,10 +387,20 @@ createInertiaApp({
         }
     },
     progress: {
-        color: "var(--pink)",
+        // Colour is defined once, as `--progress` in theme.css. See the note
+        // there: pink drew the bar on top of the pink fixed header.
+        color: "var(--progress)",
         delay: 100,
         includeCSS: true,
-        showSpinner: true,
+        /*
+         * ⚠️ NProgress's spinner is OFF (15 Aug 2026). `NavigationProgress` now
+         * covers every context rather than the installed app alone, so the
+         * spinner became a SECOND indeterminate indicator for the same wait,
+         * drawn in a different vocabulary in the opposite corner. The two-tier
+         * design is deliberate and unchanged: the bar (100ms) answers a fast
+         * navigation, the veil (160/280ms) answers a slow one.
+         */
+        showSpinner: false,
     },
 });
 
@@ -336,6 +413,20 @@ router.on('before', (event) => {
             'X-CSRF-TOKEN': token.content
         };
     }
+});
+
+// GA4 page views on Inertia navigation.
+//
+// gtag('config', …) in the <head> fires exactly once, on the initial document load. This is an
+// SPA, so without this every page after the first is invisible to GA4 and the property reports
+// one page view per session. No-op if the tag has not loaded (blocked, offline, dev).
+router.on('navigate', () => {
+    if (typeof window.gtag !== 'function') return;
+    window.gtag('event', 'page_view', {
+        page_location: window.location.href,
+        page_path: window.location.pathname + window.location.search,
+        page_title: document.title,
+    });
 });
 
 // Global UTM Tracking - Save UTM parameters to localStorage

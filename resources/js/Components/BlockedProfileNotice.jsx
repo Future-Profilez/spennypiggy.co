@@ -62,10 +62,10 @@ export default function BlockedProfileNotice({
 
     return (
         <>
-            <div className="bg-white border-[4px] border-black rounded-[30px] p-8 md:p-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-[4px] border-black rounded-box p-8 md:p-10 ">
                 {/* Icon */}
                 <div className="flex justify-center">
-                    <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="w-20 h-20 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center ">
                         <Ban
                             className="w-11 h-11 text-[#EF4444]"
                             strokeWidth={2.5}
@@ -97,7 +97,7 @@ export default function BlockedProfileNotice({
                 </p>
 
                 {/* Restriction Box */}
-                <div className="mt-8 rounded-[24px] border-[3px] border-black bg-gradient-to-b from-white to-[#F7F8FC] p-7 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="mt-8 rounded-box border-[3px] border-black bg-gradient-to-b from-white to-[#F7F8FC] p-7 ">
                     <h4 className="font-black text-lg mb-5">
                         While this block is active you cannot:
                     </h4>
@@ -132,17 +132,17 @@ export default function BlockedProfileNotice({
                             gap-2
                             px-8
                             py-3
-                            rounded-[18px]
+ rounded-box-sm
                             bg-[#10B981]
                             hover:bg-[#059669]
                             text-white
                             font-black
                             border-[3px]
                             border-black
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+ 
                             hover:translate-x-[2px]
                             hover:translate-y-[2px]
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+ 
                             transition-all
                             duration-200
                             "
@@ -163,7 +163,7 @@ export default function BlockedProfileNotice({
                 }}
             >
                 <div className="p-8 text-center">
-                    <div className="mx-auto w-24 h-24 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                    <div className="mx-auto w-24 h-24 rounded-full bg-red-100 border-[3px] border-black flex items-center justify-center ">
                         <Unlock className="w-10 h-10 text-green-600" />
                     </div>
 
@@ -185,7 +185,7 @@ export default function BlockedProfileNotice({
                                     setShowModal(false);
                                 }
                             }}
-                            className="px-8 py-3 rounded-[18px] border-[3px] border-black bg-white font-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all"
+                            className="px-8 py-3 rounded-box-sm border-[3px] border-black bg-white font-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                         >
                             Cancel
                         </button>
@@ -193,7 +193,7 @@ export default function BlockedProfileNotice({
                         <button
                             disabled={isUnblocking}
                             onClick={confirmUnblock}
-                            className="min-w-[190px] flex justify-center items-center gap-2 px-8 py-3 rounded-[18px] bg-[#10B981] hover:bg-[#059669] border-[3px] border-black text-white font-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-70"
+                            className="min-w-[190px] flex justify-center items-center gap-2 px-8 py-3 rounded-box-sm bg-[#10B981] hover:bg-[#059669] border-[3px] border-black text-white font-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-70"
                         >
                             {isUnblocking ? (
                                 <>

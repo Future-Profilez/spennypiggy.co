@@ -25,9 +25,13 @@ export const RetroCartIcon = ({ size = 26, isActive = false, count = 0 }) => {
         <Icon size={size} className="w-full h-full" />
       </div>
       
-      {/* Counter */}
+      {/* Basket count. Black on white, not pink on pink — this badge sits on the
+          pink bar. No shadow, per the bar's own rule.
+          ⚠️ Sized against the 22px glyph, not the 26px one it was drawn for: at
+          20px it crowded the bar's top rule with 8px to spare and read as
+          clipped. Width grows for a 2-digit count rather than squashing it. */}
       {count > 0 && (
-        <span className="absolute -top-2 -right-2 retro-counter shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black bg-[#FF007F] text-white font-bold w-5 h-5 flex items-center justify-center rounded-full text-[10px]">
+        <span className="absolute -top-1 -right-1.5 retro-counter border-2 border-black bg-white text-black font-bold h-4 min-w-[16px] px-[3px] flex items-center justify-center rounded-full text-[10px]">
           {count}
         </span>
       )}

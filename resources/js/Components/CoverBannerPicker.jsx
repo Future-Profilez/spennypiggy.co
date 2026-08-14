@@ -155,7 +155,7 @@ export default function CoverBannerPicker({ selected, onSelect }) {
                             <span className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-6 text-sm font-semibold text-white">
                                 {cover.label}
                                 {isSelected ? (
-                                    <span className="rounded-full bg-[#FF007F] px-2 py-0.5 text-[11px] uppercase tracking-wide">
+                                    <span className="rounded-full bg-[#FF007F] px-2 py-0.5 text-[12px] uppercase tracking-wide">
                                         Selected
                                     </span>
                                 ) : null}

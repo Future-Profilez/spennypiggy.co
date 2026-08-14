@@ -194,28 +194,73 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#9E0048">
     <meta name="application-name" content="Spenny Piggy">
     
-    {{-- Prevent rubber-banding and zooming for native app feel --}}
+    {{-- Native-app feel in the installed shell.
+
+         ⚠️ ONE background colour, browser and standalone alike. The standalone
+         rule used to repaint html/body bright teal `#05EFB8` while the browser
+         rule painted them black, so the same page showed a different overscroll
+         gutter depending on how it was opened, and launching the installed app
+         jumped from the near-black splash (`background_color` in manifest.json)
+         to a teal flash before the page painted. Keep these two in agreement
+         with the manifest's `background_color`.
+
+         🚨 `user-select: none` is scoped to CHROME, never to `body`. On `body`
+         it killed text selection across the entire installed app — a supporter
+         could not copy a payment reference, a creator's URL, an error code or a
+         purchased message reward, and every one of those is something support
+         asks people to paste. Buttons and nav do not want a selection highlight;
+         content does. Inputs are re-enabled below regardless, belt and braces. --}}
     <style>
         html, body {
             background-color: #000000 !important;
         }
         @media all and (display-mode: standalone) {
-            html, body {
-                background-color: #05EFB8 !important;
-            }
             body {
                 overscroll-behavior-y: none;
-                -webkit-user-select: none;
-                user-select: none;
                 -webkit-touch-callout: none;
                 -webkit-tap-highlight-color: transparent;
+            }
+            a, button, [role="button"], nav, .retro-bottom-bar {
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            /* 🚨 THE LINE ABOVE REMOVES THE ONLY TOUCH FEEDBACK THE OS GIVES,
+               and it does so across the whole interactive surface — in the
+               INSTALLED APP ONLY. Nothing replaced it, so a tap in the PWA
+               looked identical to a tap that had not registered, and the app
+               was reported as laggy when it was merely silent. If you ever drop
+               the tap-highlight rule, drop this with it; never the reverse.
+
+               Opacity, because it is the one property that works on any
+               background and on any component without touching layout. NOT
+               scale — resizing on press is banned sitewide (client direction),
+               and on a control under a thumb it reads as a wobble. */
+            a:active,
+            button:active,
+            [role="button"]:active,
+            label:active {
+                opacity: 0.62;
+                /* ⚠️ Instant IN, eased OUT. Inheriting the transition in both
+                   directions would delay the acknowledgement by its own
+                   duration — which is the exact complaint this fixes. */
+                transition-duration: 0s;
+            }
+
+            a, button, [role="button"], label {
+                transition: opacity 160ms ease-out;
+            }
+
+            /* A disabled control must not answer a press: pretending it did is
+               worse than the silence this replaces. */
+            button:disabled:active,
+            [role="button"][aria-disabled="true"]:active {
+                opacity: 1;
             }
             input, textarea, [contenteditable] {
                 -webkit-user-select: auto;
                 user-select: auto;
-            }
-            a, button {
-                -webkit-tap-highlight-color: transparent;
             }
         }
     </style>
@@ -241,7 +286,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ URL::asset('/apple-touch-icon.png') }}">
     
     <meta name="msapplication-TileColor" content="#9E0048" />
-    <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
+    {{-- ⚠️ `/siteicon.png` answers 404 in production — it has no proxy route, and a
+         file under `public/` is not served on the app domain. Point Windows at a
+         routed icon like every other tag here. --}}
+    <meta name="msapplication-TileImage" content="{{ url('/android-chrome-192x192.png') }}">
     
     {{-- Minimal critical CSS --}}
     <style>
@@ -258,12 +306,24 @@
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
 
 
-    {{-- iOS splash screens for different devices --}}
-    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    {{-- iOS launch images.
+
+         🚨 Every one of these used to point at `apple-touch-icon.png` (512x512).
+         iOS matches a startup image on EXACT device pixel dimensions and ignores
+         a tag whose image is not that size — it does not scale it and it does not
+         fall back — so the whole set was inert and the installed app launched to a
+         blank screen. Sizes and files come from App\Support\PwaSplash, which is the
+         one definition; never type a size in here.
+
+         ⚠️ Served by the `ios.splash` ROUTE, not from `public/` — a file under
+         `public/` is not served on the app domain (see the icon routes in
+         routes/web.php). Portrait only: the manifest declares `orientation:
+         portrait`, and a landscape set would double what ships in the Lambda. --}}
+    @foreach (\App\Support\PwaSplash::LAUNCH_IMAGES as $device)
+        <link rel="apple-touch-startup-image"
+              href="{{ url('/ios-splash/'.\App\Support\PwaSplash::fileFor($device).'.png') }}"
+              media="(device-width: {{ $device['w'] }}px) and (device-height: {{ $device['h'] }}px) and (-webkit-device-pixel-ratio: {{ $device['dpr'] }}) and (orientation: portrait)">
+    @endforeach
 
     <script nonce="{{ $cspNonce ?? '' }}">
         const css1 = [
@@ -276,10 +336,18 @@
         
         (function() {
             // Detect if running as PWA
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone || 
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                window.navigator.standalone ||
                                 document.referrer.includes('android-app://');
-            
+
+            // ⚠️ Stamped on <html> from HEAD, before <body> is parsed, so the launch
+            // screen is gated by CSS rather than by a script that runs after the
+            // element has already been laid out. A browser visitor never renders it
+            // at all; the installed app renders it with its own first paint.
+            if (isStandalone) {
+                document.documentElement.className += ' sp-standalone';
+            }
+
             // If running as standalone PWA and user is logged in, redirect directly to profile page
             if (isStandalone && window.location.pathname === '/') {
                 try {
@@ -484,20 +552,27 @@
     {{-- Standard Vite asset loading for both development and production --}}
     @vite(['resources/js/app.jsx'])
         
-    <style>
-        @media (max-width:991px){
-            html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
-        }
-    </style>
-    {{-- Google tag (gtag.js) — Google Ads conversion/remarketing.
-         This is the only Google tag on the site; do not add a second gtag.js loader
-         anywhere else (a duplicate loader re-registers the dataLayer and double-counts).
-         Loaded async and placed last in <head> so it never blocks first paint. --}}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+    {{-- 🚨 The Intercom launcher's clearance lives in `resources/css/retro-bottombar.css`,
+         derived from `--sp-bottombar-h`, and NOWHERE ELSE. A hardcoded
+         `html body .intercom-lightweight-app-launcher { margin-bottom: 90px !important }`
+         used to sit here at `max-width: 991px` and was the whole "sometimes high,
+         sometimes low" bug: it STACKED on top of that derived offset (90 + 69 = 159px up,
+         so the icon floated 102px clear of the bar mid-content), it applied to a breakpoint
+         190px wider than the bar's own so it also shifted the launcher on tablets that have
+         no bar at all, and it matched ONLY the pre-boot lightweight launcher — so the icon
+         dropped 90px the moment the messenger finished booting. Do not reintroduce a
+         per-page or per-layout Intercom offset here. --}}
+    {{-- Google tag (gtag.js) — GA4 analytics + Google Ads conversion/remarketing.
+         ONE loader, TWO configs. That is Google's documented way to run both from a single
+         tag; a second gtag.js <script> would re-register dataLayer and double-count, so do
+         not add one anywhere else. Loaded async and placed last in <head> so it never
+         blocks first paint. --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQCXDEV7QV"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
+        gtag('config', 'G-EQCXDEV7QV');
         gtag('config', 'AW-11395921981');
     </script>
 
@@ -505,134 +580,318 @@
 </head>
 
 <body class="font-sans antialiased">
-    @php
-        $isMarketingRoute = request()->is('/') || request()->is('creators') || request()->is('creators/*');
-    @endphp
-    @unless($isMarketingRoute)
-    <!-- Initial loading screen for PWA (excluded on marketing pages) -->
-    <div id="initial-loading-screen" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background: #000000;
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        opacity: 1;
-        transition: opacity 0.5s ease-out;
-    ">
-        <div style="display: flex; flex-direction: column; align-items: center; animation: fadeInUp 0.8s ease-out;">
-            <img 
-                src="{{ URL::asset('/siteicon.png') }}" 
-                alt="Spenny Piggy Logo" 
-                style="
-                    width: 120px; 
-                    height: 120px; 
-                    border-radius: 20px; 
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
-                    margin-bottom: 24px; 
-                    animation: pulse 2s ease-in-out infinite; 
-            "/>
-            <h1 style="
-                font-family: 'Anton', sans-serif;
-                font-size: 28px;
-                color: #ffffff;
-                margin: 0 0 12px 0;
-                text-align: center;
-                font-weight: 400;
-                letter-spacing: 1px;
-            ">Spenny Piggy</h1>
-            <div style="
-                width: 40px;
-                height: 4px;
-                margin: 0 auto; width: 100%;
-                padding: 20px;
-                background: linear-gradient(90deg, #FF007F, #5D25FD);
-                border-radius: 2px;
-                margin-bottom: 20px;
-                animation: loadingBar 1.5s ease-in-out infinite;
-            "></div>
-            <p style="
-                font-family: 'Poppins', sans-serif;
-                font-size: 14px;
-                color: #ffffff;
-                margin: 0 auto; width: 100%;
-                padding: 20px;
-                text-align: center;
-            ">Loading your experience...</p>
+    {{--
+        The installed app's launch screen. It continues the iOS
+        `apple-touch-startup-image` (and the Android manifest splash) with the SAME
+        artwork, so launch → this → app is one field rather than three, and it
+        covers the long part of a cold start: the wait for the JS bundle to boot
+        and Inertia to render its first page.
+
+        🚨 It is drawn in CSS with ONE image, deliberately. The generated launch
+        PNGs cannot be reused here — a file under `public/` is not served on the
+        app domain and the route-served set is per-device, so the in-app copy has
+        to be resolution-independent. The one image is the app icon, which comes
+        through a proxy route like every other icon.
+
+        ⚠️ NO LONGER EXCLUDED ON MARKETING ROUTES. It used to sit inside an
+        `@unless($isMarketingRoute)`, and the manifest's `start_url` IS `/` — so
+        the launch screen never rendered on a cold start of the installed app,
+        which is the only moment it exists for. Gating is `html.sp-standalone`
+        (stamped from HEAD), so a browser visitor still never sees it.
+
+        ⚠️ `siteicon.png` was the old logo here and answers 404 in production (no
+        proxy route), so every installed user saw a broken image on every launch.
+        Read the icon from a ROUTED path, never from `public/`.
+
+        ⚠️ Geometry mirrors the PNG generator: the base unit is
+        `min(100vw, 55vh)`, not viewport width. A width-relative type scale is
+        ~27% too large for the height available on a tablet and collides with the
+        violet field. Keep the two in step if either changes.
+
+        The id and the `.app-loaded` hide are load-bearing — `app.jsx` and the boot
+        watchdog below both address this element by id.
+    --}}
+    <div id="initial-loading-screen" aria-hidden="true">
+        <span class="sp-launch__mint"></span>
+        <span class="sp-launch__yellow"></span>
+        <span class="sp-launch__field"></span>
+
+        <img class="sp-launch__mark"
+             src="{{ url('/android-chrome-192x192.png') }}"
+             width="192" height="192" alt="" decoding="async">
+
+        <div class="sp-launch__word">
+            <span>Spenny</span>
+            <span>Piggy</span>
         </div>
+        <p class="sp-launch__tag">Exclusive content · Memberships</p>
+
+        <span class="sp-launch__dots"><i></i><i></i><i></i></span>
+        <span class="sp-launch__mintdot"></span>
+        <span class="sp-launch__pinkdot"></span>
     </div>
 
     <style>
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        #initial-loading-screen {
+            /* U — the same base unit the launch-image generator uses. */
+            --u: min(100vw, 55vh);
+            /* Wordmark size — the same 0.15 of U the launch-image generator uses,
+               measured at ~60% of U for the longer word. Everything below derives
+               from it, so the stack cannot fall out of step with the type. */
+            --w: calc(var(--u) * 0.15);
+            --wblock: calc(var(--w) * 1.84);
+            --tag-top: calc(36% + var(--u) * 0.3 + var(--wblock) + var(--u) * 0.05);
+            /* Top of the violet field: never above 70%, and always clear of the
+               stack above it, which grows with U. */
+            --arc: max(70%, calc(var(--tag-top) + var(--u) * 0.146));
+
+            position: fixed;
+            inset: 0;
+            display: none;
+            overflow: hidden;
+            z-index: 9999;
+            background: #FF007F;
+            opacity: 1;
+            transition: opacity 380ms ease-out;
         }
-        
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
+
+        /* Only the installed app renders it. Stamped on <html> from HEAD so this
+           is decided before <body> is parsed — no flash for a browser visitor. */
+        html.sp-standalone #initial-loading-screen { display: block; }
+
+        /* 🚨 The window's own backdrop is BLACK (the `html, body` rule earlier in
+           <head>, which carries !important), so any region the webview has not
+           painted yet composites as a black band over the launch screen — reported
+           from an installed iPhone as a black strip along the bottom edge. While
+           the screen is up, the backdrop is the screen's own pink; `sp-launched`
+           is added by app.jsx the moment the app has painted, and by the boot
+           watchdog if it never does, so this can never strand a pink window.
+
+           ⚠️ Scoped to `html.sp-standalone`. Painting the body a second colour in
+           the installed app is what once produced the teal launch flash and pink
+           overscroll gutters — the class is what keeps it to the launch window
+           only, and a browser visitor is never touched. */
+        html.sp-standalone,
+        html.sp-standalone body { background-color: #FF007F !important; }
+
+        html.sp-standalone.sp-launched,
+        html.sp-standalone.sp-launched body { background-color: #000000 !important; }
+
+        /* 🚨 Named classes, NEVER `#initial-loading-screen span`. That selector
+           carries id specificity, so it beat every later class rule and turned
+           the two wordmark lines and the dot row into absolutely-positioned
+           black-bordered circles — the wordmark drew both words on the same
+           pixels inside an ellipse. A shape list is the only thing that can be
+           reset by the rules underneath it. */
+        .sp-launch__mint,
+        .sp-launch__yellow,
+        .sp-launch__field,
+        .sp-launch__mintdot,
+        .sp-launch__pinkdot {
+            position: absolute;
+            box-sizing: border-box;
+            border-radius: 50%;
+            border: max(2px, calc(var(--u) * 0.0085)) solid #000;
         }
-        
-        @keyframes loadingBar {
-            0% {
-                transform: scaleX(0.3);
-                opacity: 0.5;
-            }
-            50% {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-            100% {
-                transform: scaleX(0.3);
-                opacity: 0.5;
-            }
+
+        .sp-launch__mint {
+            width: calc(var(--u) * 0.6); height: calc(var(--u) * 0.6);
+            left: calc(2% - var(--u) * 0.3); top: calc(5.5% - var(--u) * 0.3);
+            background: #05EFB8;
         }
-        
-        /* Hide loading screen when app is ready */
+
+        .sp-launch__yellow {
+            width: calc(var(--u) * 0.17); height: calc(var(--u) * 0.17);
+            left: calc(90% - var(--u) * 0.085); top: calc(17.5% - var(--u) * 0.085);
+            background: #E6EA7B;
+        }
+
+        /* The violet field is one very large circle, so only its top arc is on
+           screen — the same shape the launch PNGs carry. */
+        .sp-launch__field {
+            width: 280vw; height: 280vw;
+            left: 50%; margin-left: -140vw;
+            top: var(--arc);
+            background: #8C52FF;
+        }
+
+        .sp-launch__mintdot {
+            width: calc(var(--u) * 0.1); height: calc(var(--u) * 0.1);
+            left: calc(15.5% - var(--u) * 0.05);
+            top: calc(var(--arc) + (100% - var(--arc)) * 0.6 - var(--u) * 0.05);
+            background: #05EFB8;
+        }
+
+        .sp-launch__pinkdot {
+            width: calc(var(--u) * 0.06); height: calc(var(--u) * 0.06);
+            left: calc(85% - var(--u) * 0.03);
+            top: calc(var(--arc) + (100% - var(--arc)) * 0.85 - var(--u) * 0.03);
+            background: #FF007F;
+        }
+
+        .sp-launch__mark {
+            position: absolute;
+            left: 50%; top: 36%;
+            width: calc(var(--u) * 0.4); height: calc(var(--u) * 0.4);
+            margin: calc(var(--u) * -0.2) 0 0 calc(var(--u) * -0.2);
+            animation: sp-launch-rise 520ms ease-out both, sp-launch-bob 3.2s 520ms ease-in-out infinite;
+        }
+
+        /* 🚨 BLACK on brand pink, never white — measured 5.56:1 against white's
+           3.78:1, which fails AA at label size. Same rule as every other pink
+           surface in the app. */
+        .sp-launch__word,
+        .sp-launch__tag { position: absolute; left: 0; right: 0; text-align: center; color: #000; margin: 0; }
+
+        .sp-launch__word {
+            top: calc(36% + var(--u) * 0.3);
+            font-family: 'gulfs', 'Anton', system-ui, sans-serif;
+            font-size: var(--w);
+            /* A RATIO, never a number — numeric line-heights are remapped to
+               PIXELS by this project's Tailwind config, and the same mistake in
+               raw CSS reads as text on top of itself. */
+            line-height: 0.92;
+            text-transform: uppercase;
+            letter-spacing: calc(var(--u) * 0.004);
+            animation: sp-launch-rise 520ms 90ms ease-out both;
+        }
+
+        .sp-launch__word span { display: block; }
+
+        .sp-launch__tag {
+            top: var(--tag-top);
+            font-family: 'CeraGRMedium', 'Poppins', system-ui, sans-serif;
+            font-size: calc(var(--u) * 0.03);
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: calc(var(--u) * 0.008);
+            /* ⚠️ The line must be allowed to wrap rather than be clipped by the
+               screen's own `overflow: hidden` — letter-spacing applies after the
+               last character too, so this runs wider than the glyphs suggest. */
+            padding: 0 6vw;
+            color: rgba(0, 0, 0, 0.72);
+            animation: sp-launch-rise 520ms 160ms ease-out both;
+        }
+
+        .sp-launch__dots {
+            position: absolute;
+            display: flex;
+            gap: calc(var(--u) * 0.027);
+            left: 50%; transform: translateX(-50%);
+            top: calc(var(--arc) + (100% - var(--arc)) * 0.3);
+        }
+
+        .sp-launch__dots i {
+            width: calc(var(--u) * 0.028); height: calc(var(--u) * 0.028);
+            border-radius: 50%; background: #000;
+            animation: sp-launch-pulse 1.2s ease-in-out infinite;
+        }
+
+        .sp-launch__dots i:nth-child(2) { animation-delay: 160ms; }
+        .sp-launch__dots i:nth-child(3) { animation-delay: 320ms; }
+
+        @keyframes sp-launch-rise {
+            from { opacity: 0; transform: translateY(calc(var(--u) * 0.03)); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* The mark is absolutely placed by margin, so its animation must not
+           reintroduce a translate on the same axis as its centring offset. */
+        @keyframes sp-launch-bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(calc(var(--u) * -0.018)); }
+        }
+
+        @keyframes sp-launch-pulse {
+            0%, 100% { opacity: 0.28; }
+            40% { opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #initial-loading-screen *,
+            #initial-loading-screen { animation: none !important; transition: none !important; }
+        }
+
+        /* app.jsx adds `app-loaded` once React has mounted. */
         .app-loaded #initial-loading-screen {
             opacity: 0;
             pointer-events: none;
-            display: none !important;
         }
     </style>
 
-    <script nonce="{{ $cspNonce ?? '' }}">
-        // Show loading screen only in PWA mode
-        function isPWA() {
-            return window.matchMedia('(display-mode: standalone)').matches ||
-                   window.navigator.standalone === true ||
-                   document.referrer.includes('android-app://');
-        }
+    {{--
+        Boot watchdog. Declared OUTSIDE the loading-screen block on purpose: it has
+        to run on every route, and it has to run even when the JS bundle never
+        executes — which is the whole case it exists for, and the reason it cannot
+        live in `app.jsx`.
 
-        if (!@json($isMarketingRoute) && isPWA()) {
-            const initialLoadingScreen = document.getElementById('initial-loading-screen');
-            if (initialLoadingScreen) {
-                initialLoadingScreen.style.display = 'flex';
+        The failsafe it replaces hid the black loading screen after 5s "no matter
+        what" and did nothing else, so a page whose bundle failed to boot was left
+        showing an empty black screen with no way forward. That is the crash
+        reported on 14 Aug 2026: take a screenshot in the installed PWA, background
+        it, come back, and iOS — which had jettisoned the WKWebView content process
+        under the memory pressure — relaunches into a document that boots nothing.
+
+        Reloading alone did not fix it, which is why this needs the cache drop: the
+        service worker's HTML route was StaleWhileRevalidate, so every reload was
+        answered with the same stale document naming build chunks a later deploy had
+        already replaced. That route is NetworkFirst now (see `public/sw.js`); this
+        clears any document already stuck in a user's cache from before that change.
+
+        The guard is a timestamp, not a flag, for the reason given in `app.jsx`: a
+        one-shot flag reset by a lifecycle event that also fires on first load will
+        re-arm itself and reload forever.
+    --}}
+    <script nonce="{{ $cspNonce ?? '' }}">
+        (function () {
+            var RECOVER_KEY = 'spenny_boot_recovered_at';
+            var RECOVER_COOLDOWN_MS = 60000;
+            var BOOT_TIMEOUT_MS = 8000;
+
+            function booted() {
+                var root = document.getElementById('app');
+                return !!(root && root.children.length);
             }
-        }
-        
-        // Failsafe: hide loading screen after 5 seconds no matter what
-        setTimeout(() => {
-            const ls = document.getElementById('initial-loading-screen');
-            if (ls) ls.style.display = 'none';
-        }, 5000);
+
+            function recover() {
+                var last = 0;
+
+                try {
+                    last = Number(sessionStorage.getItem(RECOVER_KEY)) || 0;
+                    if (Date.now() - last < RECOVER_COOLDOWN_MS) return;
+                    sessionStorage.setItem(RECOVER_KEY, String(Date.now()));
+                } catch (e) {
+                    // Private mode / storage blocked. Without a cooldown a reload
+                    // cannot be rate-limited, so leave the page alone rather than
+                    // risk looping.
+                    return;
+                }
+
+                var reload = function () { window.location.reload(); };
+
+                if (window.caches && window.caches.delete) {
+                    window.caches.delete('pages-v1').then(reload, reload);
+                } else {
+                    reload();
+                }
+            }
+
+            function check() {
+                var ls = document.getElementById('initial-loading-screen');
+                if (ls) ls.style.display = 'none';
+
+                // ⚠️ Must mirror app.jsx's revealApp(). Without it a boot that
+                // never happens leaves the installed app on a bare pink window —
+                // the launch backdrop with nothing on it — and the recovery
+                // cooldown below can legitimately decline to reload.
+                document.documentElement.classList.add('sp-launched');
+
+                if (!booted()) recover();
+            }
+
+            setTimeout(check, BOOT_TIMEOUT_MS);
+        }());
     </script>
-    @endunless
     <script nonce="{{ $cspNonce ?? '' }}" type="speculationrules">
     {
     "prerender": [{ "source": "document", "eagerness": "moderate" }]

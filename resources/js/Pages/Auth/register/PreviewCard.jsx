@@ -28,7 +28,7 @@ export default function PreviewCard({ role, name, username, categories = [] }) {
 
     return (
         <figure className="m-0">
-            <figcaption className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">
+            <figcaption className="mb-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/60">
                 {isCreator ? "Your page" : "Your account"}
             </figcaption>
 

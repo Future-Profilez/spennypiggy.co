@@ -3,8 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 /* @keyframes load {
   0%{transition:0.3s;opacity:0;}
   50%{transition:0.3s;opacity:0.5;}
@@ -53,30 +51,34 @@ div{animation:load 0.4s linear;} */
   @supports not (-webkit-background-clip: text) {
     .text-gradient-founder{ color: #facc15; }
   }
-  .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); }
   /* Buttons are 20px controls, not 30px containers (DESIGN.md strict radius), and
      clear the 44px mobile touch floor. Matches Components/Checkout PayButton so the
      legacy and the new button vocabulary read as one system. */
-  .main-button { @apply bg-white font-gulfs uppercase px-6 py-3 min-h-[44px] border !border-[3px]  rounded-[20px]   }
-  .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition shadow-[3px_3px_0px_#003D4F] hover:shadow-[4px_4px_0px_#003D4F] focus:shadow-[3px_3px_0px_#003D4F] focus:outline    }
-  .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] shadow-[3px_3px_0px_var(--pink)] hover:shadow-[4px_4px_0px_var(--pink)] focus:shadow-[3px_3px_0px_var(--pink)] focus:outline    }
-  .y { @apply main-button bg-white !text-[var(--yellow)] transition !border-[var(--yellow)] shadow-[3px_3px_0px_var(--yellow)] hover:shadow-[4px_4px_0px_var(--yellow)] focus:shadow-[3px_3px_0px_var(--yellow)] focus:outline    }
-  .w { @apply main-button bg-transparent !text-white transition !border-white shadow-[3px_3px_0px_var(--mint)] hover:shadow-[4px_4px_0px_var(--mint)] focus:shadow-[3px_3px_0px_var(--mint)] focus:outline    }
-  .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[3px_3px_0px_white] hover:shadow-[4px_4px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
-  .size-lg { @apply text-[17px] rounded-[20px]    px-[16px] py-3 min-h-[44px] }
-  .pink-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-pink shadow-pink }
-  .mint-round { @apply  overflow-hidden bg-white  rounded-[30px]   md:rounded-[30px]    border-mint shadow-mint }
-  } 
-  
-  .button-pink {
-      @apply !bg-[var(--pink)] uppercase text-lg  font-gulfs rounded-full px-4 py-2 
-  }
+  .main-button { @apply bg-white font-gulfs uppercase px-6 py-3 min-h-[44px] border !border-[3px] rounded-box-sm }
+ .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition focus:outline }
+ .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] focus:outline }
+ .y { @apply main-button bg-white !text-[var(--yellow)] transition !border-[var(--yellow)] focus:outline }
+ .w { @apply main-button bg-transparent !text-white transition !border-white focus:outline }
+ /* 🚨 BLACK ON PINK, NEVER WHITE — client direction, 14 Aug 2026, and it holds
+ for buttons as well as blocks. Measured: white on #FF007F is ~4.2:1, under
+ AA at button-label size; black is ~4.7:1 and clears it. This class was the
+     one place the whole app got it wrong at once — white type, a white border
+     and a white offset shadow, so on the pink header band the button had no
+     visible frame at all. The frame is now the house black one. */
+  .pure-pink { @apply main-button pinkbg !text-black transition !border-black focus:outline }
+ .size-lg { @apply text-[17px] rounded-[20px] px-[16px] py-3 min-h-[44px] }
+ .pink-round { @apply overflow-hidden bg-white rounded-[30px] md:rounded-[30px] border-pink }
+ .mint-round { @apply overflow-hidden bg-white rounded-[30px] md:rounded-[30px] border-mint }
+ } 
+ 
+ /* Same rule: a pink fill takes black type. */
+ .button-pink {
+ @apply !bg-[var(--pink)] !text-black uppercase text-lg font-gulfs rounded-full px-4 py-2
+ }
 
-  .button-white {
-      @apply bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2 
-  }
-
-
+ .button-white {
+ @apply bg-white uppercase text-lg font-gulfs rounded-full px-4 py-2 
+ }
 
 .text-body{font-family:var(--para-body);}
 .text-CeraGR{font-family:var(--para-font);}
@@ -100,12 +102,6 @@ div{animation:load 0.4s linear;} */
 .lightpink-50 {background:#F0E8FF;}
 .lightyellow  {background:#F9E3EC;}
 
-.shadow-black-sm{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
-.shadow-black{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
-.shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
-.shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
-
-.shadow-purple{box-shadow:5px 5px 0 0 var(--purple);}
 .shadow-yellow{text-shadow:5px 4px 0px #e6ea82;-webkit-text-stroke:1px #e6ea82;}
 .text-pink{color:var(--pink) !important;}
 .text-mint{color:var(--mint);}
@@ -125,15 +121,24 @@ div{animation:load 0.4s linear;} */
   .bg-clip-text{ -webkit-background-clip: text; background-clip: text; }
   .text-transparent{ -webkit-text-fill-color: transparent; }
 
-  /* Bootstrap to Tailwind alias utilities - transitional shim */
-  .justify-content-center{ justify-content: center; }
-  .justify-content-between{ justify-content: space-between; }
-  .align-items-center{ align-items: center; }
-  .d-block{ display: block; }
-  .d-none{ display: none; }
-  .d-table{ display: table; }
-  .w-100{ width: 100%; }
-  .w-75{ width: 75%; }
+  /*
+   * ⚠️ WHAT IS LEFT OF THE BOOTSTRAP SHIM, AND WHY IT IS NOT ZERO.
+   *
+   * Bootstrap is NOT a dependency of this project — no npm package, no CDN, no
+   * import. This block was a hand-written shim keeping a handful of Bootstrap
+   * class names alive in markup that had outlived them. The layout/display half
+   * (`justify-content-*`, `align-items-center`, `d-block`, `d-none`, `d-table`,
+   * `w-100`, `w-75`) is gone: every call site now uses the Tailwind equivalent
+   * (`justify-center`, `items-center`, `block`, `hidden`, `table`, `w-full`,
+   * `w-3/4`). Do not reintroduce one — write the Tailwind class.
+   *
+   * 🚨 The logical-property margins and paddings below STAY, and they are not
+   * Bootstrap leftovers by the time they render: **this project is on Tailwind
+   * 3.2, which has no `ms-*` / `me-*` / `ps-*` / `pe-*` utilities** (they arrived
+   * in 3.3). `includes/Header.jsx` alone uses `ms-3` several times, so deleting
+   * these silently removes spacing from the site header. They can go the day
+   * Tailwind is upgraded — not before.
+   */
   .me-1{ margin-right: 0.25rem; }
   .me-2{ margin-right: 0.5rem; }
   .me-3{ margin-right: 0.75rem; }
@@ -197,37 +202,33 @@ div{animation:load 0.4s linear;} */
   .md\:pl-4{ padding-left: 1rem; }
 }
 
-
-
 .border-voilet{border-color:var(--voilet) !important;}
-
 
 .btn-pink { 
     font-family: 'CeraGRBold', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
 }
 
 @layer components{
-  .btn-pink{@apply !text-[18px] bg-[#FF007F] text-white uppercase  rounded-full !px-4 !py-3 m-auto}
-  .lg { @apply !text-[20px] !px-[30px] !py-[12px] text-center }
-  .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center }
+  /* Black on pink — see `.pure-pink` above for the measurement. */
+  .btn-pink{@apply !text-[18px] bg-[#FF007F] text-black uppercase rounded-full !px-4 !py-3 m-auto}
+ .lg { @apply !text-[20px] !px-[30px] !py-[12px] text-center }
+ .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center }
 }
-
-
 
 html{overflow-x:clip;}
 .modal-backdrop.show{opacity:0.85 !important;}
 a{text-decoration:none;}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 input[type=number]{-moz-appearance:textfield;appearance:textfield;}
-.cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:11px;color:#fff;line-height:30px;}
-.cate-items input{margin-right:10px;border-radius:10px;}
+.cate-items div{background:#fb2e94 !important;padding:8px 25px !important;border-radius:var(--sp-radius-box-sm);color:#fff;line-height:30px;}
+.cate-items input{margin-right:10px;border-radius:var(--sp-radius-box-sm);}
 .disabled{pointer-events:none;opacity:0.8;}
-.productimg{width:60px;min-width:60px;height:60px;border-radius:10px;overflow:hidden;}
+.productimg{width:60px;min-width:60px;height:60px;border-radius:var(--sp-radius-box-sm);overflow:hidden;}
 .productimg img{width:100%;height:100%;object-fit:cover;}
 .headtitle{letter-spacing:1px;text-shadow:1px 1px #0006;}
 .profilePhotoImg.dp{width:110px;height:110px;border:3px solid #8c53fb;border-radius:50%;}
-.form-input{padding:12px 16px !important;border-radius:12px;border:1px solid var(--voilet) !important;}
-.default-wish-img{border-radius:12px;overflow:auto;}
+.form-input{padding:12px 16px !important;border-radius:var(--sp-radius-box-sm);border:1px solid var(--voilet) !important;}
+.default-wish-img{border-radius:var(--sp-radius-box-sm);overflow:auto;}
 .default-wish-img img{width:100%;height:100%;max-height:320px;object-fit:cover;}
 .userphotobox > img{width:100%;height:100% !important;border-radius:19px;}
 .userphotobox{overflow:hidden;}
@@ -249,28 +250,21 @@ h2.wishtitle{font-size:24px;font-weight:900;}
 .notifications-lists{max-height:500px;overflow:auto;}
 .loadingtext{font-size:20px;line-height:inherit !important;}
 .text-large{font-size:20px;}
-.croud-add input,.croud-add select{border-radius:10px;background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
+.croud-add input,.croud-add select{border-radius:var(--sp-radius-box-sm);background:#f2f2f2;border:1px solid #ccc;padding:12px 15px;}
 /* modal css */
 .modal.mymodal:not(.basic) .modal-content {
-    border-radius: 39px;
+    border-radius: var(--sp-radius-box);
     border: 3px solid #000000;
-    box-shadow: 6px 6px 0 0 #FF007F;
 }
 .shadow-layout {
-    border-radius: 39px;
+    border-radius: var(--sp-radius-box);
     border: 3px solid #000000;
 }
-.pink-shadow-layout {
-    box-shadow: 6px 6px 0 0 #FF007F;
-}
-
-
 .custom-country-select select{padding:10px 16px;border-radius:10px;width:100%;}
-.identity{color:#fff;font-family:var(--parabold-font);font-weight:900 !important;padding:6px 5px;border-radius:11px;font-size:15px;}
+.identity{color:#fff;font-family:var(--parabold-font);font-weight:900 !important;padding:6px 5px;border-radius:var(--sp-radius-box-sm);font-size:15px;}
 .tooltipbtn:hover p{display:block;}
 .editpoststep{padding:0 !important;}
 .type-changer{border:0;border-radius:10px;padding:7px 30px 7px 10px;}
-.shadow{box-shadow:0 0 22px 0px #0003 !important;}
 .discount-tag svg{width:50px;height:50px;fill:var(--mint);}
 .editclass h2 { font-size: 16px !important;}
 
@@ -279,7 +273,6 @@ h2.wishtitle{font-size:24px;font-weight:900;}
     max-height: inherit !important;
     margin: 0 !important;
 }
-
 
 @media(max-width:991px){
   .userphotobox{height:280px;}
@@ -295,7 +288,6 @@ h2.wishtitle{font-size:24px;font-weight:900;}
   /* .modal.mymodal.full:not(.basic) .modal-content {
     border-radius: 0;
     border: 0;
-    box-shadow: none;
     height: 100vh;
   } */
    .tip-wrapper { 

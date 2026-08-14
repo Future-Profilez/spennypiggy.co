@@ -23,7 +23,7 @@ export default function ForCreators() {
              <div className="absolute inset-0 bg-gradient-to-b from-[#FF007F] to-[#05EFB8] rounded-box transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
             <div className="relative rounded-box overflow-hidden border-2 border-gray-800 bg-gray-800">
                 <LazyLoadImage
-                    alt={"image"} className="img-fluid w-full h-auto"
+                    alt={"image"} className="max-w-full w-full h-auto"
 
                     effect="blur"
 

@@ -129,7 +129,7 @@ export default function VerifyEmail({auth}) {
                     </>
                     }</button>
                 </div>
-                <p className='text-gray-400 max-w-[500px] text-lg m-auto text-center mt-6'>If you didn’t receive the email, please check your spam folder or click again after a minute.</p>
+                <p className='text-black/60 max-w-[500px] text-lg m-auto text-center mt-6'>If you didn’t receive the email, please check your spam folder or click again after a minute.</p>
                 
                 <div className="flex justify-center pt-4">
                     <Link

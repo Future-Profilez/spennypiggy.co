@@ -250,7 +250,7 @@ export default function Index({
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
+                        <div className=" !border-3 border-black bg-white overflow-hidden rounded-box ">
                             <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -336,7 +336,7 @@ export default function Index({
                                                                 </span>
                                                             </div>
                                                             {order.gifter_message && (
-                                                                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-[20px] text-sm italic text-gray-700">
+                                                                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-box-sm text-sm italic text-gray-700">
                                                                     "{order.gifter_message}"
                                                                 </div>
                                                             )}
@@ -365,7 +365,7 @@ export default function Index({
 
                     {/* Purchased Tasks */}
                     {purchased_tasks && purchased_tasks.length > 0 ? (
-                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[30px]   overflow-hidden">
+                        <div className="bg-white border-2 border-black rounded-box overflow-hidden">
                             <div className="p-4 bg-blue-100 flex !border-b-2 !border-black items-center justify-between">
                                 <h3 className="font-bold text-xl uppercase tracking-tight">
                                     Tasks I've Purchased
@@ -453,7 +453,7 @@ export default function Index({
                                                         "task.order",
                                                         purchase.uuid,
                                                     )}
-                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[30px]   font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-box font-bold hover:bg-gray-100 uppercase text-sm transition-all"
                                                 >
                                                     View Details
                                                 </Link>
@@ -476,7 +476,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
+                        <div className=" !border-3 border-black bg-white overflow-hidden rounded-box ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -602,7 +602,7 @@ export default function Index({
                                                                             "task.edit",
                                                                             task.uuid,
                                                                         )}
-                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-[15px] md:rounded-[20px]   font-bold uppercase text-sm  "
+                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-box-sm md:rounded-box-sm   font-bold uppercase text-sm  "
                                                                     >
                                                                         Edit
                                                                     </Link>
@@ -614,7 +614,7 @@ export default function Index({
 
                                                 {/* Creator Note Section - Properly structured container */}
                                                 {creatorNote && (
-                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-[15px] md:rounded-[20px]  `} >
+                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-box-sm md:rounded-box-sm  `} >
                                                         <div className="flex items-start gap-3">
                                                             <div className="flex-1">
                                                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
@@ -711,7 +711,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px]  ">
+                        <div className=" !border-3 border-black bg-white overflow-hidden rounded-box ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History
@@ -749,7 +749,7 @@ export default function Index({
                                                 </p>
                                                 <div className="mt-2">
                                                     <span
-                                                        className={`px-3 py-1 !rounded-[20px] text-xs font-bold uppercase border ${getStatusColor(
+                                                        className={`px-3 py-1 !rounded-box-sm text-xs font-bold uppercase border ${getStatusColor(
                                                             order.status,
                                                         )}`}
                                                     >
@@ -760,7 +760,7 @@ export default function Index({
                                                     </span>
                                                 </div>
                                                 {order.gifter_message && (
-                                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-[20px] text-sm italic text-gray-600">
+                                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-box-sm text-sm italic text-gray-600">
                                                         "{order.gifter_message}"
                                                     </div>
                                                 )}

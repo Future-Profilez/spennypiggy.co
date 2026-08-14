@@ -349,12 +349,12 @@ export default function PiggyPotWidget({
     const primaryBtn =
         "w-full min-h-[52px] py-3 rounded-box-sm border-[3px] border-black font-black text-base uppercase transition-all";
     const primaryOn =
-        "bg-[#FF007F] text-white hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none";
+ "bg-[#FF007F] text-white hover:-translate-y-1 active:translate-y-1 active:translate-x-1 ";
     const primaryOff = "bg-pink-200 text-pink-900 cursor-not-allowed";
 
     const fieldBase = fieldClass;
     const labelBase =
-        "block font-black text-[11px] uppercase tracking-widest text-black/70 mb-1.5";
+ "block font-black text-[12px] uppercase tracking-widest text-black/70 mb-1.5";
 
     const FieldError = ({ name }) =>
         fieldErrors[name] ? (
@@ -380,7 +380,7 @@ export default function PiggyPotWidget({
                             🎯 CONTENT GOAL
                         </div>
                         <div
-                            className={`w-full h-48 sm:h-56 ${row ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative shadow-[inset_0px_0px_20px_rgba(0,0,0,0.5)]`}
+ className={`w-full h-48 sm:h-56 ${row ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative `}
                         >
                             <img
                                 src={
@@ -397,7 +397,7 @@ export default function PiggyPotWidget({
                             {/* Status badge on image */}
                             <div className="absolute bottom-4 left-4 z-10">
                                 <span
-                                    className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${statusBadgeClass}`}
+ className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-black uppercase tracking-widest border-2 border-black ${statusBadgeClass}`}
                                 >
                                     {isComplete
                                         ? "✓ COMPLETED"
@@ -424,7 +424,7 @@ export default function PiggyPotWidget({
                         {(featuredPot.content_description ||
                             featuredPot.content_file) && (
                             <div className="mt-3 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] px-4 py-2.5 flex items-baseline gap-2 flex-wrap">
-                                <p className="font-black text-[11px] uppercase tracking-widest text-black shrink-0">
+ <p className="font-black text-[12px] uppercase tracking-widest text-black shrink-0">
                                     You unlock
                                 </p>
                                 <p className="font-bold text-sm text-black min-w-0">
@@ -447,12 +447,12 @@ export default function PiggyPotWidget({
                                     >
                                         {fmt(raisedAmount)}
                                     </span>
-                                    <span className="text-black/40 text-sm font-bold">
+ <span className="text-black/60 text-sm font-bold">
                                         {" "}
                                         of {fmt(targetAmount)}
                                     </span>
                                 </p>
-                                <p className="font-black text-[11px] uppercase tracking-widest text-black/60 shrink-0">
+ <p className="font-black text-[12px] uppercase tracking-widest text-black/60 shrink-0">
                                     {Math.round(progressPercent)}% funded
                                 </p>
                             </div>
@@ -479,7 +479,7 @@ export default function PiggyPotWidget({
                                 ))}
                             </div>
 
-                            <p className="mt-2 text-[11px] font-black uppercase tracking-widest text-black/60">
+ <p className="mt-2 text-[12px] font-black uppercase tracking-widest text-black/60">
                                 {isComplete
                                     ? "Goal reached"
                                     : `${fmt(remainingAmount)} left`}
@@ -487,7 +487,7 @@ export default function PiggyPotWidget({
                         </div>
 
                         {!isCreator && !isClosed && (
-                            <p className="text-[11px] font-black uppercase tracking-widest text-black/60 mt-4 mb-2">
+ <p className="text-[12px] font-black uppercase tracking-widest text-black/60 mt-4 mb-2">
                                 Step {step} of 3 ·{" "}
                                 {step === 1
                                     ? "Choose amount"
@@ -513,7 +513,7 @@ export default function PiggyPotWidget({
                                                     aria-pressed={
                                                         selectegTag === val
                                                     }
-                                                    className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-1 active:translate-x-1 active:shadow-none" : "bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 active:shadow-none"}`}
+ className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-1 active:translate-x-1 " : "bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 "}`}
                                                 >
                                                     {fmt(val)}
                                                 </button>
@@ -529,7 +529,7 @@ export default function PiggyPotWidget({
                                             aria-pressed={
                                                 selectegTag === "custom"
                                             }
-                                            className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm active:translate-y-1 active:translate-x-1 active:shadow-none transition-all ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-gray-50"}`}
+ className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm active:translate-y-1 active:translate-x-1 transition-all ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-gray-50"}`}
                                         >
                                             CUSTOM
                                         </button>
@@ -769,7 +769,7 @@ export default function PiggyPotWidget({
                                                 : "Calculating…"}
                                         </span>
                                     </div>
-                                    <p className="text-[11px] font-bold text-black/60 mt-2">
+ <p className="text-[12px] font-bold text-black/60 mt-2">
                                         Includes payment processing and platform
                                         fees.
                                     </p>
@@ -853,7 +853,7 @@ export default function PiggyPotWidget({
                         </div>
                         <Link
                             href={route("piggy-pots.index")}
-                            className="inline-flex shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-[#A2E4B8] px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-[#8fdcaa]"
+ className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-box-sm border-2 border-black bg-[#A2E4B8] px-5 py-2 text-xs font-black uppercase tracking-widest text-black transition-colors hover:bg-[#8fdcaa]"
                         >
                             Edit Piggy Pot
                         </Link>

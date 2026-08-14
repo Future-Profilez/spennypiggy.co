@@ -55,6 +55,10 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
         return () => io.disconnect();
     }, [goal]);
 
+    // The creator can hide the figures from visitors (account settings →
+    // "Show earnings on profile"). The server then sends the percentage only, so
+    // the milestone still reads as progress without publishing the amount.
+    const hidden = Boolean(goal?.hidden);
     const earned = Number(goal?.fullfilled) || 0;
     const target = Number(goal?.target) || 0;
 
@@ -79,11 +83,16 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
         return () => cancelAnimationFrame(raf);
     }, [live, earned]);
 
-    if (!goal || target <= 0) return null;
+    if (!goal) return null;
+    if (!hidden && target <= 0) return null;
 
-    const pct = Math.min(100, Math.max(0, (earned / target) * 100));
+    const pct = hidden
+        ? Math.min(100, Math.max(0, Number(goal?.percent) || 0))
+        : Math.min(100, Math.max(0, (earned / target) * 100));
     const remaining = Math.max(0, target - earned);
-    const complete = remaining <= 0;
+    // Hidden carries no figures, so `remaining` is 0 and cannot decide this —
+    // reading it would report every hidden creator as having met their goal.
+    const complete = hidden ? pct >= 100 : remaining <= 0;
     const fill = live ? pct : 0;
 
     return (
@@ -95,17 +104,19 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
 
             <div className="flex items-end justify-between gap-3">
                 <div className="min-w-0">
-                    <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
-                        Total earned
+                    <span className="block text-[12px] font-bold uppercase tracking-[0.18em] text-gray-500">
+                        {hidden ? "Milestone progress" : "Total earned"}
                     </span>
-                    <span
-                        className={`mt-1 block font-black leading-none tabular-nums text-black ${compact ? "text-2xl" : "text-3xl xl:text-[38px]"}`}
-                    >
-                        {formatMultiPrice(Math.round(shown), goal?.currency)}
-                    </span>
+                    {!hidden && (
+                        <span
+                            className={`mt-1 block font-black leading-none tabular-nums text-black ${compact ? "text-2xl" : "text-3xl xl:text-[38px]"}`}
+                        >
+                            {formatMultiPrice(Math.round(shown), goal?.currency)}
+                        </span>
+                    )}
                 </div>
                 <span
-                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-black tabular-nums ${
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[12px] font-black tabular-nums ${
                         complete
                             ? "border-[#12A150]/30 bg-[#12A150]/10 text-[#12A150]"
                             : "border-[#FF007F]/25 bg-[#FF007F]/10 text-[#FF007F]"
@@ -150,9 +161,17 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
                 </span>
             </div>
 
-            <div className="mt-3 flex items-baseline justify-between gap-3 text-[11px] font-semibold">
+            <div className="mt-3 flex items-baseline justify-between gap-3 text-[12px] font-semibold">
                 <span className="text-gray-500">
-                    {complete ? (
+                    {hidden ? (
+                        complete ? (
+                            <span className="font-black text-[#12A150]">
+                                Goal reached
+                            </span>
+                        ) : (
+                            "On the way to the next milestone"
+                        )
+                    ) : complete ? (
                         <span className="font-black text-[#12A150]">
                             {formatMultiPrice(target, goal?.currency)} goal
                             reached

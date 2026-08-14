@@ -86,9 +86,9 @@ export default function SummaryReceipt({
     children,
 }) {
     return (
-        <div className="relative bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+ <div className="relative bg-white border-[3px] border-black rounded-box overflow-hidden">
             <div className="bg-[#A2E4B8] border-b-[3px] border-black px-5 py-3">
-                <p className="font-black uppercase tracking-widest text-[11px]">Order summary</p>
+ <p className="font-black uppercase tracking-widest text-[12px]">Order summary</p>
             </div>
 
             <div className="p-5">
@@ -97,10 +97,10 @@ export default function SummaryReceipt({
                     <div className="flex items-center gap-3 pb-4 mb-4 border-b-2 border-dashed border-black/15">
                         <Avatar src={creatorAvatar} name={creatorName} />
                         <div className="min-w-0">
-                            <p className="font-black uppercase tracking-widest text-[10px] text-black/60 leading-none">
+ <p className="font-black uppercase tracking-widest text-[12px] text-black/60 leading-none">
                                 {payingLabel}
                             </p>
-                            <p className="font-black text-sm truncate mt-1 leading-tight">{creatorName}</p>
+ <p title={creatorName} className="font-black text-sm truncate mt-1 leading-tight">{creatorName}</p>
                             {creatorUsername && (
                                 <a
                                     href={`/${creatorUsername}`}
@@ -120,13 +120,13 @@ export default function SummaryReceipt({
                     <ItemThumb src={image} />
                     <div className="min-w-0">
                         {typeBadge && (
-                            <span className="inline-block bg-black text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">
+ <span className="inline-block bg-black text-white text-[12px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">
                                 {typeBadge}
                             </span>
                         )}
                         <p className="font-black uppercase tracking-wide text-sm leading-tight">{itemTitle}</p>
                         {itemSub && (
-                            <p className="text-[12px] font-bold text-black/60 truncate mt-0.5">{itemSub}</p>
+ <p title={itemSub} className="text-[12px] font-bold text-black/60 truncate mt-0.5">{itemSub}</p>
                         )}
                     </div>
                 </div>
@@ -134,7 +134,7 @@ export default function SummaryReceipt({
                 {/* WHAT YOU GET — the reason to pay, spelled out */}
                 {whatYouGet.length > 0 && (
                     <div className="mt-4 bg-[#F2FBF5] border-2 border-black/10 rounded-box-sm p-4">
-                        <p className="font-black uppercase tracking-widest text-[10px] text-black/60 mb-2.5">
+ <p className="font-black uppercase tracking-widest text-[12px] text-black/60 mb-2.5">
                             What you get
                         </p>
                         <ul className="space-y-2">
@@ -167,7 +167,7 @@ export default function SummaryReceipt({
                 )}
 
                 {renewalNote && (
-                    <p className="mt-4 inline-block bg-black text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+ <p className="mt-4 inline-block bg-black text-white text-[12px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
                         {renewalNote}
                     </p>
                 )}
@@ -181,19 +181,19 @@ export default function SummaryReceipt({
 
             <div className="p-5">
                 <div className="flex items-end justify-between gap-2">
-                    <span className="font-black uppercase tracking-widest text-[11px] text-black/70 pb-1">
+ <span className="font-black uppercase tracking-widest text-[12px] text-black/70 pb-1">
                         Total
                     </span>
                     <span className="font-black text-3xl leading-none">{total}</span>
                 </div>
                 {totalNote && (
-                    <p className="text-[10px] font-bold text-black/60 text-right mt-1.5 leading-snug">
+ <p className="text-[12px] font-bold text-black/60 text-right mt-1.5 leading-snug">
                         {totalNote}
                     </p>
                 )}
 
                 {nextStep && (
-                    <p className="flex items-start gap-1.5 text-[11px] font-bold text-black/70 mt-3 leading-snug">
+ <p className="flex items-start gap-1.5 text-[12px] font-bold text-black/70 mt-3 leading-snug">
                         <span aria-hidden="true">→</span>
                         {nextStep}
                     </p>
@@ -201,7 +201,7 @@ export default function SummaryReceipt({
 
                 <div className="mt-4">{children}</div>
 
-                <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold text-black/60 mt-3">
+ <p className="flex items-center justify-center gap-1.5 text-[12px] font-bold text-black/60 mt-3">
                     <svg
                         width="10"
                         height="12"
@@ -231,8 +231,8 @@ export function PayButton({ label, processingLabel = "Processing…", processing
             disabled={off}
             className={`w-full border-[3px] border-black rounded-box-sm px-4 py-3.5 font-black uppercase tracking-wide text-sm transition-[transform,box-shadow] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                 off
-                    ? "bg-gray-200 text-black/60 cursor-not-allowed"
-                    : "bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+ ? "bg-black/10 text-black/60 cursor-not-allowed"
+ : "bg-[#FF007F] text-black hover:translate-x-[1px] hover:translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
             }`}
         >
             {processing ? processingLabel : label}
@@ -245,7 +245,7 @@ export function PayButton({ label, processingLabel = "Processing…", processing
  */
 export function SectionLabel({ children }) {
     return (
-        <p className="flex items-center gap-2 font-black uppercase tracking-widest text-[11px] text-black/80 mb-3">
+ <p className="flex items-center gap-2 font-black uppercase tracking-widest text-[12px] text-black/80 mb-3">
             <span className="w-2.5 h-2.5 bg-[#FF007F] border-2 border-black rounded-[3px] inline-block" />
             {children}
         </p>
@@ -286,12 +286,12 @@ export function OrderContextCard({
     className = "",
 }) {
     return (
-        <div className={`bg-white border-[3px] border-black rounded-box shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 ${className}`}>
+        <div className={`bg-white border-[3px] border-black rounded-box p-4 ${className}`}>
             {creatorName && (
                 <div className="flex items-center gap-3 pb-3 mb-3 border-b-2 border-dashed border-black/15">
                     <Avatar src={creatorAvatar} name={creatorName} size="w-10 h-10" />
                     <div className="min-w-0">
-                        <p className="font-black uppercase tracking-widest text-[10px] text-black/60 leading-none">
+                        <p className="font-black uppercase tracking-widest text-[12px] text-black/60 leading-none">
                             {payingLabel}
                         </p>
                         <p className="font-black text-sm truncate mt-1 leading-tight">{creatorName}</p>
@@ -313,7 +313,7 @@ export function OrderContextCard({
                 <ItemThumb src={image} size="w-12 h-12" />
                 <div className="min-w-0">
                     {typeBadge && (
-                        <span className="inline-block bg-black text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">
+                        <span className="inline-block bg-black text-white text-[12px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5">
                             {typeBadge}
                         </span>
                     )}
@@ -326,7 +326,7 @@ export function OrderContextCard({
 
             {whatYouGet.filter(Boolean).length > 0 && (
                 <div className="mt-3 bg-[#F2FBF5] border-2 border-black/10 rounded-box-sm p-3">
-                    <p className="font-black uppercase tracking-widest text-[10px] text-black/60 mb-2">
+                    <p className="font-black uppercase tracking-widest text-[12px] text-black/60 mb-2">
                         What you get
                     </p>
                     <ul className="space-y-1.5">

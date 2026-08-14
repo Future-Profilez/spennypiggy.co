@@ -95,12 +95,12 @@ export default function TwoFactorSetup({ auth }) {
                         </Link>
                     </div>
 
-                    <div className="bg-white rounded-[30px]  p-4 ">
+                    <div className="bg-white rounded-box  p-4 ">
                         <h1 className="text-3xl font-gulfs mb-6 text-center uppercase">Multi-Step Verification</h1>
                         
                         {isTFA == 1 && backupCodes.length === 0 ? (
                             <div className="text-center">
-                                <div className="mb-6 p-4 bg-green-50 rounded-[20px] inline-block border border-green-200">
+                                <div className="mb-6 p-4 bg-green-50 rounded-box-sm inline-block border border-green-200">
                                     <p className="text-green-700 font-medium text-lg">Multi-Step Verification is currently ENABLED</p>
                                 </div>
                                 <p className="text-gray-600 mb-8 max-w-lg mx-auto">
@@ -108,7 +108,7 @@ export default function TwoFactorSetup({ auth }) {
                                 </p>
                                 <button 
                                     onClick={disable2fa} 
-                                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-medium transition-all shadow-md hover:shadow-lg"
+                                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-medium transition-all "
                                 >
                                     Disable 2FA
                                 </button>
@@ -117,17 +117,17 @@ export default function TwoFactorSetup({ auth }) {
                             <div>
                                 {backupCodes.length > 0 ? (
                                     <div className="max-w-xl mx-auto">
-                                        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-[30px]  mb-8">
+                                        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-box  mb-8">
                                             <h2 className="font-bold text-xl mb-3 text-yellow-800">Setup Complete! Save your Backup Codes</h2>
                                             <p className="text-gray-700 mb-4">
                                                 Please save these backup codes in a secure place. If you lose access to your device, you can use these codes to log in. 
                                                 <span className="font-bold block mt-2 text-red-600">These codes will only be shown once.</span>
                                             </p>
                                             
-                                            <div className="bg-white p-6 rounded-[20px] border border-gray-200 relative mb-4">
+                                            <div className="bg-white p-6 rounded-box-sm border border-gray-200 relative mb-4">
                                                 <div className="grid grid-cols-2 gap-4 text-center font-mono text-lg font-medium">
                                                     {backupCodes.map((code, index) => (
-                                                        <div key={index} className="p-2 bg-gray-50 rounded-lg">{code}</div>
+                                                        <div key={index} className="p-2 bg-gray-50 rounded-box-sm">{code}</div>
                                                     ))}
                                                 </div>
                                                 <button 
@@ -139,7 +139,7 @@ export default function TwoFactorSetup({ auth }) {
                                             </div>
                                         </div>
                                         <div className="text-center">
-                                            <Link href={route('account')} className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-full font-medium transition-all shadow-md hover:shadow-lg inline-block">
+                                            <Link href={route('account')} className="bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-full font-medium transition-all inline-block">
                                                 Return to Account
                                             </Link>
                                         </div>
@@ -153,7 +153,7 @@ export default function TwoFactorSetup({ auth }) {
 
                                         {step === 1 && (
                                             <div className="space-y-6">
-                                                <div className="bg-gray-50 p-6 rounded-[30px]  border border-gray-100">
+                                                <div className="bg-gray-50 p-6 rounded-box  border border-gray-100">
                                                     <h3 className="font-bold text-lg mb-4">Setup Instructions:</h3>
                                                     <ol className="list-decimal pl-5 space-y-3 text-gray-700">
                                                         <li>Download an Authenticator app (like Google Authenticator or Authy) on your mobile device.</li>
@@ -165,7 +165,7 @@ export default function TwoFactorSetup({ auth }) {
                                                 <div className="text-center">
                                                     <button 
                                                         onClick={getQr} 
-                                                        className="bg-pink-600 hover:bg-pink-700 text-white px-10 py-3 rounded-full font-medium text-lg transition-all shadow-md hover:shadow-lg transform hover:-translate-y-1"
+                                                        className="bg-pink-600 hover:bg-pink-700 text-white px-10 py-3 rounded-full font-medium text-lg transition-all transform hover:-translate-y-1"
                                                     >
                                                         Start Setup
                                                     </button>
@@ -176,17 +176,17 @@ export default function TwoFactorSetup({ auth }) {
                                         {step === 2 && (
                                             <div className="text-center animate-fade-in">
                                                 <div className="mb-6 flex flex-col items-center">
-                                                    <IoPhonePortrait size={"4rem"} className="text-gray-400 mb-4" />
+                                                    <IoPhonePortrait size={"4rem"} className="text-black/60 mb-4" />
                                                     <p className="text-gray-700 mb-4 font-medium">
                                                         Scan this QR code with your authenticator app
                                                     </p>
                                                     {qr ? (
                                                         <div
-                                                            className="bg-white p-1 rounded-[20px] shadow-sm border border-gray-200 inline-block"
+                                                            className="bg-white p-1 rounded-box-sm border border-gray-200 inline-block"
                                                             dangerouslySetInnerHTML={{ __html: qr }}
                                                         ></div>
                                                     ) : (
-                                                        <div className="h-48 w-48 bg-gray-100 animate-pulse rounded-[20px]"></div>
+                                                        <div className="h-48 w-48 bg-gray-100 animate-pulse rounded-box-sm"></div>
                                                     )}
                                                 </div>
 
@@ -197,7 +197,7 @@ export default function TwoFactorSetup({ auth }) {
                                                             <input
                                                                 key={index}
                                                                 type="text"
-                                                                className="w-14 h-14 text-center text-2xl font-bold border-gray-200 bg-gray-100 rounded-[15px] focus:ring-2 focus:ring-pink-500 focus:border-[#FF007F] transition-all"
+                                                                className="w-14 h-14 text-center text-2xl font-bold border-gray-200 bg-gray-100 rounded-box-sm focus:ring-2 focus:ring-pink-500 focus:border-[#FF007F] transition-all"
                                                                 maxLength="1"
                                                                 value={data}
                                                                 onChange={(e) => handleChange(e.target, index)}
@@ -212,10 +212,10 @@ export default function TwoFactorSetup({ auth }) {
                                                     onClick={verify}
                                                     disabled={verifying || otp.join('').length < 6}
                                                     className={`
-                                                        w-full max-w-xs mx-auto block px-6 py-3 rounded-full font-medium text-white transition-all shadow-md
-                                                        ${verifying || otp.join('').length < 6 
-                                                            ? 'bg-gray-400 cursor-not-allowed' 
-                                                            : 'bg-pink-600 hover:bg-pink-700 hover:shadow-lg transform hover:-translate-y-1'
+ w-full max-w-xs mx-auto block px-6 py-3 rounded-full font-medium text-white transition-all 
+                                                        ${verifying || otp.join('').length < 6
+                                                            ? 'bg-gray-400 cursor-not-allowed'
+ : 'bg-pink-600 hover:bg-pink-700 transform hover:-translate-y-1'
                                                         }
                                                     `}
                                                 >

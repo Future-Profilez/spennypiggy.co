@@ -13,15 +13,20 @@ import {
  *
  * Props:
  *  - max       (number)  – max tilt in degrees (default 10)
- *  - scale     (number)  – hover scale (default 1.02)
+ *  - scale     (number)  – ACCEPTED AND IGNORED, see below
  *  - glare     (bool)    – show the moving light reflection (default true)
  *  - className (string)  – must include the card's border-radius if glare is on
  *  - children  (node)
+ *
+ * ⚠️ The card does NOT grow on hover. Hover-scale is banned across this site by
+ * client direction, so the hover state is carried by the tilt and the glare
+ * alone. `scale` is kept in the signature purely so the existing call sites that
+ * pass it keep working — it is deliberately unused; do not wire it back up.
  */
 export default function TiltCard({
     children,
     max = 10,
-    scale = 1.02,
+    scale = 1.02, // eslint-disable-line no-unused-vars -- see note above
     glare = true,
     className = "",
 }) {
@@ -64,7 +69,10 @@ export default function TiltCard({
             onPointerLeave={onPointerLeave}
             initial="rest"
             whileHover="hover"
-            variants={{ rest: { scale: 1 }, hover: { scale } }}
+            // Empty variants on purpose: the labels still have to exist so the
+            // glare child below inherits `hover`, but the parent itself must not
+            // animate a scale.
+            variants={{ rest: {}, hover: {} }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
             style={{
                 rotateX,

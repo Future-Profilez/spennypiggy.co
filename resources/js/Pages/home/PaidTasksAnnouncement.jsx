@@ -15,7 +15,7 @@ export default function PaidTasksAnnouncement() {
                 <div className="max-w-6xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
                         <FadeIn y={20} duration={0.5}>
-                            <span className="inline-block bg-[#E6EA7B] text-black font-gulfs px-4 py-1 uppercase tracking-[3px] text-[11px] rounded-full border-2 border-black mb-4">
+                            <span className="inline-block bg-[#E6EA7B] text-black font-gulfs px-4 py-1 uppercase tracking-[2px] text-[15px] rounded-full border-2 border-black mb-4">
                                 ✨ New Feature ✨
                             </span>
                         </FadeIn>
@@ -38,8 +38,8 @@ export default function PaidTasksAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
 
                         <StaggerItem index={0} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
-                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#FF007F] rounded-box p-6 md:p-8 relative group transition-colors duration-200 hover:bg-[#17102a] motion-reduce:transition-none">
+                            <div className="absolute -top-6 -right-6 bg-[#FF007F] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
                             <h3 className="font-gulfs uppercase text-white tracking-tight text-xl md:text-3xl mb-2 md:mb-2">Instant <br/>Access</h3>
@@ -49,14 +49,14 @@ export default function PaidTasksAnnouncement() {
                             </p>
                             <div className="bg-[#0d0a16] border-2 border-[#FF007F] rounded-full p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8]"></div>
-                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#FF007F]">Passive income mode </span>
+                                <span className="font-gulfs uppercase tracking-[2px] text-[15px] text-[#FF007F]">Passive income mode </span>
                             </div>
                         </div>
                         </StaggerItem>
 
                         {/* Card 2: Custom */}
                         <StaggerItem index={1} x={-80} y={0} rotate={1} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#E6EA7B] rounded-box p-6 md:p-8 relative group transition-colors duration-200 hover:bg-[#17102a] motion-reduce:transition-none">
                             <div className="absolute -top-6 -right-6 bg-[#E6EA7B] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform -rotate-12">
                                 <FaMagic />
                             </div>
@@ -69,7 +69,7 @@ export default function PaidTasksAnnouncement() {
                             </p>
                             <div className="bg-[#0d0a16] border-2 border-[#E6EA7B] rounded-full p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#05EFB8]"></div>
-                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#E6EA7B]">Full control. Zero pressure.
+                                <span className="font-gulfs uppercase tracking-[2px] text-[15px] text-[#E6EA7B]">Full control. Zero pressure.
                                 </span>
                             </div>
                         </div>
@@ -77,7 +77,7 @@ export default function PaidTasksAnnouncement() {
 
                         {/* Card 3: Safe */}
                         <StaggerItem index={2} x={-80} y={0} rotate={-2} stagger={0.15} duration={0.6}>
-                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-box p-6 md:p-8 relative group hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 motion-reduce:hover:transform-none motion-reduce:transition-none">
+                        <div className="h-full bg-[#0d0a16] border-2 mb-2 md:mb-0 border-[#05EFB8] rounded-box p-6 md:p-8 relative group transition-colors duration-200 hover:bg-[#17102a] motion-reduce:transition-none">
                             <div className="absolute -top-6 -right-6 bg-[#05EFB8] text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl wiggle transform rotate-6">
                                 <FaShieldAlt />
                             </div>
@@ -95,7 +95,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                             </p>
                             <div className="bg-[#0d0a16] border-2 border-[#05EFB8] rounded-full p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-[#FF007F]"></div>
-                                <span className="font-gulfs uppercase tracking-[3px] text-[11px] text-[#05EFB8]">PLATFORM-ENFORCED RULES
+                                <span className="font-gulfs uppercase tracking-[2px] text-[15px] text-[#05EFB8]">PLATFORM-ENFORCED RULES
                                 </span>
                             </div>
                         </div>
@@ -110,11 +110,11 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                         <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-[#FF007F] rounded-full blur-3xl opacity-10"></div>
                             <Link  href="/task/dashboard"
-                                className="relative inline-flex items-center gap-4 bg-white text-black font-gulfs uppercase tracking-tight text-base md:text-xl py-3 px-4 md:px-12 rounded-full border-2 border-black hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-300 group" >
+                                className="relative inline-flex items-center gap-4 bg-white text-black font-gulfs uppercase tracking-tight text-base md:text-xl py-3 px-4 md:px-12 rounded-full border-2 border-black min-h-[48px] transition-colors duration-200 hover:bg-white/90 group" >
                                 <span className="relative z-10">Turn Requests Into Income</span>
                                 <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                             </Link>
-                            <div className="mt-6 flex justify-center items-center gap-2 text-white/50 text-sm font-bold uppercase tracking-widest">
+                            <div className="mt-6 flex justify-center items-center gap-2 text-white/60 text-sm font-bold uppercase tracking-widest">
                                 ❤️ Built for creators who are tired of unpaid requests
                             </div>
                         </div>

@@ -115,15 +115,23 @@ export default function Create({ auth, currencySymbol }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={isEdit ? "Edit Task" : "Create Task"} />
-            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-dvh font-public-sans">
-                <div className="container"> 
-                    <div className="mx-auto max-w-[900px]"> 
+            {/* 🚨 THREE GUTTERS WERE STACKED HERE and the phone paid for all of
+                them: `px-3` (12px), then `.container`, which is NOT Tailwind's —
+                `resources/css/home.css` gives it a hard `padding: 0 20px` — and
+                then the form's own `p-6` (24px). Measured at 390px that was 112px
+                of chrome before the first field, so a text input rendered 278px
+                wide inside a 390px screen and the page read as a thin column with
+                dead margins. One gutter is enough on a phone; the desktop cap is
+                `max-w-[900px]`, which `.container` was never contributing to. */}
+            <div className="loginPage bg-white px-4 py-8 md:py-18 min-h-dvh font-public-sans">
+                <div className="w-full">
+                    <div className="mx-auto max-w-[900px]">
                         <div className="text-center mb-8">  
                             <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider ">
                                 {isEdit ? 'Edit Task' : 'Create New Task'}
                             </h2> 
                             {task && task.is_suspended == 1 && (
-                                <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(239,68,68,1)] text-left">
+                                <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 rounded-box-sm text-left">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
                                             <svg className="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
@@ -141,7 +149,7 @@ export default function Create({ auth, currencySymbol }) {
                                     </div>
                                 </div>
                             )}
-                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-box-sm ">
                                 <p className="text-black font-bold text-lg tracking-wide">
                                     Paid Tasks are for things you’re happy to do. You define the task, price, and delivery. No custom requests outside your description. PG-13 only.
                                 </p>
@@ -149,7 +157,7 @@ export default function Create({ auth, currencySymbol }) {
                         </div>
 
                         {showSummary ? (
-                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border-2 border-black rounded-box p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="text-green-600" /> Confirm Task Details
                                 </h3>
@@ -179,7 +187,7 @@ export default function Create({ auth, currencySymbol }) {
                                     )}
                                 </div>
 
-                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-8">
+                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-8">
                                     <div className="flex gap-3">
                                         <Info className="text-blue-600 shrink-0" />
                                         <p className="text-sm font-bold text-blue-900">
@@ -193,14 +201,14 @@ export default function Create({ auth, currencySymbol }) {
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <button 
                                         onClick={() => setShowSummary(false)}
-                                        className="flex-1 px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase hover:bg-gray-50 transition-all"
+                                        className="flex-1 px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:bg-gray-50 transition-all"
                                     >
                                         Edit Details
                                     </button>
                                     <button 
                                         onClick={submit}
                                         disabled={processing}
-                                        className="flex-[2] bg-[#FF007F] text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                                        className="flex-[2] bg-[#FF007F] text-black px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Publishing..." : "Confirm & Publish Task"}
                                     </button>
@@ -210,7 +218,12 @@ export default function Create({ auth, currencySymbol }) {
                             <div className="">
                                 <form
                                     onSubmit={submit}
-                                    className="p-6 md:p-10 space-y-8 bg-white"
+                                    /* ⚠️ No HORIZONTAL padding below `md`. The form
+                                       and the page are both white, so this padding
+                                       draws nothing on a phone — it only narrows
+                                       the fields. The page's own `px-4` is the
+                                       gutter; vertical rhythm stays. */
+                                    className="py-6 md:p-10 space-y-8 bg-white"
                                 >
                                     {/* Title */}
                                     <div className="mb-0">
@@ -218,7 +231,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <input
                                             type="text"
                                             maxLength={100}
-                                            className="w-full border-2 border-black rounded-[20px] md:rounded-[25px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400 font-bold"
+                                            className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-black/60 font-bold"
                                             value={data.title}
                                             onChange={(e) =>
                                                 setData("title", e.target.value)
@@ -227,7 +240,7 @@ export default function Create({ auth, currencySymbol }) {
                                         />
                                         <div className="flex justify-between mt-2">
                                             <p className="text-xs font-bold text-gray-500">This is what supporters will see before purchasing.</p>
-                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-black/60'}`}>
                                                 {data.title.length}/100
                                             </p>
                                         </div>
@@ -241,7 +254,7 @@ export default function Create({ auth, currencySymbol }) {
                                     <div className="mb-0">
                                         <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description*</label>
                                         <textarea
-                                            className="w-full border-2 border-black rounded-[20px] md:rounded-[25px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
+                                            className="w-full border-2 border-black rounded-box-sm p-4 text-lg font-medium focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-black/60"
                                             rows="4"
                                             value={data.description}
                                             onChange={(e) =>
@@ -261,12 +274,20 @@ export default function Create({ auth, currencySymbol }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {/* Price */}
                                         <div className="mb-0">
-                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500 flex items-center gap-2">
+                                            <label className="flex items-center gap-2 font-black text-sm mb-2 uppercase tracking-wide text-black/60">
                                                 Price ({currencySymbol})*
+                                                {/* Hover alone hid a real payout warning from every
+                                                    phone. tabIndex + focus-within makes it tap-reachable;
+                                                    p-2/-m-2 gives a 44px hit area without moving the label. */}
                                                 {data.type === 'timed' && (
-                                                    <div className="group relative">
-                                                        <Info size={14} className="text-blue-500 cursor-help" />
-                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                    <div
+                                                        className="group relative p-2 -m-2 cursor-help"
+                                                        tabIndex={0}
+                                                        role="button"
+                                                        aria-label="Payout timing for high-value tasks"
+                                                    >
+                                                        <Info size={14} className="text-blue-500" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[12px] rounded-box-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
                                                             High-value tasks may delay payout until delivery is confirmed.
                                                         </div>
                                                     </div>
@@ -281,7 +302,7 @@ export default function Create({ auth, currencySymbol }) {
                                                     type="number"
                                                     placeholder="Minimum £4.99"
                                                     step="0.01"
-                                                    className="relative z-0 w-full border-2 border-black rounded-[20px] md:rounded-[25px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                    className="relative z-0 w-full border-2 border-black rounded-box-sm p-[18px] pl-10 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                     value={data.price}
                                                     onChange={(e) =>
                                                         setData(
@@ -292,7 +313,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 />
                                             </div>
                                             {data.price > 0 && (
-                                                <div className="mt-4 p-4 bg-gray-50 rounded-[20px] md:rounded-[25px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <div className="mt-4 p-4 bg-gray-50 rounded-box-sm border-2 border-black ">
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
                                                         <span className="font-black text-xl text-black">
@@ -326,7 +347,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <div className="mb-0">
                                             <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Category</label>
                                             <select
-                                                className="w-full border-2 border-black rounded-[20px] md:rounded-[25px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
+                                                className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
                                                 value={data.category}
                                                 onChange={(e) =>
                                                     setData(
@@ -367,11 +388,11 @@ export default function Create({ auth, currencySymbol }) {
                                                                 : current.reward,
                                                     }))
                                                 }
-                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
-                                                    data.type === "timed"
-                                                        ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
-                                                        : "bg-white hover:bg-gray-50"
-                                                }`}
+                                                className={`p-6 rounded-box border-2 border-black text-left transition-all ${
+ data.type === "timed"
+ ? "bg-blue-500 text-white translate-x-[-2px] translate-y-[-2px]"
+ : "bg-white hover:bg-gray-50"
+ }`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2">
                                                     <Clock size={20} /> Timed / Manual
@@ -388,11 +409,11 @@ export default function Create({ auth, currencySymbol }) {
                                                 onClick={() =>
                                                     setData("type", "instant")
                                                 }
-                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${
-                                                    data.type === "instant"
-                                                        ? "bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
-                                                        : "bg-white hover:bg-gray-50"
-                                                }`}
+                                                className={`p-6 rounded-box border-2 border-black text-left transition-all ${
+ data.type === "instant"
+ ? "bg-[#FF007F] text-black translate-x-[-2px] translate-y-[-2px]"
+ : "bg-white hover:bg-gray-50"
+ }`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2">
                                                     <Zap size={20} /> Instant Delivery
@@ -419,10 +440,10 @@ export default function Create({ auth, currencySymbol }) {
                                                         type="button"
                                                         onClick={() => setData("sla_hours", tf.value)}
                                                         className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${
-                                                            data.sla_hours == tf.value
-                                                                ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1"
-                                                                : "bg-white hover:bg-blue-50"
-                                                        }`}
+ data.sla_hours == tf.value
+ ? "bg-blue-500 text-white -translate-y-1"
+ : "bg-white hover:bg-blue-50"
+ }`}
                                                     >
                                                         {tf.label}
                                                     </button>
@@ -439,7 +460,7 @@ export default function Create({ auth, currencySymbol }) {
                                     )}
 
                                     {/* What the buyer receives — one editor for every module. */}
-                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 ">
                                         <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
                                             <FileUp className="text-[#FF007F]" /> What the buyer receives
                                         </p>
@@ -465,7 +486,7 @@ export default function Create({ auth, currencySymbol }) {
                                     </div>
 
                                     {/* Terms */}
-                                    <div className="p-6 bg-red-50 border-2 border-black rounded-[25px] !mt-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="p-6 bg-red-50 border-2 border-black rounded-box !mt-12 ">
                                         <div className="flex items-start">
                                             <div className="flex items-center h-6">
                                                 <input
@@ -490,7 +511,7 @@ export default function Create({ auth, currencySymbol }) {
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="w-full bg-black text-white px-8 py-5 rounded-[25px] font-black text-xl uppercase shadow-[8px_8px_0px_0px_rgba(236,72,153,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
+                                        className="border-2 border-black w-full bg-black text-white px-8 py-5 rounded-box-sm font-black text-xl uppercase hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Creating..." : "Continue to Summary"}
                                     </button>

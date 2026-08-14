@@ -33,7 +33,7 @@ function PathCard({ accent, eyebrow, title, lines, footnote, onClick }) {
             className={`group flex w-full flex-col rounded-box border-[3px] border-black bg-white p-5 text-left transition-transform duration-200 sm:p-6 ${accent.shadow} hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:hover:translate-y-0`}
         >
             <span
-                className="w-fit rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white"
+                className="w-fit rounded-full px-3 py-1 text-[12px] font-bold uppercase tracking-[0.14em] text-white"
                 style={{ backgroundColor: accent.hex }}
             >
                 {eyebrow}

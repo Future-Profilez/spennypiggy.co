@@ -13,6 +13,7 @@ import IdentityStep from "./register/IdentityStep";
 import CredentialsStep from "./register/CredentialsStep";
 import CreatorProfileStep from "./register/CreatorProfileStep";
 import ReviewStep from "./register/ReviewStep";
+import SignupPausedPanel from "./register/SignupPausedPanel";
 import {
     MAX_CATEGORIES,
     ROLE_CREATOR,
@@ -127,6 +128,10 @@ export default function Register() {
     }, []);
 
     /* --------------------------- live validation -------------------------- */
+
+    // Set only when the server refuses because creator sign-ups are paused
+    // platform-wide. Holds the server's own copy — never a string written here.
+    const [signupPaused, setSignupPaused] = useState(null);
 
     const [liveErrors, setLiveErrors] = useState({});
     const [validity, setValidity] = useState({});
@@ -558,6 +563,18 @@ export default function Register() {
                 }
             },
             onError: (err) => {
+                // 🚨 Platform-paused is NOT a field error and must not be toasted.
+                // The refusal is permanent for as long as the pause lasts, so a
+                // toast that fades leaves the person on a form that will refuse
+                // them again with no explanation. It takes over the screen and
+                // offers the waitlist instead — which is the whole reason this
+                // branch exists, and the click paid acquisition already bought.
+                if (err?.signup_paused) {
+                    setSignupPaused(err.signup_paused);
+                    resetCaptcha();
+                    return;
+                }
+
                 Object.values(err).forEach((msg) => errorAlert(msg));
                 resetCaptcha();
 
@@ -637,6 +654,27 @@ export default function Register() {
                         stepKey === "role" ? "max-w-5xl" : "max-w-[560px]"
                     }`}
                 >
+                    {/* Sign-ups paused: this REPLACES the form rather than sitting
+                        above it. Leaving the fields on screen invites the person to
+                        submit again into a refusal that has not changed, and the
+                        rail below would still be counting steps towards an account
+                        they cannot open. */}
+                    {signupPaused ? (
+                        <div className="pt-4">
+                            {/* ⚠️ Google first. A Google sign-up posts no email —
+                                the verified address is merged in from the session
+                                — so `data.email` is blank and the panel would ask
+                                for an address the server has ALREADY captured. The
+                                person then types a different one and we hold two
+                                leads for one human, and email them twice. */}
+                            <SignupPausedPanel
+                                message={signupPaused}
+                                email={googleProfile?.email || data.email}
+                                role={1}
+                            />
+                        </div>
+                    ) : (
+                    <>
                     <div className="mb-5 sm:mb-7">
                         <ProgressRail
                             role={role}
@@ -647,7 +685,7 @@ export default function Register() {
                     </div>
 
                     {googleProfile && (
-                        <div className="mb-5 flex items-center justify-between gap-3 rounded-lg border-2 border-dashed border-white/20 bg-white/5 p-3 text-xs text-white">
+                        <div className="mb-5 flex items-center justify-between gap-3 rounded-box-sm border-2 border-dashed border-white/20 bg-white/5 p-3 text-xs text-white">
                             <span className="truncate">
                                 Registering with Google: <strong className="text-[#05EFB8]">{googleProfile.email}</strong>
                             </span>
@@ -772,6 +810,8 @@ export default function Register() {
                             />
                         )}
                     </StepTransition>
+                    </>
+                    )}
 
                     <p className="mt-5 text-center text-sm text-white/60">
                         Already have an account?{" "}

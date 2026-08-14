@@ -1,17 +1,14 @@
 import { Link, usePage } from "@inertiajs/react";
-import axios from "axios";
 import { useState } from "react";
-import { useEffect } from "react";
 import AddIntro from "../intros/AddIntro";
 import EditProfile from "../account/EditProfile";
 import AddPost from "../feed/AddPost";
-import ChangeVat from "../account/ChangeVat";
-import Popup from "@/Components/Popup";
 import { checkedItem } from "@/includes/Icons";
-import Social from "../Auth/Social";
 import AddBills from "../bills/AddBills";
 import AddMembership from "../membership/AddMembership";
 import TFA from "../Auth/TFA";
+
+const TOTAL_STEPS = 9;
 
 const CustomProgressBar = ({ now, max }) => {
     const percentage = Math.round((now / max) * 100);
@@ -22,6 +19,40 @@ const CustomProgressBar = ({ now, max }) => {
     );
 };
 
+/**
+ * One checklist row.
+ *
+ * ⚠️ Stacks on a phone. Every row used to be `flex items-center justify-between`
+ * with no mobile form, so at 390px the title block and its action squeezed each
+ * other: the copy wrapped to four lines and the control was crushed against the
+ * right edge. The action is full-width below the text until `sm`, which also
+ * gives it a real thumb target — these were bare text links.
+ */
+function StepRow({ done, title, body, children }) {
+    return (
+        <div className="profile-steps mt-3 flex flex-col gap-3 rounded-box border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="step-title flex min-w-0 flex-1">
+                <div className={`check-icon mr-2 shrink-0 pt-1 ${done ? "checked" : ""}`}>
+                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
+                </div>
+                <div className="min-w-0">
+                    <h2 className="font-bold text-gray-900">{title}</h2>
+                    <p className="text-[14px] text-black/60">{body}</p>
+                </div>
+            </div>
+            <div className="w-full shrink-0 sm:w-auto">{children}</div>
+        </div>
+    );
+}
+
+/**
+ * The plain-link steps (auto tweets, VAT, shop) had no styling at all — they
+ * rendered as bare inline text, so they were both invisible as controls and
+ * far under the 44px touch target the rest of the app holds to.
+ */
+const STEP_LINK =
+    "inline-flex min-h-[44px] w-full items-center justify-center rounded-box-sm border-2 border-black bg-white px-5 text-center text-sm font-bold text-black transition-colors hover:bg-[#FF007F] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 sm:w-auto";
+
 export default function ProfileSteps({ IsloggedIn,  sLinks }) {
 
     const {  user, global_currency, profile_steps } = usePage().props;
@@ -31,284 +62,121 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
         window.location.reload(false)
     }
 
+    if (!profile || profile.total >= TOTAL_STEPS) return null;
+
     return (
         <>
-            {profile && profile.total < 9 ? (
-                <>
-                    <style>{`
-                        .check-icon.checked svg path {fill: #139700 !important;}
-                    `}</style>
-                    <div className="profileSteps bg-white border border-gray-400 rounded-[30px]    mb-4  p-3 lg:!p-6 sticky top-0 z-10" >
-                        <h2 className="mb-1 text-[20px] font-bold ">Let’s get you started</h2>
-                        <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
-                        <CustomProgressBar now={profile && profile.total} max={9} />
+            <style>{`
+                .check-icon.checked svg path {fill: #139700 !important;}
+            `}</style>
 
-                        {/* {profile && profile.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${
-                                    profile && profile.payment_connect == 1? "checked": ""}`}>
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Complete KYC
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Complete your KYC verification to receive payments.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <Link href="/start-kyc">Verify</Link>
-                            </div>
-                        </div> : ""} */}
+            {/* ⚠️ `sticky top-0` pinned this card to the top of the VIEWPORT, and
+                the app header is fixed at ~75px — so on a phone the checklist
+                scrolled up and parked underneath it. Sticky is kept only from
+                `lg`, at the same offset the profile's own aside uses. */}
+            <div className="profileSteps mb-4 rounded-box border border-gray-400 bg-white p-3 lg:!p-6 lg:sticky lg:top-[111px] lg:z-10">
+                <h2 className="mb-1 text-[20px] font-bold">Let’s get you started</h2>
+                <p className="mb-3 text-black/60">Successful creators complete these steps, although not all required.</p>
+                <CustomProgressBar now={profile.total} max={TOTAL_STEPS} />
 
-                        {/* Intro Video */}
-                        {profile?.intro !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div
-                                    className={`check-icon mr-2 pt-1 ${
-                                        profile?.intro == 1
-                                            ? "checked"
-                                            : ""
-                                    }`}
-                                >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Add Intro Video
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add a 15 - 30 sec intro video for your
-                                        supporters.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <AddIntro classes="pt-3"
-                                    text="Add" uuid={user?.id || null} IsloggedIn={IsloggedIn}
-                                />
-                            </div>
-                        </div> : ''}
+                {profile.intro !== 1 && (
+                    <StepRow
+                        done={profile.intro == 1}
+                        title="Add Intro Video"
+                        body="Add a 15 - 30 sec intro video for your supporters."
+                    >
+                        <AddIntro classes="pt-3" text="Add" uuid={user?.id || null} IsloggedIn={IsloggedIn} />
+                    </StepRow>
+                )}
 
-                        {/* auto_tweets */}
-                        {profile && profile.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title  flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${profile && profile.auto_tweets == 1? "checked": ""}`}  >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">Enable Auto Tweets</h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Automatically tweet to your supporters when a wish is granted.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <Link href="/account?page=autotweet whitespace-nowrap">Enable </Link>
-                            </div>
-                        </div> : ''}
+                {profile.auto_tweets !== 1 && (
+                    <StepRow
+                        done={profile.auto_tweets == 1}
+                        title="Enable Auto Tweets"
+                        body="Automatically tweet to your supporters when a wish is granted."
+                    >
+                        {/* ⚠️ This href was `/account?page=autotweet whitespace-nowrap`
+                            — a className had been pasted inside the URL string, so the
+                            link resolved to a path containing a space and went nowhere. */}
+                        <Link href="/account?page=autotweet" className={STEP_LINK}>Enable</Link>
+                    </StepRow>
+                )}
 
+                {profile.basic_profile !== 1 && (
+                    <StepRow
+                        done={profile.basic_profile == 1}
+                        title="Complete Basic Profile"
+                        body="Add a profile picture and bio."
+                    >
+                        <EditProfile
+                            updateProfileSteps={updateProfileSteps}
+                            user={user}
+                            classes="updatebtn "
+                            global_currency={global_currency}
+                        />
+                    </StepRow>
+                )}
 
+                {profile.post_required !== 1 && (
+                    <StepRow
+                        done={profile.post_required == 1}
+                        title="Write a Post"
+                        body="Add something for your subscribers and supporters."
+                    >
+                        <AddPost text="Add Post" classes="editpoststep" />
+                    </StepRow>
+                )}
 
-                        {/* basic_profile */}
-                        {profile && profile.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div
-                                    className={`check-icon mr-2 pt-1 ${
-                                        profile && profile.basic_profile == 1
-                                            ? "checked"
-                                            : ""
-                                    }`}
-                                >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Complete Basic Profile
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add a profile picture and bio.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <EditProfile updateProfileSteps={updateProfileSteps}
-                                    user={user}
-                                    classes="updatebtn "
-                                    global_currency={global_currency}
-                                />
-                            </div>
-                        </div> : ''}
+                {profile.membership_required !== 1 && (
+                    <StepRow
+                        done={profile.membership_required == 1}
+                        title="Add Memberships"
+                        body="Add at least one membership option for your fans."
+                    >
+                        <AddMembership text="Add" classes="edit_membership_step" />
+                    </StepRow>
+                )}
 
+                {profile.bill_required !== 1 && (
+                    <StepRow
+                        done={profile.bill_required == 1}
+                        title="Add Your Bills"
+                        body="Add at least one billing option for your fans."
+                    >
+                        <AddBills text="Add Bill" classes="edit_bill_step" />
+                    </StepRow>
+                )}
 
-                        {/* social_links */}
-                        {/* {profile && profile.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div
-                                    className={`check-icon mr-2 pt-1 ${ profile && profile.social_links == 1 ? "checked": "" }`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">Add social links</h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add a selection of social links.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <Social updatedLinks={fetchingLinks}links={sLinks}/>
-                            </div>
-                        </div> : ''} */}
+                {profile.vat_setting !== 1 && (
+                    <StepRow
+                        done={profile.vat_setting == 1}
+                        title="VAT settings"
+                        body="Add vat percentage."
+                    >
+                        <Link href="/account" className={STEP_LINK}>Add VAT</Link>
+                    </StepRow>
+                )}
 
-                        {/* post_required */}
-                       {profile && profile.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${ profile && profile.post_required == 1 ? "checked" : "" }`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Write a Post
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                       Add something for your subscribers and supporters.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <AddPost text="Add Post" classes="editpoststep" />
-                            </div>
-                        </div> : ""}
+                {profile.is_2fa !== 1 && (
+                    <StepRow
+                        done={profile.is_2fa == 1}
+                        title="Enable 2FA"
+                        body="Enable 2FA for your account security."
+                    >
+                        <TFA text={<div className="text-center">Enable</div>} />
+                    </StepRow>
+                )}
 
-                        {/* membership_required */}
-                       {profile && profile.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${ profile && profile.membership_required == 1 ? "checked" : "" }`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Add Memberships
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add at least one membership option for your fans.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <AddMembership text="Add" classes="edit_membership_step" />
-                            </div>
-                        </div> : ""}
-
-                        {/* bill_required */}
-                       {profile && profile.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${ profile && profile.bill_required == 1 ? "checked" : "" }`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Add Your Bills
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                       Add at least one billing option for your fans.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <AddBills text="Add Bill" classes="edit_bill_step" />
-                            </div>
-                        </div> : ""}
-
-                        {/* vat_setting */}
-                        {profile && profile.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${profile && profile.vat_setting == 1 ? "checked":""}`}
-                                >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        VAT settings
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add vat percentage.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <Link href="/account">Add VAT</Link>
-                            </div>
-                        </div> : ''}
-
-
-                        {/* vat_setting */}
-                        {profile && profile.is_2fa !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${profile && profile.is_2fa == 1 ? "checked":""}`}
-                                >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Enable 2FA
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Enable 2FA for your account security.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <TFA text={<>
-                                    <div className='text-center'>
-                                        Enable
-                                    </div>
-                                </>} />
-                            </div>
-                        </div> : ''}
-
-                        {profile && profile.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${profile && profile.shop == 1 ? "checked":""}`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-gray-900 font-bold">
-                                        Shop Items
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Add digital content to sell to your supporters.
-                                    </p>
-                                </div>
-                            </div>
-                            <div>
-                                <Link href="/shop">Add Digital Goods</Link>
-                            </div>
-                        </div> : ''}
-
-                        {/* content */}
-                        {/* {profile && profile.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px]   flex  items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pr-3">
-                                <div className={`check-icon mr-2 pt-1 ${profile && profile.contents == 1 ? "checked": ""}`} >
-                                   <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
-                                </div>
-                                <div>
-                                    <h2 className="text-dark font-bold">
-                                        Add wish bills and memberships
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Additional ways to sell your content.
-                                    </p>
-                                </div>
-                            </div>
-                        </div> : ""} */}
-                    </div>
-                </>
-            ) : (
-                ""
-            )}
+                {profile.shop !== 1 && (
+                    <StepRow
+                        done={profile.shop == 1}
+                        title="Shop Items"
+                        body="Add digital content to sell to your supporters."
+                    >
+                        <Link href="/shop" className={STEP_LINK}>Add Digital Goods</Link>
+                    </StepRow>
+                )}
+            </div>
         </>
     );
 }

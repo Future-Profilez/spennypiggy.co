@@ -78,10 +78,10 @@ export default function EmailPreference({ user, preferences }) {
                         Choose what you hear from us. Each type is separate — turning one off leaves the others on.
                     </p>
 
-                    <div className="bg-white rounded-[30px] border border-gray-200 p-6">
+                    <div className="bg-white rounded-box border border-gray-200 p-6">
                         <div className="space-y-4">
                             {CATEGORIES.map(({ key, title, description }) => (
-                                <div key={key} className="border rounded-lg p-4">
+                                <div key={key} className="border rounded-box-sm p-4">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
                                             <h3 className="font-semibold text-gray-900">{title}</h3>
@@ -99,7 +99,7 @@ export default function EmailPreference({ user, preferences }) {
                                 </div>
                             ))}
 
-                            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                            <div className="rounded-box-sm bg-gray-50 border border-gray-200 p-4">
                                 <h3 className="font-semibold text-gray-900">Security, legal & receipts</h3>
                                 <p className="text-sm text-gray-600">
                                     Always on. Password resets, payment receipts, payout notices and legal or
@@ -112,7 +112,7 @@ export default function EmailPreference({ user, preferences }) {
                                 <button
                                     onClick={onSubmit}
                                     disabled={saving}
-                                    className={`w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full py-2 px-4 border border-transparent rounded-box-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {saving ? 'Saving...' : 'Save Preferences'}
                                 </button>

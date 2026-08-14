@@ -1,0 +1,5 @@
+
+/update-help-centre	git diff + recent commits se scope infer karega
+/update-help-centre <module>	us feature tak scope
+/update-help-centre --check	audit only, kuchh edit nahi
+/update-help-centre --misses	unanswered searches ke liye articles likhega

@@ -128,7 +128,7 @@ export default function SecurityZone({ isCreator = true }) {
         );
 
     return (
-        <div className="space-y-8 p-2 smax-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="space-y-8 p-2 overflow-y-auto custom-scrollbar">
             <div>
                 <h2 className="text-xl font-gulfs mb-4 flex items-center gap-2 text-black">
                     <Shield className="text-[#FF007F]" /> ACTIVE SESSIONS
@@ -137,10 +137,10 @@ export default function SecurityZone({ isCreator = true }) {
                     {sessions.map((session) => (
                         <div
                             key={session.id}
-                            className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                            className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-box "
                         >
                             <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-pink-100 rounded-xl border border-black text-[#FF007F]">
+                                <div className="p-2.5 bg-pink-100 rounded-box-sm border border-black text-[#FF007F]">
                                     {session.device.is_mobile ? (
                                         <Smartphone
                                             size={24}
@@ -155,12 +155,12 @@ export default function SecurityZone({ isCreator = true }) {
                                         {session.device.browser} on{" "}
                                         {session.device.platform}
                                         {session.is_current_device && (
-                                            <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                            <span className="text-[12px] bg-green-500 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">
                                                 Active Now
                                             </span>
                                         )}
                                     </p>
-                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">
+                                    <p className="text-xs text-black/60 font-bold uppercase tracking-wide">
                                         {session.ip_address} •{" "}
                                         {session.last_active}
                                     </p>
@@ -169,7 +169,7 @@ export default function SecurityZone({ isCreator = true }) {
                             {!session.is_current_device && (
                                 <button
                                     onClick={() => revokeSession(session.id)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-200 transition-all"
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-box-sm border-2 border-transparent hover:border-red-200 transition-all"
                                     title="Revoke Session"
                                 >
                                     <LogOut size={20} strokeWidth={2.5} />
@@ -178,7 +178,7 @@ export default function SecurityZone({ isCreator = true }) {
                         </div>
                     ))}
                     {sessions.length === 0 && (
-                        <p className="text-gray-500 italic text-center p-4">
+                        <p className="text-black/60 italic text-center p-4">
                             No other active sessions found.
                         </p>
                     )}
@@ -194,17 +194,17 @@ export default function SecurityZone({ isCreator = true }) {
 
                         <div className="relative mb-6">
                             <div
-                                className={`flex items-center gap-3 p-4 bg-white border-2 border-black rounded-[20px] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${searchQuery.length >= 2 ? "ring-2 ring-pink-500" : ""}`}
+                                className={`flex items-center gap-3 p-4 bg-white border-2 border-black rounded-box transition-all ${searchQuery.length >= 2 ? "ring-2 ring-pink-500" : ""}`}
                             >
                                 <Search
                                     size={22}
-                                    className="text-gray-400"
+                                    className="text-black/60"
                                     strokeWidth={2.5}
                                 />
                                 <input
                                     type="text"
                                     placeholder="SEARCH USER TO BLOCK..."
-                                    className="flex-1 border-none focus:ring-0 p-0 text-sm font-black uppercase tracking-wider placeholder:text-gray-300 outline-none"
+                                    className="flex-1 border-none focus:ring-0 p-0 text-sm font-black uppercase tracking-wider placeholder:text-black/60 outline-none"
                                     value={searchQuery}
                                     onChange={handleSearch}
                                 />
@@ -213,18 +213,18 @@ export default function SecurityZone({ isCreator = true }) {
                                         onClick={clearSearch}
                                         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                                     >
-                                        <X size={18} className="text-gray-400" />
+                                        <X size={18} className="text-black/60" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Search Results Dropdown */}
                             {searchQuery.length >= 2 && (
-                                <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-[25px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                <div className="absolute z-20 w-full mt-3 bg-white border-2 border-black rounded-box overflow-hidden">
                                     {searching ? (
                                         <div className="p-8 text-center">
                                             <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-black border-t-transparent"></div>
-                                            <p className="text-xs font-bold uppercase text-gray-400 mt-2">
+                                            <p className="text-xs font-bold uppercase text-black/60 mt-2">
                                                 Searching...
                                             </p>
                                         </div>
@@ -240,7 +240,7 @@ export default function SecurityZone({ isCreator = true }) {
                                                             user.avatar_url ||
                                                             "/default-avatar.png"
                                                         }
-                                                        className="w-11 h-11 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                        className="w-11 h-11 rounded-box-sm border-2 border-black object-cover "
                                                         alt={user.name}
                                                         onError={(e) => {
                                                             e.target.src =
@@ -251,14 +251,14 @@ export default function SecurityZone({ isCreator = true }) {
                                                         <p className="font-black text-sm uppercase">
                                                             {user.name}
                                                         </p>
-                                                        <p className="text-xs text-gray-500 font-bold">
+                                                        <p className="text-xs text-black/60 font-bold">
                                                             @{user.username}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => blockUser(user.id)}
-                                                    className="bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-red-600 transition-all shadow-[3px_3px_0px_0px_rgba(255,142,37,1)] active:translate-y-0.5 active:shadow-none"
+                                                    className="border-2 border-black bg-black text-white px-5 py-2 rounded-box-sm text-xs font-black uppercase hover:bg-red-600 transition-all active:translate-y-0.5"
                                                 >
                                                     Block
                                                 </button>
@@ -267,13 +267,13 @@ export default function SecurityZone({ isCreator = true }) {
                                     ) : (
                                         <div className="p-8 text-center">
                                             <UserMinus
-                                                className="mx-auto text-gray-300 mb-2"
+                                                className="mx-auto text-black/60 mb-2"
                                                 size={32}
                                             />
-                                            <p className="text-gray-400 font-bold uppercase text-sm">
+                                            <p className="text-black/60 font-bold uppercase text-sm">
                                                 No users found
                                             </p>
-                                            <p className="text-gray-300 text-xs mt-1">
+                                            <p className="text-black/60 text-xs mt-1">
                                                 Try a different username
                                             </p>
                                         </div>
@@ -287,7 +287,7 @@ export default function SecurityZone({ isCreator = true }) {
                                 blockedUsers.map((block) => (
                                     <div
                                         key={block.id}
-                                        className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                        className="flex items-center justify-between p-4 bg-white border-2 border-black rounded-box "
                                     >
                                         <div className="flex items-center gap-4">
                                             <img
@@ -295,7 +295,7 @@ export default function SecurityZone({ isCreator = true }) {
                                                     block.avatar_url ||
                                                     "/default-avatar.png"
                                                 }
-                                                className="w-12 h-12 rounded-[15px] border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                                className="w-12 h-12 rounded-box-sm border-2 border-black object-cover "
                                                 alt={block.name}
                                                 onError={(e) => {
                                                     e.target.src =
@@ -306,7 +306,7 @@ export default function SecurityZone({ isCreator = true }) {
                                                 <p className="font-black text-gray-900 uppercase">
                                                     {block.name}
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-tight">
+                                                <p className="text-xs text-black/60 font-bold uppercase tracking-tight">
                                                     @{block.username} • BLOCKED{" "}
                                                     {block.blocked_at}
                                                 </p>
@@ -314,22 +314,22 @@ export default function SecurityZone({ isCreator = true }) {
                                         </div>
                                         <button
                                             onClick={() => unblockUser(block.id)}
-                                            className="bg-white border-2 border-black text-black px-5 py-2 rounded-xl text-xs font-black uppercase hover:bg-gray-100 transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
+                                            className="bg-white border-2 border-black text-black px-5 py-2 rounded-box-sm text-xs font-black uppercase hover:bg-gray-100 transition-all active:translate-y-0.5 "
                                         >
                                             Unblock
                                         </button>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px] ">
+                                <div className="text-center py-10 bg-gray-50 border-2 border-dashed border-gray-300 rounded-box ">
                                     <UserX
-                                        className="mx-auto text-gray-300 mb-2"
+                                        className="mx-auto text-black/60 mb-2"
                                         size={40}
                                     />
-                                    <p className="text-gray-400 font-bold uppercase text-sm">
+                                    <p className="text-black/60 font-bold uppercase text-sm">
                                         No blocked users yet
                                     </p>
-                                    <p className="text-gray-300 text-xs mt-1">
+                                    <p className="text-black/60 text-xs mt-1">
                                         Search and block users above
                                     </p>
                                 </div>

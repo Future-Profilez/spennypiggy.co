@@ -26,6 +26,7 @@ use App\Models\UserPayment;
 use App\Models\UserShopCategories;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
@@ -203,6 +204,7 @@ class ShopsController extends Controller
                 'name' => [
                     'required',
                     'string',
+                    new NoExpenseOrBrandName,
                 ],
                 'description' => [
                     'required',
@@ -490,7 +492,7 @@ class ShopsController extends Controller
         // the £4.99–£10,000 rule and left a £0 item on sale).
         $request->validate([
             'type' => ['required', 'string'],
-            'name' => ['required', 'string'],
+            'name' => ['required', 'string', new NoExpenseOrBrandName],
             'description' => ['required'],
             'price' => ['required', 'numeric'],
             'slot_limitation' => ['nullable', 'integer', 'min:0'],

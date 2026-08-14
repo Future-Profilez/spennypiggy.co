@@ -29,7 +29,20 @@ class ReleaseReserves extends Command
 
     protected $description = 'Release held reserves 30 days after each transaction date (per-transaction rolling window)';
 
-    private const RESERVE_RELEASE_WINDOW_DAYS = 30;
+    /**
+     * How long each reserve is held, counted from its OWN transaction date.
+     *
+     * ⚠️ NOT the same thing as ReservePolicy's onboarding window. That one
+     * decides how long a creator is on the new-creator RATE; this one decides
+     * how long each individual reserve is held. Two clocks, both around 30 days,
+     * and conflating them is exactly what made the help centre say "new creators
+     * are on 10% for their first 2 days" — which reads as the money being held
+     * for two days, and is wrong on both counts.
+     *
+     * Public so App\Support\HelpTokens can quote it rather than an article
+     * typing "30" by hand.
+     */
+    public const RESERVE_RELEASE_WINDOW_DAYS = 30;
 
     private const MINIMUM_PAYOUT_MINOR = 100; // £1.00 / $1.00 — accumulate below this
 

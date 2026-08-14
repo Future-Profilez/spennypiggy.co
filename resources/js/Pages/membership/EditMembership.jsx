@@ -14,8 +14,8 @@ import RewardEditor, {
 import RewardPreview from "@/Components/Reward/RewardPreview";
 
 const FIELD =
-    "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]";
-const FIELD_LABEL = "mb-2 block text-left text-[11px] font-black uppercase tracking-[0.14em]";
+    "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
+const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]";
 
 export default function EditMembership({ item }) {
     const { auth, global_currency } = usePage().props;
@@ -154,7 +154,7 @@ export default function EditMembership({ item }) {
                         />
 
                         {data.month_price > 0 && (
-                            <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#BAE6FD] p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#BAE6FD] p-4 ">
                                 <div className="mb-1 flex items-center justify-between">
                                     <span className="text-sm font-semibold text-neutral-700">
                                         Supporters pay

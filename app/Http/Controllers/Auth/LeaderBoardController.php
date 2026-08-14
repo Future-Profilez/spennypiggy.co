@@ -1768,10 +1768,19 @@ class LeaderBoardController extends Controller
         $data = [];
         for ($month = 1; $month <= 12; $month++) {
             $date = Carbon::create($currentYear, $month, 1);
+            /*
+             * ⚠️ EVERY key `$labelKey()` can return must be seeded here.
+             * `Piggy_Pots` was missing, so a creator with any Piggy Pot income
+             * 500'd this endpoint with "Undefined array key" — the whole monthly
+             * revenue chart on /earnings, dead, for exactly the creators who use
+             * the feature. It fails on the FIRST such transaction, so a creator
+             * whose only income is pots never saw the chart at all.
+             */
             $monthData = [
                 'Wishes' => 0,
                 'PaidTask' => 0,
                 'Piggy_Bank' => 0,
+                'Piggy_Pots' => 0,
                 'Memberships' => 0,
                 'Bills' => 0,
                 'Shops' => 0,
@@ -1792,7 +1801,9 @@ class LeaderBoardController extends Controller
                 $amt = $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
 
                 $key = $labelKey($row->source_type);
-                $monthData[$key] = round(((float) $monthData[$key]) + $amt, 2, PHP_ROUND_HALF_UP);
+                // Belt and braces: a label added to the match above but not to
+                // the seed must cost that source its bar, never the whole chart.
+                $monthData[$key] = round(((float) ($monthData[$key] ?? 0)) + $amt, 2, PHP_ROUND_HALF_UP);
             }
 
             $monthData['month'] = $date->format('F');

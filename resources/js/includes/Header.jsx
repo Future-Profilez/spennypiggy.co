@@ -16,9 +16,7 @@ import {
     HandCoinsIcon,
     ShieldCheckIcon,
     SearchIcon,
-    MenuIcon,
     ShoppingCartIcon,
-    XIcon,
     LogoutIcon,
     DashboardIcon,
     UserIcon,
@@ -26,7 +24,28 @@ import {
     HouseIcon,
     InfoIcon,
 } from "@animateicons/react/lucide";
-import { Calendar, Shield as ShieldIcon, PiggyBank, UserX } from "lucide-react";
+/**
+ * 🚨 THE HAMBURGER AND THE CLOSE ICON ARE STATIC `lucide-react`, NOT
+ * `@animateicons/react`. Do not "restore" the animated ones.
+ *
+ * Both animated versions render wrongly in the installed PWA, and for two
+ * separate reasons that share a cause — they animate SVG CHILDREN with
+ * framer-motion:
+ *
+ *   · `MenuIcon` transforms its three bars with `transformOrigin: "left center"`.
+ *     On an SVG child that keyword resolves against the nearest SVG VIEWPORT,
+ *     not the element's own box, unless `transform-box: fill-box` is set — and
+ *     WKWebView, which is what an installed PWA runs on iOS, resolves it
+ *     differently from Chrome. The bars land in the wrong place.
+ *   · `XIcon` animates `pathLength`, which framer-motion emulates with
+ *     `stroke-dasharray`/`stroke-dashoffset`. If the initial variant does not
+ *     land, the cross renders half-drawn or not at all.
+ *
+ * And the animation could never have paid for that: BOTH are triggered by
+ * `onMouseEnter`. There is no hover on a phone, so in the PWA the library was
+ * pure cost — the rendering fault with none of the effect.
+ */
+import { Calendar, Shield as ShieldIcon, PiggyBank, UserX, Menu as MenuIcon, X as XIcon } from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
 
@@ -48,8 +67,8 @@ export default function Header({ classMagicword }) {
                 url.startsWith(pathName));
         return `relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] pr-6 border-l-4 transition-all duration-200 ${
             isActive
-                ? "border-indigo-500 text-white bg-white/10"
-                : "border-transparent hover:border-indigo-500 text-white/90 hover:text-white"
+                ? "border-black bg-black/[0.06] text-black"
+                : "border-transparent hover:border-black text-black/90 hover:text-black"
         }`;
     };
 
@@ -160,7 +179,12 @@ export default function Header({ classMagicword }) {
                     onClick={handleNavClick}
                     href={href}
                     onMouseEnter={() => iconRef.current?.startAnimation?.()}
-                    className={`${getNavLinkClass(href)} rounded-xl border-[3px] border-transparent hover:border-black ${activeColor} hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                    /* `rounded-xl` in this config is 3rem (48px), not Tailwind's
+                       0.75rem — the drawer's rows were nearly pills while every
+ other control in the menu sat on the 20/30 tokens. The lift
+ stays: it is paired with a hard offset shadow, which is the
+ house press idiom rather than a hover-scale. */
+ className={`${getNavLinkClass(href)} rounded-box-sm border-[3px] border-transparent hover:border-black ${activeColor} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                     {...(isExternal
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
@@ -220,14 +244,17 @@ export default function Header({ classMagicword }) {
                                 className="menu-toggle cursor-pointer cartLink relative hidden md:block"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon size={48} color="#FFFFFF" />
+ <MenuIcon size={48} color="#000000" />
                             </div>
 
-                        <div className="spennylogo">
+ <div className="spennylogo md:ps-4 max-w-[150px] md:max-w-[180px]">
                             {/* The logo is a link home, so it is a tap target and
                                 the PWA floor applies — it measured 34px tall. The
                                 image is unchanged; only the hit area grows. */}
-                            <Link href={route("home")} className="inline-flex items-center min-h-[44px] [&>img]:max-w-[168px] md:[&>img]:max-w-[178px]">
+ {/* `!block inline-flex` set `display` twice — the
+ `!important` block won, so `items-center` never
+ applied. One display, and a real tap target. */}
+ <Link href={route("home")} className="inline-flex min-h-[44px] items-center">
                                 <img
                                     alt="Spenny Piggy - Exclusive Content, Memberships & Creator Support"
                                     height={60}
@@ -256,10 +283,20 @@ export default function Header({ classMagicword }) {
                                 <Link
                                     key={item.label}
                                     href={item.href}
-                                    className={`font-gulfs uppercase text-[16px] tracking-wider transition-colors ${
-                                        item.active
-                                            ? "text-[#E6EA7B]"
-                                            : "text-white hover:text-white"
+ /*
+ * 🚨 BLACK ON PINK — the bar is a solid #FF007F band, and
+ * black clears AA on it at 5.56:1 where white sits at 3.78:1.
+ * Every link is full-strength black (client direction,
+ * 14 Aug 2026), so the active page is marked by an UNDERLINE
+ * rather than by a contrast step — with all three at the same
+ * weight there is no colour difference left to carry it.
+ * ⚠️ The hover is brand yellow #E6EA7B, which measures 2.95:1
+ * on this pink and is under AA. It is a transient state on a
+ * link whose resting colour clears AA, and it is the client's
+ * own direction — do not extend it to a resting state.
+ */
+                                    className={`font-gulfs uppercase text-[18px] tracking-wider transition-colors text-black hover:text-[#E6EA7B] ${
+                                        item.active ? "underline underline-offset-8 decoration-2" : ""
                                     }`}
                                 >
                                     {item.label}
@@ -286,18 +323,24 @@ export default function Header({ classMagicword }) {
                                 ""
                             )}
 
+ {/* ⚠️ Desktop only (client direction, 12 Aug 2026).
+ On a phone the bar carries the logo, currency,
+ cart, Sign Up and the hamburger already, and
+ Discover is the first row inside the menu — so
+ this was a second way to the same place, taking
+ 44px from a bar that has none to spare. */}
                             <Link
                                 title="Discover"
                                 href={route("discover")}
-                                className="ms-2 md:ms-3 discover-icon"
+ className="ms-2 hidden md:ms-3 md:block discover-icon"
                             >
                                 {/* ⚠️ Ghost, not a solid fill. These were three
                                     saturated pink circles, which is three accents —
                                     and three accents is no accent. Sign Up is the
                                     only filled control on the bar, because it is the
                                     one thing the page is trying to cause. */}
-                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white/[0.12] border border-white/25 hover:bg-white/20 transition-colors">
-                                    <SearchIcon color="#ffffff" />
+ <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
+ <SearchIcon color="#000000" />
                                 </div>
                             </Link>
 
@@ -311,8 +354,8 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
-                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white/[0.12] border border-white/25 hover:bg-white/20 transition-colors">
-                                    <ShoppingCartIcon color="#ffffff" />
+ <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
+ <ShoppingCartIcon color="#000000" />
                                 </div>
                                 {count > 0 ? (
                                     <span className="site-counter block">
@@ -329,7 +372,7 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
-                                        className="uppercase text-lg font-gulfs rounded-full px-5 py-2 text-white border border-white/30 hover:border-white/55 hover:bg-white/[0.08] transition-colors"
+ className="uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black border border-black/30 hover:border-black/55 hover:bg-black/[0.08] transition-colors"
                                     >
                                         Login
                                     </Link>
@@ -348,10 +391,10 @@ export default function Header({ classMagicword }) {
                                 </div>
                             )}
                             <div
-                                className="block ps-2 mt-[10px] me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
+                                className="block ps-2  me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
-                                <MenuIcon size={48} color="#FFFFFF" />
+                                <MenuIcon size={48} color="#000000" />
                             </div>
                         </div>
                     </div>
@@ -361,7 +404,7 @@ export default function Header({ classMagicword }) {
                 header pads by, or in an installed iOS app the first content sits
                 under the bar by exactly the height of the status bar. */}
             <div
-                className="h-[75px] sm:h-[75px] md:h-[80px] lg:h-[82px] xl:h-[92px]"
+                className="h-[67px] sm:h-[67px] md:h-[80px] lg:h-[80px] xl:h-[80px]"
                 style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
             ></div>
 
@@ -382,10 +425,21 @@ export default function Header({ classMagicword }) {
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
                     flex flex-col p-8 select-none ${isActive ? "Open" : null}`}
             >
-                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[350px] h-full">
+                {/* ⚠️ `max-h-dvh`, not `max-h-screen` — a phone's `100vh` is taller
+                    than the visible viewport, so the drawer's scroll container was
+                    sized past the bottom of the screen in the installed PWA. */}
+                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-dvh overflow-auto w-full sm:max-w-[350px] h-full">
                     <button
                         onClick={toggleClass}
-                        className="absolute h-[45px] top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-lg p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20"
+                        aria-label="Close menu"
+                        /* ⚠️ The drawer is `fixed top-0` and the app declares
+                           `apple-mobile-web-app-status-bar-style: black-translucent`,
+                           so y=0 is UNDER the iOS status bar — a bare `top-4` put this
+                           button on top of the clock and the battery. The header pads
+                           for the same inset; this panel is a separate fixed layer and
+                           has to do it for itself. */
+                        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+                        className="absolute h-[45px] min-w-[45px] right-4 md:right-4 bg-white border-[3px] border-black rounded-box-sm p-1 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all z-20"
                     >
                         <XIcon color="#000" size={32} />
                     </button>
@@ -394,7 +448,13 @@ export default function Header({ classMagicword }) {
                         onTouchStart={handleMenuTouchStart}
                         onTouchMove={handleMenuTouchMove}
                     >
-                        <div className="pb-[110px] pt-[60px] px-2">
+                        {/* Tracks the close button, which is offset by the same
+                            inset — without it the profile row slides under the
+                            status bar on a notched phone. */}
+                        <div
+                            className="pb-[110px] px-2"
+                            style={{ paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' }}
+                        >
                             {auth?.user && (
                                 <Link
                                     href={route("user.show", {
@@ -411,10 +471,13 @@ export default function Header({ classMagicword }) {
                                         }
                                         toggleClass();
                                     }}
-                                    className="flex items-center gap-4 p-4 mb-6 hover:translate-x-[-2px] hover:translate-y-[-2px]  transition-all group"
+                                    /* No offset-shadow partner on this row, so the bare
+                                       hover lift is the banned "grow on hover" gimmick
+                                       by another name. A light surface shifts instead. */
+                                    className="flex items-center gap-4 p-4 mb-6 rounded-box-sm transition-colors duration-200 hover:bg-black/[0.04] group"
                                 >
                                     <div className="relative">
-                                        <div className="w-17 h-17 rounded-[15px] border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
+                                        <div className="w-17 h-17 rounded-box-sm border-[3px] border-black overflow-hidden bg-pink-100 ">
                                             <img
                                                 src={auth.user.avatar_url}
                                                 alt={auth.user.name}
@@ -427,18 +490,18 @@ export default function Header({ classMagicword }) {
                                         <span className="font-black text-black text-base uppercase tracking-tight truncate leading-tight">
                                             {auth.user.name}
                                         </span>
-                                        <span className="text-gray-500 text-xs font-bold uppercase tracking-widest truncate">
+                                        <span className="text-black/60 text-xs font-bold uppercase tracking-widest truncate">
                                             @{auth.user.username}
                                         </span>
                                         <div className="mt-1 inline-flex items-center gap-1">
-                                            <span className="text-[10px] font-black bg-[#FF007F] text-white px-1.5 py-0.5 rounded border border-black uppercase">
+                                            <span className="text-[12px] font-black bg-[#FF007F] text-black px-2 py-0.5 rounded-full border border-black uppercase leading-[1.4]">
                                                 {auth.user.role == 1
                                                     ? "Creator"
                                                     : "User"}
                                             </span>
                                             {auth.user.role == 1 &&
                                                 auth.user.default_currency && (
-                                                    <span className="text-[10px] font-black bg-yellow-300 text-black px-1.5 py-0.5 rounded border border-black uppercase">
+                                                    <span className="text-[12px] font-black bg-yellow-300 text-black px-2 py-0.5 rounded-full border border-black uppercase leading-[1.4]">
                                                         {
                                                             auth.user
                                                                 .default_currency

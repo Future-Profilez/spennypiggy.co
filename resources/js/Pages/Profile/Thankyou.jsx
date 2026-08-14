@@ -236,8 +236,8 @@ export default function Thankyou(props) {
 
 
         {ask_question && type === 'shop' && (
-          <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-xl shadow-sm">
-            <h4 className="text-[#FF007F] font-black text-[11px] uppercase tracking-wider mb-2">
+ <div className="mt-4 p-4 bg-white border-2 border-pink-200 rounded-box-sm ">
+ <h4 className="text-[#FF007F] font-black text-[12px] uppercase tracking-wider mb-2">
                Question from Creator
             </h4>
             <p className="text-sm font-semibold mb-3">{ask_question}</p>
@@ -248,19 +248,19 @@ export default function Thankyou(props) {
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-pink-500 focus:border-[#FF007F]"
+ className="w-full border border-gray-300 rounded-box-sm p-2 text-sm focus:ring-pink-500 focus:border-[#FF007F]"
                   rows="3"
                 ></textarea>
                 <button
                   onClick={sendReply}
                   disabled={posting || !reply.trim()}
-                  className="bg-[#FF007F] text-white font-bold py-2 px-4 rounded-lg hover:bg-pink-600 disabled:opacity-50 text-sm w-fit"
+ className="bg-[#FF007F] text-black font-bold py-2 px-4 rounded-box-sm hover:brightness-110 disabled:opacity-50 text-sm w-fit"
                 >
                   {posting ? "Submitting..." : "Submit Answer"}
                 </button>
               </div>
             ) : (
-              <div className="bg-green-50 text-green-700 p-3 rounded-lg text-sm font-semibold flex items-center gap-2">
+ <div className="bg-green-50 text-green-700 p-3 rounded-box-sm text-sm font-semibold flex items-center gap-2">
                 <FaCheckCircle /> Your answer has been submitted.
               </div>
             )}
@@ -322,17 +322,17 @@ export default function Thankyou(props) {
                         <div className="!p-0 !mt-0 avatar-container" >
                                 <LazyLoadImage
                                 src={owner?.avatar_url || userphoto}
-                                alt="image-avatar" className="img-fluid rounded-full w-full h-full object-cover border-[3px] border-black relative z-10"  effect="blur"
+                                alt="image-avatar" className="max-w-full rounded-full w-full h-full object-cover border-[3px] border-black relative z-10"  effect="blur"
                                 height={80}
                                 width={80} />
                         </div>
-                        <p className="text-green-600 text-gray-700 font-bold text-xl">
+                        <p className="text-green-600 font-bold text-xl">
                             Thank you from Spenny Piggy on behalf of <span className="text-green-700 font-black">{owner?.name}</span>.
                         </p>
 
 
                         {(item_name || amount || benefitsText) && (
-                        <div className="details-box !rounded-[30px] ">
+                        <div className="details-box !rounded-box ">
                             <h3><FaCheckCircle className="text-green-500" /> Purchase Details</h3>
                             
                             {item_name && (
@@ -370,7 +370,7 @@ export default function Thankyou(props) {
 
                 <div className="w-full max-w-[550px] mt-6">
                   {auth?.user ? (
-                    <div className="bg-white border-[3px] border-black rounded-[22px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-4">
+                    <div className="bg-white border-[3px] border-black rounded-box-sm p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="text-[12px] uppercase tracking-wider font-black text-black">
@@ -395,7 +395,7 @@ export default function Thankyou(props) {
                         </button>
                       </div>
 
-                      <div className="mt-2 text-[11px] font-bold text-gray-600">
+                      <div className="mt-2 text-[12px] font-bold text-gray-600">
                         {marketingSaving ? "Saving..." : marketingEmailsEnabled ? "Enabled" : "Disabled"}
                         <span className="mx-2">•</span>
                         <a href="/email-preferences" className="text-[#FF007F] hover:underline">
@@ -404,7 +404,7 @@ export default function Thankyou(props) {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-white border-[3px] border-black rounded-[22px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-4 text-center">
+                    <div className="bg-white border-[3px] border-black rounded-box-sm p-4 text-center">
                       <div className="text-[12px] uppercase tracking-wider font-black text-black">
                         Marketing emails (optional)
                       </div>
@@ -414,13 +414,13 @@ export default function Thankyou(props) {
                       <div className="mt-3 flex flex-col sm:flex-row gap-3 justify-center">
                         <Link
                           href={route("login")}
-                          className="px-6 py-2 border-[3px] border-black rounded-xl font-black bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm uppercase"
+                          className="px-6 py-2 border-[3px] border-black rounded-box-sm font-black bg-white text-black hover:bg-gray-100 transition-colors text-sm uppercase"
                         >
                           Log in
                         </Link>
                         <Link
                           href={route("register")}
-                          className="px-6 py-2 border-[3px] border-black rounded-xl font-black bg-[#FF007F] text-white hover:bg-pink-600 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm uppercase"
+                          className="px-6 py-2 border-[3px] border-black rounded-box-sm font-black bg-[#FF007F] text-black hover:brightness-110 transition-colors text-sm uppercase"
                         >
                           Create account
                         </Link>
@@ -461,15 +461,15 @@ export default function Thankyou(props) {
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             {auth?.user ? (
                                 <>
-                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=contact&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-black hover:bg-gray-100 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=contact&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-box-sm font-bold bg-white text-black hover:bg-gray-100 transition-colors text-sm">
                                         Contact Creator
                                     </Link>
-                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=refund&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-xl font-bold bg-white text-[#FF007F] hover:bg-pink-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-sm">
+                                    <Link href={`/history?support_open=1&creator_username=${owner?.username}&support_type=refund&event_type=${type}${source && source_id ? `&source=${encodeURIComponent(source)}&source_id=${encodeURIComponent(source_id)}` : ''}`} className="px-6 py-2 border-2 border-black rounded-box-sm font-bold bg-white text-[#FF007F] hover:bg-pink-50 transition-colors text-sm">
                                         Request Refund
                                     </Link>
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-600 bg-white p-3 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                <p className="text-sm text-gray-600 bg-white p-3 border-2 border-black rounded-box-sm ">
                                     Please check your email receipt for options to contact the creator or request a refund.
                                 </p>
                             )}

@@ -401,7 +401,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess, type
                             : `Your purchase: ${item?.shop?.name || "an item"}`}
                     </h2>
                     <span
-                        className={`px-3 py-1 rounded-box-sm border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${item?.shop?.type === "physical" ? "bg-blue-300" : "bg-green-300"}`}
+                        className={`px-3 py-1 rounded-box-sm border-2 border-black text-[12px] font-black uppercase ${item?.shop?.type === "physical" ? "bg-blue-300" : "bg-green-300"}`}
                     >
                         {item?.shop?.type === "physical"
                             ? "Physical"
@@ -447,7 +447,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess, type
                             </span>
                         )}
                         {isCreator && item.status !== "delivered" && (
-                            <p className="text-[10px] text-gray-500 mt-3">
+                            <p className="text-[12px] text-gray-500 mt-3">
                                 Funds will be added to your payout once marked
                                 as delivered.
                             </p>
@@ -538,7 +538,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess, type
                                     disabled={
                                         answerLoading || !answerText.trim()
                                     }
-                                    className="bg-black text-white px-4 py-3 min-h-[44px] rounded-full text-sm font-medium hover:bg-gray-800 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 transition-all disabled:opacity-50"
+                                    className="bg-black text-white px-4 py-3 min-h-[44px] rounded-full text-sm font-medium hover:bg-gray-800 active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 transition-all disabled:opacity-50"
                                 >
                                     {answerLoading
                                         ? "Submitting..."
@@ -645,7 +645,7 @@ export default function OrderDetail({ classes, text, item, date, onSuccess, type
                                         placeholder="Add a note or update about the order..."
                                         rows="3"
                                     />
-                                    <p className="text-[10px] text-gray-500">
+                                    <p className="text-[12px] text-gray-500">
                                         This note will be saved with the order
                                         details.
                                     </p>

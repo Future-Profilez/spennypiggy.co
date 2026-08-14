@@ -18,7 +18,7 @@ function CreatorCard({ auth, item }) {
         <Link
             href={route('user.show', item.username)}
             onClick={() => trackSearchClick(item.id, item.username)}
-            className="group block overflow-hidden rounded-[30px] border border-white/10 bg-[#16161C] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 hover:shadow-[0_18px_44px_-14px_rgba(255,0,127,0.4)]"
+            className="group block overflow-hidden rounded-box border border-white/10 bg-[#16161C] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 "
         >
             {/* cover banner — fully visible, shorter */}
             <div className="relative aspect-[21/9] overflow-hidden bg-[#0E0E12]">
@@ -27,10 +27,10 @@ function CreatorCard({ auth, item }) {
                     alt={item.name}
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-[filter,opacity] duration-500 group-hover:brightness-[1.08]"
                 />
                 {item.clicks_24h > 0 && (
-                    <div className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                    <div className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[12px] font-semibold text-white backdrop-blur">
                         <RiFireLine size={12} className="text-[#FF007F]" /> {item.clicks_24h}
                     </div>
                 )}
@@ -40,7 +40,7 @@ function CreatorCard({ auth, item }) {
 
             {/* footer — avatar overlaps the cover */}
             <div className="p-3 relative flex items-center ">
-                <div className="mt-[0px] overflow-hidden rounded-[20px] max-w-[70px] border-[1px] border-pink-500  shadow-[0_6px_6px_-6px_rgba(0,0,0,0.8)]">
+                <div className="mt-[0px] overflow-hidden rounded-box-sm max-w-[70px] border-[1px] border-pink-500 ">
                     <Avatar
                     auth={auth}
                     user={item}
@@ -57,7 +57,7 @@ function CreatorCard({ auth, item }) {
                         <span className="truncate">{item.name}</span>
                         <VerifiedBadge user={item} size="sm" />
                     </h3>
-                    <p className="truncate text-sm font-medium text-white/50">@{item.username}</p>
+                    <p className="truncate text-sm font-medium text-white/60">@{item.username}</p>
                 </div>
             </div>
         </Link>

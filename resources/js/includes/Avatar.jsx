@@ -9,7 +9,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
   return (
     <>
       <style>{`
-      .avatar { 
+      .avatar {
         border: 1px solid #fff;
         width: 60px;
         height: 60px;
@@ -68,11 +68,11 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className={`avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ${imgclass}`}>
+ <div className={`avatar !border-2 !border-white !overflow-visible relative rounded-box-sm ${imgclass}`}>
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 !rounded-[17px]" 
+ className="max-w-full h-auto bg-gray-200 !rounded-box-sm" 
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -94,16 +94,16 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                   tick. The tier now comes from the server, where 2 is the only
                   value that means approved. */}
               {is_founder ? (
-                <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+ <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
               ) : (
                 <VerifiedBadge
                   user={{ role, profile_status_lock, verified_badge }}
                   size="lg"
-                  className="absolute top-[-5px] right-[-5px] bg-white !shadow-xl rounded-full p-[1px]"
+ className="absolute top-[-5px] right-[-5px] bg-white rounded-full p-[1px]"
                 />
               )}
             </div>
-            {hidename ? "" : 
+            {hidename ? "" :
             <>
               <div className="avatar-content">
                   <h2 className={` flex items-center gap-1 capitalize ${namecolor || ''}`}>
@@ -111,7 +111,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
                       {name}
                     </span>
                   </h2>
-                  <p className="text-gray-500">
+ <p className="text-black/60">
                     {subhead || username}
                   </p>
               </div>
@@ -126,7 +126,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid"
+ className="max-w-full h-auto"
                 loading="lazy"
                 decoding="async"
                 style={{

@@ -278,7 +278,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                             datatoMap?.map((c, i) => {
                                 return (
                                     <div
-                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-[30px]  
+                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 rounded-box 
                                         mb-3 md:mb-4 md:ml-5 p-3 md:p-4`}
                                     >
                                         <div className="prodcartbox items-center">
@@ -407,9 +407,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     fee || "",
                                     datas?.user && datas?.user?.default_currency
                                 )}
-                                <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
+                                <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[12px] rounded-full ml-1.5 inline-block">
                                     ?
-                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]   top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                    <p className="absolute bg-[#505050] p-[10px] rounded-box   top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                         <strong className="text-white font-normal">
                                             Card Payments:
                                         </strong>{" "}
@@ -468,7 +468,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="mb-3">
                                         <p className='mb-1'>Name</p>
                                         <input required disabled={auth && auth.user?.name ? true : false}
-                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            className="border-gray-300 border rounded-box   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box  "
                                             defaultValue={auth && auth.user?.name}
                                             // onChange={(e) => setName(e.target.value)}
                                             type="text" placeholder="Enter name.. " />
@@ -476,7 +476,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="form-field mb-3 ">
                                         <p className='mb-1'>Email</p>
                                         <input required  disabled={auth && auth.user?.email ? true : false}
-                                            className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  "
+                                            className="border-gray-300 border rounded-box   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box  "
                                             defaultValue={auth && auth.user?.email}
                                             // onChange={(e) => setEmail(e.target.value)}
                                             type="email" placeholder="Enter email.. " />
@@ -500,7 +500,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select required className="border-gray-300 border rounded-[30px]   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-[30px]  " name="country"
+                                        <select required className="border-gray-300 border rounded-box   px-4 py-2 w-full focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 rounded-box  " name="country"
                                         onChange={handleChange}
                                         >
                                             <option value={''} >Choose Country</option>
@@ -509,14 +509,14 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     </div>
                                     <div className="form-field mb-3 ">
                                         <input required
-                                            className="form-input w-100 rounded"
+                                            className="form-input w-full rounded"
                                             onChange={handleChange}
                                             name="street_address"
                                             type="text" placeholder="Address" />
                                     </div>
                                     <div className="form-field mb-3 ">
                                         <input required
-                                            className="form-input w-100 rounded"
+                                            className="form-input w-full rounded"
                                             onChange={handleChange}
                                             name="city"
                                             type="text" placeholder="City" />
@@ -524,14 +524,14 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className='grid grid-cols-2 gap-3' >
                                         <div className="form-field mb-3 ">
                                             <input required
-                                            className="form-input w-100 rounded"
+                                            className="form-input w-full rounded"
                                             onChange={handleChange}
                                              name="state"
                                             type="text" placeholder="State" />
                                         </div>
                                         <div className="form-field mb-3 ">
                                             <input required
-                                            className="form-input w-100 rounded"
+                                            className="form-input w-full rounded"
                                             onChange={handleChange}
                                             name="postal_code"
                                             type="number" placeholder="Postal Code" />

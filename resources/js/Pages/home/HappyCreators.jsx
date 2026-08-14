@@ -92,9 +92,14 @@ export default function HappyCreators() {
                             {msg &&
                                 msg.map((m, i) => (
                                     <SwiperSlide key={`swiper-item-${i}`}>
+                                        {/* ⚠️ `bg-gray-900` is the banned cool gray — #111827
+                                            carries a blue cast against this page's true
+                                            black, and every other card here is #0d0a16.
+                                            The bare hover lift is gone too: no offset-shadow
+                                            partner, so it was a scale-gimmick by another
+                                            name. A card signals hover with its own surface. */}
                                         <div
-                                           
-                                          className="fading min-h-[245px] rounded-box bg-gray-900 border-2 border-gray-800 p-6 md:p-8 hover:translate-y-[-5px] transition-transform duration-300"
+                                          className="fading h-full min-h-[245px] rounded-box bg-[#0d0a16] border-2 border-white/10 p-6 md:p-8 transition-colors duration-200 hover:bg-[#17102a]"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">

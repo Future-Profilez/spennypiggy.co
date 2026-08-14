@@ -158,9 +158,9 @@ export function validateReward(value, { showPerks, recurring = false } = {}) {
     return null;
 }
 
-const LABEL = "block text-left text-[11px] font-black uppercase tracking-[0.14em] text-black";
+const LABEL = "block text-left text-[12px] font-black uppercase tracking-[0.14em] text-black";
 const INPUT =
-    "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium text-black placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]";
+ "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium text-black placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
 
 /**
  * The one reward editor every add-item form uses.
@@ -259,7 +259,7 @@ export default function RewardEditor({
                         What do they get? <span className="text-[#FF007F]">*</span>
                     </label>
                     <span
-                        className={`text-[11px] font-bold ${titleLeft < 0 ? "text-[#FF007F]" : "text-neutral-400"}`}
+ className={`text-[12px] font-bold ${titleLeft < 0 ? "text-[#FF007F]" : "text-neutral-400"}`}
                     >
                         {titleLeft}
                     </span>
@@ -297,8 +297,8 @@ export default function RewardEditor({
                                 aria-pressed={active}
                                 className={`min-h-[48px] rounded-box-sm border-[3px] border-black px-3 py-2 text-sm font-black uppercase tracking-wide transition-all ${
                                     active
-                                        ? "translate-x-[2px] translate-y-[2px] bg-[#FF007F] text-white shadow-none"
-                                        : "bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+ ? "translate-x-[2px] translate-y-[2px] bg-[#FF007F] text-black "
+ : "bg-white text-black "
                                 }`}
                             >
                                 {type.label}
@@ -319,7 +319,7 @@ export default function RewardEditor({
                             <button
                                 type="button"
                                 onClick={clearFile}
-                                className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-[3px] border-black bg-white px-4 text-xs font-black uppercase tracking-wide shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+ className="inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-[3px] border-black bg-white px-4 text-xs font-black uppercase tracking-wide "
                             >
                                 <Trash2 size={15} strokeWidth={2.5} /> Replace file
                             </button>
@@ -405,8 +405,8 @@ export default function RewardEditor({
                                         aria-pressed={active}
                                         className={`inline-flex min-h-[44px] items-center gap-2 rounded-box-sm border-[3px] border-black px-4 text-xs font-black uppercase tracking-wide transition-all ${
                                             active
-                                                ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] shadow-none"
-                                                : "bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+ ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] "
+ : "bg-white "
                                         }`}
                                     >
                                         {active && <Check size={14} strokeWidth={3} />}

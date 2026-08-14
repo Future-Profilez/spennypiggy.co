@@ -92,7 +92,7 @@ export default function ReactionsAndReply({
             <button  
               key={e} onClick={() => react(e)}
               disabled={sending} title="React"  
-              className={`px-2 py-1 rounded-[10px] border text-[26px] transition-colors ${reacted.has(e) ? 'bg-pink-100 border-[#FF007F]' : 'bg-white border-black/10 hover:bg-gray-100'}`} >
+              className={`px-2 py-1 rounded-box-sm border text-[26px] transition-colors ${reacted.has(e) ? 'bg-pink-100 border-[#FF007F]' : 'bg-white border-black/10 hover:bg-gray-100'}`} >
               {e} {counts?.[e] ? <span className="text-black text-xs font-black"> {counts[e]}</span> : null}
             </button>
           ) : (
@@ -115,22 +115,22 @@ export default function ReactionsAndReply({
                   if (error) setError('');
                 }}
                 placeholder={ev.type === 'thankyou' ? "Say thanks back…" : "Send a quick thank‑you…"}
-                className={`flex-1 bg-gray-200  border ${isOverLimit ? 'border-red-500' : 'border-white/10'} rounded-[20px] p-4 text-black placeholder-gray-500 resize-none 
-                   w-full outline-none focus:border-white/20 transition-colors border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}
+                className={`flex-1 bg-gray-200 border ${isOverLimit ? 'border-red-500' : 'border-white/10'} rounded-box p-4 text-black placeholder-gray-500 resize-none 
+ w-full outline-none focus:border-white/20 transition-colors border-[3px] border-black `}
               />
               <button
                 onClick={submitReply}
                 disabled={sending || !reply.trim() || isOverLimit}
                 className="px-3 py-2 h-10  absolute bottom-[20px] right-[15px]
-                rounded-[15px] bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 text-white text-[11px] uppercase tracking-widest self-end transition-colors"
+                rounded-box-sm bg-pink-600 hover:bg-pink-700 disabled:bg-gray-600 text-white text-[12px] uppercase tracking-widest self-end transition-colors"
               > Reply </button>
             </div>
           </div>
           <div className="flex justify-start mt-1 px-2">
-            <div className="text-[10px] uppercase tracking-widest text-red-500">
+            <div className="text-[12px] uppercase tracking-widest text-red-500">
               {error || (isOverLimit ? (charCount > 250 ? 'Character limit exceeded' : 'Word limit exceeded') : '')}
             </div>
-            <div className={`text-[10px] uppercase tracking-widest ${isOverLimit ? 'text-red-500' : 'text-gray-600'}`}>
+            <div className={`text-[12px] uppercase tracking-widest ${isOverLimit ? 'text-red-500' : 'text-gray-600'}`}>
               {charCount}/250 chars • {wordCount}/90 words
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function ReactionsAndReply({
                 <p className="text-black/80 text-sm">
                   <span className="text-black/60 font-black">@{r.username}</span> {r.message}
                 </p>
-                <p className="text-black/30 text-[10px] uppercase tracking-widest">
+                <p className="text-black/60 text-[12px] uppercase tracking-widest">
                   {r.created_at}
                 </p>
               </div>

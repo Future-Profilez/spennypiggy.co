@@ -127,7 +127,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                         <div className="mb-6">
                             <button
                                 onClick={handleBack}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-box border-2 border-black hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                             >
                                 <ArrowLeft size={16} />
                                 Back to Task Lists
@@ -138,7 +138,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                             <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider">
                                 {titleText}
                             </h2>
-                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-left">
+                            <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-box-sm text-left">
                                 <p className="text-black font-bold text-lg tracking-wide">
                                     Paid Tasks are for things you’re happy to do. You define the task, price, and delivery. No custom requests outside your description. PG-13 only.
                                 </p>
@@ -147,7 +147,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                         {/* Rejection Notice Banner */}
                         {isRejected && (
-                            <div className="mb-8 p-6 bg-red-50 border-2 border-red-500 rounded-[30px]  shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
+                            <div className="mb-8 p-6 bg-red-50 border-2 border-red-500 rounded-box ">
                                 <div className="flex items-start gap-4">
                                     <div className="flex-1">
                                         <h3 className="text-lg font-black text-red-800 mb-1 flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             Your task was rejected by the admin. Please review the feedback, make necessary changes, and resubmit for review.
                                         </p>
                                         {task.reason && (
-                                            <div className="p-4 bg-red-100 border-2 border-red-200 rounded-[20px]">
+                                            <div className="p-4 bg-red-100 border-2 border-red-200 rounded-box-sm">
                                                 <p className="text-red-800 font-bold text-sm mb-1 uppercase tracking-wider">Feedback:</p>
                                                 <p className="text-red-700 font-medium whitespace-pre-wrap">{task.reason}</p>
                                             </div>
@@ -168,7 +168,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                         )}
 
                         {showSummary ? (
-                            <div className="bg-white border-2 border-black rounded-[30px]  p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border-2 border-black rounded-box p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="text-green-600" /> Confirm Task Changes
                                 </h3>
@@ -198,7 +198,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     )}
                                 </div>
 
-                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-[20px] mb-8">
+                                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-box-sm mb-8">
                                     <div className="flex gap-3">
                                         <Info className="text-blue-600 shrink-0" />
                                         <p className="text-sm font-bold text-blue-900">
@@ -212,14 +212,14 @@ export default function Edit({ auth, currencySymbol, task }) {
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <button 
                                         onClick={() => setShowSummary(false)}
-                                        className="flex-1 px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase hover:bg-gray-50 transition-all"
+                                        className="flex-1 px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:bg-gray-50 transition-all"
                                     >
                                         Back to Edit
                                     </button>
                                     <button 
                                         onClick={submit}
                                         disabled={processing}
-                                        className="flex-[2] bg-[#FF007F] text-white px-6 py-4 border-2 border-black rounded-[20px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
+                                        className="flex-[2] bg-[#FF007F] text-black px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Updating..." : "Save Changes & Resubmit"}
                                     </button>
@@ -234,14 +234,14 @@ export default function Edit({ auth, currencySymbol, task }) {
                                         <input
                                             type="text"
                                             maxLength={100}
-                                            className="w-full border-2 border-black rounded-[20px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400 font-bold"
+                                            className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-black/60 font-bold"
                                             value={data.title}
                                             onChange={(e) => setData("title", e.target.value)}
                                             placeholder="Keep the title clear and specific."
                                         />
                                         <div className="flex justify-between mt-2">
                                             <p className="text-xs font-bold text-gray-500">This is what supporters will see before purchasing.</p>
-                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-gray-400'}`}>
+                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-black/60'}`}>
                                                 {data.title.length}/100
                                             </p>
                                         </div>
@@ -252,7 +252,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <div>
                                         <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description</label>
                                         <textarea
-                                            className="w-full border-2 border-black rounded-[20px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
+                                            className="w-full border-2 border-black rounded-box-sm p-4 text-lg font-medium focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-black/60"
                                             rows="4"
                                             value={data.description}
                                             onChange={(e) => setData("description", e.target.value)}
@@ -264,12 +264,20 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {/* Price */}
                                         <div>
-                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500 flex items-center gap-2">
+                                            <label className="flex items-center gap-2 font-black text-sm mb-2 uppercase tracking-wide text-black/60">
                                                 Price ({currencySymbol})
+                                                {/* Hover alone hid a real payout warning from every
+                                                    phone. tabIndex + focus-within makes it tap-reachable;
+                                                    p-2/-m-2 gives a 44px hit area without moving the label. */}
                                                 {data.type === 'timed' && (
-                                                    <div className="group relative">
-                                                        <Info size={14} className="text-blue-500 cursor-help" />
-                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                    <div
+                                                        className="group relative p-2 -m-2 cursor-help"
+                                                        tabIndex={0}
+                                                        role="button"
+                                                        aria-label="Payout timing for high-value tasks"
+                                                    >
+                                                        <Info size={14} className="text-blue-500" />
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[12px] rounded-box-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
                                                             High-value tasks may delay payout until delivery is confirmed.
                                                         </div>
                                                     </div>
@@ -280,13 +288,13 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    className="w-full border-2 border-black rounded-[20px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                    className="w-full border-2 border-black rounded-box-sm p-[18px] pl-10 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                     value={data.price}
                                                     onChange={(e) => setData("price", e.target.value)}
                                                 />
                                             </div>
                                             {data.price > 0 && (
-                                                <div className="mt-4 p-4 bg-gray-50 rounded-[20px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <div className="mt-4 p-4 bg-gray-50 rounded-box-sm border-2 border-black ">
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
                                                         <span className="font-black text-xl text-black">
@@ -310,7 +318,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                         <div>
                                             <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Category</label>
                                             <select
-                                                className="w-full border-2 border-black rounded-[20px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
+                                                className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
                                                 value={data.category}
                                                 onChange={(e) => setData("category", e.target.value)}
                                             >
@@ -338,7 +346,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                                 : current.reward,
                                                     }))
                                                 }
-                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "timed" ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
+                                                className={`p-6 rounded-box border-2 border-black text-left transition-all ${data.type === "timed" ? "bg-blue-500 text-white translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Clock size={20} /> Timed / Manual</div>
                                                 <div className={`text-sm font-bold ${data.type === "timed" ? "text-blue-100" : "text-gray-500"}`}>Best for custom shoutouts. Funds are held until delivery.</div>
@@ -347,7 +355,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             <button
                                                 type="button"
                                                 onClick={() => setData("type", "instant")}
-                                                className={`p-6 rounded-[25px] border-2 border-black text-left transition-all ${data.type === "instant" ? "bg-[#FF007F] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
+                                                className={`p-6 rounded-box border-2 border-black text-left transition-all ${data.type === "instant" ? "bg-[#FF007F] text-black translate-x-[-2px] translate-y-[-2px]" : "bg-white hover:bg-gray-50"}`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2"><Zap size={20} /> Instant Delivery</div>
                                                 <div className={`text-sm font-bold ${data.type === "instant" ? "text-pink-100" : "text-gray-500"}`}>Content is delivered immediately. Best for files or links.</div>
@@ -365,7 +373,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                         key={tf.value}
                                                         type="button"
                                                         onClick={() => setData("sla_hours", tf.value)}
-                                                        className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${data.sla_hours == tf.value ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" : "bg-white hover:bg-blue-50"}`}
+                                                        className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${data.sla_hours == tf.value ? "bg-blue-500 text-white -translate-y-1" : "bg-white hover:bg-blue-50"}`}
                                                     >
                                                         {tf.label}
                                                     </button>
@@ -376,7 +384,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     )}
 
                                     {/* What the buyer receives — one editor for every module. */}
-                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 ">
                                         <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
                                             <FileUp className="text-[#FF007F]" /> What the buyer receives
                                         </p>
@@ -404,7 +412,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     </div>
 
                                     {/* Terms */}
-                                    <div className="p-6 bg-red-50 border-2 border-black rounded-[25px] !mt-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="p-6 bg-red-50 border-2 border-black rounded-box !mt-12 ">
                                         <div className="flex items-start">
                                             <input id="terms-checkbox" type="checkbox" required className="h-6 w-6 text-[#FF007F] border-2 border-black rounded focus:ring-0 cursor-pointer" />
                                             <div className="ml-4">
@@ -419,7 +427,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="w-full bg-black text-white px-8 py-5 rounded-[25px] font-black text-xl uppercase shadow-[8px_8px_0px_0px_rgba(236,72,153,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
+                                        className="border-2 border-black w-full bg-black text-white px-8 py-5 rounded-box-sm font-black text-xl uppercase hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
                                     >
                                         {processing ? "Updating..." : "Continue to Summary"}
                                     </button>

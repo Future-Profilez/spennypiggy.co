@@ -70,15 +70,15 @@ function Slip() {
 
     return (
         <div
-            className="relative w-full max-w-[380px] mx-auto lg:mx-0 lg:ml-auto rotate-[-1.6deg] hover:rotate-0 transition-transform duration-500 motion-reduce:transition-none motion-reduce:rotate-0"
+            className="relative w-full max-w-[380px] mx-auto lg:mx-0 lg:ml-auto rotate-[-1.6deg]"
             style={{ filter: 'drop-shadow(0 34px 46px rgba(0,0,0,0.55))' }}
         >
             <div
-                className="rounded-t-[18px] px-7 pt-7 pb-6"
+                className="rounded-t-box-sm px-7 pt-7 pb-6"
                 style={{ background: PAPER, color: PAPER_INK }}
             >
                 <p
-                    className="font-mono text-[10px] uppercase tracking-[0.22em] mb-5"
+                    className="font-mono text-[12px] uppercase tracking-[0.22em] mb-5"
                     style={{ color: PAPER_MUTED }}
                 >
                     {slip.title}
@@ -92,7 +92,7 @@ function Slip() {
                             style={{ borderColor: 'rgba(21,18,12,0.10)' }}
                         >
                             <dt
-                                className="font-mono text-[10.5px] uppercase tracking-[0.14em]"
+                                className="font-mono text-[12px] uppercase tracking-[0.14em]"
                                 style={{ color: PAPER_MUTED }}
                             >
                                 {row.k}
@@ -114,13 +114,13 @@ function Slip() {
                     value is missing. */}
                 <div className="mt-6">
                     <p
-                        className="font-mono text-[10.5px] uppercase tracking-[0.14em] mb-2.5"
+                        className="font-mono text-[12px] uppercase tracking-[0.14em] mb-2.5"
                         style={{ color: PAPER_MUTED }}
                     >
                         {slip.blankKey}
                     </p>
                     <div
-                        className="flex items-center justify-center rounded-[10px] border-2 border-dashed py-5"
+                        className="flex items-center justify-center rounded-box-xs border-2 border-dashed py-5"
                         style={{ borderColor: 'rgba(21,18,12,0.26)', background: 'rgba(21,18,12,0.03)' }}
                     >
                         <span
@@ -150,7 +150,7 @@ function Slip() {
                 dashed box around the whole section. It reads as a stamp on a
                 document, which is what "not issued yet" actually looks like. */}
             <span
-                className="absolute right-4 -bottom-3 font-mono text-[10px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-box-sm border-2 rotate-[-5deg]"
+                className="absolute right-4 -bottom-3 font-mono text-[12px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-box-sm border-2 rotate-[-5deg]"
                 style={{
                     color: VIOLET_INK,
                     borderColor: `${VIOLET_INK}80`,
@@ -179,7 +179,7 @@ export default function StablecoinTipsAnnouncement() {
                     <div className="lg:col-span-7">
                         <FadeIn y={18}>
                             <span
-                                className="inline-block font-gulfs uppercase tracking-[0.22em] text-[11px] md:text-xs rounded-full px-4 py-2 border"
+                                className="inline-block font-gulfs uppercase tracking-[0.22em] text-[12px] rounded-full px-4 py-2 border"
                                 style={{
                                     color: VIOLET_INK,
                                     borderColor: `${VIOLET_INK}66`,
@@ -223,7 +223,7 @@ export default function StablecoinTipsAnnouncement() {
                         </ul>
 
                         <FadeIn y={12} delay={0.15}>
-                            <p className="font-poppins text-white/55 text-[12px] md:text-[12.5px] leading-[1.6] mt-6 max-w-[52ch]">
+                            <p className="font-poppins text-white/60 text-[12px] md:text-[12.5px] leading-[1.6] mt-6 max-w-[52ch]">
                                 {STABLECOIN_COPY.footnote}
                             </p>
                         </FadeIn>

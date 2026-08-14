@@ -4,9 +4,6 @@
 .btn-pink-retro {
   background: linear-gradient(135deg, var(--pink) 0%, var(--voilet) 50%, var(--mint) 100%);
   border: 2px solid var(--yellow);
-  box-shadow: 
-    0 0 10px rgba(249, 79, 151, 0.3),
-    0 4px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -31,10 +28,6 @@
 
 .btn-pink-retro:hover {
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 
-    0 0 20px rgba(249, 79, 151, 0.5),
-    0 0 30px rgba(140, 82, 255, 0.3),
-    0 8px 16px rgba(0, 0, 0, 0.3);
   filter: brightness(1.1);
 }
 
@@ -48,9 +41,6 @@
   border: 2px solid transparent;
   border-image: linear-gradient(45deg, #FF007F, #8C52FF, #05EFB8) 1;
   backdrop-filter: blur(10px);
-  box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -165,32 +155,31 @@
 }
 
 .retro-hover-glow:hover {
-  box-shadow: 
-    0 0 15px rgba(249, 79, 151, 0.3),
-    0 0 25px rgba(140, 82, 255, 0.2),
-    0 4px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
 /* Retro focus states */
 .retro-focus:focus {
   outline: none;
-  box-shadow: 
-    0 0 0 3px rgba(230, 234, 123, 0.5),
-    0 0 15px rgba(249, 79, 151, 0.4);
 }
 
+/* 🚨 REMOVED (14 Aug 2026) — the bottom bar's geometry lives in ONE file,
+   `retro-bottombar.css`, and this block was quietly overriding it from here.
 
-/* Enhanced mobile bottom bar spacing for retro theme */
-@media (max-width: 768px) {
-  body {
-    padding-bottom: 80px; 
-  }
-  
-  .retro-nav-button {
-    padding: 10px 8px;
-  }
-}
+   Two rules, both wrong:
+
+   1. `.retro-nav-button { padding: 10px 8px }` — same specificity as the bar's
+      own rule and imported AFTER it (see the `@import` order at the top of
+      `app.css`), so it WON. The bar therefore rendered 6px taller than the file
+      that defines it said it would, and every clearance derived from that
+      height — the page's bottom padding, the Intercom launcher, the messenger's
+      max-height — was short by the difference, silently. The bar's height is now
+      `--sp-bottombar-h`; do not set nav padding from any other file.
+
+   2. `body { padding-bottom: 80px }` on EVERY mobile page — including logged-out
+      ones, where there is no bar at all, so it was 80px of dead space at the
+      foot of every guest screen. `body:has(.retro-bottom-bar) main` already
+      applies that clearance, and only when the bar is actually on screen. */
 
 /* VHS/CRT style effects (optional) */
 .retro-crt-effect {

@@ -21,8 +21,15 @@ export default function ProfileProductLists({ IsloggedIn, suppressEmptyState = f
 
     return (
         <>
+            {/* ⚠️ This comment sits ABOVE the ternary deliberately: inside a
+                parenthesised branch `{/* … *\/}` is an object literal, not a
+                comment, and fails the whole Vite build. */}
             {lists && lists.length ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                /* Two columns on a phone, matching the wish and bill grids.
+                   ⚠️ Membership is deliberately NOT on this rule (client
+                   direction) — its card carries tier art and a perks list, which
+                   do not survive a 170px column. */
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                     {lists.map((item, index) => (
                         <ProfileProduct
                             IsloggedIn={IsloggedIn}

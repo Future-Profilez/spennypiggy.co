@@ -2,7 +2,7 @@
 export default function PaymentUnActivated({heading, subheading}) {
   return (
     <>
-      <div className="w-full p-5 my-5 bg-white rounded-[30px]  py-8 md:py-16 px-8 border-2 border-black shadow-[6px_6px_0px_rgba(0,0,0,0.9)]">
+      <div className="w-full p-5 my-5 bg-white rounded-box py-8 md:py-16 px-8 border-2 border-black ">
           <h5 className="text-[25px] md:text-[30px] w-full font-GillSans font-normal uppercase text-yellow-500 text-center  mb-1">
              {heading}
           </h5>

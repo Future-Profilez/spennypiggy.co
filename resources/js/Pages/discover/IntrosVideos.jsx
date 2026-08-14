@@ -80,9 +80,9 @@ export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll 
                         <button
                             key={o}
                             onClick={() => setOrder(o)}
-                            className={`rounded-[20px] px-3.5 py-1.5 text-xs font-semibold transition-all ${
+ className={`rounded-box-sm px-3.5 py-1.5 text-xs font-semibold transition-all ${
                                 order === o
-                                    ? 'bg-[#FF007F] text-white shadow-[0_6px_20px_-6px_rgba(255,0,127,0.7)]'
+ ? 'bg-[#FF007F] text-black '
                                     : 'bg-white text-black/60 border border-black/10 hover:text-black'
                             }`}
                         >
@@ -93,7 +93,7 @@ export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll 
             </div>
 
             {errorMsg && (
-                <div className="mb-4 rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+ <div className="mb-4 rounded-box-sm border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
                     {errorMsg}
                 </div>
             )}
@@ -111,7 +111,7 @@ export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll 
                         <div className="mt-7 flex justify-center">
                             <button
                                 onClick={onSeeMore}
-                                className="rounded-[20px] bg-[#FF007F] px-7 py-2.5 text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_30px_-6px_rgba(255,0,127,0.6)] transition-all hover:bg-[#ff1a8c] hover:shadow-[0_10px_40px_-6px_rgba(255,0,127,0.75)]"
+ className="rounded-box-sm bg-[#FF007F] px-7 py-2.5 text-sm font-bold uppercase tracking-wider text-black transition-all hover:brightness-110 "
                             >
                                 See more
                             </button>
@@ -125,7 +125,7 @@ export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll 
 
 function IntroSkeleton() {
     return (
-        <div className="aspect-[3/4] animate-pulse rounded-[30px] border border-black/[0.06] bg-black/[0.05]">
+ <div className="aspect-[3/4] animate-pulse rounded-box border border-black/[0.06] bg-black/[0.05]">
             <div className="flex h-full items-center justify-center">
                 <div className="h-14 w-14 rounded-full bg-black/10" />
             </div>
@@ -139,7 +139,7 @@ function IntroCard({ w }) {
     const poster = (w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
 
     return (
-        <div className="group relative aspect-[3/4] overflow-hidden rounded-[30px] border border-white/10 bg-[#16161C] shadow-[0_10px_30px_-14px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 hover:shadow-[0_18px_44px_-14px_rgba(255,0,127,0.4)]">
+ <div className="group relative aspect-[3/4] overflow-hidden rounded-box border border-white/10 bg-[#16161C] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 ">
             <Popup space="0" size="md" classes="w-full h-full" text={
                 <div className="relative h-full w-full">
                     {!imgLoaded && <div className="absolute inset-0 z-10 animate-pulse bg-white/5" />}
@@ -154,14 +154,14 @@ function IntroCard({ w }) {
                             else if (e.target.src !== userphoto) e.target.src = userphoto;
                             setImgLoaded(true);
                         }}
-                        className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+ className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-500 group-hover:brightness-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0F] via-[#0B0B0F]/25 to-transparent" aria-hidden />
-                    <span className="absolute left-3 top-3 rounded-[20px] border border-white/15 bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+ <span className="absolute left-3 top-3 rounded-box-sm border border-white/15 bg-black/40 px-2.5 py-1 text-[12px] font-semibold text-white backdrop-blur">
                         Intro
                     </span>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FF007F] text-white shadow-[0_8px_24px_-4px_rgba(255,0,127,0.7)] transition-transform duration-300 group-hover:scale-110">
+ <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FF007F] text-black transition-colors duration-300 group-hover:brightness-110">
                             <RiPlayFill size={26} className="ml-0.5" />
                         </div>
                     </div>

@@ -40,7 +40,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
             type="button"
             onClick={() => setActiveTab(id)}
             aria-pressed={activeTab === id}
-            className={`rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors ${
+            className={`inline-flex min-h-[44px] items-center rounded-full px-4 py-1.5 text-[12px] font-black uppercase tracking-wider transition-colors ${
                 activeTab === id
                     ? "bg-black text-white"
                     : "text-gray-500 hover:text-black"
@@ -63,7 +63,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
     return (
         <div className="w-full rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black">
                     Community activity
                 </h3>
                 <div className="flex items-center gap-1 rounded-full bg-[#F3F4F6] p-1">
@@ -100,17 +100,17 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                             )}
                                         </div>
                                         {/* Rank, small — the ordering is the point, not a medal */}
-                                        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-black bg-white px-1 text-[9px] font-black leading-none">
+                                        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-black bg-white px-1 text-[12px] font-black leading-none">
                                             {idx + 1}
                                         </span>
                                     </div>
 
-                                    <div className="mt-2.5 w-full truncate text-center text-[12px] font-black text-black">
+                                    <div title={item.name} className="mt-2.5 w-full truncate text-center text-[12px] font-black text-black">
                                         {item.name}
                                     </div>
 
                                     {/* Ranked and labelled by unlocks, never by amount */}
-                                    <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-[#FF007F]">
+                                    <div className="mt-0.5 text-[12px] font-bold uppercase tracking-wider text-[#FF007F]">
                                         {item.purchases ?? 0}{" "}
                                         {item.purchases === 1
                                             ? "unlock"
@@ -121,7 +121,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                         <div
                                             title={`${item.vip.level} supporter · engagement score ${item.vip.score}`}
                                             aria-label={`${item.vip.level} supporter`}
-                                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-black/10 bg-[#FAFAF8] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider"
+                                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-black/10 bg-[#FAFAF8] px-2 py-0.5 text-[12px] font-black uppercase tracking-wider"
                                             style={{ color: item.vip.color }}
                                         >
                                             <span aria-hidden="true">
@@ -166,7 +166,7 @@ export default function PiggyPotSocialProof({ topSupporters, feed, user }) {
                                 <span className="text-2xl opacity-40" aria-hidden="true">
                                     🐷
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                <span className="text-[12px] font-bold uppercase tracking-wider text-gray-500">
                                     Be the next
                                 </span>
                             </div>

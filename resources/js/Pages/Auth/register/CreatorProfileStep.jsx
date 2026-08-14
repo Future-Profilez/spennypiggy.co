@@ -43,7 +43,7 @@ export default function CreatorProfileStep({
             actionDisabled={chosen < 1}
         >
             <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/60">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60">
                     Categories
                 </span>
                 <span
@@ -62,7 +62,7 @@ export default function CreatorProfileStep({
                     <fieldset key={group.group}>
                         <legend className="sr-only">{group.group}</legend>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="mr-1 w-full text-[10px] font-semibold uppercase tracking-[0.12em] text-black/60 sm:w-auto">
+                            <span className="mr-1 w-full text-[12px] font-semibold uppercase tracking-[0.12em] text-black/60 sm:w-auto">
                                 {group.group}
                             </span>
                             {group.items.map((item) => {
@@ -83,7 +83,7 @@ export default function CreatorProfileStep({
                                                     // contrast floor and have to LOOK disabled;
                                                     // raising this to /60 made a chip you cannot
                                                     // press read as one you can.
-                                                    "cursor-not-allowed border-black/10 bg-white text-black/25"
+                                                    "cursor-not-allowed border-black/10 bg-white text-black/60"
                                                   : "border-black/15 bg-white text-black/70 hover:border-black/40"
                                         }`}
                                         style={

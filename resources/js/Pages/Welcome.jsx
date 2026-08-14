@@ -157,7 +157,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 section, not the spacer standing in for it. */}
 
             {/* ── Chapter 03 · The proof ── */}
-            <Suspense fallback={<div aria-hidden="true" className="min-h-[70vh]" />}>
+            <Suspense fallback={<div aria-hidden="true" className="min-h-[70dvh]" />}>
                 <CreatorShowcase
                     trending={trendingCreators}
                     newVerified={newVerifiedCreators}
@@ -171,7 +171,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 together (bonuses, then the referral bonus), pricing answers the
                 question they raise, and the two payment rails sit side by side. */}
             <div id="act-earn">
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[80vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[80dvh]" />}>
                     <PaidTasksAnnouncement />
                     <EarnMoreAnnouncement founderBonus={founderBonus} />
                 </Suspense>
@@ -191,16 +191,16 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                     The component file is kept — /refer-and-earn is a real page
                     and can still use it. Do not re-add it to the homepage
                     without first removing the card from EarnMore. */}
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[60vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[60dvh]" />}>
                     <PricingSection />
                 </Suspense>
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[80vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[80dvh]" />}>
                     <PayByBankAnnouncement />
                     <StablecoinTipsAnnouncement />
                 </Suspense>
             </div>
 
-            <Suspense fallback={<div aria-hidden="true" className="min-h-[70vh]" />}>
+            <Suspense fallback={<div aria-hidden="true" className="min-h-[70dvh]" />}>
                 <LiveBarSection />
                 <PaymentSlider />
             </Suspense>
@@ -210,18 +210,18 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 feature showcase: it is the answer to "paid for what, exactly?",
                 which the steps raise and the showcase then demonstrates. */}
             <div id="act-setup">
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[70vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[70dvh]" />}>
                     <SetupSteps />
                     <WaysToGetPaid />
                 </Suspense>
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[80vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[80dvh]" />}>
                     <FeatureShowcase />
                 </Suspense>
             </div>
 
             {/* ── Chapter 05 · Why creators love it ── */}
             <div id="act-love">
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[60vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[60dvh]" />}>
                     <Reveal delay={0.05}><HappyCreators /></Reveal>
                 </Suspense>
             </div>
@@ -235,10 +235,10 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 now sits below the closing marquee, where someone who has already
                 read everything can still find it. */}
             <div id="act-join">
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[60vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[60dvh]" />}>
                     <FAQ />
                 </Suspense>
-                <Suspense fallback={<div aria-hidden="true" className="min-h-[50vh]" />}>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[50dvh]" />}>
                     <JoinUs />
                 </Suspense>
                 {/* ⚠️ The prop is `textClass`. This passed `textclassName`, which
@@ -260,7 +260,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             </div>
 
             {/* Moved out of the finale — see the note on `act-join` above. */}
-            <Suspense fallback={<div aria-hidden="true" className="min-h-[40vh]" />}>
+            <Suspense fallback={<div aria-hidden="true" className="min-h-[40dvh]" />}>
                 <FeatureSuggestionSection auth={auth} />
             </Suspense>
 

@@ -63,7 +63,7 @@ export default function AddCart(props) {
             <div className="!rounded-none p-4">
                 
                 <div className="items-center mb-4">
-                    <div className="m-auto h-[150px] max-w-[200px] flex justify-center items-center bg-gray-200 rounded-[15px]  border !border-gray-200 overflow-hidden">
+                    <div className="m-auto h-[150px] max-w-[200px] flex justify-center items-center bg-gray-200 rounded-box-sm  border !border-gray-200 overflow-hidden">
                         <img
                             src={item.perma_link ? item.perma_link : uploadedimg}
                             alt="img" className="h-full w-full object-cover"
@@ -89,7 +89,7 @@ export default function AddCart(props) {
                                             item?.currency || 'USD'
                                         )}
                                     </span>
-                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                    <span className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
                                         *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}.
                                     </span>
                                 </div>
@@ -119,10 +119,10 @@ export default function AddCart(props) {
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder={`Eg. 50`}
                                 type="number"
-                                className="block w-full rounded-[30px]   border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
+                                className="block w-full rounded-box border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
                             />
                         </div>
-                        <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                        <p className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
                             *Includes platform and payment processing fees. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
                         </p>
                         <div className="crowd pt-2 mb-4">
@@ -155,7 +155,7 @@ export default function AddCart(props) {
                     <>
                     <div className=" pb-2">
                         {card_capabilities === false ? (
-                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[30px]  ">
+                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-box  ">
                                 <div className="flex">
                                     <div className="flex-shrink-0">
                                         <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -260,7 +260,7 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                         <ToCart
@@ -276,7 +276,7 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                     </div>

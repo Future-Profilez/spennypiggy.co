@@ -97,7 +97,7 @@ export default function BillDetails(props) {
                             {[...Array(4)].map((_, i) => (
                                 <div
                                     key={i}
-                                    className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                    className="rounded-box bg-white border-2 border-black p-6 "
                                 >
                                     <div className="h-3 w-24 bg-gray-200 rounded-box-sm animate-pulse" />
                                     <div className="h-9 w-32 bg-gray-200 rounded-box-sm animate-pulse mt-4" />
@@ -106,7 +106,7 @@ export default function BillDetails(props) {
                             ))}
                         </div>
                         {/* TABLE SKELETON */}
-                        <div className="rounded-box bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 space-y-4">
+                        <div className="rounded-box bg-white border-2 border-black overflow-hidden p-6 space-y-4">
                             <div className="h-6 w-40 bg-gray-200 rounded-box-sm animate-pulse" />
                             {[...Array(5)].map((_, i) => (
                                 <div
@@ -124,7 +124,7 @@ export default function BillDetails(props) {
                         <div className="mb-8">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-16 h-16 rounded-box-sm bg-[#FF007F] border-2 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="w-16 h-16 rounded-box-sm bg-[#FF007F] border-2 border-black flex items-center justify-center text-3xl ">
                                         💳
                                     </div>
 
@@ -146,8 +146,8 @@ export default function BillDetails(props) {
                                                 px-5 py-2 rounded-box-sm
                                                 bg-white border-2 border-black
                                                 text-black font-bold
-                                                shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]
-                                                hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1
+ 
+ hover:-translate-x-1 hover:-translate-y-1
                                                 transition-all duration-300
                                             "
                                             >
@@ -168,7 +168,7 @@ export default function BillDetails(props) {
 
                         {/* ANALYTICS CARDS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 ">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Buyers
                                 </p>
@@ -182,7 +182,7 @@ export default function BillDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 ">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Total Revenue
                                 </p>
@@ -199,7 +199,7 @@ export default function BillDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 ">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Monthly Revenue
                                 </p>
@@ -216,7 +216,7 @@ export default function BillDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-box bg-white border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-2 border-black p-6 ">
                                 <p className="text-gray-600 uppercase text-xs tracking-widest font-bold">
                                     Estimated Next Month
                                 </p>
@@ -235,7 +235,7 @@ export default function BillDetails(props) {
                         </div>
 
                         {/* SUPPORTERS TABLE */}
-                        <div className="rounded-box bg-white border-2 border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="rounded-box bg-white border-2 border-black overflow-hidden ">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 p-6 ">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-black text-black">
@@ -253,7 +253,7 @@ export default function BillDetails(props) {
                                         type="text"
                                         placeholder="Search supporter..."
                                         aria-label="Search supporters"
-                                        className="h-[48px] rounded-box-sm bg-white border-2 border-black px-5 text-black min-w-[280px] focus:outline-none font-semibold placeholder-gray-400"
+                                        className="h-[48px] rounded-box-sm bg-white border-2 border-black px-5 text-black min-w-[280px] focus:outline-none font-semibold placeholder-black/60"
                                     />
                                 </div>
                             </div>
@@ -265,14 +265,14 @@ export default function BillDetails(props) {
                                         <div key={index} className="p-4">
                                             <div className="flex items-center justify-between gap-3 mb-3">
                                                 <Avatar user={supporter.user} />
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-[11px] font-bold uppercase">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-box-sm bg-emerald-300 border-2 border-black text-black text-[12px] font-bold uppercase">
                                                     <span className="w-2 h-2 rounded-full bg-black"></span>
                                                     Paid
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                    <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                         Amount
                                                     </p>
                                                     <p className="text-lg font-black text-emerald-700">
@@ -283,7 +283,7 @@ export default function BillDetails(props) {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                    <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                         Type
                                                     </p>
                                                     <span className="inline-block mt-1 px-3 py-1 rounded-box-sm bg-pink-100 border-2 border-black text-black text-xs font-bold uppercase">
@@ -292,7 +292,7 @@ export default function BillDetails(props) {
                                                     </span>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                    <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                         Date
                                                     </p>
                                                     <p className="text-black font-semibold text-sm">

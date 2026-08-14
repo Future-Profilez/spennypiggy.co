@@ -183,7 +183,7 @@ export default function MySubscriptions(props) {
                                 {[...Array(4)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-6"
+                                        className="bg-white border border-gray-100 rounded-box  duration-200 p-6"
                                     >
                                         <div className="h-3 w-32 bg-gray-200 rounded-box-sm animate-pulse" />
                                         <div className="h-9 w-20 bg-gray-200 rounded-box-sm animate-pulse mt-4" />
@@ -196,7 +196,7 @@ export default function MySubscriptions(props) {
                                 <div className="h-11 w-52 bg-gray-200 rounded-box-sm animate-pulse" />
                             </div>
                             {/* TABLE SKELETON */}
-                            <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] p-6 space-y-4">
+                            <div className="bg-white border border-gray-100 rounded-box  duration-200 p-6 space-y-4">
                                 <div className="h-6 w-48 bg-gray-200 rounded-box-sm animate-pulse" />
                                 {[...Array(4)].map((_, i) => (
                                     <div
@@ -244,7 +244,7 @@ export default function MySubscriptions(props) {
 
                         {/* UPCOMING RENEWALS */}
                         {data?.stats?.upcoming_30d_count > 0 && (
-                            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] p-5">
+                            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-100 rounded-box p-5">
                                 <div className="flex items-center gap-3">
                                     <div className="w-11 h-11 bg-pink-50 flex items-center justify-center rounded-box-sm">
                                         <FiCalendar className="text-[#FF007F]" size="1.3rem" />
@@ -285,8 +285,8 @@ export default function MySubscriptions(props) {
                                 text-sm font-bold transition-all duration-300
                                 ${
                                     subscriptionTab === "bills"
-                                        ? "bg-[#FF007F] border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] text-white"
-                                        : "bg-white border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
+ ? "bg-[#FF007F] border border-gray-100 text-black"
+ : "bg-white border border-gray-100 text-black hover:bg-black/[0.04]"
                                 }
                             `}
                             >
@@ -303,8 +303,8 @@ export default function MySubscriptions(props) {
                                     text-sm font-bold transition-all duration-300
                                     ${
                                         subscriptionTab === "memberships"
-                                            ? "bg-[#FF007F] border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] text-white"
-                                            : "bg-white border border-gray-100 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)] text-black hover:bg-gray-100 hover:translate-x-[-2px] hover:translate-y-[-2px]"
+ ? "bg-[#FF007F] border border-gray-100 text-black"
+ : "bg-white border border-gray-100 text-black hover:bg-black/[0.04]"
                                     }
                                 `}
                             >
@@ -326,7 +326,7 @@ export default function MySubscriptions(props) {
 
                         {/* TABLE */}
 
-                        <div className="bg-white border border-gray-100 rounded-box shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] overflow-hidden">
+                        <div className="bg-white border border-gray-100 rounded-box  duration-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100">
                                 <h2 className="text-lg md:text-xl font-bold tracking-tight text-gray-900">
                                     {subscriptionTab === "bills"
@@ -361,7 +361,7 @@ export default function MySubscriptions(props) {
                                                     <Avatar user={creator} />
                                                     <div className="flex items-center gap-2">
                                                         {isRenewingSoon(subscription) && (
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-box-sm bg-amber-100 text-amber-700 text-[11px] font-semibold">
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-box-sm bg-amber-100 text-amber-700 text-[12px] font-semibold">
                                                                 <FiCalendar size="0.8rem" />
                                                                 {daysUntil(subscription.upcoming_payment) === 0
                                                                     ? "Renews today"
@@ -382,7 +382,7 @@ export default function MySubscriptions(props) {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                                     <div className="col-span-2">
-                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                             Plan
                                                         </p>
                                                         <p className="font-black uppercase text-black">
@@ -390,7 +390,7 @@ export default function MySubscriptions(props) {
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                             Amount
                                                         </p>
                                                         <p className="text-lg font-black text-emerald-700">
@@ -401,7 +401,7 @@ export default function MySubscriptions(props) {
                                                         </p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">
+                                                        <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">
                                                             Type
                                                         </p>
                                                         <span className="inline-block mt-0.5 px-3 py-1 rounded-box-sm bg-pink-100 border border-gray-100 text-black text-xs font-bold capitalize">
@@ -432,7 +432,7 @@ export default function MySubscriptions(props) {
                                     })
                                 ) : (
                                     <div className="py-16 flex flex-col items-center justify-center text-center px-4">
-                                        <div className="w-24 h-24 rounded-box-sm flex items-center justify-center mb-6 border border-gray-100 bg-pink-100 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.15)]">
+                                        <div className="w-24 h-24 rounded-box-sm flex items-center justify-center mb-6 border border-gray-100 bg-pink-100 ">
                                             {subscriptionTab === "bills" ? (
                                                 <FiFileText className="text-[#FF007F]" size="2.4rem" />
                                             ) : (
@@ -592,7 +592,7 @@ export default function MySubscriptions(props) {
                                                                 {isRenewingSoon(
                                                                     subscription,
                                                                 ) && (
-                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-box-sm bg-amber-100 text-amber-700 text-[11px] font-semibold">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-box-sm bg-amber-100 text-amber-700 text-[12px] font-semibold">
                                                                         <FiCalendar size="0.8rem" />
                                                                         {daysUntil(
                                                                             subscription.upcoming_payment,
@@ -654,7 +654,7 @@ export default function MySubscriptions(props) {
                                                     className="py-20"
                                                 >
                                                     <div className="flex flex-col items-center justify-center">
-                                                        <div className="w-24 h-24 rounded-box-sm flex items-center justify-center mb-6 border border-gray-100 bg-pink-100 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.15)]">
+                                                        <div className="w-24 h-24 rounded-box-sm flex items-center justify-center mb-6 border border-gray-100 bg-pink-100 ">
                                                             {subscriptionTab ===
                                                             "bills" ? (
                                                                 <FiFileText className="text-[#FF007F]" size="2.4rem" />
@@ -708,7 +708,7 @@ export default function MySubscriptions(props) {
                         rounded-box
                         bg-white
                         border border-gray-100
-                        shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)]
+  duration-200 
                         p-8
                         "
                     >
@@ -743,7 +743,7 @@ export default function MySubscriptions(props) {
                                 current billing period ends.
                             </p>
 
-                            <div className="mt-6 rounded-box-sm border border-gray-100 bg-[#fdfbf7] p-5 text-left text-sm shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]">
+                            <div className="mt-6 rounded-box-sm border border-gray-100 bg-[#fdfbf7] p-5 text-left text-sm ">
                                 <p className="uppercase tracking-[0.24em] text-xs text-gray-500 font-bold">
                                     Selected Subscription
                                 </p>
@@ -767,9 +767,9 @@ export default function MySubscriptions(props) {
                                     flex-1 py-3 rounded-box-sm min-h-[44px]
                                     bg-white border border-gray-100
                                     text-black font-bold
-                                    shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]
-                                    hover:bg-gray-50 hover:shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] hover:-translate-x-1 hover:-translate-y-1
-                                    transition-all duration-300
+ 
+ hover:bg-black/[0.04] 
+ transition-[background-color,box-shadow] duration-200
                                     "
                                 >
                                     Keep Subscription
@@ -781,9 +781,9 @@ export default function MySubscriptions(props) {
                                     flex-1 py-3 rounded-box-sm min-h-[44px]
                                     bg-red-600
                                     text-white font-bold border border-gray-100
-                                    shadow-[0_4px_12px_-6px_rgba(0,0,0,0.12)]
-                                    hover:shadow-[0_10px_30px_-14px_rgba(0,0,0,0.16)] transition-shadow duration-200 hover:shadow-[0_18px_44px_-16px_rgba(0,0,0,0.22)] hover:-translate-x-1 hover:-translate-y-1
-                                    transition-all duration-300
+ 
+ hover:brightness-110 
+ transition-[filter,box-shadow] duration-200
                                     "
                                 >
                                     Confirm Cancel

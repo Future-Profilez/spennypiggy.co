@@ -13,12 +13,12 @@ const CHIP = {
     done: "bg-mint text-black",
     pending: "bg-amber-100 text-amber-800",
     rejected: "bg-red-100 text-red-700",
-    todo: "bg-gray-100 text-gray-500",
+    todo: "bg-gray-100 text-black/60",
 };
 function StatusChip({ state, children }) {
     return (
         <span
-            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${
+            className={`inline-block px-2.5 py-1 rounded-full text-[12px] font-bold uppercase tracking-wide whitespace-nowrap ${
                 CHIP[state] || CHIP.todo
             }`}
         >
@@ -42,7 +42,7 @@ function MilestoneRail({ milestones, activeIndex }) {
                 const pending = m.state === "pending";
                 const current = i === activeIndex;
                 const last = i === milestones.length - 1;
-                let node = "bg-white text-gray-400 border-black";
+                let node = "bg-white text-black/60 border-black";
                 let mark = i + 1;
                 if (done) {
                     node = "bg-mint text-black border-black";
@@ -65,12 +65,12 @@ function MilestoneRail({ milestones, activeIndex }) {
                                 {mark}
                             </span>
                             <span
-                                className={`mt-1.5 text-[10px] font-bold text-center leading-tight ${
+                                className={`mt-1.5 text-[12px] font-bold text-center leading-tight ${
                                     current
                                         ? "text-[#FF007F]"
                                         : done
                                           ? "text-gray-600"
-                                          : "text-gray-400"
+                                          : "text-black/60"
                                 }`}
                             >
                                 {m.label}
@@ -96,7 +96,7 @@ function MilestoneRail({ milestones, activeIndex }) {
 // "fix it now" path, so a rejection is never a dead end.
 function ActionCard({ step }) {
     const isRejected = step.state === "rejected";
-    // No offset shadow on these cards. A checklist is a stack of near-identical rows, and
+ // No offset on these cards. A checklist is a stack of near-identical rows, and
     // giving every one the same heavy drop makes the list read as noise rather than as
     // steps — the border already separates them. Rejection stays distinguished by colour,
     // which is the only difference that matters here.
@@ -112,7 +112,7 @@ function ActionCard({ step }) {
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-gray-900 font-bold">{step.title}</h3>
-                        <span className="text-[11px] font-bold text-gray-400">
+ <span className="text-[12px] font-bold text-black/60">
                             ~{step.mins} min
                         </span>
                         {isRejected && (
@@ -127,7 +127,7 @@ function ActionCard({ step }) {
 
             {isRejected && (
                 <div className="mt-3 bg-white border-2 border-red-500 rounded-box-sm p-3">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-red-600 mb-1">
+ <p className="text-[12px] font-bold uppercase tracking-widest text-red-600 mb-1">
                         Why it came back
                     </p>
                     <p className="text-sm text-gray-800">
@@ -164,7 +164,7 @@ function ActionCard({ step }) {
 
             {step.hint?.length > 0 && (
                 <div className="mt-3 bg-gray-50 border border-gray-200 rounded-box-sm p-3">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+ <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1.5">
                         What we check
                     </p>
                     <ul className="space-y-1">
@@ -173,7 +173,7 @@ function ActionCard({ step }) {
                                 key={i}
                                 className="flex items-start gap-2 text-[13px] text-gray-600"
                             >
-                                <span className="text-gray-400 mt-0.5">•</span>
+ <span className="text-black/60 mt-0.5">•</span>
                                 <span>{h}</span>
                             </li>
                         ))}
@@ -196,12 +196,12 @@ function StepRow({ step }) {
             ? "bg-mint text-black"
             : step.state === "pending"
               ? "bg-amber-400 text-black"
-              : "bg-gray-100 text-gray-400";
+ : "bg-gray-100 text-black/60";
     return (
         <div className="flex items-center justify-between gap-3 border-2 border-gray-200 rounded-box-sm px-3 py-2.5 mb-2 bg-white">
             <div className="flex items-center gap-2.5 min-w-0">
                 <span
-                    className={`grid place-items-center w-6 h-6 shrink-0 rounded-full text-[11px] font-bold ${iconCls}`}
+ className={`grid place-items-center w-6 h-6 shrink-0 rounded-full text-[12px] font-bold ${iconCls}`}
                 >
                     {icon}
                 </span>
@@ -210,7 +210,7 @@ function StepRow({ step }) {
                         {step.title}
                     </p>
                     {step.note && (
-                        <p className="text-[12px] text-gray-500 leading-snug">
+ <p className="text-[12px] text-black/60 leading-snug">
                             {step.note}
                         </p>
                     )}
@@ -223,7 +223,7 @@ function StepRow({ step }) {
 
 function SectionHeading({ children }) {
     return (
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mt-5 mb-2">
+ <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mt-5 mb-2">
             {children}
         </p>
     );
@@ -380,7 +380,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const editorBtn =
         "inline-block bg-gray-100 hover:bg-gray-200 border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold text-black transition-colors";
     const primaryBtn =
-        "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all";
+ "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
 
     const REVIEW_NOTE = "Usually reviewed within a few hours.";
 
@@ -637,10 +637,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const rejectedCount = needsYou.filter((s) => s.state === "rejected").length;
 
     return (
-        <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-box mb-4 p-4 lg:!p-8">
+        <div className="mt-4 lg:mt-0 profileSteps bg-white border-[3px] border-black rounded-box mb-4 p-4 lg:!p-8">
             <div className="flex gap-3 items-start justify-between mb-1">
                 <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF007F]">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#FF007F]">
                         Get set up to earn
                     </p>
                     <h2 className="text-[22px] uppercase font-bold leading-none">
@@ -650,13 +650,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 <button
                     onClick={refreshSteps}
                     disabled={isRefreshing}
-                    className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1.5 rounded-full text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 shrink-0"
+                    className="bg-pink-100 hover:bg-pink-200 text-[#FF007F] px-3 py-1.5 rounded-full text-sm font-bold border-2 border-black transition-all disabled:opacity-50 shrink-0"
                 >
                     {isRefreshing ? "Refreshing…" : "Refresh"}
                 </button>
             </div>
 
-            <p className="text-gray-500 mb-4 text-sm">
+            <p className="text-black/60 mb-4 text-sm">
                 {onboardingComplete
                     ? "All set — supporters can now pay you for your content."
                     : minsLeft > 0

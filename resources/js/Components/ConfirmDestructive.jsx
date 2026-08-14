@@ -39,7 +39,7 @@ export default function ConfirmDestructive({
                         type="button"
                         onClick={onConfirm}
                         disabled={processing}
-                        className="min-h-[44px] px-5 rounded-box-sm border-2 border-black bg-red-500 text-white font-bold uppercase text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+                        className="min-h-[44px] px-5 rounded-box-sm border-2 border-black bg-red-500 text-white font-bold uppercase text-sm disabled:opacity-50"
                     >
                         {processing ? "Removing…" : confirmLabel}
                     </button>

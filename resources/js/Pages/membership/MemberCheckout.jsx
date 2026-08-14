@@ -4,7 +4,7 @@ import React from 'react';
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import Membership from "./Membership";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
@@ -569,7 +569,7 @@ export default function SubCheckout(props) {
                                         onClick={handleSubmit}
                                     />
                                     {(!data.agree || !data.digital_waiver) && (
-                                        <p className="text-[10px] font-bold text-black/60 text-center mt-2">
+                                        <p className="text-[12px] font-bold text-black/60 text-center mt-2">
                                             Accept the terms above to
                                             continue.
                                         </p>
@@ -630,7 +630,7 @@ export default function SubCheckout(props) {
                                 <button
                                     type="button"
                                     onClick={() => setShowStepUp(false)}
-                                    className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                    className="border-2 border-black w-full main-button !bg-white !text-black !border-black"
                                 >
                                     Cancel
                                 </button>

@@ -129,13 +129,13 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
     const paymentStrip =
         user?.role == 1 && user?.stripe_details_submitted == 1 ? (
             <div className="flex w-full flex-col items-center gap-1.5 pt-1">
-                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                <span className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
                     <Lock size={11} strokeWidth={2.5} />
                     Secure checkout
                 </span>
                 <div className="flex items-center gap-1.5">
                     <span className="flex h-7 items-center justify-center rounded-box-sm border border-black/10 bg-white px-2">
-                        <span className="text-[11px] font-black italic tracking-tight text-[#1A1F71]">
+                        <span className="text-[12px] font-black italic tracking-tight text-[#1A1F71]">
                             VISA
                         </span>
                     </span>
@@ -157,13 +157,13 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                         </svg>
                     </span>
                     <span className="flex h-7 items-center justify-center rounded-box-sm border border-black/10 bg-[#2E77BC] px-2">
-                        <span className="text-[9px] font-black tracking-wide text-white">
+                        <span className="text-[12px] font-black tracking-wide text-white">
                             AMEX
                         </span>
                     </span>
                     <span className="flex h-7 items-center justify-center gap-1 rounded-box-sm border border-black/10 bg-white px-2 text-gray-700">
                         <Landmark size={12} strokeWidth={2.5} />
-                        <span className="text-[10px] font-bold uppercase tracking-wide">
+                        <span className="text-[12px] font-bold uppercase tracking-wide">
                             Bank
                         </span>
                     </span>
@@ -183,7 +183,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                 {/* Identity card — the profile's left rail. The page-level cover sits directly
  above it at every breakpoint, and the avatar rises out of this card onto it,
  so no`overflow-hidden` here (it would clip the avatar). */}
-                <div className="relative z-10 rounded-none sm:rounded-box bg-white bg-gradient-to-b from-white via-white to-[#A2E4B8]/25 sm:bg-white sm:bg-none p-5 pb-7 sm:p-6 border-0 shadow-none sm:border-2 sm:border-black">
+                <div className="relative z-10 rounded-none sm:rounded-box bg-white bg-gradient-to-b from-white via-white to-[#A2E4B8]/25 sm:bg-white sm:bg-none p-5 pb-7 sm:p-6 border-0 sm:border-2 sm:border-black">
                     <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-3 text-center md:max-w-none">
                         {/* Avatar + name */}
                         <div
@@ -216,7 +216,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                     <span className="block text-lg font-black leading-none tabular-nums text-black">
                                         {user?.followers_count ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
                                         <Users size={10} strokeWidth={2.5} />
                                         Followers
                                     </span>
@@ -225,7 +225,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                     <span className="block text-lg font-black leading-none tabular-nums text-black">
                                         {user?.following_count ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
                                         <UserCheck
                                             size={10}
                                             strokeWidth={2.5}
@@ -237,7 +237,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                     <span className="block text-lg font-black leading-none tabular-nums text-[#FF007F]">
                                         {supporters ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#FF007F]">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#FF007F]">
                                         <PiggyBank
                                             size={11}
                                             strokeWidth={2.5}
@@ -279,7 +279,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                         <Suspense fallback={null}>
                                             <ShareProfile
                                                 username={user?.username}
-                                                classes="flex w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
+                                                classes="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
                                                 custom={`${window.location.origin}/${user?.username}`}
                                             >
                                                 Share
@@ -287,7 +287,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                         </Suspense>
                                         <Suspense fallback={null}>
                                             <AddSocial
-                                                classes="flex w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
+                                                classes="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
                                                 sLinks={slinks}
                                             />
                                         </Suspense>
@@ -331,7 +331,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                             <Suspense fallback={null}>
                                                 <ShareProfile
                                                     username={user?.username}
-                                                    classes="flex w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
+                                                    classes="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-box-sm border-2 border-black bg-white px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-gray-100"
                                                     custom={`${window.location.origin}/${user?.username}`}
                                                 >
                                                     Share profile
@@ -341,7 +341,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                 <Suspense fallback={null}>
                                                     <ReportContentModal
                                                         reportedUser={user}
-                                                        classes="flex h-9 items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[11px] font-bold uppercase tracking-wide text-gray-500 transition-colors hover:border-black hover:text-black"
+                                                        classes="flex h-9 items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[12px] font-bold uppercase tracking-wide text-gray-500 transition-colors hover:border-black hover:text-black"
                                                         text={
                                                             <>
                                                                 <Flag size={13} strokeWidth={2.5} />
@@ -364,7 +364,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                                 onMouseLeave={() =>
                                                                     unblockIconRef.current?.stopAnimation?.()
                                                                 }
-                                                                className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-green-700/25 bg-white px-3 text-[11px] font-bold uppercase tracking-wide text-green-700 transition-colors hover:border-green-700 group"
+                                                                className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-green-700/25 bg-white px-3 text-[12px] font-bold uppercase tracking-wide text-green-700 transition-colors hover:border-green-700 group"
                                                                 title="Unblock User"
                                                             >
                                                                 <UserXIcon
@@ -394,7 +394,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                                     onMouseLeave={() =>
                                                                         blockIconRef.current?.stopAnimation?.()
                                                                     }
-                                                                    classes="flex h-9 items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[11px] font-bold uppercase tracking-wide text-gray-500 transition-colors hover:border-red-600 hover:text-red-600 group"
+                                                                    classes="flex h-9 items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[12px] font-bold uppercase tracking-wide text-gray-500 transition-colors hover:border-red-600 hover:text-red-600 group"
                                                                     text={
                                                                         <>
                                                                             <UserXIcon
@@ -437,7 +437,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                                             }
                                                                             ?
                                                                         </h2>
-                                                                        <div className="bg-gray-50 border-2 border-black rounded-[20px] p-4 text-left space-y-3 mb-6">
+                                                                        <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4 text-left space-y-3 mb-6">
                                                                             <div className="flex gap-3">
                                                                                 <ShieldAlert
                                                                                     size={
@@ -542,7 +542,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                                                                     className="
  w-full
  appearance-none
- rounded-[20px]
+ rounded-box-sm
  border-[3px]
  border-black
  bg-white
@@ -651,7 +651,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
  border-black
                                                                                 
  active:translate-y-0.5
- active:shadow-none
+ 
  transition-all
  flex
  items-center

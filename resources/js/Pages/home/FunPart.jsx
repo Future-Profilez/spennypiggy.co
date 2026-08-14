@@ -9,7 +9,7 @@ function Story({ items, textcolor }) {
     return (
         <div className="relative">
             <FadeIn delay={0.05}>
-                <p className={`text-[11px] md:text-xs font-black uppercase tracking-[0.22em] ${ink} opacity-60 mb-6`}>
+                <p className={`text-[12px] md:text-xs font-black uppercase tracking-[0.22em] ${ink} opacity-60 mb-6`}>
                     Your page, in three moves
                 </p>
             </FadeIn>

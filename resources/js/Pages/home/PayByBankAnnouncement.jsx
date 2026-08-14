@@ -29,7 +29,7 @@ export default function PayByBankAnnouncement() {
                 {/* Heading */}
                 <div className="text-center mb-10 md:mb-16">
                     <FadeIn y={20} duration={0.5}>
-                        <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                        <div className="inline-block transform -rotate-2">
                             <span className="bg-[#A2E4B8] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full mb-4 inline-block">
                                 🏦 New — Pay by Bank
                             </span>
@@ -54,28 +54,28 @@ export default function PayByBankAnnouncement() {
                         {/* mint glow */}
                         <div className="pointer-events-none absolute -inset-3 bg-[#A2E4B8] opacity-15 blur-2xl rounded-box" aria-hidden="true"></div>
 
-                        <div className="max-w-[800px] m-auto relative grid md:grid-cols-[1fr_auto] bg-gray-900 border-[3px] border-[#A2E4B8] rounded-box overflow-hidden">
+                        <div className="max-w-[800px] m-auto relative grid md:grid-cols-[1fr_auto] bg-[#0d0a16] border-[3px] border-[#A2E4B8] rounded-box overflow-hidden">
                             {/* Main pass */}
                             <div className="p-6 md:p-9">
                                 <div className="flex items-center justify-between mb-6">
                                     <span className="inline-flex items-center gap-2 text-[#A2E4B8] font-black uppercase tracking-widest text-sm">
                                         <FaUniversity /> Pay by Bank
                                     </span>
-                                    <span className="text-black text-[11px] font-black uppercase tracking-widest bg-[#A2E4B8] rounded-full px-2.5 py-1">Boarding now</span>
+                                    <span className="text-black text-[12px] font-black uppercase tracking-widest bg-[#A2E4B8] rounded-full px-2.5 py-1">Boarding now</span>
                                 </div>
 
                                 {/* From → To → Fee */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 mb-7">
                                     <div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">From</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">From</p>
                                         <p className="font-black text-white text-lg md:text-xl mt-1">🏦 Your bank</p>
                                     </div>
                                     <div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">To</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">To</p>
                                         <p className="font-black text-white text-lg md:text-xl mt-1">🐷 The creator</p>
                                     </div>
                                     <div className="col-span-2 sm:col-span-1">
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">Fees</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">Fees</p>
                                         <p className="font-black text-[#A2E4B8] text-lg md:text-lg mt-1 font-mono">Lower than card</p>
                                     </div>
                                 </div>
@@ -83,14 +83,14 @@ export default function PayByBankAnnouncement() {
                                 {/* Price + method */}
                                 <div className="flex flex-wrap items-end justify-between gap-4 pt-5 border-t-2 border-dashed border-white/15">
                                     <div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">You pay</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">You pay</p>
                                         <p className="mt-1 font-mono font-black text-white leading-none">
                                             <span className="text-4xl md:text-4xl">£115</span>
-                                            <span className="text-lg text-gray-500 line-through ml-3">£121</span>
+                                            <span className="text-lg text-white/60 line-through ml-3">£121</span>
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">Method</p>
+                                        <p className="text-[12px] font-black uppercase tracking-[0.18em] text-white/60">Method</p>
                                         <p className="mt-1 font-mono font-black text-white text-base md:text-lg tracking-widest">PAY BY BANK</p>
                                     </div>
                                 </div>
@@ -104,7 +104,7 @@ export default function PayByBankAnnouncement() {
                                             'repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 4px,#fff 4px 7px,transparent 7px 9px,#fff 9px 12px,transparent 12px 16px)',
                                     }}
                                 ></div>
-                                <p className="mt-2 font-mono text-[11px] tracking-[0.3em] text-gray-500">SPNYP · OPEN BANKING · NO CARD REQUIRED</p>
+                                <p className="mt-2 font-mono text-[12px] tracking-[0.3em] text-white/60">SPNYP · OPEN BANKING · NO CARD REQUIRED</p>
                             </div>
 
                             {/* Perforated stub with region stamps */}
@@ -117,7 +117,7 @@ export default function PayByBankAnnouncement() {
                                         <div className={`transform ${s.tilt} border-[3px] border-dashed border-[#A2E4B8] rounded-box-sm px-4 py-2.5 text-center min-w-[96px]`}>
                                             <div className="text-2xl leading-none !text-white">{s.flag}</div>
                                             <div className="font-mono font-black text-[#A2E4B8] text-base leading-none mt-1 tracking-wide">{s.code}</div>
-                                            <div className="text-white/70 text-[11px] font-black uppercase tracking-[0.14em] mt-1">{s.rail}</div>
+                                            <div className="text-white/70 text-[12px] font-black uppercase tracking-[0.14em] mt-1">{s.rail}</div>
                                         </div>
                                     </StaggerItem>
                                 ))}

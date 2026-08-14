@@ -68,11 +68,11 @@ export default function AllMembershipPayments({ auth }) {
                             {[0, 1, 2].map((i) => (
                                 <div
                                     key={i}
-                                    className="h-24 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+ className="h-24 rounded-box bg-white border-[3px] border-black "
                                 />
                             ))}
                         </div>
-                        <div className="h-96 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+ <div className="h-96 rounded-box bg-white border-[3px] border-black " />
                     </div>
                 </div>
             ) : (
@@ -109,13 +109,13 @@ export default function AllMembershipPayments({ auth }) {
 
                         {/* Stats Overview - Responsive Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5">
+ <div className="rounded-box bg-white border-[3px] border-black p-4 sm:p-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+ <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black flex items-center justify-center text-black">
                                         <FiUsers size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
+ <p className="text-[12px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Total Supporters
                                         </p>
                                         <p className="text-xl sm:text-2xl font-black text-black">
@@ -124,13 +124,13 @@ export default function AllMembershipPayments({ auth }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5">
+ <div className="rounded-box bg-white border-[3px] border-black p-4 sm:p-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+ <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black flex items-center justify-center text-black">
                                         <FiDollarSign size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
+ <p className="text-[12px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Total Earnings
                                         </p>
                                         <p className="text-xl sm:text-2xl font-black text-black">
@@ -139,13 +139,13 @@ export default function AllMembershipPayments({ auth }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 sm:p-5 sm:col-span-2 lg:col-span-1">
+ <div className="rounded-box bg-white border-[3px] border-black p-4 sm:p-5 sm:col-span-2 lg:col-span-1">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-black">
+ <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-box-sm bg-pink-200 border-2 border-black flex items-center justify-center text-black">
                                         <FiBarChart2 size="1.25rem" />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
+ <p className="text-[12px] sm:text-xs text-gray-700 uppercase font-bold tracking-widest">
                                             Average Payment
                                         </p>
                                         <p className="text-xl sm:text-2xl font-black text-black">
@@ -157,14 +157,14 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Filters and Search - Responsive */}
-                        <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-3 sm:p-4 mb-4 sm:mb-6">
+ <div className="rounded-box bg-white border-[3px] border-black p-3 sm:p-4 mb-4 sm:mb-6">
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <button
                                         onClick={() => setFilter("all")}
                                         className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "all"
-                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+ ? "bg-[#FF007F] text-black "
                                                 : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
@@ -174,7 +174,7 @@ export default function AllMembershipPayments({ auth }) {
                                         onClick={() => setFilter("monthly")}
                                         className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "monthly"
-                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+ ? "bg-[#FF007F] text-black "
                                                 : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
@@ -184,7 +184,7 @@ export default function AllMembershipPayments({ auth }) {
                                         onClick={() => setFilter("yearly")}
                                         className={`px-4 py-2 min-h-[44px] rounded-box-sm text-xs sm:text-sm font-black uppercase border-2 border-black transition-all ${
                                             filter === "yearly"
-                                                ? "bg-[#FF007F] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+ ? "bg-[#FF007F] text-black "
                                                 : "bg-white text-black hover:bg-gray-100"
                                         }`}
                                     >
@@ -199,7 +199,7 @@ export default function AllMembershipPayments({ auth }) {
                                         onChange={(e) =>
                                             setSearchTerm(e.target.value)
                                         }
-                                        className="w-full sm:w-64 min-h-[44px] px-4 py-2 rounded-box-sm bg-white border-2 border-black text-black placeholder-gray-400 font-semibold focus:outline-none text-xs sm:text-sm"
+ className="w-full sm:w-64 min-h-[44px] px-4 py-2 rounded-box-sm bg-white border-2 border-black text-black placeholder-black/60 font-semibold focus:outline-none text-xs sm:text-sm"
                                     />
                                     <svg
                                         className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
@@ -219,7 +219,7 @@ export default function AllMembershipPayments({ auth }) {
                         </div>
 
                         {/* Payments Cards View for Mobile, Table for Desktop */}
-                        <div className="rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+ <div className="rounded-box bg-white border-[3px] border-black overflow-hidden">
                             {/* Mobile Card View */}
                             <div className="block lg:hidden">
                                 {filteredPayments.map((payment, index) => (
@@ -242,7 +242,7 @@ export default function AllMembershipPayments({ auth }) {
                                                         {payment.user.name}
                                                     </p>
                                                     <span
-                                                        className={`px-2 py-0.5 rounded-box-sm text-[10px] font-bold uppercase capitalize border-2 border-black ${payment.membership.type === "monthly" ? "bg-emerald-200 text-black" : "bg-pink-200 text-black"}`}
+ className={`px-2 py-0.5 rounded-box-sm text-[12px] font-bold uppercase capitalize border-2 border-black ${payment.membership.type === "monthly" ? "bg-emerald-200 text-black" : "bg-pink-200 text-black"}`}
                                                     >
                                                         {
                                                             payment.membership
@@ -257,7 +257,7 @@ export default function AllMembershipPayments({ auth }) {
                                         </div>
                                         <div className="grid grid-cols-2 gap-2 text-xs">
                                             <div>
-                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
+ <p className="text-gray-700 uppercase font-bold text-[12px] tracking-widest">
                                                     Plan
                                                 </p>
                                                 <p className="text-black font-bold">
@@ -265,7 +265,7 @@ export default function AllMembershipPayments({ auth }) {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
+ <p className="text-gray-700 uppercase font-bold text-[12px] tracking-widest">
                                                     Amount
                                                 </p>
                                                 <p className="text-black font-black">
@@ -274,7 +274,7 @@ export default function AllMembershipPayments({ auth }) {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
+ <p className="text-gray-700 uppercase font-bold text-[12px] tracking-widest">
                                                     Date
                                                 </p>
                                                 <p className="text-black font-semibold text-xs">
@@ -282,7 +282,7 @@ export default function AllMembershipPayments({ auth }) {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className="text-gray-700 uppercase font-bold text-[10px] tracking-widest">
+ <p className="text-gray-700 uppercase font-bold text-[12px] tracking-widest">
                                                     Status
                                                 </p>
                                                 <span className="inline-flex items-center gap-1 text-green-700 font-bold text-xs">

@@ -35,24 +35,24 @@ export default function FounderProgressTracker({
     // instead of a stale race tracker
     if (founderData.missed) {
         return (
-            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-gray-900 p-4 md:p-6 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mb-4 overflow-hidden rounded-box border-4 border-black bg-gray-900 p-4 md:p-6 text-white ">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <p className="font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest">
                             Founder Race Ended <span>⏰</span>
                         </p>
-                        <p className="mt-1 text-normal font-semibold text-gray-300">
+                        <p className="mt-1 text-normal font-semibold text-white/70">
                             {hasReachedGoal
                                 ? "You hit the goal, but all Founder seats were taken this time."
                                 : `You reached ${formatMultiPrice(first30DayEarnings, "GBP")} of the ${formatMultiPrice(minEarnings, "GBP")} goal — you missed it this time.`}
                         </p>
-                        <p className="mt-1 text-sm text-gray-400">
+                        <p className="mt-1 text-sm text-white/60">
                             💜 Stay updated — more bonus opportunities are coming!
                         </p>
                     </div>
                     <Link
                         href="/founder/bonus"
-                        className="self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#ff007f] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
+                        className="border-2 border-black self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#FF007F] transition-transform hover:-translate-y-0.5"
                     >
                         View
                     </Link>
@@ -63,7 +63,7 @@ export default function FounderProgressTracker({
 
     if (variant === "mini") {
         return (
-            <div className="mb-4 overflow-hidden rounded-[26px] border-4 border-black bg-yellow-300 p-4 md:p-6 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mb-4 overflow-hidden rounded-box border-4 border-black bg-yellow-300 p-4 md:p-6 text-black ">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                         <p className="text-black font-gulfs font-light flex items-center gap-2 text-lg md:text-2xl font-black uppercase tracking-widest uppercase">
@@ -84,7 +84,7 @@ export default function FounderProgressTracker({
                         </div>
                         <Link
                             href="/founder/bonus"
-                            className="rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#ff007f] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
+                            className="border-2 border-black rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#FF007F] transition-transform hover:-translate-y-0.5"
                         >
                             View
                         </Link>
@@ -116,7 +116,7 @@ export default function FounderProgressTracker({
         return (
             <Link
                 href="/founder/bonus"
-                className="absolute top-4 left-4 z-10 block max-w-[250px] rounded-[24px] border-4 border-black bg-[#ff007f] p-3 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
+                className="absolute top-4 left-4 z-10 block max-w-[250px] rounded-box border-4 border-black bg-[#FF007F] p-3 text-black transition-transform hover:-translate-y-0.5"
             >
                 <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20">
@@ -159,7 +159,7 @@ export default function FounderProgressTracker({
     }
 
     return (
-        <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-[30px] p-6 text-white mb-8 relative overflow-hidden shadow-lg border-4 border-black">
+        <div className="bg-gradient-to-r from-pink-500 to-rose-600 rounded-box p-6 text-white mb-8 relative overflow-hidden border-4 border-black">
             {/* Background decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
             
@@ -183,7 +183,7 @@ export default function FounderProgressTracker({
                         </span>
                     </div>
                     
-                    <Link href="/founder/bonus" className="bg-white text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-full font-bold text-sm shadow-md transition-all">
+                    <Link href="/founder/bonus" className="bg-white text-pink-600 hover:bg-pink-50 px-4 py-2 rounded-full font-bold text-sm transition-all">
                         Learn More
                     </Link>
                 </div>
@@ -192,7 +192,7 @@ export default function FounderProgressTracker({
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 relative z-10">
                 {/* Current Earnings */}
-                <div className="bg-pink-600/50 backdrop-blur-sm rounded-2xl p-4 border border-pink-400/30">
+                <div className="bg-pink-600/50 backdrop-blur-sm rounded-box-sm p-4 border border-pink-400/30">
                     <div className="flex items-center gap-2 text-pink-100 mb-1 text-sm">
                         <FaDollarSign /> Current Earnings
                     </div>
@@ -203,7 +203,7 @@ export default function FounderProgressTracker({
                 </div>
 
                 {/* Progress */}
-                <div className="bg-pink-600/50 backdrop-blur-sm rounded-2xl p-4 border border-pink-400/30 flex flex-col justify-center">
+                <div className="bg-pink-600/50 backdrop-blur-sm rounded-box-sm p-4 border border-pink-400/30 flex flex-col justify-center">
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-2 text-pink-100 text-sm">
                             <FaChartLine /> Progress to Goal
@@ -222,7 +222,7 @@ export default function FounderProgressTracker({
                 </div>
 
                 {/* Status */}
-                <div className="bg-pink-600/50 backdrop-blur-sm rounded-2xl p-4 border border-pink-400/30">
+                <div className="bg-pink-600/50 backdrop-blur-sm rounded-box-sm p-4 border border-pink-400/30">
                     <div className="flex items-center gap-2 text-pink-100 mb-1 text-sm">
                         <FaCrown /> Status
                     </div>
@@ -236,7 +236,7 @@ export default function FounderProgressTracker({
             </div>
 
             {/* Tips Section */}
-            <div className="bg-pink-500/40 backdrop-blur-sm rounded-2xl p-5 border border-pink-400/30 relative z-10 flex justify-between items-center">
+            <div className="bg-pink-500/40 backdrop-blur-sm rounded-box-sm p-5 border border-pink-400/30 relative z-10 flex justify-between items-center">
                 <div>
                     <h3 className="font-bold flex items-center gap-2 mb-3 text-pink-50">
                         <FaLightbulb className="text-yellow-300" /> Quick Tips to Boost Your Earnings:

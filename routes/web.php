@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\CreatorRiskController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\TestRiskController;
 use App\Http\Controllers\AppController;
-use App\Http\Controllers\MaintenanceAccessController;
 use App\Http\Controllers\Auth\BillsController;
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\MembershipController;
@@ -19,6 +18,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\BrandAssetController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
@@ -41,12 +41,16 @@ use App\Http\Controllers\FeatureSuggestionController;
 use App\Http\Controllers\GuestPurchaseController;
 use App\Http\Controllers\GuestSupportTicketController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\MagicBellProxyController;
+use App\Http\Controllers\MaintenanceAccessController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\SignupWaitlistController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StockWaitlistController;
 use App\Http\Controllers\StripeWebhookController;
@@ -62,6 +66,7 @@ use App\Models\UserCart;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
 use App\Support\PresetCovers;
+use App\Support\PwaSplash;
 use Carbon\Carbon;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -464,9 +469,21 @@ Route::post('/register/validate', [RegisteredUserController::class, 'validateReg
     ->middleware('throttle:60,1')
     ->name('register.validate');
 
-Route::get('/dashboard', function () {
-    // return Inertia::render('Dashboard');
-    return redirect()->route('user.show', ['username' => Auth::user()->username]);
+Route::get('/dashboard', function (Request $request) {
+    // ⚠️ The query string MUST survive this redirect. `/dashboard?add=post` is
+    // the URL the app links to itself — CreatorJourneyCard's `first_post` CTA
+    // and the "Write a post for members" link on the activity strip both use
+    // it — and `Dashboard.jsx` reads `?add=` exactly once during render to
+    // decide which creation form to open. Dropping it landed the creator on
+    // their profile with no composer and nothing explaining why, so the one
+    // step the journey card was nudging them towards did nothing.
+    //
+    // `username` is applied AFTER the query so a `?username=` in the URL can
+    // never redirect the caller to somebody else's profile.
+    return redirect()->route('user.show', array_merge(
+        $request->query(),
+        ['username' => Auth::user()->username],
+    ));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -732,6 +749,36 @@ Route::get('/manifest.json', function () {
     ]);
 })->name('manifest.file');
 
+/*
+ * 🚨 `/apple-touch-icon.png` answered 404 in production (measured 14 Aug 2026)
+ * while every sibling icon resolved, because a file under `public/` is not served
+ * on the app domain and this one had no proxy route. That is the iOS home-screen
+ * icon AND the 180x180 entry in `site.webmanifest`, so an installed app carried a
+ * blank tile. Do not delete this in favour of the file in `public/`.
+ */
+Route::get('/apple-touch-icon.png', function () {
+    return response()->file(resource_path('proxy/apple-touch-icon.png'), [
+        'Content-Type' => 'image/png',
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->name('apple.touch.icon.file');
+
+/*
+ * iOS launch images (`apple-touch-startup-image`).
+ *
+ * ⚠️ The basename is resolved against `PwaSplash::knows()`, never joined from raw
+ * request input — it becomes a filesystem path. The route pattern only narrows
+ * the shape; the allow-list is what makes it safe.
+ */
+Route::get('/ios-splash/{file}.png', function (string $file) {
+    abort_unless(PwaSplash::knows($file), 404);
+
+    return response()->file(resource_path('proxy/splash/'.$file.'.png'), [
+        'Content-Type' => 'image/png',
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->where('file', '[0-9]{3,4}x[0-9]{3,4}')->name('ios.splash');
+
 Route::get('/android-chrome-192x192.png', function () {
     $assetRoot = rtrim(asset('/'), '/');
     $content = file_get_contents(filename: resource_path('proxy/android-chrome-192x192.png'));
@@ -937,6 +984,7 @@ Route::get('/seo/sitemap-wishlists.xml', [SitemapController::class, 'wishlists']
 Route::get('/seo/sitemap-posts.xml', [SitemapController::class, 'posts'])->name('sitemap.posts.redirect');
 Route::get('/seo/sitemap-shop-items.xml', [SitemapController::class, 'shopItems'])->name('sitemap.shop-items.redirect');
 Route::get('/seo/sitemap-tasks.xml', [SitemapController::class, 'tasks'])->name('sitemap.tasks.redirect');
+Route::get('/seo/sitemap-help.xml', [SitemapController::class, 'help'])->name('sitemap.help');
 
 // SEO Cache management route (for post-deployment cache clearing)
 Route::get('/seo/clear-cache', [SitemapController::class, 'clearCache'])->name('seo.clear.cache');
@@ -965,6 +1013,36 @@ Route::get('/cover-banners', fn () => response()->json(PresetCovers::forPicker()
     ->name('cover-banners');
 
 /*
+| Sign-up waitlist — the lead we used to throw away.
+|
+| Public and unauthenticated by necessity: the whole audience is people the
+| platform has just refused an account to, so there is nobody to authenticate.
+| Turnstile + a tight throttle stand in for that, and the endpoint answers
+| identically whatever it stores, so it cannot be used to ask whether an address
+| already has an account.
+|
+| ⚠️ Above the auth.php require, same reason as `/cover-banners` — the profile
+| catch-all would otherwise read this as a username.
+*/
+Route::post('/signup-waitlist', [SignupWaitlistController::class, 'join'])
+    ->middleware('throttle:5,1')
+    ->name('signup.waitlist');
+
+/*
+| Web-push heartbeat — the browser telling us it still has a live subscription.
+|
+| Push is registered entirely client-side, so this is the ONLY signal the server
+| has that a user's notifications still work. Client-side throttled to once every
+| PushReachability::HEARTBEAT_THROTTLE_HOURS; the rate limit here is the
+| backstop for a client that ignores it.
+|
+| ⚠️ Same catch-all rule as above — must stay ABOVE the auth.php require.
+*/
+Route::post('/push/heartbeat', [PushSubscriptionController::class, 'heartbeat'])
+    ->middleware(['auth', 'throttle:20,1'])
+    ->name('push.heartbeat');
+
+/*
 | Guest purchase lookup — "where did my purchase go?" for someone with no account.
 |
 | Public by definition: guest checkout is allowed on Piggy Pot, Wishes and the Piggy
@@ -981,6 +1059,21 @@ Route::post('/find-my-purchase', [GuestPurchaseController::class, 'send'])
 Route::get('/my-purchases-link', [GuestPurchaseController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('guest-purchases.show');
+
+/*
+| Brand assets — the email signatures, handed to the team and to partners.
+|
+| Public and unauthenticated on purpose: the people who install these do not all
+| have accounts, and the page discloses nothing that is not already on the site
+| footer and in the Terms of Service. It carries noindex in two places
+| (StaticPageSeoMiddleware and the controller) and a robots.txt Disallow.
+|
+| ⚠️ Same catch-all rule as the routes above — `/{username}/{page?}` matches two
+| segments as readily as one, so `/brand/email-signatures` declared after the
+| auth.php require would be read as the profile of a user called "brand".
+*/
+Route::get('/brand/email-signatures', [BrandAssetController::class, 'emailSignatures'])
+    ->name('brand.email-signatures');
 
 // require __DIR__.'/auth.php'; // moved below founder routes
 
@@ -1082,6 +1175,47 @@ if (app()->environment('local', 'testing')) {
         return response()->json(['error' => 'Sentry not bound in container'], 500);
     });
 }
+
+/*
+|--------------------------------------------------------------------------
+| Help Centre
+|--------------------------------------------------------------------------
+| ⚠️ MUST stay above `require auth.php`. That file ends with the
+| `/{username}/{page?}` profile catch-all and Laravel matches in registration
+| order — `/help` declared below it is read as a creator named "help" and
+| answered with the profile 404. `route:list` shows the route either way, which
+| is exactly what makes this invisible.
+|
+| ⚠️ Order WITHIN this group matters too: `/help/search` must be declared before
+| `/help/{category}` or "search" is matched as a category slug.
+|
+| Public and unauthenticated by design. Guests get no Intercom (its provider
+| returns early when logged out), so for them this is the only self-serve route
+| there is.
+*/
+Route::prefix('help')->name('help.')->group(function () {
+    Route::get('/', [HelpController::class, 'index'])->name('index');
+
+    // JSON. Throttled because search sorts a corpus on every keystroke.
+    Route::get('/search', [HelpController::class, 'search'])
+        ->middleware('throttle:60,1')
+        ->name('search');
+
+    // Ask a question in ordinary language. Generation costs money on a public
+    // endpoint, so this carries a tighter throttle than search AND a per-IP
+    // hourly cap inside the controller.
+    Route::post('/ask', [HelpController::class, 'ask'])
+        ->middleware('throttle:20,1')
+        ->name('ask');
+
+    // Aggregate counters only; nothing here identifies the voter.
+    Route::post('/feedback', [HelpController::class, 'feedback'])
+        ->middleware('throttle:30,1')
+        ->name('feedback');
+
+    Route::get('/{category}', [HelpController::class, 'category'])->name('category');
+    Route::get('/{category}/{article}', [HelpController::class, 'article'])->name('article');
+});
 
 require __DIR__.'/auth.php';
 

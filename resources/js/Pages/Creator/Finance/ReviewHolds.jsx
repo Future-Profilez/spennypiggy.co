@@ -23,16 +23,16 @@ export default function ReviewHolds({ holds, auth }) {
                         <h1 className="text-3xl font-black text-white uppercase tracking-wider mb-2">
                             Review Holds & Disputes
                         </h1>
-                        <p className="text-gray-400">
+                        <p className="text-white/60">
                             These payments have been temporarily flagged by our risk management system or disputed by the cardholder. 
                             They are currently under review by our team to ensure the safety of your account.
                         </p>
                     </div>
 
-                    <div className="bg-slate-900/50 rounded-[30px]  border border-slate-800 overflow-hidden">
+                    <div className="bg-slate-900/50 rounded-box  border border-slate-800 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-sm">
-                                <thead className="bg-slate-800/50 text-xs uppercase text-gray-400">
+                                <thead className="bg-slate-800/50 text-xs uppercase text-white/60">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold">Date</th>
                                         <th className="px-6 py-4 font-semibold">Supporter</th>
@@ -43,7 +43,7 @@ export default function ReviewHolds({ holds, auth }) {
                                 <tbody className="divide-y divide-slate-800">
                                     {holds.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                                            <td colSpan="4" className="px-6 py-12 text-center text-white/60">
                                                 <div className="flex flex-col items-center justify-center">
                                                     <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
                                                         <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,7 +58,7 @@ export default function ReviewHolds({ holds, auth }) {
                                     ) : (
                                         holds.map((hold) => (
                                             <tr key={hold.id} className="hover:bg-slate-800/30 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                                                <td className="px-6 py-4 whitespace-nowrap text-white/60">
                                                     {new Date(hold.created_at).toLocaleDateString(undefined, { 
                                                         year: 'numeric', 
                                                         month: 'short', 
@@ -72,18 +72,18 @@ export default function ReviewHolds({ holds, auth }) {
                                                                 {hold.user.avatar_url ? (
                                                                     <img src={hold.user.avatar_url} alt="" className="w-full h-full object-cover" />
                                                                 ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400 uppercase">
+                                                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/60 uppercase">
                                                                         {hold.user.name?.charAt(0)}
                                                                     </div>
                                                                 )}
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="font-medium text-gray-200">{hold.user.name}</span>
-                                                                <span className="text-xs text-gray-500">@{hold.user.username}</span>
+                                                                <span className="text-xs text-white/60">@{hold.user.username}</span>
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-gray-500 italic">Guest Checkout</span>
+                                                        <span className="text-white/60 italic">Guest Checkout</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-purple-400">

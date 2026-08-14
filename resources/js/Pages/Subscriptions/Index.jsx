@@ -93,7 +93,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
         const nextPaymentDate = getFormattedDate(subscription.next_payment || subscription.current_period_end);
 
         return (
-            <div key={subscription.id} className="bg-white rounded-[30px]    shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
+ <div key={subscription.id} className="bg-white rounded-box overflow-hidden  duration-200 mb-4 border-l-4 border-purple-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
                     <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-purple-50 flex items-center justify-center p-4">
@@ -103,10 +103,10 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                         {subscription.wish_item?.image_url ? (
                             <img src={subscription.wish_item.image_url} 
                                 alt={subscription.wish_item.wishname} 
-                                className="h-12 w-12 object-cover rounded-[30px]  "
+                                className="h-12 w-12 object-cover rounded-box-sm "
                             />
                         ) : (
-                            <div className="h-12 w-12 flex items-center justify-center bg-purple-50 rounded-[30px]  ">
+                            <div className="h-12 w-12 flex items-center justify-center bg-purple-50 rounded-box-sm ">
                                 <FiRefreshCw className="h-12 w-12 text-purple-500" />
                             </div>
                         )}
@@ -119,7 +119,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <h3 className="text-xl font-gulfs uppercase text-gray-800">
                                     {subscription.wish_item?.wishname || 'Subscription'}
                                 </h3>
-                                <p className="text-normal mt-2 text-gray-600">
+                                <p className="text-normal mt-2 text-black/80">
                                     Creator: {subscription.creator?.name || 'Unknown'}
                                 </p>
                                 {subscription.creator?.username && (
@@ -130,7 +130,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                             </div>
                             
                             <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
-                                <p className='me-4 text-lg font-bold'>
+                                <p className="me-4 text-lg font-bold tabular-nums">
                                     {formatMultiPrice(subscription.amount, subscription.currency || auth.user.default_currency || global_currency)}
                                     {subscription.recurring_for === 'continue' && '/month'}
                                 </p>
@@ -139,7 +139,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                         </div>
                         
                         <div className="mt-4">
-                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                            <div className="flex items-center text-sm text-black/80 mb-2">
                                 <FiCalendar className="mr-2" />
                                 <span>
                                     {subscription.recurring_for === 'onetime' ? (
@@ -170,14 +170,14 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                             )}
                             
                             {subscription.recent_events && subscription.recent_events.length > 0 && (
-                                <div className="text-xs text-gray-500 mb-2">
+                                <div className="text-xs text-black/60 mb-2">
                                     Recent: {subscription.recent_events[0].event_type} on {new Date(subscription.recent_events[0].event_date).toLocaleDateString()}
                                 </div>
                             )}
                         </div>
                         
                         <div className="flex justify-between items-center mt-4">
-                            <p className='text-sm text-gray-500'>
+                            <p className='text-sm text-black/60'>
                                 Started: {new Date(subscription.created_at).toLocaleDateString('en-US', {
                                     day: 'numeric',
                                     month: 'long',
@@ -189,7 +189,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <button
                                     onClick={() => handleCancelSubscription(subscription.id)}
                                     disabled={isCancelling}
-                                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-[30px]   hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 min-h-[44px] rounded-box-sm hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isCancelling ? 'Cancelling...' : 'Cancel Subscription'}
                                 </button>
@@ -209,7 +209,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
 
     const renderSubscriberCard = (subscription) => {
         return (
-            <div key={subscription.id} className="bg-white rounded-[30px]    shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-green-400">
+ <div key={subscription.id} className="bg-white rounded-box overflow-hidden  duration-200 mb-4 border-l-4 border-green-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Subscriber info */}
                     <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-green-50 flex items-center justify-center p-4">
@@ -235,16 +235,16 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <h3 className="text-xl font-gulfs uppercase text-gray-800">
                                     {subscription.wish_item.wishname}
                                 </h3>
-                                <p className="text-normal mt-2 text-gray-600">
+                                <p className="text-normal mt-2 text-black/80">
                                     Subscriber: {subscription.subscriber.name}
                                 </p>
                                 {subscription.subscriber.username && (
-                                    <p className="text-sm text-gray-500">@{subscription.subscriber.username}</p>
+                                    <p className="text-sm text-black/60">@{subscription.subscriber.username}</p>
                                 )}
                             </div>
                             
                             <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
-                                <p className='me-4 text-lg font-bold text-green-600'>
+                                <p className="me-4 text-lg font-bold text-green-600 tabular-nums">
                                     {formatMultiPrice(subscription.amount, subscription.currency)}
                                     {subscription.recurring_for === 'continue' && '/month'}
                                 </p>
@@ -255,21 +255,21 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                         <div className="mt-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                 <div>
-                                    <span className="text-gray-500">Total Revenue:</span>
-                                    <p className="font-medium text-green-600">
+                                    <span className="text-black/60">Total Revenue:</span>
+                                    <p className="font-medium text-green-600 tabular-nums">
                                         {formatMultiPrice(subscription.total_revenue, subscription.currency)}
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500">Payments:</span>
+                                    <span className="text-black/60">Payments:</span>
                                     <p className="font-medium">{subscription.payments_count || 1}</p>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500">Status:</span>
+                                    <span className="text-black/60">Status:</span>
                                     <p className="font-medium capitalize">{subscription.status}</p>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500">Started:</span>
+                                    <span className="text-black/60">Started:</span>
                                     <p className="font-medium">
                                         {new Date(subscription.created_at).toLocaleDateString()}
                                     </p>
@@ -302,12 +302,12 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
         const [borderClass, textClass, bgClass] = classes.split(' ');
 
         return (
-            <div className={`bg-white rounded-[30px]   shadow-md p-6 border-t-4 ${borderClass}`}>
+            <div className={`bg-white rounded-box p-6 border-t-4 ${borderClass}`}>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-gray-500">{title}</p>
-                        <p className={`text-2xl font-bold ${textClass}`}>{value}</p>
-                        {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+                        <p className="text-sm font-medium text-black/60">{title}</p>
+                        <p className={`text-2xl font-bold tabular-nums whitespace-nowrap ${textClass}`}>{value}</p>
+                        {subtitle && <p className="text-sm text-black/60 mt-1">{subtitle}</p>}
                     </div>
                     <div className={`p-3 ${bgClass} rounded-full`}>
                         {icon}
@@ -325,7 +325,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
         >
             <Head title="Subscriptions" />
             
-            <div className="py-12">
+            <div className="pt-12 pb-28 md:pb-16">
                 <div className="containerbox mx-auto">
                     <div className="py-8">
                         {/* Stats Overview */}
@@ -368,7 +368,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                         <div className="flex space-x-4 mb-6">
                             <button
                                 onClick={() => setActiveTab('my-subscriptions')}
-                                className={`px-6 py-3 rounded-[30px]    font-medium transition-colors ${
+                                className={`px-6 py-3 rounded-box-sm min-h-[44px] font-medium transition-colors ${
                                     activeTab === 'my-subscriptions' 
                                         ? 'bg-purple-600 text-white' 
                                         : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -378,7 +378,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                             </button>
                             <button
                                 onClick={() => setActiveTab('subscribers')}
-                                className={`px-6 py-3 rounded-[30px]    font-medium transition-colors ${
+                                className={`px-6 py-3 rounded-box-sm min-h-[44px] font-medium transition-colors ${
                                     activeTab === 'subscribers' 
                                         ? 'bg-green-600 text-white' 
                                         : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -400,13 +400,13 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                         {mySubscriptions.map(subscription => renderSubscriptionCard(subscription))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 bg-white rounded-[30px]   ">
-                                        <FiRefreshCw className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <div className="text-center py-12 bg-white rounded-box   ">
+                                        <FiRefreshCw className="mx-auto h-12 w-12 text-black/60 mb-4" />
                                         <h3 className="text-lg font-medium text-gray-900 mb-2">No subscriptions yet</h3>
-                                        <p className="text-gray-600 mb-4">Start supporting your favorite creators by subscribing to their content.</p>
+                                        <p className="text-black/80 mb-4">Start supporting your favorite creators by subscribing to their content.</p>
                                         <Link
                                             href="/"
-                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-[30px]   shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+                                            className="inline-flex items-center min-h-[44px] px-4 py-2 border border-transparent text-sm font-medium rounded-box-sm text-white bg-purple-600 hover:bg-purple-700"
                                         >
                                             Browse Creators
                                         </Link>
@@ -426,13 +426,13 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                         {subscribersToMe.map(subscription => renderSubscriberCard(subscription))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 bg-white rounded-[30px]   ">
-                                        <FiUsers className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                                    <div className="text-center py-12 bg-white rounded-box   ">
+                                        <FiUsers className="mx-auto h-12 w-12 text-black/60 mb-4" />
                                         <h3 className="text-lg font-medium text-gray-900 mb-2">No subscribers yet</h3>
-                                        <p className="text-gray-600 mb-4">Create subscription wish items to start getting subscribers and earning recurring revenue.</p>
+                                        <p className="text-black/80 mb-4">Create subscription wish items to start getting subscribers and earning recurring revenue.</p>
                                         <Link
                                             href="/profile"
-                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-[30px]   shadow-sm text-white bg-green-600 hover:bg-green-700"
+                                            className="inline-flex items-center min-h-[44px] px-4 py-2 border border-transparent text-sm font-medium rounded-box-sm text-white bg-green-600 hover:bg-green-700"
                                         >
                                             Create Subscription Content
                                         </Link>
@@ -449,7 +449,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
-                    <div className={`rounded-[30px]    p-4 shadow-lg ${
+                    <div className={`rounded-box p-4 ${
                         toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}>
                         <div className="flex items-center">
@@ -467,7 +467,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <div className="-mx-1.5 -my-1.5">
                                     <button
                                         onClick={() => setShowToast(false)}
-                                        className="inline-flex rounded-[30px]   p-1.5 hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                        className="inline-flex rounded-box-sm min-h-[44px] min-w-[44px] items-center justify-center p-1.5 hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2"
                                     >
                                         <span className="sr-only">Dismiss</span>
                                         <FiX className="h-4 w-4" />

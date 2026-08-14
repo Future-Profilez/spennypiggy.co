@@ -44,9 +44,7 @@ export default function GiftListing({
 
     return (
         <div
-            className={`wishlistcntbox mb-3 sm:mb-4 whbg relative
-                ${gift?.deleted_at !== null ? "opacity-50" : ""}
-                 shadow-voilet`}
+            className={`border-2 border-black wishlistcntbox mb-3 sm:mb-4 whbg relative ${gift?.deleted_at !== null ? "opacity-50" : ""}`}
         >
             {IsloggedIn && (
                 <div className="absolute top-2 right-2 z-10 opacity-100">
@@ -65,14 +63,14 @@ export default function GiftListing({
                             leaveFrom="transform opacity-100 scale-100"
                             leaveTo="transform opacity-0 scale-95"
                         >
-                            <Menu.Items className="absolute right-8 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-[30px]   bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <Menu.Items className="absolute right-8 mt-[-40px] w-40 origin-top-right divide-y divide-gray-100 rounded-box bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                                 <div className="px-1 py-1">
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
                                                 className={`${
-                                                    active ? 'bg-[#FF007F] text-white' : 'text-gray-900'
-                                                } group flex w-full items-center rounded-[30px]   px-2 py-2 text-sm`}
+                                                    active ? 'bg-[#FF007F] text-black' : 'text-gray-900'
+                                                } group flex w-full items-center rounded-box   px-2 py-2 text-sm`}
                                                 onClick={() => {
                                                     DeleteItem(gift?.uuid);
                                                 }}

@@ -570,10 +570,10 @@ export default function EditProfile({
         <div className="flex ps-2 py-3 gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
             <button
                 onClick={() => setActiveTab("profile")}
-                className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+ className={`py-2 px-6 text-sm font-black uppercase tracking-widest border-[3px] border-black rounded-box-sm transition-all whitespace-nowrap ${
                     activeTab === "profile"
-                        ? "bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                        : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+ ? "bg-yellow-300 text-black translate-x-[-1px] translate-y-[-1px]"
+ : "bg-white text-black hover:bg-yellow-100 hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
             >
                 Profile
@@ -586,10 +586,10 @@ export default function EditProfile({
                 fields, because they are what a visitor sees first. */}
             <button
                 onClick={() => setActiveTab("settings")}
-                className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+ className={`py-2 px-6 text-sm font-black uppercase tracking-widest border-[3px] border-black rounded-box-sm transition-all whitespace-nowrap ${
                     activeTab === "settings"
-                        ? "bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
-                        : "bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+ ? "bg-yellow-300 text-black translate-x-[-1px] translate-y-[-1px]"
+ : "bg-white text-black hover:bg-yellow-100 hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
             >
                 Settings
@@ -614,7 +614,7 @@ export default function EditProfile({
                             </h2>
                             <button
                                 onClick={() => setUploadingStart(false)}
-                                className="mr-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]"
+ className="mr-4 bg-gray-200 px-4 py-1 rounded-box-sm"
                             >
                                 Exit
                             </button>
@@ -653,7 +653,7 @@ export default function EditProfile({
                             <button
                                 type="button"
                                 onClick={() => setCoverUploadingStart(false)}
-                                className="mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]"
+ className="mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-box-sm"
                             >
                                 Exit
                             </button>
@@ -708,7 +708,7 @@ export default function EditProfile({
                                     activeTab === "profile" ? "block" : "hidden"
                                 }
                             >
-                                <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+ <h3 className="mb-4 mt-8 border-t border-black/10 pt-8 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     Your details
                                 </h3>
                                 <ul>
@@ -724,7 +724,7 @@ export default function EditProfile({
                                             onChange={(e) =>
                                                 setData("name", e.target.value)
                                             }
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+ className="w-full border-gray-300 border px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                             placeholder="Your Name"
                                         />
                                     </li>
@@ -743,7 +743,7 @@ export default function EditProfile({
                                             }
                                             type="text"
                                             name="username"
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+ className="w-full border-gray-300 border px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                             placeholder="spennypiggy.co/username"
                                             onKeyUp={(e) => {
                                                 setUsername(e.target.value);
@@ -762,7 +762,7 @@ export default function EditProfile({
                                             onChange={(e) =>
                                                 setData("email", e.target.value)
                                             }
-                                            className="w-full border-gray-300 border px-4 py-3 rounded-[15px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
+ className="w-full border-gray-300 border px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                             placeholder="your@email.com"
                                         />
                                     </li>
@@ -777,7 +777,7 @@ export default function EditProfile({
                                                     w-full
                                                     border border-gray-300
                                                     px-4 py-3 pr-12
-                                                    rounded-[15px]
+ rounded-box-sm
                                                     focus:outline-none
                                                     focus:border-[#FF007F]
                                                     focus:ring-1
@@ -807,7 +807,7 @@ export default function EditProfile({
                                             {/* Custom Dropdown Icon */}
                                             <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                                                 <svg
-                                                    className="w-5 h-5 text-gray-500"
+ className="w-5 h-5 text-black/60"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -828,7 +828,7 @@ export default function EditProfile({
                                         </label>
                                         <input
                                             type="date"
-                                            className="w-full border border-gray-300 px-4 py-3 rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
+ className="w-full border border-gray-300 px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
                                             value={data.date_of_birth}
                                             onChange={(e) => setData("date_of_birth", e.target.value)}
                                         />
@@ -862,7 +862,7 @@ export default function EditProfile({
                                         </div>
                                         {user?.bio_approved === 2 &&
                                             user?.edit_bio_reason && (
-                                                <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-[12px] border border-red-200">
+ <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
                                                     <span className="font-bold">
                                                         Rejection Reason:
                                                     </span>{" "}
@@ -876,12 +876,12 @@ export default function EditProfile({
                                                 setData("bio", e.target.value)
                                             }
                                             name="bio"
-                                            className="w-full border-gray-300 border p-4 rounded-[20px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 min-h-[120px]"
+ className="w-full border-gray-300 border p-4 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 min-h-[120px]"
                                             placeholder="Tell us about yourself..."
                                         />
                                     </li>
                                     <li className="mb-4">
-                                        <div className="p-3 bg-gray-50 rounded-[20px] border border-gray-200">
+ <div className="p-3 bg-gray-50 rounded-box-sm border border-gray-200">
                                             <strong className="block text-sm text-gray-600 mb-1">
                                                 Profile URL
                                             </strong>
@@ -896,7 +896,7 @@ export default function EditProfile({
                                     <li className="mb-4">
                                         <Link
                                             href={route("account.2fa")}
-                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200 hover:bg-gray-100 transition-colors w-full text-left"
+ className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200 hover:bg-gray-100 transition-colors w-full text-left"
                                         >
                                             <div>
                                                 <div className="flex items-center gap-2">
@@ -909,7 +909,7 @@ export default function EditProfile({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-1">
+ <p className="text-xs text-black/60 mt-1">
                                                     Add an extra layer of
                                                     security to your account
                                                 </p>
@@ -917,7 +917,7 @@ export default function EditProfile({
                                             <div className="bg-white p-2 rounded-full border border-gray-200">
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-5 w-5 text-gray-400"
+ className="h-5 w-5 text-black/60"
                                                     viewBox="0 0 20 20"
                                                     fill="currentColor"
                                                 >
@@ -945,7 +945,7 @@ export default function EditProfile({
                                         : "hidden"
                                 }
                             >
-                                <h3 className="mb-4 text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+ <h3 className="mb-4 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     How your profile looks
                                 </h3>
                                 <div className="mainprofile mb-8 relative w-full">
@@ -958,20 +958,20 @@ export default function EditProfile({
                                                       coverimage
                                             }
                                             alt="Cover"
-                                            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90 !rounded-[30px] "
+ className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90 !rounded-box "
                                         />
                                         <button
                                             type="button"
                                             onClick={() =>
                                                 setCoverUploadingStart(true)
                                             }
-                                            className="w-fit absolute top-4 right-4    bg-white shadow-lg hover:bg-gray-200 transition-all z-10 px-4 py-2 rounded-xl shadow-lg !text-sm"
+ className="w-fit absolute top-4 right-4 bg-white hover:bg-gray-200 transition-all z-10 px-4 py-2 rounded-box-sm !text-sm"
                                         >
                                             Edit Cover Photo
                                         </button>
                                     </div>
                                     <div className="flex justify-center mt-[-70px]">
-                                        <div className="w-[120px] h-[120px] dp group relative !border-3 !border-green-400 !rounded-[30px]  overflow-hidden">
+ <div className="w-[120px] h-[120px] dp group relative !border-3 !border-green-400 !rounded-box overflow-hidden">
                                             <img
                                                 src={
                                                     profileDP
@@ -987,7 +987,7 @@ export default function EditProfile({
                                                 onClick={() =>
                                                     setUploadingStart(true)
                                                 }
-                                                className="editbtn absolute bottom-[5px] right-0 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-all z-10"
+ className="editbtn absolute bottom-[5px] right-0 bg-white rounded-full hover:bg-gray-100 transition-all z-10"
                                             >
                                                 <img
                                                     src={editicon}
@@ -1018,7 +1018,7 @@ export default function EditProfile({
 
                                         {currentSocialBanner && (
                                             <div className="mb-4 relative group">
-                                                <div className="border-4 border-white rounded-[20px] shadow-lg overflow-hidden mx-auto max-w-md">
+ <div className="border-4 border-white rounded-box-sm overflow-hidden mx-auto max-w-md">
                                                     <img
                                                         src={
                                                             currentSocialBanner ||
@@ -1029,7 +1029,7 @@ export default function EditProfile({
                                                         className="w-full h-auto"
                                                     />
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-2">
+ <p className="text-xs text-black/60 mt-2">
                                                     Right-click image to save
                                                 </p>
                                             </div>
@@ -1042,7 +1042,7 @@ export default function EditProfile({
                                                 generatingBanner ||
                                                 (!localAvatar && !user?.avatar)
                                             }
-                                            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-full font-medium shadow-md hover:shadow-lg transform transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-full font-medium transform transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {generatingBanner
                                                 ? "Generating..."
@@ -1098,10 +1098,10 @@ export default function EditProfile({
                                                                     />
                                                                     <label
                                                                         htmlFor={`types-${index}`}
-                                                                        className={`block px-4 py-2 text-normal rounded-full font-medium cursor-pointer  min-w-[50px] !text-center transition-all duration-300 border 
+ className={`block px-4 py-2 text-normal rounded-full font-medium cursor-pointer min-w-[50px] !text-center transition-all duration-300 border 
                                                                         ${
                                                                             isSelected
-                                                                                ? "bg-pink-600 border-[#FF007F] !text-white shadow-md transform scale-105"
+ ? "bg-pink-600 border-[#FF007F] !text-white "
                                                                                 : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-50"
                                                                         }`}
                                                                     >
@@ -1119,19 +1119,19 @@ export default function EditProfile({
                                             {/* <li className="mb-6">
                                                 <label className="block text-normal font-medium !text-black mb-2">Minimum Treat Amount</label>
                                                 <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+ <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-black/60 font-medium">
                                                         {global_currency?.symbol || '£'}
                                                     </span>
-                                                    <input 
-                                                        type="number" 
-                                                        name="min_surprise_amount" 
+                                                    <input
+                                                        type="number"
+                                                        name="min_surprise_amount"
                                                         defaultValue={user?.min_surprise_amount || ''}
                                                         onChange={(e) => setData('min_surprise_amount', e.target.value)}
-                                                        className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-[10px] md:rounded-[15px] focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
+ className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                                         placeholder="0.00"
                                                     />
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-1">
+ <p className="text-xs text-black/60 mt-1">
                                                     Minimum amount supporters must spend on a treat.
                                                 </p>
                                             </li> */}
@@ -1143,14 +1143,16 @@ export default function EditProfile({
                                     </li>
 
                                     <li className="mb-4">
-                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200">
+ <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
                                             <div>
                                                 <h4 className="font-medium text-gray-800">
-                                                    Show Piggy Bank Earnings
+ Earnings on profile
                                                 </h4>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Display your earnings goal
-                                                    on your profile
+ <p className="text-xs text-black/60 mt-1">
+ Show your total earned to
+ visitors. Off, they still
+ see your milestone progress
+ — just not the amount.
                                                 </p>
                                             </div>
                                             <Switch
@@ -1174,12 +1176,12 @@ export default function EditProfile({
                                     </li>
 
                                     <li className="mb-4">
-                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200">
+ <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
                                             <div>
                                                 <h4 className="font-medium text-gray-800">
                                                     Email Notifications
                                                 </h4>
-                                                <p className="text-xs text-gray-500 mt-1">
+ <p className="text-xs text-black/60 mt-1">
                                                     Receive updates about your
                                                     account via email
                                                 </p>
@@ -1210,25 +1212,25 @@ export default function EditProfile({
                                 <button
                                     type="button"
                                     onClick={() => setClose(false)}
-                                    className="w-full rounded-xl bg-gray-200 border-[3px]
-                                    border-black font-black uppercase tracking-widest block p-[10px] 
-                                    hover:bg-gray-300 transition-colors 
-                                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
-                                    hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] !text-sm"
+ className="w-full rounded-box-sm bg-gray-200 border-[3px]
+                                    border-black font-black uppercase tracking-widest block p-[10px]
+                                    hover:bg-gray-300 transition-colors
+ 
+                                    hover:translate-x-[-2px] hover:translate-y-[-2px]
+ !text-sm"
                                 >
                                     Cancel
                                 </button>
                                 <LoaderButton
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full rounded-xl bg-yellow-300 
-                                    border-[3px] border-black font-black 
-                                    uppercase font-poppins tracking-widest block p-[10px] hover:bg-yellow-400 
+ className="w-full rounded-box-sm bg-yellow-300 
+                                    border-[3px] border-black font-black
+                                    uppercase font-poppins tracking-widest block p-[10px] hover:bg-yellow-400
                                     transition-colors font-bold !mt-0 !text-sm
-                                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
-                                    hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                                    hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] !text-black "
+ 
+                                    hover:translate-x-[-2px] hover:translate-y-[-2px]
+ !text-black "
                                     spinnerclass="fill-black"
                                 >
                                     {loading || processing
