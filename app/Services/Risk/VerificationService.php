@@ -4,6 +4,7 @@ namespace App\Services\Risk;
 
 use App\Models\ConfirmationLog;
 use App\Models\RiskIdentity;
+use App\Support\RiskMessages;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -76,7 +77,7 @@ class VerificationService
         $cachedOtp = Cache::store($this->otpStore)->get($key);
 
         if (! $cachedOtp) {
-            return ['ok' => false, 'error' => 'OTP expired. Please request a new code.'];
+            return ['ok' => false, 'error' => RiskMessages::get('STEP_UP_CODE_EXPIRED', RiskMessages::AUDIENCE_GUEST)['body'], 'key' => 'STEP_UP_CODE_EXPIRED'];
         }
 
         // Brute-force guard: lock out after too many failed attempts.
@@ -84,14 +85,14 @@ class VerificationService
         if ($attempts >= $this->maxOtpAttempts) {
             Cache::store($this->otpStore)->forget($key);
 
-            return ['ok' => false, 'error' => 'Too many incorrect attempts. Please request a new code.'];
+            return ['ok' => false, 'error' => RiskMessages::get('STEP_UP_CODE_LOCKED', RiskMessages::AUDIENCE_GUEST)['body'], 'key' => 'STEP_UP_CODE_LOCKED'];
         }
 
         if ((string) $cachedOtp !== (string) $otp) {
             // Increment failed-attempt counter, tied to the OTP's own lifetime.
             Cache::store($this->otpStore)->put($attemptsKey, $attempts + 1, 600);
 
-            return ['ok' => false, 'error' => 'Incorrect OTP. Please try again.'];
+            return ['ok' => false, 'error' => RiskMessages::get('STEP_UP_CODE_FAILED', RiskMessages::AUDIENCE_GUEST)['body'], 'key' => 'STEP_UP_CODE_FAILED'];
         }
 
         // Clear OTP + attempt counter after success to prevent replay

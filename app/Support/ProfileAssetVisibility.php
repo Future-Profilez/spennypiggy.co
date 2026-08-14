@@ -74,7 +74,11 @@ class ProfileAssetVisibility
      * in the review queue as an edit to something that was never published.
      */
     public const HANDLE_COLUMNS = [
-        'twitter', 'instagram', 'facebook', 'youtube', 'twitch', 'tumblr',
+        // ⚠️ Every column the table HAS, not just the three now accepted: a
+        // creator verified on a retired platform still has a live handle, and
+        // reading their row as empty would treat their next edit as a first
+        // submission rather than as a change to something published.
+        'twitter', 'instagram', 'tiktok', 'facebook', 'youtube', 'twitch', 'tumblr',
         'reddit', 'discord', 'onlyfans', 'loyalfans', 'fansly', 'manyvids', 'other',
     ];
 

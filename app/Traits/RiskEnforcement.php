@@ -9,6 +9,8 @@ use App\Services\Risk\RiskEngineService;
 use App\Services\Risk\RiskIdentityService;
 use App\Services\Risk\RiskService;
 use App\Services\Risk\VerificationService;
+use App\Support\BlockedPaymentNotice;
+use App\Support\RiskMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -55,25 +57,37 @@ trait RiskEnforcement
         );
 
         if ($guestRestriction) {
+            // Copy comes from RiskMessages, never from the check itself — the
+            // same refusal is raised from several places and used to be worded
+            // three different ways.
+            $ui = RiskMessages::get('GUEST_ACCOUNT_REQUIRED', RiskMessages::AUDIENCE_GUEST);
+
             if ($isJsonResponse) {
                 return response()->json([
                     'status' => false,
                     'code' => 'AUTH_REQUIRED',
                     'reason_code' => $guestRestriction['code'],
                     'message' => 'Login required',
-                    'msg' => $guestRestriction['message'],
+                    // `msg` is what the older checkout screens render; `ui` is
+                    // what the shared RiskMessage component renders. Both carry
+                    // the same wording so a half-migrated screen cannot drift.
+                    'msg' => $ui['body'],
+                    'ui' => $ui,
                 ]);
             }
 
             return to_route('login', [
                 'redirect' => $request->fullUrl(),
-                'message' => $guestRestriction['message'],
+                'message' => $ui['body'],
             ]);
         }
 
         // 3. Risk Engine Context
         $context = [
-            'amount' => (int) round($totalAmountWithFees * 100),
+            // ⚠️ Minor units. A zero-decimal currency (JPY, KRW…) has no minor
+            // unit, so multiplying by 100 inflated the amount a hundredfold and
+            // put every such payment over the spend caps.
+            'amount' => (int) round($totalAmountWithFees * (Helpers::isZeroDecimalCurrency($currency) ? 1 : 100)),
             'currency' => strtoupper($currency),
             'creator_id' => $creator->uuid,
             'email' => Auth::user()->email ?? $request->query('email') ?? $request->input('email'),
@@ -94,18 +108,35 @@ trait RiskEnforcement
 
         // 5. Handle BLOCK / COOLDOWN
         if (in_array($decision, ['BLOCK', 'COOLDOWN'], true)) {
-            $msg = $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.';
+            // The engine already resolved the audience-correct copy. The
+            // fallback is RiskMessages' own generic state, NOT a bare string —
+            // the old fallback ("Payment blocked for security reasons.") broke
+            // all three of the brief's rules at once: it named the rule, it
+            // implied wrongdoing, and it gave no next step.
+            $ui = $riskResult['ui'] ?: RiskMessages::get(
+                'GENERIC_HOLD',
+                RiskMessages::audienceFor($context['is_guest'])
+            );
+
+            // On-screen only left anyone who navigated away with nothing at all,
+            // and a guest with no account to come back to. Send-once per address
+            // per day, and never throws — see BlockedPaymentNotice.
+            BlockedPaymentNotice::send($ui, $context['email'] ?? null, Auth::user());
+
             if ($isJsonResponse) {
                 return response()->json([
                     'status' => false,
-                    'message' => $msg,
-                    'msg' => $msg,
+                    'message' => $ui['body'],
+                    'msg' => $ui['body'],
                     'decision' => $decision,
                     'reason_codes' => $riskResult['reason_codes'] ?? [],
+                    'ui' => $ui,
                 ]);
             }
 
-            return redirect()->back()->with('error', $msg);
+            return redirect()->back()
+                ->with('error', $ui['body'])
+                ->with('risk_message', $ui);
         }
 
         // 6. Handle STEP_UP
@@ -121,7 +152,12 @@ trait RiskEnforcement
                     $sent = app(VerificationService::class)->sendOtp($identity, $context);
 
                     if (! $sent) {
-                        $msg = 'Unable to send verification code. Please check your email and try again.';
+                        // A guest's step-up code goes to an address they typed
+                        // moments ago and nothing has verified — so "check your
+                        // email" has to include "check it's the right one", or
+                        // this is a silently lost sale that looks like nothing
+                        // happened.
+                        $msg = 'We couldn\'t get that code to you. Double-check the email address and give it another go.';
                         if ($isJsonResponse) {
                             return response()->json(['status' => false, 'message' => $msg, 'msg' => $msg]);
                         }
@@ -154,10 +190,10 @@ trait RiskEnforcement
                 $stepUpData = [
                     'step_up_required' => true,
                     'decision' => 'STEP_UP',
-                    'ui' => $riskResult['ui'] ?? [
-                        'title' => 'Confirm Your Payment',
-                        'body' => 'For your security, please confirm this payment.',
-                    ],
+                    'ui' => $riskResult['ui'] ?: RiskMessages::get(
+                        'STEP_UP_REQUIRED',
+                        RiskMessages::audienceFor($context['is_guest'])
+                    ),
                     'step_up_context' => [
                         'risk_identity_id' => $identity->id ?? null,
                         'amount' => $context['amount'],

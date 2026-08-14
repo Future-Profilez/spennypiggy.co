@@ -4,6 +4,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 import RewardSummary from "@/Components/Reward/RewardSummary";
+import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function CartItem({data, removeCart, quantityUpdate, currency, isLoggedIn, totalPrice}) {
 
@@ -20,7 +21,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                 !isLoggedIn
             ) {
                 setQuantity(intialItem);
-                const msg = resp?.data?.msg || "Larger payments more than £50 need to login.";
+                const msg = resp?.data?.msg || riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE");
                 errorAlert(msg);
                 window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
                 return;

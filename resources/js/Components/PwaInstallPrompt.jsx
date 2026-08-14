@@ -24,10 +24,45 @@ export default function PwaInstallPrompt() {
     }
   };
 
+  /**
+   * ⚠️ A first-time visitor is NEVER prompted. Measured on the live homepage: the
+   * prompt is a full-screen `bg-black/40` scrim at z-[9999999999] centred over the
+   * `<h1>`, and it lands while the cookie bar still covers the trust points — so a
+   * first-time visitor met three overlays at once and could not read the pitch. It
+   * also asks someone to install an app for a product they have not been told about.
+   *
+   * The marker IS the gate: visit 1 records and shows nothing, visit 2 onward is
+   * eligible. Cookie consent is dealt with on visit 1, so the two never stack.
+   * Deliberately not `sessionStorage` — a reload is not a return visit.
+   */
+  const RETURN_VISIT_KEY = 'pwa_install_seen_site';
+
+  // ⚠️ Resolved ONCE per mount, into a ref. `shouldShowPrompt` is called from two
+  // places (the 3s timer and `beforeinstallprompt`), and the read below also WRITES
+  // the marker — so evaluating it per call would answer "first visit" the first time
+  // and "returning" the second, showing the prompt on the very visit it must not.
+  const isReturningRef = useRef(null);
+  if (isReturningRef.current === null) {
+    try {
+      isReturningRef.current = Boolean(localStorage.getItem(RETURN_VISIT_KEY));
+      if (!isReturningRef.current) {
+        localStorage.setItem(RETURN_VISIT_KEY, new Date().toISOString());
+      }
+    } catch (error) {
+      // Storage blocked (Safari private mode, hardened profiles) throws
+      // SecurityError. Fail closed: with no marker we cannot prove this is a
+      // return visit, and a wrongly-suppressed prompt costs far less than a
+      // modal over the headline.
+      isReturningRef.current = false;
+    }
+  }
+
   const shouldShowPrompt = () => {
+    if (!isReturningRef.current) return false;
+
     const lastShown = getLastShownDate();
-    if (!lastShown) return true; // Never shown before
-    
+    if (!lastShown) return true; // Returning, never prompted before
+
     const now = new Date();
     const daysSinceShown = (now - lastShown) / (1000 * 60 * 60 * 24);
     return daysSinceShown >= 30; // Show if 30+ days have passed
@@ -198,7 +233,7 @@ export default function PwaInstallPrompt() {
             </div>
             
             <div className="space-y-3 text-sm text-neutral-700 ">
-              <div className="p-3 rounded-[20px] bg-green-50 /20 border border-green-200 ">
+              <div className="p-3 rounded-box-sm bg-green-50 border border-green-200">
                 <p className="font-medium mb-2">Chrome Install Steps:</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-3">
@@ -245,10 +280,17 @@ export default function PwaInstallPrompt() {
           <h3 className="text-2xl font-gulfs uppercase text-neutral-900  ">
             Add Spenny Piggy to Your Home Screen 🐷💖
           </h3>
+          {/* 🚨 Content-first copy. This wording was "Never miss a tribute, task,
+              or juicy update… (or request payment 👀)" — the exact transfer/gifting
+              vocabulary the whole platform was cleaned of (see the content-compliance
+              rules in CLAUDE.md), plus a suggestive emoji on a product whose headline
+              claim is "Strictly SFW". This modal is the FIRST thing a visitor — or a
+              Stripe reviewer — sees on the homepage, so it is a Stripe-facing surface
+              and the ban list applies to it in full. No gift/tip/donation/tribute. */}
           <p className="mt-2 text-sm text-neutral-700  ">
-            Never miss a tribute, task, or juicy update again.
+            Get told the moment something sells.
             <br />
-            📲 Install the app to get push notifications — including when your favourite creators message you (or request payment 👀).
+            📲 Install the app for push notifications when someone buys your content, orders a paid request, or messages you.
           </p>
 
           {isSafari ? (

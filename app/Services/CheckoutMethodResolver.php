@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\StripeControl;
+use App\Support\RiskMessages;
 
 /**
  * Resolves the supporter's requested payment method ('card' | 'bank') against
@@ -107,7 +108,14 @@ class CheckoutMethodResolver
         }
 
         if (! $rules['card_allowed']) {
-            return self::refuse('card_risk_declined', 'Card payment is unavailable for this purchase — please use the bank payment option (lower fees, higher limits).');
+            // ⚠️ The copy is NOT written here. `App\Support\RiskMessages` is the
+            // one definition of everything a supporter reads when a payment is
+            // refused, and this refusal used to be the exception — a hand-written
+            // string that named the reason ("lower fees, higher limits") and sat
+            // outside every rule the brief is tested against.
+            $ui = RiskMessages::get('CARD_UNAVAILABLE_USE_BANK');
+
+            return self::refuse('card_risk_declined', $ui['body'], $ui);
         }
 
         $force3ds = $rules['force_3ds'];
@@ -127,12 +135,18 @@ class CheckoutMethodResolver
         ];
     }
 
-    private static function refuse(string $code, string $message): array
+    /**
+     * @param  array|null  $ui  The rendered RiskMessages state, where one exists.
+     *                          Additive: every caller reads `message`, and a
+     *                          surface that can draw the full card reads `ui`.
+     */
+    private static function refuse(string $code, string $message, ?array $ui = null): array
     {
         return [
             'ok' => false,
             'code' => $code,
             'message' => $message,
+            'ui' => $ui,
         ];
     }
 }

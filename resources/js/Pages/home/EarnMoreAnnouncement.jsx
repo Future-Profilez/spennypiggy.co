@@ -43,8 +43,8 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                    <TiltCard max={8} className="rounded-[30px] h-full">
-                    <div className="bg-[#E6EA7B] border-[3px] border-black rounded-[30px] p-6 md:p-8 relative group h-full">
+                    <TiltCard max={8} className="rounded-box h-full">
+                    <div className="bg-[#E6EA7B] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-6">
                             <FaBolt />
                         </div>
@@ -62,8 +62,8 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                     </StaggerItem>
 
                     <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
-                    <TiltCard max={8} className="rounded-[30px] h-full">
-                    <div className="bg-[#05EFB8] border-[3px] border-black rounded-[30px] p-6 md:p-8 relative group h-full">
+                    <TiltCard max={8} className="rounded-box h-full">
+                    <div className="bg-[#05EFB8] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform -rotate-6">
                             <FaCrown />
                         </div>
@@ -86,19 +86,23 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                     </StaggerItem>
 
                     <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                    <TiltCard max={8} className="rounded-[30px] h-full">
-                    <div className="bg-[#FF007F] border-[3px] border-black rounded-[30px] p-6 md:p-8 relative group h-full">
+                    <TiltCard max={8} className="rounded-box h-full">
+                    <div className="bg-[#FF007F] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
                         <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-12">
                             <FaUserFriends />
                         </div>
-                        <h3 className="text-2xl font-gulfs text-white mb-2 uppercase">Creator Referral Bonus</h3>
-                        <p className="text-white/85 text-lg mb-5 leading-snug">
+                        {/* ⚠️ INK ON A PINK FILL IS BLACK. White on #FF007F is 3.78:1
+                            and fails AA at this size; black is 5.56:1. The yellow and
+                            mint cards beside this one already take black, so this was
+                            also the only card in the row reading in a different ink. */}
+                        <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Creator Referral Bonus</h3>
+                        <p className="text-black/80 text-lg mb-5 leading-snug">
                             Refer creators and earn £50 when they reach £1,000 in earnings.
                         </p>
-                        <ul className="space-y-2 text-white font-semibold">
-                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> Unlimited referrals</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> No cap on rewards</li>
-                            <li className="flex items-center gap-2"><FaCheck className="text-white shrink-0" /> Earn while helping others grow</li>
+                        <ul className="space-y-2 text-black font-semibold">
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Unlimited referrals</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> No cap on rewards</li>
+                            <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Earn while helping others grow</li>
                         </ul>
                     </div>
                     </TiltCard>
@@ -119,7 +123,16 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             href="/register"
                             className="relative inline-flex items-center gap-3 bg-[#E6EA7B] text-black font-black text-base md:text-lg py-3 px-7 rounded-full hover:scale-105 transition-all duration-300 uppercase tracking-wide group"
                         >
-                            <span>Start Selling for Free</span>
+                            {/* ⚠️ ONE LABEL FOR ONE ACTION. The homepage had four
+                                for /register — "Create your page", "Start Selling
+                                for Free", "Join the Spenny Piggy party!" and the
+                                header's "Sign Up" — read in sequence while
+                                scrolling, so the same destination looked like four
+                                different offers. The in-page CTAs now all read
+                                "Create your page", matching the hero. (The header
+                                keeps "Sign Up": it is persistent chrome, read once
+                                and conventionally labelled, not part of the scroll.) */}
+                            <span>Create your page</span>
                             <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                         </Magnetic>

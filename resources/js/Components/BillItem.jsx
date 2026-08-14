@@ -5,7 +5,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { feeRatesFor, creatorIdOf } from "@/utils/pricing";
+import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 const AddBills = lazy(() => import("@/Pages/bills/AddBills"));
 import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
@@ -48,8 +48,8 @@ function BillItem(props) {
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         const vatAmount = (listedPrice * (parseFloat(vatPercent) || 0)) / 100;
         const priceWithVat = listedPrice + vatAmount;
-        const stripeFeeRate = 0.029;
-        const stripeFixedFee = isZeroDecimal ? 0 : 0.3;
+        const stripeFeeRate = STRIPE_FEE_RATE;
+        const stripeFixedFee = isZeroDecimal ? 0 : STRIPE_FIXED_FEE;
         // Per-creator: a creator on a bespoke platform rate must be QUOTED
         // what checkout will CHARGE them. The global props cannot express that.
         const __rates = feeRatesFor(creatorIdOf(itm), __pageProps);

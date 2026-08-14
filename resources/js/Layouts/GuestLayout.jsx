@@ -5,6 +5,7 @@ import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 import NetworkStatusBanner from '@/Components/NetworkStatusBanner';
 import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
+import MaintenanceBanner from '@/Components/MaintenanceBanner';
 import IntercomProvider from '@/Components/IntercomProvider';
 import Footer from '@/includes/Footer';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
@@ -30,6 +31,7 @@ export default function Guest({children, auth, className}) {
         />
         <BottomBar />
         <PwaInstallPrompt />
+        <MaintenanceBanner />
         <FlashMessenger />
         <TermsUpdatePopup />
         <IntercomProvider />

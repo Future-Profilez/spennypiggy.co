@@ -145,29 +145,6 @@ class ThirdPartyScriptManager {
     }
 
     /**
-     * Load Google Analytics with lazy loading
-     * @param {string} trackingId - GA tracking ID
-     * @param {Object} config - Additional configuration
-     */
-    async loadGoogleAnalytics(trackingId, config = {}) {
-        return this.lazyLoadScript({
-            id: 'google-analytics',
-            src: `https://www.googletagmanager.com/gtag/js?id=${trackingId}`,
-            onLoad: () => {
-                window.dataLayer = window.dataLayer || [];
-                function gtag() {
-                    dataLayer.push(arguments);
-                }
-                gtag('js', new Date());
-                gtag('config', trackingId, config);
-                window.gtag = gtag;
-            },
-            delay: config.delay || 5000,
-            ...config
-        });
-    }
-
-    /**
      * Load Intercom chat widget with lazy loading
      * @param {string} appId - Intercom app ID
      * @param {Object} settings - Intercom settings

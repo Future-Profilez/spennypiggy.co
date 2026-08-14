@@ -12,6 +12,17 @@ class SeoController extends Controller
      */
     public function robotsTxt()
     {
+        // Same rule as robots(): a non-production host serves a permissive file
+        // with no sitemaps, so the crawler can reach the noindex on every page.
+        if (! config('seo.indexable')) {
+            return $this->noStoreTextResponse(
+                "# Non-production environment. Crawling is allowed ONLY so that\n"
+                ."# the noindex on every page can be read; nothing here should be indexed.\n"
+                ."User-agent: *\n"
+                ."Allow: /\n"
+            );
+        }
+
         $siteUrl = config('app.url');
         $content = file_get_contents(resource_path('proxy/robots.txt'));
         $content = Str::replace('[SITE_URL]', $siteUrl, $content);
@@ -31,6 +42,30 @@ class SeoController extends Controller
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
 
         // Remove any etag to prevent conditional caching
+        $response->headers->remove('ETag');
+
+        return $response;
+    }
+
+    /**
+     * A text/plain response nothing is allowed to cache.
+     *
+     * robots.txt is the one file where a stale cached copy is expensive: a CDN
+     * holding yesterday's version keeps directing crawlers by rules that have
+     * been replaced.
+     */
+    private function noStoreTextResponse(string $content): Response
+    {
+        $response = new Response($content, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
+
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, s-maxage=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT');
+        $response->headers->set('Last-Modified', gmdate('D, d M Y H:i:s').' GMT');
+        $response->headers->set('X-Accel-Expires', '0');
+        $response->headers->set('Surrogate-Control', 'no-store');
         $response->headers->remove('ETag');
 
         return $response;
@@ -70,6 +105,21 @@ class SeoController extends Controller
             '/seed*',
             '/dev/',
         ];
+
+        // ⚠️ A non-production host does NOT get `Disallow: /`. Google has to CRAWL
+        // a page to see the noindex on it, so blocking the crawler is exactly what
+        // keeps an already-indexed dev site in the results forever. The crawl stays
+        // open, every response carries noindex (StaticPageSeoMiddleware), and the
+        // pages drop out. No sitemaps are advertised — there is nothing here that
+        // should be discovered in the first place.
+        if (! config('seo.indexable')) {
+            $content = "# Non-production environment. Crawling is allowed ONLY so that\n"
+                ."# the noindex on every page can be read; nothing here should be indexed.\n"
+                ."User-agent: *\n"
+                ."Allow: /\n";
+
+            return $this->noStoreTextResponse($content);
+        }
 
         $content = "User-agent: *\n";
         $content .= "Allow: /\n\n";

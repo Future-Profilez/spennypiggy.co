@@ -8,13 +8,25 @@ environments:
     nodejs: 18
     warm: 1
     gateway-version: 2
-    cli-timeout: 120
+    # Every command due in the same minute runs sequentially inside ONE
+    # schedule:run invocation, so this is the budget for the whole minute, not
+    # for one command. At 120 the :00 and :30 ticks were being killed mid-run —
+    # 21 times in a single day on this environment (7 Aug 2026) — and because
+    # Vapor only flushes output when the invocation ends, a killed minute logged
+    # NOTHING, which is indistinguishable from the scheduler never firing.
+    # Lambda's ceiling is 900.
+    cli-timeout: 600
     cli-concurrency: 10
     cli-memory: 512
     timeout: 120
     runtime: "php-8.2:al2"
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
+    # NOTE (11 Aug 2026): do not add `database-proxy: true` here. Vapor has
+    # deprecated database proxies and `vapor database:proxy` refuses to create
+    # one, so this environment cannot mirror production's proxy setup. The
+    # production proxy (vapor-spennypiggy-db-1750157979) predates the
+    # deprecation and still runs; it just can no longer be reproduced on dev.
     cache: spenny-piggy-redis-caches
     health-checks: false
     assets:
@@ -46,7 +58,10 @@ environments:
     cli-memory: 1024
     nodejs: 18
     scheduler: true
-    cli-timeout: 120
+    # See the note on the development environment above. The weekly payout run
+    # was the casualty here: its 10:00 Friday invocation was killed at exactly
+    # 120,000 ms and never started.
+    cli-timeout: 600
     cli-concurrency: 10
     warm: 1
     gateway-version: 2

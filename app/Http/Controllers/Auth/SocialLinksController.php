@@ -40,22 +40,19 @@ class SocialLinksController extends Controller
                 ], 422);
             }
 
-            // ✅ Define social platforms
-            $socialPlatforms = [
-                'twitter',
-                'instagram',
-                'facebook',
-                'youtube',
-                'twitch',
-                'tumblr',
-                'reddit',
-                'discord',
-                'onlyfans',
-                'loyalfans',
-                'fansly',
-                'manyvids',
-                'other',
-            ];
+            // The platforms a creator may verify against.
+            //
+            // 🚨 Narrowed to three on 11 Aug 2026 (client decision). This list
+            // used to hold THIRTEEN, and any one of them satisfied the
+            // requirement — so the platform accepted Facebook and YouTube while
+            // the public documentation said "Instagram, X or TikTok only", and
+            // TikTok was not a field at all. A creator read the rule and was
+            // then shown a Facebook box.
+            //
+            // These three are what verification is actually performed against:
+            // an account with a public post history and a profile photo a human
+            // reviewer can compare to a passport.
+            $socialPlatforms = SocialLinks::ACCEPTED_PLATFORMS;
 
             // ✅ Enforce at least one filled field
             $hasAtLeastOne = false;
@@ -74,23 +71,26 @@ class SocialLinksController extends Controller
             }
 
             // ✅ Prepare data (ALLOW NULLS)
+            //
+            // ⚠️ ONLY the accepted platforms are written. The retired columns
+            // (facebook, youtube, twitch, tumblr, reddit, discord, onlyfans,
+            // loyalfans, fansly, manyvids, other) are deliberately left ALONE
+            // rather than nulled: creators verified on them before the narrowing
+            // still have those handles approved and rendered on their profile,
+            // and writing `$request->facebook` — which the form no longer sends,
+            // so always null — would silently wipe an approved link the first
+            // time an existing creator edited their Instagram handle.
+            //
+            // Nothing new can be written to them, which is the whole point; what
+            // is already there is theirs.
             $data = [
                 'whoyouinto' => $request->whoyouinto,
-                'twitter' => $request->twitter,
-                'instagram' => $request->instagram,
-                'facebook' => $request->facebook,
-                'youtube' => $request->youtube,
-                'twitch' => $request->twitch,
-                'tumblr' => $request->tumblr,
-                'reddit' => $request->reddit,
-                'discord' => $request->discord,
-                'onlyfans' => $request->onlyfans,
-                'loyalfans' => $request->loyalfans,
-                'fansly' => $request->fansly,
-                'manyvids' => $request->manyvids,
-                'other' => $request->other,
                 'updated_at' => now(),
             ];
+
+            foreach (SocialLinks::ACCEPTED_PLATFORMS as $platform) {
+                $data[$platform] = $request->{$platform};
+            }
 
             // ✅ Moderation reset
             $data['status'] = 0;

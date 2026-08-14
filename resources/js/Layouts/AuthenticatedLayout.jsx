@@ -5,6 +5,7 @@ import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 import NetworkStatusBanner from '@/Components/NetworkStatusBanner';
 import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
+import MaintenanceBanner from '@/Components/MaintenanceBanner';
 import IntercomProvider from '@/Components/IntercomProvider';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
 import OnboardingNudge from '@/Components/OnboardingNudge';
@@ -56,6 +57,7 @@ export default function Authenticated(props){
         <Footer auth={auth} />
         <BottomBar />
         <PwaInstallPrompt />
+        <MaintenanceBanner />
         <FlashMessenger />
         <TermsUpdatePopup />
         <IntercomProvider />

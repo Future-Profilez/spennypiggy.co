@@ -14,6 +14,7 @@ use App\Services\IntercomService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\SubscriptionActivationService;
 use App\Support\GifterVerificationCharge;
+use App\Support\MaintenanceMode;
 use App\Support\SubscriptionPlan;
 use App\Support\VerifiedBadge;
 use Illuminate\Http\Request;
@@ -255,6 +256,22 @@ class HandleInertiaRequests extends Middleware
             'custom_fee_rates' => CreatorFeeResolver::publicRateMap(),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
 
+            /*
+             * Pre-flight / bypass notice.
+             *
+             * NULL for almost every request, and reads the same cached state
+             * EnsureSiteAvailable has already resolved, so it costs nothing extra.
+             *
+             * Two cases, both worth a strip at the top of the page:
+             *  - `scheduled` — the window has not started, so warn people BEFORE
+             *    their checkout disappears mid-flow. This is what stops the
+             *    "my payment vanished" tickets.
+             *  - `bypassing` — the site IS down for everyone else and this viewer
+             *    is only through on a bypass token. Without it, whoever is doing
+             *    the maintenance believes the wall never went up.
+             */
+            'maintenance_notice' => $this->maintenanceNotice($request),
+
             // ⚠️ Shared because two components read the plan at MODULE level, where
             // they cannot take a prop — and with nothing to merge they fell back to
             // the hardcoded client constants. `free_until_first_sale` is the one
@@ -267,6 +284,46 @@ class HandleInertiaRequests extends Middleware
             'last_terms_update' => Setting::where('key', 'last_terms_update')->value('value') ?? '2026-04-23 00:00:00',
             'updated_terms_list' => json_decode(Setting::where('key', 'updated_terms_list')->value('value') ?? '[]', true),
         ];
+    }
+
+    /**
+     * The strip shown at the top of the app when maintenance is imminent, or when
+     * this viewer is only seeing the site because they hold a bypass token.
+     *
+     * @return array{mode: string, headline: string, message: string, starts_at: ?string, ends_at: ?string}|null
+     */
+    private function maintenanceNotice(Request $request): ?array
+    {
+        $state = MaintenanceMode::state();
+
+        if (! $state['enabled']) {
+            return null;
+        }
+
+        if (MaintenanceMode::isDown($state)) {
+            // Reaching here at all means the wall let this request past, which can
+            // only be a bypass — EnsureSiteAvailable refuses everything else long
+            // before Inertia builds props.
+            return [
+                'mode' => 'bypassing',
+                'headline' => 'The site is offline for everyone else',
+                'message' => 'You are viewing it on a maintenance bypass link.',
+                'starts_at' => $state['starts_at'],
+                'ends_at' => $state['ends_at'],
+            ];
+        }
+
+        if (MaintenanceMode::isScheduled($state)) {
+            return [
+                'mode' => 'scheduled',
+                'headline' => 'Scheduled maintenance',
+                'message' => $state['message'],
+                'starts_at' => $state['starts_at'],
+                'ends_at' => $state['ends_at'],
+            ];
+        }
+
+        return null;
     }
 
     private function resolveTurnstileSiteKey(Request $request): ?string

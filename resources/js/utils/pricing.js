@@ -16,8 +16,23 @@
 
 const DEFAULT_PLATFORM_RATE = 17;
 const DEFAULT_COMPLIANCE_RATE = 2;
-const STRIPE_RATE = 0.029;
-const STRIPE_FIXED_FEE = 0.3;
+
+/**
+ * ⚠️ Mirrors `config/payments.php` → `fee_profiles.card`. Raised 0.029 → 0.034
+ * on 11 Aug 2026 so the estimate covers international cards, whose real Stripe
+ * cost (~3.25% + 20p) the old figure did not — the shortfall came out of the
+ * creator's net.
+ *
+ * 🚨 Leaving this at 0.029 while the server charges 3.4% would quote every
+ * supporter a total ~0.65% below what their card is actually debited: the price
+ * on the button and the price on the statement would disagree, on every card
+ * checkout on the platform. If the server value changes again, change it here in
+ * the same commit.
+ */
+export const STRIPE_FEE_RATE = 0.034;
+export const STRIPE_FIXED_FEE = 0.3;
+
+const STRIPE_RATE = STRIPE_FEE_RATE;
 
 /**
  * The listing owner's numeric id, whatever shape this particular payload uses.

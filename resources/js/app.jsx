@@ -259,8 +259,12 @@ window.addEventListener('vite:preloadError', (event) => {
 });
 
 createInertiaApp({
+    // ⚠️ This suffix is appended to EVERY page title on the site, so it is
+    // printed in search results and social cards for all of them — which makes it
+    // a Stripe-facing surface, and the content-first ban list applies in full. It
+    // read "…Gifts, Memberships, Exclusive Content & More." until 10 Aug 2026.
     title: (title) =>
-        `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,
+        `${title || "Spenny Piggy"} - The Everything Wishlist - Content, Memberships & Custom Requests.`,
     resolve: (name) => {
         return resolvePageComponent(
             `./Pages/${name}.jsx`,
@@ -332,19 +336,6 @@ router.on('before', (event) => {
             'X-CSRF-TOKEN': token.content
         };
     }
-});
-
-// GA4 page views on Inertia navigation.
-// The gtag snippet only fires once, on the initial document load — this is an SPA,
-// so without this every page after the first is invisible and the property reports
-// one page view per session. No-ops when GA is not configured.
-router.on('navigate', () => {
-    if (typeof window.gtag !== 'function') return;
-    window.gtag('event', 'page_view', {
-        page_location: window.location.href,
-        page_path: window.location.pathname + window.location.search,
-        page_title: document.title,
-    });
 });
 
 // Global UTM Tracking - Save UTM parameters to localStorage

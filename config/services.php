@@ -72,6 +72,24 @@ return [
         'identity_secret' => env('INTERCOM_IDENTITY_VERIFICATION_SECRET'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Blocked-payment notice
+    |--------------------------------------------------------------------------
+    |
+    | Emails a supporter when their payment was stopped before it reached
+    | Stripe. On-screen only left anyone who navigated away with nothing, and a
+    | guest with no account to return to (9 Aug messaging brief, Qs 5 and 9).
+    |
+    | ⚠️ A guest's address is UNVERIFIED — they typed it into a checkout minutes
+    | earlier — so this is send-once per address per state per day. The switch
+    | exists so the whole thing can be stopped without a deploy.
+    |
+    */
+    'blocked_payment_notice' => [
+        'enabled' => env('BLOCKED_PAYMENT_NOTICE_ENABLED', true),
+    ],
+
     'risk_engine' => [
         'enabled' => env('RISK_ENGINE_ENABLED', true),
     ],
@@ -119,9 +137,11 @@ return [
     // `redirect` is absolute and built from APP_URL so it matches the URI registered in the
     // Google Cloud console exactly — Google compares the string, and a trailing slash or a
     // http/https mismatch is answered with `redirect_uri_mismatch`, not a warning.
+    // `site_verification` is the Search Console "HTML tag" token — an ownership proof that
+    // loads no Google script, not a tracking tag. There is deliberately no analytics id:
+    // the only Google tag on the site is the Ads gtag.js in app.blade.php (AW-11395921981).
     'google' => [
         'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
-        'analytics_id' => env('GOOGLE_ANALYTICS_ID'),
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => rtrim((string) env('APP_URL'), '/').'/auth/google/callback',

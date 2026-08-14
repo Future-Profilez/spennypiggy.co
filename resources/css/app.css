@@ -902,7 +902,7 @@ body {
 }
 /* Magic bell css */
 a.css-1j56y57 {
-    background: #FF007F;
+    background: #ffffff2b;
     width: 40px !important;
     height: 40px !important;
     padding: 4px;
@@ -910,6 +910,7 @@ a.css-1j56y57 {
     align-items: center !important;
     justify-content: center;
     border-radius: 50%;
+    border: 1px solid #ffffff3b;
 }
 a.css-1j56y57 svg {
     width: 21px !important;

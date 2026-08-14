@@ -192,8 +192,17 @@ class Kernel extends ConsoleKernel
 
         // Daily job to process founder payouts (only picks bonuses whose
         // estimated_payout_date has arrived, so cadence is safe)
+        //
+        // 10:03, not 10:00. Every scheduled command due in one minute runs
+        // sequentially inside a SINGLE schedule:run invocation, and on Vapor that
+        // invocation dies at `cli-timeout`. Minute :00 already carries six hourly
+        // commands plus every */5, */10 and */15 tick, so anything added there is
+        // queueing behind all of them. Verified in CloudWatch on 7 Aug 2026: the
+        // 10:00 invocation was killed at exactly 120,000 ms on BOTH production and
+        // development, and — because output is only flushed when the invocation
+        // ends — that minute logged nothing at all.
         $schedule->job(new ProcessFounderPayouts)
-            ->dailyAt('10:00')
+            ->dailyAt('10:03')
             ->withoutOverlapping(30);
 
         $schedule->job(new ProcessFounderMonthlyBonuses)
@@ -335,9 +344,19 @@ class Kernel extends ConsoleKernel
             ->everyThreeHours()
             ->withoutOverlapping(10);
 
-        // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
+        // Risk Engine: Weekly Payout Run (Fridays)
+        //
+        // 10:07, not 10:00 — see the note on ProcessFounderPayouts above. This is
+        // the command that exposed the problem: on 7 Aug 2026 the 10:00 invocation
+        // was killed at the Lambda timeout on both environments, so the run never
+        // started and left no trace, which reads exactly like a scheduler that
+        // never fired. It is also the longest-running command in the schedule (a
+        // Stripe round trip per creator), so it must not share a minute with the
+        // hourly pile-up.
+        //
+        // Both halves matter: the quiet minute, and cli-timeout in vapor.yml.
         $schedule->command('payout:run-weekly')
-            ->weeklyOn(5, '10:00')
+            ->weeklyOn(5, '10:07')
             ->withoutOverlapping();
 
         // Risk Engine: Release held reserves 30 days after each transaction (daily)
@@ -412,6 +431,15 @@ class Kernel extends ConsoleKernel
         app()->environment('local', 'testing') && $recoveryIsShort
             ? $recovery->everyMinute()
             : $recovery->hourlyAt(20);
+
+        // A creator whose payouts an admin has paused was told nothing at all —
+        // their only signal was the money not arriving on Friday. Hourly rather
+        // than daily: `payout_paused_at` is written by the ADMIN app, so this
+        // sweep is the only thing that can observe it, and a day's silence about
+        // held money is a day of support tickets.
+        $schedule->command('payouts:notify-holds')
+            ->hourlyAt(25)
+            ->withoutOverlapping();
 
         // Stripe compliance: pause/resume content memberships on the min-3-posts/30-day cadence
         $schedule->command('app:enforce-posting-cadence')

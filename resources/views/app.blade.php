@@ -183,11 +183,15 @@
 
     {{-- PWA and App metadata --}}
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    {{-- ⚠️ black-translucent, not default. `default` paints a WHITE status bar
+         strip above a dark app; this lets the header colour run underneath
+         it instead. It requires the header to pad for env(safe-area-inset-top)
+         — see Header.jsx — or the logo sits under the clock. --}}
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#A2E4B8">
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#A2E4B8">
+    <meta name="theme-color" content="#9E0048">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#9E0048">
     <meta name="application-name" content="Spenny Piggy">
     
     {{-- Prevent rubber-banding and zooming for native app feel --}}
@@ -236,7 +240,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ URL::asset('/favicon-192x192.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ URL::asset('/apple-touch-icon.png') }}">
     
-    <meta name="msapplication-TileColor" content="#05EFB8" />
+    <meta name="msapplication-TileColor" content="#9E0048" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     
     {{-- Minimal critical CSS --}}
@@ -485,22 +489,17 @@
             html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
         }
     </style>
-    {{-- GA4. Renders nothing when GOOGLE_ANALYTICS_ID is unset, so local and dev
-         never write into the production property. Loaded async and placed last in
-         <head> so it never blocks first paint. --}}
-    @if(config('services.google.analytics_id'))
-        {{-- Inline @php(...) is NOT usable in this project's Blade setup: it compiles
-             to a bare `<?php(...)` with no closing tag and silently swallows the rest
-             of the template (every page 500s with "expecting endif"). Call config()
-             directly, or use a full @php ... @endphp block. --}}
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', @json(config('services.google.analytics_id')));
-        </script>
-    @endif
+    {{-- Google tag (gtag.js) — Google Ads conversion/remarketing.
+         This is the only Google tag on the site; do not add a second gtag.js loader
+         anywhere else (a duplicate loader re-registers the dataLayer and double-counts).
+         Loaded async and placed last in <head> so it never blocks first paint. --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-11395921981"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-11395921981');
+    </script>
 
     @inertiaHead
 </head>

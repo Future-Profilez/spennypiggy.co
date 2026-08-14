@@ -16,6 +16,7 @@ import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
 import { PayButton, OrderContextCard } from "@/Components/Checkout/SummaryReceipt";
 import { fieldClass } from "@/Components/Checkout/FormKit";
+import { riskMessageBody, redirectToLoginWithMessage, GUEST_VALUE_THRESHOLD_GBP } from '@/constants/riskMessages';
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
@@ -88,7 +89,7 @@ export default function TipInner({classes, idd}) {
       return;
     }
     if (tipRes.data && (tipRes.data.message === "Login required" || tipRes.data.code === "AUTH_REQUIRED")) {
-      const msg = tipRes.data.msg || "Guest checkout is disabled. Please log in.";
+      const msg = tipRes.data.msg || riskMessageBody("GUEST_ACCOUNT_REQUIRED");
       errorAlert(msg);
       router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
       return;
@@ -154,9 +155,10 @@ export default function TipInner({classes, idd}) {
         toast.error("Please verify the captcha");
         return false;
     }
-    if(auth && !auth.user && usdToGbp(data.amount) > 50){
-        errorAlert("Larger payments more than £50 need to login.");
-        router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`);
+    // ⚠️ The threshold is never printed — see constants/riskMessages.js.
+    if(auth && !auth.user && usdToGbp(data.amount) > GUEST_VALUE_THRESHOLD_GBP){
+        errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE"));
+        redirectToLoginWithMessage("GUEST_ACCOUNT_REQUIRED_VALUE");
         return false;
     }
     if (deviceid) {

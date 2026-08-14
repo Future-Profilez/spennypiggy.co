@@ -3,9 +3,11 @@
 namespace Tests\Unit;
 
 use App\Models\Currency;
+use App\Models\Dispute;
 use App\Services\CheckoutMethodResolver;
 use App\Services\PaymentTierService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -120,5 +122,107 @@ class CheckoutMethodResolverTest extends TestCase
         $this->assertSame(PaymentTierService::TIER_BANK_REQUIRED, $rules['tier']);
         $this->assertTrue($rules['bank_available']);
         $this->assertTrue($rules['bank_recommended']);
+    }
+
+    /**
+     * ⚠️ `disputes` has `created_at` but NO `updated_at`, a string uuid primary
+     * key with no model hook to fill it, and a non-nullable `amount`. A plain
+     * `Dispute::create()` therefore dies on the missing column before the test
+     * ever reaches its assertion.
+     */
+    private function disputeFrom(string $email, string $status = 'needs_response'): void
+    {
+        $dispute = new Dispute;
+        $dispute->timestamps = false;
+        $dispute->forceFill([
+            'id' => (string) Str::uuid(),
+            'stripe_dispute_id' => 'du_'.Str::random(16),
+            'amount' => 150000,
+            'currency' => 'gbp',
+            'customer_email' => $email,
+            'status' => $status,
+        ])->save();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Above the card ceiling — client decision, 11 Aug 2026
+    |--------------------------------------------------------------------------
+    | Card is not blocked outright. The buyer risk screen runs at this tier too
+    | (it previously did not, so the largest payments were the only ones taking
+    | card unscreened), and a buyer who fails it is routed to Pay by Bank.
+    */
+
+    public function test_a_clean_buyer_still_pays_by_card_above_the_ceiling(): void
+    {
+        $r = CheckoutMethodResolver::resolve('card', 'both', 1500, 'GBP', null, 'clean@example.com', 'acct_x');
+
+        $this->assertTrue($r['ok'], 'a buyer with no risk signal must not be refused');
+        $this->assertTrue($r['force_3ds']);
+        $this->assertTrue($r['rules']['card_allowed']);
+    }
+
+    public function test_a_disputing_buyer_is_routed_to_bank_above_the_ceiling(): void
+    {
+        $this->disputeFrom('Chargeback@Example.com');
+
+        // Matched case-insensitively: the address typed at checkout and the one
+        // Stripe recorded on the dispute are the same address whatever the case.
+        $r = CheckoutMethodResolver::resolve('card', 'both', 1500, 'GBP', null, 'chargeback@example.com', 'acct_x');
+
+        $this->assertFalse($r['ok']);
+        $this->assertSame('card_risk_declined', $r['code']);
+
+        // The tier layer is what decided it, and it flags bank as the way
+        // through — that flag is how the checkout screen knows to point there
+        // rather than just showing a dead end.
+        $rules = PaymentTierService::resolve(1500, 'GBP', null, 'chargeback@example.com');
+        $this->assertFalse($rules['card_allowed']);
+        $this->assertTrue($rules['prompt_bank']);
+    }
+
+    public function test_the_refusal_uses_the_signed_off_copy_and_names_no_amount(): void
+    {
+        $this->disputeFrom('x@example.com');
+
+        $r = CheckoutMethodResolver::resolve('card', 'both', 1500, 'GBP', null, 'x@example.com', 'acct_x');
+
+        $this->assertStringContainsString(
+            "This payment can't be completed by card. Please pay securely using Pay by Bank.",
+            $r['message'],
+            'the client signed off this sentence verbatim'
+        );
+
+        // Rule 1 of the messaging brief: never print the threshold. A refusal
+        // that says "over £1,000" tells a card tester exactly where to sit.
+        $this->assertDoesNotMatchRegularExpression('/\d/', $r['message']);
+
+        // The full state travels alongside, so a surface that can draw the card
+        // does not have to re-derive it from the sentence.
+        $this->assertSame('CARD_UNAVAILABLE_USE_BANK', $r['ui']['key']);
+    }
+
+    public function test_a_risky_buyer_keeps_card_when_the_currency_has_no_bank_rail(): void
+    {
+        // INR has no bank method. Refusing card here would leave the buyer no
+        // way to pay at all, so the sale continues with 3DS instead — client
+        // decision, 11 Aug 2026.
+        $this->disputeFrom('inr@example.com');
+
+        $r = CheckoutMethodResolver::resolve('card', 'both', 200000, 'INR', null, 'inr@example.com', 'acct_x');
+
+        $this->assertTrue($r['ok'], 'no bank rail means card must remain available');
+        $this->assertTrue($r['force_3ds']);
+        $this->assertFalse($r['rules']['bank_available']);
+    }
+
+    public function test_a_settled_dispute_does_not_route_the_buyer_to_bank(): void
+    {
+        // A dispute the creator won is not a live signal against this buyer.
+        $this->disputeFrom('won@example.com', 'won');
+
+        $r = CheckoutMethodResolver::resolve('card', 'both', 1500, 'GBP', null, 'won@example.com', 'acct_x');
+
+        $this->assertTrue($r['ok']);
     }
 }

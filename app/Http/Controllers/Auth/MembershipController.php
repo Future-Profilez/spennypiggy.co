@@ -610,10 +610,18 @@ class MembershipController extends Controller
                 ->with('error', '⚠️ Please complete your card verification payment and wait for admin approval before making further payments.');
         }
         if ($user) {
+            // ⚠️ Deliberately still accepts the RETIRED platforms as well as the
+            // three now offered. This gate asks "has this creator given us a
+            // social account at all", not "is it on the current list" — and a
+            // creator verified on Facebook or Twitch before the 11 Aug 2026
+            // narrowing has done nothing wrong. Restricting it to the accepted
+            // three would stop live sales for creators whose approved handle
+            // sits in a column the form no longer offers.
             $isSocilAdded = SocialLinks::where('user_id', $user->id)
                 ->where(function ($query) {
                     $query->whereNotNull('tumblr')
                         ->orWhereNotNull('instagram')
+                        ->orWhereNotNull('tiktok')
                         ->orWhereNotNull('twitch')
                         ->orWhereNotNull('facebook')
                         ->orWhereNotNull('twitter');

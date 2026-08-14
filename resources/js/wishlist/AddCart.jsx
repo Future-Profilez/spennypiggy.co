@@ -9,6 +9,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import { trackSearchClick } from "@/includes/Analytics";
 import RewardSummary from "@/Components/Reward/RewardSummary";
+import { riskMessageBody } from '@/constants/riskMessages';
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
@@ -47,9 +48,9 @@ export default function AddCart(props) {
     };
 
     const gotologin = (recure) => {
-        errorAlert("For larger payments more than £50 need to login  first.");
+        errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE"));
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
-        router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
+        router.visit(`/login?redirect=${url}&message=${encodeURIComponent(riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE"))}`);
     };
 
     return (

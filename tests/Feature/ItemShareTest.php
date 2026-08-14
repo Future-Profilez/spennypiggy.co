@@ -218,6 +218,11 @@ class ItemShareTest extends TestCase
 
     public function test_the_sitemap_index_and_robots_both_name_the_new_children(): void
     {
+        // This asserts the PRODUCTION robots.txt. A non-indexable host serves a
+        // deliberately different file — permissive, with no sitemaps at all — so
+        // the environment has to be stated rather than inherited from `testing`.
+        config(['seo.indexable' => true]);
+
         // robots.txt stops the crawl, the index makes the URLs discoverable. A child
         // listed in neither is unreachable — which is how the creator, wishlist and
         // post sitemaps sat unread before.
