@@ -13,12 +13,23 @@ import RewardEditor, {
 } from "@/Components/Reward/RewardEditor";
 
 export default function Create({ auth, currencySymbol }) {
-    const { global_currency } = usePage().props;
+    const { global_currency, rates } = usePage().props;
+    console.log("Global Currency:", global_currency);
     const task = usePage().props?.task ?? null;
     const isEdit = Boolean(task);
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth.user.default_currency || 'GBP';
+    console.log("Default Currency:", defaultCurrency);
     const [showSummary, setShowSummary] = useState(false);
+
+    // Calculate GBP conversion from current currency using existing rates
+    const convertToGBP = (amount) => {
+        if (!amount || defaultCurrency === 'GBP') return parseFloat(amount);
+        const rate = rates?.[defaultCurrency?.toUpperCase()];
+        console.log(`Converting ${amount} ${defaultCurrency} to GBP at rate:`, rate);
+        if (!rate) return null;
+        return (parseFloat(amount) * rate).toFixed(2);
+    };
 
     const categories = [
         "Shoutout / Name Feature",
@@ -291,6 +302,19 @@ export default function Create({ auth, currencySymbol }) {
                                                     }
                                                 />
                                             </div>
+
+                                            {/* GBP Conversion Display */}
+                                            {data.price && defaultCurrency !== 'GBP' && (
+                                                <div className="mt-3 p-3 bg-blue-50 rounded-[15px] border-2 border-blue-200">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-bold text-blue-700 uppercase">Equivalent in GBP:</span>
+                                                        <span className="font-black text-lg text-blue-600">
+                                                            £{convertToGBP(data.price) || 'Loading...'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {data.price > 0 && (
                                                 <div className="mt-4 p-4 bg-gray-50 rounded-[20px] md:rounded-[25px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                     <div className="flex justify-between items-center mb-2">
