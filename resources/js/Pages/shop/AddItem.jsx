@@ -368,9 +368,11 @@ export default function AddItem(props) {
             axios
                 .post(`/shop/add`, getSubmitData())
                 .then((res) => {
+                    // Close popup immediately
+                    setOpen(false);
+                    
                     if (res.data.status) {
                         resetUploader();
-                        setOpen(false);
                         window.dispatchEvent(new Event("closeAddOptions"));
                         window.dispatchEvent(new Event("shop:item-changed"));
                         setTimeout(() => {
@@ -384,6 +386,7 @@ export default function AddItem(props) {
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setOpen(false);
                     errorsHandling(err);
                 });
         };
@@ -393,9 +396,11 @@ export default function AddItem(props) {
             axios
                 .post(`/shop/update/${item.uuid}`, getSubmitData())
                 .then((res) => {
+                    // Close popup immediately
+                    setOpen(false);
+                    
                     if (res.data.status) {
                         resetUploader();
-                        setOpen(false);
                         window.dispatchEvent(new Event("closeAddOptions"));
                         window.dispatchEvent(new Event("shop:item-changed"));
                         setTimeout(() => {
@@ -409,6 +414,7 @@ export default function AddItem(props) {
                 })
                 .catch((err) => {
                     setLoading(false);
+                    setOpen(false);
                     errorsHandling(err);
                 });
         };
