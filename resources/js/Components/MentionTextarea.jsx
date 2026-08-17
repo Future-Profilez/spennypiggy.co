@@ -210,7 +210,7 @@ export default function MentionTextarea({
                             ? { bottom: `calc(100% - ${menuPos.top}px)` }
                             : { top: `${menuPos.top}px` }
                     }
-                    className="absolute left-0 z-30 max-h-64 w-full max-w-[360px] overflow-y-auto rounded-box-sm border-2 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                    className="absolute left-0 z-30 max-h-64 w-full max-w-[360px] overflow-y-auto rounded-box-sm border-2 border-black bg-white "
                 >
                     {loading && results.length === 0 ? (
                         <p className="px-3 py-3 text-sm text-gray-500">Searching creators…</p>
@@ -246,10 +246,10 @@ export default function MentionTextarea({
                                         className="h-8 w-8 shrink-0 rounded-full object-cover"
                                     />
                                     <span className="min-w-0">
-                                        <span className="block truncate text-sm font-bold text-black">
+                                        <span title={user.name} className="block truncate text-sm font-bold text-black">
                                             {user.name}
                                         </span>
-                                        <span className="block truncate text-xs text-gray-500">
+                                        <span title={`@${user.username}`} className="block truncate text-xs text-gray-500">
                                             @{user.username}
                                         </span>
                                     </span>

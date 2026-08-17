@@ -59,7 +59,7 @@ const Section = ({ no, icon: Icon, accent, title, children, className = "" }) =>
     <Reveal className={`py-11 md:py-14 ${className}`}>
         <motion.div variants={riseIn} className="mb-5 flex items-center gap-3">
             <span
-                className="grid h-11 w-11 flex-none place-items-center rounded-[13px] border-2"
+                className="grid h-11 w-11 flex-none place-items-center rounded-box-sm border-2"
                 style={{ borderColor: INK, background: accent, color: isDark(accent) ? "#fff" : INK, boxShadow: `3px 3px 0 0 ${INK}` }}
             >
                 <Icon size={22} strokeWidth={2.3} />
@@ -83,7 +83,7 @@ const B = ({ children }) => <strong className="font-bold" style={{ color: INK }}
 
 const Pill = ({ l, value }) => (
     <motion.span variants={popIn} className="inline-flex items-center gap-2 rounded-full border-2 bg-white px-4 py-2" style={{ borderColor: INK, boxShadow: `2px 2px 0 0 ${INK}` }}>
-        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">{l}</span>
+        <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-black/60">{l}</span>
         <span className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#FF007F]">{value}</span>
     </motion.span>
 );
@@ -93,21 +93,21 @@ const HCard = ({ icon: Icon, title, object, body, accent, index }) => {
     const dark = isDark(accent);
     const deep = SHADE[accent] || accent;
     return (
-        <motion.div whileHover={{ y: -6 }} whileTap={{ scale: 0.985 }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="h-[448px] w-[300px] shrink-0 sm:w-[348px]">
-            <div className="flex h-full flex-col overflow-hidden rounded-[24px] border-2 bg-white" style={{ borderColor: INK, boxShadow: `5px 5px 0 0 ${accent}` }}>
+        <motion.div whileHover={{ y: -6 }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="h-[448px] w-[300px] shrink-0 sm:w-[348px]">
+            <div className="flex h-full flex-col overflow-hidden rounded-box border-2 bg-white" style={{ borderColor: INK, boxShadow: `5px 5px 0 0 ${accent}` }}>
                 <div className="relative h-[120px] flex-none overflow-hidden px-6 pt-6" style={{ background: `linear-gradient(140deg, ${accent}, ${deep})` }}>
                     <span className={`${heavy} pointer-events-none absolute -right-1 -top-5 select-none text-[104px] leading-none`} style={{ color: dark ? "rgba(255,255,255,0.20)" : "rgba(28,27,26,0.14)" }}>
                         {String(index).padStart(2, "0")}
                     </span>
                 </div>
                 <div className="relative">
-                    <span className="absolute -top-8 left-6 grid h-[54px] w-[54px] place-items-center rounded-[15px] border-2" style={{ background: "#fff", borderColor: INK, color: INK, boxShadow: `3px 3px 0 0 ${INK}` }}>
+                    <span className="absolute -top-8 left-6 grid h-[54px] w-[54px] place-items-center rounded-box-sm border-2" style={{ background: "#fff", borderColor: INK, color: INK, boxShadow: `3px 3px 0 0 ${INK}` }}>
                         <Icon size={25} strokeWidth={2.3} />
                     </span>
                 </div>
                 <div className="flex flex-1 flex-col px-6 pb-6 pt-10">
                     <h3 className={`${display} text-[20px] leading-[0.95] tracking-tight`} style={{ color: INK }}>{title}</h3>
-                    {object && <span className="mt-2 text-[10px] font-bold leading-snug text-gray-400">{object}</span>}
+                    {object && <span className="mt-2 text-[12px] font-bold leading-snug text-black/60">{object}</span>}
                     <p className="mt-3 text-[13.5px] leading-relaxed" style={{ color: MUTE }}>{body}</p>
                 </div>
             </div>
@@ -211,7 +211,7 @@ export default function HowSpennyPiggyWorks({ auth }) {
 
                 {/* ── HERO ── */}
                 <motion.header className="relative z-10 mx-auto max-w-5xl px-5 pt-24 md:pt-28" variants={container} initial="hidden" animate="show">
-                    <motion.span variants={riseIn} className="inline-flex -rotate-1 items-center gap-2 rounded-full border-2 bg-[#E6EA7B] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em]" style={{ borderColor: INK, boxShadow: `2px 2px 0 0 ${INK}`, color: INK }}>
+                    <motion.span variants={riseIn} className="inline-flex -rotate-1 items-center gap-2 rounded-full border-2 bg-[#E6EA7B] px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.16em]" style={{ borderColor: INK, boxShadow: `2px 2px 0 0 ${INK}`, color: INK }}>
                         <Sparkles size={14} strokeWidth={2.8} /> Payments &amp; Content Policy
                     </motion.span>
 
@@ -242,8 +242,8 @@ export default function HowSpennyPiggyWorks({ auth }) {
                 <main className="relative z-10 mx-auto max-w-5xl px-5 pb-24 pt-6">
                     {/* 01 — statement panel */}
                     <Section no="01" icon={Sparkles} accent={PINK} title="The content-first principle">
-                        <motion.div variants={riseIn} className="rounded-[24px] border-2 p-7 md:p-9" style={{ borderColor: INK, background: PINK, color: "#fff", boxShadow: `6px 6px 0 0 ${INK}` }}>
-                            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white/75">Core rule</p>
+                        <motion.div variants={riseIn} className="rounded-box border-2 p-7 md:p-9" style={{ borderColor: INK, background: PINK, color: "#fff", boxShadow: `6px 6px 0 0 ${INK}` }}>
+                            <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-white/75">Core rule</p>
                             <p className={`${display} text-[20px] leading-[1.08] tracking-tight md:text-[27px]`}>
                                 Every payment on Spenny Piggy is associated with creator content. <span className="text-[#E6EA7B]">A payment that delivers no content is not permitted</span> — it is restricted, refunded or removed.
                             </p>
@@ -291,8 +291,8 @@ export default function HowSpennyPiggyWorks({ auth }) {
                         <Prose>The following are prohibited, because they are not the purchase of creator content:</Prose>
                         <motion.div variants={container} className="mt-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                             {prohibited.map((item) => (
-                                <motion.div key={item} variants={popIn} whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5" style={{ borderColor: INK, background: "rgba(255,0,127,0.05)", boxShadow: "3px 3px 0 0 #FF007F" }}>
-                                    <span className="grid h-7 w-7 flex-none place-items-center rounded-full border-2 bg-[#FF007F] text-white" style={{ borderColor: INK }}>
+                                <motion.div key={item} variants={popIn} whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="flex items-center gap-3 rounded-box-sm border-2 px-4 py-3.5" style={{ borderColor: INK, background: "rgba(255,0,127,0.05)", boxShadow: "3px 3px 0 0 #FF007F" }}>
+                                    <span className="grid h-7 w-7 flex-none place-items-center rounded-full border-2 bg-[#FF007F] text-black" style={{ borderColor: INK }}>
                                         <X size={15} strokeWidth={3.4} />
                                     </span>
                                     <span className="text-[14.5px] font-bold" style={{ color: INK }}>{item}</span>
@@ -316,10 +316,10 @@ export default function HowSpennyPiggyWorks({ auth }) {
 
                     {/* SUMMARY — gradient banner */}
                     <Reveal className="pt-8">
-                        <motion.div variants={riseIn} className="relative overflow-hidden rounded-[28px] border-2 p-8 md:p-12" style={{ borderColor: INK, background: `linear-gradient(135deg, ${PINK}, ${VIOLET})`, color: "#fff", boxShadow: `8px 8px 0 0 ${INK}` }}>
+                        <motion.div variants={riseIn} className="relative overflow-hidden rounded-box border-2 p-8 md:p-12" style={{ borderColor: INK, background: `linear-gradient(135deg, ${PINK}, ${VIOLET})`, color: "#fff", boxShadow: `8px 8px 0 0 ${INK}` }}>
                             <div className="pointer-events-none absolute inset-0 opacity-[0.12]" style={dotBg} />
                             <div className="relative">
-                                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+                                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[12px] font-bold uppercase tracking-[0.2em] text-white">
                                     <FileCheck2 size={13} strokeWidth={2.6} /> Summary
                                 </span>
                                 <p className={`${display} text-[24px] leading-[1.04] tracking-tight md:text-[34px]`}>
@@ -334,13 +334,13 @@ export default function HowSpennyPiggyWorks({ auth }) {
 
                     {/* FOOTER */}
                     <motion.footer initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, ease: EASE }} className="mt-12 border-t-2 border-dashed pt-8" style={{ borderColor: "rgba(28,27,26,0.2)" }}>
-                        <p className="max-w-3xl text-[13px] leading-relaxed text-gray-500">
+                        <p className="max-w-3xl text-[13px] leading-relaxed text-black/60">
                             Spenny Piggy is operated by Social Vortex Limited (company no. 15233693), 55 Colmore Row, Birmingham, England, B3 2AA. This page should be read alongside our{" "}
                             <Link href="/content-payment-policy" className="font-bold text-[#FF007F] underline decoration-[#FF007F]/40 underline-offset-2 transition-[text-decoration-color] hover:decoration-[#FF007F] active:opacity-70">
                                 Content &amp; Payment Association Framework
                             </Link>, Terms of Service and Privacy Policy.
                         </p>
-                        <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">How Spenny Piggy Works · v1.0 · Effective 15 June 2026</p>
+                        <p className="mt-4 text-[12px] font-bold uppercase tracking-[0.16em] text-black/60">How Spenny Piggy Works · v1.0 · Effective 15 June 2026</p>
                     </motion.footer>
                 </main>
             </div>

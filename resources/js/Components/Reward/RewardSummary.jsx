@@ -44,13 +44,13 @@ export default function RewardSummary({
         <div
             className={`rounded-box-sm border-[3px] border-black bg-[#F2FBF5] p-3 text-left ${className}`}
         >
-            <p className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-neutral-500">
+            <p className="mb-1 flex items-center gap-1.5 text-[12px] font-black uppercase tracking-[0.14em] text-neutral-500">
                 <Gift size={12} strokeWidth={2.5} /> {label}
             </p>
             <p className="text-sm font-black leading-snug">{headline}</p>
             {detail && <p className="mt-0.5 text-xs font-medium text-neutral-500">{detail}</p>}
             {TYPE_LABEL[type] && (
-                <span className="mt-2 inline-block rounded-full border-2 border-black bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide">
+                <span className="mt-2 inline-block rounded-full border-2 border-black bg-white px-2 py-0.5 text-[12px] font-black uppercase tracking-wide">
                     {TYPE_LABEL[type]}
                 </span>
             )}

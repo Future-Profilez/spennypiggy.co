@@ -15,12 +15,15 @@ use App\Models\GifterCardVerification;
 use App\Models\PlatformRiskState;
 use App\Models\PromoCode;
 use App\Models\ReferralCode;
+use App\Models\SignupLead;
 use App\Models\User;
 use App\Models\UserVerificationStatus;
+use App\Services\SignupLeadService;
 use App\Services\UserProfileService;
 use App\Services\VisitTracker;
 use App\Support\GifterVerificationCharge;
 use App\Support\PresetCovers;
+use App\Support\RiskMessages;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -134,15 +137,6 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        /* =========================RISK ENGINE CHECK========================== */
-        // Check Platform State (FREEZE blocks new creator activation)
-        $platformState = PlatformRiskState::latest('started_at')->first();
-        if ($platformState && $platformState->state === 'FREEZE' && $request->role == 1) {
-            throw ValidationException::withMessages([
-                'email' => 'New creator registration is temporarily paused due to system maintenance.',
-            ]);
-        }
-
         /* =========================GOOGLE SIGN-UP========================== */
         // A Google sign-up posts this same form and passes every gate below it. The only
         // differences are handled here.
@@ -174,6 +168,39 @@ class RegisteredUserController extends Controller
             ]);
         } else {
             $google = null;
+        }
+
+        /* =========================RISK ENGINE CHECK==========================
+         *
+         * Platform FREEZE stops new creator accounts being opened.
+         *
+         * ⚠️ This gate sits AFTER the Google block deliberately. A Google sign-up
+         * posts no email — the verified address is merged in above — so gating
+         * first meant we refused the person and had nothing to capture them with,
+         * which is the entire failure this lead capture exists to close.
+         *
+         * 🚨 The refusal key is `signup_paused`, NOT `email`. `Register.jsx`
+         * branches on it to render the waitlist panel instead of a field error,
+         * and its owner-finder maps `email` back to the credentials step — so an
+         * `email` key would bounce the person to a field they cannot fix.
+         */
+        $platformState = PlatformRiskState::latest('started_at')->first();
+        if ($platformState && $platformState->state === 'FREEZE' && $request->role == 1) {
+            // Never throws; a lead we failed to record costs one email, an
+            // exception here costs the person their message.
+            app(SignupLeadService::class)->capture(
+                $request,
+                (string) $request->input('email'),
+                1,
+                SignupLead::REASON_PLATFORM_FREEZE,
+            );
+
+            throw ValidationException::withMessages([
+                'signup_paused' => RiskMessages::get(
+                    'CREATOR_SIGNUP_PAUSED',
+                    RiskMessages::AUDIENCE_CREATOR,
+                )['body'],
+            ]);
         }
 
         /* =========================BASIC VALIDATION========================== */
@@ -348,6 +375,23 @@ class RegisteredUserController extends Controller
             'utm_campaign' => $request->input('utm_campaign'),
         ]);
 
+        // Which paid-ads landing page earned this signup, on the same first-touch
+        // rule as the source above.
+        //
+        // ⚠️ The cookie is visitor-supplied, so the value is only stored when it
+        // is one of the six known page types — otherwise anyone could write an
+        // arbitrary string into this column by setting a cookie, and the admin
+        // report would be reading whatever they typed.
+        //
+        // ⚠️ Written with forceFill for the same reason as the block below: the
+        // column is deliberately not in `$fillable`, so a mass assignment would
+        // be dropped in silence.
+        $adLanding = $request->cookie(VisitTracker::LANDING_COOKIE);
+
+        if (VisitTracker::isAdLanding($adLanding)) {
+            $user->forceFill(['signup_landing_page' => $adLanding]);
+        }
+
         // ⚠️ Set AFTER create, not inside it. These columns are not in the model's
         // `$fillable`, so passing them to `User::create()` is silently dropped.
         // We use forceFill to bypass the fillable guard.
@@ -356,6 +400,15 @@ class RegisteredUserController extends Controller
             'cover' => $assignedCover,
             'cover_approved' => 1,
         ]);
+
+        // A waiting lead who has now got in must be CLOSED, or the notify sweep
+        // emails "you can sign up now" to somebody who already did.
+        //
+        // ⚠️ AFTER the row exists, never before. Closing first and then losing the
+        // insert — a username taken in the race, a constraint — would leave the
+        // person with no account AND a lead marked converted, so they could never
+        // be told when sign-ups reopened.
+        app(SignupLeadService::class)->close((string) $user->email);
 
         if ($google) {
             // Google has already proved the address receives mail, so asking the person to

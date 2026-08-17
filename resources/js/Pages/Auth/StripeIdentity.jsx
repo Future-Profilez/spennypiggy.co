@@ -47,7 +47,7 @@ export default function StripeIdentity({ auth }) {
     return (
         <Authenticated auth={auth?.user || ""} user={auth?.user || ""}>
             <Head title="Identity Verification" />
-            <div className="min-h-[90vh] bg-[#A2E4B8] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-[90dvh] bg-[#A2E4B8] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
                 <div className="w-full max-w-7xl mx-auto">
                     <div className="text-center mb-10">
                         <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-black uppercase tracking-wider mb-2">
@@ -61,7 +61,7 @@ export default function StripeIdentity({ auth }) {
                         </p>
                     </div>
 
-                    <div className="max-w-xl m-auto bg-white rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                    <div className="max-w-xl m-auto bg-white rounded-box border-[3px] border-black overflow-hidden">
                         <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
@@ -93,7 +93,7 @@ export default function StripeIdentity({ auth }) {
 
                             {hasFailed && (
                                 <div className="mb-4 bg-red-50 p-4 rounded-box-sm border-2 border-red-500">
-                                    <p className="text-[11px] font-bold uppercase tracking-widest text-red-600 mb-1">
+                                    <p className="text-[12px] font-bold uppercase tracking-widest text-red-600 mb-1">
                                         Why it came back
                                     </p>
                                     <p className="font-bold text-gray-900">
@@ -105,7 +105,7 @@ export default function StripeIdentity({ auth }) {
 
                                     {failure.note && (
                                         <div className="mt-3 bg-white border border-red-200 rounded-box-sm p-3">
-                                            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                                            <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1">
                                                 Note from our team
                                             </p>
                                             <p className="text-sm text-gray-800">
@@ -116,7 +116,7 @@ export default function StripeIdentity({ auth }) {
 
                                     {failure.whatToDo.length > 0 && (
                                         <div className="mt-3">
-                                            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+                                            <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 mb-1.5">
                                                 What to do next
                                             </p>
                                             <ol className="space-y-1">

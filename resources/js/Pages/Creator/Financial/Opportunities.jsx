@@ -82,7 +82,7 @@ const RemindButton = ({ supporterId }) => {
             <span
                 role="status"
                 aria-live="polite"
-                className="inline-flex items-center gap-1 rounded-[20px] bg-green-100 px-3 py-2 text-[12px] font-bold text-green-800"
+                className="inline-flex items-center gap-1 rounded-box-sm bg-green-100 px-3 py-2 text-[12px] font-bold text-green-800"
             >
                 ✓ Reminder sent
             </span>
@@ -95,7 +95,7 @@ const RemindButton = ({ supporterId }) => {
                 onClick={send}
                 disabled={state === 'busy'}
                 title="The platform sends its standard reminder with your name on it — once per quiet spell, and only if the supporter allows reminders."
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[20px] border-2 border-[#FF007F] px-4 py-2 text-[12px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-box-sm border-2 border-[#FF007F] px-4 py-2 text-[12px] font-bold text-[#FF007F] transition-colors hover:bg-[#FF007F] hover:text-black disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/50"
             >
                 <Send size={13} />
                 {state === 'busy' ? 'Sending…' : state === 'blocked' ? 'Try again' : 'Send platform reminder'}
@@ -115,27 +115,27 @@ const RemindButton = ({ supporterId }) => {
  * "nobody is finding it" need opposite fixes.
  */
 const ListingColumn = ({ title, rows = [], empty, accent }) => (
-    <div className="rounded-[20px] border border-gray-200 bg-white p-4">
+    <div className="rounded-box-sm border border-gray-200 bg-white p-4">
         <div className="mb-3 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accent }} />
-            <h3 className="text-[13px] font-bold uppercase tracking-wide text-gray-500">{title}</h3>
+            <h3 className="text-[13px] font-bold uppercase tracking-wide text-black/60">{title}</h3>
         </div>
 
         {rows.length === 0 ? (
-            <p className="text-sm text-gray-500">{empty}</p>
+            <p className="text-sm text-black/60">{empty}</p>
         ) : (
             <ul className="space-y-2.5">
                 {rows.map((row) => (
                     <li key={`${row.type}-${row.id}`} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <div className="truncate text-sm font-bold text-gray-900">{row.title}</div>
-                            <div className="text-xs text-gray-500">{row.diagnosis}</div>
+                            <div className="text-xs text-black/60">{row.diagnosis}</div>
                         </div>
                         <div className="shrink-0 text-right">
                             <div className="font-anton text-lg leading-none text-gray-900">
                                 {row.sold > 0 ? row.sold : row.viewers}
                             </div>
-                            <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                            <div className="text-[12px] font-bold uppercase tracking-wide text-black/60">
                                 {row.sold > 0 ? "sold" : "saw it"}
                             </div>
                         </div>
@@ -147,11 +147,11 @@ const ListingColumn = ({ title, rows = [], empty, accent }) => (
 );
 
 const RetentionStat = ({ label, value, hint, accent }) => (
-    <div className="rounded-[20px] border border-gray-200 bg-white p-4">
+    <div className="rounded-box-sm border border-gray-200 bg-white p-4">
         <div className="h-1 w-8 rounded-full" style={{ backgroundColor: accent }} />
         <div className="mt-3 font-anton text-3xl leading-none text-gray-900">{value}</div>
-        <div className="mt-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">{label}</div>
-        {hint && <div className="mt-0.5 text-xs text-gray-400">{hint}</div>}
+        <div className="mt-2 text-[13px] font-bold uppercase tracking-wide text-black/60">{label}</div>
+        {hint && <div className="mt-0.5 text-xs text-black/60">{hint}</div>}
     </div>
 );
 
@@ -189,13 +189,13 @@ export default function Opportunities({
                     {/* Header */}
                     <Link
                         href={route('financial.dashboard')}
-                        className="mb-4 inline-flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-[#FF007F]"
+                        className="mb-4 inline-flex items-center gap-1 text-sm font-bold text-black/60 hover:text-[#FF007F]"
                     >
                         <ChevronLeft size={16} /> Financial dashboard
                     </Link>
 
                     {/* Hero — the whole point in one glance: how many supporters, worth how much. */}
-                    <div className="relative overflow-hidden rounded-[30px] bg-[#16161C] p-6 text-white md:p-8">
+                    <div className="relative overflow-hidden rounded-box bg-[#16161C] p-6 text-white md:p-8">
                         <div
                             className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-20 blur-2xl"
                             style={{ background: 'radial-gradient(circle, #FF007F, transparent 70%)' }}
@@ -211,7 +211,7 @@ export default function Opportunities({
                                         <span className="font-anton text-6xl leading-none md:text-7xl">
                                             {totals.supporters ?? 0}
                                         </span>
-                                        <span className="mb-1 text-sm text-gray-400">
+                                        <span className="mb-1 text-sm text-white/60">
                                             paying supporter{(totals.supporters ?? 0) === 1 ? '' : 's'}
                                         </span>
                                     </div>
@@ -222,9 +222,9 @@ export default function Opportunities({
                                             { label: 'This month', value: moneyShort(totals.monthly_value, currency), tint: 'text-[#FF007F]' },
                                             { label: 'Avg / supporter', value: moneyShort(totals.average_supporter_value, currency), tint: 'text-white' },
                                         ].map((s) => (
-                                            <div key={s.label} className="rounded-[20px] bg-white/5 p-3 ring-1 ring-white/10">
+                                            <div key={s.label} className="rounded-box-sm bg-white/5 p-3 ring-1 ring-white/10">
                                                 <div className={`font-anton text-xl leading-none tabular-nums ${s.tint}`}>{s.value}</div>
-                                                <div className="mt-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">{s.label}</div>
+                                                <div className="mt-1.5 text-[12px] font-bold uppercase tracking-wide text-white/60">{s.label}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -232,7 +232,7 @@ export default function Opportunities({
                             ) : (
                                 <div className="mt-2">
                                     <div className="font-anton text-4xl leading-tight md:text-5xl">Your growth centre</div>
-                                    <p className="mt-2 max-w-lg text-sm text-gray-300">
+                                    <p className="mt-2 max-w-lg text-sm text-white/60">
                                         The steps to your first sale now — your supporter leaderboard, tiers and
                                         win-back prompts appear here as soon as the money starts coming in.
                                     </p>
@@ -243,8 +243,8 @@ export default function Opportunities({
 
                     {/* Tier distribution — where your supporters sit on the platform ladder. */}
                     {hasSupporters && tierPresent.length > 0 && (
-                        <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
-                            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                        <div className="mt-4 rounded-box border border-gray-200 bg-white p-5 md:p-6">
+                            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-black/60">
                                 Supporter tiers
                             </h2>
                             <div className="flex h-4 w-full overflow-hidden rounded-full">
@@ -260,7 +260,7 @@ export default function Opportunities({
                                 {tierPresent.map((t) => (
                                     <span
                                         key={t.level}
-                                        className="inline-flex items-center gap-1.5 rounded-[20px] border border-gray-200 bg-gray-50 px-3 py-1.5 text-[13px] font-bold text-gray-700"
+                                        className="inline-flex items-center gap-1.5 rounded-box-sm border border-gray-200 bg-gray-50 px-3 py-1.5 text-[13px] font-bold text-gray-700"
                                     >
                                         <span aria-hidden>{t.icon}</span>
                                         {t.level}
@@ -275,8 +275,8 @@ export default function Opportunities({
                         Gated on revenue, NOT hasSupporters: guest/anonymous checkouts
                         (Piggy Pot / Wish) earn money without a supporter_id. */}
                     {revenueTotal > 0 && (
-                        <div className="mt-4 rounded-[30px] border border-gray-200 bg-white p-5 md:p-6">
-                            <h2 className="mb-4 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-gray-500">
+                        <div className="mt-4 rounded-box border border-gray-200 bg-white p-5 md:p-6">
+                            <h2 className="mb-4 flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-black/60">
                                 <BarChart3 size={15} className="text-[#FF007F]" /> Revenue by type
                             </h2>
                             <div className="space-y-3">
@@ -299,10 +299,10 @@ export default function Opportunities({
                                                 />
                                             </div>
                                             <div className="mt-1 flex items-center justify-between">
-                                                <span className="text-[11px] text-gray-400">
+                                                <span className="text-[12px] text-black/60">
                                                     {r.count} payment{r.count === 1 ? '' : 's'}
                                                 </span>
-                                                <span className="text-[11px] font-bold text-gray-500">
+                                                <span className="text-[12px] font-bold text-black/60">
                                                     {pct.toFixed(1)}%
                                                 </span>
                                             </div>
@@ -315,7 +315,7 @@ export default function Opportunities({
 
                     {/* Getting started — shown until the first supporter arrives. */}
                     {!hasSupporters && (
-                        <div className="mt-4 rounded-[30px] border-2 border-[#FF007F] bg-[#FF007F]/[0.04] p-5 md:p-6">
+                        <div className="mt-4 rounded-box border-2 border-[#FF007F] bg-[#FF007F]/[0.04] p-5 md:p-6">
                             <div className="flex items-center gap-2 font-bold text-gray-900">
                                 <Sparkles size={18} className="text-[#FF007F]" /> Get your first supporters
                             </div>
@@ -326,14 +326,14 @@ export default function Opportunities({
                                     'Share your profile link on your own social channels — that is where your first buyers come from.',
                                 ].map((step, i) => (
                                     <li key={i} className="flex gap-2.5">
-                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF007F] text-[11px] font-bold text-white">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF007F] text-[12px] font-bold text-black">
                                             {i + 1}
                                         </span>
                                         <span>{step}</span>
                                     </li>
                                 ))}
                             </ol>
-                            <p className="mt-3 text-xs italic text-gray-500">
+                            <p className="mt-3 text-xs italic text-black/60">
                                 The steps below are tailored to what you have not published yet.
                             </p>
                         </div>
@@ -347,7 +347,7 @@ export default function Opportunities({
                                 return (
                                     <div
                                         key={a.key}
-                                        className={`flex gap-3 rounded-[20px] border-l-4 bg-white p-4 shadow-sm ${
+                                        className={`flex gap-3 rounded-box-sm border-l-4 bg-white p-4 ${
                                             warn ? 'border-amber-400' : 'border-[#FF007F]'
                                         }`}
                                     >
@@ -378,7 +378,7 @@ export default function Opportunities({
                             <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
                                 <ShoppingCart size={18} className="text-[#FF007F]" /> Stopped at checkout
                             </h2>
-                            <p className="mb-3 text-sm text-gray-500">
+                            <p className="mb-3 text-sm text-black/60">
                                 People who reached your payment screen in the last {abandoned.window_days ?? 30} days
                                 and did not finish. We email them a reminder automatically.
                             </p>
@@ -417,7 +417,7 @@ export default function Opportunities({
                                                 <div className="truncate font-bold text-gray-900">
                                                     {it.title || `Your ${it.label}`}
                                                 </div>
-                                                <div className="text-xs text-gray-500">
+                                                <div className="text-xs text-black/60">
                                                     {it.reminded ? 'Reminder sent' : 'Reminder queued'}
                                                 </div>
                                             </div>
@@ -429,7 +429,7 @@ export default function Opportunities({
                                 </div>
                             )}
 
-                            <p className="mt-3 text-xs italic text-gray-500">
+                            <p className="mt-3 text-xs italic text-black/60">
                                 A listing that collects these is usually priced or described in a way that loses
                                 people at the last step. We never share who they were.
                             </p>
@@ -448,7 +448,7 @@ export default function Opportunities({
                             <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
                                 <BarChart3 size={18} className="text-[#FF007F]" /> Which listings are working
                             </h2>
-                            <p className="mb-3 text-sm text-gray-500">
+                            <p className="mb-3 text-sm text-black/60">
                                 Last {listings.window_days ?? 30} days, across your shop and paid tasks.{' '}
                                 {/* This panel ranks the two types that have view data. The
                                     catalogue is where the other four — and anything stuck
@@ -485,7 +485,7 @@ export default function Opportunities({
                         </h2>
 
                         {actions.length === 0 ? (
-                            <p className="rounded-[20px] border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                            <p className="rounded-box-sm border border-gray-200 bg-white p-4 text-sm text-gray-600">
                                 Nothing to suggest yet — this fills up once you have a few sales.
                             </p>
                         ) : (
@@ -493,11 +493,11 @@ export default function Opportunities({
                                 {actions.map((a) => (
                                     <div
                                         key={a.key}
-                                        className="flex flex-col rounded-[20px] border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+                                        className="flex flex-col rounded-box-sm border border-gray-200 bg-white p-4  "
                                     >
                                         <h3 className="font-bold text-gray-900">{a.title}</h3>
                                         <p className="mt-1 flex-1 text-sm text-gray-600">{a.detail}</p>
-                                        {a.hint && <p className="mt-2 text-xs italic text-gray-500">{a.hint}</p>}
+                                        {a.hint && <p className="mt-2 text-xs italic text-black/60">{a.hint}</p>}
                                     </div>
                                 ))}
                             </div>
@@ -526,7 +526,7 @@ export default function Opportunities({
                             <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-gray-900">
                                 <Users size={18} className="text-[#FF007F]" /> Top supporters
                             </h2>
-                            <p className="mb-3 text-sm text-gray-500">
+                            <p className="mb-3 text-sm text-black/60">
                                 Ranked by lifetime spend with you.
                                 {(totals.supporters ?? 0) > supporters.length && (
                                     <> Showing your top {supporters.length} of {totals.supporters}.</>
@@ -537,7 +537,7 @@ export default function Opportunities({
                                 {supporters.map((s, i) => (
                                     <div
                                         key={s.supporter_id}
-                                        className="rounded-[20px] border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+                                        className="rounded-box-sm border border-gray-200 bg-white p-4  "
                                     >
                                         <div className="flex items-center gap-3">
                                             {/* Rank */}
@@ -553,7 +553,7 @@ export default function Opportunities({
                                                     <span className="truncate font-bold text-gray-900">{s.name || 'Supporter'}</span>
                                                     {s.vip?.level && (
                                                         <span
-                                                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold text-gray-900"
+                                                            className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-bold text-gray-900"
                                                             style={{ backgroundColor: `${s.vip.color}22`, borderColor: s.vip.color }}
                                                             title={`Engagement level: ${s.vip.level}`}
                                                         >
@@ -561,12 +561,12 @@ export default function Opportunities({
                                                         </span>
                                                     )}
                                                     {s.at_risk && (
-                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
+                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[12px] font-bold text-amber-800">
                                                             At risk
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="mt-1 text-[13px] text-gray-500">
+                                                <div className="mt-1 text-[13px] text-black/60">
                                                     {s.purchases} purchase{s.purchases === 1 ? '' : 's'} ·{' '}
                                                     {money(s.average_order_value, currency)} avg
                                                     {s.days_since_last_purchase !== null && (
@@ -585,7 +585,7 @@ export default function Opportunities({
                                                 <div className="font-anton text-xl leading-none tabular-nums text-gray-900">
                                                     {moneyShort(s.lifetime_spent, currency)}
                                                 </div>
-                                                <div className="text-[11px] font-bold uppercase tracking-wide text-gray-400">lifetime</div>
+                                                <div className="text-[12px] font-bold uppercase tracking-wide text-black/60">lifetime</div>
                                                 {s.monthly_spent > 0 && (
                                                     <div className="mt-1 text-[13px] font-bold tabular-nums text-[#FF007F]">
                                                         +{money(s.monthly_spent, currency)} this mo.
@@ -603,7 +603,7 @@ export default function Opportunities({
                                 ))}
                             </div>
 
-                            <p className="mt-4 text-xs italic text-gray-500">
+                            <p className="mt-4 text-xs italic text-black/60">
                                 Supporter contact details are never shared. "Send platform reminder" delivers the
                                 platform's standard message with your name on it — once per quiet spell, and only if
                                 the supporter allows reminders. For anything personal, use your own social channels.

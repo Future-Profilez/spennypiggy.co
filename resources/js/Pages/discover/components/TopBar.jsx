@@ -81,17 +81,17 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="sticky top-[75px] sm:top-[78px] md:top-[87px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
-            <div className="container max-w-7xl mx-auto px-4 pb-0  md:pb-3 pt-3">
+ <div className="sticky top-[68px] sm:top-[68px] md:top-[80px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
+ <div className="container max-w-7xl mx-auto px-4 pb-0 md:pb-3 pt-3">
                 {/* Search Bar */}
                 <div className="relative mb-2 md:mb-4">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <RiSearchLine className="text-white/50" size={22} />
+ <RiSearchLine className="text-black/60" size={22} />
                     </div>
                     <input
                         ref={inputRef}
                         type="text"
-                        className="w-full pl-12 pr-4 py-3.5 rounded-[20px] border border-black/10 bg-[#16161C] focus:border-[#FF007F]/70 focus:ring-2 focus:ring-[#FF007F]/25 focus:outline-none transition-all text-base md:text-lg font-medium text-white placeholder-white/45 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.7)]"
+ className="w-full pl-12 pr-4 py-3.5 rounded-box-sm border border-black/10 bg-gray-200 focus:border-[#FF007F]/70 focus:ring-2 focus:ring-[#FF007F]/25 focus:outline-none transition-all text-base md:text-lg font-medium text-black placeholder-black/45 "
                         placeholder="Search creators and wishes..."
                         value={query}
                         onChange={(e) => {
@@ -103,24 +103,24 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[20px]   shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+ <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-box border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>
                                         <div className="flex items-center justify-between px-3 py-2">
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Searches</div>
+ <div className="text-xs font-semibold text-black/60 uppercase tracking-wider">Recent Searches</div>
                                             <button onClick={clearRecentSearches} className="text-xs text-[#FF007F] hover:text-pink-700">Clear</button>
                                         </div>
                                         {recentSearches.map((term, index) => (
-                                            <div 
+                                            <div
                                                 key={index}
                                                 onClick={() => {
                                                     setQuery(term);
                                                     handleSearchSubmit(term);
                                                 }}
-                                                className="hover:bg-gray-50 px-3 py-2 rounded-[30px]    cursor-pointer flex items-center gap-2 group"
+ className="hover:bg-gray-50 px-3 py-2 min-h-[44px] rounded-box-sm cursor-pointer flex items-center gap-2 group"
                                             >
-                                                <RiTimeLine className="text-gray-400 group-hover:text-[#FF007F] transition-colors" />
+ <RiTimeLine className="text-black/60 group-hover:text-[#FF007F] transition-colors" />
                                                 <span className="text-gray-700 group-hover:text-gray-900 capitalize">{term}</span>
                                             </div>
                                         ))}
@@ -130,14 +130,14 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                 {query && (
                                     <>
                                         <div onClick={() => handleSearchSubmit(query)}
-                                        className="hover:bg-gray-50 px-3 py-2 rounded-[30px]    cursor-pointer flex items-center gap-2 text-[#FF007F] font-medium border-t border-gray-100 mt-1" >
+ className="hover:bg-gray-50 px-3 py-2 min-h-[44px] rounded-box-sm cursor-pointer flex items-center gap-2 text-[#FF007F] font-medium border-t border-gray-100 mt-1" >
                                             <RiSearchLine /> Search for "{query}"
                                         </div>
                                         {(suggestions.creators?.length > 0 || suggestions.wishes?.length > 0) && (
                                             <div className="mb-2">
                                                 {suggestions.creators?.length > 0 && (
                                                     <>
-                                                        <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">Creators</div>
+ <div className="text-xs font-semibold text-black/60 px-3 py-2 uppercase tracking-wider">Creators</div>
                                                         {suggestions.creators.map((item, i) => (
                                                             <Link href={`/${item?.username}`} onClick={() => trackSearchClick(item.id, item.username)} className='w-full block px-3 py-2 hover:bg-gray-200'>
                                                                 <Avatar role={item.role}
@@ -151,7 +151,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                             // <Link 
                                                             //     key={`c-${i}`} 
                                                             //     href={s.url}
-                                                            //     className="hover:bg-gray-50 px-3 py-2 rounded-[30px]    cursor-pointer flex items-center gap-3"
+                                                            //     className="hover:bg-gray-50 px-3 py-2 min-h-[44px] rounded-box-sm cursor-pointer flex items-center gap-3"
                                                             // >
                                                             //     <img src={s.image || userphoto} className="w-8 h-8 rounded-full object-cover" />
                                                             //     <div>
@@ -159,7 +159,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                             //             {s.text}
                                                             //             {s.verified && <span className="text-blue-500 text-xs">✅</span>}
                                                             //         </div>
-                                                            //         <div className="text-xs text-gray-500">{s.subtext}</div>
+                                                            //         <div className="text-xs text-black/60">{s.subtext}</div>
                                                             //     </div>
                                                             // </Link>
                                                         ))}
@@ -168,20 +168,20 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                 
                                                 {/* {suggestions.wishes?.length > 0 && (
                                                     <>
-                                                        <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider mt-2">Wishes</div>
+ <div className="text-xs font-semibold text-black/60 px-3 py-2 uppercase tracking-wider mt-2">Wishes</div>
                                                         {suggestions.wishes.map((s, i) => (
-                                                            <div 
+                                                            <div
                                                                 key={`w-${i}`}
                                                                 onClick={() => {
                                                                     setQuery(s.search_term);
                                                                     handleSearchSubmit(s.search_term);
                                                                 }}
-                                                                className="hover:bg-gray-50 px-3 py-2 rounded-[30px]    cursor-pointer flex items-center gap-3"
+ className="hover:bg-gray-50 px-3 py-2 min-h-[44px] rounded-box-sm cursor-pointer flex items-center gap-3"
                                                             >
-                                                                <img src={s.image || 'https://via.placeholder.com/30'} alt={s.text || ''} loading="lazy" className="w-8 h-8 rounded-[30px]   object-cover" />
+ <img src={s.image || 'https://via.placeholder.com/30'} alt={s.text || ''} loading="lazy" className="w-8 h-8 rounded-box object-cover" />
                                                                 <div>
                                                                     <div className="text-sm font-medium text-gray-900">{s.text}</div>
-                                                                    <div className="text-xs text-gray-500">{s.subtext}</div>
+ <div className="text-xs text-black/60">{s.subtext}</div>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -201,17 +201,17 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                 {onQuickFilter && Array.isArray(activeFilters) && (
                     <div className="flex items-center !ps-1 md:!ps-2 gap-3 overflow-x-auto no-scrollbar pb-3 pt-2">
                         {onFilterToggle && (
-                            <button 
+                            <button
                                 onClick={onFilterToggle}
-                                className="flex-shrink-0 p-2 rounded-xl bg-white border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-300 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all" >
+ className="flex-shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full bg-white border-[3px] border-black hover:bg-yellow-300 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all" >
                                 <RiFilter3Line size={24} className="text-black font-black" />
                             </button>
                         )}
                         {quickFilters.map(filter => (
                             <button key={filter.id} onClick={() => onQuickFilter(filter.id)}
-                                className={`flex-shrink-0 px-4 py-2 rounded-[20px] text-[13px] font-semibold transition-all whitespace-nowrap border ${
+ className={`flex-shrink-0 px-4 py-2 rounded-box-sm text-[13px] font-semibold transition-all whitespace-nowrap border ${
                                     activeFilters.includes(filter.id)
-                                        ? 'bg-[#FF007F] text-white border-[#FF007F] shadow-[0_6px_20px_-6px_rgba(255,0,127,0.7)]'
+ ? 'bg-[#FF007F] text-black border-[#FF007F] '
                                         : 'bg-white text-black/70 border-black/10 hover:text-black hover:border-black/30'
                                 }`} > {filter.label}
                             </button>

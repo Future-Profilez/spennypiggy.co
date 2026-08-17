@@ -37,9 +37,9 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
 
     return (
         <div className="mt-8 w-full max-w-[550px]">
-            <div className="relative overflow-hidden rounded-box border-[3px] border-black bg-[#FFF6EC] p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="relative overflow-hidden rounded-box border-[3px] border-black bg-[#FFF6EC] p-5 ">
                 <div className="mb-3 inline-block -rotate-1 rounded-box-sm border-[3px] border-black bg-gradient-to-r from-[#FF007F] to-[#FF8E25] px-3 py-1">
-                    <span className="text-[11px] font-black uppercase tracking-wide text-white">
+                    <span className="text-[12px] font-black uppercase tracking-wide text-white">
                         Keep it coming
                     </span>
                 </div>
@@ -59,7 +59,7 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
                 <div className="flex flex-wrap items-center gap-3">
                     <a
                         href={offer.checkout_url}
-                        className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-5 py-2.5 text-sm font-black uppercase tracking-wider text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+                        className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-5 py-2.5 text-sm font-black uppercase tracking-wider text-black transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
                     >
                         Join for {price}/mo
                     </a>

@@ -47,9 +47,9 @@ export default function CreatorRiskBanner() {
                 {activeBanners.map((banner, index) => (
                     <div 
                         key={index} 
-                        className={`relative overflow-hidden rounded-[30px]  border backdrop-blur-md transition-all duration-300 shadow-sm hover:shadow-md ${getBannerStyle(banner.type)}`} >
+                        className={`relative overflow-hidden rounded-box border backdrop-blur-md transition-all duration-300 ${getBannerStyle(banner.type)}`} >
                         <div className="flex flex-col md:flex-row items-start md:items-center p-4 relative z-10 gap-4">
-                            <div className={`flex-shrink-0 p-6 !rounded-[25px] ${getIconBg(banner.type)}`}>
+                            <div className={`flex-shrink-0 p-6 !rounded-box ${getIconBg(banner.type)}`}>
                                 {getIcon(banner.type)}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -63,12 +63,12 @@ export default function CreatorRiskBanner() {
                             <div className="flex flex-shrink-0 w-full md:w-auto gap-3 mt-2 md:mt-0">
                                 <button 
                                     onClick={() => handleOpenModal(banner)}
-                                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider py-2.5 px-5 rounded-lg transition-all whitespace-nowrap ${getButtonStyles(banner.type)}`}
+                                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider min-h-[44px] py-2.5 px-5 rounded-box-sm transition-colors duration-200 whitespace-nowrap ${getButtonStyles(banner.type)}`}
                                 >
                                     {banner.action_label || 'View Details'} <BiChevronRight size={16} />
                                 </button>
                                 {banner.type === 'action_required' && !banner.action_url && (
-                                    <button className="flex-1 md:flex-none text-xs font-bold uppercase tracking-wider py-2.5 px-5 rounded-lg bg-white/60 hover:bg-white/90 transition-all text-gray-900 border border-white/20">
+                                    <button className="flex-1 md:flex-none text-xs font-bold uppercase tracking-wider min-h-[44px] py-2.5 px-5 rounded-box-sm bg-white/60 hover:bg-white/90 transition-colors duration-200 text-gray-900 border border-white/20">
                                         Support
                                     </button>
                                 )}
@@ -92,7 +92,7 @@ export default function CreatorRiskBanner() {
                         </div>
                         
                         <div className="space-y-6">
-                            <div className="bg-gray-50 p-5 rounded-[30px]  border border-gray-100">
+                            <div className="bg-gray-50 p-5 rounded-box  border border-gray-100">
                                 <h4 className="text-sm uppercase tracking-wide text-gray-500 font-bold mb-2 flex items-center gap-2">
                                     <BiInfoCircle /> What Happened
                                 </h4>
@@ -101,7 +101,7 @@ export default function CreatorRiskBanner() {
                                 </p>
                             </div>
                             
-                            <div className="bg-blue-50/50 p-5 rounded-[30px]  border border-blue-100">
+                            <div className="bg-blue-50/50 p-5 rounded-box  border border-blue-100">
                                 <h4 className="text-sm uppercase tracking-wide text-blue-600 font-bold mb-2 flex items-center gap-2">
                                     <BiShieldQuarter /> What To Do
                                 </h4>
@@ -114,7 +114,7 @@ export default function CreatorRiskBanner() {
                         <div className="mt-8 flex flex-col-reverse md:flex-row justify-end gap-3">
                             <button 
                                 onClick={handleCloseModal}
-                                className="px-6 py-3 rounded-[20px] border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition-colors w-full md:w-auto"
+                                className="px-6 py-3 rounded-box border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold transition-colors w-full md:w-auto"
                             >
                                 Close
                             </button>
@@ -124,10 +124,10 @@ export default function CreatorRiskBanner() {
                                 method={selectedBanner.action_method || 'get'} 
                                 as={selectedBanner.action_method === 'post' ? 'button' : 'a'} 
                                 type={selectedBanner.action_method === 'post' ? 'button' : undefined} 
-                                className={`px-6 py-3 rounded-[20px] text-white font-bold shadow-lg transition-transform 
-                                transform active:scale-95 w-full md:w-auto text-center flex items-center justify-center 
-                                gap-2 ${getButtonStyles(selectedBanner.type).split(' ').filter(c => c.startsWith('bg-') 
-                                || c.startsWith('hover:')).join(' ')}`} > 
+                                className={`px-6 py-3 min-h-[44px] rounded-box-sm text-white font-bold transition-colors duration-200 
+ hover:brightness-110 active:brightness-95 w-full md:w-auto text-center flex items-center justify-center 
+                                gap-2 ${getButtonStyles(selectedBanner.type).split(' ').filter(c => c.startsWith('bg-')
+                                || c.startsWith('hover:')).join(' ')}`} >
                                     {selectedBanner.action_label || 'Proceed'} 
                                     <BiChevronRight size={18} />
                                 </Link>
@@ -165,10 +165,10 @@ function getTitleColor(type) {
 
 function getIconBg(type) {
     switch (type) {
-        case 'critical': return 'bg-white text-red-600 shadow-sm';
-        case 'warning': return 'bg-white text-amber-600 shadow-sm';
-        case 'action_required': return 'bg-white text-orange-600 shadow-sm';
-        case 'info': default: return 'bg-white text-blue-600 shadow-sm';
+        case 'critical': return 'bg-white text-red-600 ';
+        case 'warning': return 'bg-white text-amber-600 ';
+        case 'action_required': return 'bg-white text-orange-600 ';
+        case 'info': default: return 'bg-white text-blue-600 ';
     }
 }
 
@@ -183,10 +183,10 @@ function getGradientOverlay(type) {
 
 function getButtonStyles(type) {
     switch (type) {
-        case 'critical': return 'bg-red-600 text-white hover:bg-red-700 shadow-red-200/50 shadow-lg';
-        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-200/50 shadow-lg';
-        case 'action_required': return 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-200/50 shadow-lg';
-        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50 shadow-lg';
+        case 'critical': return 'bg-red-600 text-white hover:bg-red-700  ';
+        case 'warning': return 'bg-amber-500 text-white hover:bg-amber-600  ';
+        case 'action_required': return 'bg-orange-500 text-white hover:bg-orange-600  ';
+        case 'info': default: return 'bg-blue-600 text-white hover:bg-blue-700  ';
     }
 }
 

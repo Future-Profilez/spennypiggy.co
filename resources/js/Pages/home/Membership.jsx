@@ -83,7 +83,7 @@ export default function Membership() {
         <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF007F] rounded-full blur-[140px] opacity-[0.08] z-0"></div>
 
         <div className='relative max-w-6xl mx-auto z-10'>
-          <p className="text-center font-gulfs uppercase tracking-[3px] text-[11px] text-[#FF007F] mb-4">
+          <p className="text-center font-gulfs uppercase tracking-[3px] text-[12px] text-[#FF007F] mb-4">
             Premium
           </p>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase tracking-tight leading-tight">
@@ -100,18 +100,18 @@ export default function Membership() {
           </div>
 
           <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-5xl mt-3 relative z-10'>
-            <div className="relative w-full bg-[#0d0a16] border-2 border-[#FF007F] rounded-[24px] p-6 md:p-8">
+            <div className="relative w-full bg-[#0d0a16] border-2 border-[#FF007F] rounded-box p-6 md:p-8">
               <div className="relative flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="w-11 h-11 rounded-2xl bg-[#E6EA7B] border-2 border-black grid place-items-center text-black">
+                  <span className="w-11 h-11 rounded-box-sm bg-[#E6EA7B] border-2 border-black grid place-items-center text-black">
                     <FaCrown size={20} />
                   </span>
                   <div className="text-left leading-tight">
                     <p className="font-gulfs uppercase text-white text-lg md:text-xl tracking-tight">Membership tiers</p>
-                    <p className="text-[11px] font-gulfs uppercase tracking-[2px] text-white/60">Set your own perks &amp; price</p>
+                    <p className="text-[12px] font-gulfs uppercase tracking-[2px] text-white/60">Set your own perks &amp; price</p>
                   </div>
                 </div>
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-black bg-[#05EFB8] rounded-full px-3 py-1">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[12px] font-black uppercase tracking-wide text-black bg-[#05EFB8] rounded-full px-3 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-black"></span>0% fan fees
                 </span>
               </div>
@@ -124,21 +124,21 @@ export default function Membership() {
                 ].map((t, i) => (
                   <div
                     key={i}
-                    className={`relative bg-[#0d0a16] border-2 rounded-[24px] p-5 text-left flex flex-col ${t.popular ? 'md:-translate-y-2' : ''}`}
+                    className={`relative bg-[#0d0a16] border-2 rounded-box p-5 text-left flex flex-col ${t.popular ? 'md:-translate-y-2' : ''}`}
                     style={{ borderColor: t.accent }}
                   >
                     {t.popular && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-black uppercase tracking-wide text-black bg-[#E6EA7B] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[12px] font-black uppercase tracking-wide text-black bg-[#E6EA7B] border-2 border-black rounded-full px-3 py-0.5 whitespace-nowrap">Most popular</span>
                     )}
                     <p className="font-gulfs uppercase text-white text-lg tracking-tight">{t.name}</p>
                     <p className="mt-1 mb-4">
                       <span className="font-gulfs text-3xl md:text-[34px] leading-none" style={{ color: t.accent }}>{t.price}</span>
-                      <span className="text-white/55 font-bold text-[12px]"> /mo</span>
+                      <span className="text-white/60 font-bold text-[12px]"> /mo</span>
                     </p>
                     <ul className="space-y-2 mb-5">
                       {t.perks.map((p, j) => (
                         <li key={j} className="flex items-start gap-2 text-[12.5px] font-semibold text-white/70 leading-snug">
-                          <span className="mt-0.5 w-4 h-4 shrink-0 rounded-full grid place-items-center text-[11px] text-black" style={{ background: t.accent }}>✓</span>
+                          <span className="mt-0.5 w-4 h-4 shrink-0 rounded-full grid place-items-center text-[12px] text-black" style={{ background: t.accent }}>✓</span>
                           {p}
                         </li>
                       ))}
@@ -188,11 +188,11 @@ export default function Membership() {
                 return (
                   <StaggerItem key={index} index={index} y={20} stagger={0.08} duration={0.6} className="h-full">
                     <div
-                      className="relative h-full bg-[#0d0a16] border-2 rounded-[24px] p-6 md:p-8 flex flex-col items-start gap-4 text-left"
+                      className="relative h-full bg-[#0d0a16] border-2 rounded-box p-6 md:p-8 flex flex-col items-start gap-4 text-left"
                       style={{ borderColor: accent }}
                     >
                       <div
-                        className="w-16 h-16 rounded-[18px] border-2 border-black flex items-center justify-center"
+                        className="w-16 h-16 rounded-box-sm border-2 border-black flex items-center justify-center"
                         style={{ background: accent }}
                       >
                         <item.icon size={30} color="#000" />

@@ -9,11 +9,25 @@ use Carbon\Carbon;
 
 class ReservePolicy
 {
+    /**
+     * The reserve every newly connected creator carries, as a percentage.
+     *
+     * ⚠️ TIME-LIMITED — it applies for DEFAULT_ONBOARDING_DAYS after the creator
+     * connected Stripe and then drops to 0. Named rather than left inline so it
+     * can be quoted to creators (App\Support\HelpTokens reads it for
+     * {{reserve.onboarding_pct}}); a creator who sees it held with nothing
+     * explaining it reasonably concludes it is permanent.
+     */
+    public const ONBOARDING_PERCENT = 10;
+
+    /** Fallback when risk_settings has no creator_rules row. */
+    public const DEFAULT_ONBOARDING_DAYS = 30;
+
     public function getOnboardingAgeDays(): int
     {
         $creatorRules = RiskSetting::get('creator_rules', []);
 
-        return (int) ($creatorRules['new_creator_age_days'] ?? 30);
+        return (int) ($creatorRules['new_creator_age_days'] ?? self::DEFAULT_ONBOARDING_DAYS);
     }
 
     /**
@@ -39,7 +53,7 @@ class ReservePolicy
 
         $daysSinceConnected = (int) $anchor->copy()->startOfDay()->diffInDays($at->copy()->startOfDay());
 
-        return $daysSinceConnected <= $ageDays ? 10 : 0;
+        return $daysSinceConnected <= $ageDays ? self::ONBOARDING_PERCENT : 0;
     }
 
     public function getEffectiveReservePercent(User $creator, ?CreatorMetric $metric = null, ?Carbon $at = null): int

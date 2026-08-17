@@ -59,7 +59,7 @@ export default function LiveBarSection() {
                 <span className="w-3 h-3 rounded-full bg-[#ff5f57]"></span>
                 <span className="w-3 h-3 rounded-full bg-[#febc2e]"></span>
                 <span className="w-3 h-3 rounded-full bg-[#28c840]"></span>
-                <span className="ml-3 text-[11px] md:text-xs font-semibold text-white/55 bg-white/10 rounded-full px-3 py-1">spennypiggy.co</span>
+                <span className="ml-3 text-[12px] font-semibold text-white/60 bg-white/10 rounded-full px-3 py-1">spennypiggy.co</span>
               </div>
               {/* branded poster — click to play */}
               <Lightbox classes="block w-full" images={[{ src: spennys }]} text={<>
@@ -77,13 +77,13 @@ export default function LiveBarSection() {
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                         <span className="relative flex items-center justify-center w-20 h-20">
                             <span className="absolute inset-0 rounded-full bg-[#FF007F]/40 animate-ping"></span>
-                            <span className="relative w-20 h-20 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <span className="relative w-20 h-20 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center transition-[filter] duration-300 group-hover:brightness-110">
                                 <span className="w-0 h-0 border-y-[11px] border-y-transparent border-l-[18px] border-l-white ml-1.5"></span>
                             </span>
                         </span>
                         <span className="text-white font-gulfs uppercase text-sm md:text-base tracking-wide">Watch the 60-second tour</span>
                     </div>
-                    <span className="absolute bottom-4 right-4 text-[11px] font-black text-white bg-black/70 border border-white/20 rounded-full px-3 py-1">0:60</span>
+                    <span className="absolute bottom-4 right-4 text-[12px] font-black text-white bg-black/70 border border-white/20 rounded-full px-3 py-1">0:60</span>
                 </div>
               </>} />
            </div>

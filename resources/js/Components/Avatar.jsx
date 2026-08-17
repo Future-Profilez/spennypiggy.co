@@ -22,25 +22,25 @@ export default function Avatar({ user, name }) {
                 />
             </div>
             <div className="min-w-0">
-                <p className="text-gray-500 font-semibold text-[14px] leading-tight truncate max-w-[200px]">
+                <p className="text-white/60 font-semibold text-[14px] leading-tight truncate max-w-[200px]">
                     <span className="capitalize">
                         {name || u?.name || "Anonymous"}
                     </span>
                     {u?.username && (
-                        <span className="text-gray-500 font-normal ml-1 text-[13px]">
+                        <span className="text-white/60 font-normal ml-1 text-[13px]">
                             @{u.username}
                         </span>
                     )}
                 </p>
                 {u?.email && (
-                    <p className="text-gray-500 text-[12px] truncate max-w-[200px] mb-1">
+                    <p title={u.email} className="text-white/60 text-[12px] truncate max-w-[200px] mb-1">
                         {u.email}
                     </p>
                 )}
                 {u?.role !== undefined && (
                     <div className="mt-0.5">
                         <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest border ${
+                            className={`text-[12px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest border ${
                                 u.role == 1
                                     ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                                     : "bg-blue-500/10 text-blue-400 border-blue-500/20"
@@ -63,10 +63,10 @@ export default function Avatar({ user, name }) {
                     src={userimage}
                 />
                 <div>
-                    <p className="text-gray-400 text-[14px] font-semibold uppercase tracking-tight">
+                    <p className="text-white/60 text-[14px] font-semibold uppercase tracking-tight">
                         {name || "Anonymous"}
                     </p>
-                    <p className="text-gray-600 text-[11px] italic">
+                    <p className="text-white/70 text-[12px] italic">
                         User not found
                     </p>
                 </div>

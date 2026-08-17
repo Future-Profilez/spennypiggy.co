@@ -51,7 +51,7 @@ export default function OfferAnnouncement({ onDismiss }) {
                 type="button"
                 onClick={handleDismiss}
                 aria-label="Dismiss founder offer"
-                className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
+                className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
             >
                 <X size={15} strokeWidth={3} />
             </button>
@@ -65,7 +65,7 @@ export default function OfferAnnouncement({ onDismiss }) {
                     <span className="hidden font-gulfs text-[38px] leading-none tracking-tight text-[#FFD700] sm:block">
                         £2.5k
                     </span>
-                    <span className="hidden text-[10px] font-black uppercase tracking-[0.18em] text-white/60 sm:block">
+                    <span className="hidden text-[12px] font-black uppercase tracking-[0.18em] text-white/60 sm:block">
                         in 30 days
                     </span>
                 </div>
@@ -88,7 +88,7 @@ export default function OfferAnnouncement({ onDismiss }) {
 
                     <Link
                         href="/founder/bonus"
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#FFD700] px-4 py-2 text-[11px] font-black uppercase tracking-wide text-black transition-transform hover:-translate-y-0.5"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#FFD700] px-4 py-2 text-[12px] font-black uppercase tracking-wide text-black transition-colors duration-200 hover:brightness-110"
                     >
                         Learn more
                         <ArrowRight size={13} strokeWidth={3} />

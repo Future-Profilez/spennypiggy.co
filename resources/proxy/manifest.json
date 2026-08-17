@@ -1,6 +1,6 @@
 {
     "theme_color": "#FF007F",
-    "background_color": "#0B0413",
+    "background_color": "#FF007F",
     "display": "standalone",
     "orientation": "portrait",
     "scope": "/",
@@ -14,13 +14,13 @@
     "prefer_related_applications": false,
     "name": "Spenny Piggy - Exclusive Content, Memberships & Creator Support",
     "short_name": "Spenny Piggy",
-    "description": "Join Memberships, adopt bills & more. Safe for Creators who receive 100% payouts!",
+    "description": "Buy exclusive content, join memberships and unlock creator services. Creators keep 100% of their listed price.",
     "shortcuts": [
         {
-            "name": "Wallet",
-            "short_name": "Wallet",
-            "description": "View your wallet and transactions",
-            "url": "/wallet",
+            "name": "My purchases",
+            "short_name": "Purchases",
+            "description": "Your unlocked content, orders and subscriptions",
+            "url": "/my-purchases",
             "icons": [
                 {
                     "src": "/android-chrome-192x192.png",

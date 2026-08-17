@@ -158,7 +158,12 @@ export default function PiggyPotModal({
             onHide={handleClose}
         >
             <div className="flex min-h-0 flex-1 flex-col bg-[#F2EFE7]">
-                <header className="shrink-0 border-b-[3px] border-black bg-black px-4 py-3 sm:px-6">
+                {/* PWA standalone has no browser chrome — inset the header's content
+                    so the status bar never lands on the title. See `Sheet.jsx`. */}
+                <header
+                    className="shrink-0 border-b-[3px] border-black bg-black px-4 py-3 sm:px-6"
+                    style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+                >
                     <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
                         <button
                             type="button"
@@ -176,7 +181,7 @@ export default function PiggyPotModal({
                             <h3 className="truncate font-GillSans text-lg uppercase leading-none tracking-wide text-white sm:text-2xl">
                                 {isEditing ? "Edit Piggy Pot" : "Create Piggy Pot"}
                             </h3>
-                            <p className="mt-1 truncate text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+                            <p className="mt-1 truncate text-[12px] font-black uppercase tracking-[0.16em] text-white/60">
                                 Sell content towards a visible goal
                             </p>
                         </div>
@@ -187,7 +192,7 @@ export default function PiggyPotModal({
                             type="submit"
                             form="piggy-pot-form"
                             disabled={processing}
-                            className="hidden h-11 shrink-0 items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
+                            className="hidden h-11 shrink-0 items-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
                         >
                             {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
                         </button>
@@ -197,7 +202,11 @@ export default function PiggyPotModal({
                 {/* The action scrolls with the form — a pinned bar covered the
                     last field, and on a phone it stacked on the bottom nav. */}
                 <div className="customScrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 pb-28 sm:px-6 md:py-8">
-                    <div className="mx-auto w-full max-w-3xl rounded-box border-[3px] border-black bg-white p-5 sm:p-6">
+                    {/* 🚨 Frameless on a phone — see the same note in
+                        `ItemFormShell`. This panel is already the whole screen, so
+                        the card around the form is a second frame on the same
+                        content and costs 22px a side. It returns at `sm`. */}
+                    <div className="mx-auto w-full max-w-3xl rounded-box border-[3px] border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
 
                 <form id="piggy-pot-form" onSubmit={handleSubmit} className="space-y-5">
                     <div>
@@ -206,7 +215,7 @@ export default function PiggyPotModal({
                         </label>
                         <input
                             type="text"
-                            className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
                             placeholder="e.g. Exclusive photo set"
                             value={data.title}
                             onChange={(e) => setData("title", e.target.value)}
@@ -224,7 +233,7 @@ export default function PiggyPotModal({
                             Description
                         </label>
                         <textarea
-                            className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
                             rows="3"
                             placeholder="Tell backers what they unlock by chipping in..."
                             value={data.description}
@@ -248,7 +257,7 @@ export default function PiggyPotModal({
                                 type="number"
                                 step="0.01"
                                 min="1"
-                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
                                 placeholder="e.g. 500"
                                 value={data.target_amount}
                                 onChange={(e) =>
@@ -269,7 +278,7 @@ export default function PiggyPotModal({
                             </label>
                             <input
                                 type="datetime-local"
-                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
                                 value={data.deadline}
                                 onChange={(e) =>
                                     setData("deadline", e.target.value)
@@ -290,21 +299,23 @@ export default function PiggyPotModal({
                         <p className="text-xs text-gray-500 mb-3">
                             Upload a cover image to make your pot stand out.
                         </p>
-                        <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
+                        <div className="border-2 border-black rounded-box p-1 bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                             {data.cover_media && (
-                                <div className="mb-3 bg-white border-2 border-black rounded-xl overflow-hidden relative group">
+                                <div className="mb-3 bg-white border-2 border-black rounded-box-sm overflow-hidden relative group">
                                     <img
                                         src={data.cover_media}
                                         className="w-full h-[150px] object-cover"
                                         alt="Cover Preview"
                                     />
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {/* Always visible on touch — a hover-only overlay leaves a
+                                        phone with no way to remove the cover at all. */}
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                         <button
                                             type="button"
                                             onClick={() =>
                                                 setData("cover_media", "")
                                             }
-                                            className="bg-white text-red-600 font-bold px-4 py-2 border-2 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
+                                            className="bg-white text-red-600 font-bold min-h-[44px] px-4 py-2 border-2 border-black rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                                         >
                                             Remove Cover
                                         </button>
@@ -349,7 +360,7 @@ export default function PiggyPotModal({
                                 Content Description
                             </label>
                             <textarea
-                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 "
                                 rows="2"
                                 placeholder="Describe the exclusive content they will get..."
                                 value={data.content_description}
@@ -362,9 +373,9 @@ export default function PiggyPotModal({
                             />
                         </div>
                         <label htmlFor="">Upload Content File*</label>
-                        <div className="border-2 border-black rounded-[20px] p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
+                        <div className="border-2 border-black rounded-box p-1 bg-gray-50 border-dashed hover:border-pink-500 transition-colors">
                             {data.content_file && (
-                                <div className="mb-3 p-3 bg-white border-2 border-black rounded-xl text-sm font-bold flex justify-between items-center">
+                                <div className="mb-3 p-3 bg-white border-2 border-black rounded-box-sm text-sm font-bold flex justify-between items-center">
                                     <span className="truncate">
                                         File Uploaded!
                                     </span>
@@ -373,7 +384,7 @@ export default function PiggyPotModal({
                                         onClick={() =>
                                             setData("content_file", "")
                                         }
-                                        className="text-red-500 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded-lg"
+                                        className="min-h-[44px] text-red-600 hover:text-red-700 text-xs px-3 py-1 border border-red-200 rounded-box-sm transition-colors duration-200"
                                     >
                                         Remove
                                     </button>
@@ -476,7 +487,7 @@ export default function PiggyPotModal({
                                 Status
                             </label>
                             <select
-                                className="w-full border-2 border-black rounded-[20px] p-3 focus:outline-none focus:ring-0 focus:border-pink-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white appearance-none"
+                                className="w-full border-2 border-black rounded-box p-3 focus:outline-none focus:ring-0 focus:border-pink-500 bg-white appearance-none"
                                 value={data.status}
                                 onChange={(e) =>
                                     setData("status", e.target.value)
@@ -494,7 +505,7 @@ export default function PiggyPotModal({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-sm font-black uppercase tracking-[0.14em] text-white transition-all disabled:opacity-50"
+                            className="flex min-h-[52px] w-full items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-sm font-black uppercase tracking-[0.14em] text-black transition-all disabled:opacity-50"
                         >
                             {processing ? "Saving…" : isEditing ? "Save changes" : "Create pot"}
                         </button>

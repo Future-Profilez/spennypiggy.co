@@ -30,7 +30,7 @@
 
                 <div className="mt-16">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                        <a href="https://laravel.com/docs" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]    shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
+                        <a href="https://laravel.com/docs" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]      flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
                             <div>
                                 <div className="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="w-7 h-7 stroke-red-500">
@@ -50,7 +50,7 @@
                             </svg>
                         </a>
 
-                        <a href="https://laracasts.com" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]    shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
+                        <a href="https://laracasts.com" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]      flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
                             <div>
                                 <div className="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="w-7 h-7 stroke-red-500">
@@ -70,7 +70,7 @@
                             </svg>
                         </a>
 
-                        <a href="https://laravel-news.com" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]    shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
+                        <a href="https://laravel-news.com" className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]      flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
                             <div>
                                 <div className="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="w-7 h-7 stroke-red-500">
@@ -90,7 +90,7 @@
                             </svg>
                         </a>
 
-                        <div className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]    shadow-2xl shadow-gray-500/20 flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
+                        <div className="scale-100 p-6 bg-white from-gray-700/50 via-transparent rounded-[30px]      flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500">
                             <div>
                                 <div className="h-16 w-16 bg-red-50 flex items-center justify-center rounded-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="w-7 h-7 stroke-red-500">

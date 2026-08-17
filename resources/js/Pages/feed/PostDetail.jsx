@@ -57,9 +57,9 @@ const FALLBACK_AUDIENCE = { label: "", accent: "#3FBF7F", tint: "#EAF7F0" };
 
 const PANEL = "rounded-box bg-white";
 const PILL =
-    "inline-flex items-center gap-2 rounded-full px-3.5 text-[11px] font-black uppercase tracking-wider";
+    "inline-flex items-center gap-2 rounded-full px-3.5 text-[12px] font-black uppercase tracking-wider";
 const ACTION =
-    "inline-flex min-h-[44px] items-center justify-center rounded-full px-4 text-[11px] font-black uppercase tracking-wider transition-colors";
+    "inline-flex min-h-[44px] items-center justify-center rounded-full px-4 text-[12px] font-black uppercase tracking-wider transition-colors";
 
 export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
     const { auth } = usePage().props;
@@ -161,7 +161,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
             />
             <div className="relative">
                 <span
-                    className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white"
+                    className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-black uppercase tracking-[0.18em] text-white"
                     style={{ background: audience.accent }}
                 >
                     <svg
@@ -203,7 +203,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                     who already paid needs the way back in, or the only path we
                     offer them is to buy something they already own. */}
                 {!auth?.user && (
-                    <p className="mx-auto mt-4 max-w-sm text-sm text-black/50">
+                    <p className="mx-auto mt-4 max-w-sm text-sm text-black/60">
                         Already have access?{" "}
                         <Link href="/login" className="font-bold text-[#FF007F] hover:underline">
                             Log in
@@ -237,6 +237,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                 heightClass="h-[300px] sm:h-[420px] lg:h-[520px]"
                 onOpen={(i) => setLightboxIndex(i)}
                 className="cursor-zoom-in"
+                watermarkOps={creator?.watermark_ops}
             />
         );
     };
@@ -256,7 +257,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                 <div className="mx-auto max-w-5xl">
                     <Link
                         href={`/${creator.username}?page=feed`}
-                        className="inline-flex min-h-[44px] items-center gap-2 text-[11px] font-black uppercase tracking-wider text-black/60 transition-colors hover:text-[#FF007F]"
+                        className="inline-flex min-h-[44px] items-center gap-2 text-[12px] font-black uppercase tracking-wider text-black/60 transition-colors hover:text-[#FF007F]"
                     >
                         ← Back to {creator.name}
                     </Link>
@@ -280,7 +281,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                         >
                                             {creator.name}
                                         </Link>
-                                        <span className="text-xs font-bold text-black/40">
+                                        <span className="text-xs font-bold text-black/60">
                                             <TimeFormat dateString={post.created_at || ""} />
                                         </span>
                                     </div>
@@ -331,7 +332,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                                     leaveFrom="transform opacity-100 scale-100"
                                                     leaveTo="transform opacity-0 scale-95"
                                                 >
-                                                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-box bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[99]">
+                                                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-box bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[99]">
                                                         <div className="px-1 py-1">
                                                             <Menu.Item>
                                                                 {({ active }) => (
@@ -463,7 +464,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                 <p className="mt-3 text-sm font-black uppercase tracking-wider">
                                     {creator.name}
                                 </p>
-                                <p className="text-xs font-bold text-black/40">
+                                <p className="text-xs font-bold text-black/60">
                                     @{creator.username}
                                 </p>
                                 <Link
@@ -493,10 +494,10 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                                 i > 0 ? "border-t border-black/[0.05]" : ""
                                             }`}
                                         >
-                                            <dt className="text-[11px] font-black uppercase tracking-wider text-black/35">
+                                            <dt className="text-[12px] font-black uppercase tracking-wider text-black/60">
                                                 {term}
                                             </dt>
-                                            <dd className="truncate text-[11px] font-black uppercase tracking-wide text-black/70">
+                                            <dd className="truncate text-[12px] font-black uppercase tracking-wide text-black/70">
                                                 {value}
                                             </dd>
                                         </div>
@@ -509,7 +510,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                     <p className="text-sm font-black uppercase leading-tight tracking-wide">
                                         Keep your feed active
                                     </p>
-                                    <p className="mt-2 text-xs leading-relaxed text-black/55">
+                                    <p className="mt-2 text-xs leading-relaxed text-black/60">
                                         Members and subscribers keep paying while you keep
                                         posting. Three member posts a month keeps every
                                         subscription running.
@@ -520,7 +521,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                             window.dispatchEvent(new Event("openAddOptions"));
                                             window.scrollTo({ top: 0, behavior: "smooth" });
                                         }}
-                                        className={`${ACTION} mt-4 w-full bg-[#FF007F] text-white hover:opacity-90`}
+                                        className={`${ACTION} mt-4 w-full bg-[#FF007F] text-black hover:opacity-90`}
                                     >
                                         Write a post
                                     </button>
@@ -566,7 +567,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                     )}
 
                     <div
-                        className="flex max-h-[85vh] w-full max-w-4xl items-center justify-center"
+                        className="flex max-h-[85dvh] w-full max-w-4xl items-center justify-center"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {(() => {
@@ -576,14 +577,14 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                 <LazyVideo
                                     src={url}
                                     fallback={creator.avatar_url}
-                                    className="max-h-[80vh] max-w-full rounded-box"
+                                    className="max-h-[80dvh] max-w-full rounded-box"
                                     controls
                                 />
                             ) : (
                                 <img
                                     src={url}
                                     alt="Full size"
-                                    className="max-h-[80vh] max-w-full rounded-box object-contain"
+                                    className="max-h-[80dvh] max-w-full rounded-box object-contain"
                                 />
                             );
                         })()}

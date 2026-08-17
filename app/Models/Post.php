@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCreatorWatermark;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +13,7 @@ use Ramsey\Uuid\Uuid;
 
 class Post extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasCreatorWatermark, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -63,7 +65,10 @@ class Post extends Model
         static::creating(function ($w) {
             $w->uuid = Uuid::uuid4();
             if (empty($w->slug)) {
-                $w->slug = static::generateUniqueSlug($w->title ?: 'post');
+                // ⚠️ The creator's id, not their username — the lookup only runs if the
+                // plain slug is already taken, which is rare, so an untitled post does
+                // not cost a query on every create.
+                $w->slug = static::generateUniqueSlug($w->title ?: 'post', null, $w->user_id);
             }
         });
 
@@ -122,29 +127,83 @@ class Post extends Model
      *                              retitled post must not collide with its own
      *                              current slug and end up as "my-post-1".
      */
-    public static function generateUniqueSlug($title, $ignoreId = null)
+    /**
+     * A slug that is free across the WHOLE table, not just the rows the current
+     * viewer may read.
+     *
+     * 🚨 `posts.slug` carries a UNIQUE index, so every predicate that hides a row from
+     * this check is a production 500 on the creator's own post button. Three hid rows
+     * here, and all three must stay lifted:
+     *
+     *  - the `published` global scope (a post waiting on its publish time),
+     *  - SoftDeletes (a TRASHED post still occupies the index — this is what produced
+     *    `Duplicate entry 'post' for key 'posts.posts_slug_unique'` in production: an
+     *    untitled post fell back to the literal `post`, the deleted row holding it was
+     *    invisible, the loop never ran, and the insert died),
+     *  - `post_slug_history`, whose own slug column is unique and is what serves the
+     *    301 for a retitled post. A new post taking a retired slug both collides there
+     *    and shadows the redirect for the post that used to own it.
+     *
+     * The ladder, in order: the title's own slug → the same plus the creator's
+     * username (what the platform asks for, and it reads as a real URL) → a numeric
+     * suffix → a random token, which cannot collide twice.
+     */
+    public static function generateUniqueSlug($title, $ignoreId = null, $userId = null)
     {
-        $slug = Str::slug($title);
-        if (empty($slug)) {
-            $slug = 'post';
-        }
-        $originalSlug = $slug;
-        $count = 1;
-        // ⚠️ withScheduled(): `slug` carries a UNIQUE index, and a post waiting
-        // on its publish time is hidden by the global scope — so without this the
-        // check cannot see it, hands back a slug that is already taken, and the
-        // insert dies on the constraint. Uniqueness is a property of the table,
-        // not of what the current viewer is allowed to read.
-        while (static::withScheduled()
-            ->where('slug', $slug)
-            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
-            ->exists()
-        ) {
-            $slug = $originalSlug.'-'.$count;
-            $count++;
+        $base = Str::slug($title);
+        if ($base === '') {
+            $base = 'post';
         }
 
-        return $slug;
+        if (! static::slugTaken($base, $ignoreId)) {
+            return $base;
+        }
+
+        // Only now is the creator worth a query — most posts never get here.
+        $stem = $base;
+        if ($userId) {
+            $username = Str::slug((string) User::whereKey($userId)->value('username'));
+            if ($username !== '') {
+                $stem = $base.'-'.$username;
+                if (! static::slugTaken($stem, $ignoreId)) {
+                    return $stem;
+                }
+            }
+        }
+
+        for ($n = 2; $n <= 50; $n++) {
+            $candidate = $stem.'-'.$n;
+            if (! static::slugTaken($candidate, $ignoreId)) {
+                return $candidate;
+            }
+        }
+
+        // ⚠️ Never fall out of this method with a slug that was not checked. Fifty
+        // collisions means something is wrong with the input, not with the creator —
+        // give them a working URL rather than a failed post.
+        do {
+            $candidate = $stem.'-'.Str::lower(Str::random(6));
+        } while (static::slugTaken($candidate, $ignoreId));
+
+        return $candidate;
+    }
+
+    /** True when any row — live, scheduled, trashed, or retired — already holds this slug. */
+    protected static function slugTaken(string $slug, $ignoreId = null): bool
+    {
+        $onPost = static::withTrashed()
+            ->withoutGlobalScope('published')
+            ->where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists();
+
+        if ($onPost) {
+            return true;
+        }
+
+        return PostSlugHistory::where('slug', $slug)
+            ->when($ignoreId, fn ($q) => $q->where('post_id', '!=', $ignoreId))
+            ->exists();
     }
 
     public function user()
@@ -179,12 +238,18 @@ class Post extends Model
                 // replace + with %20 for spaces
                 $url = str_replace('+', '%20', $url);
             } else {
-                // Regular image - add format transformation
-                $url = 'https://ucarecdn.com/'.$this->image.'/-/format/jpeg/';
+                // Format conversion AND a size cap. A post image is a full
+                // camera photo; uncapped it decodes to tens of MB of bitmap per
+                // post, and a feed holds many at once. See MediaUrl::POST_WIDTH.
+                $url = MediaUrl::thumb($this->image, MediaUrl::POST_WIDTH);
             }
         }
 
-        return $url;
+        // Creator attribution watermark. Returns $url untouched unless the
+        // feature is on, the owner relation is loaded, and the URL is a plain
+        // image path — a generated thank-you image (the branch above) is
+        // refused by MediaUrl because it already carries text operations.
+        return MediaUrl::watermark($url, $this->creatorWatermarkUuid());
     }
 
     /**

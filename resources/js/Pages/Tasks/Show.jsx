@@ -14,7 +14,7 @@ import ShareButton from "@/Components/ShareButton";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
-import { riskMessageBody } from '@/constants/riskMessages';
+import { riskMessageBody, riskMessageTitle } from '@/constants/riskMessages';
 
 export default function Show({ auth, task, share, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
@@ -383,10 +383,10 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                         </svg>
                                     </div>
                                     <div className="ml-3">
-                                        <h3 className="text-sm leading-5 font-bold text-yellow-800 uppercase tracking-wide">
+                                        <h3 className="text-sm leading-[1.45] font-bold text-yellow-800 uppercase tracking-wide">
                                             In Review
                                         </h3>
-                                        <div className="mt-2 text-sm leading-5 text-yellow-700">
+                                        <div className="mt-2 text-sm leading-[1.55] text-yellow-700">
                                             <p>
                                                 This item is currently in the reviewing process. It will be live within 30min to 1 hr.
                                             </p>
@@ -404,7 +404,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                         </svg>
                                     </div>
                                     <div className="ml-3">
-                                        <h3 className="text-sm leading-5 font-bold text-red-700 uppercase tracking-wide">
+                                        <h3 className="text-sm leading-[1.45] font-bold text-red-700 uppercase tracking-wide">
                                             Suspended
                                         </h3>
                                         <div className="mt-2 text-sm text-red-700">
@@ -569,8 +569,8 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                         )}
                                         {!card_capabilities && (
                                             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
-                                                <p className="font-bold">Payments Unavailable</p>
-                                                <p className="text-sm">This creator cannot accept payments at the moment (Card Payments capability missing).</p>
+                                                <p className="font-bold">{riskMessageTitle("CREATOR_UNAVAILABLE")}</p>
+                                                <p className="text-sm">{riskMessageBody("CREATOR_UNAVAILABLE")}</p>
                                             </div>
                                         )}
                                         <form onSubmit={(e) => e.preventDefault()}>
@@ -719,7 +719,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                className="border-2 border-black w-full main-button !bg-white !text-black !border-black"
                             >
                                 Cancel
                             </button>

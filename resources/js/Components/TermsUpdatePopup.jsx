@@ -80,7 +80,7 @@ export default function TermsUpdatePopup() {
                 <div className="flex justify-end">
                     <button
                         onClick={handleAccept}
-                        className="bg-pink-600 text-white px-8 py-3 rounded-full font-bold hover:bg-pink-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                        className="border-2 border-black bg-pink-600 text-white px-8 py-3 rounded-full font-bold hover:bg-pink-700 transition-all active:translate-x-[2px] active:translate-y-[2px]"
                     >
                         I Accept the Updated Terms
                     </button>

@@ -49,6 +49,50 @@ class PostsController extends Controller
     /** How many posts one creator may have waiting to publish at once. */
     private const MAX_QUEUED_POSTS = 20;
 
+    /**
+     * One entry per uploaded file, whatever the client sent.
+     *
+     * ⚠️ The uploader hands its whole collection back and can re-fire for a file
+     * that was already added, so a payload could legitimately arrive carrying the
+     * same uuid twice — and the post then rendered ONE upload as two thumbnails
+     * everywhere it appeared. It is a single stored Uploadcare file either way
+     * (one uuid = one file), so the duplicate costs nothing in storage; it is the
+     * post's own record of what it contains that must not lie. Guarded in the
+     * composer too — this is the write path, so it guards itself rather than
+     * trusting what it is handed.
+     */
+    private function dedupeMedia($media)
+    {
+        if (! is_array($media) || $media === []) {
+            return $media ?: null;
+        }
+
+        $seen = [];
+        $unique = [];
+
+        foreach ($media as $item) {
+            $id = is_array($item) ? ($item['uuid'] ?? $item['url'] ?? null) : null;
+
+            // An entry with no identifier of its own cannot be compared, so it is
+            // kept rather than guessed at — dropping a file the creator uploaded
+            // is far worse than keeping a duplicate.
+            if (! is_string($id) || $id === '') {
+                $unique[] = $item;
+
+                continue;
+            }
+
+            if (isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $unique[] = $item;
+        }
+
+        return $unique ?: null;
+    }
+
     private function postRules(): array
     {
         return [
@@ -56,7 +100,11 @@ class PostsController extends Controller
             'for_module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
             'image' => ['required_without:media', 'nullable', 'string', 'max:500'],
             'media' => ['sometimes', 'nullable', 'array'],
-            'title' => ['nullable', 'string', 'max:150'],
+            // ⚠️ Required. It was nullable, and an untitled post fell back to the
+            // literal slug `post` — the second one ever written collided on the unique
+            // index and the creator's post button 500'd. The title is also what the
+            // post's own URL, the feed card and every share preview are built from.
+            'title' => ['required', 'string', 'max:150'],
             'content' => ['nullable', 'string', 'max:5000'],
             'ai_generated' => ['sometimes', 'boolean'],
             // A publish time. Absent or null = publish as soon as it is approved,
@@ -139,6 +187,7 @@ class PostsController extends Controller
 
         $request->validate($this->postRules(), [
             'image.required_without' => 'Add an image or video for this post.',
+            'title.required' => 'Give your post a title.',
         ]);
 
         // NOTE: this endpoint is called with axios and the caller reads resp.data.status.
@@ -174,7 +223,7 @@ class PostsController extends Controller
             'title' => $request->title ?: null,
             'content' => $request->content ?: null,
             'image' => $request->image ?: null,
-            'media' => $request->media ?: null,
+            'media' => $this->dedupeMedia($request->media),
             'ai_generated' => $request->boolean('ai_generated'),
             'scheduled_at' => $scheduledAt,
         ]);
@@ -218,6 +267,7 @@ class PostsController extends Controller
 
         $request->validate($this->postRules(), [
             'image.required_without' => 'Add an image or video for this post.',
+            'title.required' => 'Give your post a title.',
         ]);
 
         // ⚠️ withScheduled(): the global scope hides a post whose publish time has
@@ -269,7 +319,7 @@ class PostsController extends Controller
         $post->title = $request->title ?: null;
         $post->content = $request->content ?: null;
         $post->image = $request->image ?: null;
-        $post->media = $request->media ?: null;
+        $post->media = $this->dedupeMedia($request->media);
         $post->ai_generated = $request->boolean('ai_generated');
         $post->approved = 0;
 
@@ -304,7 +354,7 @@ class PostsController extends Controller
         // kept in post_slug_history so every link already shared — and everything
         // already indexed — redirects instead of 404ing.
         if (trim((string) $post->title) !== trim($previousTitle)) {
-            $newSlug = Post::generateUniqueSlug($post->title ?: 'post', $post->id);
+            $newSlug = Post::generateUniqueSlug($post->title ?: 'post', $post->id, $post->user_id);
 
             if ($newSlug !== $previousSlug) {
                 $post->slug = $newSlug;

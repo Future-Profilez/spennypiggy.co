@@ -63,6 +63,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
@@ -2302,6 +2303,12 @@ class ProfileController extends Controller
         }
         $user->save();
         $this->userProfileService->clearUserCaches($user->username, $user->id);
+
+        // The two earnings caches are keyed per creator and live 600s — without
+        // forgetting them a creator turns the toggle off and the figure stays
+        // public for up to ten minutes.
+        Cache::forget('user_earnings_v2_'.$user->id);
+        Cache::forget('profile_overview_v1_'.$user->id);
 
         return response()->json([
             'status' => true,

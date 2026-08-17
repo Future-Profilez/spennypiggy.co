@@ -18,7 +18,7 @@ import ItemFunnelLine from "@/Components/ItemFunnelLine";
  */
 
 const MONEY = "tabular-nums tracking-tight font-bold";
-const LABEL = "text-[11px] font-semibold uppercase tracking-wide text-gray-500";
+const LABEL = "text-[12px] font-semibold uppercase tracking-wide text-black/60";
 const ACTION =
     "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-box-sm border border-gray-200 px-3 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50";
 
@@ -74,6 +74,7 @@ export default function ListingRow({ item }) {
     // Stripe product on the creator's connected account, and the disabled re-render
     // loses the double-tap race.
     const [duplicating, setDuplicating] = useState(false);
+    const [imageFailed, setImageFailed] = useState(false);
 
     // The picker is opened per row rather than always rendered: a datetime input on
     // every card is a form control the width of the cell, on a value nobody edits most
@@ -108,15 +109,20 @@ export default function ListingRow({ item }) {
         <article className="bg-white border border-gray-200 rounded-box p-4">
             <div className="flex gap-4">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-box-sm bg-gray-100 sm:h-20 sm:w-20">
-                    {item.thumbnail ? (
+                    {item.thumbnail && !imageFailed ? (
                         <img
                             src={item.thumbnail}
                             alt=""
                             loading="lazy"
+                            // The server always sends a thumbnail now (a listing with no
+                            // image of its own gets the platform placeholder), so this
+                            // only catches a dead CDN reference — which must degrade to a
+                            // quiet tile, never to the browser's torn-page glyph.
+                            onError={() => setImageFailed(true)}
                             className="h-full w-full object-cover"
                         />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center text-gray-300">
+                        <div className="flex h-full w-full items-center justify-center text-black/60">
                             <ImageOff size={22} />
                         </div>
                     )}
@@ -130,7 +136,7 @@ export default function ListingRow({ item }) {
                             tone={item.status_tone}
                         />
                         {item.stock !== null && item.stock !== undefined && (
-                            <span className="text-[12px] font-semibold text-gray-500">
+                            <span className="text-[12px] font-semibold text-black/60">
                                 {item.stock > 0
                                     ? `${item.stock} left`
                                     : "Sold out"}
@@ -139,7 +145,7 @@ export default function ListingRow({ item }) {
                         {/* "Scheduled" alone is the one status that raises a question it
                             does not answer. The date belongs beside it. */}
                         {item.status === "scheduled" && whenLabel(item.publish_at) && (
-                            <span className="text-[12px] font-semibold text-gray-500">
+                            <span className="text-[12px] font-semibold text-black/60">
                                 {whenLabel(item.publish_at)}
                             </span>
                         )}
@@ -149,7 +155,7 @@ export default function ListingRow({ item }) {
                         {item.title}
                     </h3>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-gray-500">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-black/60">
                         {price && (
                             <span className={`${MONEY} text-gray-900`}>
                                 {price}
@@ -278,7 +284,7 @@ export default function ListingRow({ item }) {
                             </button>
                         )}
                     </div>
-                    <p className="mt-2 text-[12px] text-gray-500">
+                    <p className="mt-2 text-[12px] text-black/60">
                         Nobody can see or buy this until then. It still needs to pass
                         review first.
                     </p>

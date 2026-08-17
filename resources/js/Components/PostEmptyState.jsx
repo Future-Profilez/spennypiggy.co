@@ -45,7 +45,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 {/* Empty state icon */}
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
                     <svg 
-                        className="w-12 h-12 text-gray-400" 
+                        className="w-12 h-12 text-black/60" 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 
                 {/* Additional context for filtered views */}
                 {filter !== 'all' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-[30px]    max-w-md">
+                    <div className="mt-6 p-4 bg-gray-50 rounded-box    max-w-md">
                         <p className="text-sm text-gray-700">
                             <strong>Tip:</strong> {filter === 'supporters' && 'Send a tip'} 
                             {filter === 'members' && 'Purchase a membership'} 

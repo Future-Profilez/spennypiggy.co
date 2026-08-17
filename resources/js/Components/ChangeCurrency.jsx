@@ -81,7 +81,17 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Menu as="div" className="relative inline-block text-left">
             <div>
-               <Menu.Button className="inline-flex justify-center w-full rounded-[30px]   border border-transparent px-2 md:px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+               {/* ⚠️ This sits in the pink header beside the bell, search and basket,
+                   which are all SOLID WHITE pills with no border (client direction,
+                   14 Aug 2026). It was `bg-cyan-500` — a colour that appears nowhere in
+                   the palette (pink / mint / violet / yellow / ink), on the most-seen
+                   chrome on the site. It also rendered at 38px, under the 44px touch floor.
+
+                   🚨 BLACK ON WHITE, never white type: the label used to be white on a
+                   white wash, which read as a pale blob with the text floating in it.
+                   Black on the solid white fill is 21:1 and matches the four controls
+                   next to it — change one of the five and change all five. */}
+               <Menu.Button className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-white px-3 md:px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/85 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-opacity-75">
                   {/* ⚠️ Was `: "N/A"`. `defaultvalue` is `global_currency`, which is
                       empty for a logged-out visitor — so the header of the public
                       homepage rendered a chip reading "N/A" to every first-time
@@ -101,7 +111,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                leaveFrom="transform opacity-100 scale-100"
                leaveTo="transform opacity-0 scale-95"
             >
-               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[20px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-[300px] overflow-y-auto">
+               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-box bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-[300px] overflow-y-auto">
                   <div className="px-1 py-1 ">
                      {currencies && currencies.map((c, i)=>{
                         return (
@@ -111,7 +121,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                                     href={route('change.currency', {c:c.value})}
                                     className={`${
                                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                                    } group flex w-full items-center rounded-[15px]  p-3 text-normal`}
+                                    } group flex w-full items-center rounded-box-sm  p-3 text-normal`}
                                  >
                                     {c.label}
                                  </Link>

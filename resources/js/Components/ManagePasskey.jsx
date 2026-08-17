@@ -189,7 +189,7 @@ export default function ManagePasskey({ email, className }) {
     };
 
     return (
-        <div className={`bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden ${className || ""}`}>
+        <div className={`bg-gray-50 rounded-box border border-gray-200 mb-4 overflow-hidden ${className || ""}`}>
             <div className="p-4 flex items-center justify-between border-b border-gray-200">
                 <div className="pe-4">
                     <h4 className="font-medium text-gray-800">Passkeys / FaceID</h4>
@@ -218,7 +218,7 @@ export default function ManagePasskey({ email, className }) {
                     {passkeys.map((pk) => (
                         <div key={pk.id} className="p-4 flex items-center justify-between hover:bg-gray-100 transition-colors">
                             <div className="flex items-center">
-                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-3 shadow-sm">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-3 ">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
                                     </svg>

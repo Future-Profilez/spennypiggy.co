@@ -15,9 +15,21 @@ import LazyVideo from "@/Components/LazyVideo";
 // `-/quality/85/` is NOT a valid Uploadcare operation — the CDN answers 400 and
 // every multi-image post rendered a broken thumbnail. Quality takes named
 // values (smart/normal/better/best/lighter/lightest).
-const IMAGE_OPS = "-/format/jpeg/-/quality/smart/";
+// ⚠️ `-/preview/` caps the long edge WITHOUT upscaling — `-/resize/` would
+// stretch anything smaller than the target and cost more memory than it saves.
+// The browser holds a decoded bitmap (width × height × 4 bytes), so an uncapped
+// camera photo is ~48 MB of RAM each and a scrolled feed is what got the mobile
+// Safari tab killed. Mirrors App\Support\MediaUrl::POST_WIDTH — change both.
+const IMAGE_OPS = "-/preview/1200x1200/-/format/jpeg/-/quality/smart/";
 
-export function mediaSrc(media, { transform = true } = {}) {
+// Server-supplied `-/overlay/…/` string from `User::watermark_ops`. The geometry
+// has ONE definition, in App\Support\MediaUrl — JS never composes it. Only the
+// shape is checked here, so a malformed value degrades to no watermark instead
+// of to a broken CDN path.
+const WATERMARK_OPS =
+    /^-\/overlay\/[0-9a-f-]{36}\/[0-9a-z,.-]+\/[0-9a-z,.-]+\/[0-9a-z,.-]+\/$/i;
+
+export function mediaSrc(media, { transform = true, watermarkOps = null } = {}) {
     const raw = media?.uuid || media?.url || "";
     if (!raw) return "";
     if (raw.startsWith("http")) return raw;
@@ -26,7 +38,19 @@ export function mediaSrc(media, { transform = true } = {}) {
     // get a second set appended.
     if (raw.includes("/-/")) return base;
 
-    return transform && !media?.isVideo ? base + IMAGE_OPS : base;
+    // `-/overlay/` is an IMAGE operation — on a video it is silently ignored,
+    // which reads as a broken feature rather than an unsupported file. The video
+    // guard therefore comes first, before a watermark is ever considered.
+    //
+    // ⚠️ isVideoItem, not `media.isVideo`: an item can declare itself only
+    // through `mimeType`, and the narrower check was already appending
+    // `-/format/jpeg/` to those videos before a watermark was ever involved.
+    if (!transform || isVideoItem(media)) return base;
+
+    const stamped =
+        watermarkOps && WATERMARK_OPS.test(watermarkOps) ? watermarkOps : "";
+
+    return base + IMAGE_OPS + stamped;
 }
 
 export function isVideoItem(media) {
@@ -42,6 +66,9 @@ export default function PostMediaCarousel({
     posterFallback = null,
     onOpen = null,
     className = "",
+    // The owning creator's `watermark_ops`. Null (the default) means the card
+    // renders exactly as it did before this feature existed.
+    watermarkOps = null,
 }) {
     const [index, setIndex] = useState(0);
     const startX = useRef(null);
@@ -113,7 +140,7 @@ export default function PostMediaCarousel({
                 style={{ transform: `translateX(-${index * 100}%)` }}
             >
                 {items.map((media, i) => {
-                    const src = mediaSrc(media);
+                    const src = mediaSrc(media, { watermarkOps });
                     return (
                         <div key={`${media.uuid || i}`} className="w-full shrink-0 grow-0 basis-full">
                             {isVideoItem(media) ? (
@@ -153,7 +180,7 @@ export default function PostMediaCarousel({
                     {/* Bottom-right, not top-right: the card's audience badge
                         ("Members only") already owns the top-right corner and the
                         two overlapped. */}
-                    <span className="absolute bottom-3 right-3 z-10 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-black text-white">
+                    <span className="absolute bottom-3 right-3 z-10 rounded-full bg-black/60 px-2.5 py-1 text-[12px] font-black text-white">
                         {index + 1}/{count}
                     </span>
 

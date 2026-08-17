@@ -69,7 +69,7 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={key}
-                className={`${classes} flex h-8 w-8 items-center justify-center rounded-box-sm text-white border border-black/10 transition-transform hover:-translate-y-0.5`}
+                className={`${classes} flex h-11 w-11 md:h-8 md:w-8 items-center justify-center rounded-box-sm text-white border border-black/10 transition-opacity duration-200 hover:opacity-70`}
             >
                 <Icon size={15} />
             </a>
@@ -180,7 +180,7 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                 >
                     <span className="line-clamp-1">{user?.name}</span>
                     {(verifiedTier(user) && (
-                        <span className="flex items-center inline-block transform hover:scale-110 transition-transform">
+                        <span className="inline-flex items-center">
                             {user?.is_founder ? (
                                 <Suspense
                                     fallback={
@@ -223,7 +223,7 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                     >
                         <ShareProfile
                             username={user?.name}
-                            classes={`inline-flex items-center group rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
+                            classes={`inline-flex min-h-[44px] items-center group rounded-full px-4 py-1 text-sm font-semibold transition-colors ${
                                 onCover
                                     ? "border border-white/25 bg-black/45 text-white backdrop-blur-sm hover:bg-black/60"
                                     : "border border-black/15 bg-gray-50 text-gray-600 hover:border-black hover:bg-gray-100 hover:text-black"

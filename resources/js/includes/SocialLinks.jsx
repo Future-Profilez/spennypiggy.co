@@ -66,7 +66,7 @@ export default function SocialLinks({ links }) {
                                 target="_blank"
                                 title={item.label}
                                 href={href}
-                                className={`${colors[item.key]} p-1 rounded-[10px] md:rounded-[12px]   !pe-2 !text-sm flex items-center gap-1`} >
+                                className={`${colors[item.key]} p-1 rounded-box-xs   !pe-2 !text-sm flex items-center gap-1`} >
                                 {icons[item.key]}
                                 {item.label}
                             </a>

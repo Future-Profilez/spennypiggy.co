@@ -48,6 +48,24 @@ class TrackSiteVisit
                 );
             }
 
+            // The paid-ads landing page they arrived on, remembered on the same
+            // first-touch rule as the source. Someone who clicks the Founder
+            // Bonus advert, reads three other pages and signs up two days later
+            // is still credited to Founder Bonus — the last page before the
+            // form is almost always /register, which tells us nothing.
+            $adLanding = $this->tracker->resolveAdLanding($request);
+
+            if ($adLanding !== null && ! $request->cookies->has(VisitTracker::LANDING_COOKIE)) {
+                Cookie::queue(
+                    Cookie::make(
+                        VisitTracker::LANDING_COOKIE,
+                        $adLanding,
+                        60 * 24 * VisitTracker::ATTRIBUTION_DAYS,
+                        null, null, $secure, true, false, 'lax'
+                    )
+                );
+            }
+
             // First touch wins: if someone arrives from Reddit and comes back
             // direct a week later before signing up, Reddit gets the credit.
             if ($source && $source !== 'direct' && ! $request->cookies->has(VisitTracker::ATTRIBUTION_COOKIE)) {

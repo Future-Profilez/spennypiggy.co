@@ -74,7 +74,7 @@ export default function FindPurchase() {
         <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Find my purchase" />
 
-            <div className="flex min-h-[90vh] items-center justify-center px-4 py-3 md:py-12">
+            <div className="flex min-h-[90dvh] items-center justify-center px-4 py-3 md:py-12">
                 <div className="w-full max-w-[580px]">
                     <div className="rounded-box border-[3px] border-black bg-white p-6 sm:p-8">
                         {sentTo ? (
@@ -93,13 +93,13 @@ export default function FindPurchase() {
                                     whether the address exists is the enumeration this
                                     whole flow is built to avoid.
                                 */}
-                                <p className="mt-3 text-[15px] leading-[1.55] text-gray-600">
+                                <p className="mt-3 text-[15px] leading-[1.55] text-black/80">
                                     If <span className="font-semibold text-black">{sentTo}</span> has
                                     purchases, we have just sent it a link. It works for
                                     7 days.
                                 </p>
 
-                                <p className="mt-3 text-[14px] leading-[1.55] text-gray-500">
+                                <p className="mt-3 text-[14px] leading-[1.55] text-black/60">
                                     Nothing yet? Check your spam folder, then try the
                                     other email you might have used at checkout.
                                 </p>
@@ -107,7 +107,7 @@ export default function FindPurchase() {
                                 <button
                                     type="button"
                                     onClick={() => setSentTo(null)}
-                                    className="mt-6 min-h-[48px] w-full rounded-box-sm border-[3px] border-black bg-white px-4 text-[15px] font-bold text-black transition-transform hover:-translate-y-0.5"
+                                    className="mt-6 min-h-[48px] w-full rounded-box-sm border-[3px] border-black bg-white px-4 text-[15px] font-bold text-black transition-colors duration-200 hover:bg-black/[0.04]"
                                 >
                                     Try another email
                                 </button>
@@ -122,7 +122,7 @@ export default function FindPurchase() {
                                     Find my purchase
                                 </h1>
 
-                                <p className="mt-3 text-[15px] leading-[1.55] text-gray-600">
+                                <p className="mt-3 text-[15px] leading-[1.55] text-black/80">
                                     Bought something without making an account? Enter the
                                     email you used at checkout and we will send you a link
                                     to everything you have bought.
@@ -146,7 +146,7 @@ export default function FindPurchase() {
                                             setData("email", e.target.value)
                                         }
                                         placeholder="you@example.com"
-                                        className="mt-2 min-h-[52px] w-full rounded-box-sm border-[3px] border-black px-4 text-[15px] text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]"
+                                        className="mt-2 min-h-[52px] w-full rounded-box-sm border-[3px] border-black px-4 text-[15px] text-black placeholder:text-black/60 focus:outline-none focus:ring-2 focus:ring-[#FF007F]"
                                     />
 
                                     {turnstileSiteKey && (
@@ -170,7 +170,7 @@ export default function FindPurchase() {
                                             processing ||
                                             (turnstileSiteKey && !verified)
                                         }
-                                        className="mt-5 min-h-[52px] w-full rounded-box-sm border-[3px] border-black bg-[#FF007F] px-4 font-gulfs text-[16px] uppercase text-white transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50"
+                                        className="mt-5 min-h-[52px] w-full rounded-box-sm border-[3px] border-black bg-[#FF007F] px-4 font-gulfs text-[16px] uppercase text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-50"
                                     >
                                         {processing
                                             ? "Processing…"
@@ -178,7 +178,7 @@ export default function FindPurchase() {
                                     </button>
                                 </form>
 
-                                <p className="mt-5 flex items-start gap-2 border-t border-gray-200 pt-4 text-[13px] leading-[1.5] text-gray-500">
+                                <p className="mt-5 flex items-start gap-2 border-t border-gray-200 pt-4 text-[13px] leading-[1.5] text-black/60">
                                     <ShieldCheck size={16} className="mt-0.5 shrink-0" />
                                     {/*
                                         Stated plainly, because the response is identical

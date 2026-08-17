@@ -63,11 +63,11 @@ export default function MembershipDetails(props) {
                             {[0, 1, 2].map((i) => (
                                 <div
                                     key={i}
-                                    className="h-40 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                    className="h-40 rounded-box bg-white border-[3px] border-black "
                                 />
                             ))}
                         </div>
-                        <div className="h-96 rounded-box bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+                        <div className="h-96 rounded-box bg-white border-[3px] border-black " />
                     </div>
                 </div>
             ) : (
@@ -77,7 +77,7 @@ export default function MembershipDetails(props) {
                         <div className="mb-8">
                             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-16 h-16 rounded-box bg-yellow-300 border-[3px] border-black flex items-center justify-center text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="w-16 h-16 rounded-box bg-yellow-300 border-[3px] border-black flex items-center justify-center text-black ">
                                         <FaCrown size="1.75rem" />
                                     </div>
 
@@ -106,7 +106,7 @@ export default function MembershipDetails(props) {
 
                                 <Link
                                     href="/membership-dashboard"
-                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-box-sm bg-white border-2 border-black text-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300 min-h-[44px]"
+                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-box-sm bg-white border-2 border-black text-black font-bold hover:-translate-x-1 hover:-translate-y-1 transition-all duration-300 min-h-[44px]"
                                 >
                                     ← Back to Dashboard
                                 </Link>
@@ -115,7 +115,7 @@ export default function MembershipDetails(props) {
 
                         {/* STATS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-                            <div className="rounded-box bg-white border-[3px] border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-[3px] border-black p-6 ">
                                 <p className="text-gray-700 uppercase text-xs tracking-widest font-bold">
                                     Total Supporters
                                 </p>
@@ -127,7 +127,7 @@ export default function MembershipDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-box bg-white border-[3px] border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-[3px] border-black p-6 ">
                                 <p className="text-gray-700 uppercase text-xs tracking-widest font-bold">
                                     Total Revenue
                                 </p>
@@ -142,7 +142,7 @@ export default function MembershipDetails(props) {
                                 </p>
                             </div>
 
-                            <div className="rounded-box bg-white border-[3px] border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="rounded-box bg-white border-[3px] border-black p-6 ">
                                 <p className="text-gray-700 uppercase text-xs tracking-widest font-bold">
                                     Next Month Estimate
                                 </p>
@@ -159,7 +159,7 @@ export default function MembershipDetails(props) {
                         </div>
 
                         {/* SUPPORTERS */}
-                        <div className="rounded-box bg-white border-[3px] border-black overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="rounded-box bg-white border-[3px] border-black overflow-hidden ">
                             <div className="p-6 border-b-[3px] border-black">
                                 <h2 className="text-2xl md:text-3xl font-black text-black">
                                     Supporters List

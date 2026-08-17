@@ -34,7 +34,7 @@ export default function ProfileTabs({
                                 px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 tab-button
                                 ${activeTab === tab.key 
                                     ? 'text-white tab-button-active' 
-                                    : 'text-gray-400 hover:text-gray-200'
+                                    : 'text-white/60 hover:text-white'
                                 }
                             `}
                         >
@@ -47,7 +47,7 @@ export default function ProfileTabs({
                 {showAddButton && (
                     <button
                         onClick={onAddClick}
-                        className="ml-4 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-[#05EFB8] text-[#05EFB8] hover:bg-[#05EFB8] hover:text-black transition-all duration-200 flex-shrink-0 add-button-pulse"
+                        className="ml-4 flex items-center justify-center w-11 h-11 rounded-full border-2 border-[#05EFB8] text-[#05EFB8] hover:bg-[#05EFB8] hover:text-black transition-all duration-200 flex-shrink-0 add-button-pulse"
                     >
                         <HiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>

@@ -285,23 +285,30 @@ export default function Accountsetting(props) {
                 onClick={onClick}
                 onMouseEnter={() => iconRef.current?.startAnimation?.()}
                 onMouseLeave={() => iconRef.current?.stopAnimation?.()}
-                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"}  !rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+                className={`relative group w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-[#FF007F]"} !rounded-box hover:border-pink-200 transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
             >
-                <div className="flex !items-center gap-4 text-left">
+                {/* 🚨 `shrink-0` on the tile, `min-w-0` on the copy. Both are flex
+                    items, and a flex item shrinks by default while text cannot fall
+                    below its own min-content width — so without these the copy wins
+                    and every tile on the page rendered as a squashed oval (measured
+                    40–58px wide against the 60px square it asks for). The `md:` half
+                    was already guarded with `md:min-w-[50px]`; this is its mobile
+                    equivalent. Text is what gives way, never the geometry. */}
+                <div className="flex !items-center gap-4 text-left min-w-0">
                     <div
-                        className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
+                        className={`p-2.5 !rounded-box-sm w-[60px] h-[60px] shrink-0 md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
                         ${isDestructive ? "bg-red-200 text-red-600" : "bg-pink-200 text-[#FF007F]"}`}
                     >
                         <Icon ref={iconRef} size={28} strokeWidth={2} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                         <h3
                             className={`font-bold text-base ${isDestructive ? "text-red-600" : "text-gray-800"}`}
                         >
                             {title}
                         </h3>
                         {subtitle && (
-                            <p className="text-sm text-gray-500 font-medium mt-0.5">
+                            <p className="text-sm text-black/60 font-medium mt-0.5">
                                 {subtitle}
                             </p>
                         )}
@@ -310,7 +317,7 @@ export default function Accountsetting(props) {
                 <div className="flex items-center gap-3">
                     {value && (
                         <span
-                            className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-lg border ${
+                            className={`mt-4 md:mt-0 text-sm font-semibold px-3 py-1 rounded-box-sm border ${
                                 value.toLowerCase() === "active" ||
                                 value.toLowerCase() === "connected" ||
                                 value.toLowerCase() === "enabled" ||
@@ -328,7 +335,7 @@ export default function Accountsetting(props) {
                     ) : (
                         <ChevronRightIcon
                             size={18}
-                            className="text-gray-300 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4"
+                            className="text-black/60 group-hover:text-[#FF007F] absolute md:static !text-xl top-[30px] right-4"
                         />
                     )}
                 </div>
@@ -350,13 +357,20 @@ export default function Accountsetting(props) {
         <Authenticated user={user} auth={auth.user}>
             <Head title={"My Account"} />
             <div className="min-h-dvh bg-gray-200 py-6 md:py-16">
-                <div className="max-w-3xl mx-auto px-6 pt-8">
+                {/* ⚠️ The top padding is `md:pt-8`, NOT `pt-8`. The wrapper above
+                    already owns this page's vertical rhythm (`py-6 md:py-16`), and
+                    `includes/Header.jsx` renders its own 67px clearance spacer under
+                    the fixed bar — so an unqualified `pt-8` here was desktop spacing
+                    applied at every width, stacking 24px + 32px into 56px of dead
+                    grey above the title on a phone. This column owns the horizontal
+                    padding; vertical spacing belongs to the wrapper. */}
+                <div className="max-w-3xl mx-auto px-6 md:pt-8">
                     <div className="md:text-center mb-10">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">
                             Account{" "}
                             <span className="text-[#FF007F]">Settings</span>
                         </h1>
-                        <p className="text-gray-500 font-medium text-normal">
+                        <p className="text-black/60 font-medium text-normal">
                             Manage your profile, preferences and security
                         </p>
                     </div>
@@ -366,10 +380,10 @@ export default function Accountsetting(props) {
                         <div className="mb-10 animate-fade-in-up">
                             <div 
                                 onClick={contactSupport}
-                                className="relative group w-full flex items-center justify-between p-6 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black !rounded-[30px] hover:shadow-[5px_5px_0px_rgba(0,0,0,1)] transition-all cursor-pointer mb-3"
+                                className="relative group w-full flex items-center justify-between p-6 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black !rounded-box transition-all cursor-pointer mb-3"
                             >
                                 <div className="flex items-center gap-4 text-left text-white">
-                                    <div className="p-2.5 bg-white/20 rounded-[20px] w-[50px] h-[50px] flex items-center justify-center">
+                                    <div className="p-2.5 bg-white/20 rounded-box-sm w-[50px] h-[50px] flex items-center justify-center">
                                         <Trophy size={28} className="text-white" />
                                     </div>
                                     <div>
@@ -587,7 +601,7 @@ export default function Accountsetting(props) {
                                     <h2 className="text-black font-gulfs text-xl mb-4">
                                         YOUR PROFILE QR CODE
                                     </h2>
-                                    <div className="bg-white p-6 border-2 border-black rounded-[30px] inline-block shadow-[5px_5px_0px_rgba(0,0,0,1)] mb-6">
+                                    <div className="bg-white p-6 border-2 border-black rounded-box inline-block mb-6">
                                         <QRCodeSVG
                                             id="qr-code-svg"
                                             value={`${window.location.origin}/${auth.user.username}`}
@@ -612,7 +626,7 @@ export default function Accountsetting(props) {
                                             downloadLink.click();
                                             document.body.removeChild(downloadLink);
                                         }}
-                                        className="bg-black text-white px-6 py-3 rounded-full text-sm font-black uppercase hover:bg-pink-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.2)]"
+                                        className="border-2 border-black bg-black text-white px-6 py-3 rounded-full text-sm font-black uppercase hover:bg-pink-600 transition-all"
                                     >
                                         Download SVG
                                     </button>
@@ -712,35 +726,49 @@ export default function Accountsetting(props) {
                                     />
                                 </Popup>
 
-                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[20px] md:rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
-                                    <div className="flex items-center gap-4 text-left">
-                                        {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-[#FF007F]">
+                                {/* 🚨 This row's description is three lines long, which is
+                                    what exposed the fault: the row is `flex` at EVERY width
+                                    (unlike SettingItem's `md:flex`), so the Switch is a flex
+                                    item that shrinks, and with no `min-w-0` on the text side
+                                    the entire squeeze landed on it — measured 16px wide
+                                    against its own `w-11` (44px), with the knob translated
+                                    24px and rendering 6px OUTSIDE the card border. The copy is
+                                    correct and must not be shortened; the geometry has to
+                                    survive it. Same grammar as the Email Notifications row
+                                    below and the house `RowGroup` rule. */}
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-box-sm md:rounded-box hover:border-pink-200 transition-all mb-3">
+                                    <div className="flex items-center gap-4 text-left min-w-0">
+                                        {/* <div className="p-2.5 rounded-box-sm  bg-pink-50 text-[#FF007F]">
                                             <PiggyBank
                                                 size={20}
                                                 strokeWidth={2.5}
                                             />
                                         </div> */}
                                         <div
-                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
+                                            className={`p-2.5 !rounded-box-sm w-[60px] h-[60px] shrink-0 md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
                                         >
                                             <PiggyBank
                                                 size={20}
                                                 strokeWidth={2.5}
                                             />
                                         </div>
-                                        <div>
+                                        <div className="min-w-0">
                                             <h3 className="font-bold text-base text-gray-800">
-                                                Piggy Bank Earnings
+                                                Earnings on profile
                                             </h3>
-                                            <p className="text-sm text-gray-500 font-medium mt-0.5">
-                                                Show earnings goal on profile
+                                            <p className="text-sm text-black/60 font-medium mt-0.5">
+                                                Show your total earned to
+                                                visitors. Off, they still see
+                                                your milestone progress — just
+                                                not the amount. You always see
+                                                your own.
                                             </p>
                                         </div>
                                     </div>
                                     <Switch
                                         checked={showEarning}
                                         onChange={swicthEarning}
-                                        className={`${showEarning ? "bg-pink-600" : "bg-gray-200"} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+                                        className={`${showEarning ? "bg-pink-600" : "bg-gray-200"} relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors before:absolute before:inset-x-0 before:-inset-y-[10px] before:content-[''] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
                                     >
                                         <span
                                             className={`${showEarning ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
@@ -750,18 +778,23 @@ export default function Accountsetting(props) {
                             </>
                         )}
 
-                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all mb-3">
-                            <div className="flex items-center gap-4 text-left">
+                        {/* Carries the same guards as the Earnings row above. This one
+                            renders correctly today only because its subtitle is one
+                            short line — that is a property of the copy, not of the
+                            layout, and it must not be what holds the switch inside the
+                            card. */}
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-[#FF007F] rounded-box hover:border-pink-200 transition-all mb-3">
+                            <div className="flex items-center gap-4 text-left min-w-0">
                                 <div
-                                    className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
+                                    className={`p-2.5 !rounded-box-sm w-[60px] h-[60px] shrink-0 md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-[#FF007F]`}
                                 >
                                     <BellIcon size={20} strokeWidth={2.5} />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <h3 className="font-bold text-base text-gray-800">
                                         Email Notifications
                                     </h3>
-                                    <p className="text-sm text-gray-500 font-medium mt-0.5">
+                                    <p className="text-sm text-black/60 font-medium mt-0.5">
                                         Receive updates via email
                                     </p>
                                 </div>
@@ -769,7 +802,7 @@ export default function Accountsetting(props) {
                             <Switch
                                 checked={emailEnabled}
                                 onChange={switchNotification}
-                                className={`${emailEnabled ? "bg-pink-600" : "bg-gray-200"} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+                                className={`${emailEnabled ? "bg-pink-600" : "bg-gray-200"} relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors before:absolute before:inset-x-0 before:-inset-y-[10px] before:content-[''] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
                             >
                                 <span
                                     className={`${emailEnabled ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
@@ -802,7 +835,7 @@ export default function Accountsetting(props) {
                         <SectionTitle title="Security" />
 
                         <ManagePasskey
-                            className="w-full border-2 border-[#FF007F] rounded-[30px]  hover:border-pink-200 hover:shadow-sm transition-all"
+                            className="w-full border-2 border-[#FF007F] rounded-box hover:border-pink-200 transition-all"
                             email={auth.user.email}
                         />
 
@@ -972,7 +1005,7 @@ export default function Accountsetting(props) {
                                         rows={5}
                                         maxLength={2000}
                                         required
-                                        className="w-full p-4 border-2 border-black rounded-[20px] focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none text-sm font-medium mb-4"
+                                        className="w-full p-4 border-2 border-black rounded-box-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none text-sm font-medium mb-4"
                                     />
                                     <div className="flex justify-end gap-3">
                                         <button
@@ -985,7 +1018,7 @@ export default function Accountsetting(props) {
                                         <button
                                             type="submit"
                                             disabled={submittingSuggestion || !suggestion.trim()}
-                                            className="px-6 py-2.5 bg-black text-white font-black uppercase rounded-full hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-xs shadow-[3px_3px_0px_rgba(0,0,0,1)] disabled:shadow-none"
+                                            className="border-2 border-black px-6 py-2.5 bg-black text-white font-black uppercase rounded-full hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-xs"
                                         >
                                             {submittingSuggestion ? "Submitting..." : "Submit"}
                                         </button>
@@ -1057,7 +1090,7 @@ export default function Accountsetting(props) {
                         </Popup>
                     </div>
 
-                    <div className="text-center text-xs text-gray-400 mt-10 pb-10">
+                    <div className="text-center text-xs text-black/60 mt-10 pb-10">
                         {auth?.user?.created_at && (
                             <div className="mb-2">
                                 Joined on{" "}

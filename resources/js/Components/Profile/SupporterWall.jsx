@@ -32,15 +32,15 @@ export default function SupporterWall() {
     if (!supporters.length && !showDelivery) return null;
 
     return (
-        <div className="rounded-box border border-black/10 bg-white p-4 shadow-none sm:p-5 md:border-2 md:border-black">
+        <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
             {supporters.length > 0 && (
                 <>
                     <div className="mb-3 flex items-baseline justify-between gap-2">
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                        <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black">
                             Recent supporters
                         </h3>
                         {active > 0 && (
-                            <span className="text-[11px] font-bold text-gray-500">
+                            <span className="text-[12px] font-bold text-gray-500">
                                 {active} active this month
                             </span>
                         )}
@@ -58,15 +58,15 @@ export default function SupporterWall() {
                                     <img
                                         src={s.avatar}
                                         alt={s.name}
-                                        className="!h-11 !w-11 !min-h-0 rounded-full border-2 border-black object-cover transition-transform group-hover:-translate-y-0.5"
+                                        className="!h-11 !w-11 !min-h-0 rounded-full border-2 border-black object-cover transition-opacity duration-200 group-hover:opacity-90"
                                     />
                                 ) : (
-                                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-[#FFE600] text-sm font-black transition-transform group-hover:-translate-y-0.5">
+                                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-black bg-[#FFE600] text-sm font-black transition-opacity duration-200 group-hover:opacity-90">
                                         {initial(s.name)}
                                     </span>
                                 )}
                                 {s.purchases > 1 && (
-                                    <span className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-black bg-[#FF007F] px-1 text-[9px] font-black leading-none text-white">
+                                    <span className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-black bg-[#FF007F] px-1 text-[12px] font-black leading-none text-black">
                                         {s.purchases}
                                     </span>
                                 )}
@@ -87,7 +87,7 @@ export default function SupporterWall() {
                 <div
                     className={`${supporters.length ? "mt-4 border-t border-black/10 pt-4" : ""} space-y-2.5`}
                 >
-                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                    <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black">
                         Delivery record
                     </h3>
 

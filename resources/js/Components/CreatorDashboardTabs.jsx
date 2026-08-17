@@ -60,8 +60,8 @@ export default function CreatorDashboardTabs() {
                             aria-current={active ? "page" : undefined}
                             className={`group rounded-box px-4 py-3 min-h-[44px] flex-1 min-w-[190px] transition-all duration-200 ${
                                 active
-                                    ? "bg-[#FF007F] shadow-[0_14px_30px_-12px_rgba(255,0,127,0.55)]"
-                                    : "bg-white ring-1 ring-gray-200/80 shadow-[0_6px_18px_-10px_rgba(0,0,0,0.15)] hover:ring-gray-300 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-12px_rgba(0,0,0,0.2)]"
+ ? "bg-[#FF007F] "
+ : "bg-white ring-1 ring-gray-200/80 hover:ring-gray-300 hover:-translate-y-0.5 "
                             }`}
                         >
                             <div className="flex items-center gap-3">

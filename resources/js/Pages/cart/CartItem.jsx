@@ -57,7 +57,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
         <div className={`fading border-2 cartlist flex justify-between content-between items-center border-black/15 rounded-box-sm
             mb-3 p-3`}>
             <div className='prodcartbox items-center'>
-                <div className='productimg !rounded-[15px]  me-3'>
+                <div className='productimg !rounded-box-sm  me-3'>
                     <img src={data.url || cartproductimg} alt='img' />
                 </div>
                 <div>
@@ -75,7 +75,7 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                                     </span>
                                 ) : null}
                             </span>
-                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                            <span className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
                                 *Includes platform and payment processing fees{data?.type === 'physical' ? " and shipping" : ""}
                             </span>
                         </div>

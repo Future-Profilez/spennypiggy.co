@@ -30,36 +30,58 @@ function formatDate(iso) {
  * The block whose post ages out first is dated — a creator at 3 of 3 is only at
  * 3 of 3 until then, and that is the single most useful thing on this strip for
  * someone who is currently fine.
+ *
+ * ⚠️ A post does not count until an admin approves it, so a creator who has just
+ * published three posts genuinely reads 0 / 3 — identical on screen to having
+ * posted nothing, which is what they raise a ticket about. `pending` draws those
+ * posts as HALF-FILLED, DASHED blocks: work done, not yet counted. Never merge
+ * them into `have` — the number has to keep matching the rule that pauses their
+ * income, or the meter would say they are safe while collection stops.
  */
-export function PostMeter({ have, required, nextDropOut, dark }) {
-    const slots = Array.from({ length: Math.max(required, have) });
+export function PostMeter({ have, required, nextDropOut, dark, pending = 0 }) {
+ const waiting = Math.max(0, pending);
+ const slots = Array.from({ length: Math.max(required, have + waiting) });
     const dropOut = formatDate(nextDropOut);
 
     return (
         <div>
-            <div className="flex items-center gap-1.5" role="img"
-                aria-label={`${have} of ${required} member posts published`}>
+ <div className="flex flex-wrap items-center gap-1.5" role="img"
+ aria-label={`${have} of ${required} member posts counting${waiting ? `, ${waiting} waiting to be approved` : ''}`}>
                 {slots.map((_, i) => {
                     const filled = i < have;
+ const isPending = !filled && i < have + waiting;
                     return (
                         <span
                             key={i}
                             className={[
                                 'h-3.5 w-9 rounded-[3px] border-2',
+ isPending ? 'border-dashed' : '',
                                 dark ? 'border-white/70' : 'border-black',
                                 filled
                                     ? dark ? 'bg-white' : 'bg-black'
-                                    : dark ? 'bg-transparent' : 'bg-transparent',
+ : isPending
+ ? dark ? 'bg-white/30' : 'bg-black/25'
+ : 'bg-transparent',
                             ].join(' ')}
                         />
                     );
                 })}
                 <span className={`ml-2 text-xs font-black uppercase tracking-widest ${dark ? 'text-white/80' : 'text-black/70'}`}>
                     {have} / {required} posts
+ {waiting > 0 && (
+ <span className={dark ? 'text-white/60' : 'text-black/60'}>
+ {' '}&middot; {waiting} in review
                 </span>
+ )}
+ </span>
             </div>
+ {waiting > 0 && (
+ <p className={`mt-1.5 text-[12px] font-semibold ${dark ? 'text-white/70' : 'text-black/60'}`}>
+ {waiting === 1 ? '1 post is' : `${waiting} posts are`} waiting to be approved — {waiting === 1 ? 'it counts' : 'they count'} as soon as that is done. You do not need to post {waiting === 1 ? 'it' : 'them'} again.
+ </p>
+ )}
             {dropOut && (
-                <p className={`mt-1.5 text-[11px] font-semibold ${dark ? 'text-white/60' : 'text-black/55'}`}>
+ <p className={`mt-1.5 text-[12px] font-semibold ${dark ? 'text-white/60' : 'text-black/60'}`}>
                     Your oldest post stops counting on {dropOut}
                 </p>
             )}
@@ -75,6 +97,7 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
         headline,
         consequence,
         member_posts: have = 0,
+ pending_review: pendingReview = 0,
         required = 3,
         counting_posts: countingPosts = [],
         pause_in_days: pauseInDays,
@@ -89,18 +112,19 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
     if (status === 'active') {
         return (
             <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-black/10 pb-3 ${className}`}>
-                <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-black/70">
+ <span className="inline-flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.14em] text-black/70">
                     <span className="h-2 w-2 rounded-full bg-[#1E9E5A]" aria-hidden="true" />
                     Payments running
                 </span>
-                <span className="text-[11px] font-semibold text-black/45">
+ <span className="text-[12px] font-semibold text-black/60">
                     {have} of {required} member posts
+ {pendingReview > 0 ? ` · ${pendingReview} waiting for approval` : ''}
                     {formatDate(nextDropOut) ? ` · oldest expires ${formatDate(nextDropOut)}` : ''}
                 </span>
                 {showDetailsLink && (
                     <Link
                         href={route('creator.activity')}
-                        className="ml-auto text-[11px] font-black uppercase tracking-[0.14em] text-black/50 underline decoration-black/20 underline-offset-4 hover:text-black"
+ className="ml-auto text-[12px] font-black uppercase tracking-[0.14em] text-black/60 underline decoration-black/20 underline-offset-4 hover:text-black"
                     >
                         Details
                     </Link>
@@ -115,10 +139,10 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
     // Paused inverts to black-on-red: this is the only state where money has
     // already stopped, and it should not look like the same card in a warmer colour.
     const shell = stopped
-        ? 'bg-[#141414] border-[3px] border-black shadow-[6px_6px_0px_0px_#E01B3C]'
+ ? 'bg-[#141414] border-[3px] border-black '
         : urgent
-            ? 'bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_#E01B3C]'
-            : 'bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]';
+ ? 'bg-white border-[3px] border-black '
+ : 'bg-white border-[3px] border-black ';
 
     const plate = stopped
         ? 'bg-[#E01B3C] text-white'
@@ -140,7 +164,7 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
             aria-label="Your payment status"
         >
             <span
-                className={`inline-flex items-center rounded-box-sm border-2 border-black px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${plate}`}
+ className={`inline-flex items-center rounded-box-sm border-2 border-black px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] ${plate}`}
             >
                 {plateLabel}
             </span>
@@ -158,14 +182,14 @@ export default function ActivityStatusBanner({ cadence, className = '', showDeta
             </p>
 
             <div className="mt-5">
-                <PostMeter have={have} required={required} nextDropOut={nextDropOut} dark={stopped} />
+ <PostMeter have={have} required={required} pending={pendingReview} nextDropOut={nextDropOut} dark={stopped} />
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                     href={route('dashboard', { add: 'post' })}
-                    className={`inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black px-6 text-xs font-black uppercase tracking-[0.14em] shadow-[3px_3px_0px_#000] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${
-                        stopped ? 'bg-white text-black' : 'bg-[#FF007F] text-white'
+ className={`inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black px-6 text-xs font-black uppercase tracking-[0.14em] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${
+ stopped ? 'bg-white text-black' : 'bg-[#FF007F] text-black'
                     }`}
                 >
                     Write a post

@@ -111,11 +111,11 @@ function Segment({ way, accent }) {
             <h3 className="font-gulfs uppercase text-white text-[15px] md:text-base leading-[1.2] tracking-[0.04em] mb-2">
                 {way.title}
             </h3>
-            <p className="font-poppins text-white/55 text-[13px] md:text-[13.5px] leading-[1.55] flex-1">
+            <p className="font-poppins text-white/60 text-[13px] md:text-[13.5px] leading-[1.55] flex-1">
                 {way.line}
             </p>
             <p
-                className="font-poppins text-[10.5px] uppercase tracking-[0.16em] mt-4 pt-3.5 border-t border-white/[0.08]"
+                className="font-poppins text-[12px] uppercase tracking-[0.16em] mt-4 pt-3.5 border-t border-white/[0.08]"
                 style={{ color: accent }}
             >
                 {way.note}
@@ -133,7 +133,7 @@ function BandLabel({ children, accent }) {
     return (
         <div className="flex items-center gap-4 mb-3">
             <span
-                className="font-gulfs uppercase text-[11px] tracking-[0.26em] whitespace-nowrap"
+                className="font-gulfs uppercase text-[12px] tracking-[0.26em] whitespace-nowrap"
                 style={{ color: accent }}
             >
                 {children}
@@ -215,11 +215,11 @@ export default function WaysToGetPaid() {
                                     ))}
                                 </ul>
                             </Bar>
-                            {/* ⚠️ Was `text-white/30` — 2.48:1, a hard AA failure, on
+                            {/* ⚠️ Was `text-white/60` — 2.48:1, a hard AA failure, on
                                 the ONLY thing telling a phone user this rail scrolls.
                                 The least legible text in the section was the one
                                 explaining a hidden-scrollbar carousel. /70 is 8.1:1. */}
-                            <p className="font-poppins text-[10.5px] uppercase tracking-[0.2em] text-white/70 mt-2.5">
+                            <p className="font-poppins text-[12px] uppercase tracking-[0.2em] text-white/70 mt-2.5">
                                 Swipe &rarr;
                             </p>
                         </div>
@@ -298,12 +298,12 @@ export default function WaysToGetPaid() {
                                     <h3 className="font-gulfs uppercase text-white text-[15px] tracking-[0.04em] leading-[1.2]">
                                         {STABLECOIN_COPY.card.title}
                                     </h3>
-                                    <p className="font-poppins text-white/55 text-[13px] leading-[1.55] mt-1.5">
+                                    <p className="font-poppins text-white/60 text-[13px] leading-[1.55] mt-1.5">
                                         {STABLECOIN_COPY.card.line}
                                     </p>
                                 </div>
                                 <span
-                                    className="font-poppins text-[10.5px] uppercase tracking-[0.16em] shrink-0"
+                                    className="font-poppins text-[12px] uppercase tracking-[0.16em] shrink-0"
                                     style={{ color: VIOLET }}
                                 >
                                     {STABLECOIN_COPY.card.detail}

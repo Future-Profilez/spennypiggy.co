@@ -23,7 +23,7 @@ export default function VipSupporters() {
                  style={{borderLeftColor: vip_level.color}}>
                 <div className="flex relative items-center justify-between mb-3">
                     <div className="flex items-center">
-                        <div className="absolute top-[-8px] left-[-8px] z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+                        <div className="absolute top-[-8px] left-[-8px] z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/60 ">
                             {supporter.rank}
                         </div>
                         <Avatar
@@ -38,7 +38,7 @@ export default function VipSupporters() {
                         />
                         {/* <div className="flex flex-col">
                             <h3 className="font-semibold text-gray-900 text-sm">{supporter.name}</h3>
-                            <p className="text-xs text-gray-600">@{supporter.username}</p>
+                            <p className="text-xs text-black/80">@{supporter.username}</p>
                         </div> */}
                     </div>
                     
@@ -47,14 +47,14 @@ export default function VipSupporters() {
                     {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
                             <RiGiftLine size={16} className="text-[#FF007F] mr-1" />
-                            <span className="text-xs text-gray-500">Gifts</span>
+                            <span className="text-xs text-black/60">Gifts</span>
                         </div>
                         <p className="font-bold text-gray-900 text-sm">{supporter.total_gifts}</p>
                     </div> */}
                     {/* <div className="stat-item">
                         <div className="flex items-center justify-center mb-1">
                             <RiHeartLine size={16} className="text-red-500 mr-1" />
-                            <span className="text-xs text-gray-500">Total</span>
+                            <span className="text-xs text-black/60">Total</span>
                         </div>
                         <p className="font-bold text-gray-900 text-sm">
                             {formatMultiPrice(supporter.total_amount, supporter.currency)}
@@ -64,14 +64,14 @@ export default function VipSupporters() {
                         <p className="font-bold text-gray-900 text-sm">{supporter.creators_supported_count}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiUserStarLine size={16} className="text-blue-500 mr-1" />
-                            <span className="text-xs text-gray-500">Supporters</span>
+                            <span className="text-xs text-black/60">Supporters</span>
                         </div>
                     </div>
                     <div className="stat-item">
                         <p className="font-bold text-gray-900 text-sm">{Math.round(supporter.vip_score)}</p>
                         <div className="flex items-center justify-center mb-1">
                             <RiStarLine size={16} className="text-yellow-500 mr-1" />
-                            <span className="text-xs text-gray-500">VIP Score</span>
+                            <span className="text-xs text-black/60">VIP Score</span>
                         </div>
                     </div>
                 </div>
@@ -81,13 +81,13 @@ export default function VipSupporters() {
                 </div>
 
                 {/* <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center text-xs text-black/60">
                         <RiCalendarLine size={14} className="mr-1" />
                         <span>Last support: {supporter.latest_support_date}</span>
                     </div>
                     <div className="flex space-x-1">
                         {supporter.support_types.map((type, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600 capitalize">
+                            <span key={index} className="px-2 py-1 bg-gray-100 rounded-full text-xs text-black/80 capitalize">
                                 {type}
                             </span>
                         ))}
@@ -127,7 +127,7 @@ export default function VipSupporters() {
             <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-start mb-2">
                 💎 VIP Supporters
             </h2>
-            <p className="text-gray-600 text-sm mb-4">
+            <p className="text-black/80 text-sm mb-4">
                 Most active and generous supporters in the last 3 months
             </p>
 
@@ -136,7 +136,7 @@ export default function VipSupporters() {
                 {vipSupporters.slice(0, 5).map((supporter, index) => (
                     <div key={supporter.id} className={`${index === 0 ? 'hidden':""} fading  rank py-3 border-bottom flex items-center justify-between relative`}>
                         <div className="flex items-center space-x-3">
-                            <div className="absolute top-2 left-1 z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+                            <div className="absolute top-2 left-1 z-10 rank-badge flex h-7 w-7 items-center justify-center rounded-full bg-white font-gulfs text-13 leading-none text-black/60 ">
                                 {supporter.rank}
                             </div>
                             <Avatar
@@ -151,7 +151,7 @@ export default function VipSupporters() {
                             />
                             {/* <div className="flex flex-col">
                                 <h3 className="font-semibold text-gray-900 text-sm">{supporter.name}</h3>
-                                <p className="text-xs text-gray-600">@{supporter.username}</p>
+                                <p className="text-xs text-black/80">@{supporter.username}</p>
                             </div> */}
                         </div>
                         <div className="flexs items-center space-x-2">
@@ -168,7 +168,7 @@ export default function VipSupporters() {
 
             {/* {vipSupporters.length > 5 && (
                 <div className="text-center mt-4">
-                    <p className="text-sm text-gray-500">+ {vipSupporters.length - 5} more VIP supporters</p>
+                    <p className="text-sm text-black/60">+ {vipSupporters.length - 5} more VIP supporters</p>
                 </div>
             )} */}
         </div>

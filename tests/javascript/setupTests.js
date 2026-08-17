@@ -12,6 +12,15 @@
  * the application does not share.
  */
 
+// ⚠️ jsdom ships no TextEncoder/TextDecoder, and `react-dom/server` reads them at
+// IMPORT time — so a test that renders a component to markup fails to even load,
+// with an error pointing at its own first import line rather than at the shim.
+// These are the real Node implementations, not stand-ins.
+const { TextEncoder, TextDecoder } = require('node:util');
+
+global.TextEncoder = global.TextEncoder || TextEncoder;
+global.TextDecoder = global.TextDecoder || TextDecoder;
+
 // jsdom implements neither of these, and components that call them throw rather
 // than degrade. Both are read-only observers, so a no-op is a faithful stand-in.
 if (typeof window !== 'undefined') {

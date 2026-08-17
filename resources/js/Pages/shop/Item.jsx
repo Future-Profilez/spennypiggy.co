@@ -132,7 +132,7 @@ export default function ShopDetailItem(props) {
                                         <li>
                                             <div className="flex items-center">
                                                 <svg
-                                                    className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1"
+                                                    className="rtl:rotate-180 w-3 h-3 text-black/60 mx-1"
                                                     aria-hidden="true"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
@@ -154,7 +154,7 @@ export default function ShopDetailItem(props) {
                                         <li aria-current="page">
                                             <div className="flex items-center">
                                                 <svg
-                                                    className="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1"
+                                                    className="rtl:rotate-180 w-3 h-3 text-black/60 mx-1"
                                                     aria-hidden="true"
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
@@ -233,7 +233,7 @@ export default function ShopDetailItem(props) {
                                         src={shop.perma_link}
                                     />
                                     {shop.ai_generated == 1 ? (
-                                        <div className="absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-box-sm px-2 py-1 text-[8px] text-white">
+                                        <div className="absolute bottom-2 left-2 z-10 bg-black rounded-box-sm px-2 py-1 text-[12px] text-white">
                                             MADE WITH AI{" "}
                                         </div>
                                     ) : (
@@ -249,7 +249,7 @@ export default function ShopDetailItem(props) {
                                     <h1 className="font-GillSans uppercase text-3xl">
                                         {shop.name}
                                     </h1>
-                                    <span className={`px-3 py-1 rounded-box-sm border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                    <span className={`px-3 py-1 rounded-box-sm border-2 border-black text-xs font-black uppercase ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                         {shop.type === 'physical' ? 'Physical' : 'Digital'}
                                     </span>
                                 </div>
@@ -363,7 +363,7 @@ export default function ShopDetailItem(props) {
                                                                 <div className="flex flex-col">
                                                                     <div className="flex items-baseline">
                                                                         <span>{formatMultiPrice(shop?.special_member_price, itemCurrency)}</span>
-                                                                        <span className="line-through text-gray-400 text-xl ml-2">
+                                                                        <span className="line-through text-black/60 text-xl ml-2">
                                                                             {formatMultiPrice(price, itemCurrency)}
                                                                         </span>
                                                                     </div>
@@ -375,7 +375,7 @@ export default function ShopDetailItem(props) {
                                                                 <div className="flex flex-col">
                                                                         <div className="flex items-baseline">
                                                                             <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}</span>
-                                                                            <span className="line-through text-gray-400 text-xl ml-2">
+                                                                            <span className="line-through text-black/60 text-xl ml-2">
                                                                                 {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}
                                                                             </span>
                                                                         </div>
@@ -432,13 +432,13 @@ export default function ShopDetailItem(props) {
                                         <div className="flex flex-col sm:flex-row gap-3">
                                             <Link
                                                 href="/shop?type=products"
-                                                className="w-full sm:w-auto text-center font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-yellow-300 border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[4px] active:translate-y-[4px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                             >
                                                 Manage in my shop
                                             </Link>
                                             <Link
                                                 href="/shop?type=orders"
-                                                className="w-full sm:w-auto text-center font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm shadow-[4px_4px_0px_#000] transition-all hover:shadow-[2px_2px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                                                className="w-full sm:w-auto text-center font-black uppercase bg-white border-[3px] border-black px-6 py-3 min-h-[44px] rounded-box-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                             >
                                                 View orders
                                             </Link>

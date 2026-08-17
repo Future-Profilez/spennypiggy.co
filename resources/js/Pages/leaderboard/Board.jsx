@@ -209,13 +209,13 @@ export default function Board(props) {
                                     style={{ background: "radial-gradient(circle, rgba(255,0,127,0.18), transparent 70%)" }}
                                 />
 
-                                <p className="text-9 font-semibold uppercase tracking-[0.3em] text-white/45 sm:text-10">
+                                <p className="text-12 font-semibold uppercase tracking-[0.3em] text-white/60">
                                     Ranked by supporters
                                 </p>
                                 <h1 className="mt-2 text-38 font-semibold leading-[0.92] tracking-[-0.035em] sm:text-60">
                                     Leaderboard
                                 </h1>
-                                <p className="mt-3 max-w-md text-13 leading-relaxed text-white/55">
+                                <p className="mt-3 max-w-md text-13 leading-relaxed text-white/60">
                                     Every creator on the platform, re-ranked daily by the supporters backing them.
                                 </p>
 
@@ -229,7 +229,7 @@ export default function Board(props) {
                                         { term: "Movement", value: `${windowDays}d` },
                                     ].map(({ term, value }) => (
                                         <div key={term} className="min-w-0">
-                                            <dt className="truncate text-8 font-semibold uppercase tracking-[0.22em] text-white/40 sm:text-9">
+                                            <dt className="truncate text-12 font-semibold uppercase tracking-[0.22em] text-white/60">
                                                 {term}
                                             </dt>
                                             <dd className="mt-1 truncate font-gulfs text-18 leading-none sm:text-22">
@@ -255,7 +255,7 @@ export default function Board(props) {
                                         className={`min-h-[44px] whitespace-nowrap rounded-full px-4 text-12 font-semibold uppercase tracking-[0.12em] transition-colors ${
                                             period === p
                                                 ? "bg-[#0B0B0C] text-white"
-                                                : "text-black/50 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/20"
+                                                : "text-black/60 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/20"
                                         }`}
                                     >
                                         {PERIOD_LABELS[p] ?? p}
@@ -271,7 +271,7 @@ export default function Board(props) {
                             {/* Movement is the news, so it sits above the board. */}
                             {climbers.length > 0 && !searching && (
                                 <section className="mb-8">
-                                    <h2 className="mb-3 flex items-center gap-2 text-10 font-semibold uppercase tracking-[0.22em] text-black/40">
+                                    <h2 className="mb-3 flex items-center gap-2 text-12 font-semibold uppercase tracking-[0.22em] text-black/60">
                                         <TrendingUpIcon size={13} strokeWidth={2.5} aria-hidden="true" />
                                         Climbing fastest
                                     </h2>
@@ -282,7 +282,7 @@ export default function Board(props) {
                                                     href={`/${c.username}`}
                                                     className="flex min-h-[44px] items-center gap-2.5 rounded-full py-1.5 pl-3 pr-2.5 text-13 ring-1 ring-inset ring-black/[0.08] transition-colors hover:ring-black/25"
                                                 >
-                                                    <span className="font-gulfs text-15 text-black/30">{c.rank}</span>
+ <span className="font-gulfs text-15 text-black/60">{c.rank}</span>
                                                     <span className="max-w-[12ch] truncate font-medium text-[#0B0B0C]">
                                                         @{c.username}
                                                     </span>
@@ -297,7 +297,7 @@ export default function Board(props) {
                             <div className="relative mb-4">
                                 <SearchIcon
                                     size={16}
-                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+ className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/60"
                                     aria-hidden="true"
                                 />
                                 <input
@@ -306,13 +306,13 @@ export default function Board(props) {
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search every creator on the board"
                                     aria-label="Search creators"
-                                    className="min-h-[48px] w-full rounded-full border-0 bg-black/[0.03] pl-11 pr-11 text-14 text-[#0B0B0C] placeholder:text-black/35 ring-1 ring-inset ring-black/[0.07] transition-shadow focus:bg-white focus:ring-2 focus:ring-[#0B0B0C]"
+ className="min-h-[48px] w-full rounded-full border-0 bg-black/[0.03] pl-11 pr-11 text-14 text-[#0B0B0C] placeholder:text-black/60 ring-1 ring-inset ring-black/[0.07]  focus:bg-white focus:ring-2 focus:ring-[#0B0B0C]"
                                 />
                                 {searching && (
                                     <button
                                         onClick={() => setSearch("")}
                                         aria-label="Clear search"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-black/40 transition-colors hover:text-[#0B0B0C]"
+ className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-black/60 transition-colors hover:text-[#0B0B0C]"
                                     >
                                         <XIcon size={16} strokeWidth={2.5} />
                                     </button>
@@ -327,7 +327,7 @@ export default function Board(props) {
                                     <span className="text-[#0B0B0C]">{error}</span>
                                     <button
                                         onClick={() => fetchBoard(period, search, page)}
-                                        className="min-h-[44px] shrink-0 rounded-full bg-[#0B0B0C] px-4 text-11 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
+ className="min-h-[44px] shrink-0 rounded-full bg-[#0B0B0C] px-4 text-12 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
                                     >
                                         Retry
                                     </button>
@@ -336,10 +336,10 @@ export default function Board(props) {
 
                             <section className="mb-10 overflow-hidden rounded-box bg-white ring-1 ring-inset ring-black/[0.08]">
                                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-black/[0.06] px-4 py-4">
-                                    <h2 className="text-10 font-semibold uppercase tracking-[0.22em] text-black/40">
+ <h2 className="text-12 font-semibold uppercase tracking-[0.22em] text-black/60">
                                         {searching ? "Search results" : "Full ranking"}
                                     </h2>
-                                    <p className="text-12 text-black/40">
+ <p className="text-12 text-black/60">
                                         {searching
                                             ? `${matched} ${matched === 1 ? "creator" : "creators"} matching “${search}”`
                                             : `Every creator, ranked ${rest.length > 0 ? "from #4 down" : ""}`}
@@ -353,7 +353,7 @@ export default function Board(props) {
                                         <p className="text-17 font-semibold tracking-tight text-[#0B0B0C]">
                                             {searching ? "No creators found" : "That's everyone so far"}
                                         </p>
-                                        <p className="mx-auto mt-1.5 max-w-sm text-13 text-black/45">
+                                        <p className="mx-auto mt-1.5 max-w-sm text-13 text-black/60">
                                             {searching
                                                 ? "Try a different name or handle."
                                                 : rows.length > 0
@@ -393,7 +393,7 @@ export default function Board(props) {
                                         <button
                                             onClick={loadMore}
                                             disabled={loadingMore}
-                                            className="min-h-[44px] w-full rounded-full text-11 font-semibold uppercase tracking-[0.14em] text-black/55 transition-colors hover:bg-black/[0.03] hover:text-[#0B0B0C] disabled:opacity-50"
+                                            className="min-h-[44px] w-full rounded-full text-12 font-semibold uppercase tracking-[0.14em] text-black/60 transition-colors hover:bg-black/[0.03] hover:text-[#0B0B0C] disabled:opacity-50"
                                         >
                                             {loadingMore ? "Loading…" : "Show more creators"}
                                         </button>
@@ -407,7 +407,7 @@ export default function Board(props) {
                                         <p className="text-14 font-semibold tracking-tight text-[#0B0B0C]">
                                             Show me on the leaderboard
                                         </p>
-                                        <p className="mt-0.5 text-12 text-black/45">
+                                        <p className="mt-0.5 text-12 text-black/60">
                                             Turn this off and your profile is removed from every public board.
                                         </p>
                                     </div>
@@ -415,7 +415,7 @@ export default function Board(props) {
                                         role="switch"
                                         aria-checked={!optedOut}
                                         onClick={toggleOptOut}
-                                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] ${
                                             optedOut ? "bg-black/12" : "bg-[#0B0B0C]"
                                         }`}
                                     >
@@ -423,7 +423,7 @@ export default function Board(props) {
                                             {optedOut ? "Show me on the leaderboard" : "Hide me from the leaderboard"}
                                         </span>
                                         <span
-                                            className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-all ${
+                                            className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white transition-all ${
                                                 optedOut ? "left-1" : "left-[26px]"
                                             }`}
                                         />

@@ -342,11 +342,11 @@ function InstantTabSystem({
         const isEffectivelyActive = isActive || isPending;
         const shouldShowLoading = isPending && isTransitioning;
         
-        // Dynamic styles for instant feedback
+        // Instant tap feedback. Deliberately NOT a scale — no element on this
+        // site grows on press; the press reads as a dip in opacity instead.
         const buttonStyles = {
-            transform: isClicked ? 'scale(0.95)' : 'scale(1)',
-            transition: isClicked ? 'transform 0.1s ease-out' : 'transform 0.2s ease-out',
-            willChange: 'transform',
+            opacity: isClicked ? 0.7 : 1,
+            transition: isClicked ? 'opacity 0.1s ease-out' : 'opacity 0.2s ease-out',
         };
         
         const handleClick = (e) => {
@@ -365,8 +365,8 @@ function InstantTabSystem({
                 style={buttonStyles}
                 disabled={isTransitioning && isPending}
                 className={`
-                    relative px-3.5 py-2 text-xs md:text-sm font-black uppercase
-                    transition-all duration-300 min-w-max whitespace-nowrap
+                    relative inline-flex items-center min-h-[44px] px-3.5 py-2 text-xs md:text-sm font-black uppercase
+                    transition-colors duration-300 min-w-max whitespace-nowrap
                     select-none touch-manipulation tracking-wider border-2 border-black rounded-box-sm
                     ${isEffectivelyActive
                         ? 'text-black bg-yellow-300'
@@ -433,7 +433,7 @@ function InstantTabSystem({
                             type="button"
                             onClick={() => scrollByPage(-1)}
                             aria-label="Scroll tabs left"
-                            className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-box-sm border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
+                            className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-box-xs border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
                         >
                             <ChevronLeft size={16} strokeWidth={3} />
                         </button>
@@ -443,7 +443,7 @@ function InstantTabSystem({
                             type="button"
                             onClick={() => scrollByPage(1)}
                             aria-label="Scroll tabs right"
-                            className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-box-sm border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
+                            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-box-sm border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
                         >
                             <ChevronRight size={16} strokeWidth={3} />
                         </button>
@@ -460,7 +460,7 @@ function InstantTabSystem({
                             disabled={isTransitioning}
                             aria-label="Refresh this tab"
                             className={`
-                                flex h-9 w-9 items-center justify-center
+                                flex h-11 w-11 items-center justify-center
                                 border-2 border-black rounded-box-sm
                                 text-black bg-white hover:bg-yellow-100
                                 disabled:opacity-70 disabled:pointer-events-none

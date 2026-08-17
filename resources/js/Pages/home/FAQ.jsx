@@ -111,11 +111,13 @@ export default function FAQ() {
                                 anywhere on the page. WCAG 2.4.7. `text-yellow-400` is
                                 also off-palette — the allocated yellow is #E6EA7B. */}
                             <Disclosure.Button className={`flex w-full justify-between px-4 py-4 md:px-6 md:py-6 text-left text-md md:text-xl font-gulfs uppercase tracking-wide focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF007F] ${open ? 'text-[#E6EA7B]' : 'text-white'}`}>
-                              <span>{f.title}</span>
+                              <span className="pr-4">{f.title}</span>
+                              {/* `shrink-0` — without it a long question squeezes the
+                                  chevron out of round, which is the whole affordance. */}
                               <ChevronUpIcon
                                 className={`${
                                   open ? 'rotate-180 transform' : ''
-                                } h-6 w-6 text-[#FF007F] transition-transform duration-200`}
+                                } h-6 w-6 shrink-0 text-[#FF007F] transition-transform duration-200`}
                               />
                             </Disclosure.Button>
                             <Transition
@@ -126,7 +128,10 @@ export default function FAQ() {
                                 leaveFrom="transform scale-100 opacity-100"
                                 leaveTo="transform scale-95 opacity-0"
                             >
-                              <Disclosure.Panel className="px-6 pb-6 text-lg text-gray-300 leading-relaxed">
+                              {/* Padding must match the button's, or the question sits
+                                  at 16px and its answer at 24px on a phone — the
+                                  question and answer stop reading as one column. */}
+                              <Disclosure.Panel className="px-4 pb-4 md:px-6 md:pb-6 text-base md:text-lg text-gray-300 leading-relaxed">
                                 {f.description}
                               </Disclosure.Panel>
                             </Transition>

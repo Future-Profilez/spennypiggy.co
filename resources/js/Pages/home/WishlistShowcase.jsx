@@ -150,12 +150,12 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
             <div className="relative w-full h-[70px] rounded-[12px] border border-white/10 bg-white/[0.04] overflow-hidden mb-2.5 flex items-center justify-center">
                 <span className="absolute inset-0" style={{ background: `radial-gradient(circle at 50% 55%, ${accent}40, transparent 70%)` }}></span>
                 <span className="relative text-[38px] select-none" aria-hidden>{emoji}</span>
-                <span className="absolute top-1.5 right-2 text-[11px] opacity-70 select-none" aria-hidden>✨</span>
+                <span className="absolute top-1.5 right-2 text-[12px] opacity-70 select-none" aria-hidden>✨</span>
             </div>
 
             {/* `white/45` is 4.43:1 — a marginal AA fail, and this is 9.5px type,
                 which gets no small-print exemption. */}
-            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wide text-white/70">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-white/70">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }}></span>{tag}
             </span>
             {/* ⚠️ Was an <h4> directly under LiveBarSection's <h2> — a two-level
@@ -178,8 +178,8 @@ function ShareCard({ handle }) {
                 <p className="font-gulfs uppercase text-[13px] text-white leading-tight">Share your page</p>
             </div>
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-[10px] px-2.5 py-1.5">
-                <span className="text-[11px] font-bold text-white/70 truncate">{handle}</span>
-                <span className="ml-auto text-[11px] font-black uppercase text-white rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
+                <span className="text-[12px] font-bold text-white/70 truncate">{handle}</span>
+                <span className="ml-auto text-[12px] font-black uppercase text-white rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
             </div>
         </Shell>
     );
@@ -189,8 +189,8 @@ function ThankYouCard() {
     return (
         <Shell accent={PURPLE}>
             <div className="flex items-start gap-2 mb-2.5">
-                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
-                <p className="text-[11.5px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
+                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[12px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
+                <p className="text-[12px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
                     <span className="font-black text-white">@legitjustjack</span> just supported your content! 🙌
                 </p>
             </div>
@@ -203,15 +203,15 @@ function SupportCard({ handle, amount }) {
     return (
         <Shell accent={PINK}>
             <span className="absolute top-2.5 right-3 text-xs opacity-80 select-none" aria-hidden>🎉</span>
-            <span className="absolute top-7 right-7 text-[11px] opacity-60 select-none" aria-hidden>✨</span>
+            <span className="absolute top-7 right-7 text-[12px] opacity-60 select-none" aria-hidden>✨</span>
             <div className="flex items-center gap-2 mb-2">
                 <span className="relative w-8 h-8">
                     <span className="absolute inset-0 rounded-full animate-ping" style={{ background: `${PINK}40` }}></span>
                     <span className="relative w-8 h-8 rounded-full flex items-center justify-center text-sm ring-2 ring-[#14141f]" style={{ background: `${PINK}33` }} aria-hidden>💖</span>
                 </span>
-                <span className="text-[11px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: PINK }}>New supporter</span>
+                <span className="text-[12px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: PINK }}>New supporter</span>
             </div>
-            <p className="text-[11.5px] text-white/70 leading-snug">
+            <p className="text-[12px] text-white/70 leading-snug">
                 <span className="font-black text-white">{handle}</span> supported you
             </p>
             <p className="font-black text-[20px] mt-1" style={{ color: PINK }}>{amount}</p>

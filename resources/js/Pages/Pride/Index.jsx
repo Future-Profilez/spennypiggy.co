@@ -7,10 +7,10 @@ import { FaBolt, FaBriefcase, FaBox, FaCheckCircle, FaDollarSign, FaFire, FaGift
 import Header from '@/includes/Header';
 
 const PRIDE_LIVEBAR_ITEMS = [
-    "🏳️‍🌈 GET PAID TO BE YOU  ",
-    "STOP POSTING FOR FREE  ",
-    "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER  ",
-    "💸 MONETISE THE ATTENTION  ",
+ "🏳️‍🌈 GET PAID TO BE YOU ",
+ "STOP POSTING FOR FREE ",
+ "💅 LIKES ARE CUTE, PAYOUTS ARE CUTER ",
+ "💸 MONETISE THE ATTENTION ",
 ];
 
 export default function PrideLanding() {
@@ -54,13 +54,13 @@ export default function PrideLanding() {
                 <div className="absolute bottom-[-10%] left-[10%] w-[300px] h-[300px] rounded-full bg-[#00F0FF]/15 blur-[100px] hidden md:block"></div>
             </div>
 
-            {/* <header className={`hidden fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-[#050505]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(255,0,127,0.1)]' : 'py-4 bg-transparent'}`}>
+ {/* <header className={`hidden fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-[#050505]/80 backdrop-blur-xl border-b border-white/10 ' : 'py-4 bg-transparent'}`}>
                 <div className="max-w-6xl mx-auto px-4 md:px-6 flex justify-between items-center">
                     <Link href="/" className="relative group">
-                        <div className="absolute -inset-2 bg-gradient-to-r from-[#FF007F] to-[#00F0FF] rounded-[30px]  blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+ <div className="absolute -inset-2 bg-gradient-to-r from-[#FF007F] to-[#00F0FF] rounded-box blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
                         <img src={spennypiggy} alt="Spenny Piggy" className="h-10 md:h-14 relative z-10" />
                     </Link>
-                    <a href={getUTMLink('register')} className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-2.5 text-[12px] md:text-xs font-black uppercase tracking-widest text-white bg-transparent border-2 border-[#FF007F] rounded-[30px]  hover:bg-[#FF007F] hover:text-black transition-all duration-300 shadow-[0_0_10px_rgba(255,0,127,0.3)] hover:shadow-[0_0_20px_rgba(255,0,127,0.6)]">
+ <a href={getUTMLink('register')} className="flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-2.5 text-[12px] md:text-xs font-black uppercase tracking-widest text-white bg-transparent border-2 border-[#FF007F] rounded-box hover:bg-[#FF007F] hover:text-black transition-all duration-300 ">
                         Start Earning <FaFire className="w-4 h-4 md:w-3.5 md:h-3.5" />
                     </a>
                 </div>
@@ -69,10 +69,10 @@ export default function PrideLanding() {
             <Header />
 
             {/* Scrolling Marquee Top using LiveBar */}
-            <div className="relative z-20 mt-[20px] md:mt-[20px] w-full   transform -rotate-1 shadow-lg">
-                <LiveBar 
+ <div className="relative z-20 mt-[20px] md:mt-[20px] w-full transform -rotate-1 ">
+                <LiveBar
                     livebartest={PRIDE_LIVEBAR_ITEMS}
-                    classes="w-full" 
+                    classes="w-full"
                     color="bg-gradient-to-r from-[#FF007F] via-[#7000FF] to-[#00F0FF]"
                     textClass="mx-4 text-black font-black uppercase tracking-widest text-[14px] md:text-sm whitespace-nowrap mb-0"
                 />
@@ -80,7 +80,7 @@ export default function PrideLanding() {
 
             {/* Hero Section */}
             <section className="containerbox mx-auto">
-            <div className="relative z-10 pt-12 md:pt-16 pb-14  px-3  text-center ">
+ <div className="relative z-10 pt-12 md:pt-16 pb-14 px-3 text-center ">
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-60">
                     <FaStar className="text-[#FF007F] w-6 h-6 absolute top-0 left-[15%] animate-pulse motion-reduce:animate-none" />
                     <FaStar className="text-[#00F0FF] w-8 h-8 absolute top-16 right-[15%] animate-pulse delay-150 motion-reduce:animate-none" />
@@ -88,22 +88,25 @@ export default function PrideLanding() {
                 </div>
                 
                 {/* 100% Sticker */}
-                <div className="absolute -top-1 right-2 
-                md:right-[15%] lg:right-[20%] z-20 
-                transform rotate-12 
-                hover:rotate-0 transition-transform 
-                duration-300">
-                    <div className="p-4 bg-[#FFB800] text-black font-black uppercase text-center p-3 rounded-full shadow-[4px_4px_0px_0px_#FF007F] border-4 border-black w-24 h-24 md:w-28 md:h-28 flex items-center justify-center animate-pulse motion-reduce:animate-none">
-                        <span className="leading-tight text-[10px] md:text-[12px]">Keep<br/><span className="text-sm ">100%</span><br/>Earnings!</span>
+                <div className="absolute -top-1 right-2
+                md:right-[15%] lg:right-[20%] z-20
+ transform rotate-12">
+ {/* One padding. `p-4 … p-3` on the same element is a dead class
+ and a reader has to work out which one won. */}
+ <div className="p-3 bg-[#FFB800] text-black font-black uppercase text-center rounded-full border-4 border-black w-24 h-24 md:w-28 md:h-28 flex items-center justify-center animate-pulse motion-reduce:animate-none">
+ <span className="leading-tight text-[12px]">Keep<br/><span className="text-sm ">100%</span><br/>Earnings!</span>
                     </div>
                 </div>
 
-                <div className="inline-block mb-5 px-6 py-2 rounded-[30px]  border border-white/20 bg-white/5 backdrop-blur-md">
+ <div className="inline-block mb-5 px-6 py-2 rounded-box border border-white/20 bg-white/5 backdrop-blur-md">
                     <span className="text-[14px] md:text-sm font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF007F] to-[#00F0FF]">
                         ✨ The Ultimate Creator Infrastructure ✨
                     </span>
                 </div>
-                <h1 className="font-gulfs text-6xl md:text-6xl lg:text-7xl leading-[1.1] tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 mb-3 drop-shadow-xl">
+ {/* `text-6xl` (60px) at 390px pushed "THINK YOU'RE" onto three ragged
+ lines inside a 326px measure. 48px is the base; the big sizes
+ resume the moment there is room for them. */}
+                <h1 className="font-gulfs text-5xl sm:text-6xl lg:text-7xl leading-[1.1] tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-300 mb-3 drop-shadow-xl">
                     THINK YOU'RE <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF007F] via-[#ff4da6] to-[#FF007F] neon-text-pink">SEXY?</span>
                 </h1>
@@ -116,8 +119,8 @@ export default function PrideLanding() {
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                     <a href={getUTMLink('register')} className="group relative w-full sm:w-auto">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-[#7000FF] rounded-[30px]  blur opacity-70 group-hover:opacity-100 transition duration-200"></div>
-                        <div className="relative px-8 py-4 text-lg md:text-base font-black uppercase tracking-widest text-white bg-black rounded-[30px]  border border-white/10 group-hover:bg-[#FF007F] group-hover:border-[#FF007F] group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+ <div className="absolute -inset-1 bg-gradient-to-r from-[#FF007F] to-[#7000FF] rounded-box blur opacity-70 group-hover:opacity-100 transition duration-200"></div>
+ <div className="relative px-8 py-4 text-lg md:text-base font-black uppercase tracking-widest text-white bg-black rounded-box border border-white/10 group-hover:bg-[#FF007F] group-hover:border-[#FF007F] group-hover:text-black transition-all duration-300 flex items-center justify-center gap-2">
                             Start Earning <FaBolt className="w-6 h-6 md:w-5 md:h-5 group-hover:animate-bounce motion-reduce:animate-none" />
                         </div>
                     </a>
@@ -128,18 +131,18 @@ export default function PrideLanding() {
             {/* QR Campaign Section - Polaroid Style */}
             <section className="relative z-10 py-10 px-6">
                 <div className="max-w-xl mx-auto">
-                    <div className="glass-card rounded-[30px]  p-1.5 transform rotate-1 hover:rotate-0 transition-transform duration-500 shadow-[0_15px_40px_rgba(0,0,0,0.4)]">
-                        <div className="border border-white/10 rounded-[30px]  p-8 md:p-8 py-10 text-center bg-gradient-to-b from-white/5 to-transparent relative  ">
+ <div className="glass-card rounded-box p-1.5 transform rotate-1 ">
+ <div className="border border-white/10 rounded-box p-8 md:p-8 py-10 text-center bg-gradient-to-b from-white/5 to-transparent relative ">
                             {/* Decorative tape */}
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-white/20 backdrop-blur-md transform -rotate-2 shadow-sm rounded-[30px] "></div>
-                            
+ <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-white/20 backdrop-blur-md transform -rotate-2 rounded-full "></div>
+ 
                             <FaHeart className="w-14 h-14 md:w-12 md:h-12 text-[#FF007F] mx-auto mb-5 animate-pulse motion-reduce:animate-none drop-shadow-[0_0_10px_rgba(255,0,127,0.6)]" />
                             <h3 className="fading font-gulfs text-4xl md:text-4xl tracking-wider mb-4 leading-tight">SCANNED THIS <br/> FROM PRIDE?</h3>
-                            <div className="fading bg-black/50 inline-block px-6 py-3 md:px-5 md:py-2.5 rounded-[30px]  mb-8 border border-white/10">
+ <div className="fading bg-black/50 inline-block px-6 py-3 md:px-5 md:py-2.5 rounded-box mb-8 border border-white/10">
                                 <p className="text-xl md:text-xl text-[#00F0FF] font-black italic">"Good. That means the shirt worked."</p>
                             </div>
                             <br/>
-                            <a href={getUTMLink('register')} className="fading inline-flex items-center gap-2 px-8 py-4 md:px-6 md:py-3 text-base md:text-sm font-bold uppercase tracking-wider text-black bg-white rounded-[30px]  hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+ <a href={getUTMLink('register')} className="fading inline-flex items-center gap-2 px-8 py-4 md:px-6 md:py-3 text-base md:text-sm font-bold uppercase tracking-wider text-black bg-white rounded-box hover:bg-gray-200 transition-all ">
                                 Claim My Creator Page
                             </a>
                         </div>
@@ -166,20 +169,20 @@ export default function PrideLanding() {
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-12">
                         <h2 className="fading font-gulfs text-4xl md:text-5xl tracking-wider mb-5">HOW TO SECURE THE BAG</h2>
-                        <p className="fading text-gray-400 text-lg md:text-lg font-medium">Turn your audience into multiple income streams instantly.</p>
+ <p className="fading text-white/60 text-lg md:text-lg font-medium">Turn your audience into multiple income streams instantly.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {features.map((feature, idx) => (
-                            <div key={idx} className="fading glass-card rounded-[30px]  p-8 md:p-6 hover:-translate-y-1.5 transition-all duration-300 group relative  ">
+ <div key={idx} className="fading glass-card rounded-box p-8 md:p-6 transition-colors duration-200 group relative ">
                                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                                 
                                 <div className="relative z-10">
-                                    <div className={`w-14 h-14 md:w-12 md:h-12 rounded-[30px]  flex items-center justify-center mb-5 md:mb-4 bg-gradient-to-br ${feature.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+ <div className={`w-14 h-14 md:w-12 md:h-12 rounded-box-sm flex items-center justify-center mb-5 md:mb-4 bg-gradient-to-br ${feature.color} transition-[filter] duration-300 group-hover:brightness-110`}>
                                         <feature.icon className="text-white w-7 h-7 md:w-6 md:h-6" />
                                     </div>
                                     <h3 className="text-2xl md:text-xl font-black mb-3 md:mb-2">{feature.title}</h3>
-                                    <p className="text-gray-400 text-base md:text-base leading-relaxed">{feature.desc}</p>
+ <p className="text-white/60 text-base md:text-base leading-relaxed">{feature.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -190,12 +193,12 @@ export default function PrideLanding() {
             {/* Founder Bonus Section */}
             <section className="relative z-10 py-12 px-6">
                 <div className="max-w-5xl mx-auto">
-                    <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] border border-[#FFB800]/50 rounded-[30px]  p-8 md:p-10 relative   shadow-[0_0_40px_rgba(255,184,0,0.15)]">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFB800]/10 blur-[80px] rounded-[30px]  pointer-events-none"></div>
+ <div className="bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] border border-[#FFB800]/50 rounded-box p-8 md:p-10 relative ">
+ <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFB800]/10 blur-[80px] rounded-full pointer-events-none"></div>
                         
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                             <div className="flex-1 text-center md:text-left">
-                                <div className="fading inline-block px-4 py-1 rounded-[30px]  bg-[#FFB800]/20 text-[#FFB800] font-bold text-xs uppercase tracking-widest mb-5 border border-[#FFB800]/30">
+ <div className="fading inline-block px-4 py-1 rounded-box bg-[#FFB800]/20 text-[#FFB800] font-bold text-xs uppercase tracking-widest mb-5 border border-[#FFB800]/30">
                                     Limited Time Offer
                                 </div>
                                 <h3 className="fading font-gulfs text-4xl md:text-4xl text-white mb-5 uppercase tracking-wider">
@@ -204,28 +207,28 @@ export default function PrideLanding() {
                                 <p className="fading text-gray-300 text-lg md:text-lg mb-8 leading-relaxed">
                                     Join now and get exclusive onboarding incentives. We heavily reward our early creators who bring their audience to the platform.
                                 </p>
-                                <ul className=" text-left  grid grid-cols-1 gap-4 md:grid-cols-2 mx-auto md:mx-0">
-                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px]  border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px] "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
+ <ul className=" text-left grid grid-cols-1 gap-4 md:grid-cols-2 mx-auto md:mx-0">
+ <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-box border border-white/10">
+ <div className="bg-[#FFB800]/20 p-2 rounded-box-sm "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Special bonus on your first 30 days</span>
                                     </li>
-                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px]  border border-white/10 border-l-4 border-l-[#FFB800]">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px] "><FaDollarSign className="text-[#FFB800] w-6 h-6" /></div>
+ <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-box border border-white/10 border-l-4 border-l-[#FFB800]">
+ <div className="bg-[#FFB800]/20 p-2 rounded-box-sm "><FaDollarSign className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base text-[#FFB800]">Up to 10% extra a month! For 12 months.</span>
                                     </li>
-                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px]  border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px] "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
+ <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-box border border-white/10">
+ <div className="bg-[#FFB800]/20 p-2 rounded-box-sm "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Priority VIP creator support</span>
                                     </li>
-                                    <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-[30px]  border border-white/10">
-                                        <div className="bg-[#FFB800]/20 p-2 rounded-[30px] "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
+ <li className="fading flex items-center min-h-[100px] gap-4 bg-white/5 p-4 rounded-box border border-white/10">
+ <div className="bg-[#FFB800]/20 p-2 rounded-box-sm "><FaCheckCircle className="text-[#FFB800] w-6 h-6" /></div>
                                         <span className="font-bold text-base md:text-base">Exclusive Founder badge on profile</span>
                                     </li>
                                 </ul>
                             </div>
                             {/* <div className="w-full md:w-1/3 flex justify-center">
-                                <div className="w-48 h-48 bg-gradient-to-tr from-[#FFB800] to-[#FF007F] rounded-[30px]  p-1.5 animate-pulse shadow-[0_0_40px_rgba(255,184,0,0.3)]">
-                                    <div className="w-full h-full bg-[#050505] rounded-[30px]  flex items-center justify-center">
+ <div className="w-48 h-48 bg-gradient-to-tr from-[#FFB800] to-[#FF007F] rounded-box p-1.5 animate-pulse ">
+ <div className="w-full h-full bg-[#050505] rounded-box flex items-center justify-center">
                                         <img src={spennypiggy} alt="Piggy" className="w-28 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                                     </div>
                                 </div>
@@ -238,7 +241,7 @@ export default function PrideLanding() {
             {/* LGBTQ+ Business Positioning */}
             <section className="relative z-10 py-16 px-6">
                 <div className="max-w-4xl mx-auto text-center">
-                    <div className="fading inline-block mb-6 p-4 rounded-[30px]  bg-[#FF007F]/10 border border-[#FF007F]/30">
+ <div className="fading inline-block mb-6 p-4 rounded-box bg-[#FF007F]/10 border border-[#FF007F]/30">
                         <FaStar className="w-8 h-8 text-[#FF007F]" />
                     </div>
                     <h2 className="fading uppercase text-4xl md:text-5xl font-black mb-6 leading-tight">
@@ -260,8 +263,8 @@ export default function PrideLanding() {
                     BESTIE. IN THIS ECONOMY?
                 </h3>
                 <a href={getUTMLink('register')} className="fading group relative inline-block">
-                    <div className="absolute -inset-1.5 bg-gradient-to-r from-[#FF007F] via-[#7000FF] to-[#00F0FF] rounded-[30px]  blur-md opacity-70 group-hover:opacity-100 animate-pulse transition duration-200"></div>
-                    <div className="relative px-10 py-5 text-xl md:text-xl font-black uppercase tracking-widest text-black bg-white rounded-[30px]  transition-all duration-300 group-hover:scale-105">
+ <div className="absolute -inset-1.5 bg-gradient-to-r from-[#FF007F] via-[#7000FF] to-[#00F0FF] rounded-box blur-md opacity-70 group-hover:opacity-100 animate-pulse transition duration-200"></div>
+ <div className="relative px-10 py-5 text-xl md:text-xl font-black uppercase tracking-widest text-black bg-white rounded-box transition-colors duration-200 group-hover:bg-white/90">
                         Create My Spenny Piggy
                     </div>
                 </a>
@@ -273,9 +276,9 @@ export default function PrideLanding() {
             </div>
 
             {/* Sticky Mobile CTA */}
-            <div className={`fixed bottom-0 left-0 w-full p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#050505]/90 backdrop-blur-xl border-t border-[#FF007F]/30 z-50 transform transition-transform duration-500 md:hidden flex flex-col items-center justify-center shadow-[0_-10px_20px_rgba(255,0,127,0.15)] ${scrolled ? 'translate-y-0' : 'translate-y-full'}`}>
-                <p className="text-[10px] text-[#00F0FF] font-bold mb-1.5 uppercase tracking-widest text-center">Hot people deserve revenue streams</p>
-                <a href={getUTMLink('register')} className="w-full py-3 text-center font-black text-sm uppercase tracking-widest text-black bg-gradient-to-r from-[#FF007F] to-[#ff4da6] rounded-[30px]  shadow-[0_0_15px_rgba(255,0,127,0.4)] active:scale-95 transition-transform">
+ <div className={`fixed bottom-0 left-0 w-full p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#050505]/90 backdrop-blur-xl border-t border-[#FF007F]/30 z-50 transform transition-transform duration-500 md:hidden flex flex-col items-center justify-center ${scrolled ? 'translate-y-0' : 'translate-y-full'}`}>
+ <p className="text-[12px] text-[#00F0FF] font-bold mb-1.5 uppercase tracking-widest text-center">Hot people deserve revenue streams</p>
+ <a href={getUTMLink('register')} className="w-full py-3 text-center font-black text-sm uppercase tracking-widest text-black bg-gradient-to-r from-[#FF007F] to-[#ff4da6] rounded-box transition-[filter] duration-200 active:brightness-95">
                     Start Earning
                 </a>
             </div>

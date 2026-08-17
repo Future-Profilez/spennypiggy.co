@@ -18,7 +18,7 @@ export default function ReturningSupporter() {
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-box border-2 border-black bg-[#12131A] px-4 py-3.5">
             <p className="flex items-center gap-3 text-[13px] font-semibold text-white/80">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF007F] text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF007F] text-black">
                     <Heart size={16} strokeWidth={2.5} fill="currentColor" />
                 </span>
                 <span>
@@ -28,14 +28,14 @@ export default function ReturningSupporter() {
                     </span>{" "}
                     from {user?.name}
                     {viewer.since ? (
-                        <span className="text-white/50"> since {viewer.since}</span>
+                        <span className="text-white/60"> since {viewer.since}</span>
                     ) : null}
                 </span>
             </p>
 
             <Link
                 href={route("gifter.hub")}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wide text-black transition-colors hover:bg-[#FF007F] hover:text-white"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12px] font-black uppercase tracking-wide text-black transition-colors hover:bg-[#FF007F] hover:text-black"
             >
                 View purchases
                 <ArrowRight size={12} strokeWidth={3} />

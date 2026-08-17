@@ -98,37 +98,37 @@ export default function BlockedUsers({ auth }) {
             },
             "Personal reasons": {
                 color: "bg-gray-100 text-gray-700 border-gray-300",
-                icon: <AlertCircle size={14} className="text-gray-500" />,
+                icon: <AlertCircle size={14} className="text-black/60" />,
             },
         };
         return (
             reasons[reason] || {
                 color: "bg-gray-100 text-gray-700 border-gray-300",
-                icon: <AlertCircle size={14} className="text-gray-500" />,
+                icon: <AlertCircle size={14} className="text-black/60" />,
             }
         );
     };
 
     return (
         <Authenticated auth={auth.user} user={auth.user}>
-            <div className="min-h-dvh bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] py-10">
+            <div className="min-h-dvh bg-gradient-to-b from-[#E4F8EC] via-[#BCEDCB] to-[#A2E4B8] pt-10 pb-28 md:pb-16">
                 <div className="max-w-5xl mx-auto px-4">
                     <div className="mb-8">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-white border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="p-2 bg-white border-[3px] border-black rounded-box-sm ">
                                 <UserX size={28} className="text-red-500" />
                             </div>
                             <h1 className="text-4xl font-black text-gray-900">
                                 Blocked Users
                             </h1>
                             {users.length > 0 && (
-                                <span className="bg-red-500 text-white font-black text-sm px-4 py-1 rounded-full border-[2px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                <span className="bg-red-500 text-white font-black text-sm px-4 py-1 rounded-full border-[2px] border-black ">
                                     {users.length}
                                 </span>
                             )}
                         </div>
 
-                        <p className="text-gray-600 mt-2 font-semibold ml-1">
+                        <p className="text-black/80 mt-2 font-semibold ml-1">
                             Manage people you've blocked and review your
                             decisions.
                         </p>
@@ -146,19 +146,16 @@ export default function BlockedUsers({ auth }) {
                                     <div
                                         key={item.id}
                                         className="
-                                        relative
-                                        bg-white
-                                        border-[3px]
-                                        border-black
-                                        rounded-[30px]
-                                        p-4 md:p-5
-                                        transition-all
-                                        duration-200
-                                        shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                                        hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                                        hover:translate-x-[2px]
-                                        hover:translate-y-[2px]
-                                    "
+ relative
+ bg-white
+ border-[3px]
+ border-black
+ rounded-box
+ p-4 md:p-5
+ transition-all
+ duration-200
+ 
+ "
                                     >
                                         {/* Main Content - Always Visible */}
                                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -168,7 +165,7 @@ export default function BlockedUsers({ auth }) {
                                                     <Avatar
                                                         user={item.blocked_user}
                                                         size="h-16 w-16 md:h-20 md:w-20"
-                                                        className="border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                                                        className="border-[3px] border-black "
                                                     />
                                                     <div className="absolute -bottom-1 -right-1 bg-red-500 border-2 border-black rounded-full p-1">
                                                         <Ban
@@ -189,7 +186,7 @@ export default function BlockedUsers({ auth }) {
                                                             px-3 py-1
                                                             rounded-full
                                                             border-2
-                                                            text-[11px] font-black
+                                                            text-[12px] font-black
                                                             uppercase tracking-wide
                                                             ${reasonDetails.color}
                                                         `}
@@ -200,10 +197,10 @@ export default function BlockedUsers({ auth }) {
                                                         </span>
 
                                                         {/* Date Badge */}
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 border-2 border-gray-300 text-[11px] font-black text-gray-600 uppercase tracking-wide">
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 border-2 border-gray-300 text-[12px] font-black text-black/80 uppercase tracking-wide">
                                                             <Clock
                                                                 size={14}
-                                                                className="text-gray-500"
+                                                                className="text-black/60"
                                                             />
                                                             {new Date(
                                                                 item.created_at,
@@ -228,18 +225,18 @@ export default function BlockedUsers({ auth }) {
                                                         toggleExpand(item.id)
                                                     }
                                                     className="
-                                                    h-[48px] w-[48px]
-                                                    flex items-center justify-center
-                                                    bg-gray-100
-                                                    border-[3px] border-black
-                                                    rounded-[16px]
-                                                    shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]
-                                                    hover:translate-x-[2px] hover:translate-y-[2px]
-                                                    hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-                                                    transition-all
-                                                    text-gray-700
-                                                    hover:bg-gray-200
-                                                "
+ h-[48px] w-[48px]
+ flex items-center justify-center
+ bg-gray-100
+ border-[3px] border-black
+ rounded-box-sm
+ 
+ hover:translate-x-[2px] hover:translate-y-[2px]
+ 
+ transition-all
+ text-gray-700
+ hover:bg-gray-200
+ "
                                                     title="View details"
                                                 >
                                                     {isExpanded ? (
@@ -261,18 +258,18 @@ export default function BlockedUsers({ auth }) {
                                                         handleUnblockClick(item)
                                                     }
                                                     className="
-                                                    h-[48px] min-w-[150px] md:min-w-[180px]
-                                                    flex items-center justify-center gap-2
-                                                    bg-[#FF2D8B]
-                                                    border-[3px] border-black
-                                                    rounded-[16px]
-                                                    text-white font-black text-sm uppercase tracking-wide
-                                                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                                                    hover:translate-x-[2px] hover:translate-y-[2px]
-                                                    hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-                                                    transition-all
-                                                    hover:bg-[#FF007F]
-                                                "
+ h-[48px] min-w-[150px] md:min-w-[180px]
+ flex items-center justify-center gap-2
+ bg-[#FF2D8B]
+ border-[3px] border-black
+ rounded-box-sm
+ text-white font-black text-sm uppercase tracking-wide
+ 
+ hover:translate-x-[2px] hover:translate-y-[2px]
+ 
+ transition-all
+ hover:bg-[#FF007F]
+ "
                                                 >
                                                     <UserX
                                                         size={16}
@@ -288,7 +285,7 @@ export default function BlockedUsers({ auth }) {
                                             <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {/* Block Reason Detail */}
-                                                    <div className="bg-gray-50 border-2 border-black rounded-[16px] p-4">
+                                                    <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <ShieldAlert
                                                                 size={18}
@@ -305,7 +302,7 @@ export default function BlockedUsers({ auth }) {
                                                     </div>
 
                                                     {/* Block Date Detail */}
-                                                    <div className="bg-gray-50 border-2 border-black rounded-[16px] p-4">
+                                                    <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <Clock
                                                                 size={18}
@@ -334,7 +331,7 @@ export default function BlockedUsers({ auth }) {
                                                     </div>
 
                                                     {/* Blocked User Info */}
-                                                    <div className="bg-gray-50 border-2 border-black rounded-[16px] p-4 md:col-span-2">
+                                                    <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4 md:col-span-2">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <UserX
                                                                 size={18}
@@ -364,14 +361,14 @@ export default function BlockedUsers({ auth }) {
                             })}
                         </div>
                     ) : (
-                        <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-12 text-center">
-                            <div className="w-24 h-24 mx-auto bg-gray-100 border-[3px] border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
-                                <UserX size={40} className="text-gray-400" />
+                        <div className="bg-white border-[3px] border-black rounded-box p-12 text-center">
+                            <div className="w-24 h-24 mx-auto bg-gray-100 border-[3px] border-black rounded-full flex items-center justify-center mb-4">
+                                <UserX size={40} className="text-black/60" />
                             </div>
                             <p className="text-xl font-black text-gray-700 uppercase">
                                 No Blocked Users
                             </p>
-                            <p className="text-gray-500 font-semibold mt-2">
+                            <p className="text-black/60 font-semibold mt-2">
                                 You haven't blocked anyone yet.
                             </p>
                         </div>
@@ -390,27 +387,27 @@ export default function BlockedUsers({ auth }) {
             >
                 <div
                     className="
-                    bg-[#FFFDF9]
-                    border-[4px]
-                    border-black
-                    rounded-[35px]
-                    p-6 md:p-8
-                    text-center
-                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                "
+ bg-[#FFFDF9]
+ border-[4px]
+ border-black
+ rounded-box
+ p-6 md:p-8
+ text-center
+ 
+ "
                 >
                     <div className="mb-5">
                         <div
                             className="
-                            w-24 h-24
-                            mx-auto
-                            rounded-full
-                            bg-[#FFF0F7]
-                            border-[3px] border-black
-                            flex items-center justify-center
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                            relative
-                        "
+ w-24 h-24
+ mx-auto
+ rounded-full
+ bg-[#FFF0F7]
+ border-[3px] border-black
+ flex items-center justify-center
+ 
+ relative
+ "
                         >
                             <span className="text-5xl">🔓</span>
                             <div className="absolute -top-1 -right-1 bg-green-500 border-2 border-black rounded-full p-1">
@@ -441,13 +438,13 @@ export default function BlockedUsers({ auth }) {
                     <p className="text-2xl font-black text-gray-900 mb-1">
                         {selectedUser?.blocked_user?.name}
                     </p>
-                    <p className="text-gray-500 font-semibold text-sm mb-6">
+                    <p className="text-black/60 font-semibold text-sm mb-6">
                         @{selectedUser?.blocked_user?.username}
                     </p>
 
                     {/* Show block reason in modal */}
                     {selectedUser?.reason && (
-                        <div className="bg-gray-50 border-2 border-black rounded-[20px] p-4 mb-6 text-left">
+                        <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4 mb-6 text-left">
                             <div className="flex items-center gap-2 mb-2">
                                 <ShieldAlert
                                     size={18}
@@ -460,7 +457,7 @@ export default function BlockedUsers({ auth }) {
                             <p className="text-gray-800 font-semibold">
                                 {selectedUser.reason}
                             </p>
-                            <p className="text-gray-400 text-xs font-semibold mt-1">
+                            <p className="text-black/60 text-xs font-semibold mt-1">
                                 Blocked on{" "}
                                 {new Date(
                                     selectedUser.created_at,
@@ -481,19 +478,19 @@ export default function BlockedUsers({ auth }) {
                                 setSelectedUser(null);
                             }}
                             className="
-                            px-8 py-3
-                            rounded-[20px]
-                            bg-white
-                            border-[3px] border-black
-                            font-black uppercase
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                            hover:translate-x-[2px] hover:translate-y-[2px]
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-                            transition-all
-                            disabled:opacity-50
-                            disabled:cursor-not-allowed
-                            min-w-[140px]
-                        "
+ px-8 py-3
+ rounded-box-sm
+ bg-white
+ border-[3px] border-black
+ font-black uppercase
+ 
+ hover:translate-x-[2px] hover:translate-y-[2px]
+ 
+ transition-all
+ disabled:opacity-50
+ disabled:cursor-not-allowed
+ min-w-[140px]
+ "
                         >
                             Cancel
                         </button>
@@ -502,21 +499,21 @@ export default function BlockedUsers({ auth }) {
                             onClick={confirmUnblock}
                             disabled={isUnblocking}
                             className="
-                            px-8 py-3
-                            min-w-[180px]
-                            flex items-center justify-center gap-2
-                            rounded-[20px]
-                            bg-[#FF2D8B]
-                            border-[3px] border-black
-                            text-white font-black uppercase
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                            hover:translate-x-[2px] hover:translate-y-[2px]
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
-                            transition-all
-                            disabled:opacity-70
-                            disabled:cursor-not-allowed
-                            hover:bg-[#FF007F]
-                        "
+ px-8 py-3
+ min-w-[180px]
+ flex items-center justify-center gap-2
+ rounded-box-sm
+ bg-[#FF2D8B]
+ border-[3px] border-black
+ text-white font-black uppercase
+ 
+ hover:translate-x-[2px] hover:translate-y-[2px]
+ 
+ transition-all
+ disabled:opacity-70
+ disabled:cursor-not-allowed
+ hover:bg-[#FF007F]
+ "
                         >
                             {isUnblocking ? (
                                 <>
@@ -551,7 +548,7 @@ export default function BlockedUsers({ auth }) {
                         </button>
                     </div>
 
-                    <p className="text-xs text-gray-400 font-semibold mt-4">
+                    <p className="text-xs text-black/60 font-semibold mt-4">
                         This action will restore all interactions with this
                         user.
                     </p>

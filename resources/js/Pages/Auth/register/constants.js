@@ -89,14 +89,14 @@ export const stepIndex = (role, key) =>
 export const ACCENT = {
     [ROLE_CREATOR]: {
         hex: "#FF007F",
-        shadow: "shadow-pink",
+ shadow: "",
         text: "text-[#FF007F]",
         bg: "bg-[#FF007F]",
         ring: "focus-visible:ring-[#FF007F]",
     },
     [ROLE_SUPPORTER]: {
         hex: "#8C52FF",
-        shadow: "shadow-voilet",
+ shadow: "",
         text: "text-[#8C52FF]",
         bg: "bg-[#8C52FF]",
         ring: "focus-visible:ring-[#8C52FF]",

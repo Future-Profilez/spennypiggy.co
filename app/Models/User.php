@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Jobs\GenerateCreatorWatermark;
 use App\Services\CreatorActivityService;
+use App\Support\MediaUrl;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +25,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, WebAuthnAuthentication;
 
     protected $dates = ['deleted_at'];
+
+    /**
+     * Mirrors the column defaults. A DB default is NOT applied to a just-created
+     * in-memory model, so without this a creator read back in the same request
+     * that made them answers null to show_piggy_bank — which reads as "earnings
+     * hidden" for a creator who never chose that. Same trap as CreatorMetric.
+     */
+    protected $attributes = [
+        'show_piggy_bank' => 1,
+    ];
 
     protected $fillable = [
         'uuid',
@@ -101,6 +113,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'marketing_emails_enabled' => 'boolean',
         'marketing_unsubscribed_at' => 'datetime',
         'push_notifications_enabled' => 'boolean',
+        // ⚠️ Delivery, not consent — see App\Support\PushReachability. Deliberately NOT in
+        // $fillable: it is a derived fact about a device, written by the heartbeat endpoint
+        // with forceFill, and that endpoint takes its input from the browser.
+        'push_verified_at' => 'datetime',
         'reactivation_emails_enabled' => 'boolean',
         'abandoned_checkout_emails_enabled' => 'boolean',
         'restock_emails_enabled' => 'boolean',
@@ -131,6 +147,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // unlike most of this list it is safe on a paginated payload. See
         // `VerifiedBadge::COLUMNS` for what a builder has to select.
         'verified_badge',
+        // Also pure. Null whenever watermarking is off, the creator has no
+        // watermark, or `watermark_uuid` was not selected — every reader treats
+        // null as "serve the image unchanged".
+        'watermark_ops',
     ];
 
     protected $with = ['social_links'];
@@ -150,6 +170,32 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // otherwise carry that object (not the string the DB stores) until re-fetched —
         // breaking any array-by-uuid lookup done in the same request the user was created.
         static::creating(fn ($u) => $u->uuid = (string) Uuid::uuid4());
+
+        // A new creator would otherwise serve unwatermarked previews until the
+        // next daily sweep — up to 24h, and they can publish within the hour.
+        static::created(function ($u) {
+            if (MediaUrl::enabled() && (int) $u->role === 1) {
+                GenerateCreatorWatermark::dispatch($u->id);
+            }
+        });
+
+        // The watermark PNG prints the creator's profile URL, so a rename does
+        // not make it stale — it makes it WRONG, pointing supporters at a handle
+        // that no longer resolves. Re-render on the spot.
+        //
+        // ⚠️ Not the only safety net, and deliberately so: the admin app shares
+        // this database but not this code, so a handle changed from there fires
+        // no event here. `watermarks:generate` (scheduled daily) compares
+        // `watermark_for_username` against the live handle and repairs it.
+        //
+        // ⚠️ Gated on the flag like everything else that spends: with the
+        // feature off there is nothing to keep in sync, and dispatching would
+        // upload a PNG nothing stamps.
+        static::updated(function ($u) {
+            if (MediaUrl::enabled() && $u->wasChanged('username') && (int) $u->role === 1) {
+                GenerateCreatorWatermark::dispatch($u->id, true);
+            }
+        });
     }
 
     /**
@@ -263,17 +309,36 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         return VerifiedBadge::tierFor($this);
     }
 
+    /**
+     * The `-/overlay/…/` operation string that stamps this creator's profile
+     * URL onto a public preview image, or null.
+     *
+     * Handed to the frontend so JS never has to know the overlay geometry —
+     * there is one definition of it, in App\Support\MediaUrl.
+     *
+     * ⚠️ Reads one column on this row — no query — which is what makes it safe
+     * in `$appends`. A builder that does not select `watermark_uuid` yields
+     * null, which every reader treats as "no watermark", never as an error.
+     */
+    public function getWatermarkOpsAttribute(): ?string
+    {
+        return MediaUrl::opsFor($this->watermark_uuid ?? null);
+    }
+
     public function getAvatarUrlAttribute()
     {
         if (! $this->avatar || ! $this->profileMediaVisible('avatar_approved')) {
             return self::DEFAULT_AVATAR_URL;
         }
 
+        // The creator's own crop runs first; the cap runs on its result. An
+        // uncapped avatar is an original phone photo decoded at full size on
+        // every card that renders one — see MediaUrl::AVATAR_WIDTH.
         $modifier = $this->avatar_cdn_modifier
             ? "{$this->avatar_cdn_modifier}-/preview/"
-            : '-/format/jpeg/';
+            : '';
 
-        return "https://ucarecdn.com/{$this->avatar}/{$modifier}";
+        return "https://ucarecdn.com/{$this->avatar}/{$modifier}".MediaUrl::fitOps(MediaUrl::AVATAR_WIDTH);
     }
 
     public function getSocialUrlAttribute()
@@ -295,11 +360,15 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             return false;
         }
 
+        // ⚠️ With no crop modifier this used to serve the ORIGINAL file with no
+        // operations at all — no format conversion (so a HEIC upload rendered
+        // nothing) and no size cap, on the single largest image the profile
+        // loads. See MediaUrl::COVER_WIDTH.
         $modifier = $this->cover_cdn_modifier
             ? "{$this->cover_cdn_modifier}-/preview/"
             : '';
 
-        return "https://ucarecdn.com/{$this->cover}/{$modifier}";
+        return "https://ucarecdn.com/{$this->cover}/{$modifier}".MediaUrl::fitOps(MediaUrl::COVER_WIDTH);
     }
 
     public function getDefaultCurrencyAttribute($value)

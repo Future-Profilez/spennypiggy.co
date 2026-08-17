@@ -19,10 +19,10 @@ export default function CreatorsBacked() {
     return (
         <section className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-black">
+                <h3 className="text-[12px] font-black uppercase tracking-[0.16em] text-black">
                     Creators you back
                 </h3>
-                <span className="text-[11px] font-bold text-gray-500">
+                <span className="text-[12px] font-bold text-gray-500">
                     Only you can see this
                 </span>
             </div>
@@ -38,12 +38,12 @@ export default function CreatorsBacked() {
                                     className="!h-12 !w-12 !min-h-0 rounded-full border-2 border-black object-cover"
                                 />
                                 {c.purchases > 1 && (
-                                    <span className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-black bg-[#FF007F] px-1 text-[9px] font-black leading-none text-white">
+                                    <span className="absolute -bottom-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-black bg-[#FF007F] px-1 text-[12px] font-black leading-none text-black">
                                         {c.purchases}
                                     </span>
                                 )}
                             </span>
-                            <span className="mt-1.5 w-full truncate text-center text-[11px] font-bold text-black">
+                            <span title={c.name} className="mt-1.5 w-full truncate text-center text-[12px] font-bold text-black">
                                 {c.name}
                             </span>
                         </>
@@ -58,7 +58,7 @@ export default function CreatorsBacked() {
                                 <Link
                                     href={`/${c.username}`}
                                     title={title}
-                                    className={`${box} rounded-box-sm transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black`}
+                                    className={`${box} rounded-box-sm transition-colors duration-200 hover:bg-black/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black`}
                                 >
                                     {inner}
                                 </Link>

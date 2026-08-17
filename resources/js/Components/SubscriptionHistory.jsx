@@ -38,21 +38,21 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     if (billed.length === 0) {
         return (
             <div
-                className="bg-white rounded-[30px]  shadow-sm border border-gray-200 p-6"
+                className="bg-white rounded-box border border-gray-200 p-6"
                 onMouseEnter={() => emptyIconRef.current?.startAnimation?.()}
             >
                 <div className="text-center py-8">
-                    <div className="text-gray-400 mb-2">
+                    <div className="text-black/60 mb-2">
                         <CreditCardIcon
                             ref={emptyIconRef}
                             className="mx-auto h-12 w-12 opacity-50"
                             duration={1.5}
                         />
                     </div>
-                    <p className="text-gray-500 font-medium">
+                    <p className="text-black/60 font-medium">
                         No billing history yet
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-black/60 mt-1">
                         Nothing has been charged. Your first payment appears here
                         once you make a sale.
                     </p>
@@ -73,7 +73,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                     <thead className="border-b-2 border-gray-100 bg-gray-50">
-                        <tr className="text-gray-600 font-bold uppercase tracking-wider">
+                        <tr className="text-black/80 font-bold uppercase tracking-wider">
                             <th className="py-3 px-3">Start Date</th>
                             <th className="py-3 px-3">Stripe ID / Session</th>
                             <th className="py-3 px-3">Amount</th>
@@ -89,7 +89,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
             </div>
             
             <div className="pt-6 text-center">
-                <p className="text-xs font-medium text-gray-400 bg-gray-50 inline-block px-4 py-1.5 rounded-full">
+                <p className="text-xs font-medium text-black/60 bg-gray-50 inline-block px-4 py-1.5 rounded-full">
                     Showing {billed.length} billing record{billed.length !== 1 ? "s" : ""}
                 </p>
             </div>
@@ -139,16 +139,16 @@ const StatusRow = ({ charge, index }) => {
         >
             <td className="py-4 px-3 text-gray-900 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                    <CalendarIcon size={14} className="text-gray-400" />
+                    <CalendarIcon size={14} className="text-black/60" />
                     {formatDate(charge.current_start_subscription_date || charge.current_start_trial_date)}
                 </div>
             </td>
-            <td className="py-4 px-3 font-mono text-[10px] max-w-[120px] truncate text-gray-500" title={charge.stripe_id || charge.session_id}>
+            <td className="py-4 px-3 font-mono text-[12px] max-w-[120px] truncate text-black/60" title={charge.stripe_id || charge.session_id}>
                 {charge.stripe_id || charge.session_id}
             </td>
             <td className="py-4 px-3 font-bold text-gray-800">
 
-                 <span className={`px-2 py-1 rounded-xl text-[10px] font-black uppercase inline-flex items-center gap-1.5 min-w-[80px] mb-1 status-icon ${
+                 <span className={`px-2 py-1 rounded-box-sm text-[12px] font-black uppercase inline-flex items-center gap-1.5 min-w-[80px] mb-1 status-icon ${
                     charge.status === 'active' || charge.status === 'paid' ? 'bg-green-100 text-green-700 border border-green-200' : 
                     charge.status === 'trialing' || charge.status === 'trial' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
                     'bg-red-100 text-red-700 border border-red-200'
@@ -176,7 +176,7 @@ const StatusRow = ({ charge, index }) => {
             </td>
             <td className="py-4 px-3 text-gray-700 font-medium">
                 <div className="flex items-center gap-2">
-                    <CalendarIcon size={14} className="text-gray-400" />
+                    <CalendarIcon size={14} className="text-black/60" />
                     {formatDate(charge.current_end_subscription_date || charge.current_end_trial_date)}
                 </div>
             </td>

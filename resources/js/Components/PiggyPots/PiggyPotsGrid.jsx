@@ -3,6 +3,7 @@ import { Gift } from "lucide-react";
 import AddMoreTile from "@/Components/AddMoreTile";
 import Nocontent from "@/includes/Nocontent";
 import ItemBadges from "@/Components/ItemBadges";
+import ItemStatusBadge from "@/Components/ItemStatusBadge";
 
 const Popup = lazy(() => import("@/Components/Popup"));
 const PiggyPotWidget = lazy(
@@ -40,8 +41,17 @@ export default function PiggyPotsGrid({
 
     const content = useMemo(() => {
         if (piggyPots && piggyPots.length > 0) {
+            // Two columns on a phone, matching the wish, shop and bill grids.
+            // Task and Membership are deliberately NOT on this rule (client
+            // direction): a task card carries a delivery window and a membership
+            // its tier art plus a perks list, neither survives a ~170px column.
+            //
+            // ⚠️ LINE comments, not a block one. A JSX-style brace comment placed
+            // directly inside a `return (` is an object literal and breaks the
+            // build — and writing that trap out inside a /* block */ closes the
+            // comment early on its own terminator, which broke it a second way.
             return (
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
                     {piggyPots.map((pot) => {
                         const target = Number(pot?.target_amount) || 0;
                         const raised = Number(pot?.total_raised) || 0;
@@ -74,12 +84,12 @@ export default function PiggyPotsGrid({
                                 type="button"
                                 onClick={() => setActivePiggyPot(pot)}
                                 aria-label={`Open ${pot.title}`}
-                                className={`text-left cursor-pointer ${inPopup ? "" : "bg-white border-[3px] border-black hover:-translate-y-1 rounded-box"} transition-all p-3 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
+                                className={`text-left cursor-pointer ${inPopup ? "" : "bg-white border-[3px] border-black transition-colors duration-200 hover:bg-black/[0.03] rounded-box"} transition-all p-3 flex flex-col relative group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]`}
                             >
-                                <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[170px] flex-shrink-0 relative">
+                                <div className="mb-3 rounded-box-sm overflow-hidden border-2 border-black h-[132px] sm:h-[170px] flex-shrink-0 relative">
                                     <div className="absolute top-3 left-3 z-10">
                                         <span
-                                            className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-black  ${statusBadgeClass}`}
+                                            className={`inline-flex items-center px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[12px] font-black uppercase tracking-widest border-2 border-black  ${statusBadgeClass}`}
                                         >
                                             {isComplete
                                                 ? "✓ completed"
@@ -91,7 +101,7 @@ export default function PiggyPotsGrid({
                                             pot.cover_media ||
                                             "https://ucarecdn.com/6d5506b2-7361-4c58-8f1b-dfe1e196885a/"
                                         }
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        className="w-full h-full object-cover transition-[filter,opacity] duration-500 group-hover:brightness-[1.08]"
                                         alt={pot.title}
                                     />
                                 </div>
@@ -100,26 +110,27 @@ export default function PiggyPotsGrid({
                                     deadline={pot?.deadline}
                                     className="mb-1.5"
                                 />
-                                <h3 className="font-black text-xl uppercase tracking-wide text-black line-clamp-1">
+                                <h3 className="font-black text-[13px] sm:text-xl uppercase tracking-wide text-black line-clamp-1">
                                     {pot.title}
                                 </h3>
 
-                                {/* --- ADDED: PENDING REVIEW MESSAGE --- */}
+                                {/* The same chip the wish and bill cards use, so
+                                    one moderation state reads one way across the
+                                    whole profile. It also replaces a four-line
+                                    inline block that, at two columns, was taller
+                                    than the pot's own title and price. */}
                                 {pot?.status === "moderation_hold" && (
-                                    <div className="mt-2 mb-2 bg-[#FFF3D6] border-[2px] border-[#E6B84D] rounded-lg p-2.5 flex items-start gap-2">
-                                        <span className="text-[#E6B84D] text-sm font-bold">
-                                            ⏳
-                                        </span>
-                                        <p className="text-[#5C4A1E] text-xs font-bold leading-tight">
-                                            Waiting for review — it goes live
-                                            once our team has checked it.
-                                            Nothing for you to do.
-                                        </p>
+                                    <div className="mt-1.5 flex">
+                                        <ItemStatusBadge
+                                            state="in_review"
+                                            reason={pot?.moderation_reason}
+                                            itemName={pot?.title}
+                                            block={false}
+                                        />
                                     </div>
                                 )}
-                                {/* ----------------------------------- */}
 
-                                <p className="text-gray-600 text-sm font-medium line-clamp-2 mt-1 min-h-[40px] flex-grow">
+                                <p className="hidden sm:block text-gray-600 text-sm font-medium line-clamp-2 mt-1 sm:min-h-[40px] flex-grow">
                                     {pot.description}
                                 </p>
                                 {/* What the supporter gets back for funding the goal. */}
@@ -127,13 +138,13 @@ export default function PiggyPotsGrid({
                                     pot.reward_description ||
                                     pot.content_description ||
                                     pot.content_file) && (
-                                    <div className="mt-2 flex items-center gap-1.5 rounded-[20px] border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5">
+                                    <div className="mt-2 flex items-center gap-1.5 rounded-box border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5">
                                         <Gift
                                             size={13}
                                             strokeWidth={2.5}
                                             className="shrink-0 text-emerald-600"
                                         />
-                                        <span className="truncate text-[11px] font-bold leading-tight text-emerald-700">
+                                        <span className="truncate text-[12px] font-bold leading-tight text-emerald-700">
                                             <span className="text-emerald-600/80">
                                                 You get:
                                             </span>{" "}
@@ -146,14 +157,14 @@ export default function PiggyPotsGrid({
                                 )}
                                 <div className="mt-3 flex justify-between items-center flex-shrink-0">
                                    
-                                    <span className="font-black text-sm text-pink-600">
+                                    <span className="font-black text-[12px] sm:text-sm text-pink-600">
                                         {money(raised, pot.currency)} 
                                     </span>
-                                    <span className="font-black text-sm text-pink-600">
+                                    <span className="font-black text-[12px] sm:text-sm text-pink-600">
                                         {money(target, pot.currency)}
                                     </span>
                                 </div>
-                                <div className="mt-2 w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden shadow-[inset_0_2px_0_rgba(0,0,0,0.1)]">
+                                <div className="mt-2 w-full bg-white h-4 md:h-5 rounded-full border-[3px] border-black overflow-hidden ">
                                     <div
                                         className={`${isComplete ? "bg-[#A2E4B8]" : "bg-[#FF007F]"} h-full transition-all duration-1000 ease-out`}
                                         style={{ width: `${progressPercent}%` }}
@@ -194,7 +205,7 @@ export default function PiggyPotsGrid({
                         onClick={() =>
                             window.dispatchEvent(new Event("toggleAddOptions"))
                         }
-                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                     >
                         Create Piggy Pot
                     </button>

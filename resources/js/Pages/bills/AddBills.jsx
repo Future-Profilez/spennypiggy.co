@@ -22,8 +22,8 @@ import RewardEditor, {
 import RewardPreview from "@/Components/Reward/RewardPreview";
 
 const FIELD =
-    "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]";
-const FIELD_LABEL = "mb-2 block text-left text-[11px] font-black uppercase tracking-[0.14em]";
+ "w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-base font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 ";
+const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]";
 
 const PERIODS = [
     { value: "weekly", label: "Weekly" },
@@ -250,7 +250,7 @@ export default function AddBills(props) {
                             </div>
                         )}
 
-                        <p className="my-3 text-center text-[11px] font-black uppercase tracking-[0.14em] text-neutral-400">
+ <p className="my-3 text-center text-[12px] font-black uppercase tracking-[0.14em] text-neutral-400">
                             or upload your own
                         </p>
 
@@ -397,8 +397,8 @@ export default function AddBills(props) {
                                         aria-pressed={active}
                                         className={`min-h-[48px] rounded-box-sm border-[3px] border-black text-sm font-black uppercase tracking-wide transition-all ${
                                             active
-                                                ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] shadow-none"
-                                                : "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+ ? "translate-x-[2px] translate-y-[2px] bg-[#A2E4B8] "
+ : "bg-white "
                                         }`}
                                     >
                                         {period.label}
@@ -473,7 +473,7 @@ export default function AddBills(props) {
 function AddItemTrigger() {
     return (
         <span className="flex items-center">
-            <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-pink-100 p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
+ <span className="flex h-[44px] min-h-[44px] w-[44px] min-w-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-pink-100 p-1 md:h-[52px] md:min-h-[52px] md:w-[52px] md:min-w-[52px]">
                 <SlCalender color="var(--pink)" size="1.5rem" />
             </span>
             <span className="pl-3 text-left">

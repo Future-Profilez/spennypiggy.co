@@ -16,8 +16,22 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
   const [uploadStartTime, setUploadStartTime] = useState(null);
   const dataOutputRef = useRef();
   const controller = useRef(new AbortController());
+  /**
+   * ⚠️ `LR_UPLOAD_FINISH` carries the WHOLE upload collection and can fire more
+   * than once for the same file (the preview step settles the collection a
+   * second time once CDN modifiers are applied), and the collection is not
+   * cleared on a successful hand-over. Consumers that APPEND what they are given
+   * — the post composer's `getfile` — therefore received the same uuid twice and
+   * rendered one uploaded image as two thumbnails.
+   *
+   * Files are handed over ONCE per uuid per uploader instance. The set is
+   * cleared on reset/remove, so re-adding a file the creator deliberately
+   * removed still works.
+   */
+  const sentUuidsRef = useRef(new Set());
 
   const handleResetUploader = () => {
+    sentUuidsRef.current.clear();
     const ctxProvider = dataOutputRef.current;
     if (!ctxProvider) return;
     ctxProvider.uploadCollection.clearAll();
@@ -103,7 +117,12 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
       isUploading && isUploading(false);
     };
     
-    const removeHandler = () => {
+    // ⚠️ Same context guard as the others. Without it, removing a file in ANY
+    // uploader on the page cleared THIS one's collection and its sent-uuid set.
+    const removeHandler = e => {
+      const eventCtx = e?.detail?.ctx || e?.target?.getAttribute?.('ctx-name');
+      if (eventCtx && eventCtx !== ctxName) return;
+
       setCheckIsUploading(false);
       isUploading && isUploading(false);
       handleResetUploader();
@@ -127,7 +146,7 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
   const checkAdult = async (d) => {
     if (!d || d.length === 0) return;
 
-    const filesToScan = d.map(f => ({
+    const allFiles = d.map(f => ({
       uuid: f?.uuid,
       mimeType: f?.contentInfo?.mime?.type || '',
       mimeSubtype: f?.contentInfo?.mime?.subtype || '',
@@ -138,6 +157,26 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
       isAudio: (f?.contentInfo?.mime?.type === 'audio') || false,
       url: f?.cdnUrl || `https://ucarecdn.com/${f?.uuid}/`
     }));
+
+    // A re-fired finish event for files already handed over is a no-op, never a
+    // second copy of the same upload.
+    const filesToScan = allFiles.filter(f => f.uuid && !sentUuidsRef.current.has(f.uuid));
+    if (filesToScan.length === 0) return;
+
+    /**
+     * 🚨 The claim is taken HERE, synchronously, before the first `await`.
+     *
+     * `LR_UPLOAD_FINISH` fires more than once for the same file (the preview step
+     * settles the collection again once CDN modifiers are applied), and the adult
+     * scan below is an awaited HTTP round trip — so with the mark taken after it,
+     * both events read the same unclaimed uuids, both passed this filter, and one
+     * uploaded image was handed to the composer TWICE. The consumer's own dedupe
+     * hid it only when both copies arrived in the same `setState` batch.
+     *
+     * A refusal un-claims via `handleResetUploader`, so a file the creator removes
+     * and re-adds still works.
+     */
+    filesToScan.forEach(f => sentUuidsRef.current.add(f.uuid));
 
     const imagesToScan = filesToScan.filter(f => f.uuid && f.mimeType === 'image');
 
@@ -236,14 +275,14 @@ const GlobalUploader = forwardRef(({ imgclasses, options, sendFile, accept, view
       {renderUploader()}
 
       {scanning && (
-        <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
+        <div className={`scanning rounded bg-light  border p-3 my-2 mb-4`}>
           <CustomProgressBar animated now={100} />
           <p className='text-center mt-2'>Adult content scanning...</p>
         </div>
       )}
 
       {checkIsUploading && uploadProgress > 0 && (
-        <div className={`upload-progress rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
+        <div className={`upload-progress rounded bg-light  border p-3 my-2 mb-4`}>
           <CustomProgressBar animated now={uploadProgress} />
           <p className='text-center mt-2'>
             Uploading... {Math.round(uploadProgress)}%

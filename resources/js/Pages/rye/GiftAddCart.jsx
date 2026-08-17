@@ -148,7 +148,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
             modalclass="pinkmodal"
             classes="hidden"
         >
-            <div className="addCartModalHead rounded-[30px]    relative ">
+            <div className="addCartModalHead rounded-box    relative ">
                 <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-10 px-3 text-center">
                     {" "}
                     Add to Cart{" "}
@@ -175,7 +175,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                                 data.price.currency
                             )}
                         </span>
-                        <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                        <span className="text-[12px] text-gray-500 font-normal mt-1 leading-tight">
                             *Includes platform and payment processing fees
                         </span>
                     </div>

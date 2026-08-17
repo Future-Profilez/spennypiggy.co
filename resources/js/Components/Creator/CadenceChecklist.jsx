@@ -17,7 +17,7 @@ export default function CadenceChecklist({ checklist = [], className = '' }) {
 
     return (
         <section
-            className={`rounded-box border-[3px] border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:p-6 ${className}`}
+ className={`rounded-box border-[3px] border-black bg-white p-5 sm:p-6 ${className}`}
             aria-label="Steps to keep your payments running"
         >
             <h2 className="font-gulfs text-xl uppercase text-black">
@@ -34,7 +34,7 @@ export default function CadenceChecklist({ checklist = [], className = '' }) {
                         className={`rounded-box-sm border-2 p-4 ${
                             item.done
                                 ? 'border-black/15 bg-black/[0.03]'
-                                : 'border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+ : 'border-black bg-white '
                         }`}
                     >
                         <div className="flex items-start gap-3">
@@ -52,7 +52,7 @@ export default function CadenceChecklist({ checklist = [], className = '' }) {
                             <div className="min-w-0 flex-1">
                                 <p
                                     className={`text-[15px] font-black leading-snug ${
-                                        item.done ? 'text-black/55' : 'text-black'
+ item.done ? 'text-black/60' : 'text-black'
                                     }`}
                                 >
                                     {item.label}
@@ -64,7 +64,7 @@ export default function CadenceChecklist({ checklist = [], className = '' }) {
                                 {item.cta_label && item.cta_route && !item.done && (
                                     <Link
                                         href={route(item.cta_route, item.cta_params || {})}
-                                        className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-5 text-xs font-black uppercase tracking-[0.14em] text-white shadow-[2px_2px_0px_#000] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+ className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-5 text-xs font-black uppercase tracking-[0.14em] text-black transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                                     >
                                         {item.cta_label}
                                     </Link>

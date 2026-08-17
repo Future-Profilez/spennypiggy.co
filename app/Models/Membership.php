@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -98,26 +99,39 @@ class Membership extends Model
         return $this->hasMany(MembershipPayment::class);
     }
 
+    /**
+     * A membership with no thumbnail of its own falls back to its TIER's art,
+     * not to the generic platform placeholder — the tier is the product here.
+     *
+     * ⚠️ The ONE definition of that map. The catalogue ("My Listings") resolves
+     * its own square thumbnail rather than reading `perma_link`, so a second copy
+     * of these uuids is how one screen shows gold art and another shows a broken
+     * tile. An unrecognised level returns null; the caller decides what to do.
+     */
+    public static function defaultThumbnailUuid(?string $level): ?string
+    {
+        return match (strtolower(trim((string) $level))) {
+            'bronze' => '70d610ae-b6b0-4f5a-a144-2d49765c4140',
+            'silver' => 'be570b7f-9a2f-49ef-9228-aa88c457c215',
+            'gold' => 'efb9fec0-ee98-499a-a82b-e90137357f8b',
+            'platinum' => 'e44e62d6-295f-4c6c-a907-537998f54192',
+            'lifetime' => '58a3bd82-a089-423c-b3f8-f9da5ece4e90',
+            default => null,
+        };
+    }
+
     public function getPermaLinkAttribute()
     {
-        $url = false;
         if (! empty($this->thumbnail)) {
-            $url = 'https://ucarecdn.com/'.$this->thumbnail.'/-/format/jpeg/';
-        } else {
-            if ($this->level == 'bronze') {
-                $url = 'https://ucarecdn.com/70d610ae-b6b0-4f5a-a144-2d49765c4140/';
-            } elseif ($this->level == 'silver') {
-                $url = 'https://ucarecdn.com/be570b7f-9a2f-49ef-9228-aa88c457c215/';
-            } elseif ($this->level == 'gold') {
-                $url = 'https://ucarecdn.com/efb9fec0-ee98-499a-a82b-e90137357f8b/';
-            } elseif ($this->level == 'platinum') {
-                $url = 'https://ucarecdn.com/e44e62d6-295f-4c6c-a907-537998f54192/';
-            } elseif ($this->level == 'lifetime') {
-                $url = 'https://ucarecdn.com/58a3bd82-a089-423c-b3f8-f9da5ece4e90/';
-            }
+            return MediaUrl::thumb($this->thumbnail);
         }
 
-        return $url;
+        $uuid = self::defaultThumbnailUuid($this->level);
+
+        // ⚠️ An unknown tier used to return `false` — a bare `false` reaching an
+        // <img src> is a broken image, so it now falls through to the platform
+        // placeholder like every other listing type.
+        return MediaUrl::thumb($uuid ?? MediaUrl::FALLBACK_THUMBNAIL);
     }
 
     public function user()

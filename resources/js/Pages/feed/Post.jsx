@@ -152,13 +152,19 @@ export default function Post({ item, isProfileView = false }) {
     const activeMedia = mediaItems[currentMediaIndex];
     const isVideo = activeMedia?.isVideo || activeMedia?.mimeType?.startsWith('video/') || false;
 
+    // Creator attribution overlay. The post row carries it directly (the profile
+    // feed does not load the owner relation — serialising a partially-loaded
+    // User fires ~15 appended accessors per row); surfaces that do carry the
+    // owner fall through to it. Undefined on either means no watermark.
+    const postWatermarkOps = item?.watermark_ops ?? item?.user?.watermark_ops ?? null;
+
     function posturl() {
         if (item && item?.for_module == "public") {
             return item.image_url || false;
         }
         if (IsloggedIn || (item && item.is_lock === 0)) {
             if (hasMediaArray && activeMedia && activeMedia.uuid) {
-                return mediaSrc(activeMedia);
+                return mediaSrc(activeMedia, { watermarkOps: postWatermarkOps });
             }
             return item.image_url;
         } else {
@@ -225,6 +231,7 @@ export default function Post({ item, isProfileView = false }) {
                 posterFallback={item?.user?.avatar_url}
                 heightClass={isProfileView ? "h-[220px] md:h-[260px]" : "h-[300px] md:h-[400px]"}
                 rounded=""
+                watermarkOps={postWatermarkOps}
             />
         );
     };
@@ -233,9 +240,9 @@ export default function Post({ item, isProfileView = false }) {
         <>
             <div 
                 onClick={handleCardClick}
-                className={`post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all ${isProfileView ? 'cursor-pointer' : ''}`}
+                className={`post-wrap bg-[#fdfbf7] rounded-box p-[15px] xl:p-4 !mb-4 md:!mb-[22px] border-[3px] border-black transition-[filter] duration-200 hover:brightness-[0.98] ${isProfileView ? 'cursor-pointer' : ''}`}
             >
-                <div className="flex items-center justify-between mb-3 gap-2">
+                <div className="flex items-center justify-between  gap-2">
                     {/* `.post-wrap .headerpost` is width:100%, so the chip next to it
                         was squeezed to zero and spilled outside the card. It keeps its
                         own width (shrink-0) and the author block takes the rest. */}
@@ -309,7 +316,7 @@ export default function Post({ item, isProfileView = false }) {
                                 leaveFrom="transform opacity-100 scale-100"
                                 leaveTo="transform opacity-0 scale-95"
                             >
-                                <Menu.Items className="absolute right-0 z-50 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-box bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <Menu.Items className="absolute right-0 z-50 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-box bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                                     <div className="px-1 py-1">
                                         <Menu.Item>
                                             {({ active }) => (
@@ -397,14 +404,14 @@ export default function Post({ item, isProfileView = false }) {
                         {isScheduled ? (
                             <span
                                 title="Only you can see this until it publishes. You can change the time or cancel it until then."
-                                className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border-2 border-black bg-[#A2E4B8] px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-black"
+                                className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border-2 border-black bg-[#A2E4B8] px-2.5 py-1 text-[12px] font-black uppercase tracking-wider text-black"
                             >
                                 🕒 {scheduledLabel}
                             </span>
                         ) : isPendingApproval ? (
                             <span
                                 title="Only you can see this post for now — it usually goes live within 24 hours, and it counts towards your activity once approved."
-                                className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-sm"
+                                className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[12px] font-black uppercase tracking-wider text-white backdrop-blur-sm"
                             >
                                 ⏳ In review
                             </span>
@@ -412,13 +419,13 @@ export default function Post({ item, isProfileView = false }) {
 
                         {renderMediaPreview()}
                         {isPinned && (
-                            <span className="absolute left-3 bottom-3 z-10 flex shrink-0 items-center gap-1 rounded-box-sm border border-yellow-400 bg-yellow-100 px-2 py-0.5 text-[10px] font-black uppercase text-yellow-800">
+                            <span className="absolute left-3 bottom-3 z-10 flex shrink-0 items-center gap-1 rounded-box-sm border border-yellow-400 bg-yellow-100 px-2 py-0.5 text-[12px] font-black uppercase text-yellow-800">
                                 📌 Pinned
                             </span>
                         )}
 
                         {item.ai_generated == 1 ? (
-                            <div className="absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-box-sm px-2 py-1 text-[8px] text-white">
+                            <div className="absolute bottom-3 left-3 z-10 bg-black rounded-box-sm px-2 py-1 text-[12px] text-white">
                                 MADE WITH AI{" "}
                             </div>
                         ) : (
@@ -453,13 +460,13 @@ export default function Post({ item, isProfileView = false }) {
                 {isLocked && lock && creatorUsername ? (
                     <Link
                         href={`/${creatorUsername}?page=${lock.page}`}
-                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-white font-black uppercase tracking-wide text-sm border-[3px] border-black rounded-box-sm px-4 py-3  active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-black font-black uppercase tracking-wide text-sm border-[3px] border-black rounded-box-sm px-4 py-3 active:translate-x-[2px] active:translate-y-[2px] transition-all"
                     >
                         🔒 {lock.cta}
                     </Link>
                 ) : null}
 
-                <div className="interactions flex items-center mt-4 ">
+                <div className="interactions flex items-center mt-2 ">
                     <PostLike
                         is_liked={item.liked}
                         likes_count={item?.likes_count || 0}
@@ -473,7 +480,7 @@ export default function Post({ item, isProfileView = false }) {
                         aria-label={
                             showComments ? "Hide comments" : "Show comments"
                         }
-                        className="relative bg-transparent border-0 p-0 ml-4 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        className="relative bg-transparent border-0 p-0 ml-4 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-opacity duration-200 hover:opacity-70"
                         onClick={(e) => {
                             e.stopPropagation();
                             setShowComments(!showComments);
@@ -481,14 +488,14 @@ export default function Post({ item, isProfileView = false }) {
                     >
                         <div dangerouslySetInnerHTML={{ __html: comment }} />
                         {item.pending_items_count > 0 && (
-                            <span className="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white border-2 border-white animate-pulse">
+                            <span className="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[12px] font-bold text-white border-2 border-white animate-pulse">
                                 {item.pending_items_count}
                             </span>
                         )}
                     </button>
                 </div>
 
-                <div className="flex mt-3">
+                <div className="flex mt-1">
                     <p className="fading like-count text-black mr-4 font-black uppercase text-sm border-[3px] border-black bg-[#A2E4B8] px-3 py-1 rounded-box-sm ">
                         <b className='text-[12px] md:text-[14px] '>
                             {lcount || 0} {lcount === 1 ? "like" : "likes"}

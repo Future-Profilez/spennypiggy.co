@@ -15,13 +15,13 @@
 
 /** Shared control recipe. 44px min height is the mobile touch floor. */
 export const fieldClass =
-    "w-full rounded-box-sm border-2 border-black/15 bg-white px-4 py-3 min-h-[44px] text-[15px] font-medium text-black placeholder:text-black/60 transition-colors duration-150 motion-reduce:transition-none focus:outline-none focus:border-black focus:ring-4 focus:ring-[#FF007F]/25 disabled:bg-black/5 disabled:text-black/50 disabled:cursor-not-allowed";
+    "w-full rounded-box-sm border-2 border-black/15 bg-white px-4 py-3 min-h-[44px] text-[15px] font-medium text-black placeholder:text-black/60 transition-colors duration-150 motion-reduce:transition-none focus:outline-none focus:border-black focus:ring-4 focus:ring-[#FF007F]/25 disabled:bg-black/5 disabled:text-black/60 disabled:cursor-not-allowed";
 
 /** Field label. One weight, one size, everywhere. */
 export function Label({ htmlFor, children, hint = null, required = false }) {
     return (
         <label htmlFor={htmlFor} className="block mb-1.5">
-            <span className="font-black uppercase tracking-widest text-[11px] text-black/70">
+            <span className="font-black uppercase tracking-widest text-[12px] text-black/70">
                 {children}
                 {required && <span className="text-[#FF007F] ml-0.5">*</span>}
             </span>

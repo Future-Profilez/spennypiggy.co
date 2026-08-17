@@ -22,12 +22,12 @@ function StepNode({ index, done, current }) {
     if (current)
         return (
             <span
-                className={`${base} bg-[#FF007F] text-white ring-4 ring-pink-100 motion-safe:animate-pulse`}
+ className={`${base} bg-[#FF007F] text-black ring-4 ring-pink-100 motion-safe:animate-pulse`}
             >
                 {index + 1}
             </span>
         );
-    return <span className={`${base} bg-white text-gray-400`}>{index + 1}</span>;
+ return <span className={`${base} bg-white text-black/60`}>{index + 1}</span>;
 }
 
 function JourneyRail({ steps, activeIndex }) {
@@ -62,19 +62,19 @@ function JourneyRail({ steps, activeIndex }) {
                                     current
                                         ? "text-black"
                                         : s.done
-                                          ? "text-gray-700"
-                                          : "text-gray-400"
+ ? "text-black/80"
+ : "text-black/60"
                                 }`}
                             >
                                 {s.label}
                             </p>
                             <span
-                                className={`inline-block mt-1 text-[11px] font-bold uppercase tracking-widest ${
+ className={`inline-block mt-1 text-[12px] font-bold uppercase tracking-widest ${
                                     s.done
                                         ? "text-[#3aa76d]"
                                         : current
                                           ? "text-[#FF007F]"
-                                          : "text-gray-300"
+ : "text-black/60"
                                 }`}
                             >
                                 {status}
@@ -299,7 +299,7 @@ export default function Stripe(props) {
     };
 
     const cardCls =
-        "bg-white border-2 border-black rounded-box shadow-[4px_4px_0px_0px_#0B0B0F] overflow-hidden";
+ "bg-white border-2 border-black rounded-box overflow-hidden";
 
     return (
         <Authenticated auth={auth.user} user={user}>
@@ -314,13 +314,13 @@ export default function Stripe(props) {
                 <div className="max-w-2xl mx-auto px-4">
                     {/* Header */}
                     <div className="mb-8">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF007F] mb-1">
+ <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#FF007F] mb-1">
                             Get set up to earn
                         </p>
                         <h1 className="text-[30px] md:text-[38px] leading-none font-gulfs uppercase text-black">
                             Start getting paid
                         </h1>
-                        <p className="text-gray-600 font-CeraGR mt-2">
+ <p className="text-black/80 font-CeraGR mt-2">
                             A few quick steps and supporters can pay you for your
                             content. We’ll guide you the whole way.
                         </p>
@@ -348,7 +348,7 @@ export default function Stripe(props) {
                             <p className="font-bold font-CeraGR text-black">
                                 Profile approval needed first
                             </p>
-                            <p className="text-sm text-gray-700 font-CeraGR mt-0.5">
+ <p className="text-sm text-black/80 font-CeraGR mt-0.5">
                                 Finish your profile and submit it for admin
                                 approval to unlock payment setup.
                             </p>
@@ -363,8 +363,13 @@ export default function Stripe(props) {
                         // ── Step 3: Seller agreement (Merchant of Record) ──
                         <div className={cardCls}>
                             <div className="bg-black text-white px-6 py-4">
-                                <p className="text-[11px] font-bold uppercase tracking-widest text-mint">
-                                    Step 3 of 5
+ {/* Same step as the connect panel below — the seller
+ agreement is the first half of "connect payouts",
+ not a step of its own. Derived, never a literal:
+ "Step 3 of 5" was hardcoded here and went stale
+ the moment the journey gained a step. */}
+ <p className="text-[12px] font-bold uppercase tracking-widest text-mint">
+ {stepLabel}
                                 </p>
                                 <h2 className="font-gulfs uppercase text-xl">
                                     Your seller agreement
@@ -384,7 +389,7 @@ export default function Stripe(props) {
                                     </p>
                                 </div>
 
-                                <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">
+ <p className="text-xs font-bold uppercase tracking-widest text-black/60 mb-3">
                                     By continuing you agree that:
                                 </p>
                                 <ul className="space-y-3 mb-6">
@@ -393,10 +398,10 @@ export default function Stripe(props) {
                                             key={index}
                                             className="flex items-start gap-3"
                                         >
-                                            <span className="grid place-items-center w-5 h-5 shrink-0 mt-0.5 rounded-full bg-mint text-black text-[10px] font-bold">
+ <span className="grid place-items-center w-5 h-5 shrink-0 mt-0.5 rounded-full bg-mint text-black text-[12px] font-bold">
                                                 ✓
                                             </span>
-                                            <p className="text-sm text-gray-700 font-CeraGR leading-relaxed">
+ <p className="text-sm text-black/80 font-CeraGR leading-relaxed">
                                                 {text}
                                             </p>
                                         </li>
@@ -431,7 +436,7 @@ export default function Stripe(props) {
                                 <button
                                     onClick={handleMorConsent}
                                     disabled={!data.mor_agreed || processing}
-                                    className="block w-full text-center bg-[#FF007F] text-white font-gulfs uppercase text-base py-4 rounded-box-sm border-2 border-black shadow-[3px_3px_0px_0px_#0B0B0F] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-40 disabled:shadow-none disabled:active:translate-x-0 disabled:active:translate-y-0"
+ className="block w-full text-center bg-[#FF007F] text-black font-gulfs uppercase text-base py-4 rounded-box-sm border-2 border-black active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:opacity-40 disabled:active:translate-x-0 disabled:active:translate-y-0"
                                 >
                                     {processing ? (
                                         <Spinner label="Confirming…" />
@@ -439,7 +444,7 @@ export default function Stripe(props) {
                                         "Agree & continue"
                                     )}
                                 </button>
-                                <p className="text-xs text-center text-gray-500 font-CeraGR mt-3">
+ <p className="text-xs text-center text-black/60 font-CeraGR mt-3">
                                     Next: choose your country and connect Stripe.
                                 </p>
                             </div>
@@ -448,7 +453,7 @@ export default function Stripe(props) {
                         // ── Connect payments ──
                         <div className={cardCls}>
                             <div className="bg-black text-white px-6 py-4">
-                                <p className="text-[11px] font-bold uppercase tracking-widest text-mint">
+ <p className="text-[12px] font-bold uppercase tracking-widest text-mint">
                                     {stepLabel}
                                 </p>
                                 <h2 className="font-gulfs uppercase text-xl">
@@ -475,7 +480,7 @@ export default function Stripe(props) {
                                 {/* Content-only checklist (calm, not alarming) */}
                                 {!resuming && (
                                     <>
-                                <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">
+ <p className="text-xs font-bold uppercase tracking-widest text-black/60 mb-3">
                                     Before you connect, keep your profile
                                     content-only
                                 </p>
@@ -485,10 +490,10 @@ export default function Stripe(props) {
                                             key={i}
                                             className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-box-sm p-2.5"
                                         >
-                                            <span className="text-gray-400 text-sm leading-none mt-0.5">
+ <span className="text-black/60 text-sm leading-none mt-0.5">
                                                 ✕
                                             </span>
-                                            <span className="text-[13px] text-gray-600 font-CeraGR leading-snug">
+ <span className="text-[13px] text-black/80 font-CeraGR leading-snug">
                                                 {rule}
                                             </span>
                                         </li>
@@ -496,7 +501,7 @@ export default function Stripe(props) {
                                 </ul>
 
                                 {/* Country */}
-                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">
+ <label className="block text-xs font-bold uppercase tracking-widest text-black/60 mb-2">
                                     Your country
                                 </label>
                                 <div className="mb-5">
@@ -530,7 +535,7 @@ export default function Stripe(props) {
                                         }
                                         className="mt-0.5 w-6 h-6 accent-[#FF007F] shrink-0 disabled:cursor-not-allowed"
                                     />
-                                    <span className="text-sm text-gray-700 font-CeraGR leading-snug">
+ <span className="text-sm text-black/80 font-CeraGR leading-snug">
                                         I understand my creator e-mail address may
                                         appear on supporter receipts and
                                         transaction records. Use a dedicated
@@ -562,7 +567,7 @@ export default function Stripe(props) {
                                         }}
                                         className="mt-0.5 w-6 h-6 accent-[#FF007F] shrink-0"
                                     />
-                                    <span className="text-sm text-gray-700 font-CeraGR leading-snug">
+ <span className="text-sm text-black/80 font-CeraGR leading-snug">
                                         I’ll use Spenny Piggy in line with the
                                         Terms of Service, will post exclusive
                                         content in exchange for purchases,
@@ -579,8 +584,8 @@ export default function Stripe(props) {
                                     disabled={!canConnect}
                                     className={`block w-full text-center font-gulfs uppercase text-base py-4 rounded-box-sm border-2 border-black transition-all ${
                                         canConnect
-                                            ? "bg-[#FF007F] text-white shadow-[3px_3px_0px_0px_#0B0B0F] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                                            : "bg-gray-200 text-gray-400 shadow-none cursor-not-allowed"
+ ? "bg-[#FF007F] text-black active:translate-x-0.5 active:translate-y-0.5 "
+ : "bg-gray-200 text-black/60 cursor-not-allowed"
                                     }`}
                                 >
                                     {connecting ? (
@@ -592,7 +597,7 @@ export default function Stripe(props) {
                                     )}
                                 </button>
 
-                                <div className="flex items-center justify-center gap-2 mt-4 text-gray-500">
+ <div className="flex items-center justify-center gap-2 mt-4 text-black/60">
                                     <svg
                                         className="w-4 h-4"
                                         fill="none"

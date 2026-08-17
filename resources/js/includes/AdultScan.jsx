@@ -37,7 +37,7 @@ export default function AdultScan({fileuid, content, onScan, classes, type, scan
   return (
     <>
       {scanning ? 
-      <div className={`scanning rounded bg-gray-50 shadow-sm border p-3 my-2 mb-4 ${scan_classes}`} >
+      <div className={`scanning rounded bg-gray-50 border p-3 my-2 mb-4 ${scan_classes}`} >
         <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2 overflow-hidden">
           <div className="bg-pink-600 h-2.5 rounded-full animate-progress-indeterminate w-full origin-left"></div>
         </div>

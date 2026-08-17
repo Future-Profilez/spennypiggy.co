@@ -38,7 +38,7 @@ export default function GrowthTrends() {
                 </span>
             </div>
             <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-            <p className="text-sm text-gray-600">{title}</p>
+            <p className="text-sm text-black/80">{title}</p>
         </div>
     );
 
@@ -79,7 +79,7 @@ export default function GrowthTrends() {
                         </>
                     ) : (
                         <>
-                            <p className="font-bold text-lg">{formatMultiPrice(creator.current_amount, creator.currency)}</p>
+                            <p className="font-bold text-lg tabular-nums">{formatMultiPrice(creator.current_amount, creator.currency)}</p>
                             <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
                         </>
                     )}
@@ -104,7 +104,7 @@ export default function GrowthTrends() {
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors ml-2 text-sm" 
+                        className="py-1 border border-red-500 text-red-500 inline-flex items-center min-h-[44px] px-3 rounded-box-sm hover:bg-red-50 transition-colors ml-2 text-sm" 
                         onClick={fetchGrowthData}
                     >
                         Retry
@@ -117,7 +117,7 @@ export default function GrowthTrends() {
     return (
         <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
             <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📈 Growth & Momentum</h2>
-            <p className="text-gray-500 mb-6">Creators with the fastest growth and momentum</p>
+            <p className="text-black/60 mb-6">Creators with the fastest growth and momentum</p>
 
             {/* Platform Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -176,7 +176,7 @@ export default function GrowthTrends() {
             {data.comeback_creators.length > 0 && (
                 <div>
                     <h3 className="text-lg font-semibold mb-3">🔄 Comeback Creators</h3>
-                    <p className="text-sm text-gray-600 mb-3">Creators making a strong return</p>
+                    <p className="text-sm text-black/80 mb-3">Creators making a strong return</p>
                     {data.comeback_creators.map((creator, index) => (
                         <CreatorCard 
                             key={creator.id} 

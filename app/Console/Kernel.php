@@ -231,6 +231,24 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:55')
             ->withoutOverlapping();
 
+        // Help centre counters. help_article_stats gains a row per article per
+        // day and help_search_misses one per distinct unanswered question —
+        // both unbounded, and nothing else removes a row.
+        //
+        // ⚠️ Not on :00. That minute already carries six hourly commands plus
+        // every */5, */10 and */15 tick, and on Vapor every command due in the
+        // same minute shares ONE cli-timeout budget.
+        $schedule->command('help:prune')
+            ->dailyAt('03:52')
+            ->withoutOverlapping();
+
+        // Semantic search vectors. Only re-embeds articles whose text actually
+        // changed, so a run with nothing new costs one query and no API call.
+        // A no-op while help.ai.enabled is false.
+        $schedule->command('help:embed')
+            ->hourlyAt(24)
+            ->withoutOverlapping();
+
         // Nudge creators who completed Stripe connect setup but have no listings.
         $schedule->command('creators:nudge-first-listing')
             ->daily()
@@ -275,12 +293,36 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:55')
             ->withoutOverlapping(30);
 
+        // Sign-up leads: people refused an account while creator registration was
+        // paused. The notify sweep runs OFTEN because the value of the message
+        // decays — somebody told the same afternoon still wants an account, and
+        // somebody told next week has usually gone elsewhere. It returns
+        // immediately while the platform is still paused, so a frequent tick
+        // costs one cheap read.
+        $schedule->command('signup-leads:notify')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping(10);
+
+        // 🚨 A contact detail for somebody with no account. Nothing else removes
+        // a row, so without this the table is a permanent shadow mailing list.
+        $schedule->command('signup-leads:prune')
+            ->dailyAt('03:57')
+            ->withoutOverlapping(30);
+
         // Delivery log: a row per email, push and bell entry the platform sends,
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise
         // read as "still on its way" forever.
         $schedule->command('notification-logs:prune')
             ->dailyAt('03:40')
+            ->withoutOverlapping(30);
+
+        // Renders the per-creator attribution watermark. A sweep, not only the
+        // User::updated hook: the admin app shares this database but not this
+        // code, so a handle changed from the back office fires no event here and
+        // the stored PNG would keep printing a profile URL that 404s.
+        $schedule->command('watermarks:generate')
+            ->dailyAt('03:20')
             ->withoutOverlapping(30);
 
         // Names settled payments that produced no buyer receipt. This is the
@@ -450,6 +492,15 @@ class Kernel extends ConsoleKernel
         $schedule->command('renewals:notify')
             ->dailyAt('09:45')
             ->withoutOverlapping(10);
+
+        // Ask creators to check their phone alerts when the browser has not
+        // confirmed a live push subscription in PushReachability::STALE_DAYS.
+        // ⚠️ 09:20, deliberately off the crowded :00 minute — see the Vapor
+        // cli-timeout note in CLAUDE.md; every command due in one minute shares a
+        // single CLI Lambda invocation.
+        $schedule->command('push:remind-stale')
+            ->dailyAt('09:20')
+            ->withoutOverlapping(15);
 
         // Engagement engine. Spread across the morning so they don't all fan out
         // onto the queue at once. All require queue:work to actually deliver.

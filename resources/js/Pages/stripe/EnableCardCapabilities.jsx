@@ -6,10 +6,10 @@ export default function EnableCardCapabilities({charges}) {
 
     const [loading, setLoading] = useState(false);
   return (
-    <div className="w-full mb-6 bg-white rounded-[30px]   shadow-sm border-2 border-[#FF007F] overflow-hidden">
+    <div className="w-full mb-6 bg-white rounded-box border-2 border-[#FF007F] overflow-hidden">
         <div className="flex">
-            <div className="w-1.5 bg-[#FF007F]"></div>
-            <div className="flex-1 p-6 sm:p-6 md:p-8">
+            <div className="w-1.5 shrink-0 bg-[#FF007F]"></div>
+            <div className="min-w-0 flex-1 p-5 sm:p-6 md:p-8">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-pink-50 text-[#FF007F]">
@@ -26,14 +26,14 @@ export default function EnableCardCapabilities({charges}) {
                     </div>
                 </div>
 
-                <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                <p className="text-black/80 mb-6 text-base leading-relaxed">
                     Your Stripe account is not fully enabled. Please click below to complete the Stripe onboarding and enable payments.
                 </p>
 
-                <a 
+                <a
                     onClick={() => setLoading(!loading)}
                     href="/stripe/enable_card_payments"
-                    className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                    className="flex min-h-[48px] w-full items-center justify-center rounded-box-sm bg-[#FF007F] px-6 py-3 text-center font-gulfs text-sm uppercase text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 md:text-[17px]"
                 >
                     {loading ? "Loading..." : "Enable Card Payments"} 
                 </a>

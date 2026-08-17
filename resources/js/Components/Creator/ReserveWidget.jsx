@@ -20,19 +20,19 @@ export default function ReserveWidget({ className = '' }) {
             });
     }, []);
 
-    if (loading) return <div className={`animate-pulse h-32 bg-gray-100 rounded-xl ${className}`}></div>;
+    if (loading) return <div className={`animate-pulse h-32 bg-black/5 rounded-box ${className}`}></div>;
 
     if (!data || data.total_held <= 0) return null;
 
     return (
-        <div className={`bg-white rounded-[30px]  shadow p-6 border-2 border-yellow-100 ${className}`}>
+        <div className={`bg-white rounded-box p-6 border-2 border-yellow-100 ${className}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="bg-yellow-100 p-3 rounded-full text-yellow-600">
                         <BiLockAlt size={24} />
                     </div>
                     <div>
-                        <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider">Funds on Hold (Reserves)</h3>
+                        <h3 className="text-black/60 text-sm font-bold uppercase tracking-wider">Funds on Hold (Reserves)</h3>
                         <p className="text-2xl font-black text-gray-900">
                             {(data.total_held).toLocaleString('en-GB', { style: 'currency', currency: data.currency || 'GBP' })}
                         </p>
@@ -46,11 +46,11 @@ export default function ReserveWidget({ className = '' }) {
                 </button>
             </div>
 
-            <div className="mt-5 p-4 bg-yellow-50/50 rounded-[30px] ">
+            <div className="mt-5 p-4 bg-yellow-50/50 rounded-box ">
                 <p className="text-sm text-gray-700 mb-2 leading-relaxed">
                     Funds are typically held for up to 30 days to cover potential disputes, after which they are automatically released to your balance.
                 </p> 
-                <p className="text-xs text-gray-500 italic leading-relaxed">
+                <p className="text-xs text-black/60 italic leading-relaxed">
                     Note - We SP don't hold or have access to your funds, we just control the payments timing, amounts and speed based on our payments policy linked to your individual level of risk.
                 </p>
             </div>
@@ -60,10 +60,10 @@ export default function ReserveWidget({ className = '' }) {
                     <h4 className="text-sm font-bold text-gray-700 mb-3">Upcoming Releases</h4>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {data.breakdown.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-xl">
+                            <div key={idx} className="flex items-center justify-between text-sm p-3 bg-black/[0.03] rounded-box-sm">
                                 <div className="flex items-center gap-2">
-                                    <BiTime className="text-gray-400" />
-                                    <span className="text-gray-600">
+                                    <BiTime className="text-black/60" />
+                                    <span className="text-black/80">
                                         Releasing <strong>{new Date(item.release_date).toLocaleDateString()}</strong>
                                     </span>
                                 </div>
@@ -71,7 +71,7 @@ export default function ReserveWidget({ className = '' }) {
                                     <span className="block font-bold text-gray-900">
                                         {((item.amount || item.reserve_amount) / (item.amount ? 100 : 1)).toLocaleString('en-GB', { style: 'currency', currency: item.currency || 'GBP' })}
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-black/60">
                                         {item.days_remaining > 0 ? `${item.days_remaining} days left` : 'Processing'}
                                     </span>
                                 </div>

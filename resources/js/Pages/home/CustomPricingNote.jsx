@@ -128,7 +128,11 @@ export default function CustomPricingNote() {
                         <a
                             href="mailto:support@spennypiggy.co?subject=Custom%20pricing%20enquiry"
                             onClick={startChat}
-                            className="group inline-flex min-h-[44px] w-full shrink-0 items-center justify-center gap-3 rounded-full border-[3px] border-[#FF007F] bg-[#FF007F] px-7 py-3 font-gulfs text-base uppercase tracking-wide text-black transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:w-auto md:text-lg"
+                            /* ⚠️ No hover lift and no hover scale. A bare
+                               `hover:-translate-y-1` with no offset-shadow partner is
+                               the same "grow on hover" gimmick the client removed
+                               site-wide; a filled accent signals hover by brightness. */
+                            className="group inline-flex min-h-[48px] w-full shrink-0 items-center justify-center gap-3 rounded-full border-[3px] border-[#FF007F] bg-[#FF007F] px-7 py-3 font-gulfs text-base uppercase tracking-wide text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none sm:w-auto md:text-lg"
                         >
                             Drop us a chat
                             <span

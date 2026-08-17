@@ -16,12 +16,12 @@ const STATES = {
     },
     down: {
         Icon: ArrowDownIcon,
-        className: "text-black/45 bg-black/[0.03] ring-black/[0.08]",
+        className: "text-black/60 bg-black/[0.03] ring-black/[0.08]",
         label: (delta) => `Down ${delta}`,
     },
     same: {
         Icon: MinusIcon,
-        className: "text-black/35 bg-transparent ring-black/[0.07]",
+        className: "text-black/60 bg-transparent ring-black/[0.07]",
         label: () => "Held position",
     },
     new: {
@@ -45,7 +45,7 @@ export default function MovementChip({ direction, delta = 0, windowDays, compact
         <span
             title={title}
             aria-label={title}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-11 font-semibold leading-none ring-1 ring-inset ${className}`}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-12 font-semibold leading-none ring-1 ring-inset ${className}`}
         >
             <Icon size={11} strokeWidth={2.5} aria-hidden="true" />
             {direction === "new" ? "New" : direction === "same" ? "Held" : delta}

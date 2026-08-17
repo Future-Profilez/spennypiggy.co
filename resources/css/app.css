@@ -1,6 +1,7 @@
 @import "react-lazy-load-image-component/src/effects/blur.css";
 @import "./retro-bottombar.css";
 @import "./retro-enhancements.css";
+@import "./help.css";
 
 /* Global Text Selection */
 ::selection {
@@ -68,7 +69,6 @@
 @keyframes fading-effect {
     from {
         opacity: 0;
-        box-shadow: none;
         transform: scale(0.96) translateY(1vh);
     }
 }
@@ -173,15 +173,8 @@ body {
     font-size: 22px;
     line-height: 32px;
 }
-.btn-pink.shadow-mint {
-    box-shadow: 2px 3px 0 0 var(--mint);
-}
-.btn-pink.shadow-mint:hover {
-    box-shadow: 5px 5px 0 0 var(--mint);
-}
 .btn-pink lg:hover,
 .btn-pink lg:focus {
-    box-shadow: none;
     transition: all ease 0.3s;
 }
 .rotate-btn a,
@@ -189,12 +182,11 @@ body {
 .rotate-btn a,
 .rotate-btn button:focus {
     transform: rotate(5deg) translateZ(0);
-    box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.9);
     will-change: transform;
 }
 .btn-pink-md {
     /* 20px: the design system's only control radius. Was 15px. */
-    border-radius: 20px;
+    border-radius: var(--sp-radius-box-sm);
     border: 1px solid var(--black);
     background: var(--pink);
     color: var(--white);
@@ -211,14 +203,12 @@ body {
     align-items: center;
     align-content: center;
     justify-content: center;
-    box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.9);
     transition: all ease 0.3s;
 }
 .bt-wh {
-    border-radius: 10px;
+    border-radius: var(--sp-radius-box-sm);
     border: 1px solid var(--voilet);
     background: var(--white);
-    box-shadow: 5px 5px 0px 0px var(--voilet);
     display: flex;
     width: 100%;
     padding: 14px 10px;
@@ -235,9 +225,8 @@ body {
     cursor: pointer;
 }
 .btn-mint {
-    border-radius: 9px;
+    border-radius: var(--sp-radius-box-sm);
     background: var(--mint);
-    box-shadow: 4px 4px 0px 0px var(--black);
     color: var(--voilet);
     text-align: right;
     font-family: var(--heading-font);
@@ -256,7 +245,6 @@ body {
 }
 .btn-mint:hover,
 .btn-mint:focus {
-    box-shadow: 8px 8px 0px 0px var(--black);
     transition: all ease 0.3s;
 }
 .shadow-none {
@@ -297,7 +285,7 @@ body {
     display: none;
 }
 .dropdown-menu {
-    border-radius: 15px !important;
+    border-radius: var(--sp-radius-box) !important;
     padding: 0 !important;
 }
 .edit-post.dropdown button#dropdown-basic-button {
@@ -306,7 +294,7 @@ body {
 }
 .dropdown-item {
     padding: 10px 20px !important;
-    border-radius: 15px !important;
+    border-radius: var(--sp-radius-box-sm) !important;
 }
 .dropdown-menu:focus {
     background: #fbfbfb !important;
@@ -367,13 +355,13 @@ body {
 .button {
     background: var(--pink);
     padding: 9px 20px;
-    border-radius: 30px;
+    border-radius: var(--sp-radius-box);
     color: #fff !important;
 }
 .button.esm {
     font-size: 13px;
     padding: 5px 10px;
-    border-radius: 10px !important;
+    border-radius: var(--sp-radius-box-sm) !important;
 }
 
 .max-width-400 {
@@ -427,7 +415,6 @@ body {
     margin: 0;
     border-radius: 50px;
     justify-content: space-between;
-    box-shadow: 0 0 26px 4px #0002;
 }
 .landing-bottom-bar li a.active,
 .landing-bottom-bar li a:focus {
@@ -437,7 +424,7 @@ body {
     color: #000 !important;
     text-transform: uppercase;
     font-family: var(--CeraBold);
-    border-radius: 20px;
+    border-radius: var(--sp-radius-box-sm);
     display: block;
     font-weight: 700;
 }
@@ -508,21 +495,6 @@ body {
 }
 /* end */
 @media (max-width: 575px) {
-    .shadow-mint {
-        box-shadow: 7px 7px 0 0 var(--mint);
-    }
-    .shadow-black {
-        box-shadow: 7px 7px 0 0 rgba(0, 0, 0, 1);
-    }
-    .shadow-voilet {
-        box-shadow: 7px 7px 0 0 var(--voilet);
-    }
-    .shadow-mint {
-        box-shadow: 7px 7px 0 0 var(--mint);
-    }
-    .shadow-purple {
-        box-shadow: 7px 7px 0 0 var(--purple);
-    }
     .modal-content {
         max-width: calc(100% - 30px);
         margin: auto;
@@ -539,7 +511,7 @@ body {
     }
 }
 .rounded-basic {
-    border-radius: 20px;
+    border-radius: var(--sp-radius-box-sm);
 }
 .sno p {
     font-size: 25px;
@@ -553,7 +525,7 @@ body {
     font-size: 16px;
     background: #05efb83b;
     padding: 5px 15px;
-    border-radius: 10px;
+    border-radius: var(--sp-radius-box-sm);
 }
 .postions {
     display: flex;
@@ -635,7 +607,7 @@ body {
     background: #ededed;
     width: 100%;
     text-align: center;
-    border-radius: 11px;
+    border-radius: var(--sp-radius-box-sm);
     padding: 8px;
     margin: 0 8px;
 }
@@ -696,11 +668,10 @@ body {
 }
 .react-select__input-container input {
     border: 0 !important;
-    box-shadow: none !important;
 }
 .react-select__control {
     padding: 6px;
-    border-radius: 15px !important;
+    border-radius: var(--sp-radius-box-sm) !important;
 }
 /* switch toggle */
 .toggle-switch {
@@ -746,18 +717,13 @@ body {
     bottom: -2px;
     background-color: var(--thumb_color);
     transform: translateY(-0.2em);
-    box-shadow: 0 0.2em 0 var(--outline_color);
     transition: 0.15s;
 }
 .toggle-switch input:checked + .slider {
     background-color: var(--track_active_color);
 }
-.toggle-switch input:focus-visible + .slider {
-    box-shadow: 0 0 0 2px var(--track_active_color);
-}
 .toggle-switch input:hover + .slider:before {
     transform: translateY(-0.3em);
-    box-shadow: 0 0.3em 0 var(--outline_color);
 }
 .toggle-switch input:checked + .slider:before {
     transform: translateX(calc(var(--switch_width) - var(--switch_height)))
@@ -767,7 +733,6 @@ body {
 .toggle-switch input:hover:checked + .slider:before {
     transform: translateX(calc(var(--switch_width) - var(--switch_height)))
         translateY(-0.3em);
-    box-shadow: 0 0.3em 0 var(--outline_color);
 }
 @keyframes load {
     0% {
@@ -815,7 +780,7 @@ body {
     background: white;
     padding: 0px 0px 0px 20px;
     margin-bottom: 20px;
-    border-radius: 0px 0px 15px 15px;
+    border-radius: 0px 0px var(--sp-radius-box) var(--sp-radius-box);
 }
 .data-memeber span {
     justify-content: space-between;
@@ -920,7 +885,7 @@ a.css-1j56y57 svg stroke {
     font-size: #fff !important;
 }
 a.css-1j56y57 svg path {
-    fill: #fff !important;
+    fill: #000 !important;
 }
 .css-1uazkid {
     position: absolute !important;
@@ -1049,16 +1014,13 @@ lr-config {
 }
 
 #nprogress .bar {
-    background: var(--pink, #FF007F) !important;
+    background: var(--progress, #05EFB8) !important;
     position: fixed !important;
     z-index: 9999999 !important;
     top: 0px !important;
     left: 0 !important;
     width: 100% !important;
     height: 10px !important;
-    box-shadow:
-        0 0 10px var(--pink, #FF007F),
-        0 0 5px var(--pink, #FF007F) !important;
     transition: all 0.2s ease !important;
 }
 
@@ -1068,9 +1030,6 @@ lr-config {
     right: 0px !important;
     width: 100px !important;
     height: 100% !important;
-    box-shadow:
-        0 0 10px var(--pink, #FF007F),
-        0 0 5px var(--pink, #FF007F) !important;
     opacity: 1 !important;
     transform: rotate(3deg) translate(0px, -4px) !important;
 }
@@ -1089,8 +1048,8 @@ lr-config {
     height: 24px;
     box-sizing: border-box;
     border: solid 3px transparent;
-    border-top-color: var(--pink, #FF007F);
-    border-left-color: var(--pink, #FF007F);
+    border-top-color: var(--progress, #05EFB8);
+    border-left-color: var(--progress, #05EFB8);
     border-radius: 50%;
     animation: nprogress-spinner 400ms linear infinite;
 }
@@ -1114,7 +1073,7 @@ lr-config {
 .membership-popup-content {
     padding: 20px 18px;
     background: #f8f8f8;
-    border-radius: 0 0 28px 28px;
+    border-radius: 0 0 var(--sp-radius-box) var(--sp-radius-box);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1164,7 +1123,7 @@ lr-config {
 
 .sendSurprize-modal .modal-body::-webkit-scrollbar-thumb {
     background: #ff4fa0;
-    border-radius: 20px;
+    border-radius: var(--sp-radius-box-sm);
 }
 
 .membership-levels {
@@ -1204,7 +1163,7 @@ lr-config {
 .membership-update-btn {
     width: 100%;
     min-height: 56px;
-    border-radius: 18px;
+    border-radius: var(--sp-radius-box-sm);
     font-size: 18px;
     font-weight: 700;
     background: linear-gradient(135deg, #ff4fa0, #ff2e88);
@@ -1283,15 +1242,93 @@ lr-config {
 }
 
 /*
+ * The sweep for `Components/NavigationProgress.jsx` (installed app only).
+ *
+ * ⚠️ Declared here rather than as a Tailwind `animation` entry because the
+ * component applies it as an inline `style` — Tailwind's JIT only emits CSS for
+ * class strings it can read literally, so anything driven by a runtime value
+ * produces no rule at all and the bar would sit still.
+ *
+ * The fill is half the track's width, so it travels a full track-width in each
+ * direction and reads as motion rather than as a bar that has stalled.
+ */
+@keyframes sp-nav-sweep {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(200%);
+    }
+}
+
+/*
+ * The veil FADES IN rather than appearing — it covers the whole viewport, and a
+ * hard cut at that size reads as a fault rather than as a wait. 120ms sits under
+ * the threshold where a transition starts to feel like a delay of its own.
+ */
+@keyframes sp-nav-veil-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.sp-nav-veil {
+    animation: sp-nav-veil-in 120ms ease-out both;
+}
+
+/*
+ * The one moving mark inside the solid block. It BREATHES rather than spins — a
+ * spinner is the generic vocabulary this design exists to avoid — and opacity is
+ * the cheapest property to animate on the exact frame the app is painting a new
+ * page.
+ */
+@keyframes sp-nav-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
+.sp-nav-pulse {
+    animation: sp-nav-pulse 0.9s ease-in-out infinite;
+}
+
+/* Presence is the signal; the motion is the enhancement. With motion reduced the
+   fill stays put at full width, the veil arrives with no fade and the mark holds
+   steady — so the state is still legible with nothing moving at all. */
+@media (prefers-reduced-motion: reduce) {
+    .sp-nav-sweep {
+        animation: none !important;
+        width: 100%;
+    }
+
+    .sp-nav-veil,
+    .sp-nav-pulse {
+        animation: none !important;
+    }
+}
+
+/*
  * A full-screen add-item Sheet covers the whole viewport on mobile, so the
  * fixed app chrome (bottom navigation, the dev/env purple bar) must not float
  * over its footer — the primary CTA was landing behind the tab bar. The Sheet
  * component toggles `.sheet-open` on <body> while it is open. Only hide the
  * bottom-anchored chrome on phones; the desktop modal is centred and never
  * collides with it.
+ *
+ * 🚨 The selector below MUST name `.retro-bottom-bar`. It used to say
+ * `.bottom-navigation`, which is the class of `Components/BottomNavigation.jsx`
+ * — dead code with zero references. The live bar is `Layouts/BottomBar.jsx`, so
+ * the rule matched nothing and the nav stayed on top of every open sheet: the
+ * add-item chooser's last row sat behind it, and the bar's own buttons were
+ * tappable through a modal that was supposed to own the screen.
  */
 @media (max-width: 767px) {
+    body.sheet-open .retro-bottom-bar,
     body.sheet-open .bottom-navigation {
         display: none !important;
+    }
+
+    /* The bar is gone, so the clearance it reserved has to go with it —
+       otherwise every sheet keeps 80px of dead space under its content. */
+    body.sheet-open main {
+        padding-bottom: 0;
     }
 }

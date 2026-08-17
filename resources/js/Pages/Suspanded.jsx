@@ -11,14 +11,14 @@ export default function NotFound({ auth, user }) {
     return (
         <Authenticated auth={auth} user={user} >
             <div className="blackbg py-18">
-                <div className=" h-[80vh] flex justify-center items-center   ">
+                <div className="min-h-[80dvh] flex justify-center items-center">
                   <div className="flex justify-center">
                      <div className="max-w-[400px] p-6">
                         <div className='noresultimg mb-5 m-auto'><img  alt="img" src={noresultimg} /></div>    
                         <h2 className='font-gulfs text-3xl uppercase text-white w-full text-center sshadow-yellow'> Account Suspended</h2>
                         <p className="text-gray-300 mt-2 text-center">Your account has been suspended due to a policy violation or payout configuration issue. If you are the owner of this account, please contact support. </p>
                         <div className='flex justify-center mt-4'>
-                           <a className="livechat intercom-dud02y e11rlguj1 text-pink">Contact Support</a>
+                           <a className="livechat intercom-dud02y e11rlguj1 text-pink inline-flex min-h-[44px] items-center cursor-pointer">Contact Support</a>
                         </div> 
                      </div>
                      

@@ -15,7 +15,7 @@ const GOAL = 1000;
 const REWARD = 50;
 
 const CARD =
-    "bg-white border-[3px] border-black rounded-box shadow-[6px_6px_0_0_#000]";
+ "bg-white border-[3px] border-black rounded-box ";
 const NUM = "tabular-nums [font-variant-numeric:tabular-nums]";
 
 const money = (v) =>
@@ -90,7 +90,7 @@ export default function ReferAndEarn({
                     {/* ============ PAGE HEAD ============ */}
                     <div className="flex items-end justify-between mb-5 px-1">
                         <div>
-                            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-black/60">
+ <div className="text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                                 Creator referrals
                             </div>
                             <h1 className="font-gulfs uppercase text-2xl md:text-3xl leading-none mt-1">
@@ -99,7 +99,7 @@ export default function ReferAndEarn({
                         </div>
                         <Link
                             href={`/${auth?.user?.username}`}
-                            className="text-sm font-semibold underline underline-offset-4 hover:no-underline"
+ className="text-sm font-semibold underline underline-offset-4 hover:no-underline inline-flex items-center min-h-[44px]"
                         >
                             ← Back to profile
                         </Link>
@@ -141,7 +141,7 @@ export default function ReferAndEarn({
                                             <div className="font-bold text-sm uppercase tracking-wide">
                                                 {t}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+ <div className="text-sm text-black/60">
                                                 {d}
                                             </div>
                                         </div>
@@ -160,7 +160,7 @@ export default function ReferAndEarn({
                         <div className="relative bg-[#FFF7CF] p-6 md:p-8 border-t-[3px] border-dashed border-black lg:border-t-0">
                             <div className="flex items-center gap-2 mb-4">
                                 <Scissors size={16} className="rotate-180 lg:rotate-90" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.18em]">
+ <span className="text-[12px] font-black uppercase tracking-[0.18em]">
                                     Your link — tear here
                                 </span>
                             </div>
@@ -173,7 +173,7 @@ export default function ReferAndEarn({
                                     <div className="flex flex-wrap gap-2 mt-4">
                                         <button
                                             onClick={copyLink}
-                                            className="flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-black text-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#FF007F] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+ className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-box-sm border-2 border-black bg-black text-white text-sm font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                         >
                                             {copied ? <Check size={15} /> : <Copy size={15} />}
                                             {copied ? "Copied" : "Copy link"}
@@ -181,14 +181,14 @@ export default function ReferAndEarn({
                                         <ShareProfile
                                             username={auth?.name}
                                             custom={referralLink}
-                                            classes="flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+ classes="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                         >
                                             <Share2 size={15} />
                                             Share
                                         </ShareProfile>
                                     </div>
                                     {referralCode && (
-                                        <div className="mt-4 text-xs text-gray-600">
+ <div className="mt-4 text-xs text-black/80">
                                             Code:{" "}
                                             <span className="font-mono font-bold">
                                                 {referralCode}
@@ -198,14 +198,14 @@ export default function ReferAndEarn({
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm text-gray-600 mb-4">
+ <p className="text-sm text-black/80 mb-4">
                                         Generate your personal link once — it
                                         never expires.
                                     </p>
                                     <button
                                         onClick={createReferralLink}
                                         disabled={loading}
-                                        className="flex items-center gap-2 px-6 py-3 rounded-box-sm border-2 border-black text-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-60"
+ className="flex items-center gap-2 px-6 py-3 rounded-box-sm border-2 border-black text-white text-sm font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] transition-all disabled:opacity-60"
                                         style={{ background: PINK }}
                                     >
                                         <Link2 size={15} />
@@ -229,7 +229,7 @@ export default function ReferAndEarn({
                                 {...rise(i + 1)}
                                 className={`${CARD} !rounded-box p-5`}
                             >
-                                <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-black/50">
+ <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                                     <Icon size={14} />
                                     {label}
                                 </div>
@@ -243,11 +243,11 @@ export default function ReferAndEarn({
                     {/* ============ REDEEM BANNER ============ */}
                     <motion.div
                         {...rise(2)}
-                        className="border-[3px] border-black rounded-box shadow-[6px_6px_0_0_#000] mb-6 p-6 md:px-8 flex flex-col md:flex-row md:items-center gap-4"
+ className="border-[3px] border-black rounded-box mb-6 p-6 md:px-8 flex flex-col md:flex-row md:items-center gap-4"
                         style={{ background: PINK }}
                     >
                         <div className="flex-1 text-white">
-                            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
+ <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/80">
                                 Available to redeem
                             </div>
                             <div className={`font-gulfs text-4xl md:text-5xl leading-none mt-1 ${NUM}`}>
@@ -266,8 +266,8 @@ export default function ReferAndEarn({
                             className={`group flex items-center justify-center gap-2 px-7 py-3.5 rounded-box-sm border-[3px] border-black text-[15px] font-black uppercase tracking-wide transition-all
                                 ${
                                     canRedeem && !redeeming
-                                        ? "bg-white text-black shadow-[4px_4px_0_0_#000] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
-                                        : "bg-white/40 text-black/40 cursor-not-allowed"
+ ? "bg-white text-black hover:-translate-y-0.5 active:translate-y-0 "
+ : "bg-white/40 text-black/60 cursor-not-allowed"
                                 }`}
                         >
                             {redeeming
@@ -287,7 +287,7 @@ export default function ReferAndEarn({
                                 Referred creators
                             </h2>
                             {referrals.length > 0 && (
-                                <span className={`text-sm text-gray-500 ${NUM}`}>
+ <span className={`text-sm text-black/60 ${NUM}`}>
                                     {referrals.length}{" "}
                                     {referrals.length === 1 ? "creator" : "creators"}
                                 </span>
@@ -299,14 +299,14 @@ export default function ReferAndEarn({
                                 <p className="font-bold uppercase text-sm tracking-wide">
                                     No referrals yet
                                 </p>
-                                <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+ <p className="text-sm text-black/60 mt-1 max-w-sm mx-auto">
                                     Share your link with a creator — they'll
                                     show up here the moment they sign up.
                                 </p>
                                 {hasReferral && (
                                     <button
                                         onClick={copyLink}
-                                        className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide shadow-[3px_3px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+ className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-box-sm border-2 border-black bg-white text-sm font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                     >
                                         {copied ? <Check size={15} /> : <Copy size={15} />}
                                         {copied ? "Copied" : "Copy your link"}
@@ -342,7 +342,7 @@ function ReferralRow({ r }) {
                 </span>
                 <div className="min-w-0">
                     <div className="font-bold text-sm truncate">{r.name}</div>
-                    <div className="text-xs text-gray-500 truncate">
+ <div className="text-xs text-black/60 truncate">
                         @{r.username} · joined {r.joined_at}
                     </div>
                 </div>
@@ -356,7 +356,7 @@ function ReferralRow({ r }) {
                         style={{ width: `${pct}%` }}
                     />
                 </div>
-                <div className={`text-[11px] text-gray-500 mt-1 ${NUM}`}>
+ <div className={`text-[12px] text-black/60 mt-1 ${NUM}`}>
                     £{money(r.lifetime_gmv)} of £{money(GOAL)}
                     {done && !r.rejection_reason && (
                         <span className="text-green-700 font-bold ml-2">
@@ -389,7 +389,7 @@ const StatusBadge = ({ status }) => {
     };
     return (
         <span
-            className={`inline-block px-3 py-1 rounded-full border-2 text-[11px] font-bold uppercase tracking-wide ${map[status] || "bg-gray-100 text-gray-600 border-gray-300"}`}
+ className={`inline-block px-3 py-1 rounded-full border-2 text-[12px] font-bold uppercase tracking-wide ${map[status] || "bg-gray-100 text-black/80 border-gray-300"}`}
         >
             {status?.replaceAll("_", " ") || "—"}
         </span>

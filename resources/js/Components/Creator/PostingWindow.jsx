@@ -64,12 +64,12 @@ export default function PostingWindow({
     return (
         <div className="rounded-box border-[3px] border-black bg-white p-4 md:p-5">
             <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/50">
+                <p className="text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                     Last {windowDays} days
                 </p>
                 <p className="font-gulfs text-[15px] leading-none tabular-nums text-black">
                     {posts.length}
-                    <span className="text-black/40"> / {required}</span>
+                    <span className="text-black/60"> / {required}</span>
                 </p>
             </div>
 
@@ -89,13 +89,13 @@ export default function PostingWindow({
                 ))}
 
                 {posts.length === 0 && (
-                    <p className="absolute inset-0 flex items-center justify-center text-[11px] font-bold uppercase tracking-widest text-black/35">
+                    <p className="absolute inset-0 flex items-center justify-center text-[12px] font-bold uppercase tracking-widest text-black/60">
                         Nothing counted yet
                     </p>
                 )}
             </div>
 
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-black/40">
+            <div className="flex items-center justify-between text-[12px] font-bold uppercase tracking-widest text-black/60">
                 <span>Drops off</span>
                 <span>Today</span>
             </div>

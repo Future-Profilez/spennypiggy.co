@@ -38,7 +38,7 @@ export default function PaymentSlider() {
     <div className="py-8 md:py-10">
       <div className="mb-5 flex items-center justify-center gap-2 px-4 md:mb-6">
         <span className="text-sm" aria-hidden>🔒</span>
-        <p className="text-center font-poppins text-[11px] font-bold uppercase tracking-[0.18em] text-white/55 md:text-xs md:tracking-[0.22em]">
+        <p className="text-center font-poppins text-[12px] font-bold uppercase tracking-[0.18em] text-white/60 md:tracking-[0.22em]">
           Secure payments · powered by trusted partners
         </p>
       </div>

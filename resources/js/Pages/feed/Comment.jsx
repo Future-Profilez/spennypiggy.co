@@ -218,7 +218,7 @@ export default function Comment({
                         </div>
                         <div className="flex items-center justify-center space-x-2 w-full">
                             <div className="block w-full">
-                                <div className="w-auto rounded-[30px] px-2 ps-0 pb-2">
+                                <div className="w-auto rounded-box px-2 ps-0 pb-2">
                                     <div className="font-medium flex items-center justify-between flex-wrap gap-2">
                                         <a
                                             href="#"
@@ -230,7 +230,7 @@ export default function Comment({
                                         </a>
                                         {getStatusLabel(item) && (
                                             <span
-                                                className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(item)}`}
+                                                className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(item)}`}
                                             >
                                                 {getStatusLabel(item)}
                                             </span>
@@ -251,7 +251,7 @@ export default function Comment({
                                             Reply
                                         </button>
                                     )}
-                                    <span className="text-gray-400">•</span>
+                                    <span className="text-black/60">•</span>
                                     <span className="text-gray-500 text-sm">
                                         <TimeFormat
                                             dateString={item.created_at || ""}
@@ -261,7 +261,7 @@ export default function Comment({
                                     {/* Post Creator can manage others' replies - NOT their own */}
                                     {canManage && replyStatus !== 1 && (
                                         <>
-                                            <span className="text-gray-400">
+                                            <span className="text-black/60">
                                                 •
                                             </span>
                                             <button
@@ -283,7 +283,7 @@ export default function Comment({
                                     {/* Delete button for Post Creator or Reply Owner */}
                                     {(isPostCreator || isItemOwner(item)) && (
                                         <>
-                                            <span className="text-gray-400">
+                                            <span className="text-black/60">
                                                 •
                                             </span>
                                             <button
@@ -331,7 +331,7 @@ export default function Comment({
 
                     <div className="items-center w-full">
                         <div className="block">
-                            <div className="w-auto rounded-[30px] px-2 ps-0 pb-2">
+                            <div className="w-auto rounded-box px-2 ps-0 pb-2">
                                 <div className="font-medium flex items-center justify-between flex-wrap gap-2">
                                     <a
                                         href="#"
@@ -343,7 +343,7 @@ export default function Comment({
                                     </a>
                                     {getStatusLabel(c) && status !== 1 && (
                                         <span
-                                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(c)}`}
+                                            className={`text-[12px] px-2 py-0.5 rounded-full font-medium ${getStatusClass(c)}`}
                                         >
                                             {getStatusLabel(c)}
                                         </span>
@@ -365,7 +365,7 @@ export default function Comment({
                                     </button>
                                 )}
                                 {auth?.user && (
-                                    <span className="text-gray-400">•</span>
+                                    <span className="text-black/60">•</span>
                                 )}
                                 <span className="text-gray-500 text-sm">
                                     <TimeFormat
@@ -376,7 +376,7 @@ export default function Comment({
                                 {/* Post Creator can manage others' comments - NOT their own */}
                                 {canManage && status !== 1 && (
                                     <>
-                                        <span className="text-gray-400">•</span>
+                                        <span className="text-black/60">•</span>
                                         <button
                                             disabled={actionLoading}
                                             onClick={() =>
@@ -394,7 +394,7 @@ export default function Comment({
                                 {/* Delete button for Post Creator or Comment Owner (for their own comments) */}
                                 {(isPostCreator || isOwnCommentFlag) && (
                                     <>
-                                        <span className="text-gray-400">•</span>
+                                        <span className="text-black/60">•</span>
                                         <button
                                             disabled={deleting}
                                             onClick={() =>

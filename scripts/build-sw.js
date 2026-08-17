@@ -14,13 +14,37 @@ async function buildServiceWorker() {
       swSrc: 'public/sw.js',
       swDest: 'public/service-worker.js',
       globDirectory: 'public/',
+      // 🚨 PRECACHE THE APP SHELL ONLY — never `build/**`.
+      //
+      // These two globs used to take everything under `public/`, which precached
+      // 552 files, 449 of them hashed build chunks (399 JS files, 6.4MB, inside a
+      // 56MB build directory). Precaching means the service worker downloads all
+      // of it during `install`, in one burst, on the client — and Workbox
+      // re-runs that whole install on every deploy because each chunk's filename
+      // changed.
+      //
+      // On an installed iOS PWA that burst lands exactly when the app resumes,
+      // and it is the single largest memory event the app produces. iOS jettisons
+      // the WKWebView content process under memory pressure and the app comes back
+      // blank. It is also pure waste: the app lazy-loads one route's chunks per
+      // page, the runtime `static-assets-v1` CacheFirst route already caches each
+      // chunk the moment it is genuinely requested, and every chunk is
+      // content-hashed so it can be cached for a year on first real use.
+      //
+      // What belongs here is only what must work with NO network: the offline
+      // page and the icons its markup references.
       globPatterns: [
-        '**/*.{css,js,html,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
-        // Include built assets
-        'build/**/*.{css,js,html,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
+        'offline.html',
+        'siteicon.png',
+        'logo.png',
+        'apple-touch-icon.png',
+        'favicon.ico',
+        'favicon-*.png',
+        'android-chrome-*.png',
+        'Favicon.svg',
       ],
       maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-      
+
       globIgnores: [
         '**/node_modules/**/*',
         '**/.git/**/*',

@@ -19,6 +19,7 @@ use App\Models\TaskPurchase;
 use App\Models\User;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
@@ -134,7 +135,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => 'required|string|max:100',
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
             'description' => 'required|string',
             'price' => [
                 'required',
@@ -259,7 +260,7 @@ class TaskController extends Controller
         }
 
         $request->validate([
-            'title' => 'required|string|max:100',
+            'title' => ['required', 'string', 'max:100', new NoExpenseOrBrandName],
             'description' => 'required|string',
             'price' => [
                 'required',

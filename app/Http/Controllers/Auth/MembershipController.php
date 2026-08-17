@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\UserPayment;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Rules\NoExpenseOrBrandName;
 use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -153,6 +154,7 @@ class MembershipController extends Controller
             'level' => [
                 'required',
                 'string',
+                new NoExpenseOrBrandName,
             ],
             'month_price' => [
                 'required',
@@ -300,6 +302,7 @@ class MembershipController extends Controller
                 'level' => [
                     'required',
                     'string',
+                    new NoExpenseOrBrandName,
                 ],
                 'month_price' => [
                     'required',

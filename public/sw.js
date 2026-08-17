@@ -25,19 +25,33 @@ cleanupOutdatedCaches();
 // ================================================================
 
 // 1. STATIC ASSETS - Cache First with long expiration
+//
+// ⚠️ `statuses` MUST NOT include 0 here. A status-0 entry is an OPAQUE
+// cross-origin response, and an opaque response can never be executed as a
+// script or applied as a stylesheet. Cached under CacheFirst it is replayed on
+// every later request, so ONE opaque fetch of a chunk (a captive-portal
+// interception, a CDN blip) permanently blanks the app for that user until they
+// clear site data. Opaque bodies are also billed to quota at ~7MB each, which
+// pushes the origin over its budget and gets the whole cache evicted.
+//
+// ⚠️ `maxEntries` must comfortably exceed the chunk count (399 JS files at the
+// time of writing). At 60 the LRU evicted almost every chunk on every page
+// load, so the cache did nothing but thrash — and each eviction is a re-fetch
+// on resume, which is exactly the memory spike this file is trying to avoid.
 registerRoute(
-  ({ request }) => request.destination === 'style' || 
-                   request.destination === 'script' || 
+  ({ request }) => request.destination === 'style' ||
+                   request.destination === 'script' ||
                    request.destination === 'worker',
   new CacheFirst({
     cacheName: 'static-assets-v1',
     plugins: [
       new CacheableResponsePlugin({
-        statuses: [0, 200],
+        statuses: [200],
       }),
       new ExpirationPlugin({
         maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-        maxEntries: 60,
+        maxEntries: 500,
+        purgeOnQuotaError: true,
       }),
     ],
   })
@@ -101,14 +115,31 @@ registerRoute(
   })
 );
 
-// 5. HTML PAGES - Stale While Revalidate
+// 5. HTML PAGES - Network First, cache only as the offline fallback
+//
+// 🚨 THIS MUST NOT BE StaleWhileRevalidate. An HTML document names the hashed
+// build chunks that boot the app, so a cached document is only valid for as
+// long as those exact chunk filenames exist. SWR answered every navigation from
+// cache first for a FULL DAY, so after any deploy an installed PWA booted an old
+// document, asked for chunks that were gone, and rendered nothing. `app.jsx`
+// listens for `vite:preloadError` and reloads — but the reload was served the
+// SAME dead document out of `pages-v1`, and its 60s cooldown then suppressed
+// every further attempt. The user was left on a blank screen no reload could
+// fix. That is the crash reported on 14 Aug 2026 (screenshot → background →
+// resume): iOS relaunches the webview, and the relaunch replayed the wedge.
+//
+// NetworkFirst with a short timeout keeps offline working (the cached copy is
+// still served when the network fails) while guaranteeing that a reachable
+// network always wins. `statuses` excludes 0 for the reason given above — an
+// opaque document is an unbootable one.
 registerRoute(
   ({ request }) => request.mode === 'navigate',
-  new StaleWhileRevalidate({
+  new NetworkFirst({
     cacheName: 'pages-v1',
+    networkTimeoutSeconds: 4,
     plugins: [
       new CacheableResponsePlugin({
-        statuses: [0, 200],
+        statuses: [200],
       }),
       new ExpirationPlugin({
         maxAgeSeconds: 24 * 60 * 60, // 24 hours
@@ -202,20 +233,25 @@ registerRoute(
 // OFFLINE SUPPORT
 // ================================================================
 
-// Catch-all for navigation requests when offline
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  async (args) => {
-    try {
-      return await new StaleWhileRevalidate({
-        cacheName: 'pages-v1',
-      }).handle(args);
-    } catch (error) {
-      const { matchPrecache } = workbox.precaching;
-      return (await matchPrecache('/offline.html')) || caches.match('/offline.html');
-    }
+// Catch-all for navigation requests when offline.
+//
+// ⚠️ This MUST be `setCatchHandler`, not a second `registerRoute` for
+// `request.mode === 'navigate'`. Workbox matches routes in registration order
+// and the FIRST match wins, so the HTML route above already answered every
+// navigation and this block was unreachable — `offline.html` had never been
+// served to anyone. The catch handler runs when a route's handler throws, which
+// is the case it was written for.
+workbox.routing.setCatchHandler(async ({ request }) => {
+  if (request.destination !== 'document') {
+    return Response.error();
   }
-);
+
+  const { matchPrecache } = workbox.precaching;
+
+  return (await matchPrecache('/offline.html')) ||
+         (await caches.match('/offline.html')) ||
+         Response.error();
+});
 
 // ================================================================
 // PUSH NOTIFICATIONS
@@ -273,28 +309,30 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Runtime cache cleanup
+// Runtime cache cleanup.
+//
+// 🚨 An allow-list of runtime cache names DELETES THE WORKBOX PRECACHE. Workbox
+// stores it under `workbox-precache-v2-<origin>`, which was not in the list, so
+// every activation wiped the app shell that `precacheAndRoute` had just spent a
+// download storm filling — and then refilled it on the next activation. That is
+// the loop, not a cleanup. `cleanupOutdatedCaches()` at the top of this file
+// already removes precaches from older Workbox versions, correctly.
+//
+// Only names this file has actually retired belong here. Adding a cache above
+// means adding it to `RUNTIME_CACHES` — never re-deriving this as "anything I do
+// not recognise".
+const RETIRED_CACHES = [];
+
 self.addEventListener('activate', event => {
-  const currentCaches = [
-    'static-assets-v1',
-    'images-v1', 
-    'fonts-v1',
-    'api-cache-v1',
-    'pages-v1',
-    'google-fonts-v1',
-    'cdn-assets-v1'
-  ];
-  
+  if (!RETIRED_CACHES.length) {
+    return;
+  }
+
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (!currentCaches.includes(cacheName)) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames
+        .filter(cacheName => RETIRED_CACHES.includes(cacheName))
+        .map(cacheName => caches.delete(cacheName))
+    ))
   );
 });

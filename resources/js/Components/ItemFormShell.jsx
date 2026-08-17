@@ -79,7 +79,7 @@ export default function ItemFormShell({
                     type="button"
                     onClick={goNext}
                     disabled={processing}
-                    className="hidden h-11 shrink-0 items-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
+                    className="hidden h-11 shrink-0 items-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-60 motion-reduce:transform-none sm:inline-flex"
                 >
                     {processing && <Loader2 size={16} className="animate-spin" strokeWidth={3} />}
                     {actionLabel}
@@ -95,12 +95,12 @@ export default function ItemFormShell({
                         {activeSteps.map((entry, position) => (
                             <span
                                 key={entry.key}
-                                className={`flex shrink-0 items-center gap-2 rounded-full border-2 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+                                className={`flex shrink-0 items-center gap-2 rounded-full border-2 px-3 py-1 text-[12px] font-black uppercase tracking-[0.14em] transition-colors ${
                                     position === index
-                                        ? "border-[#FF007F] bg-[#FF007F] text-white"
+                                        ? "border-[#FF007F] bg-[#FF007F] text-black"
                                         : position < index
                                           ? "border-white/40 text-white/70"
-                                          : "border-white/15 text-white/35"
+                                          : "border-white/15 text-white/60"
                                 }`}
                             >
                                 <span aria-hidden="true">{position + 1}</span>
@@ -129,7 +129,7 @@ export default function ItemFormShell({
                                 type="button"
                                 onClick={goBack}
                                 disabled={processing}
-                                className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-box-sm border-[3px] border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50"
+                                className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-box-sm border-[3px] border-black bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50"
                                 aria-label="Back"
                             >
                                 <ArrowLeft size={20} strokeWidth={3} />
@@ -139,14 +139,14 @@ export default function ItemFormShell({
                             type="button"
                             onClick={goNext}
                             disabled={processing}
-                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-60 md:flex-none md:min-w-[220px]"
+                            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-box-sm border-[3px] border-black bg-[#FF007F] px-8 text-base font-black uppercase tracking-wide text-black transition-all active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 md:flex-none md:min-w-[220px]"
                         >
                             {processing && <Loader2 size={18} className="animate-spin" strokeWidth={3} />}
                             {actionLabel}
                         </button>
                     </div>
                     {activeSteps.length > 1 && (
-                        <p className="text-center text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-400 md:hidden">
+                        <p className="text-center text-[12px] font-bold uppercase tracking-[0.14em] text-neutral-400 md:hidden">
                             Step {index + 1} of {activeSteps.length}
                         </p>
                     )}
@@ -164,7 +164,19 @@ export default function ItemFormShell({
                         : "mx-auto max-w-2xl"
                 }
             >
-                <div className="min-w-0 rounded-box border-[3px] border-black bg-white p-5 sm:p-6">
+                {/* 🚨 NO CARD ON A PHONE. The sheet is already full-screen, so a
+                    bordered card drawn immediately inside it is a second frame
+                    around the same content — and it costs the form 22px of width
+                    on each side (2px frame + 20px padding) at exactly the width
+                    where there is none to spare. Above `sm` the panel is wide
+                    enough for the card to do its job of holding the form to a
+                    readable measure, so it comes back.
+
+                    ⚠️ The resets carry `!` because `border-black` is redefined in
+                    `resources/css/index.css` as a full `border` shorthand AFTER
+                    the utilities layer — an unflagged `max-sm:border-0` loses on
+                    source order and the frame silently survives at 2px. */}
+                <div className="min-w-0 rounded-box border-[3px] border-black bg-white p-5 sm:p-6 max-sm:!rounded-none max-sm:!border-0 max-sm:!bg-transparent max-sm:!p-0">
                     {step?.hint && (
                         <p className="mb-5 text-left text-sm font-medium text-neutral-500">{step.hint}</p>
                     )}

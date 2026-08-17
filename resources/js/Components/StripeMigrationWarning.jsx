@@ -13,7 +13,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
     const { current_agreement, required_agreement, country, reason } = migrationStatus;
 
     return (
-        <div className="w-full mb-6 bg-white rounded-[30px]   shadow-sm border border-red-100 overflow-hidden">
+        <div className="w-full mb-6 bg-white rounded-box border border-red-100 overflow-hidden">
             <div className="flex">
                 <div className="w-1.5 bg-red-600"></div>
                 <div className="flex-1  p-6 lg:p-8">
@@ -42,7 +42,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
                     <Link 
                         onClick={() => setLoading(!loading)}
                         href="/stripe/upgrade-express-account"
-                        className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                        className="block w-full min-h-[44px] text-center bg-[#FF007F] text-black font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-colors duration-200 hover:brightness-110 active:brightness-95"
                     >
                         {loading ? "Loading..." : "Upgrade Account"}
                     </Link>
@@ -61,7 +61,7 @@ export function CompactStripeMigrationWarning({ migrationStatus, className = '' 
     }
 
     return (
-        <div className={`bg-orange-500 text-white rounded-[30px]   p-3 mb-3 ${className}`}>
+        <div className={`bg-orange-500 text-white rounded-box   p-3 mb-3 ${className}`}>
             <div className="flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HelpArticle;
+use App\Models\HelpCategory;
 use App\Models\Post;
 use App\Models\Shop;
 use App\Models\Task;
@@ -109,6 +111,7 @@ class SitemapController extends Controller
                 ['path' => '/seo/sitemap-posts.xml', 'query' => fn () => $this->postQuery()],
                 ['path' => '/seo/sitemap-shop-items.xml', 'query' => fn () => $this->shopQuery()],
                 ['path' => '/seo/sitemap-tasks.xml', 'query' => fn () => $this->taskQuery()],
+                ['path' => '/seo/sitemap-help.xml', 'query' => fn () => $this->helpQuery()],
             ];
 
             foreach ($children as $child) {
@@ -353,6 +356,74 @@ class SitemapController extends Controller
     }
 
     /**
+     * Generate the help centre sitemap — the directory, every published
+     * section, and every published article.
+     *
+     * ⚠️ Listed in BOTH the index above AND robots.txt. A child sitemap in
+     * neither is unreachable, which is the bug that left the creator, wishlist
+     * and post sitemaps unread for months.
+     *
+     * Feature-flagged articles are dropped: submitting a URL that 404s because
+     * the feature behind it is switched off is a crawl error we chose to create.
+     */
+    public function help()
+    {
+        $page = $this->page();
+
+        $content = Cache::remember('sitemap:help:'.$page, self::CACHE_TTL, function () use ($page) {
+            $urls = [];
+
+            // Only the first chunk carries the directory and the section pages;
+            // repeating them on every page would duplicate them in the index.
+            if ($page === 1) {
+                $urls[] = [
+                    'loc' => url('/help'),
+                    'lastmod' => $this->safely(fn () => HelpArticle::query()->visible()->max('updated_at')) ?? $this->deployedAt(),
+                    'changefreq' => 'weekly',
+                    'priority' => '0.7',
+                ];
+
+                $categories = $this->safely(fn () => HelpCategory::query()
+                    ->where('is_published', true)
+                    ->orderBy('id')
+                    ->get(['id', 'slug', 'updated_at'])) ?? collect();
+
+                foreach ($categories as $category) {
+                    $urls[] = [
+                        'loc' => url('/help/'.$category->slug),
+                        'lastmod' => $category->updated_at,
+                        'changefreq' => 'weekly',
+                        'priority' => '0.6',
+                    ];
+                }
+            }
+
+            $articles = $this->safely(fn () => $this->helpQuery()
+                ->with('category:id,slug')
+                ->orderBy('id')
+                ->forPage($page, self::CHUNK)
+                ->get(['id', 'help_category_id', 'slug', 'feature_flag', 'updated_at'])) ?? collect();
+
+            foreach ($articles as $article) {
+                if (empty($article->slug) || empty($article->category?->slug) || ! $article->featureIsLive()) {
+                    continue;
+                }
+
+                $urls[] = [
+                    'loc' => url('/help/'.$article->category->slug.'/'.$article->slug),
+                    'lastmod' => $article->updated_at,
+                    'changefreq' => 'monthly',
+                    'priority' => '0.6',
+                ];
+            }
+
+            return $this->urlset($urls);
+        });
+
+        return $this->xml($content);
+    }
+
+    /**
      * Manual trigger to clear sitemap cache
      * This route can be called after deployment to regenerate sitemaps
      */
@@ -366,6 +437,7 @@ class SitemapController extends Controller
             Cache::forget('sitemap:posts:'.$i);
             Cache::forget('sitemap:shop-items:'.$i);
             Cache::forget('sitemap:tasks:'.$i);
+            Cache::forget('sitemap:help:'.$i);
         }
 
         return response()->json([
@@ -390,6 +462,18 @@ class SitemapController extends Controller
             ->where('role', 1)
             ->where('suspended_account', 0)
             ->whereNotNull('username');
+    }
+
+    /**
+     * Published help articles whose scheduled publish time has arrived.
+     *
+     * The feature-flag check cannot be expressed in SQL (it reads config), so it
+     * is applied per row in help() — a flagged article is a handful of rows, and
+     * dropping them at query level is not possible.
+     */
+    private function helpQuery()
+    {
+        return HelpArticle::query()->visible();
     }
 
     private function wishQuery()

@@ -32,12 +32,20 @@ export default function RewardHint({ item, className = '' }) {
 
     return (
         <div
-            className={`flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-[20px] border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5 ${className}`}
+            className={`flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-box-sm border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5 ${className}`}
             title={label}
         >
             <Gift size={13} strokeWidth={2.5} className="shrink-0 text-emerald-600" />
-            <span className="truncate text-[11px] font-bold leading-tight text-emerald-700">
-                <span className="text-emerald-600/80">You get:</span> {label}
+            {/* ⚠️ The "You get:" prefix is HIDDEN on a narrow card, because there
+                it consumes the width the ANSWER needs. Measured in a two-column
+                wish grid at 390px: the pill has ~127px of text room and
+                "You get: Exclusive content" wants ~150px, so it rendered as
+                "You get: Exclusiv…" — the label truncating the only part that
+                carries information. The gift icon already says "you get"; the
+                words are the part worth keeping. */}
+            <span className="truncate text-[10px] font-bold leading-tight text-emerald-700 sm:text-[12px]">
+                <span className="hidden text-emerald-600/80 sm:inline">You get:</span>{" "}
+                {label}
             </span>
         </div>
     );

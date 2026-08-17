@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\EarlyFraudWarning;
 use App\Models\PlatformRiskState;
 use App\Models\RiskSetting;
+use App\Support\PlatformGmvTrigger;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +22,7 @@ class MonitorPlatformRiskState extends Command
      *
      * @var string
      */
-    protected $signature = 'risk:monitor-platform';
+    protected $signature = 'risk:monitor-platform {--dry-run : Evaluate every trigger and report, but never change the platform state}';
 
     /**
      * The console command description.
@@ -40,10 +41,23 @@ class MonitorPlatformRiskState extends Command
         $triggers = RiskSetting::get('platform_state_triggers', []);
         $freezeDisputeRate = (float) ($triggers['platform_dispute_rate_freeze'] ?? 0.007);
         $dailyGmvCautionMultiplier = (float) ($triggers['daily_gmv_caution_multiplier'] ?? 1.5);
-        $dailyGmvThrottleMultiplier = (float) ($triggers['daily_gmv_throttle_multiplier'] ?? 2.0);
-        $weeklyGmvSpikeMultiplier = (float) ($triggers['weekly_gmv_spike_multiplier'] ?? 1.3);
+        $dailyGmvThrottleMultiplier = (float) ($triggers['daily_gmv_throttle_multiplier'] ?? PlatformGmvTrigger::DEFAULT_DAILY_THROTTLE_MULTIPLIER);
+        // ⚠️ Raised 1.3 → 2.0 (15 Aug 2026). At 1.3 the platform THROTTLED itself
+        // for 30% week-on-week growth, which is a healthy ramp rather than an
+        // incident — and is exactly what the live ad campaigns are bought to
+        // produce. Do not lower it without a floor rise to match.
+        $weeklyGmvSpikeMultiplier = (float) ($triggers['weekly_gmv_spike_multiplier'] ?? PlatformGmvTrigger::DEFAULT_WEEKLY_MULTIPLIER);
         $creatorDisputeRateTrigger = (float) ($triggers['creator_dispute_rate_trigger'] ?? 0.008);
         $creatorsOverTriggerCount = (int) ($triggers['creators_over_trigger_count'] ?? 5);
+
+        // ⚠️ The GMV floors and the fire/suppress rule live in
+        // `App\Support\PlatformGmvTrigger`. This command's metrics are raw MySQL
+        // (`NOW() - INTERVAL 30 DAY`), which no sqlite test can execute, so the
+        // RULE is kept where it can be tested and only the queries stay here.
+        // A ratio trigger must clear an absolute size as well as its multiplier.
+        $dailyCautionFloor = (int) ($triggers['daily_gmv_caution_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_DAILY_CAUTION_FLOOR);
+        $dailyThrottleFloor = (int) ($triggers['daily_gmv_throttle_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_DAILY_THROTTLE_FLOOR);
+        $weeklyFloor = (int) ($triggers['weekly_gmv_spike_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_WEEKLY_FLOOR);
 
         // 1. Calculate Dispute Rate (30d)
         // Spec: If dispute_rate_pct >= 0.7% -> FREEZE
@@ -104,19 +118,37 @@ class MonitorPlatformRiskState extends Command
         ");
 
         $gmvRatio = $gmvStats->ratio ?? 0;
-        $this->info("GMV Spike Ratio: {$gmvRatio}");
+        $gmv24h = (int) ($gmvStats->gmv_24h ?? 0);
+        $this->info("GMV Spike Ratio: {$gmvRatio} (24h GMV minor: {$gmv24h})");
 
-        if ($gmvRatio >= $dailyGmvThrottleMultiplier) {
+        if (PlatformGmvTrigger::fires($gmvRatio, $dailyGmvThrottleMultiplier, $gmv24h, $dailyThrottleFloor)) {
             $this->transitionState('THROTTLE', ['GMV_SPIKE_THROTTLE'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
                 'avg_daily_7d' => $gmvStats->avg_daily_7d,
+                'floor_minor' => $dailyThrottleFloor,
             ]);
 
             return;
         }
 
-        if ($gmvRatio >= $dailyGmvCautionMultiplier) {
+        // A ratio that cleared its multiplier and not its floor is the case this
+        // floor exists for. Report it — the whole point is to be able to tell
+        // "the trigger never fired" from "the trigger was suppressed", and
+        // without this line the two are indistinguishable in the log.
+        $this->reportSuppressed('GMV_SPIKE_THROTTLE', PlatformGmvTrigger::suppressed($gmvRatio, $dailyGmvThrottleMultiplier, $gmv24h, $dailyThrottleFloor), $gmv24h, $dailyThrottleFloor, [
+            'gmv_ratio' => $gmvRatio,
+            'avg_daily_7d' => $gmvStats->avg_daily_7d,
+        ]);
+
+        if (PlatformGmvTrigger::suppressed($gmvRatio, $dailyGmvCautionMultiplier, $gmv24h, $dailyCautionFloor)) {
+            $this->reportSuppressed('GMV_SPIKE_CAUTION', true, $gmv24h, $dailyCautionFloor, [
+                'gmv_ratio' => $gmvRatio,
+                'avg_daily_7d' => $gmvStats->avg_daily_7d,
+            ]);
+        }
+
+        if (PlatformGmvTrigger::fires($gmvRatio, $dailyGmvCautionMultiplier, $gmv24h, $dailyCautionFloor)) {
             $this->transitionState('CAUTION', ['GMV_SPIKE_CAUTION'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
@@ -151,17 +183,24 @@ class MonitorPlatformRiskState extends Command
         ");
 
         $weeklyRatio = $weeklyStats->ratio ?? 0;
-        $this->info("Weekly GMV Ratio: {$weeklyRatio}");
+        $gmvThisWeek = (int) ($weeklyStats->gmv_this_week ?? 0);
+        $this->info("Weekly GMV Ratio: {$weeklyRatio} (7d GMV minor: {$gmvThisWeek})");
 
-        if ($weeklyRatio >= $weeklyGmvSpikeMultiplier) {
+        if (PlatformGmvTrigger::fires($weeklyRatio, $weeklyGmvSpikeMultiplier, $gmvThisWeek, $weeklyFloor)) {
             $this->transitionState('THROTTLE', ['WEEKLY_GMV_SPIKE'], [
                 'weekly_ratio' => $weeklyRatio,
                 'gmv_this_week' => $weeklyStats->gmv_this_week,
                 'gmv_prev_week' => $weeklyStats->gmv_prev_week,
+                'floor_minor' => $weeklyFloor,
             ]);
 
             return;
         }
+
+        $this->reportSuppressed('WEEKLY_GMV_SPIKE', PlatformGmvTrigger::suppressed($weeklyRatio, $weeklyGmvSpikeMultiplier, $gmvThisWeek, $weeklyFloor), $gmvThisWeek, $weeklyFloor, [
+            'weekly_ratio' => $weeklyRatio,
+            'gmv_prev_week' => $weeklyStats->gmv_prev_week,
+        ]);
 
         // 4. Creator Clusters (High Disputes)
 
@@ -246,8 +285,57 @@ class MonitorPlatformRiskState extends Command
         }
     }
 
+    /**
+     * Record a ratio trigger that fired and was held back by its absolute floor.
+     *
+     * ⚠️ This is not decoration. The floors were picked against one snapshot of
+     * live GMV, and the only way to know whether they are set right is to read
+     * back how often a real trigger was suppressed and by how much. A silent
+     * suppression is indistinguishable from a trigger that never fired.
+     */
+    private function reportSuppressed(string $reason, bool $wasSuppressed, int $observedMinor, int $floorMinor, array $context = []): void
+    {
+        if (! $wasSuppressed) {
+            return;
+        }
+
+        $line = sprintf(
+            'SUPPRESSED %s — ratio cleared but GMV %s is under the £%s floor.',
+            $reason,
+            number_format($observedMinor / 100, 2),
+            number_format($floorMinor / 100, 2),
+        );
+
+        $this->warn($line);
+
+        Log::info('Platform risk trigger suppressed by GMV floor', array_merge([
+            'reason' => $reason,
+            'observed_minor' => $observedMinor,
+            'floor_minor' => $floorMinor,
+        ], $context));
+    }
+
     private function transitionState($newState, $reasons, $metrics)
     {
+        // A dry run evaluates every trigger and reports what it WOULD do. It must
+        // never write a PlatformRiskState row: that row is what the next run diffs
+        // against and what gates creator registration, so a "safe" inspection that
+        // froze the platform would be the worst possible outcome of a --dry-run.
+        if ($this->option('dry-run')) {
+            $current = PlatformRiskState::latest('started_at')->first();
+            $currentState = $current ? $current->state : 'NORMAL';
+
+            if ($currentState === $newState) {
+                $this->line("DRY RUN: already {$newState}, no change.");
+
+                return;
+            }
+
+            $this->warn("DRY RUN: would transition {$currentState} -> {$newState} (".implode(', ', $reasons).')');
+
+            return;
+        }
+
         $current = PlatformRiskState::latest('started_at')->first();
         $currentState = $current ? $current->state : 'NORMAL';
 

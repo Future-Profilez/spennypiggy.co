@@ -71,14 +71,66 @@ class PostingCadenceService
      */
     private function countingPostsQuery(User $creator)
     {
+        return $this->memberPostsQuery($creator)->where('approved', 1);
+    }
+
+    /**
+     * The same member content, but the posts an admin has not cleared yet.
+     *
+     * ⚠️ A post is created `approved = 0` and does not count until it is approved, so a
+     * creator who has just published three posts legitimately reads 0 / 3 — which on
+     * screen is indistinguishable from having posted nothing, and is exactly what they
+     * open a support ticket about. Every surface that prints the count must therefore
+     * be able to print this number beside it.
+     *
+     * There is no reject handler for posts anywhere in either app (`can_reject` is
+     * false for the `post` queue), so `approved = 0` always means "waiting", never
+     * "refused" — the copy this feeds can safely promise it will count.
+     */
+    private function pendingReviewQuery(User $creator)
+    {
+        return $this->memberPostsQuery($creator)->where(function ($q) {
+            $q->where('approved', '!=', 1)->orWhereNull('approved');
+        });
+    }
+
+    /**
+     * Predicates shared by the counting and awaiting-review queries: genuine member
+     * content inside the rolling window, whatever its approval state.
+     *
+     * ⚠️ `Post` carries the `published` global scope, so a SCHEDULED post is absent
+     * from both — correct, it is not live yet, and the checklist says as much.
+     */
+    private function memberPostsQuery(User $creator)
+    {
+        return $this->postsInWindowQuery($creator)->whereIn('for_module', self::GATED_MODULES);
+    }
+
+    /**
+     * Posts the creator wrote in the window that went to the WRONG audience.
+     *
+     * ⚠️ The other half of "I posted twice and it still says 0 / 3": a public post is
+     * published, approved and visible, and counts for nothing, because a subscriber is
+     * paying for something only they get. The checklist has always said so in prose;
+     * a creator reading it while looking at posts they can see on their own profile
+     * needs the number, not the rule.
+     */
+    private function nonMemberPostsQuery(User $creator)
+    {
+        return $this->postsInWindowQuery($creator)->where(function ($q) {
+            $q->whereNull('for_module')->orWhereNotIn('for_module', self::GATED_MODULES);
+        });
+    }
+
+    /** Genuine (non-system) posts by this creator inside the rolling window. */
+    private function postsInWindowQuery(User $creator)
+    {
         return Post::where('user_id', $creator->id)
-            ->whereIn('for_module', self::GATED_MODULES)
             // Exclude system/auto posts, but keep genuine posts whose type is NULL
             // (whereNotIn alone would drop NULL-typed rows due to SQL NULL semantics).
             ->where(function ($q) {
                 $q->whereNull('type')->orWhereNotIn('type', self::SYSTEM_TYPES);
             })
-            ->where('approved', 1)
             ->where('created_at', '>=', now()->subDays(self::WINDOW_DAYS));
     }
 
@@ -91,7 +143,7 @@ class PostingCadenceService
      * Display payload for the creator's posting-cadence status (dashboard widget +
      * activity page). Pure read — does not pause/resume anything.
      *
-     * @return array{member_posts:int,required:int,window_days:int,meets:bool,posts_needed:int,paused:bool,paused_at:?string,past_grace:bool,status:string}
+     * @return array{member_posts:int,pending_review:int,non_member_posts:int,required:int,window_days:int,meets:bool,posts_needed:int,paused:bool,paused_at:?string,past_grace:bool,status:string}
      */
     public function statusFor(User $creator): array
     {
@@ -101,6 +153,12 @@ class PostingCadenceService
         $windowStart = now()->subDays(self::WINDOW_DAYS);
         $publishedAt = $this->countingPostsQuery($creator)->orderBy('created_at')->pluck('created_at');
         $count = $publishedAt->count();
+        // Posts the creator HAS written that are simply not approved yet. Without this
+        // the meter reads 0 / 3 at the exact moment they have done the work.
+        $pendingReview = $this->pendingReviewQuery($creator)->count();
+        // Only asked when the creator is short — a creator who is fine does not need
+        // to be told their public posts are public.
+        $nonMemberPosts = $count >= self::MIN_POSTS ? 0 : $this->nonMemberPostsQuery($creator)->count();
         $meets = $count >= self::MIN_POSTS;
         $paused = $creator->isContentPostingPaused();
         $oldestSub = $this->oldestActiveSubscriptionDate($creator);
@@ -180,6 +238,8 @@ class PostingCadenceService
         return [
             'counting_posts' => $countingPosts,
             'member_posts' => $count,
+            'pending_review' => $pendingReview,
+            'non_member_posts' => $nonMemberPosts,
             'required' => self::MIN_POSTS,
             'window_days' => self::WINDOW_DAYS,
             'meets' => $meets,
@@ -198,7 +258,7 @@ class PostingCadenceService
             // What this state means for the creator's money, and what fixes it.
             'headline' => self::HEADLINES[$status] ?? $status,
             'consequence' => $this->consequenceFor($status, $subscriberCount, $pauseAt),
-            'checklist' => $this->checklistFor($status, max(0, self::MIN_POSTS - $count), $countingPosts),
+            'checklist' => $this->checklistFor($status, max(0, self::MIN_POSTS - $count), $countingPosts, $pendingReview, $nonMemberPosts),
         ];
     }
 
@@ -255,7 +315,7 @@ class PostingCadenceService
      * @param  array<int,array{at:string,drops_out_at:string,position:float}>  $countingPosts
      * @return array<int,array{key:string,label:string,detail:string,done:bool,cta_label:?string,cta_route:?string,cta_params:array}>
      */
-    private function checklistFor(string $status, int $needed, array $countingPosts): array
+    private function checklistFor(string $status, int $needed, array $countingPosts, int $pendingReview = 0, int $nonMemberPosts = 0): array
     {
         $items = [];
 
@@ -266,7 +326,10 @@ class PostingCadenceService
                     ? 'Publish 1 more post for members'
                     : "Publish {$needed} more posts for members")
                 : 'Post for your members',
-            'detail' => 'It must be posted to Members or Subscribers — a public post does not count, because your subscribers are paying for something only they get.',
+            'detail' => 'It must be posted to Members or Subscribers — a public post does not count, because your subscribers are paying for something only they get.'
+                .($pendingReview === 0
+                    ? ' Posts are checked before they go live, so a new one starts counting once it has been approved.'
+                    : ''),
             'done' => $needed === 0,
             'cta_label' => 'Write a post',
             'cta_route' => 'dashboard',
@@ -301,6 +364,48 @@ class PostingCadenceService
             'cta_route' => 'dashboard',
             'cta_params' => ['add' => 'post'],
         ];
+
+        // The creator DID post, to the wrong audience. Sits below the pending row when
+        // both are true: "it is being checked" is the better news and the likelier fix.
+        if ($nonMemberPosts > 0 && $needed > 0) {
+            $one = $nonMemberPosts === 1;
+            $subject = $one ? '1 post you published' : "{$nonMemberPosts} posts you published";
+
+            $items = array_merge([[
+                'key' => 'wrong_audience',
+                'label' => $subject.' went to everyone, so '.($one ? 'it does' : 'they do').' not count',
+                'detail' => 'Only posts set to Members or Subscribers count toward this, because that is what your '
+                    .'subscribers are paying for. You do not have to start again — open '
+                    .($one ? 'that post' : 'those posts').' and change the audience to Members, or write the next '
+                    .'one that way.',
+                'done' => false,
+                'cta_label' => 'Write a members-only post',
+                'cta_route' => 'dashboard',
+                'cta_params' => ['add' => 'post'],
+            ]], $items);
+        }
+
+        // ⚠️ FIRST, above "publish more posts" — this is the answer to "I posted twice
+        // and it still says 0 / 3", and telling that creator to write another post is
+        // both wrong and the reason the number looked broken.
+        if ($pendingReview > 0) {
+            $subject = $pendingReview === 1 ? '1 post is' : "{$pendingReview} posts are";
+            $covers = $needed > 0 && $pendingReview >= $needed;
+
+            $items = array_merge([[
+                'key' => 'awaiting_review',
+                'label' => "{$subject} waiting to be approved",
+                'detail' => 'Every post is checked before it goes live, and it only counts toward your '
+                    .self::MIN_POSTS.' once that is done — usually within a day. Do not post it again. '
+                    .($covers
+                        ? 'Once these are approved you are back at '.self::MIN_POSTS.' and nothing pauses.'
+                        : 'It is added to your count automatically.'),
+                'done' => false,
+                'cta_label' => null,
+                'cta_route' => null,
+                'cta_params' => [],
+            ]], $items);
+        }
 
         if ($status === 'paused') {
             array_unshift($items, [

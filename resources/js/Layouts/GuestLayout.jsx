@@ -1,5 +1,5 @@
-import { Toaster } from 'react-hot-toast';
-import Header from '@/includes/Header'; 
+import BrandToaster from '@/Components/Toast/BrandToaster';
+import Header from '@/includes/Header';
 import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 import NetworkStatusBanner from '@/Components/NetworkStatusBanner';
@@ -22,13 +22,7 @@ export default function Guest({children, auth, className}) {
             {children}
         </main>
         <Footer auth={auth ||''} />
-        <Toaster 
-            toastOptions={{
-                style: {
-                    marginTop: 'env(safe-area-inset-top)'
-                }
-            }}
-        />
+        <BrandToaster />
         <BottomBar />
         <PwaInstallPrompt />
         <MaintenanceBanner />

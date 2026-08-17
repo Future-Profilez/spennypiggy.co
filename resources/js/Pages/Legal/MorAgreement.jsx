@@ -20,16 +20,16 @@ export default function MorAgreement(props) {
         <Guest auth={auth?.user} user={user}>
             <Head title="Merchant of Record Agreement" />
             <LegalLayout activePage="MorAgreement">
-                <div className="mx-auto p-0 lg:p-12">
-                    <h1 className="mx-auto p-0 text-2xl md:text-4xl font-black text-[#FF007F] mb-8 uppercase tracking-tighter-12">
+                <div className="mx-auto w-full max-w-[72ch] px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
+                    <h1 className="text-2xl md:text-4xl font-black text-[#FF007F] mb-10 uppercase tracking-tight">
                         Merchant of Record Agreement
                     </h1>
                     <div className="prose prose-pink max-w-none">
-                        <p className="mb-4 text-gray-700 leading-relaxed italic">Stripe Connect Onboarding — Creator Acknowledgement</p>
-                        <p className="mb-4 text-gray-700 leading-relaxed text-sm text-gray-500 italic">Issue Date: 23 April 2026</p>
+                        <p className="mb-5 text-gray-700 leading-relaxed italic">Stripe Connect Onboarding — Creator Acknowledgement</p>
+                        <p className="mb-5 leading-relaxed text-sm text-black/60 italic">Issue Date: 23 April 2026</p>
                         <p className="mb-6 text-gray-700 leading-relaxed">As part of your Stripe Connect onboarding, you are required to read and confirm the following Merchant of Record declaration. Please review each point to confirm your understanding and acceptance before proceeding.</p>
                         
-                        <div className="bg-pink-50/50 rounded-[30px]  p-6 md:p-8 mb-8 border border-pink-100">
+                        <div className="bg-pink-50/50 rounded-box p-5 sm:p-6 md:p-8 mb-8 border border-pink-100">
                             <p className="text-lg text-gray-900 mb-6 flex items-center gap-2">
                                 <HiCheckCircle className="text-[#FF007F] text-xl" />
                                 Merchant of Record Confirmation
@@ -49,7 +49,7 @@ export default function MorAgreement(props) {
                             </ul>
                         </div>
 
-                        <div className="bg-gray-50 rounded-[30px]  p-6 md:p-8 mb-8 border border-gray-100">
+                        <div className="bg-gray-50 rounded-box p-5 sm:p-6 md:p-8 mb-8 border border-gray-100">
                             <p className="text-lg text-gray-900 mb-4">Final Acceptance</p>
                             <div className="flex items-start gap-3 text-gray-800">
                                 <div className="mt-1 flex-shrink-0">
@@ -60,8 +60,8 @@ export default function MorAgreement(props) {
                         </div>
 
 
-                        <p className="mt-12 text-sm text-gray-500">This document forms part of the Spenny Piggy Platform Legal Framework.</p>
-                        <p className="text-sm text-gray-500">© 2026 Social Vortex Limited, trading as Spenny Piggy. All rights reserved.</p>
+                        <p className="mt-12 text-sm text-black/60">This document forms part of the Spenny Piggy Platform Legal Framework.</p>
+                        <p className="text-sm text-black/60">© 2026 Social Vortex Limited, trading as Spenny Piggy. All rights reserved.</p>
                     </div>
                 </div>
             </LegalLayout>

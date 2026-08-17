@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCreatorWatermark;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +14,7 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
+    use HasCreatorWatermark, HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     protected $dates = ['deleted_at'];
 
@@ -117,12 +119,14 @@ class WishItem extends Model
             // $fontsize = $textWm['fontsize'];
             // $check = "-/preview/-/text_align/left/center/-/font/$fontsize/fff/-/text/80px8p/8p,100p/$wm/";
             // $url = Uploadcare::getUrl($this->thumbnail, $this->type, $watermark, $check);
-            $url = 'https://ucarecdn.com/'.$this->thumbnail.'/-/format/jpeg/';
+            $url = MediaUrl::thumb($this->thumbnail);
         } else {
-            $url = 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/';
+            $url = MediaUrl::thumb(MediaUrl::FALLBACK_THUMBNAIL);
         }
 
-        return $url;
+        // Creator attribution watermark. The fallback above is a PLATFORM
+        // placeholder, not this creator's work — MediaUrl refuses it by uuid.
+        return MediaUrl::watermark($url, $this->creatorWatermarkUuid());
     }
 
     public function getRewardUrlAttribute()

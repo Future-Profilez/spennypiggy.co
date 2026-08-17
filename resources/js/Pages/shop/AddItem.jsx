@@ -421,14 +421,19 @@ export default function AddItem(props) {
 
         const trigger = (
                 <div className=" flex items-center">
-                    <div className="p-1 rounded-box-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
+ <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
                         <ShoppingBagIcon color="var(--pink)" size={24} />
                     </div>
                     <div className="pl-3 text-left">
-                        <h2 className="text-sm md:text-lg font-normal font-GillSans uppercase leading-tight">
+ {/* Matches the other rows in the add-item chooser
+ (Dashboard.jsx). This one had drifted onto a
+ different face and a smaller size, so its title
+ rendered at the same 14px as its own description
+ and the row lost its heading. */}
+ <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
                             Sell Something
                         </h2>
-                        <p className="text-sm font-poppins">
+ <p className="text-sm font-bold text-gray-700">
                             Sell digital or physical items from your page
                         </p>
                     </div>
@@ -469,7 +474,7 @@ export default function AddItem(props) {
                                 <h2 className="text-xl font-black uppercase tracking-tight">
                                     {isEdit ? 'Edit Offering' : 'New Offering'}
                                 </h2>
-                                <div className="text-xs font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+ <div className="text-xs font-black text-black/60 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
                                     Step {step} of 3
                                 </div>
                             </div>
@@ -497,10 +502,10 @@ export default function AddItem(props) {
                             {/* Step Progress Bar */}
                             <div className="flex gap-2 h-1.5">
                                 {[1, 2, 3].map((s) => (
-                                    <div 
-                                        key={s} 
+                                    <div
+                                        key={s}
                                         className={`flex-1 rounded-full transition-all duration-500 ${
-                                            s <= step ? 'bg-[#FF007F] shadow-[0_0_8px_rgba(249,79,151,0.4)]' : 'bg-gray-200'
+ s <= step ? 'bg-[#FF007F] ' : 'bg-gray-200'
                                         }`}
                                     />
                                 ))}
@@ -517,25 +522,25 @@ export default function AddItem(props) {
                                     <div className="space-y-4">
                                         <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">1. Select Product Type</h3>
                                         <div className="flex gap-4">
-                                            <button 
+                                            <button
                                                 type="button"
-                                                onClick={() => handleLists('digital')} 
-                                                className={`flex-1 flex flex-col items-center gap-2 p-6 rounded-box border-[3px] transition-all active:scale-95 ${
-                                                    physical !== 'physical' 
-                                                    ? 'border-black bg-yellow-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
-                                                    : 'border-gray-200 bg-gray-50 text-gray-400 grayscale'
+                                                onClick={() => handleLists('digital')}
+ className={`flex-1 flex flex-col items-center gap-2 p-6 rounded-box border-[3px] transition-all active:brightness-95 ${
+                                                    physical !== 'physical'
+ ? 'border-black bg-yellow-300 ' 
+ : 'border-gray-200 bg-gray-50 text-black/60 grayscale'
                                                 }`}
                                             >
                                                 <span className="text-3xl">📁</span>
                                                 <span className="font-black uppercase text-xs tracking-wider">Digital Item</span>
                                             </button>
-                                            <button 
+                                            <button
                                                 type="button"
-                                                onClick={() => handleLists('physical')} 
-                                                className={`flex-1 flex flex-col items-center gap-2 p-6 rounded-box border-[3px] transition-all active:scale-95 ${
-                                                    physical === 'physical' 
-                                                    ? 'border-black bg-blue-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
-                                                    : 'border-gray-200 bg-gray-50 text-gray-400 grayscale'
+                                                onClick={() => handleLists('physical')}
+ className={`flex-1 flex flex-col items-center gap-2 p-6 rounded-box border-[3px] transition-all active:brightness-95 ${
+                                                    physical === 'physical'
+ ? 'border-black bg-blue-300 ' 
+ : 'border-gray-200 bg-gray-50 text-black/60 grayscale'
                                                 }`}
                                             >
                                                 <span className="text-3xl">📦</span>
@@ -553,14 +558,14 @@ export default function AddItem(props) {
                                                 {isEdit && !thumb && (
                                                     <img
                                                         alt="Current thumbnail"
-                                                        className="w-full border-[3px] border-black max-h-[240px] object-cover rounded-box mb-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+ className="w-full border-[3px] border-black max-h-[240px] object-cover rounded-box mb-4 "
                                                         src={item?.perma_link}
                                                     />
                                                 )}
                                                 <div className="uploader overflow-hidden rounded-box border-[3px] border-dashed border-gray-300 hover:border-[#FF007F] transition-colors bg-gray-50 p-4">
                                                     <GlobalUploader
                                                         ctxName="add-shop1-context"
-                                                        type="minimal" 
+                                                        type="minimal"
                                                         ref={thumbUploaderRef}
                                                         sendFile={getFileUID}
                                                         options={st.shop}
@@ -586,11 +591,11 @@ export default function AddItem(props) {
                                                     value={shopItem.name}
                                                     onChange={handelInputs}
                                                     maxLength={80}
-                                                    className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white transition-all placeholder:text-gray-400"
+ className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white transition-all placeholder:text-black/60"
                                                     type="text"
                                                     placeholder="What are you selling?"
                                                 />
-                                                <p className="text-[10px] text-gray-500 text-right">{(shopItem.name || "").length}/80</p>
+ <p className="text-[12px] text-gray-500 text-right">{(shopItem.name || "").length}/80</p>
                                             </div>
 
                                             <div className="space-y-1.5">
@@ -601,16 +606,16 @@ export default function AddItem(props) {
                                                     value={shopItem.description}
                                                     onChange={handelInputs}
                                                     maxLength={500}
-                                                    className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white transition-all placeholder:text-gray-400"
+ className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 font-bold focus:ring-0 focus:bg-white transition-all placeholder:text-black/60"
                                                     placeholder="Tell fans why they need this..."
                                                 />
-                                                <p className="text-[10px] text-gray-500 text-right">{(shopItem.description || "").length}/500</p>
+ <p className="text-[12px] text-gray-500 text-right">{(shopItem.description || "").length}/500</p>
                                             </div>
 
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Price ({defaultCurrency})*</label>
                                                 <div className="relative">
-                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-400">{defaultCurrency}</div>
+ <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-black/60">{defaultCurrency}</div>
                                                     <input
                                                         name="price"
                                                         value={shopItem.price}
@@ -625,13 +630,13 @@ export default function AddItem(props) {
                                                     <div className="p-4 bg-green-50 rounded-box-sm border-[3px] border-green-200 mt-4 flex flex-col gap-2">
                                                         <div className="flex justify-between items-center">
                                                             <div>
-                                                                <p className="text-[10px] font-black uppercase text-green-600 tracking-widest">You Receive</p>
+ <p className="text-[12px] font-black uppercase text-green-600 tracking-widest">You Receive</p>
                                                                 <p className="text-xl font-black text-green-700">
                                                                     {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(shopItem.price)}
                                                                 </p>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Fans Pay</p>
+ <p className="text-[12px] font-black uppercase text-gray-500 tracking-widest">Fans Pay</p>
                                                                 <p className="text-lg font-bold text-gray-600">
                                                                     {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
                                                                 </p>
@@ -660,8 +665,8 @@ export default function AddItem(props) {
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Domestic Rate*</label>
                                                     <div className="relative">
-                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-400">{defaultCurrency}</div>
-                                                        <input 
+ <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-black/60">{defaultCurrency}</div>
+                                                        <input
                                                             type="number"
                                                             className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 pl-14 font-black focus:ring-0 focus:bg-white"
                                                             value={domesticShipping}
@@ -673,8 +678,8 @@ export default function AddItem(props) {
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">Worldwide Rate*</label>
                                                     <div className="relative">
-                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-400">{defaultCurrency}</div>
-                                                        <input 
+ <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-black/60">{defaultCurrency}</div>
+                                                        <input
                                                             type="number"
                                                             className="w-full bg-gray-100 border-[3px] border-black rounded-box-sm p-4 pl-14 font-black focus:ring-0 focus:bg-white"
                                                             value={wwsShipping}
@@ -710,10 +715,10 @@ export default function AddItem(props) {
                                         <h3 className="text-sm font-black uppercase tracking-widest text-gray-500">2. Categories</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {categories?.map((c, i) => (
-                                                <label 
-                                                    key={c.uuid ?? i} 
-                                                    className={`cursor-pointer px-4 py-2 rounded-full border-[3px] font-black uppercase text-[10px] tracking-widest transition-all ${
-                                                        checkboxes.includes(c.uuid) ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-400'
+                                                <label
+                                                    key={c.uuid ?? i}
+ className={`cursor-pointer px-4 py-2 rounded-full border-[3px] font-black uppercase text-[12px] tracking-widest transition-all ${
+ checkboxes.includes(c.uuid) ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-black/60'
                                                     }`}
                                                 >
                                                     <input
@@ -737,7 +742,7 @@ export default function AddItem(props) {
                                             <button
                                                 onClick={addCategory}
                                                 disabled={adding}
-                                                className="px-6 py-3 min-h-[44px] bg-black text-white rounded-box-sm font-black uppercase text-[10px] tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
+ className="px-6 py-3 min-h-[44px] bg-black text-white rounded-box-sm font-black uppercase text-[12px] tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all disabled:opacity-50"
                                             >
                                                 {adding ? '...' : '+ Add'}
                                             </button>
@@ -773,7 +778,7 @@ export default function AddItem(props) {
                                             <input
                                                 value={question}
                                                 onChange={(e) => setQuestion(e.target.value)}
-                                                className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+ className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-bold placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 "
                                                 placeholder="e.g. What name should I personalise it with?"
                                             />
                                         </OptionCard>
@@ -792,7 +797,7 @@ export default function AddItem(props) {
                                                     inputMode="numeric"
                                                     min="1"
                                                     onChange={(e) => setSlots(e.target.value)}
-                                                    className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-black placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+ className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white px-4 py-3 text-sm font-black placeholder:font-medium placeholder:text-neutral-400 focus:outline-none focus:ring-0 "
                                                     placeholder="Max items available"
                                                 />
                                             </OptionCard>
@@ -816,7 +821,7 @@ export default function AddItem(props) {
                                                             type="number"
                                                             inputMode="decimal"
                                                             onChange={(e) => setSpPrice(e.target.value)}
-                                                            className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white py-3 pl-14 pr-4 text-sm font-black focus:outline-none focus:ring-0 focus:shadow-[3px_3px_0px_0px_rgba(255,0,127,1)]"
+ className="w-full min-h-[48px] rounded-box-sm border-[3px] border-black bg-white py-3 pl-14 pr-4 text-sm font-black focus:outline-none focus:ring-0 "
                                                             placeholder="Special price"
                                                         />
                                                     </div>
@@ -837,7 +842,7 @@ export default function AddItem(props) {
                                                 type="checkbox"
                                                 checked={isChecked}
                                                 onChange={(e) => setIsChecked(e.target.checked)}
-                                                className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
+ className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-xs border-[3px] border-black text-[#FF007F] focus:ring-0"
                                             />
                                             <span className="text-xs font-bold leading-relaxed text-neutral-700">
                                                 I confirm I am 18+ and agree to the{' '}
@@ -871,27 +876,27 @@ export default function AddItem(props) {
                     <div className="flex-shrink-0 bg-white border-t border-gray-100 p-4 sticky bottom-0 z-20">
                         <div className="max-w-2xl mx-auto flex gap-4">
                             {step > 1 && (
-                                <button 
+                                <button
                                     onClick={prevStep}
-                                    className="flex-1 py-4 min-h-[44px] border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all bg-white"
+ className="flex-1 py-4 min-h-[44px] border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all bg-white"
                                 >
                                     Back
                                 </button>
                             )}
                             
                             {step < 3 ? (
-                                <button 
+                                <button
                                     onClick={nextStep}
-                                    className="flex-[2] py-4 min-h-[44px] bg-black text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+ className="flex-[2] py-4 min-h-[44px] bg-black text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 transition-all "
                                 >
                                     Next Step
                                 </button>
                             ) : (
-                                <button 
+                                <button
                                     onClick={isEdit ? updateItem : addShopItem}
                                     disabled={loading || !isChecked}
-                                    className={`flex-[2] py-4 min-h-[44px] bg-[#FF007F] text-white border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
-                                        (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed shadow-none translate-y-[2px] translate-x-[2px]' : ''
+ className={`flex-[2] py-4 min-h-[44px] bg-[#FF007F] text-black border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 transition-all ${
+ (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed translate-y-[2px] translate-x-[2px]' : ''
                                     }`}
                                 >
                                     {loading ? 'Processing...' : (isEdit ? 'Save Changes' : 'Publish Item')}
@@ -913,7 +918,7 @@ function OptionCard({ id, title, hint, checked, onChange, children }) {
     return (
         <div
             className={`rounded-box border-[3px] border-black p-4 transition-colors ${
-                checked ? "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" : "bg-[#F7F7F7]"
+ checked ? "bg-white " : "bg-[#F7F7F7]"
             }`}
         >
             <label htmlFor={id} className="flex min-h-[44px] cursor-pointer items-start gap-3">
@@ -922,7 +927,7 @@ function OptionCard({ id, title, hint, checked, onChange, children }) {
                     id={id}
                     checked={checked}
                     onChange={onChange}
-                    className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-sm border-[3px] border-black text-[#FF007F] focus:ring-0"
+ className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded-box-xs border-[3px] border-black text-[#FF007F] focus:ring-0"
                 />
                 <span className="min-w-0 flex-1 text-left">
                     <span className="block text-xs font-black uppercase tracking-wider">{title}</span>

@@ -79,7 +79,7 @@ export default function RewardMedia({ media, poster, compact = false, className 
     if (kind === "audio") {
         return (
             <div className="rounded-box-sm border-[3px] border-black bg-[#A2E4B8] p-4">
-                <p className="mb-3 truncate text-sm font-black uppercase tracking-wide">{name}</p>
+                <p title={name} className="mb-3 truncate text-sm font-black uppercase tracking-wide">{name}</p>
                 <audio controls preload="none" src={media.url} className="w-full" />
             </div>
         );
@@ -92,13 +92,13 @@ export default function RewardMedia({ media, poster, compact = false, className 
             href={media.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-[64px] items-center gap-3 rounded-box-sm border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="flex min-h-[64px] items-center gap-3 rounded-box-sm border-[3px] border-black bg-white p-4 transition-all hover:translate-x-[1px] hover:translate-y-[1px] "
         >
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-box-sm border-2 border-black bg-[#FFE500]">
                 <Icon size={20} strokeWidth={2.5} />
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-black uppercase tracking-wide">{name}</span>
+                <span title={name} className="block truncate text-sm font-black uppercase tracking-wide">{name}</span>
                 <span className="block text-xs font-semibold text-neutral-500">
                     {[kind === "file" ? "Download" : kind.toUpperCase(), size].filter(Boolean).join(" · ")}
                 </span>
@@ -125,14 +125,14 @@ export function RewardLink({ url }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-[64px] items-center gap-3 rounded-box-sm border-[3px] border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="flex min-h-[64px] items-center gap-3 rounded-box-sm border-[3px] border-black bg-white p-4 transition-all hover:translate-x-[1px] hover:translate-y-[1px] "
         >
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-box-sm border-2 border-black bg-[#A2E4B8]">
                 <ExternalLink size={20} strokeWidth={2.5} />
             </span>
             <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-black uppercase tracking-wide">Open your content</span>
-                <span className="block truncate text-xs font-semibold text-neutral-500">{host}</span>
+                <span title={host} className="block truncate text-xs font-semibold text-neutral-500">{host}</span>
             </span>
         </a>
     );

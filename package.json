@@ -46,7 +46,8 @@
         "monitoring:setup": "php artisan migrate:fresh --seed && php artisan web-vitals:setup",
         "liveboth": "npm run livebuild && cd .. && cd admin.spennypiggy.co/ && npm run livebuild",
         "devboth": "npm run devbuild && cd .. && cd admin.spennypiggy.co/ && npm run devbuild",
-        "check": "node scripts/checks/run.mjs ."
+        "check": "node scripts/checks/run.mjs .",
+        "pwa:splash": "node scripts/build-pwa-splash.mjs"
     },
     "devDependencies": {
         "@babel/plugin-transform-react-jsx": "^7.27.1",

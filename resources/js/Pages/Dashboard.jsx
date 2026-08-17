@@ -210,7 +210,7 @@ export default function Dashboard(props) {
         auth?.user?.username == user?.username,
     );
 
-    const { is_blocked } = usePage().props;
+    const { is_blocked, intro: introProp } = usePage().props;
     const isInteractionBlocked = !IsloggedIn && is_blocked?.blocked;
     const blockedByMe = is_blocked?.blocked_by_me;
 
@@ -505,9 +505,13 @@ export default function Dashboard(props) {
                 )}
                 {IsloggedIn ? (
                     <>
+                        {/* Desktop only. On a phone the same action is the "+" in the
+                            fixed bottom nav, which is reachable from every screen —
+                            two buttons opening one chooser, one of them buried in a
+                            horizontally-scrolling tab strip, is the worse of the two. */}
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-[16px] 
+                            className="addoption-action hidden md:block cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-box-sm
  hover:translate-x-[2px] hover:translate-y-[2px] 
  transition-all z-50"
                             // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
@@ -521,7 +525,7 @@ export default function Dashboard(props) {
                                   <div
                                       onClick={() => setShowAdd(false)}
                                       data-lenis-prevent
-                                      className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain"
+                                      className="bg-[#00000088] backdrop-blur-sm fixed z-[9990] flex items-stretch justify-center top-0 left-0 w-full h-full overflow-y-auto overscroll-contain"
                                   >
                                       {/* ⚠️ Full page on every size, like the post
                                           composer. It was a 660px card whose option
@@ -539,19 +543,31 @@ export default function Dashboard(props) {
                                               {/* Full-screen on mobile (min-h-dvh,
                                                   no rounding, no gap); a centred
                                                   card on desktop. */}
-                                              <div className="relative flex min-h-dvh w-full flex-col bg-[#FFF6EC] px-4 py-6 sm:px-6 md:px-8 md:py-10">
+                                              {/* ⚠️ Installed as a PWA there is no browser
+                                                  chrome, so a full-bleed panel runs UNDER the
+                                                  status bar and the clock sits on top of the
+                                                  heading. The surface still bleeds to the
+                                                  screen edge — only the CONTENT is inset. */}
+                                              <div
+                                                  className="relative flex min-h-dvh w-full flex-col bg-[#FFF6EC] px-4 py-6 sm:px-6 md:px-8 md:py-10"
+                                                  style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))" }}
+                                              >
                                                   <button
                                                       type="button"
                                                       onClick={() =>
                                                           setShowAdd(false)
                                                       }
                                                       aria-label="Close"
-                                                      className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-[#FF007F] hover:text-white font-black text-2xl leading-none pb-1 transition-colors z-20"
+                                                      className="absolute right-3 w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-full hover:bg-[#FF007F] hover:text-black font-black text-2xl leading-none pb-1 transition-colors z-20"
+                                                      // Absolute positioning resolves against the
+                                                      // padding EDGE, so the parent's inset does
+                                                      // not move this — it needs its own.
+                                                      style={{ top: "max(0.75rem, calc(env(safe-area-inset-top) + 0.25rem))" }}
                                                   >
                                                       ×
                                                   </button>
                                                   <div className="text-center mb-5 max-w-[480px] mx-auto">
-                                                      <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black rounded-[22px] px-6 py-3 mb-3 -rotate-1">
+                                                      <div className="inline-block bg-gradient-to-r from-[#FF007F] to-[#FF8E25] border-[3px] border-black rounded-box-sm px-6 py-3 mb-3 -rotate-1">
                                                           <h2 className="text-white font-anton tracking-wide uppercase text-2xl md:text-2xl !leading-none m-0">
                                                               🐷 Turn Content
                                                               Into Cash 💰
@@ -577,8 +593,13 @@ export default function Dashboard(props) {
                                                   <div className="mx-auto min-h-0 w-full max-w-4xl flex-1 overflow-y-auto pt-2 pb-24 md:overflow-visible md:pb-0">
                                                       {wishOptions ? (
                                                           <div>
+                                                              {/* ⚠️ Content-first: this was "Cash Gift". "Gift" is
+                                                                  banned vocabulary on every user-facing surface, and
+                                                                  "Cash Gift" describes a money transfer — the exact
+                                                                  framing a wish is reframed AWAY from. Matches the
+                                                                  chooser row that opens this. */}
                                                               <Wishlist
-                                                                  text="Cash Gift"
+                                                                  text="Sell exclusive content"
                                                                   currency={
                                                                       global_currency
                                                                   }
@@ -589,9 +610,9 @@ export default function Dashboard(props) {
                                                                           : false
                                                                   }
                                                               />
-                                                              <div className="w-full font-bold disabled addop bg-white border-4 border-black rounded-[30px] p-3 mb-4 text-center">
+                                                              <div className="w-full font-bold disabled addop bg-white border-4 border-black rounded-box p-3 mb-4 text-center">
                                                                   <div className="flex items-center">
-                                                                      <div className="p-1 rounded-[30px] border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                      <div className="p-1 rounded-box border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                           <CiGift
                                                                               color="#000"
                                                                               size="1.5rem"
@@ -629,7 +650,7 @@ export default function Dashboard(props) {
                                                                               !wishOptions,
                                                                           )
                                                                       }
-                                                                      className="bg-gray-200 text-back rounded-[30px] px-3 py-2"
+                                                                      className="bg-gray-200 text-back rounded-box px-3 py-2"
                                                                   >
                                                                       Back
                                                                   </button>
@@ -650,10 +671,10 @@ export default function Dashboard(props) {
                                                                                   true,
                                                                               )
                                                                           }
-                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                       >
                                                                           <div className="flex items-center">
-                                                                              <div className="p-1 rounded-2xl border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                              <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                   <FaRegHeart
                                                                                       color="#FF007F"
                                                                                       size="1.6rem"
@@ -683,11 +704,11 @@ export default function Dashboard(props) {
                                                                           ?.role ===
                                                                           1 && (
                                                                           <Link
-                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                               href="/task/create"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-2xl border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <BiTask
                                                                                           color="#FF007F"
                                                                                           size="1.6rem"
@@ -722,10 +743,10 @@ export default function Dashboard(props) {
                                                                                   );
                                                                                   openCreateModal();
                                                                               }}
-                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           >
                                                                               <div className="flex items-center">
-                                                                                  <div className="p-1 rounded-2xl border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
+                                                                                  <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
                                                                                       <span className="text-2xl">
                                                                                           🐷
                                                                                       </span>
@@ -749,11 +770,23 @@ export default function Dashboard(props) {
                                                                       )}
 
                                                                       <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           product_type="digital_products"
                                                                           addIntent={addIntent}
                                                                       />
-                                                                      <AddPost classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      {/* The one row here that is not a way to list something for
+                                                                          sale. Every other option adds a product; this one is what
+                                                                          keeps a creator's recurring subscription income collecting
+                                                                          (`PostingCadenceService` pauses their Bill + Membership
+                                                                          subscriptions when they stop posting for members). Drawn
+                                                                          identically to its neighbours, that was invisible — so it
+                                                                          carries the mint accent the platform already uses for
+                                                                          "this is live / this is working", and keeps that accent on
+                                                                          hover instead of falling back to the shared cream. */}
+                                                                      <AddPost
+                                                                          highlight
+                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
+                                                                      />
                                                                       {/* <AddGift
  text="Add Gift"
  classes="font-bold py-3 px-3 mb-2 text-center"
@@ -765,8 +798,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-[30px] relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                                   </div>
                                                               </div>
                                                           </>
@@ -790,7 +823,7 @@ export default function Dashboard(props) {
  bg-[#E9E1D7]
  border-[3px]
  border-black
- rounded-[20px]
+ rounded-box-sm
                                                                 
  font-black
  uppercase
@@ -847,7 +880,7 @@ export default function Dashboard(props) {
     // Small amber"waiting for approval" notice — one quiet style for every pending state.
     const pendingNotice = (text) => (
         <div className="mt-3 flex items-start gap-2 rounded-box-sm border border-amber-300 bg-amber-50 px-3 py-2.5">
-            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-white">
+            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[12px] font-black text-white">
                 i
             </span>
             <p className="text-[12px] font-semibold leading-snug text-amber-800">
@@ -860,10 +893,10 @@ export default function Dashboard(props) {
     // Full width under the cover so it lands before anything else on the page.
     const profileSummaryBand =
         user && user.role == 1 ? (
-            <div className="rounded-box border border-black/10 bg-white p-4 shadow-none sm:p-5 md:border-2 md:border-black">
+            <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-10">
                     <div className="min-w-0 lg:flex-1">
-                        <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-500">
+                        <h2 className="text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                             About me
                         </h2>
 
@@ -1009,8 +1042,15 @@ export default function Dashboard(props) {
                                         creator IS, which is what this column answers, and in the
                                         centre column it pushed the actual content down the page.
                                         Renders for the owner always, and for visitors only once
-                                        approved — same rule it carried before the move. */}
-                                    {(IsloggedIn || user?.intro?.approved == 1) && (
+                                        approved — same rule it carried before the move.
+
+                                        ⚠️ Gate on the `intro` PAGE PROP, never `user.intro`. The
+                                        relation is eager-loaded in one rare Stripe-resync branch
+                                        only, so `user.intro` is undefined on virtually every load
+                                        and an approved intro was invisible to every visitor. It is
+                                        also the same prop AddIntro itself reads, so the gate and
+                                        the card can no longer disagree about whether one exists. */}
+                                    {(IsloggedIn || introProp?.approved == 1) && (
                                         <Suspense
                                             fallback={
                                                 <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
@@ -1040,7 +1080,7 @@ export default function Dashboard(props) {
                                     {/* Stripe Account Migration Warning */}
 
                                     {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-box">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -1086,9 +1126,9 @@ export default function Dashboard(props) {
                                                     href={route(
                                                         "financial.opportunities",
                                                     )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-[25px] border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
                                                 >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] border-[3px] border-black bg-[#FF007F] text-2xl">
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] text-2xl">
                                                         📈
                                                     </span>
                                                     <div className="min-w-0 flex-1">
@@ -1117,9 +1157,9 @@ export default function Dashboard(props) {
                                                     href={route(
                                                         "catalogue.index",
                                                     )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-[25px] border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
                                                 >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[14px] border-[3px] border-black bg-[#05EFB8] text-2xl">
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#05EFB8] text-2xl">
                                                         🗂️
                                                     </span>
                                                     <div className="min-w-0 flex-1">
@@ -1133,7 +1173,7 @@ export default function Dashboard(props) {
                                                             stuck.
                                                         </div>
                                                     </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-white text-lg font-black transition-transform group-hover:translate-x-0.5">
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
                                                         ›
                                                     </span>
                                                 </Link>
@@ -1442,7 +1482,7 @@ export default function Dashboard(props) {
                                                                                             slinks?.reason ||
                                                                                             user?.avatar_approved ==
                                                                                                 2) ? (
-                                                                                            <div className="bg-white border-1 border-black rounded-[30px] mb-4 p-4">
+                                                                                            <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
                                                                                                 <h2 className="text-red-600 font-bold text-xl">
                                                                                                     Action
                                                                                                     Required
@@ -1569,8 +1609,8 @@ export default function Dashboard(props) {
                                                                                             ?.username !==
                                                                                             user?.username ? (
                                                                                             <div className="mb-6 !mt-6 relative group">
-                                                                                                {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                                                <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
+                                                                                                {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                                                <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
                                                                                                     <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                                         <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                                             <div className="relative">
@@ -1600,7 +1640,7 @@ export default function Dashboard(props) {
                                                                                                             </div>
                                                                                                         </div>
                                                                                                         <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                                            <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
+                                                                                                            <p className="text-[12px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">
                                                                                                                 Support
                                                                                                                 Story
                                                                                                             </p>
@@ -1631,7 +1671,7 @@ export default function Dashboard(props) {
                                                                                                         <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
                                                                                                             <Link
                                                                                                                 href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                                                className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200"
+                                                                                                                className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200"
                                                                                                             >
                                                                                                                 View
                                                                                                                 Your
@@ -1814,7 +1854,7 @@ export default function Dashboard(props) {
                                                                                                                 ""
                                                                                                                     ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
                                                                                                                     : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                                            } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                                            } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                         >
                                                                                                             All
                                                                                                         </Link>
@@ -1841,7 +1881,7 @@ export default function Dashboard(props) {
                                                                                                                             c.id
                                                                                                                                 ? "bg-[#FF007F] text-black border-[3px] border-black translate-x-[-1px] translate-y-[-1px]"
                                                                                                                                 : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
-                                                                                                                        } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                                                        } px-4 py-1 rounded-box-sm font-black uppercase tracking-widest text-sm transition-all`}
                                                                                                                         key={`cats-${i}`}
                                                                                                                     >
                                                                                                                         {
@@ -1897,7 +1937,19 @@ export default function Dashboard(props) {
                                                                                                             handleDragCancel
                                                                                                         }
                                                                                                     >
-                                                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 !gap-2 sm:!gap-3 md:!gap-4">
+                                                                                                        {/* TWO columns on a phone (client direction, 15 Aug
+                                                                                                            2026), reversing the one-column pass of 14 Aug.
+                                                                                                            ⚠️ That pass was right about the SYMPTOM — at ~171px
+                                                                                                            the old card's title, price, reward line, delivery
+                                                                                                            note and CTA each wrapped to two or three lines. The
+                                                                                                            fix is the CARD, not the column count:
+                                                                                                            `Wishlistbox` now has a compact tier at base and its
+                                                                                                            full tier from `sm`, and it drops the two blocks that
+                                                                                                            earn no space at this width (a duplicate "You get"
+                                                                                                            and a boilerplate line identical on every card).
+                                                                                                            Widening this back without that tier reinstates the
+                                                                                                            broken text. */}
+                                                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 !gap-2.5 sm:!gap-3 md:!gap-4">
                                                                                                             <SortableContext
                                                                                                                 strategy={
                                                                                                                     rectSortingStrategy
@@ -2027,7 +2079,7 @@ export default function Dashboard(props) {
                                                                                                 <div className="w-full">
                                                                                                     {IsloggedIn ? (
                                                                                                         <>
-                                                                                                            <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                            <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                                 <div className="text-4xl mb-3">
                                                                                                                     🎁
                                                                                                                 </div>
@@ -2059,7 +2111,7 @@ export default function Dashboard(props) {
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
-                                                                                                                    className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                                    className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                                 >
                                                                                                                     Add
                                                                                                                     Wish
@@ -2133,7 +2185,7 @@ export default function Dashboard(props) {
                                                                                             tasks.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         📋
                                                                                                     </div>
@@ -2163,7 +2215,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                     >
                                                                                                         Create
                                                                                                         Task
@@ -2209,7 +2261,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         ⭐
                                                                                                     </div>
@@ -2236,7 +2288,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                     >
                                                                                                         Create
                                                                                                         Membership
@@ -2276,7 +2328,7 @@ export default function Dashboard(props) {
                                                                                                 ?.length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🧾
                                                                                                     </div>
@@ -2304,7 +2356,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                     >
                                                                                                         Create
                                                                                                         Bill
@@ -2347,7 +2399,7 @@ export default function Dashboard(props) {
                                                                                                 .length ===
                                                                                                 0) && (
                                                                                             <>
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🛍️
                                                                                                     </div>
@@ -2377,7 +2429,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                     >
                                                                                                         Add
                                                                                                         Item
@@ -2480,7 +2532,7 @@ export default function Dashboard(props) {
                                                                                     ) : (
                                                                                         <div className="w-full">
                                                                                             {IsloggedIn ? (
-                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-[30px] p-8 text-center mt-4">
+                                                                                                <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🎁
                                                                                                     </div>
@@ -2509,7 +2561,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black text-white uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
                                                                                                     >
                                                                                                         Add
                                                                                                         Gift

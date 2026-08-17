@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers;
 use App\Jobs\CheckMediaModeration;
 use App\Models\PiggyPot;
+use App\Rules\NoExpenseOrBrandName;
 use App\Services\ItemTextModeration;
 use App\Services\PiggyPotStatusService;
 use App\Services\RewardService;
@@ -123,7 +124,7 @@ class PiggyPotController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName],
             'description' => 'nullable|string',
             'target_amount' => [
                 'required',
@@ -216,7 +217,7 @@ class PiggyPotController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'title' => ['required', 'string', 'max:255', new NoExpenseOrBrandName],
             'description' => 'nullable|string',
             'target_amount' => [
                 'required',

@@ -1,245 +1,394 @@
 import { Head, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
-import CreatorGuideLinks from './components/CreatorGuideLinks';
-import { Check, ArrowRight, Star, Shield, Zap, Lock, AlertTriangle, Gift, DollarSign } from 'lucide-react';
+import AdPage from './components/AdPage';
+import {
+    ACCENT,
+    Eyebrow,
+    LedgerFrame,
+    LedgerRow,
+    LedgerTotal,
+    SectionHead,
+    StartSelling,
+    StatCell,
+} from './components/Ledger';
+import { ArrowRight } from 'lucide-react';
 
-import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
+import {
+    PRICE_FORMATTED,
+    SUBSCRIPTION_COPY,
+} from '@/constants/creatorSubscription';
+import {
+    FAST_START,
+    FOUNDER,
+    REFERRAL,
+    money,
+    percent,
+} from '@/constants/creatorBonuses';
+
+/**
+ * The creators overview — the Final URL every Google Ads campaign points at.
+ *
+ * ⚠️ STRIPE-FACING SURFACE. The version this replaces sold "Wishlist Gifting",
+ * "Bills & Contributions — help with real-world costs" and "Supporters spend
+ * more on gifts, tasks and bills" — wording `App\Rules\NoExpenseOrBrandName`
+ * REJECTS on a real listing, so the advert was coaching creators to list things
+ * the platform refuses.
+ *
+ * ⚠️ Removed and not to be reinstated: "Spenny Piggy absorbs the loss — not the
+ * creator" and "Creators are never debited". The second is not true —
+ * `LedgerRules::payable()`'s refund/dispute adjustment deducts from the creator.
+ *
+ * ⚠️ This page carries ALL THREE accents, once each, as its section markers — it
+ * is the only one that does. The five argument pages carry one apiece, which is
+ * what makes them look like different pages to someone arriving from a different
+ * advert.
+ */
+
+const WAYS = [
+    {
+        mark: '🔓',
+        title: 'Exclusive content',
+        line: 'Photos, videos, guides and bundles that unlock on payment.',
+        tag: 'one-off',
+    },
+    {
+        mark: '🎯',
+        title: 'Content goals',
+        line: 'One piece of content, sold toward a target everyone can see.',
+        tag: 'one-off',
+    },
+    {
+        mark: '💖',
+        title: 'Piggy Bank',
+        line: 'A one-off content purchase, at an amount they pick.',
+        tag: 'one-off',
+    },
+    {
+        mark: '✅',
+        title: 'Paid requests',
+        line: 'Custom work, paid up front and held until you deliver.',
+        tag: 'one-off',
+    },
+    {
+        mark: '🛍️',
+        title: 'Your shop',
+        line: 'Digital files, prints and merch on your own storefront.',
+        tag: 'one-off',
+    },
+    {
+        mark: '🔁',
+        title: 'Recurring content',
+        line: 'One content stream on a schedule, charged every month.',
+        tag: 'monthly',
+    },
+    {
+        mark: '💎',
+        title: 'Memberships',
+        line: 'Tiers, perks and member-only posts for your closest supporters.',
+        tag: 'monthly',
+    },
+];
+
+const REASONS = [
+    {
+        title: 'You keep 100%',
+        line: 'No revenue cut. The price you list is the amount that reaches you — supporters cover the platform fee at checkout, and they see their full total before they pay.',
+        href: '/creators/keep-100',
+        cta: 'How the pricing works',
+        accent: ACCENT.earn,
+    },
+    {
+        title: 'Built to stay online',
+        line: 'Payment accounts get closed when money arrives with no explanation. Every payment here is tied to a platform feature, with the usage rules and activity logs a card issuer expects.',
+        href: '/creators/stripe-safe',
+        cta: 'Why accounts stay safe',
+        accent: ACCENT.safe,
+    },
+    {
+        // ⚠️ The creator is the MERCHANT OF RECORD — disputes and refunds are
+        // theirs to decide, and the platform does not answer the card issuer for
+        // them. This card used to say "disputes are ours"; see Disputes.jsx.
+        title: 'Never answer empty-handed',
+        line: 'You are the merchant of record, so a dispute is your call. Every sale records what was sold, that it was delivered, that it was opened and what the buyer agreed to — so you answer with evidence instead of memory.',
+        href: '/creators/disputes',
+        cta: 'What we capture',
+        accent: ACCENT.safe,
+    },
+    {
+        title: 'Real people, on chat',
+        line: 'Live chat support when money is on the line — not a form and a three-day wait.',
+        href: null,
+        cta: null,
+        accent: ACCENT.bonus,
+    },
+];
+
 export default function Index() {
-  return (
-    <>
-      <Head title="Creators — Keep 100%. We Protect Your Payouts.">
-        <link rel="canonical" href="/creators" />
-        <meta name="description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
-        <meta property="og:title" content="Creators — Keep 100%. We Protect Your Payouts." />
-        <meta property="og:description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
-        <meta property="og:image" content="/siteicon.png" />
-        <meta property="og:url" content="https://spennypiggy.co/creators" />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Creators — Keep 100%. We Protect Your Payouts." />
-        <meta name="twitter:description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
-        <meta name="twitter:image" content="/siteicon.png" />
-      </Head>
-      <Guest>
-        <div className="bg-[#A2E4B8] min-h-dvh font-sans text-gray-900 pb-12 md:pb-16 relative">
-          <div className='containerbox mx-auto'>
-            <div className="relative z-1">
-              <div className=" pt-12 pb-16 md:pt-24 md:pb-20">
-                <div className="max-w-4xl">
-                  <div className=" ">
-                    <h1 className="text-3xl md:text-5xl font-gulfs uppercase leading-[0.9] tracking-wide mb-4 text-black">
-                      Creators Keep <span className="underline decoration-[6px] decoration-yellow-300">100%</span> <br/>
-                      <span className="text-gray-700">We Protect Your Payouts</span>
-                    </h1>
-                    <p className="text-base md:text-lg font-medium text-gray-700 max-w-2xl leading-relaxed">
-                      All-in-one monetisation tools for creators who want real spending, live support, and long-term account safety.
-                    </p>
-                    <div className="mt-6 flex flex-col sm:flex-row gap-3 items-start">
-                      <Link href="/register" className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-sm md:text-base py-3 px-6 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all">
-                        <span>Start Selling — It's Free</span>
-                        <ArrowRight />
-                      </Link>
-                      <span className="text-xs md:text-sm font-medium text-gray-700">{SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    const title = 'Sell your content and keep 100% — Spenny Piggy for creators';
+    const description = `Seven ways to get paid on one profile, weekly payouts, and dispute evidence gathered for you. You keep 100% of your listed price. ${SUBSCRIPTION_COPY.promise}.`;
+    const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
-              {/* Section: Why Creators Choose This */}
-              <div className="py-10 md:py-16 relative z-1">
-                <div className="">
-                  <h2 className="text-3xl sm:text-4xl lg:text-5xl md:leading-snug font-gulfs uppercase mb-6   items-center gap-3 text-black">
-                    Why Creators <br/> <span className="text-[#FF007F]">Choose This</span>
-                  </h2>
-                  
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      {[
-                        "Live Chat Support (Real Humans) — Get help when money is on the line, not days later",
-                        "Founder Bonuses for Early Creators — Early adopters receive extra rewards and priority perks",
-                        "Creators Keep 100% — No revenue cuts. Supporters pay the platform fee",
-                        "Payout & Chargeback Protection — Disputes handled by the platform, not you",
-                        "Stripe-Aligned by Design — Built to avoid freezes, shutdowns, and clawbacks"
-                      ].map((item, i) => {
-                        const [title, desc] = item.split("—");
-                        return (
-                          <div key={i} className="bg-white p-4 md:p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
-                            <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-yellow-300 text-black p-2 rounded-[30px]  h-fit shrink-0 border-[3px] border-black">
-                                <Check size={20} strokeWidth={3} />
-                              </div>
-                              <div>
-                                <h3 className="text-normal md:text-xl font-bold mb-1 text-gray-900">{title}</h3>
-                                <p className="text-gray-500 leading-snug">{desc}</p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Founder Bonuses Block embedded in grid */}
-                    <div className="bg-[#fdfbf7] text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden flex flex-col justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="relative z-1">
-                          <h2 className="text-2xl sm:text-4xl lg:text-4xl  font-gulfs uppercase mb-6 leading-none">
-                            Founder Bonuses <br className='hidden lg:visible'/> for Early Creators
-                          </h2>
-                          <ul className="space-y-3 md:space-y-4 font-bold text-md lg:text-lg">
-                            <li className="flex items-center gap-3"><Star className="text-yellow-500" size={20}/> Available to early creators only</li>
-                            <li className="flex items-center gap-3"><Star className="text-yellow-500" size={20}/> Rewards based on platform activity</li>
-                            <li className="flex items-center gap-3"><Star className="text-yellow-500" size={20}/> Priority access to new monetisation tools</li>
-                            <li className="flex items-center gap-3"><Star className="text-yellow-500" size={20}/> Limited availability — once filled, it’s gone</li>
-                          </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    return (
+        <>
+            <Head title={title}>
+                <link rel="canonical" href="/creators" />
+                <meta name="description" content={description} />
+                <meta property="og:title" content={title} />
+                <meta property="og:description" content={description} />
+                <meta property="og:image" content="/siteicon.png" />
+                <meta
+                    property="og:url"
+                    content="https://spennypiggy.co/creators"
+                />
+                <meta property="og:type" content="website" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={title} />
+                <meta name="twitter:description" content={description} />
+                <meta name="twitter:image" content="/siteicon.png" />
+            </Head>
 
-              {/* Section: Higher Value Spending & Toolkit */}
-              <div className=" py-10 md:py-16">
-                <div className="grid lg:grid-cols-2 gap-8 md:gap-10">
-                  <div className='lg:pt-12'>
-                    <h2 className="text-3xl md:text-5xl font-gulfs uppercase mb-8 leading-tight text-black">
-                      Built to Drive <br/> <span className="text-gradient-wishlist decoration-4 underline-offset-4">Higher-Value</span> Spending
-                    </h2>
-                    <ul className="space-y-4 md:space-y-6">
-                      {[
-                        "Supporters spend more on gifts, tasks, and bills",
-                        "Multiple ways for supporters to pay — not just tips",
-                        "Tools designed for repeat spending, not one-offs",
-                        "Works alongside your existing platforms"
-                      ].map((item, i) => (
-                        <li key={i} className="flex items-start gap-4 text-md md:text-lg font-medium text-gray-700">
-                            <div className="bg-gray-100 p-2 rounded-full text-[#FF007F] shrink-0"><DollarSign size={20} /></div>
-                            {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            <Guest>
+                <AdPage>
+                    {/* Hero */}
+                    <div className="max-w-3xl">
+                        <Eyebrow accent={ACCENT.earn}>For creators</Eyebrow>
 
-                  {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[25px] md:rounded-[30px]  shadow-xl md:border border-gray-100">
-                    <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
-                      Your Full <br/> Monetisation Toolkit
-                    </h2>
-                    <ul className="space-y-6">
-                      {[
-                        "Wishlist Gifting — Supporters buy real items, not low-value tips",
-                        "Paid Tasks — Set rules, deadlines, and prices for supporter requests",
-                        "Bills & Contributions — Let supporters help with real-world costs",
-                        "Intro Video — Convert new supporters faster with context",
-                        "Leaderboards — Gamify spending and reward top supporters"
-                      ].map((item, i) => {
-                        const [title, desc] = item.split("—");
-                        return (
-                            <li key={i} className="group">
-                              <h3 className="font-bold text-md md:text-xl flex items-center gap-2 group-hover:text-[#FF007F] transition-colors text-gray-900">
-                                  <Zap size={18} className="text-yellow-500 fill-yellow-500" /> {title}
-                              </h3>
-                              <p className="text-gray-500 pl-7">{desc}</p>
-                            </li>
-                        )
-                      })}
-                    </ul>
-                  </div>
-                </div>
-              </div>
+                        <h1 className="mt-5 font-gulfs text-5xl uppercase leading-[0.85] tracking-tight text-white sm:text-6xl md:text-[64px]">
+                            Sell your content.
+                            <br />
+                            <span className="text-gradient-wishlist">
+                                Keep all of it.
+                            </span>
+                        </h1>
 
-              {/* Section: Account Safety & Disputes */}
-                    
-                    {/* Safety */}
-                    <div className="mb-16 py-8 md:py-12">
-                      <h2 className="text-3xl md:text-5xl font-gulfs uppercase mb-6 text-center text-black">
-                          Why Your Account <span className="underline decoration-[6px] decoration-yellow-300">Stays Safe</span> Here
-                      </h2>
-                      <div className="max-w-3xl mx-auto text-center mb-10">
-                          <p className="text-xl text-black font-bold mb-4">Payment accounts get shut down when money arrives without a clear reason.</p>
-                          <p className="text-xl font-bold text-black mt-4">That’s why Spenny Piggy:</p>
-                      </div>
-                      
-                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-                          {[
-                            "Enforces clear usage and content rules",
-                            "Links every payment to a platform feature",
-                            "Sends monthly reminders to creators",
-                            "Keeps transaction records Stripe expects"
-                          ].map((item, i) => (
-                            <div key={i} className="bg-[#fdfbf7] p-4 md:p-6 rounded-[25px] md:rounded-[30px]  text-center flex flex-col items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                <p className="font-bold text-gray-80 text-lg">{item}</p>
-                            </div>
-                          ))}
-                      </div>
-                      <p className="text-center mt-4 text-normal md:text-lg font-medium text-gray-900">This is why Stripe remains an option.</p>
+                        <p className="mb-9 mt-7 max-w-xl text-base leading-relaxed text-gray-300 md:text-xl">
+                            Seven ways to get paid on one profile, payouts every
+                            week, and every sale documented — so if a payment is
+                            ever queried, you answer it with evidence.
+                        </p>
+
+                        <StartSelling promise={promise} />
                     </div>
 
-                    {/* Disputes */}
-                    <div className="bg-black text-white rounded-[25px] md:rounded-[30px]  p-6 md:p-10 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-                      
-                      <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-                          <div>
-                            <h2 className="text-2xl md:text-4xl font-gulfs uppercase mb-6">
-                                Disputes Are <br/> <span className="text-[#FF007F]">Our Problem</span> — Not Yours
-                            </h2>
-                            <ul className="space-y-4 mb-8">
-                                {[
-                                  "Delivery receipts on every transaction",
-                                  "Time-stamped activity logs",
-                                  "Platform-managed dispute handling",
-                                  "Creators are never debited"
-                                ].map((item, i) => (
-                                  <li key={i} className="flex items-center gap-3 text-normal md:text-lg text-gray-300">
-                                      <Shield className="text-yellow-400" size={20} /> {item}
-                                  </li>
-                                ))}
-                            </ul>
-                            <p className="text-[17px] md:text-xl font-bold text-white border-l-4 border-[#FF007F] pl-4">
-                                If the platform ever loses a dispute, Spenny Piggy absorbs the loss — not the creator.
-                            </p>
-                          </div>
-
-                          {/* Why Creators Lose Money on Other Apps */}
-                          <div className="bg-white text-black p-6 rounded-[25px] md:rounded-[30px]  border-[3px] border-black">
-                            <h3 className="text-[16px] md:text-xl font-bold uppercase mb-6 text-red-400 flex items-center gap-2">
-                                <AlertTriangle  /> Why Creators Lose Money on Other Payment Apps
-                            </h3>
-                            <ul className="space-y-3 mb-6">
-                                {[
-                                  "No delivery tracking",
-                                  "No service context",
-                                  "No platform protection",
-                                  "One report can freeze everything"
-                                ].map((item, i) => (
-                                  <li key={i} className="text-gray-600 flex items-center gap-3">
-                                      <span className="w-2 h-2 bg-red-500 rounded-full"></span> {item}
-                                  </li>
-                                ))}
-                            </ul>
-                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px]  ">
-                                Spenny Piggy exists to remove that risk.
-                            </p>
-                          </div>
-                      </div>
+                    {/* The three figures the page rests on */}
+                    <div className="mt-16 grid gap-4 md:grid-cols-3 md:gap-5">
+                        <StatCell
+                            figure="100%"
+                            label="Of your listed price"
+                            note="No revenue cut. Supporters cover the platform fee at checkout."
+                            accent={ACCENT.earn}
+                            className="rounded-box border-2 border-white/15 bg-white/[0.04]"
+                        />
+                        <StatCell
+                            figure="Weekly"
+                            label="Payout runs"
+                            note="Straight to your own bank account through Stripe."
+                            accent={ACCENT.safe}
+                            className="rounded-box border-2 border-white/15 bg-white/[0.04]"
+                        />
+                        <StatCell
+                            figure="7"
+                            label="Ways to get paid"
+                            note="Five a supporter buys once, two they pay every month."
+                            accent={ACCENT.bonus}
+                            className="rounded-box border-2 border-white/15 bg-white/[0.04]"
+                        />
                     </div>
-              
-              <div className="text-center py-4 md:py-12 px-6">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-base py-3 px-8 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all"
-                >
-                  <span>Start Selling — It's Free</span>
-                  <ArrowRight />
-                </Link>
-                <div className="mt-2 text-sm font-medium text-gray-700">
-                  {SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime
-                </div>
-              </div>
 
-              <CreatorGuideLinks />
-            </div>
-          </div>
-        </div>
-      </Guest>
-    </>
-  );
+                    {/* Ways to earn */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead eyebrow="Ways to earn" accent={ACCENT.earn}>
+                            One profile,{' '}
+                            <span className="text-gradient-wishlist">
+                                seven ways to be paid
+                            </span>
+                        </SectionHead>
+
+                        <LedgerFrame className="mt-10">
+                            {WAYS.map((way) => (
+                                <LedgerRow
+                                    key={way.title}
+                                    mark={way.mark}
+                                    title={way.title}
+                                    line={way.line}
+                                    tag={way.tag}
+                                    accent={ACCENT.earn}
+                                />
+                            ))}
+                            <LedgerTotal
+                                label="What reaches you"
+                                note="Supporters cover the fees at checkout."
+                                figure="100%"
+                            />
+                        </LedgerFrame>
+
+                        <Link
+                            href="/creators/features"
+                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
+                            style={{ textDecorationColor: ACCENT.earn }}
+                        >
+                            See all seven in detail
+                            <ArrowRight size={14} />
+                        </Link>
+                    </div>
+
+                    {/* Why creators choose this */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="Why creators choose this"
+                            accent={ACCENT.safe}
+                        >
+                            Paid properly, and{' '}
+                            <span className="text-gradient-wishlist">
+                                still here next year
+                            </span>
+                        </SectionHead>
+
+                        <div className="mt-10 grid gap-4 md:grid-cols-2 md:gap-5">
+                            {REASONS.map((reason) => (
+                                <div
+                                    key={reason.title}
+                                    className="flex flex-col rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-8"
+                                >
+                                    <span
+                                        className="mb-5 block h-[5px] w-10 rounded-full"
+                                        style={{
+                                            backgroundColor: reason.accent,
+                                        }}
+                                    />
+                                    <h3 className="mb-3 font-gulfs text-lg uppercase leading-tight tracking-wide text-white md:text-xl">
+                                        {reason.title}
+                                    </h3>
+                                    <p className="text-base leading-relaxed text-gray-300">
+                                        {reason.line}
+                                    </p>
+                                    {reason.href && (
+                                        <Link
+                                            href={reason.href}
+                                            className="mt-6 inline-flex w-fit items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
+                                            style={{
+                                                textDecorationColor:
+                                                    reason.accent,
+                                            }}
+                                        >
+                                            {reason.cta}
+                                            <ArrowRight size={14} />
+                                        </Link>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* The problem */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="The problem"
+                            accent={ACCENT.safe}
+                            lead="A transfer with no explanation behind it is the thing that gets an account reviewed, and then closed. One report is enough."
+                        >
+                            Why creators lose money{' '}
+                            <span className="text-gradient-wishlist">
+                                on payment apps
+                            </span>
+                        </SectionHead>
+
+                        <ul className="mt-10 grid gap-3 md:grid-cols-2">
+                            {[
+                                [
+                                    'No delivery tracking',
+                                    'Nothing proves the buyer received anything',
+                                ],
+                                [
+                                    'No service context',
+                                    'The charge does not say what it was for',
+                                ],
+                                [
+                                    'No platform protection',
+                                    'You answer the card issuer yourself',
+                                ],
+                                [
+                                    'One report freezes everything',
+                                    'Including the money already earned',
+                                ],
+                            ].map(([head, sub]) => (
+                                <li
+                                    key={head}
+                                    className="rounded-box border-2 border-white/15 bg-white/[0.04] px-5 py-4"
+                                >
+                                    <div className="font-gulfs text-base uppercase tracking-wide text-white md:text-lg">
+                                        {head}
+                                    </div>
+                                    <div className="mt-1.5 text-sm text-white/60 md:text-base">
+                                        {sub}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Bonuses */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="Paid on top"
+                            accent={ACCENT.bonus}
+                            lead="Each one is a qualifying threshold, not a promise. Earnings are never assured and terms apply."
+                        >
+                            Three programmes{' '}
+                            <span className="text-gradient-wishlist">
+                                that stack
+                            </span>
+                        </SectionHead>
+
+                        <LedgerFrame className="mt-10">
+                            <LedgerRow
+                                title="Founder bonus"
+                                line={`First ${FOUNDER.seats} creators to earn ${money(FOUNDER.qualifyingNet)} net in ${FOUNDER.windowDays} days. Founders then earn ${percent(FOUNDER.monthlyRate)} on top of monthly earnings, up to ${money(FOUNDER.monthlyCap)} a month.`}
+                                figure={percent(FOUNDER.monthlyRate)}
+                                tag="monthly"
+                            />
+                            <LedgerRow
+                                title="Fast start bonus"
+                                line={`An extra ${percent(FAST_START.rate)} on everything you earn in your first ${FAST_START.windowDays} days, paid alongside your normal payout.`}
+                                figure={percent(FAST_START.rate)}
+                                tag={`${FAST_START.windowDays} days`}
+                            />
+                            <LedgerRow
+                                title="Creator referrals"
+                                line={`${money(REFERRAL.amount)} for every creator you bring who starts selling. Your link is in your dashboard from day one.`}
+                                figure={money(REFERRAL.amount)}
+                                tag="per creator"
+                            />
+                        </LedgerFrame>
+
+                        <Link
+                            href="/creators/founder-bonus"
+                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
+                            style={{ textDecorationColor: ACCENT.bonus }}
+                        >
+                            How the founder bonus works
+                            <ArrowRight size={14} />
+                        </Link>
+                    </div>
+
+                    {/* Close */}
+                    <div className="mt-20 text-center md:mt-28">
+                        <h2 className="font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl">
+                            Start selling{' '}
+                            <span className="text-gradient-wishlist">today</span>
+                        </h2>
+                        <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-gray-300 md:text-xl">
+                            Listing is free. You are not charged anything until
+                            you have made a sale.
+                        </p>
+                        <StartSelling
+                            promise={promise}
+                            align="center"
+                            className="mt-8"
+                        />
+                    </div>
+                </AdPage>
+            </Guest>
+        </>
+    );
 }

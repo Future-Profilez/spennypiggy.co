@@ -21,7 +21,7 @@ const TONE = {
   sent: 'bg-[#E9F7EF] text-[#1B7A46] border-[#1B7A46]/20',
   queued: 'bg-[#FFF7E6] text-[#8A5A00] border-[#8A5A00]/20',
   failed: 'bg-[#FDECEC] text-[#B3261E] border-[#B3261E]/20',
-  skipped: 'bg-black/[0.04] text-black/55 border-black/10',
+  skipped: 'bg-black/[0.04] text-black/60 border-black/10',
 };
 
 const WORD = {
@@ -51,7 +51,7 @@ export default function DeliveryStatus({ notifications, className = '' }) {
           <span
             key={key}
             title={`${label} ${WORD[status] ?? status}`}
-            className={`inline-flex items-center gap-1 rounded-box-sm border px-2 py-0.5 text-[11px] font-semibold ${
+            className={`inline-flex items-center gap-1 rounded-box-sm border px-2 py-0.5 text-[12px] font-semibold ${
               TONE[status] ?? TONE.skipped
             }`}
           >

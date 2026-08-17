@@ -58,7 +58,7 @@ export default function EnableBankPaymentsCard() {
 
     if (justEnabled) {
         return (
-            <div className="rounded-box border-[3px] border-black bg-[#A2E4B8] p-4 md:p-5 shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+            <div className="rounded-box border-[3px] border-black bg-[#A2E4B8] p-4 md:p-5 ">
                 <p className="font-black uppercase tracking-widest text-sm">
                     Bank payments enabled ✓
                 </p>
@@ -73,7 +73,7 @@ export default function EnableBankPaymentsCard() {
     if (!status || status.state !== "needs_enable") return null;
 
     return (
-        <div className="rounded-box border-[3px] border-black bg-white p-4 md:p-5 shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+        <div className="rounded-box border-[3px] border-black bg-white p-4 md:p-5 ">
             <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
                 <div className="flex-1">
                     <p className="font-black uppercase tracking-widest text-sm">
@@ -98,7 +98,7 @@ export default function EnableBankPaymentsCard() {
                     type="button"
                     onClick={enable}
                     disabled={enabling}
-                    className="rounded-box-sm min-h-[44px] px-6 py-3 bg-[#FF007F] text-white font-black uppercase tracking-widest text-sm border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-60 transition-all"
+                    className="rounded-box-sm min-h-[44px] px-6 py-3 bg-[#FF007F] text-black font-black uppercase tracking-widest text-sm border-[3px] border-black active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-60 transition-all"
                 >
                     {enabling ? "Enabling…" : "Enable now"}
                 </button>

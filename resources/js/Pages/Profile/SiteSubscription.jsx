@@ -306,7 +306,7 @@ export default function SiteSubscription({
                     />
                 </div>
 
-                <div className="mt-2 flex items-baseline justify-between gap-3 text-[11px] font-bold uppercase tracking-widest text-black/60">
+                <div className="mt-2 flex items-baseline justify-between gap-3 text-[12px] font-bold uppercase tracking-widest text-black/60">
                     <span>{formatDate(startDate)}</span>
                     <span className="text-black">
                         {theme.dateLabel} {formatDate(endDate)}
@@ -340,7 +340,7 @@ export default function SiteSubscription({
                 {showPromise ? (
                     <>
                         <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#A2E4B8] p-4">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-black/70">
+                            <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-black/70">
                                 You pay today
                             </p>
                             <p className="mt-1 font-gulfs text-[44px] leading-[0.95] tracking-tight text-black">
@@ -449,7 +449,7 @@ export default function SiteSubscription({
                             {theme.secondaryCta && (
                                 <Link
                                     href={route("activate-subscription")}
-                                    className="ms-4 text-[13px] font-bold uppercase tracking-wider text-black/50 underline underline-offset-4 hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                    className="ms-4 text-[13px] font-bold uppercase tracking-wider text-black/60 underline underline-offset-4 hover:text-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                                 >
                                     {theme.secondaryCta}
                                 </Link>
@@ -477,7 +477,7 @@ export default function SiteSubscription({
                 {theme.cta && (
                     <Link
                         href="/activate-subscription"
-                        className="mt-4 block w-full rounded-full border-[3px] border-black bg-[#FF007F] px-4 py-3 text-center text-[15px] font-bold uppercase tracking-wider text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                        className="mt-4 block w-full rounded-full border-[3px] border-black bg-[#FF007F] px-4 py-3 text-center text-[15px] font-bold uppercase tracking-wider text-black transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                     >
                         {theme.cta}
                     </Link>

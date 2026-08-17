@@ -107,7 +107,7 @@ export default function MembershipItem({
         silver: {
             bg: "bg-[#D8DCE3]",
             text: "text-black",
-            ink: "text-black/55",
+            ink: "text-black/60",
         },
         bronze: {
             bg: "bg-[#F97316]",
@@ -127,7 +127,7 @@ export default function MembershipItem({
         default: {
             bg: "bg-[#A2E4B8]",
             text: "text-black",
-            ink: "text-black/55",
+            ink: "text-black/60",
         },
     };
 
@@ -143,13 +143,13 @@ export default function MembershipItem({
         <div
             className={`${item?.status == 0 ? "inactive-item" : ""} h-full group/card`}
         >
-            <div className="relative flex flex-col h-full bg-white rounded-box border-[3px] border-black hover:-translate-y-1 transition-all duration-200 overflow-hidden">
+            <div className="relative flex flex-col h-full bg-white rounded-box border-[3px] border-black transition-colors duration-200 hover:bg-black/[0.03] overflow-hidden">
                 {/* Tier head — the colour IS the tier, so the name sits in it */}
                 <div className={`relative ${theme.bg} ${theme.text} px-5 py-4`}>
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <span
-                                className={`block text-[10px] font-black uppercase tracking-[0.2em] ${theme.ink}`}
+                                className={`block text-[12px] font-black uppercase tracking-[0.2em] ${theme.ink}`}
                             >
                                 Membership tier
                             </span>
@@ -172,10 +172,10 @@ export default function MembershipItem({
                         (IsloggedIn && item?.approved == 0)) && (
                         <div className="mt-3 flex flex-wrap gap-2">
                             {item?.is_suspended == 1 && (
-                                <span className="group/suspend relative cursor-help rounded-full border-2 border-black bg-red-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+                                <span className="group/suspend relative cursor-help rounded-full border-2 border-black bg-red-600 px-3 py-1 text-[12px] font-black uppercase tracking-wider text-white">
                                     Suspended
                                     {item.suspend_reason && (
-                                        <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-56 rounded-box-sm bg-black p-2 text-[10px] normal-case tracking-normal text-white group-hover/suspend:block">
+                                        <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-56 rounded-box-sm bg-black p-2 text-[12px] normal-case tracking-normal text-white group-hover/suspend:block">
                                             Reason: {item.suspend_reason}
                                         </span>
                                     )}
@@ -184,10 +184,10 @@ export default function MembershipItem({
                             {IsloggedIn &&
                                 item?.approved == 0 &&
                                 item?.is_suspended != 1 && (
-                                    <span className="group/approval relative cursor-help rounded-full border-2 border-black bg-yellow-400 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black">
+                                    <span className="group/approval relative cursor-help rounded-full border-2 border-black bg-yellow-400 px-3 py-1 text-[12px] font-black uppercase tracking-wider text-black">
                                         Pending approval
                                         {item?.edited_reason && (
-                                            <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-64 rounded-box-sm bg-black p-3 text-[10px] normal-case leading-relaxed tracking-normal text-white group-hover/approval:block">
+                                            <span className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-64 rounded-box-sm bg-black p-3 text-[12px] normal-case leading-relaxed tracking-normal text-white group-hover/approval:block">
                                                 <span className="mb-1 block font-bold text-yellow-300">
                                                     Edit reason
                                                 </span>
@@ -256,12 +256,12 @@ export default function MembershipItem({
                                       item?.currency,
                                   )}
                         </span>
-                        <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                        <span className="text-xs font-bold uppercase tracking-wide text-black/60">
                             / month
                         </span>
                     </div>
                     {!isCreator && (
-                        <p className="mt-1 text-[10px] font-semibold text-gray-400">
+                        <p className="mt-1 text-[12px] font-semibold text-black/60">
                             Includes platform &amp; processing fees
                         </p>
                     )}
@@ -269,7 +269,7 @@ export default function MembershipItem({
                     <div className="my-4 border-t-2 border-dashed border-black/15"></div>
 
                     <div className="flex-grow">
-                        <h4 className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-gray-500">
+                        <h4 className="mb-3 text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
                             What you get
                         </h4>
                         {/* The instant welcome reward — distinct from the ongoing
@@ -303,7 +303,7 @@ export default function MembershipItem({
                                     </li>
                                 ))
                             ) : (
-                                <li className="text-[13px] font-bold italic text-gray-500">
+                                <li className="text-[13px] font-bold italic text-black/60">
                                     Standard access benefits
                                 </li>
                             )}
@@ -314,7 +314,7 @@ export default function MembershipItem({
                                 <button
                                     type="button"
                                     onClick={() => setIsExpanded(true)}
-                                    className="mt-3 text-[11px] font-black uppercase tracking-wider text-gray-500 underline decoration-dotted underline-offset-4 transition-colors hover:text-[#FF007F]"
+                                    className="mt-3 text-[12px] font-black uppercase tracking-wider text-black/60 underline decoration-dotted underline-offset-4 transition-colors hover:text-[#FF007F]"
                                 >
                                     Show {remainingBenefits} more
                                 </button>
@@ -334,7 +334,7 @@ export default function MembershipItem({
                                 href={route("membership.checkout", {
                                     uuid: item?.uuid,
                                 })}
-                                className="flex w-full items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
+                                className="flex w-full items-center justify-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] py-3 text-xs font-black uppercase tracking-widest text-black transition-colors duration-200 hover:brightness-110 active:brightness-95"
                             >
                                 Join {item?.level}
                                 <svg

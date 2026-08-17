@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasCreatorWatermark;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +14,7 @@ use Ramsey\Uuid\Uuid;
 
 class Shop extends Model
 {
-    use HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
+    use HasCreatorWatermark, HasFactory, HasRewardContract, HasScheduledPublishing, SoftDeletes;
 
     protected $fillable = [
         'publish_at',
@@ -107,11 +109,15 @@ class Shop extends Model
     {
         $url = false;
         if (! empty($this->image)) {
-            // Use only format transformation, quality seems to cause 400 errors
-            $url = 'https://ucarecdn.com/'.$this->image.'/-/format/jpeg/';
+            // Capped — an uncapped original decodes to tens of MB of bitmap in
+            // the browser and is what killed the mobile Safari tab on a profile
+            // full of listings. See MediaUrl::THUMB_WIDTH.
+            $url = MediaUrl::thumb($this->image);
         }
 
-        return $url;
+        // Creator attribution watermark — no-op unless the feature is on and
+        // the owner relation is already loaded (see HasCreatorWatermark).
+        return MediaUrl::watermark($url, $this->creatorWatermarkUuid());
     }
 
     /**

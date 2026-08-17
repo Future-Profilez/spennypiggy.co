@@ -48,7 +48,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
         {/* <Popup  modalclass="updateavatar p-4" action={ClosePop} text={text}  > */}
             <div className='editprofileModal innermodal  '>
                 <div className='editprofileModalInner mt-4'>
-                    <div className={`${isEditable ? '' : 'd-none'} editable`} >
+                    <div className={`${isEditable ? '' : 'hidden'} editable`} >
                         <UploadcareEditor
                             height={'50vh'}
                             uuid={file && file.uuid || ''}
@@ -57,7 +57,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
                             cropPreset={type === 'cover' ? '16:9' : '1:1'}
                         />
                     </div>
-                    <div className={`${!isEditable ? '' : 'd-none'} edited`} >
+                    <div className={`${!isEditable ? '' : 'hidden'} edited`} >
                         <div className="pb-4" >
                             <GlobalUploader ctxName={`update-${type}`} type='minimal' ref={uploaderRef} sendFile={getFileUID} options={st.profileimage} />
                         </div>

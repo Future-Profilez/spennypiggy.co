@@ -41,7 +41,7 @@ function StepRail({ current }) {
                                     ? "bg-black text-white"
                                     : active
                                       ? "bg-[#A2E4B8] text-black"
-                                      : "bg-white text-black/40")
+                                      : "bg-white text-black/60")
                             }
                         >
                             {done ? "✓" : i + 1}
@@ -49,7 +49,7 @@ function StepRail({ current }) {
                         <span
                             className={
                                 "truncate text-[13px] leading-[1.3] " +
-                                (active ? "font-semibold text-black" : "text-black/55")
+                                (active ? "font-semibold text-black" : "text-black/60")
                             }
                         >
                             {step.label}
@@ -71,7 +71,7 @@ function StepRail({ current }) {
  */
 function Shell({ children }) {
     return (
-        <div className="mx-auto mb-6 rounded-box border-2 border-black bg-white p-4 shadow-[5px_5px_0px_rgba(0,0,0,0.9)] md:p-6">
+        <div className="mx-auto mb-6 rounded-box border-2 border-black bg-white p-4 md:p-6">
             {children}
         </div>
     );

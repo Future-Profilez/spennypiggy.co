@@ -81,7 +81,7 @@ export default function RecentSupporters() {
         </div>
       </div>
       <div className="rank-stats ps-2">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-black/60">
           {formatRelativeTime(supporter.created_at)}
         </p>
       </div>
@@ -110,7 +110,7 @@ export default function RecentSupporters() {
       </div>
     ) : data.length > 0 ? <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
       <h2 className="text-bls text-19 font-semibold tracking-tight text-[#0B0B0C] ">Recent Supporters</h2>
-      <p className='text-gray-500  mb-3'>Latest supporters who have shown their love.</p>
+      <p className='text-black/60  mb-3'>Latest supporters who have shown their love.</p>
       
       {/* <div className="time-hrs">
         <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>

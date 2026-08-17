@@ -134,7 +134,7 @@ export default function ActivateSubscription(props) {
             <div className="bg-[#A2E4B8] min-h-dvh py-10 md:py-16 pb-40 lg:pb-16">
                 <div className="mx-auto w-full max-w-3xl px-4">
 
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-black/50">
+                    <p className="text-[12px] font-black uppercase tracking-[0.22em] text-black/60">
                         The creator plan
                     </p>
 
@@ -147,11 +147,11 @@ export default function ActivateSubscription(props) {
                     </p>
 
                     {/* The only bordered surface on the page. */}
-                    <div className="mt-8 rounded-box border-[3px] border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="mt-8 rounded-box border-[3px] border-black bg-white ">
 
                         {isActive ? (
                             <div className="p-6 md:p-8">
-                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/50">
+                                <p className="text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                                     Status
                                 </p>
                                 <p className="mt-2 font-gulfs text-[34px] leading-none uppercase text-black">
@@ -163,7 +163,7 @@ export default function ActivateSubscription(props) {
                             </div>
                         ) : (
                             <div className="p-6 md:p-8">
-                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/50">
+                                <p className="text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                                     You pay today
                                 </p>
 
@@ -214,13 +214,13 @@ export default function ActivateSubscription(props) {
                                     <LoaderButton
                                         onClick={buttonAction}
                                         disabled={loading}
-                                        className={`w-full !rounded-box-sm border-[3px] border-black bg-[#FF007F] py-4 text-lg font-black uppercase tracking-widest text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-pink-600 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] motion-reduce:transition-none ${loading ? 'cursor-not-allowed opacity-50 grayscale' : ''}`}
+                                        className={`w-full !rounded-box-sm border-[3px] border-black bg-[#FF007F] py-4 text-lg font-black uppercase tracking-widest text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:brightness-110 motion-reduce:transition-none ${loading ? 'cursor-not-allowed opacity-50 grayscale' : ''}`}
                                     >
                                         {loading ? 'Processing…' : buttonLabel}
                                     </LoaderButton>
                                 </div>
 
-                                <p className="mt-4 text-[11px] font-medium leading-relaxed text-black/50">
+                                <p className="mt-4 text-[12px] font-medium leading-relaxed text-black/60">
                                     {legalCopy}
                                 </p>
                             </div>
@@ -242,7 +242,7 @@ export default function ActivateSubscription(props) {
                         ))}
                     </ul>
 
-                    <p className="mt-8 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-black/45">
+                    <p className="mt-8 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest text-black/60">
                         <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                         </svg>
@@ -255,13 +255,13 @@ export default function ActivateSubscription(props) {
             <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t-[3px] border-black px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-3 max-w-xl mx-auto">
                     <div className="flex-shrink-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 leading-none mb-1">{freeRun ? 'Today' : 'Due today'}</p>
+                        <p className="text-[12px] font-bold uppercase tracking-widest text-black/60 leading-none mb-1">{freeRun ? 'Today' : 'Due today'}</p>
                         <p className="text-xl font-black text-black leading-none tabular-nums">{dueToday}</p>
                     </div>
                     <LoaderButton
                         onClick={buttonAction}
                         disabled={loading}
-                        className={`flex-1 min-h-[52px] !rounded-box-sm bg-[#FF007F] text-white font-black py-3 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-base ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                        className={`flex-1 min-h-[52px] !rounded-box-sm bg-[#FF007F] text-black font-black py-3 border-[3px] border-black active:translate-x-[2px] active:translate-y-[2px] transition-all uppercase tracking-widest text-base ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                     >
                         {loading ? 'Processing…' : buttonLabel}
                     </LoaderButton>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -142,9 +143,9 @@ class Bills extends Model
     {
         $url = false;
         if (! empty($this->thumbnail)) {
-            $url = 'https://ucarecdn.com/'.$this->thumbnail.'/-/format/jpeg/';
+            $url = MediaUrl::thumb($this->thumbnail);
         } else {
-            $url = 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/';
+            $url = MediaUrl::thumb(MediaUrl::FALLBACK_THUMBNAIL);
         }
 
         return $url;

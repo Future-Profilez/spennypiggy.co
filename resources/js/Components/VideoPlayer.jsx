@@ -9,7 +9,7 @@ const VideoPlayer = ({ src, poster, controls = true, autoPlay = false, className
         <div className={`video-player-container ${className}`}>
             {src ? (
                 <video
-                    className="w-full h-auto rounded-[30px]  shadow-sm border-[3px] border-black"
+                    className="w-full h-auto rounded-box border-[3px] border-black"
                     controls={controls}
                     autoPlay={false}
                     preload="none"
@@ -21,8 +21,8 @@ const VideoPlayer = ({ src, poster, controls = true, autoPlay = false, className
                     Your browser does not support the video tag.
                 </video>
             ) : (
-                <div className="relative aspect-video bg-gray-100 rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden group cursor-pointer">
-                    <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
+                <div className="relative aspect-video bg-gray-100 rounded-box border-[3px] border-black overflow-hidden group cursor-pointer">
+                    <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[12px] font-black uppercase tracking-tight '>
                         Intro video
                     </div>
                     
@@ -38,7 +38,7 @@ const VideoPlayer = ({ src, poster, controls = true, autoPlay = false, className
                     />
                     
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 bg-[#FF007F] rounded-full flex items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:scale-110 transition-transform">
+                        <div className="w-16 h-16 bg-[#FF007F] rounded-full flex items-center justify-center border-[3px] border-black transition-colors duration-200 group-hover:brightness-110">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M8 5V19L19 12L8 5Z" fill="black"/>
                             </svg>

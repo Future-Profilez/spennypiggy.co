@@ -116,7 +116,7 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
                     {/* White background is not decoration — a scanner needs the quiet
                         zone and the contrast to read the code at all. */}
                     <QRCodeSVG value={url} size={148} level="M" marginSize={2} />
-                    <p className="mt-2 max-w-[148px] text-center text-[11px] font-bold text-zinc-500">
+                    <p className="mt-2 max-w-[148px] text-center text-[12px] font-bold text-zinc-500">
                         Scan to open
                     </p>
                 </div>
@@ -124,7 +124,7 @@ export default function ShareButton({ share, label = "Share", className = "" }) 
 
             {/* Fallback list, only on browsers with no share sheet. */}
             {open && (
-                <div className="absolute right-0 z-20 mt-2 w-56 rounded-box border-2 border-black bg-white p-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="absolute right-0 z-20 mt-2 w-56 rounded-box border-2 border-black bg-white p-2 ">
                     <button
                         type="button"
                         onClick={copy}

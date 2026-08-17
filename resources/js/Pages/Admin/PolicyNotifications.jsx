@@ -69,10 +69,10 @@ export default function PolicyNotifications({ auth, currentSettings }) {
             <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
                 {/* Status card */}
-                <div className={`rounded-2xl border-2 p-6 ${isActive && activePolicies.length > 0 ? "border-green-400 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
+                <div className={`rounded-box border-2 p-6 ${isActive && activePolicies.length > 0 ? "border-green-400 bg-green-50" : "border-gray-200 bg-gray-50"}`}>
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>
-                            <p className="text-sm font-mono uppercase tracking-widest text-gray-500 mb-1">Current Status</p>
+                            <p className="text-sm font-mono uppercase tracking-widest text-black/60 mb-1">Current Status</p>
                             {isActive && activePolicies.length > 0 ? (
                                 <>
                                     <p className="text-lg font-bold text-green-700">🟢 Active — popup showing to users</p>
@@ -89,14 +89,14 @@ export default function PolicyNotifications({ auth, currentSettings }) {
                                     </div>
                                 </>
                             ) : (
-                                <p className="text-lg font-bold text-gray-500">⚪ Inactive — no popup shown</p>
+                                <p className="text-lg font-bold text-black/60">⚪ Inactive — no popup shown</p>
                             )}
                         </div>
                         {isActive && activePolicies.length > 0 && (
                             <button
                                 onClick={handleDeactivate}
                                 disabled={deactivating}
-                                className="px-5 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition disabled:opacity-50"
+                                className="px-5 py-2 bg-red-600 text-white rounded-box-sm font-bold hover:bg-red-700 transition disabled:opacity-50"
                             >
                                 {deactivating ? "Deactivating…" : "Deactivate"}
                             </button>
@@ -105,10 +105,10 @@ export default function PolicyNotifications({ auth, currentSettings }) {
                 </div>
 
                 {/* Trigger form */}
-                <form onSubmit={handleTrigger} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
+                <form onSubmit={handleTrigger} className="bg-white rounded-box border border-gray-200 p-6 space-y-6">
                     <div>
                         <h3 className="text-lg font-bold text-gray-900 mb-1">Trigger Policy Change Notification</h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-black/60">
                             Selecting policies and clicking <strong>Trigger</strong> will show a mandatory acceptance popup to all users who joined before the trigger date and haven't accepted since.
                         </p>
                     </div>
@@ -120,7 +120,7 @@ export default function PolicyNotifications({ auth, currentSettings }) {
                             {ALL_POLICIES.map(policy => (
                                 <label
                                     key={policy.key}
-                                    className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${
+                                    className={`flex items-center gap-3 p-3 rounded-box-sm border-2 cursor-pointer transition ${
                                         data.updated_terms_list.includes(policy.key)
                                             ? "border-[#FF007F] bg-pink-50"
                                             : "border-gray-200 hover:border-gray-300"
@@ -151,13 +151,13 @@ export default function PolicyNotifications({ auth, currentSettings }) {
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                             Trigger date/time
-                            <span className="text-gray-400 font-normal ml-2">(users who accepted before this date will see the popup)</span>
+                            <span className="text-black/60 font-normal ml-2">(users who accepted before this date will see the popup)</span>
                         </label>
                         <input
                             type="datetime-local"
                             value={data.trigger_date}
                             onChange={e => setData("trigger_date", e.target.value)}
-                            className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007F]"
+                            className="border border-gray-300 rounded-box-sm px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007F]"
                         />
                     </div>
 
@@ -165,18 +165,18 @@ export default function PolicyNotifications({ auth, currentSettings }) {
                         <button
                             type="submit"
                             disabled={processing || data.updated_terms_list.length === 0}
-                            className="px-8 py-3 bg-[#FF007F] text-white rounded-xl font-bold hover:bg-pink-700 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50"
+                            className="border-2 border-black px-8 py-3 bg-[#FF007F] text-black rounded-box-sm font-bold hover:brightness-110 transition active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50"
                         >
                             {processing ? "Triggering…" : "Trigger Notification"}
                         </button>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-black/60">
                             {data.updated_terms_list.length} {data.updated_terms_list.length === 1 ? "policy" : "policies"} selected
                         </p>
                     </div>
                 </form>
 
                 {/* How it works */}
-                <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+                <div className="bg-gray-50 rounded-box border border-gray-200 p-6">
                     <h4 className="font-bold text-gray-800 mb-3">How this works</h4>
                     <ul className="space-y-2 text-sm text-gray-600">
                         <li>• Select the policies that changed and click <strong>Trigger Notification</strong>.</li>

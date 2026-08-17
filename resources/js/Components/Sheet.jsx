@@ -122,7 +122,7 @@ export default function Sheet({
                                             {title}
                                         </Dialog.Title>
                                         {subtitle && (
-                                            <p className="mt-1 truncate text-left text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+                                            <p className="mt-1 truncate text-left text-[12px] font-black uppercase tracking-[0.16em] text-white/60">
                                                 {subtitle}
                                             </p>
                                         )}

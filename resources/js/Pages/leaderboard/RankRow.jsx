@@ -36,7 +36,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                 className="absolute inset-y-0 left-[30px] w-px bg-black/[0.06] sm:left-[46px]"
             />
 
-            <span className="relative z-10 w-8 shrink-0 bg-white text-center font-gulfs text-16 leading-none text-black/25 sm:w-14 sm:text-22">
+            <span className="relative z-10 w-8 shrink-0 bg-white text-center font-gulfs text-16 leading-none text-black/60 sm:w-14 sm:text-22">
                 {row.rank}
             </span>
 
@@ -49,7 +49,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                     src={row.avatar || userphoto}
                     alt=""
                     loading="lazy"
-                    className="h-11 w-11 shrink-0 rounded-box-sm object-cover shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
+                    className="h-11 w-11 shrink-0 rounded-box-sm object-cover "
                 />
 
                 <div className="min-w-0 flex-1">
@@ -60,7 +60,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                         <VerifiedBadge user={row} size="sm" />
                     </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-11 text-black/45 sm:text-12">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-12 text-black/60 ">
                         <span className="truncate">@{row.username}</span>
                         {row.supporters > 0 && (
                             <span className="whitespace-nowrap">
@@ -74,7 +74,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                             visible at every width, never hidden on mobile. */}
                         {tier.label && (
                             <span
-                                className={`rounded-full px-2 py-0.5 text-10 font-semibold uppercase tracking-[0.08em] ${tier.className}`}
+                                className={`rounded-full px-2 py-0.5 text-12 font-semibold uppercase tracking-[0.08em] ${tier.className}`}
                             >
                                 {tier.label}
                             </span>
@@ -96,7 +96,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
                 <FollowButton
                     targetUserId={row.id}
                     isInitiallyFollowing={row.is_following}
-                    classes="inline-flex min-h-[44px] shrink-0 items-center rounded-full px-3 text-10 font-semibold uppercase tracking-[0.08em] ring-1 ring-inset ring-black/12 transition-colors hover:ring-black/30 disabled:opacity-50 sm:px-3.5 sm:text-11"
+                    classes="inline-flex min-h-[44px] shrink-0 items-center rounded-full px-3 text-12 font-semibold uppercase tracking-[0.08em] ring-1 ring-inset ring-black/12 transition-colors hover:ring-black/30 disabled:opacity-50 sm:px-3.5"
                 />
             )}
         </div>

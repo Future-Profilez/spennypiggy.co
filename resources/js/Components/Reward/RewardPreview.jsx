@@ -48,7 +48,7 @@ export default function RewardPreview({
 
     return (
         <div className={className}>
-            <p className="mb-3 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-neutral-500">
+            <p className="mb-3 inline-flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.14em] text-neutral-500">
                 <Eye size={14} strokeWidth={2.5} /> Supporter sees
             </p>
             <RewardBlock reward={reward} compact />

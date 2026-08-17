@@ -100,17 +100,17 @@ export default function PurchaseResults() {
 
                 {rows.length === 0 && (
                     <div className="mt-7 rounded-box border-[3px] border-black bg-white p-8 text-center">
-                        <PackageOpen size={30} className="mx-auto text-gray-300" />
+ <PackageOpen size={30} className="mx-auto text-black/60" />
                         <h2 className="mt-3 font-gulfs text-[22px] uppercase leading-[1.1] text-black">
                             Nothing here yet
                         </h2>
-                        <p className="mt-2 text-[14px] leading-[1.5] text-gray-500">
+ <p className="mt-2 text-[14px] leading-[1.5] text-black/60">
                             We could not find purchases for this address. If you
                             used a different email at checkout, try that one.
                         </p>
                         <Link
                             href={route("guest-purchases.form")}
-                            className="mt-5 inline-flex min-h-[48px] items-center rounded-box-sm border-[3px] border-black px-5 text-[15px] font-bold text-black transition-transform hover:-translate-y-0.5"
+ className="mt-5 inline-flex min-h-[48px] items-center rounded-box-sm border-[3px] border-black px-5 text-[15px] font-bold text-black transition-colors duration-200 hover:bg-black/[0.04]"
                         >
                             Try another email
                         </Link>
@@ -124,11 +124,11 @@ export default function PurchaseResults() {
                             className="rounded-box border-[3px] border-black bg-white p-5 sm:p-6"
                         >
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-box-sm border-2 border-black bg-[#E6EA7B] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-black">
+ <span className="rounded-box-sm border-2 border-black bg-[#E6EA7B] px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-black">
                                     {row.type_label}
                                 </span>
                                 {when(row.purchased_at) && (
-                                    <span className="text-[13px] text-gray-500">
+ <span className="text-[13px] text-black/60">
                                         {when(row.purchased_at)}
                                     </span>
                                 )}
@@ -199,7 +199,7 @@ export default function PurchaseResults() {
                                     <RewardBlock
                                         reward={row.reward}
                                         locked={!row.settled}
-                                        className="!shadow-none"
+ className=""
                                     />
                                 </div>
                             )}
@@ -212,7 +212,7 @@ export default function PurchaseResults() {
                                 rendering an empty card the reader has to interpret.
                             */}
                             {row.item_missing && (
-                                <p className="mt-4 rounded-box-sm border-2 border-gray-300 bg-gray-50 px-3 py-2.5 text-[13px] font-medium leading-[1.45] text-gray-600">
+ <p className="mt-4 rounded-box-sm border-2 border-gray-300 bg-gray-50 px-3 py-2.5 text-[13px] font-medium leading-[1.45] text-black/80">
                                     {/*
                                         ⚠️ This REPLACES the awaiting-settlement note
                                         rather than sitting beside it. Together they read
@@ -229,7 +229,7 @@ export default function PurchaseResults() {
                             )}
 
                             {!row.item_missing && !row.settled && !row.awaiting_settlement && (
-                                <p className="mt-4 rounded-box-sm border-2 border-gray-300 bg-gray-50 px-3 py-2.5 text-[13px] font-medium leading-[1.45] text-gray-600">
+ <p className="mt-4 rounded-box-sm border-2 border-gray-300 bg-gray-50 px-3 py-2.5 text-[13px] font-medium leading-[1.45] text-black/80">
                                     This payment did not complete, so there is no
                                     content to collect. If you were charged, reply to
                                     your receipt email and we will look into it.

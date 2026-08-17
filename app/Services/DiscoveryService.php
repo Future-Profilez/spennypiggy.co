@@ -8,6 +8,7 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Support\MediaUrl;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -267,7 +268,7 @@ class DiscoveryService
         }
 
         return $query->offset($offset)->limit($limit)
-            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier'.MediaUrl::ownerColumn())
             ->get()
             ->map(function ($w) {
                 return [
@@ -394,7 +395,7 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier'.MediaUrl::ownerColumn())
                 ->get()
                 ->map(function ($w) {
                     return [
@@ -482,7 +483,7 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage'.MediaUrl::ownerColumn())
                 ->get()
                 ->map(function ($b) {
                     return [
@@ -536,7 +537,7 @@ class DiscoveryService
                 ->orderByDesc('supporter_count')
                 ->orderByDesc('id')
                 ->limit($limit)
-                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
+                ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage'.MediaUrl::ownerColumn())
                 ->get()
                 ->map(function ($m) {
                     return [
@@ -615,7 +616,7 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->get()
             ->map(function ($b) {
                 return [
@@ -689,7 +690,7 @@ class DiscoveryService
         }
 
         return $query->limit($limit)
-            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage')
+            ->with('user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->get()
             ->map(function ($m) {
                 return [
@@ -857,7 +858,7 @@ class DiscoveryService
 
         return $query->limit($limit)
             ->with([
-                'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency',
+                'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency'.MediaUrl::ownerColumn(),
                 'shop_shipping_info:id,shop_id,country,shipping_price',
             ])
             ->get()
@@ -913,7 +914,7 @@ class DiscoveryService
                 ->orderByDesc('id')
                 ->limit($limit)
                 ->with([
-                    'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency',
+                    'user:id,name,username,avatar,avatar_approved,avatar_cdn_modifier,cover,cover_approved,cover_cdn_modifier,vat_amount_percentage,default_currency'.MediaUrl::ownerColumn(),
                     'shop_shipping_info:id,shop_id,country,shipping_price',
                 ])
                 ->get()

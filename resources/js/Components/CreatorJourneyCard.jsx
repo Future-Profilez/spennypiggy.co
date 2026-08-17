@@ -71,14 +71,14 @@ export default function CreatorJourneyCard() {
 
     return (
         <div
-            className={`relative mb-6 w-full overflow-hidden rounded-box border-[3px] border-black p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:p-6 ${
+            className={`relative mb-6 w-full overflow-hidden rounded-box border-[3px] border-black p-5 md:p-6 ${
                 waiting ? "bg-white" : "bg-[#FFF6EC]"
             }`}
         >
             <button
                 onClick={dismiss}
                 aria-label="Hide this step"
-                className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-xl font-black transition-colors hover:bg-[#FF007F] hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50"
+                className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border-2 border-black bg-white text-xl font-black transition-colors hover:bg-[#FF007F] hover:text-black focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50"
             >
                 ×
             </button>
@@ -123,7 +123,7 @@ export default function CreatorJourneyCard() {
             ) : journey.route ? (
                 <button
                     onClick={() => go(journey.route, journey.params)}
-                    className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-white px-5 py-2.5 text-sm font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+                    className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-white px-5 py-2.5 text-sm font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
                 >
                     {journey.cta}
                 </button>
@@ -166,10 +166,10 @@ function ThreeWays({ onPick }) {
                 <button
                     key={option.title}
                     onClick={option.go}
-                    className="group relative flex flex-col rounded-box-sm border-[3px] border-black bg-white p-4 text-left shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+                    className="group relative flex flex-col rounded-box-sm border-[3px] border-black bg-white p-4 text-left transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
                 >
                     {option.recommended && (
-                        <span className="absolute -top-2.5 right-3 rounded-full border-2 border-black bg-[#FF007F] px-2 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="absolute -top-2.5 right-3 rounded-full border-2 border-black bg-[#FF007F] px-2 py-0.5 text-[12px] font-black uppercase tracking-wider text-black ">
                             Recommended
                         </span>
                     )}

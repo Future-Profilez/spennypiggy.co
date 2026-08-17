@@ -54,12 +54,12 @@ export default function DisputeShow({ auth, dispute }) {
                         </Link>
                         <div>
                             <h2 className="text-2xl font-bold text-white uppercase font-gulfs tracking-wide">Dispute Details</h2>
-                            <p className="text-gray-500 text-sm">ID: {dispute.stripe_dispute_id}</p>
+                            <p className="text-white/60 text-sm">ID: {dispute.stripe_dispute_id}</p>
                         </div>
                     </div>
                     
                     {/* Status Banner */}
-                    <div className={`mb-8 p-6 rounded-[30px]  border ${
+                    <div className={`mb-8 p-6 rounded-box  border ${
                         isClosed ? (dispute.status === 'won' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-gray-500/10 border-gray-500/20 !text-gray-100') :
                         isSubmitted ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
                         'bg-red-500/10 border-red-500/20 text-[#FF007F]'
@@ -88,13 +88,13 @@ export default function DisputeShow({ auth, dispute }) {
                         {/* Sidebar: Supporter & Payment Info */}
                         <div className="space-y-6">
                             {/* Supporter Info */}
-                            <div className="bg-[#1a1a1a] p-6 rounded-[30px]  border border-gray-800">
-                                <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-6 flex items-center gap-2">
+                            <div className="bg-[#1a1a1a] p-6 rounded-box  border border-gray-800">
+                                <h4 className="text-[12px] uppercase tracking-widest text-white/60 font-bold mb-6 flex items-center gap-2">
                                     <BiUser className="text-[#FF007F]" /> Supporter Info
                                 </h4>
                                 {dispute.payment?.supporter ? (
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-14 h-14 rounded-[30px]  bg-gray-800 border border-gray-700 overflow-hidden">
+                                        <div className="w-14 h-14 rounded-box  bg-gray-800 border border-gray-700 overflow-hidden">
                                             {dispute.payment.supporter.avatar ? (
                                                 <img src={dispute.payment.supporter.avatar} alt={dispute.payment.supporter.name || ''} className="w-full h-full object-cover" />
                                             ) : (
@@ -106,33 +106,33 @@ export default function DisputeShow({ auth, dispute }) {
                                         <div>
                                             <div className="text-white font-bold">{dispute.payment.supporter.name}</div>
                                             <div className="text-[#FF007F] text-xs">@{dispute.payment.supporter.username}</div>
-                                            <div className="text-gray-500 text-[10px] mt-1">{dispute.payment.supporter.email}</div>
+                                            <div className="text-white/60 text-[12px] mt-1">{dispute.payment.supporter.email}</div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="text-gray-500 italic text-sm mb-6">Guest / Unknown Supporter</div>
+                                    <div className="text-white/60 italic text-sm mb-6">Guest / Unknown Supporter</div>
                                 )}
                                 
                                 <div className="pt-6 border-t border-gray-800">
-                                    <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-4 flex items-center gap-2">
+                                    <h4 className="text-[12px] uppercase tracking-widest text-white/60 font-bold mb-4 flex items-center gap-2">
                                         <BiCartAlt className="text-[#FF007F]" /> Transaction Info
                                     </h4>
                                     <dl className="space-y-4">
                                         <div>
-                                            <dt className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Amount Disputed</dt>
+                                            <dt className="text-[12px] text-white/60 uppercase font-bold tracking-tighter">Amount Disputed</dt>
                                             <dd className="text-2xl font-bold text-white mt-1">
                                                 {(dispute.amount / 100).toLocaleString('en-GB', { style: 'currency', currency: dispute.currency.toUpperCase() })}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Reason</dt>
-                                            <dd className="text-sm font-medium text-gray-300 capitalize mt-1">
+                                            <dt className="text-[12px] text-white/60 uppercase font-bold tracking-tighter">Reason</dt>
+                                            <dd className="text-sm font-medium text-white/60 capitalize mt-1">
                                                 {dispute.reason ? dispute.reason.replace(/_/g, ' ') : 'General'}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Date</dt>
-                                            <dd className="text-sm text-gray-300 mt-1">
+                                            <dt className="text-[12px] text-white/60 uppercase font-bold tracking-tighter">Date</dt>
+                                            <dd className="text-sm text-white/60 mt-1">
                                                 {new Date(dispute.created_at).toLocaleDateString()}
                                             </dd>
                                         </div>
@@ -141,8 +141,8 @@ export default function DisputeShow({ auth, dispute }) {
                             </div>
 
                             {/* Important Notice */}
-                            <div className="bg-[#FF007F]/5 p-6 rounded-[30px]  border border-[#FF007F]/20">
-                                <h4 className="text-[10px] uppercase tracking-widest text-[#FF007F] font-bold mb-3">Important</h4>
+                            <div className="bg-[#FF007F]/5 p-6 rounded-box  border border-[#FF007F]/20">
+                                <h4 className="text-[12px] uppercase tracking-widest text-[#FF007F] font-bold mb-3">Important</h4>
                                 <p className="text-xs !text-gray-100 leading-relaxed">
                                     Providing evidence doesn't guarantee a win, but it significantly increases your chances. Banks look for proof that the service was delivered as described.
                                 </p>
@@ -151,18 +151,18 @@ export default function DisputeShow({ auth, dispute }) {
 
                         {/* Main Content: Evidence Submission */}
                         <div className="lg:col-span-2">
-                            <div className="bg-[#1a1a1a] p-8 rounded-[30px]  border border-gray-800 h-full">
+                            <div className="bg-[#1a1a1a] p-8 rounded-box  border border-gray-800 h-full">
                                 {canSubmit ? (
                                     <form onSubmit={handleSubmit} className="space-y-8">
                                         <div>
                                             <h4 className="text-xl font-bold text-white mb-2 uppercase font-gulfs tracking-widest">Submit Your Evidence</h4>
-                                            <p className="text-gray-500 text-sm mb-6">Tell the bank why this dispute is incorrect. Be clear and professional.</p>
+                                            <p className="text-white/60 text-sm mb-6">Tell the bank why this dispute is incorrect. Be clear and professional.</p>
                                             
                                             <div className="space-y-2">
                                                 <InputLabel htmlFor="explanation" value="Explanation / Message to Bank" className="!text-gray-100 text-xs uppercase tracking-widest" />
                                                 <textarea
                                                     id="explanation"
-                                                    className="w-full bg-black border border-gray-800 rounded-[30px]  text-white p-4 focus:border-[#FF007F] focus:ring-0 transition-all min-h-[150px] text-sm"
+                                                    className="w-full bg-black border border-gray-800 rounded-box  text-white p-4 focus:border-[#FF007F] focus:ring-0 transition-all min-h-[150px] text-sm"
                                                     placeholder="Describe what the supporter purchased and any interaction you had with them..."
                                                     value={data.explanation}
                                                     onChange={(e) => setData('explanation', e.target.value)}
@@ -190,9 +190,9 @@ export default function DisputeShow({ auth, dispute }) {
                                                 {data.files.length > 0 && (
                                                     <div className="space-y-2">
                                                         {data.files.map((file, idx) => (
-                                                            <div key={idx} className="bg-black border border-gray-800 rounded-xl p-3 flex items-center justify-between group">
+                                                            <div key={idx} className="bg-black border border-gray-800 rounded-box-sm p-3 flex items-center justify-between group">
                                                                 <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <div className="p-2 bg-gray-900 rounded-lg">
+                                                                    <div className="p-2 bg-gray-900 rounded-box-sm">
                                                                         {file.isImage ? (
                                                                             <img src={file.url} className="w-6 h-6 object-cover rounded" alt="" />
                                                                         ) : (
@@ -201,13 +201,13 @@ export default function DisputeShow({ auth, dispute }) {
                                                                     </div>
                                                                     <div className="overflow-hidden">
                                                                         <div className="text-xs text-white font-bold truncate">{file.name}</div>
-                                                                        <div className="text-[10px] text-gray-600">{(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                                                                        <div className="text-[12px] text-gray-600">{(file.size / 1024 / 1024).toFixed(2)} MB</div>
                                                                     </div>
                                                                 </div>
                                                                 <button 
                                                                     type="button"
                                                                     onClick={() => removeFile(idx)}
-                                                                    className="p-1 hover:text-red-500 transition-colors text-gray-500"
+                                                                    className="grid h-11 w-11 place-items-center rounded-box-sm hover:text-red-500 transition-colors text-white/60"
                                                                 >
                                                                     <BiX size={18} />
                                                                 </button>
@@ -221,7 +221,7 @@ export default function DisputeShow({ auth, dispute }) {
 
                                         <div className="pt-6 border-t border-gray-800 flex justify-end">
                                             <PrimaryButton 
-                                                className="bg-[#FF007F] hover:bg-[#d83a7c] px-8 py-4 rounded-[30px]  text-sm font-bold uppercase tracking-widest"
+                                                className="bg-[#FF007F] hover:brightness-110 px-8 py-4 rounded-box  text-sm font-bold uppercase tracking-widest"
                                                 disabled={processing}
                                             >
                                                 {processing ? 'Submitting...' : 'Submit to Stripe'}
@@ -230,22 +230,22 @@ export default function DisputeShow({ auth, dispute }) {
                                     </form>
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${isSubmitted ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-800 text-gray-500'}`}>
+                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${isSubmitted ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-800 text-white/60'}`}>
                                             {isSubmitted ? <BiCheckCircle size={40} /> : <BiFile size={40} />}
                                         </div>
                                         <h4 className="text-2xl font-bold text-white mb-3 uppercase font-gulfs tracking-wider">
                                             {isSubmitted ? 'Evidence Submitted' : 'Dispute Finalized'}
                                         </h4>
-                                        <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
+                                        <p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed">
                                             {isSubmitted 
                                                 ? "You've successfully submitted evidence for this dispute. The bank is currently reviewing the documents. This process can take up to 60-90 days."
                                                 : "This dispute has been closed and can no longer be contested. The final status has been recorded in your financial history."}
                                         </p>
                                         
                                         {dispute.evidence_details && (
-                                            <div className="mt-12 w-full text-left bg-black border border-gray-800 rounded-3xl p-6">
-                                                <h5 className="text-[10px] uppercase font-bold tracking-widest text-gray-500 mb-4">Your Explanation</h5>
-                                                <p className="text-gray-300 text-sm italic leading-relaxed">
+                                            <div className="mt-12 w-full text-left bg-black border border-gray-800 rounded-box p-6">
+                                                <h5 className="text-[12px] uppercase font-bold tracking-widest text-white/60 mb-4">Your Explanation</h5>
+                                                <p className="text-white/60 text-sm italic leading-relaxed">
                                                     "{dispute.evidence_details.explanation}"
                                                 </p>
                                             </div>

@@ -39,14 +39,14 @@ export default function LegalLayout({ children, activePage }) {
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center shadow-md shadow-pink-100">
+                    <div className="border-2 border-black w-8 h-8 bg-pink-600 rounded-box-xs flex items-center justify-center">
                         <ShieldCheck className="text-white" size={16} />
                     </div>
                     <span className="font-bold text-gray-900 text-sm tracking-tight uppercase">Legal Center</span>
                 </div>
                 <button 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="p-2 text-gray-500 hover:text-[#FF007F] transition-colors"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-black/60 hover:text-[#FF007F] transition-colors"
                 >
                     {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
@@ -60,21 +60,21 @@ export default function LegalLayout({ children, activePage }) {
                 <div className="p-6">
                     <Link 
                         href="/"  
-                        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#FF007F] transition-colors mb-8 group" >
+                        className="inline-flex items-center gap-2 text-sm font-medium text-black/60 hover:text-[#FF007F] transition-colors mb-8 group min-h-[44px]" >
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                         Back to Home
                     </Link>
 
                     <div className="mb-8">
                         <div className="hidden md:flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 bg-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-200">
+                            <div className="border-2 border-black w-10 h-10 bg-pink-600 rounded-box-sm flex items-center justify-center">
                                 <ShieldCheck className="text-white" size={20} />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
                                     Legal Center
                                 </h2>
-                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+                                <p className="text-[12px] text-black/60 font-medium uppercase tracking-widest">
                                     Official Documents
                                 </p>
                             </div>
@@ -89,14 +89,10 @@ export default function LegalLayout({ children, activePage }) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-[30px]  transition-all duration-200 group ${
-                                            isActive
-                                                ? 'bg-pink-600 text-white shadow-md shadow-pink-100 translate-x-1'
-                                                : 'text-gray-500 hover:bg-pink-50 hover:text-[#FF007F]'
-                                        }`}
+                                        className={`border-[3px] border-black flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-box transition-all duration-200 group ${ isActive ? 'bg-pink-600 text-white translate-x-1' : "text-black/60 hover:bg-pink-50 hover:text-[#FF007F]" }`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <Icon size={18} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#FF007F]'} />
+                                            <Icon size={18} className={isActive ? "text-white" : "text-black/60 group-hover:text-[#FF007F]"} />
                                             {item.name}
                                         </div>
                                         {isActive && <ChevronRight size={14} className="text-white/70" />}
@@ -109,14 +105,14 @@ export default function LegalLayout({ children, activePage }) {
                 
                 <div className="mt-auto p-6 border-t border-gray-50 bg-gray-50/50">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                        <p className="text-[12px] font-bold text-black/60 uppercase tracking-wider">
                             Last Updated
                         </p>
-                        <p className="text-xs text-gray-600 font-medium">
+                        <p className="text-xs text-black/80 font-medium">
                             April 2026
                         </p>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-4 font-medium">
+                    <p className="text-[12px] text-black/60 mt-4 font-medium">
                         © {new Date().getFullYear()} Spenny Piggy. <br />All rights reserved.
                     </p>
                 </div>
@@ -125,7 +121,7 @@ export default function LegalLayout({ children, activePage }) {
             {/* Main Content */}
             <main className="flex-1 min-w-0 bg-white md:bg-[#FDFCFD]">
                 <div className="">
-                    <div className="min-h-[80vh]">
+                    <div className="min-h-[80dvh]">
                         {children}
                     </div>
                 </div>

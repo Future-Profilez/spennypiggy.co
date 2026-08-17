@@ -63,7 +63,7 @@ export default function TopSupporters({grid = false}) {
             {supporter.gift_count} {supporter.gift_count === 1 ? 'support' : 'supports'}
           </p>
           {/* 
-          <p className="text-xs text-gray-500" title={`Support types: ${supporter.support_types?.join(', ')}`}>
+          <p className="text-xs text-black/60" title={`Support types: ${supporter.support_types?.join(', ')}`}>
             {supporter.support_types?.length} {supporter.support_types?.length === 1 ? 'type' : 'types'}
           </p>
            */}
@@ -98,7 +98,7 @@ export default function TopSupporters({grid = false}) {
       <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C]" title="Ranked by number of support transactions">
         🏆 Top Supporters
       </h2>
-      <p className='text-gray-500 mb-3'>Most active supporters by support count</p>
+      <p className='text-black/60 mb-3'>Most active supporters by support count</p>
     
       {data && data.length ? (
         <>

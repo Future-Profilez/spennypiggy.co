@@ -14,12 +14,12 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, A
 
 /* ---------------------------------------------------------------------------
  * Shared display tokens. One card shape, one money style, one label style —
- * the old page mixed rounded-[30px]/rounded-xl/rounded-lg and three different
+ * the old page mixed rounded-box/rounded-box-sm/rounded-box-sm and three different
  * label treatments, which is what made it read as unfinished.
  * ------------------------------------------------------------------------ */
 const CARD = 'bg-white border border-gray-200 rounded-box';
 const MONEY = 'tabular-nums tracking-tight font-bold';
-const LABEL = 'text-[11px] font-semibold uppercase tracking-wide text-gray-500';
+const LABEL = 'text-[12px] font-semibold uppercase tracking-wide text-black/60';
 const BTN = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-box-sm text-[14px] font-semibold transition-colors';
 
 const PAYOUT_TYPE_STYLES = {
@@ -48,7 +48,7 @@ function Section({ title, sub, children, action = null }) {
             <div className="flex items-end justify-between gap-4 mb-4">
                 <div>
                     <h2 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
-                    {sub ? <p className="text-[13px] text-gray-500 font-medium mt-1 leading-snug">{sub}</p> : null}
+                    {sub ? <p className="text-[13px] text-black/60 font-medium mt-1 leading-snug">{sub}</p> : null}
                 </div>
                 {action}
             </div>
@@ -74,7 +74,7 @@ function Stat({ label, value, sub, tone = 'default', icon = null }) {
                 </div>
                 <div className={`text-2xl md:text-[28px] ${MONEY} mt-2 ${toneCls}`}>{value}</div>
             </div>
-            {sub ? <div className="text-[13px] text-gray-500 font-medium mt-3 leading-snug">{sub}</div> : null}
+            {sub ? <div className="text-[13px] text-black/60 font-medium mt-3 leading-snug">{sub}</div> : null}
         </div>
     );
 }
@@ -336,7 +336,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                     <div className="text-[12px] font-semibold text-emerald-600 mt-0.5">Released to date</div>
                                 </div>
                             </div>
-                            <div className="text-[13px] text-gray-500 font-medium mt-2">{reserve_reason || 'Reserves currently held on your earnings.'}</div>
+                            <div className="text-[13px] text-black/60 font-medium mt-2">{reserve_reason || 'Reserves currently held on your earnings.'}</div>
                         </div>
                         <button
                             type="button"
@@ -347,13 +347,13 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                         </button>
                     </div>
 
-                    <div className="mt-5 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="mt-5 max-h-[70dvh] overflow-y-auto pr-1">
                         {reserveLoading ? (
-                            <div className="text-gray-500 text-sm font-medium">Loading reserves…</div>
+                            <div className="text-black/60 text-sm font-medium">Loading reserves…</div>
                         ) : reserveLoadError ? (
                             <div className="text-red-600 text-sm font-semibold">{reserveLoadError}</div>
                         ) : (reserves || []).length === 0 ? (
-                            <div className="text-gray-500 text-sm font-medium">No held reserves right now.</div>
+                            <div className="text-black/60 text-sm font-medium">No held reserves right now.</div>
                         ) : (
                             <>
                                 {/* Mobile: card rows. A 6-column table is unusable at 390px. */}
@@ -367,7 +367,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <div className="text-[14px] font-semibold text-gray-900 line-clamp-2">{r.source_name || 'Reserve'}</div>
-                                                        <div className="text-[12px] text-gray-500 font-medium mt-1">
+                                                        <div className="text-[12px] text-black/60 font-medium mt-1">
                                                             {txDate ? txDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}
                                                             {r.supporter ? ` · @${r.supporter.username}` : ' · Guest'}
                                                         </div>
@@ -391,7 +391,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 <div className="hidden md:block overflow-x-auto rounded-box border border-gray-200">
                                     <table className="w-full text-left">
                                         <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-                                            <tr className="text-gray-500 text-[11px] uppercase font-semibold tracking-wide">
+                                            <tr className="text-black/60 text-[12px] uppercase font-semibold tracking-wide">
                                                 <th className="px-4 py-3">Date</th>
                                                 <th className="px-4 py-3">Supporter</th>
                                                 <th className="px-4 py-3">Description</th>
@@ -426,28 +426,28 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             {r.supporter ? (
                                                                 <div className="flex flex-col">
                                                                     <span className="text-gray-900 font-medium capitalize">{r.supporter.name}</span>
-                                                                    <span className="text-[13px] text-gray-500">@{r.supporter.username}</span>
+                                                                    <span className="text-[13px] text-black/60">@{r.supporter.username}</span>
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-gray-500 text-[14px]">Guest / System</span>
+                                                                <span className="text-black/60 text-[14px]">Guest / System</span>
                                                             )}
                                                         </td>
                                                         <td className="px-4 py-3 text-sm min-w-[240px]">
                                                             <div className="font-medium text-gray-900 line-clamp-2">{r.source_name || 'Reserve'}</div>
                                                             {r.label || r.source_type === 'payout_run' ? (
-                                                                <div className="text-[12px] text-gray-500 font-medium mt-0.5">{r.label || 'Payout run'}</div>
+                                                                <div className="text-[12px] text-black/60 font-medium mt-0.5">{r.label || 'Payout run'}</div>
                                                             ) : null}
                                                         </td>
                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                             {isReleased ? (
                                                                 <div className="flex flex-col">
                                                                     <span className="text-[13px] font-semibold text-emerald-600">Released</span>
-                                                                    {r.release_date ? <span className="text-[12px] text-gray-400 font-medium">{r.release_date}</span> : null}
+                                                                    {r.release_date ? <span className="text-[12px] text-black/60 font-medium">{r.release_date}</span> : null}
                                                                 </div>
                                                             ) : relDays !== null ? (
                                                                 <div className="flex flex-col">
                                                                     <span className="text-[13px] font-semibold text-cyan-700">{relDays === 0 ? 'Frees today' : `in ${relDays} day${plural(relDays)}`}</span>
-                                                                    {r.release_date ? <span className="text-[12px] text-gray-400 font-medium">{r.release_date}</span> : null}
+                                                                    {r.release_date ? <span className="text-[12px] text-black/60 font-medium">{r.release_date}</span> : null}
                                                                 </div>
                                                             ) : (
                                                                 <span className="text-[13px] text-gray-600 font-medium">{r.release_date || '-'}</span>
@@ -458,9 +458,9 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                         </td>
                                                         <td className="px-4 py-3 text-right whitespace-nowrap">
                                                             {statusMeta ? (
-                                                                <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusMeta.cls}`}>{statusMeta.label}</span>
+                                                                <span className={`inline-block px-2.5 py-1 rounded-full text-[12px] font-semibold border ${statusMeta.cls}`}>{statusMeta.label}</span>
                                                             ) : (
-                                                                <span className="text-gray-400">-</span>
+                                                                <span className="text-black/60">-</span>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -483,7 +483,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <div key={`rel-${r.financial_transaction_id || idx}-${idx}`} className="flex items-start justify-between gap-3 p-4">
                                                 <div className="min-w-0">
                                                     <div className="text-[14px] font-medium text-gray-900 line-clamp-2">{r.source_name || 'Reserve'}</div>
-                                                    <div className="text-[12px] text-gray-500 font-medium mt-1">
+                                                    <div className="text-[12px] text-black/60 font-medium mt-1">
                                                         {relAt ? relAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                                                         {r.supporter ? ` · @${r.supporter.username}` : ' · Guest'}
                                                     </div>
@@ -518,8 +518,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 <span className="inline-flex items-center gap-1.5 bg-[#FF007F]/10 text-[#FF007F] border border-[#FF007F]/20 text-[12px] font-semibold px-3 py-1.5 rounded-full">
                                     Tax year {tax_year}
                                 </span>
-                                <span className="text-[12px] text-gray-500 font-medium">{date_range?.start} – {date_range?.end}</span>
-                                {tax_band_label ? <span className="text-[12px] text-gray-400 font-medium">· {tax_band_label}</span> : null}
+                                <span className="text-[12px] text-black/60 font-medium">{date_range?.start} – {date_range?.end}</span>
+                                {tax_band_label ? <span className="text-[12px] text-black/60 font-medium">· {tax_band_label}</span> : null}
                             </div>
                         </div>
 
@@ -528,7 +528,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 href={route('financial.expenses.index')}
                                 onMouseEnter={() => logExpenseIconRef.current?.startAnimation?.()}
                                 onMouseLeave={() => logExpenseIconRef.current?.stopAnimation?.()}
-                                className={`${BTN} bg-[#FF007F] hover:bg-[#d8006c] text-white`}
+                                className={`${BTN} bg-[#FF007F] hover:brightness-110 text-black`}
                             >
                                 <PlusIcon ref={logExpenseIconRef} size={18} />
                                 <span>Log expense</span>
@@ -620,7 +620,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                             <div className="p-5">
                                 <div className={`${LABEL} flex items-center gap-2`}><Clock size={14} className="text-blue-500" /> Clearing</div>
                                 <div className={`text-xl ${MONEY} text-gray-900 mt-2`}>{formatCurrency(summary?.clearing_balance, displayCurrency)}</div>
-                                <div className="text-[12px] text-gray-500 font-medium mt-1">Payable after the 7-day hold</div>
+                                <div className="text-[12px] text-black/60 font-medium mt-1">Payable after the 7-day hold</div>
                             </div>
                             <button type="button" onClick={openReserveDetails} className="p-5 text-left hover:bg-gray-50 transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400/50">
                                 <div className={`${LABEL} flex items-center gap-2`}><ShieldCheckIcon size={14} className="text-cyan-600" /> Reserve held</div>
@@ -632,7 +632,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                             <div className="p-5">
                                 <div className={`${LABEL} flex items-center gap-2`}><HelpCircle size={14} className="text-yellow-600" /> Pending delivery</div>
                                 <div className={`text-xl ${MONEY} text-gray-900 mt-2`}>{formatCurrency(summary?.pending_balance, displayCurrency)}</div>
-                                <div className="text-[12px] text-gray-500 font-medium mt-1">Yours once you fulfil the order</div>
+                                <div className="text-[12px] text-black/60 font-medium mt-1">Yours once you fulfil the order</div>
                             </div>
                         </div>
                     </div>
@@ -647,7 +647,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                     key={t.key}
                                     href={route('financial.dashboard', { tab: t.key })}
                                     className={`px-4 min-h-[48px] flex items-center font-semibold text-[14px] border-b-2 whitespace-nowrap transition-colors ${
-                                        tab === t.key ? 'border-[#FF007F] text-[#FF007F]' : 'border-transparent text-gray-500 hover:text-gray-900'
+                                        tab === t.key ? 'border-[#FF007F] text-[#FF007F]' : 'border-transparent text-black/60 hover:text-gray-900'
                                     }`}
                                 >
                                     {t.label}
@@ -682,7 +682,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                 {row.label}
                                                                 {row.onClick ? <span className="text-[13px] text-[#FF007F] font-semibold ml-2">View →</span> : null}
                                                             </div>
-                                                            <div className="text-[13px] text-gray-500 font-medium mt-1 leading-snug">{row.hint}</div>
+                                                            <div className="text-[13px] text-black/60 font-medium mt-1 leading-snug">{row.hint}</div>
                                                         </div>
                                                     </div>
                                                     <div className={`text-lg ${MONEY} whitespace-nowrap ${row.muted ? 'text-emerald-600' : 'text-gray-900'}`}>
@@ -709,7 +709,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <span className="text-[14px] font-semibold text-gray-800">
                                                 {showPayoutBreakdown ? 'Hide' : 'Show'} the {upcomingTx.length} sale{plural(upcomingTx.length)} in this payout
                                             </span>
-                                            <ChevronRightIcon size={18} className={`text-gray-400 transition-transform duration-200 ${showPayoutBreakdown ? 'rotate-90' : ''}`} />
+                                            <ChevronRightIcon size={18} className={`text-black/60 transition-transform duration-200 ${showPayoutBreakdown ? 'rotate-90' : ''}`} />
                                         </button>
                                         {showPayoutBreakdown && (
                                             <div className={`${CARD} mt-3 overflow-hidden`}>
@@ -720,7 +720,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <div key={t.financial_transaction_id || idx} className="flex items-center justify-between gap-4 px-5 py-3.5">
                                                                 <div className="min-w-0">
                                                                     <div className="font-semibold text-gray-900 text-[14px] truncate">{t.description || 'Payment'}</div>
-                                                                    <div className="text-[12px] text-gray-500 font-medium mt-1 flex items-center gap-2 flex-wrap">
+                                                                    <div className="text-[12px] text-black/60 font-medium mt-1 flex items-center gap-2 flex-wrap">
                                                                         {t.label ? <span>{t.label}</span> : null}
                                                                         {t.supporter?.username ? <span>@{t.supporter.username}</span> : <span>Guest</span>}
                                                                         {d ? <span>{d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span> : null}
@@ -820,7 +820,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: color }} />
                                                         </div>
                                                         <div className="flex justify-between items-center mt-1">
-                                                            <span className="text-[12px] text-gray-500 font-medium">{t?.count ?? 0} payment{(t?.count ?? 0) === 1 ? '' : 's'}</span>
+                                                            <span className="text-[12px] text-black/60 font-medium">{t?.count ?? 0} payment{(t?.count ?? 0) === 1 ? '' : 's'}</span>
                                                             <span className="text-[12px] font-semibold tabular-nums" style={{ color }}>{percentage.toFixed(1)}%</span>
                                                         </div>
                                                     </div>
@@ -834,7 +834,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <UsersIcon className="text-emerald-600" size={18} /> Top supporters
                                         </h3>
                                         {(top_supporters || []).length === 0 ? (
-                                            <div className="px-5 pb-6 text-[14px] text-gray-500 font-medium">No supporters yet this tax year.</div>
+                                            <div className="px-5 pb-6 text-[14px] text-black/60 font-medium">No supporters yet this tax year.</div>
                                         ) : (
                                             <div className="divide-y divide-gray-100 border-t border-gray-100">
                                                 {top_supporters.map((s) => (
@@ -843,11 +843,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                                                                 {s.supporter?.avatar_url
                                                                     ? <img src={s.supporter.avatar_url} alt={s.supporter?.name || ''} className="w-full h-full object-cover" />
-                                                                    : <span className="text-[13px] font-semibold text-gray-400">{s.supporter?.name?.[0] ?? '?'}</span>}
+                                                                    : <span className="text-[13px] font-semibold text-black/60">{s.supporter?.name?.[0] ?? '?'}</span>}
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <div className="text-[14px] font-semibold text-gray-900 truncate">{s.supporter?.name ?? 'Guest'}</div>
-                                                                <div className="text-[12px] text-gray-500 font-medium truncate">@{s.supporter?.username ?? 'guest'}</div>
+                                                                <div className="text-[12px] text-black/60 font-medium truncate">@{s.supporter?.username ?? 'guest'}</div>
                                                             </div>
                                                         </div>
                                                         <div className={`text-[15px] ${MONEY} text-gray-900 shrink-0`}>{formatCurrency(s.total_spent, displayCurrency)}</div>
@@ -864,7 +864,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                 <div className="text-[14px] font-semibold text-gray-900">Grow your income</div>
-                                                <div className="text-[12px] text-gray-500 font-medium">Who's gone quiet, and what to do next.</div>
+                                                <div className="text-[12px] text-black/60 font-medium">Who's gone quiet, and what to do next.</div>
                                             </div>
                                             <ChevronRightIcon size={18} className="text-[#FF007F] shrink-0" />
                                         </Link>
@@ -892,7 +892,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <div className="mt-4 space-y-2 border-t border-gray-100 pt-3">
                                                 {payableLines.map((line, idx) => (
                                                     <div key={idx} className="flex justify-between items-center gap-3 text-[13px] font-medium">
-                                                        <span className="text-gray-500">{line.label}</span>
+                                                        <span className="text-black/60">{line.label}</span>
                                                         <span className={`tabular-nums font-semibold whitespace-nowrap ${line.amount >= 0 ? 'text-gray-800' : 'text-red-600'}`}>
                                                             {line.amount >= 0 ? '+' : ''}{formatCurrency(line.amount, displayCurrency)}
                                                         </span>
@@ -904,12 +904,12 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="text-[13px] text-gray-500 font-medium mt-3 leading-snug">
+                                            <div className="text-[13px] text-black/60 font-medium mt-3 leading-snug">
                                                 Excludes reserves, orders awaiting delivery, disputes and refunds.
                                             </div>
                                         )}
                                         {summary.carry_over_amount > 0 ? (
-                                            <div className="text-[13px] text-gray-500 font-medium mt-3">Includes {formatCurrency(summary.carry_over_amount, displayCurrency)} carried over from the previous tax year.</div>
+                                            <div className="text-[13px] text-black/60 font-medium mt-3">Includes {formatCurrency(summary.carry_over_amount, displayCurrency)} carried over from the previous tax year.</div>
                                         ) : null}
                                     </div>
 
@@ -917,7 +917,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                         <div className={`${CARD} p-5 md:p-6`}>
                                             <div className={`${LABEL} flex items-center gap-2`}><Landmark size={14} className="text-[#FF007F]" /> Payout schedule</div>
                                             <div className="text-[16px] font-semibold text-gray-900 mt-2">{nextPayoutLabel || 'Every Friday'}</div>
-                                            <div className="text-[13px] text-gray-500 font-medium mt-1.5">
+                                            <div className="text-[13px] text-black/60 font-medium mt-1.5">
                                                 Earning window: {cycleWindowLabel || 'the last 7 days'}
                                                 {payout_cycle?.timezone ? ` · ${payout_cycle.timezone}` : ''}
                                             </div>
@@ -930,14 +930,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                         >
                                             <div className={`${LABEL} flex items-center gap-2`}><ShieldCheckIcon size={14} className="text-cyan-600" /> Reserve</div>
                                             <div className={`text-[22px] ${MONEY} text-gray-900 mt-2`}>{formatCurrency(summary?.held_reserves ?? 0, displayCurrency)}</div>
-                                            <div className="text-[13px] text-gray-500 font-medium mt-1.5 leading-snug">
+                                            <div className="text-[13px] text-black/60 font-medium mt-1.5 leading-snug">
                                                 {(reserve_policy?.effective_percent ?? 0) > 0
                                                     ? `${reserve_policy.effective_percent}% is held on new sales and returned 30 days later.`
                                                     : 'No reserve is being held on your new sales.'}
                                             </div>
-                                            {reserve_reason ? <div className="text-[13px] text-gray-500 font-medium mt-1">{reserve_reason}</div> : null}
+                                            {reserve_reason ? <div className="text-[13px] text-black/60 font-medium mt-1">{reserve_reason}</div> : null}
                                             {reserve_policy?.onboarding_percent > 0 && reserve_policy?.onboarding_ends_at ? (
-                                                <div className="text-[13px] text-gray-500 font-medium mt-1">New-creator hold ends {reserve_policy.onboarding_ends_at}.</div>
+                                                <div className="text-[13px] text-black/60 font-medium mt-1">New-creator hold ends {reserve_policy.onboarding_ends_at}.</div>
                                             ) : null}
                                             <div className="text-[13px] font-semibold text-[#FF007F] mt-2">See every held reserve →</div>
                                         </button>
@@ -963,7 +963,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                     <span className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${dot}`} />
                                                     <div className="min-w-0">
                                                         <div className="text-[15px] font-semibold text-gray-900 leading-tight">{label}</div>
-                                                        <div className="text-[13px] text-gray-500 font-medium mt-1 leading-snug">
+                                                        <div className="text-[13px] text-black/60 font-medium mt-1 leading-snug">
                                                             {note}{count === null ? '' : ` · ${count} payment${count === 1 ? '' : 's'}`}
                                                         </div>
                                                     </div>
@@ -988,7 +988,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className={`${CARD} p-5 md:p-6`}>
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <div className={LABEL}>Fast Start bonus</div>
-                                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                                        <span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold border ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                                             {String(fast_start_bonus.status || '').replaceAll('_', ' ')}
                                                         </span>
                                                     </div>
@@ -998,7 +998,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                     </div>
                                                     {isActive ? (
                                                         <div className="mt-4">
-                                                            <div className="flex justify-between text-[13px] text-gray-500 font-medium mb-1.5">
+                                                            <div className="flex justify-between text-[13px] text-black/60 font-medium mb-1.5">
                                                                 <span>{fast_start_bonus.days_remaining ?? '-'} day{plural(fast_start_bonus.days_remaining)} left</span>
                                                                 <span>Ends {end ? end.toLocaleDateString('en-GB') : '-'}</span>
                                                             </div>
@@ -1007,7 +1007,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             </div>
                                                         </div>
                                                     ) : null}
-                                                    <div className="text-[13px] text-gray-500 font-medium mt-3 leading-snug">Paid as a one-off payout after your 30-day window ends.</div>
+                                                    <div className="text-[13px] text-black/60 font-medium mt-3 leading-snug">Paid as a one-off payout after your 30-day window ends.</div>
                                                     <Link href={route('financial.fast-start-bonus')} className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#FF007F] hover:underline mt-3 min-h-[44px]">
                                                         Full details <ChevronRightIcon size={15} />
                                                     </Link>
@@ -1027,7 +1027,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <div className={`${CARD} p-5 md:p-6`}>
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <div className={LABEL}>Founder bonus</div>
-                                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                                                        <span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold border ${
                                                             isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                                 : founder_bonus.status === 'payout_paused' ? 'bg-amber-50 text-amber-700 border-amber-200'
                                                                 : 'bg-gray-100 text-gray-600 border-gray-200'
@@ -1040,7 +1040,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                         On {formatCurrency(founder_bonus.earnings_so_far || 0, founder_bonus.currency)} earned this month
                                                     </div>
                                                     <div className="mt-4">
-                                                        <div className="flex justify-between text-[13px] text-gray-500 font-medium mb-1.5">
+                                                        <div className="flex justify-between text-[13px] text-black/60 font-medium mb-1.5">
                                                             <span>Month ends {end ? end.toLocaleDateString('en-GB') : '-'}</span>
                                                             <span>{founder_bonus.months_left === null || founder_bonus.months_left === undefined ? '-' : `${founder_bonus.months_left} month${plural(founder_bonus.months_left)} left`}</span>
                                                         </div>
@@ -1048,7 +1048,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <div className="bg-purple-600 h-full rounded-full" style={{ width: `${progress}%` }} />
                                                         </div>
                                                     </div>
-                                                    <div className="text-[13px] text-gray-500 font-medium mt-3 leading-snug">
+                                                    <div className="text-[13px] text-black/60 font-medium mt-3 leading-snug">
                                                         {Math.round((founder_bonus.bonus_percentage || 0) * 100)}% bonus · min {formatCurrency(founder_bonus.min_monthly_earnings || 0, founder_bonus.currency)} · cap {formatCurrency(founder_bonus.max_bonus_per_month || 0, founder_bonus.currency)}
                                                     </div>
 
@@ -1056,7 +1056,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                         <div className="mt-4 rounded-box-sm bg-gray-50 border border-gray-200 px-4 py-3 flex items-center justify-between gap-3">
                                                             <div className="min-w-0">
                                                                 <div className="text-[13px] font-semibold text-gray-900">Qualification payout</div>
-                                                                <div className="text-[12px] text-gray-500 font-medium mt-0.5">
+                                                                <div className="text-[12px] text-black/60 font-medium mt-0.5">
                                                                     {String(qualification.status || '').replaceAll('_', ' ')}
                                                                     {qualification.estimated_payout_date ? ` · due ${new Date(qualification.estimated_payout_date).toLocaleDateString('en-GB')}` : ''}
                                                                 </div>
@@ -1069,14 +1069,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                         <div className="mt-3 rounded-box-sm bg-gray-50 border border-gray-200 px-4 py-3 flex items-center justify-between gap-3">
                                                             <div className="min-w-0">
                                                                 <div className="text-[13px] font-semibold text-gray-900">Last month ({lastMonth.month})</div>
-                                                                <div className="text-[12px] text-gray-500 font-medium mt-0.5">
+                                                                <div className="text-[12px] text-black/60 font-medium mt-0.5">
                                                                     {String(lastMonth.payout_status || '').replaceAll('_', ' ')}
                                                                     {lastMonth.payout_date ? ` · ${new Date(lastMonth.payout_date).toLocaleDateString('en-GB')}` : ''}
                                                                 </div>
                                                             </div>
                                                             <div className="text-right shrink-0">
                                                                 <div className={`${MONEY} text-gray-900`}>{formatCurrency(lastMonth.bonus_amount || 0, founder_bonus.currency)}</div>
-                                                                <div className="text-[12px] text-gray-500 font-medium">on {formatCurrency(lastMonth.monthly_earnings || 0, founder_bonus.currency)}</div>
+                                                                <div className="text-[12px] text-black/60 font-medium">on {formatCurrency(lastMonth.monthly_earnings || 0, founder_bonus.currency)}</div>
                                                             </div>
                                                         </div>
                                                     ) : null}
@@ -1090,14 +1090,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                             <Section
                                 title="Payout history"
                                 sub="Every payout sent to your bank."
-                                action={<span className="text-[13px] text-gray-500 font-medium tabular-nums">{payout_history.length} payout{plural(payout_history.length)}</span>}
+                                action={<span className="text-[13px] text-black/60 font-medium tabular-nums">{payout_history.length} payout{plural(payout_history.length)}</span>}
                             >
                                 <div className={`${CARD} overflow-hidden`}>
                                     {payout_history.length === 0 ? (
                                         <div className="px-6 py-14 text-center flex flex-col items-center gap-2">
-                                            <WalletIcon className="text-gray-300" size={30} />
+                                            <WalletIcon className="text-black/60" size={30} />
                                             <span className="text-gray-600 text-[14px] font-semibold">No payouts yet</span>
-                                            <span className="text-gray-400 text-[13px] font-medium">Your first payout goes out the Friday after your first sale clears.</span>
+                                            <span className="text-black/60 text-[13px] font-medium">Your first payout goes out the Friday after your first sale clears.</span>
                                         </div>
                                     ) : (
                                         <>
@@ -1113,14 +1113,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             <div className="flex items-start justify-between gap-3">
                                                                 <div>
                                                                     <div className={`text-xl ${MONEY} text-gray-900`}>{formatCurrency(p.amount, p.currency)}</div>
-                                                                    <div className="text-[13px] text-gray-500 font-medium mt-0.5">{p.date}{p.time ? ` · ${p.time}` : ''}</div>
+                                                                    <div className="text-[13px] text-black/60 font-medium mt-0.5">{p.date}{p.time ? ` · ${p.time}` : ''}</div>
                                                                 </div>
-                                                                <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${payoutStatusBadgeCls(p.status)}`}>
+                                                                <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${payoutStatusBadgeCls(p.status)}`}>
                                                                     {p.status === 'in_transit' ? 'On its way' : p.status?.replace('_', ' ')}
                                                                 </span>
                                                             </div>
                                                             <div className="mt-3 flex items-center gap-2 flex-wrap">
-                                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
+                                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
                                                                     {p.type_label}
                                                                 </span>
                                                                 {hasBonus ? (
@@ -1135,7 +1135,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                         className="text-left text-red-600 font-semibold min-h-[44px]"
                                                                     >
                                                                         {p.failure_reason || 'Payout failed'}
-                                                                        <span className="block text-[12px] text-gray-400 font-medium mt-0.5">{isOpen ? 'Hide details' : 'Show details'}</span>
+                                                                        <span className="block text-[12px] text-black/60 font-medium mt-0.5">{isOpen ? 'Hide details' : 'Show details'}</span>
                                                                     </button>
                                                                 ) : p.status === 'paid' ? (
                                                                     <span className="text-emerald-700 font-semibold">Arrived {p.arrival_date || ''}</span>
@@ -1146,7 +1146,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                             {isFail && isOpen && (
                                                                 <div className="mt-3 rounded-box-sm border border-red-200 bg-red-50 p-4">
                                                                     <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
-                                                                    {p.failure_code ? <div className="text-[12px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div> : null}
+                                                                    {p.failure_code ? <div className="text-[12px] text-black/60 font-mono mt-2">Code: {p.failure_code}</div> : null}
                                                                     <p className="text-[13px] text-gray-600 mt-3">
                                                                         The money stays in your balance and retries next Friday. Need help? <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-semibold underline">support@spennypiggy.co</a>
                                                                     </p>
@@ -1161,7 +1161,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <div className="hidden md:block overflow-x-auto">
                                                 <table className="w-full text-left">
                                                     <thead className="bg-gray-50 border-b border-gray-200">
-                                                        <tr className="text-gray-500 text-[11px] uppercase font-semibold tracking-wide">
+                                                        <tr className="text-black/60 text-[12px] uppercase font-semibold tracking-wide">
                                                             <th className="px-6 py-3.5">Sent on</th>
                                                             <th className="px-6 py-3.5">Type</th>
                                                             <th className="px-6 py-3.5 text-right">Amount</th>
@@ -1180,10 +1180,10 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                     <tr className="hover:bg-gray-50 transition-colors align-top">
                                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                                             <div className="text-[14px] text-gray-900 font-semibold leading-tight">{p.date}</div>
-                                                                            {p.time ? <div className="text-[12px] text-gray-400 font-medium mt-0.5">{p.time}</div> : null}
+                                                                            {p.time ? <div className="text-[12px] text-black/60 font-medium mt-0.5">{p.time}</div> : null}
                                                                         </td>
                                                                         <td className="px-6 py-4">
-                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
+                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold border ${PAYOUT_TYPE_STYLES[p.type_key] || PAYOUT_TYPE_STYLES.weekly}`}>
                                                                                 {p.type_label}
                                                                             </span>
                                                                         </td>
@@ -1193,7 +1193,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                                 <div className="text-[12px] font-semibold tabular-nums text-[#FF007F] mt-0.5">Bonus {formatCurrency(bonusAmt, p.currency)}</div>
                                                                             ) : null}
                                                                             {p.reference ? (
-                                                                                <div className="text-[11px] text-gray-400 font-mono mt-1 truncate max-w-[140px] ml-auto" title={p.reference}>{p.reference}</div>
+                                                                                <div className="text-[12px] text-black/60 font-mono mt-1 truncate max-w-[140px] ml-auto" title={p.reference}>{p.reference}</div>
                                                                             ) : null}
                                                                         </td>
                                                                         <td className="px-6 py-4 text-[14px] text-gray-600 font-medium">
@@ -1204,7 +1204,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                                     className="text-left text-red-600 font-semibold"
                                                                                 >
                                                                                     {p.failure_reason || 'Payout failed'}
-                                                                                    <span className="block text-[12px] text-gray-400 font-medium mt-0.5">{isOpen ? 'Hide details' : 'Show details'}</span>
+                                                                                    <span className="block text-[12px] text-black/60 font-medium mt-0.5">{isOpen ? 'Hide details' : 'Show details'}</span>
                                                                                 </button>
                                                                             ) : p.status === 'paid' ? (
                                                                                 <span className="text-emerald-700 font-semibold">{p.arrival_date || 'Delivered'}</span>
@@ -1215,7 +1215,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                             )}
                                                                         </td>
                                                                         <td className="px-6 py-4 text-right">
-                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${payoutStatusBadgeCls(p.status)}`}>
+                                                                            <span className={`whitespace-nowrap inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${payoutStatusBadgeCls(p.status)}`}>
                                                                                 {p.status === 'in_transit' ? 'On its way' : p.status?.replace('_', ' ')}
                                                                             </span>
                                                                         </td>
@@ -1225,7 +1225,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                                             <td colSpan="5" className="px-6 py-4">
                                                                                 <div className="rounded-box-sm border border-red-200 bg-white p-4">
                                                                                     <p className="text-[13px] text-gray-700 break-words">{p.failure_detail || 'No additional detail provided by Stripe.'}</p>
-                                                                                    {p.failure_code ? <div className="text-[12px] text-gray-400 font-mono mt-2">Code: {p.failure_code}</div> : null}
+                                                                                    {p.failure_code ? <div className="text-[12px] text-black/60 font-mono mt-2">Code: {p.failure_code}</div> : null}
                                                                                     <p className="text-[13px] text-gray-600 mt-3">
                                                                                         The money stays in your balance and retries in the next run. Need help? <a href="mailto:support@spennypiggy.co" className="text-[#FF007F] font-semibold underline">support@spennypiggy.co</a>
                                                                                     </p>
@@ -1292,7 +1292,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                             <div className={LABEL}>Tax year progress</div>
                                             <div className="text-[15px] font-semibold text-gray-900 mt-1.5">{Math.round(taxYearProgress)}% through {tax_year}</div>
                                         </div>
-                                        <div className="text-[13px] text-gray-500 font-medium">6 April → 5 April</div>
+                                        <div className="text-[13px] text-black/60 font-medium">6 April → 5 April</div>
                                     </div>
                                     <div className="mt-3 w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                                         <div className="bg-[#FF007F] h-full rounded-full" style={{ width: `${taxYearProgress}%` }} />
@@ -1320,9 +1320,9 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">{item.icon}</span>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="text-[15px] font-semibold text-gray-900">{item.label}</div>
-                                                    <div className="text-[13px] text-gray-500 font-medium mt-0.5 leading-snug">{item.sub}</div>
+                                                    <div className="text-[13px] text-black/60 font-medium mt-0.5 leading-snug">{item.sub}</div>
                                                 </div>
-                                                <ChevronRightIcon size={18} className="text-gray-400 shrink-0 mt-1" />
+                                                <ChevronRightIcon size={18} className="text-black/60 shrink-0 mt-1" />
                                             </Link>
                                         ))}
                                     </div>
@@ -1330,13 +1330,13 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                     <div className={`${CARD} p-5 md:p-6 h-fit`}>
                                         <div className="flex items-center justify-between gap-3 mb-4">
                                             <h3 className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
-                                                <Building2 className="text-gray-500" size={18} /> Business details
+                                                <Building2 className="text-black/60" size={18} /> Business details
                                             </h3>
                                             {!isEditingProfile && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setIsEditingProfile(true)}
-                                                    className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-900 rounded-box-sm hover:bg-gray-100"
+                                                    className="min-h-[44px] min-w-[44px] flex items-center justify-center text-black/60 hover:text-gray-900 rounded-box-sm hover:bg-gray-100"
                                                     aria-label="Edit business details"
                                                 >
                                                     <Pencil size={17} />
@@ -1357,7 +1357,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 </label>
                                                 <div className="flex gap-2 justify-end pt-1">
                                                     <button type="button" onClick={() => setIsEditingProfile(false)} className={`${BTN} text-gray-600 hover:bg-gray-100`}>Cancel</button>
-                                                    <button type="submit" disabled={processing} className={`${BTN} bg-[#FF007F] hover:bg-[#d8006c] disabled:opacity-60 text-white`}>
+                                                    <button type="submit" disabled={processing} className={`${BTN} bg-[#FF007F] hover:brightness-110 disabled:opacity-60 text-black`}>
                                                         {processing ? 'Saving…' : 'Save'}
                                                     </button>
                                                 </div>

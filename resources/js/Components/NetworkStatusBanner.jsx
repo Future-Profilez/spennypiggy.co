@@ -44,9 +44,9 @@ export default function NetworkStatusBanner() {
 
     return (
         <div className="fixed top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] left-1/2 -translate-x-1/2 z-[999999] w-[90%] max-w-sm transition-all duration-300 animate-in fade-in slide-in-from-top-4">
-            <div className={`flex items-center justify-between px-4 py-2.5 rounded-[20px] backdrop-blur-xl border shadow-lg ${
-                isOffline 
-                    ? 'bg-[#16161C]/95 border-amber-500/30 text-amber-300 shadow-amber-500/10' 
+            <div className={`flex items-center justify-between px-4 py-2.5 rounded-box backdrop-blur-xl border ${
+                isOffline
+                    ? 'bg-[#16161C]/95 border-amber-500/30 text-amber-300 '
                     : 'bg-[#16161C]/95 border-[#05EFB8]/30 text-[#05EFB8] shadow-[#05EFB8]/10'
             }`}>
                 <div className="flex items-center gap-2.5">
@@ -64,7 +64,7 @@ export default function NetworkStatusBanner() {
                 </div>
                 <button
                     onClick={() => setVisible(false)}
-                    className="text-gray-400 hover:text-white text-xs px-2 py-0.5 rounded-[20px] bg-white/5 hover:bg-white/10 transition-colors"
+                    className="text-white/60 hover:text-white text-xs px-2 py-0.5 rounded-box bg-white/5 hover:bg-white/10 transition-colors"
                 >
                     ✕
                 </button>

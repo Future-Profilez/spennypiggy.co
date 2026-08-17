@@ -243,7 +243,7 @@ export default function AddSocial({
                         <Icon className="mr-2 text-lg" />
                         {platform.label}
                         {platform.type === "handle" && (
-                            <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            <span className="ml-2 text-xs text-black/60 bg-gray-100 px-2 py-1 rounded">
                                 handle
                             </span>
                         )}
@@ -252,7 +252,7 @@ export default function AddSocial({
                         <div className="mt-0 text-xs text-right">
                             <span
                                 className={clsx({
-                                    "text-gray-500":
+                                    "text-black/60":
                                         !charInfo.showWarning &&
                                         !charInfo.isOverLimit,
                                     "text-yellow-600": charInfo.showWarning,
@@ -277,7 +277,7 @@ export default function AddSocial({
                             placeholder={platform.placeholder}
                             maxLength={platform.maxLength}
                             className={clsx(
-                                "block w-full pl-12 pr-12 py-3 rounded-[30px]   text-sm transition-all duration-200",
+                                "block w-full pl-12 pr-12 py-3 rounded-box   text-sm transition-all duration-200",
                                 "focus:outline-none focus:ring-2 focus:ring-opacity-50",
                                 {
                                     "border-2 border-gray-300 focus:border-gray-400 focus:ring-gray-200":
@@ -319,7 +319,7 @@ export default function AddSocial({
                             <button
                                 type="button"
                                 onClick={() => copyToClipboard(previewUrl)}
-                                className="ml-2 p-1 hover:bg-blue-100 rounded"
+                                className="ml-2 grid h-11 w-11 place-items-center hover:bg-blue-100 rounded-box-sm"
                                 title="Copy URL"
                             >
                                 <FaCopy className="text-xs" />
@@ -380,7 +380,7 @@ export default function AddSocial({
                     {/* Information Banner */}
                     <div
                         className={clsx(
-                            "mb-6 p-4 rounded-[20px]   border-l-4 flex items-start",
+                            "mb-6 p-4 rounded-box-sm   border-l-4 flex items-start",
                             {
                                 "bg-yellow-50 border-yellow-500":
                                     !formValidation.hasValidFields,
@@ -454,7 +454,7 @@ export default function AddSocial({
                                 className={clsx(
                                     "w-full mb-4 py-3 rounded-full font-bold text-white transition-all duration-200 flex items-center justify-center gap-2",
                                     {
-                                        "bg-pink-600 hover:bg-pink-700 shadow-lg":
+                                        "bg-pink-600 hover:bg-pink-700 ":
                                             isDirty &&
                                             hasAtLeastOneValue &&
                                             !formValidation.hasErrors &&

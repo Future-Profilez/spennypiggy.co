@@ -94,7 +94,7 @@ export function ActIntro({ no, title, accentWord, sub, accent = "#FF007F" }) {
           {accentWord ? <> <span className="text-gradient-wishlist">{accentWord}</span></> : null}
         </h2>
         {sub ? (
-          <p className="font-poppins text-gray-300 text-base md:text-xl mt-6 max-w-xl mx-auto leading-relaxed">
+ <p className="font-poppins text-white/70 text-base md:text-xl mt-6 max-w-xl mx-auto leading-relaxed">
             {sub}
           </p>
         ) : null}
@@ -287,9 +287,9 @@ export function ChapterNav({ chapters }) {
             aria-label={c.label}
             aria-current={on ? "true" : undefined}
           >
-            {/* `text-gray-400` was a banned cool gray; the ink ramp is white/N. */}
+ {/* `text-white/60` was a banned cool gray; the ink ramp is white/N. */}
             <span
-              className={`font-gulfs uppercase tracking-widest text-[10px] ${
+ className={`font-gulfs uppercase tracking-widest text-[12px] ${
                 reduce ? "" : "transition-all duration-300"
               } ${
                 on
@@ -303,7 +303,7 @@ export function ChapterNav({ chapters }) {
               className={`block rounded-full ${
                 reduce ? "" : "transition-all duration-300"
               } ${
-                on ? "w-3 h-3 bg-[#FF007F] shadow-[0_0_12px_2px_rgba(255,0,127,0.7)]" : "w-2 h-2 bg-white/40 group-hover:bg-white/70"
+ on ? "w-3 h-3 bg-[#FF007F] " : "w-2 h-2 bg-white/40 group-hover:bg-white/70"
               }`}
             />
           </a>

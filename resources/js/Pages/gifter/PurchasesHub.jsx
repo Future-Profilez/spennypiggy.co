@@ -16,13 +16,13 @@ import {
 /* Category system — one quiet colour + icon per type, rendered as soft tinted
    chips (10–14% fill, coloured glyph). Encodes type without shouting. */
 const CAT = {
-    wish:       { label: "Wish",         color: "#8B5CF6", icon: Heart },
-    shop:       { label: "Shop",         color: "#0EA5E9", icon: ShoppingBag },
-    task:       { label: "Paid task",    color: "#F59E0B", icon: CheckCircle2 },
-    piggypot:   { label: "Piggy Pot",    color: "#EC4899", icon: PiggyBank },
-    membership: { label: "Membership",   color: "#10B981", icon: Crown },
-    bill:       { label: "Subscription", color: "#3B82F6", icon: Repeat },
-    tip:        { label: "Piggy Bank",   color: "#65A30D", icon: Coins },
+ wish: { label: "Wish", color: "#8B5CF6", icon: Heart },
+ shop: { label: "Shop", color: "#0EA5E9", icon: ShoppingBag },
+ task: { label: "Paid task", color: "#F59E0B", icon: CheckCircle2 },
+ piggypot: { label: "Piggy Pot", color: "#EC4899", icon: PiggyBank },
+ membership: { label: "Membership", color: "#10B981", icon: Crown },
+ bill: { label: "Subscription", color: "#3B82F6", icon: Repeat },
+ tip: { label: "Piggy Bank", color: "#65A30D", icon: Coins },
 };
 const cat = (t) => CAT[t] || { label: t, color: "#71717A", icon: FileText };
 const tint = (hex, a = "1a") => hex + a; // 8-digit hex alpha
@@ -33,29 +33,29 @@ const TIER_COLOR = { "Level 1": "#9CA3AF", "Level 2": "#60A5FA", "Level 3": "#34
 
 const ACCENT = "#FF007F";
 const ACCENT2 = "#7C3AED";
-const CARD = "bg-white/80 backdrop-blur-sm border border-white/60 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)]";
-const CARD_HOVER = "transition-all duration-300 hover:shadow-[0_12px_40px_-8px_rgba(16,24,40,0.2)] hover:-translate-y-0.5";
+const CARD = "bg-white/80 backdrop-blur-sm border border-white/60 rounded-box-sm ";
+const CARD_HOVER = "transition-all duration-300 hover:-translate-y-0.5";
 const MONO = "[font-variant-numeric:tabular-nums] tabular-nums";
-const EYEBROW = "text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400";
+const EYEBROW = "text-[12px] font-bold uppercase tracking-[0.18em] text-black/60";
 
 /* Four top-level tabs, each grouping what used to be its own tab. Eight tabs on a
    phone meant a horizontally-scrolled rail where half the destinations were never
    seen; these group by the question the buyer is actually asking. */
 const TABS = [
-    { key: "library",      label: "Library",      icon: Film },
+ { key: "library", label: "Library", icon: Film },
     { key: "transactions", label: "Transactions", icon: ReceiptText },
-    { key: "spending",     label: "Spending",     icon: Wallet },
-    { key: "saved",        label: "Saved",        icon: Bookmark },
+ { key: "spending", label: "Spending", icon: Wallet },
+ { key: "saved", label: "Saved", icon: Bookmark },
 ];
 
 const SORTS = { recent: "Recent", oldest: "Oldest first", name: "Name A–Z", price_desc: "Price: high → low", price_asc: "Price: low → high" };
 
 /* Views that own a search box, and the sort keys each supports. */
 const VIEW_TOOLS = {
-    media:         { search: true, types: true,  sorts: ["recent", "oldest", "name"], server: true },
-    transactions:  { search: true, types: true,  sorts: ["recent", "oldest", "price_desc", "price_asc", "name"] },
-    spending:      { search: false, types: false, sorts: [] },
-    saved:         { search: true, types: true,  sorts: ["recent", "name"] },
+ media: { search: true, types: true, sorts: ["recent", "oldest", "name"], server: true },
+ transactions: { search: true, types: true, sorts: ["recent", "oldest", "price_desc", "price_asc", "name"] },
+ spending: { search: false, types: false, sorts: [] },
+ saved: { search: true, types: true, sorts: ["recent", "name"] },
 };
 
 const DEFAULT_VIEW = { library: "media", transactions: "transactions", spending: "spending", saved: "saved" };
@@ -131,8 +131,8 @@ export default function PurchasesHub({
     const [sort, setSort] = useState("recent");
     const [typeFilter, setTypeFilter] = useState(null);
     const [lightbox, setLightbox] = useState(null);
-    const [confirm, setConfirm] = useState(null);   // { title, body, confirmLabel, tone, onConfirm }
-    const [report, setReport] = useState(null);     // incoming row being reported
+ const [confirm, setConfirm] = useState(null); // { title, body, confirmLabel, tone, onConfirm }
+ const [report, setReport] = useState(null); // incoming row being reported
     const [toast, setToast] = useState(null);
 
     const debouncedQuery = useDebounced(query, 320);
@@ -330,7 +330,7 @@ export default function PurchasesHub({
     }, [receipts, unlocked, incomingItems, subs]);
 
     const rawSource = {
-        media,                                    // already creator-filtered server-side
+ media, // already creator-filtered server-side
         transactions: byCreator(allTransactions),
         spending: [],
         saved: byCreator(savedItems),
@@ -407,7 +407,7 @@ export default function PurchasesHub({
 
             {/* Tab rail — sticky, four destinations so nothing scrolls out of reach */}
             <div className={`${embedded ? "" : "sticky top-2 z-20"} mt-7 mb-4`}>
-                <div className="flex gap-1.5 bg-white/70 backdrop-blur-xl border border-white/80 rounded-[20px] p-1.5 shadow-[0_4px_24px_rgba(16,24,40,0.10)]">
+ <div className="flex gap-1.5 bg-white/70 backdrop-blur-xl border border-white/80 rounded-box-sm p-1.5 ">
                     {TABS.map((t) => {
                         const Icon = t.icon;
                         const active = tab === t.key;
@@ -417,9 +417,9 @@ export default function PurchasesHub({
                                 key={t.key}
                                 onClick={() => setTab(t.key)}
                                 aria-pressed={active}
-                                className={`group relative flex-1 flex items-center justify-center gap-2 px-2 sm:px-3.5 min-h-[46px] rounded-[20px] text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
+ className={`group relative flex-1 flex items-center justify-center gap-2 px-2 sm:px-3.5 min-h-[46px] rounded-box-sm text-sm font-semibold transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 ${
                                     active
-                                        ? "text-white shadow-lg"
+ ? "text-white "
                                         : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50/80"
                                 }`}
                                 style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 20px -4px ${ACCENT}55` } : {}}
@@ -428,8 +428,8 @@ export default function PurchasesHub({
                                 <span className={active ? "" : "hidden xs:inline sm:inline"}>{t.label}</span>
                                 {alert && <span className="w-2 h-2 rounded-full bg-rose-400 ring-2 ring-white absolute top-2 right-2" aria-label="Needs attention" />}
                                 {!alert && counts[t.key] > 0 && (
-                                    <span className={`text-[11px] rounded-full px-1.5 py-0.5 hidden sm:inline ${MONO} ${
-                                        active ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-400"
+ <span className={`text-[12px] rounded-full px-1.5 py-0.5 hidden sm:inline ${MONO} ${
+ active ? "bg-white/20 text-white" : "bg-zinc-100 text-black/60"
                                     }`}>{counts[t.key]}</span>
                                 )}
                             </button>
@@ -506,7 +506,7 @@ export default function PurchasesHub({
 
     if (embedded) return inner;
     return (
-        <div className="relative min-h-dvh pb-24 text-zinc-900"
+ <div className="relative min-h-dvh pb-28 text-zinc-900"
             style={{
                 paddingBottom: "calc(6rem + env(safe-area-inset-bottom))",
                 background: "linear-gradient(160deg, #fdf6ff 0%, #f0f4ff 40%, #fff5fb 100%)",
@@ -523,10 +523,10 @@ export default function PurchasesHub({
 
 function viewsFor(tab) {
     return {
-        library:      ["media"],
+ library: ["media"],
         transactions: ["transactions"],
-        spending:     ["spending"],
-        saved:        ["saved"],
+ spending: ["spending"],
+ saved: ["saved"],
     }[tab] || [];
 }
 
@@ -548,14 +548,14 @@ function ViewSwitch({ tab, view, setView, counts }) {
                 const active = view === o.k;
                 return (
                     <button key={o.k} onClick={() => setView(o.k)} aria-pressed={active}
-                        className={`inline-flex items-center gap-2 min-h-[40px] px-4 rounded-full text-sm font-semibold border transition-all duration-200 ${
+ className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full text-sm font-semibold border transition-all duration-200 ${
                             active
-                                ? "text-white border-transparent shadow-md"
+ ? "text-white border-transparent "
                                 : "bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
                         }`}
                         style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 16px -4px ${ACCENT}44` } : {}}>
                         {o.label}
-                        <span className={`text-[11px] ${MONO} ${active ? "text-white/70" : "text-zinc-400"}`}>{counts[o.k] ?? 0}</span>
+ <span className={`text-[12px] ${MONO} ${active ? "text-white/70" : "text-black/60"}`}>{counts[o.k] ?? 0}</span>
                     </button>
                 );
             })}
@@ -574,16 +574,16 @@ function Toolbar({
         <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
                 <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+ <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/60 pointer-events-none" />
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search by title or creator…"
-                        className="w-full min-h-[44px] pl-10 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 focus:border-[#FF007F]/30 transition-all"
+ className="w-full min-h-[44px] pl-10 pr-12 rounded-box-sm bg-white/80 backdrop-blur-sm border border-white/80 text-sm text-zinc-900 placeholder:text-black/60 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 focus:border-[#FF007F]/30 transition-all"
                     />
                     {query && (
                         <button onClick={() => setQuery("")} aria-label="Clear search"
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 inline-flex items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition">
+ className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 inline-flex items-center justify-center rounded-full text-black/60 hover:bg-zinc-100 hover:text-zinc-700 transition">
                             <X size={15} />
                         </button>
                     )}
@@ -591,26 +591,26 @@ function Toolbar({
 
                 {creators.length > 1 && (
                     <div className="relative shrink-0">
-                        <Users size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+ <Users size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/60 pointer-events-none" />
                         <select value={creatorFilter} onChange={(e) => setCreatorFilter(e.target.value)} aria-label="Filter by creator"
-                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
+ className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-box-sm bg-white/80 backdrop-blur-sm border border-white/80 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
                             <option value="">All creators</option>
                             {creators.map((c) => (
                                 <option key={c.owner?.username} value={c.owner?.username || ""}>@{c.owner?.username}</option>
                             ))}
                         </select>
-                        <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-zinc-400 pointer-events-none" />
+ <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-black/60 pointer-events-none" />
                     </div>
                 )}
 
                 {hasSort && (
                     <div className="relative shrink-0">
-                        <ArrowDownUp size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+ <ArrowDownUp size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/60 pointer-events-none" />
                         <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort"
-                            className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-[20px] bg-white/80 backdrop-blur-sm border border-white/80 shadow-sm text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
+ className="appearance-none w-full sm:w-auto min-h-[44px] pl-9 pr-9 rounded-box-sm bg-white/80 backdrop-blur-sm border border-white/80 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/25 cursor-pointer">
                             {sorts.map((k) => <option key={k} value={k}>{SORTS[k]}</option>)}
                         </select>
-                        <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-zinc-400 pointer-events-none" />
+ <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-black/60 pointer-events-none" />
                     </div>
                 )}
             </div>
@@ -629,7 +629,7 @@ function Toolbar({
             )}
 
             {(filtered || loading) && (
-                <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-2">
+ <div className="flex items-center gap-2 text-[12px] text-black/60 mt-2">
                     {loading ? "Searching…" : `${shown} ${shown === 1 ? "result" : "results"}`}
                     {filtered && !loading && (
                         <button onClick={() => { setQuery(""); setTypeFilter(null); setCreatorFilter(""); }}
@@ -645,7 +645,7 @@ function FilterChip({ active, onClick, label, color = "#71717A", Icon }) {
     return (
         <button onClick={onClick} aria-pressed={active}
             className={`inline-flex items-center gap-1.5 min-h-[34px] px-3 rounded-full text-xs font-semibold border transition-all duration-200 ${
-                active ? "text-white border-transparent shadow-sm" : "text-zinc-600 bg-white/70 backdrop-blur-sm border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
+ active ? "text-white border-transparent " : "text-zinc-600 bg-white/70 backdrop-blur-sm border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
             }`}
             style={active ? { backgroundColor: color, boxShadow: `0 2px 10px -2px ${color}66` } : undefined}>
             {Icon && <Icon size={12} strokeWidth={2.4} />} {label}
@@ -670,7 +670,7 @@ function Backdrop({ children, onClose, reduce }) {
             <motion.div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true"
                 initial={reduce ? false : { y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={reduce ? { opacity: 0 } : { y: 24, opacity: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full sm:max-w-md bg-white/95 backdrop-blur-xl rounded-t-[30px] sm:rounded-[30px] p-6 shadow-2xl border border-white/60">
+ className="w-full sm:max-w-md bg-white/95 backdrop-blur-xl rounded-t-box sm:rounded-box p-6 border border-white/60">
                 {children}
             </motion.div>
         </motion.div>
@@ -713,7 +713,7 @@ function ReportDialog({ item, onSubmit, onClose, busy, reduce }) {
                 maxLength={2000}
                 autoFocus
                 placeholder="Tell them what went wrong…"
-                className="w-full mt-4 p-3 rounded-box-sm border border-zinc-200 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 resize-none"
+ className="w-full mt-4 p-3 rounded-box-sm border border-zinc-200 text-sm text-zinc-900 placeholder:text-black/60 focus:outline-none focus:ring-2 focus:ring-[#FF007F]/30 resize-none"
             />
             <div className="flex gap-2.5 mt-4">
                 <button onClick={onClose} disabled={busy}
@@ -747,7 +747,7 @@ function Toast({ message, onDone }) {
                     initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.96 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     role="status"
-                    className="fixed left-1/2 -translate-x-1/2 z-[60] text-white text-sm font-semibold px-5 py-3.5 rounded-[20px] shadow-2xl max-w-[92vw] text-center border border-white/10"
+ className="fixed left-1/2 -translate-x-1/2 z-[60] text-white text-sm font-semibold px-5 py-3.5 rounded-box-sm max-w-[92vw] text-center border border-white/10"
                     style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", background: `linear-gradient(135deg, #18181b 0%, #27272a 100%)`, backdropFilter: "blur(12px)" }}>
                     {message}
                 </motion.div>
@@ -805,7 +805,7 @@ function Lightbox({ items, index, onIndex, onClose, reduce }) {
             <div className="flex items-center justify-between px-4 py-3 text-white/90" onClick={(e) => e.stopPropagation()}>
                 <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{item.title}</div>
-                    <div className="text-xs text-white/50 truncate">@{item.owner?.username}{multi ? ` · ${index + 1} / ${items.length}` : ""}</div>
+ <div className="text-xs text-white/60 truncate">@{item.owner?.username}{multi ? ` · ${index + 1} / ${items.length}` : ""}</div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                     {item.media_url && (
@@ -834,9 +834,9 @@ function Lightbox({ items, index, onIndex, onClose, reduce }) {
                         // LazyVideo resolves the real poster from the video UUID; passing the
                         // video URL as posterSrc would hand an <img> a video file.
                         <LazyVideo src={item.media_url} fallback={item.owner?.avatar} controls
-                            className="max-h-[80vh] max-w-[92vw] rounded-box-sm object-contain bg-black" />
+ className="max-h-[80dvh] max-w-[92vw] rounded-box-sm object-contain bg-black" />
                     ) : item.media_kind === "image" ? (
-                        <img src={item.media_url} alt={item.title} className="max-h-[80vh] max-w-[92vw] rounded-box-sm object-contain" />
+ <img src={item.media_url} alt={item.title} className="max-h-[80dvh] max-w-[92vw] rounded-box-sm object-contain" />
                     ) : item.media_kind === "audio" ? (
                         <div className="w-[min(92vw,520px)] rounded-box bg-white p-6 text-center">
                             <span className="inline-flex w-14 h-14 rounded-full items-center justify-center mb-4" style={{ backgroundColor: tint(c.color, "16"), color: c.color }}>
@@ -877,7 +877,7 @@ function Chip({ type }) {
     const c = cat(type);
     const Icon = c.icon;
     return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium rounded-full px-2 py-0.5"
+ <span className="inline-flex items-center gap-1 text-[12px] font-medium rounded-full px-2 py-0.5"
             style={{ backgroundColor: tint(c.color, "14"), color: c.color }}>
             <Icon size={11} strokeWidth={2.4} /> {c.label}
         </span>
@@ -897,7 +897,7 @@ function IconTile({ type, size = 44, rounded = "rounded-box-sm" }) {
 
 function NewDot() {
     return (
-        <span className="relative inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 text-white"
+ <span className="relative inline-flex items-center gap-1 text-[12px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 text-white"
             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 2px 8px ${ACCENT}55` }}>
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-white animate-ping opacity-60" />
             New
@@ -912,7 +912,7 @@ function NewDot() {
  */
 function RowCard({ lead, title, titleHref, subtitle, meta, right, actions, badge }) {
     return (
-        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_16px_40px_-8px_rgba(16,24,40,0.18)] hover:-translate-y-0.5">
+ <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-box-sm transition-all duration-300 hover:-translate-y-0.5">
             {/* Subtle left accent glow on hover */}
             <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
@@ -937,7 +937,7 @@ function RowCard({ lead, title, titleHref, subtitle, meta, right, actions, badge
 
 function LinkAction({ onClick, href, children, tone = "accent", disabled }) {
     const cls = `inline-flex items-center gap-1 text-xs font-medium min-h-[32px] transition-colors disabled:opacity-50 ${
-        tone === "danger" ? "text-zinc-400 hover:text-rose-600" : tone === "quiet" ? "text-zinc-500 hover:text-zinc-900" : "hover:underline"
+ tone === "danger" ? "text-black/60 hover:text-rose-600" : tone === "quiet" ? "text-zinc-500 hover:text-zinc-900" : "hover:underline"
     }`;
     const style = tone === "accent" ? { color: ACCENT } : undefined;
     if (href) return <a href={href} className={cls} style={style}>{children}</a>;
@@ -948,7 +948,7 @@ function LinkAction({ onClick, href, children, tone = "accent", disabled }) {
 function Hero({ embedded, media, summary, money, reduce, status, overdue, onOverdue }) {
     const Title = embedded ? "h2" : "h1";
     return (
-        <div className="overflow-hidden rounded-[30px] relative" style={{
+ <div className="overflow-hidden rounded-box relative" style={{
             background: `linear-gradient(135deg, #1a0533 0%, #280a50 30%, #3b0764 60%, #1e0a4a 100%)`,
             boxShadow: `0 20px 60px -12px rgba(124,58,237,0.4), 0 4px 20px -4px rgba(255,0,127,0.3)`,
         }}>
@@ -961,7 +961,7 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
 
             <div className="grid lg:grid-cols-[1.2fr_0.8fr] relative z-10">
                 <div className="p-6 sm:p-8 md:p-10">
-                    <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50 mb-3">
+ <div className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] text-white/60 mb-3">
                         <span className="w-4 h-px bg-white/30" />
                         Your library
                     </div>
@@ -978,7 +978,7 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
 
                     {overdue > 0 && (
                         <button onClick={onOverdue}
-                            className="mt-5 inline-flex items-center gap-2 min-h-[44px] px-4 rounded-[20px] text-sm font-semibold text-white/90 border border-rose-400/40 hover:border-rose-400/70 transition-all"
+ className="mt-5 inline-flex items-center gap-2 min-h-[44px] px-4 rounded-box-sm text-sm font-semibold text-white/90 border border-rose-400/40 hover:border-rose-400/70 transition-all"
                             style={{ background: "rgba(225,29,72,0.20)", backdropFilter: "blur(8px)" }}>
                             <AlertTriangle size={15} strokeWidth={2.2} className="text-rose-400" />
                             {overdue} {overdue === 1 ? "delivery is" : "deliveries are"} overdue
@@ -993,9 +993,9 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
                     {media.length ? (
                         <Mosaic tiles={media.slice(0, 4)} extra={Math.max(0, media.length - 4)} reduce={reduce} />
                     ) : (
-                        <div className="flex flex-col items-center justify-center text-white/30">
+ <div className="flex flex-col items-center justify-center text-white/60">
                             <PiggyBank size={48} strokeWidth={1.4} />
-                            <span className="mt-3 text-sm font-medium text-white/40">Your library is empty</span>
+ <span className="mt-3 text-sm font-medium text-white/60">Your library is empty</span>
                         </div>
                     )}
                 </div>
@@ -1017,8 +1017,8 @@ function Stat({ label, value, big }) {
 
 function HeroStat({ label, value, big, accent }) {
     return (
-        <div className="min-w-0 bg-white/10 backdrop-blur-sm rounded-[20px] p-3 border border-white/10">
-            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50 mb-1.5">{label}</div>
+ <div className="min-w-0 bg-white/10 backdrop-blur-sm rounded-box-sm p-3 border border-white/10">
+ <div className="text-[12px] font-bold uppercase tracking-[0.15em] text-white/60 mb-1.5">{label}</div>
             <div className={`${big ? "text-xl sm:text-2xl" : "text-base sm:text-lg"} font-bold leading-none truncate ${MONO}`}
                 style={{ color: accent ? ACCENT : "white" }}>
                 {value}
@@ -1034,16 +1034,16 @@ function SupporterStatus({ status, reduce }) {
     const rows = Object.keys(breakdown);
     return (
         <div className="mt-6 max-w-md">
-            <div className="p-3.5 rounded-[20px] border border-white/20" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
+ <div className="p-3.5 rounded-box-sm border border-white/20" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
                 <div className="flex items-center justify-between mb-3">
                     <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                        <span className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
+ <span className="w-8 h-8 rounded-full flex items-center justify-center "
                             style={{ background: `linear-gradient(135deg, ${color}cc, ${color})`, boxShadow: `0 4px 12px ${color}55` }}>
                             <Trophy size={15} strokeWidth={2.2} className="text-white" />
                         </span>
                         {status.level} supporter
                     </span>
-                    <span className={`text-xs text-white/50 ${MONO}`}>{Math.round(status.score)} pts</span>
+ <span className={`text-xs text-white/60 ${MONO}`}>{Math.round(status.score)} pts</span>
                 </div>
                 <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)`, boxShadow: `0 0 8px ${color}77` }}
@@ -1052,11 +1052,11 @@ function SupporterStatus({ status, reduce }) {
                         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
                 </div>
                 <div className="flex items-center justify-between gap-3 mt-2">
-                    <span className="text-[11px] text-white/40">
+ <span className="text-[12px] text-white/60">
                         {status.next_level ? `${status.to_next} pts to ${status.next_level}` : "Top tier reached"} · last 90 days
                     </span>
                     {rows.length > 0 && (
-                        <button onClick={() => setOpen((o) => !o)} className="text-[11px] font-semibold text-white/50 hover:text-white/90 min-h-[28px] transition-colors">
+ <button onClick={() => setOpen((o) => !o)} className="text-[12px] font-semibold text-white/60 hover:text-white/90 min-h-[28px] transition-colors">
                             {open ? "Hide" : "How this works"}
                         </button>
                     )}
@@ -1068,7 +1068,7 @@ function SupporterStatus({ status, reduce }) {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden mt-2 space-y-1">
                             {rows.map((k) => (
-                                <li key={k} className="flex items-center justify-between text-[11px] text-white/50 capitalize">
+ <li key={k} className="flex items-center justify-between text-[12px] text-white/60 capitalize">
                                     <span>{String(k).replace(/_/g, " ")}</span>
                                     <span className={MONO}>{Math.round(Number(breakdown[k]) || 0)} pts</span>
                                 </li>
@@ -1117,7 +1117,7 @@ function Mosaic({ tiles, extra, reduce }) {
                     const isImg = t.media_kind === "image" && t.media_url;
                     return (
                         <motion.div key={t.id} variants={rise(reduce)}
-                            className="aspect-square rounded-[16px] bg-white overflow-hidden border border-white/80"
+ className="aspect-square rounded-box-sm bg-white overflow-hidden border border-white/80"
                             style={{ transform: `rotate(${rot[i]})`, boxShadow: shadows[i] }}>
                             {isImg ? (
                                 <img src={t.media_url} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -1132,7 +1132,7 @@ function Mosaic({ tiles, extra, reduce }) {
                 })}
             </div>
             {extra > 0 && (
-                <span className={`absolute -bottom-2 -right-2 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-lg ${MONO}`}
+ <span className={`absolute -bottom-2 -right-2 text-white text-[12px] font-bold px-2.5 py-1 rounded-full ${MONO}`}
                     style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                     +{extra}
                 </span>
@@ -1181,7 +1181,7 @@ function MediaCard({ item, onOpen, isNew }) {
     const poster = useVideoPoster(media_kind === "video" ? media_url : null, owner?.avatar);
 
     return (
-        <div className="overflow-hidden flex flex-col group rounded-[20px] border border-white/70 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-[0_16px_48px_-8px_rgba(16,24,40,0.22)] hover:-translate-y-1" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.07)" }}>
+        <div className="overflow-hidden flex flex-col group rounded-box-sm border border-white/70 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.07)" }}>
             <button
                 type="button"
                 onClick={openable ? onOpen : undefined}
@@ -1193,16 +1193,16 @@ function MediaCard({ item, onOpen, isNew }) {
                     <>
                         {poster && <img src={poster} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
                         <span className="absolute inset-0 flex items-center justify-center">
-                            <span className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white group-hover:scale-110 transition-all duration-300" style={{ background: "rgba(0,0,0,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
+                            <span className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white transition-[filter] duration-300 group-hover:brightness-125" style={{ background: "rgba(0,0,0,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
                                 <Play size={20} className="ml-0.5" />
                             </span>
                         </span>
-                        <span className="absolute top-2.5 left-2.5 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 pointer-events-none" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
+ <span className="absolute top-2.5 left-2.5 text-white text-[12px] font-bold px-2 py-1 rounded-full flex items-center gap-1 pointer-events-none" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
                             <Play size={9} /> Video
                         </span>
                     </>
                 ) : media_kind === "image" ? (
-                    <img src={media_url} alt={title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+ <img src={media_url} alt={title} loading="lazy" className="w-full h-full object-cover transition-[filter,opacity] duration-500 group-hover:brightness-[1.08]" />
                 ) : (
                     <NonVisual kind={media_kind} color={c.color} />
                 )}
@@ -1221,7 +1221,7 @@ function MediaCard({ item, onOpen, isNew }) {
 
 function SkeletonCard() {
     return (
-        <div className="overflow-hidden flex flex-col rounded-[20px] border border-white/70 bg-white/60 animate-pulse">
+ <div className="overflow-hidden flex flex-col rounded-box-sm border border-white/70 bg-white/60 animate-pulse">
             <div className="aspect-square bg-gradient-to-br from-zinc-100 to-zinc-50" />
             <div className="p-3.5 space-y-2">
                 <div className="h-3.5 w-3/4 bg-zinc-100 rounded-full" />
@@ -1244,16 +1244,16 @@ function NonVisual({ kind, color }) {
 /* ---------------- Renewing banner ---------------- */
 function RenewingBanner({ items, money, onCancel, busy, onView }) {
     return (
-        <div className="mt-5 rounded-[20px] p-5 border" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", borderColor: "#fde68a", boxShadow: "0 4px 20px -4px rgba(245,158,11,0.2)" }}>
+        <div className="mt-5 rounded-box-sm p-5 border" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", borderColor: "#fde68a", boxShadow: "0 4px 20px -4px rgba(245,158,11,0.2)" }}>
             <div className="flex items-center gap-2.5 mb-3">
-                <span className="w-8 h-8 rounded-[20px] flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
+ <span className="w-8 h-8 rounded-box-xs flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
                     <BellRing size={16} strokeWidth={2} className="text-amber-500" />
                 </span>
                 <span className="text-sm font-bold text-amber-900">{items.length} renewing this week</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {items.slice(0, 4).map((s) => (
-                    <div key={s.id} className="bg-white/70 backdrop-blur-sm border border-amber-200/60 rounded-[20px] px-3.5 py-2.5 flex items-center gap-3">
+ <div key={s.id} className="bg-white/70 backdrop-blur-sm border border-amber-200/60 rounded-box-sm px-3.5 py-2.5 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold text-zinc-900 truncate">{s.title}</div>
                             <div className={`text-xs text-amber-700/70 ${MONO}`}>{money(s.amount)} · renews {fmtDate(s.next_charge_at)}</div>
@@ -1268,7 +1268,7 @@ function RenewingBanner({ items, money, onCancel, busy, onView }) {
                 ))}
             </div>
             {items.length > 4 && (
-                <button onClick={onView} className="mt-3 text-xs font-medium text-zinc-400 hover:text-zinc-900 min-h-[44px]">View all {items.length}</button>
+ <button onClick={onView} className="mt-3 text-xs font-medium text-black/60 hover:text-zinc-900 min-h-[44px]">View all {items.length}</button>
             )}
         </div>
     );
@@ -1314,7 +1314,7 @@ function SubscriptionList({ items, money, reduce, onCancel, onResume, busy, filt
                         right={
                             <>
                                 <div className={`font-semibold text-zinc-900 ${MONO}`}>{money(s.amount)}</div>
-                                {s.recurring_type && <div className="text-[11px] text-zinc-400 mt-0.5 capitalize">{s.recurring_type}</div>}
+ {s.recurring_type && <div className="text-[12px] text-black/60 mt-0.5 capitalize">{s.recurring_type}</div>}
                             </>
                         }
                     />
@@ -1326,7 +1326,7 @@ function SubscriptionList({ items, money, reduce, onCancel, onResume, busy, filt
 
 function StatusPill({ tone, label }) {
     return (
-        <span className="shrink-0 text-[11px] font-medium rounded-full px-2 py-0.5 capitalize"
+ <span className="shrink-0 text-[12px] font-medium rounded-full px-2 py-0.5 capitalize"
             style={{ backgroundColor: tint(tone, "16"), color: tone }}>{label}</span>
     );
 }
@@ -1359,12 +1359,12 @@ function IncomingList({ items, reduce, onAccept, onReport, busy, filtered, isNew
                                 <>
                                     <StatusPill tone={tone} label={status} />
                                     {it.is_physical && it.tracking_id && (
-                                        <span className={`text-[11px] text-zinc-400 truncate ${MONO}`}>{it.courier ? `${it.courier} · ` : ""}{it.tracking_id}</span>
+ <span className={`text-[12px] text-black/60 truncate ${MONO}`}>{it.courier ? `${it.courier} · ` : ""}{it.tracking_id}</span>
                                     )}
-                                    {!it.is_physical && it.due_at && <span className="text-[11px] text-zinc-400">Due {fmtDate(it.due_at)}</span>}
-                                    {it.is_physical && it.eta && <span className="text-[11px] text-zinc-400">Arrives {fmtDate(it.eta)}</span>}
+ {!it.is_physical && it.due_at && <span className="text-[12px] text-black/60">Due {fmtDate(it.due_at)}</span>}
+ {it.is_physical && it.eta && <span className="text-[12px] text-black/60">Arrives {fmtDate(it.eta)}</span>}
                                     {!it.due_at && !it.eta && it.waiting_days > 0 && (
-                                        <span className="text-[11px] text-zinc-400">Waiting {it.waiting_days}d</span>
+ <span className="text-[12px] text-black/60">Waiting {it.waiting_days}d</span>
                                     )}
                                 </>
                             }
@@ -1415,7 +1415,7 @@ function SavedList({ items, money, reduce, onRemove, filtered }) {
                         meta={s.price ? <span className={`text-sm font-semibold text-zinc-900 ${MONO}`}>{money(s.price)}</span> : null}
                         actions={
                             s.unavailable_reason
-                                ? <span className="text-xs text-zinc-400">Not available right now</span>
+ ? <span className="text-xs text-black/60">Not available right now</span>
                                 : <LinkAction href={s.open_link}>Buy now <ArrowUpRight size={12} strokeWidth={2.4} /></LinkAction>
                         }
                         right={
@@ -1482,7 +1482,7 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                         </div>
                         {!embedded && (
                             <a href="/my-purchases-export"
-                                className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 rounded-[20px] text-xs font-semibold text-white transition-all hover:opacity-90"
+ className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-box-sm text-xs font-semibold text-white transition-all hover:opacity-90"
                                 style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}33` }}>
                                 <Download size={13} strokeWidth={2.4} /> Export CSV
                             </a>
@@ -1495,16 +1495,23 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                     const h = Math.max(4, (m.total / monthMax) * 112);
                                     const isLast = idx === months.length - 1;
                                     return (
-                                        <div key={m.month} className="flex-1 flex flex-col justify-end group relative">
-                                            {/* Tooltip on hover */}
-                                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10">
-                                                <div className={`text-[10px] font-semibold text-white px-2 py-1 rounded-lg whitespace-nowrap ${MONO}`}
+ <div
+ key={m.month}
+ tabIndex={0}
+ title={`${m.month}: ${money(m.total)}`}
+ aria-label={`${m.month}: ${money(m.total)}`}
+ className="flex-1 flex flex-col justify-end group relative rounded-box-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]"
+ >
+ {/* The figure is revealed on hover OR focus: a value only a
+ mouse can uncover does not exist on a phone. */}
+ <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-10">
+ <div className={`text-[12px] font-semibold text-white px-2 py-1 rounded-box-sm whitespace-nowrap ${MONO}`}
                                                     style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}55` }}>
                                                     {money(m.total)}
                                                 </div>
                                             </div>
                                             <motion.div
-                                                className="w-full rounded-t-[6px] cursor-default"
+ className="w-full rounded-t-box-sm cursor-default"
                                                 style={{
                                                     background: m.total > 0
                                                         ? (isLast ? `linear-gradient(180deg, ${ACCENT} 0%, ${ACCENT2} 100%)` : `linear-gradient(180deg, ${ACCENT}cc 0%, ${ACCENT}88 100%)`)
@@ -1519,16 +1526,16 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                     );
                                 })}
                             </div>
-                            <div className="flex justify-between text-[10px] font-semibold text-zinc-400 mt-2">
+ <div className="flex justify-between text-[12px] font-semibold text-black/60 mt-2">
                                 <span>{fmtMonth(months[0]?.month)}</span>
                                 <span>{fmtMonth(months[months.length - 1]?.month)}</span>
                             </div>
                         </>
                     )}
                     <div className="text-xs text-zinc-500 mt-4 pt-4 border-t border-zinc-100/80 flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-zinc-900">{money(summary.this_month)}</span> this month
+ <span className="font-semibold text-zinc-900 tabular-nums">{money(summary.this_month)}</span> this month
                         {delta !== 0 && (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${delta > 0 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"}`}>
+ <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] font-bold ${delta > 0 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"}`}>
                                 {delta > 0 ? "+" : "−"}{money(Math.abs(delta))} vs last month
                             </span>
                         )}
@@ -1565,7 +1572,7 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                     <div key={k}>
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="flex items-center gap-2">
-                                                <span className="w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0"
+ <span className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                                                     style={{ backgroundColor: tint(c.color, "18"), color: c.color }}>
                                                     <Icon size={13} strokeWidth={2.4} />
                                                 </span>
@@ -1596,11 +1603,11 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {creators.slice(0, 8).map((c, idx) => (
                             <div key={c.owner?.username}
-                                className="group flex items-center gap-3.5 rounded-[20px] p-3.5 border border-white/60 transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(16,24,40,0.15)] hover:-translate-y-0.5 cursor-default"
+ className="group flex items-center gap-3.5 rounded-box-sm p-3.5 border border-white/60 transition-all duration-300 cursor-default"
                                 style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(8px)" }}>
                                 {/* Avatar with ring glow */}
                                 <div className="relative shrink-0">
-                                    <img src={c.owner?.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-zinc-100 ring-2 ring-white shadow-md" />
+ <img src={c.owner?.avatar} alt="" className="w-11 h-11 rounded-full object-cover bg-zinc-100 ring-2 ring-white " />
                                     {c.active_subs > 0 && (
                                         <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white flex items-center justify-center"
                                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
@@ -1610,16 +1617,16 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <a href={c.open_link} className="text-sm font-bold text-zinc-900 truncate block hover:underline">@{c.owner?.username}</a>
-                                    <div className={`text-[11px] text-zinc-500 font-medium ${MONO} mt-0.5`}>
+ <div className={`text-[12px] text-zinc-500 font-medium ${MONO} mt-0.5`}>
                                         {c.purchase_count} purchase{c.purchase_count !== 1 ? "s" : ""}{c.active_subs ? ` · ${c.active_subs} active` : ""}
                                     </div>
                                     <div className="flex items-center gap-2.5 mt-1.5">
                                         <button onClick={() => onCreator(c.owner?.username)}
-                                            className="text-[11px] font-bold transition-opacity hover:opacity-70" style={{ color: ACCENT }}>
+ className="text-[12px] font-bold transition-opacity hover:opacity-70" style={{ color: ACCENT }}>
                                             Show items
                                         </button>
                                         {c.support_story_url && (
-                                            <a href={c.support_story_url} className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 inline-flex items-center gap-1">
+ <a href={c.support_story_url} className="text-[12px] font-semibold text-black/60 hover:text-zinc-700 inline-flex items-center gap-1">
                                                 <MessageCircle size={10} strokeWidth={2.4} /> Our story
                                             </a>
                                         )}
@@ -1696,7 +1703,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
     const amount = item.amount ?? item.price ?? null;
 
     return (
-        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_12px_32px_-8px_rgba(16,24,40,0.14)]">
+ <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-box-sm transition-all duration-300 ">
             {/* Left accent glow on hover */}
             <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
@@ -1722,12 +1729,12 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                         <div className={`text-base font-bold text-zinc-900 ${MONO}`}>{money(amount)}</div>
                         {kind === 'receipt' && item.certificate_url && (
                             <a href={item.certificate_url} target="_blank" rel="noreferrer"
-                                className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 transition-colors">
+ className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-black/60 hover:text-zinc-700 transition-colors">
                                 <Download size={11} strokeWidth={2.4} /> Receipt
                             </a>
                         )}
                         {kind === 'subscription' && item.recurring_type && (
-                            <div className="text-[10px] text-zinc-400 font-medium mt-0.5 capitalize">{item.recurring_type}</div>
+ <div className="text-[12px] text-black/60 font-medium mt-0.5 capitalize">{item.recurring_type}</div>
                         )}
                     </div>
                 )}
@@ -1737,18 +1744,18 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
             {hasReward && (
                 <div className="border-t mx-4 mb-4 pt-3.5" style={{ borderColor: `${ACCENT}22` }}>
                     <div className="flex items-center gap-1.5 mb-2.5">
-                        <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+ <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                             <Gift size={11} strokeWidth={2.5} className="text-white" />
                         </span>
-                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>What you unlocked</span>
+ <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>What you unlocked</span>
                     </div>
                     {item.reward_text && (
-                        <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-[12px] px-3 py-2.5 border border-white/80 mb-2.5">{item.reward_text}</p>
+ <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-box-sm px-3 py-2.5 border border-white/80 mb-2.5">{item.reward_text}</p>
                     )}
                     {item.reward_url && (
                         <a href={item.reward_url} target="_blank" rel="noreferrer"
-                            className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
+ className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90"
                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
                             <RewardIcon size={13} strokeWidth={2.5} />{rewardLabel}
                         </a>
@@ -1760,7 +1767,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
             {kind === 'unlocked' && !hasReward && item.open_link && (
                 <div className="px-4 pb-4">
                     <a href={item.open_link} target="_blank" rel="noreferrer"
-                        className="flex items-center justify-center gap-2 min-h-[38px] w-full rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
+ className="flex items-center justify-center gap-2 min-h-[38px] w-full rounded-box-sm border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
                         <ArrowUpRight size={13} strokeWidth={2.4} /> View content
                     </a>
                 </div>
@@ -1770,7 +1777,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
             {kind === 'incoming' && (
                 <div className="px-4 pb-4 space-y-2.5">
                     {item.is_physical && item.tracking_id && (
-                        <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 rounded-[12px] px-3 py-2.5 border border-zinc-100">
+ <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 rounded-box-sm px-3 py-2.5 border border-zinc-100">
                             <Truck size={13} strokeWidth={2.2} />
                             <span className="font-medium">{item.courier_name || 'Courier'}</span>
                             <span className={MONO}>{item.tracking_id}</span>
@@ -1779,19 +1786,19 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                     <div className="flex gap-2 flex-wrap">
                         {item.can_accept && (
                             <button onClick={() => onAccept(item)} disabled={busy === item.id}
-                                className="flex-1 min-h-[38px] rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
+ className="flex-1 min-h-[38px] rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
                                 style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                                 {busy === item.id ? 'Accepting…' : 'Accept delivery'}
                             </button>
                         )}
                         {item.open_link && (
                             <a href={item.open_link}
-                                className="flex-1 flex items-center justify-center gap-1.5 min-h-[38px] rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
+ className="flex-1 flex items-center justify-center gap-1.5 min-h-[38px] rounded-box-sm border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
                                 <ArrowUpRight size={12} strokeWidth={2.4} /> View creator
                             </a>
                         )}
                         <button onClick={() => onReport(item)}
-                            className="min-h-[38px] px-3.5 rounded-[14px] border border-zinc-200/70 text-xs font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 transition-all">
+ className="min-h-[38px] px-3.5 rounded-box-sm border border-zinc-200/70 text-xs font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50 transition-all">
                             Report
                         </button>
                     </div>
@@ -1808,20 +1815,20 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                     <div className="flex gap-2">
                         {item.cancelable && (
                             <button onClick={() => onCancel(item)} disabled={busySub === item.id}
-                                className="min-h-[36px] px-4 rounded-[14px] border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all disabled:opacity-50">
+ className="min-h-[36px] px-4 rounded-box-sm border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all disabled:opacity-50">
                                 Cancel renewal
                             </button>
                         )}
                         {item.resumable && (
                             <button onClick={() => onResume(item)} disabled={busySub === item.id}
-                                className="min-h-[36px] px-4 rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
+ className="min-h-[36px] px-4 rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
                                 style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                                 Resume
                             </button>
                         )}
                         {item.open_link && (
                             <a href={item.open_link}
-                                className="ml-auto min-h-[36px] px-3.5 flex items-center gap-1.5 rounded-[14px] border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all">
+ className="ml-auto min-h-[36px] px-3.5 flex items-center gap-1.5 rounded-box-sm border border-zinc-200 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 transition-all">
                                 <ArrowUpRight size={12} strokeWidth={2.4} /> View
                             </a>
                         )}
@@ -1832,7 +1839,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
             {/* ── No reward, no special section (e.g. physical shop item) ── */}
             {kind === 'receipt' && !hasReward && (
                 <div className="px-4 pb-3.5">
-                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
+ <div className="flex items-center gap-2 text-[12px] text-black/60 font-medium">
                         <Truck size={12} strokeWidth={2.2} />
                         <span>Physical or pending delivery</span>
                     </div>
@@ -1859,7 +1866,7 @@ function ReceiptCard({ r, money }) {
         : 'View your reward';
 
     return (
-        <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-[20px] shadow-[0_2px_12px_rgba(16,24,40,0.07)] transition-all duration-300 hover:shadow-[0_12px_32px_-8px_rgba(16,24,40,0.16)]">
+ <div className="group relative overflow-hidden bg-white/80 backdrop-blur-sm border border-white/70 rounded-box-sm transition-all duration-300 ">
             {/* Left accent bar on hover */}
             <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{ background: `linear-gradient(180deg, ${ACCENT}, ${ACCENT2})` }} />
@@ -1878,7 +1885,7 @@ function ReceiptCard({ r, money }) {
                 <div className="text-right shrink-0">
                     <div className={`text-base font-bold text-zinc-900 ${MONO}`}>{money(r.amount)}</div>
                     <a href={r.certificate_url} target="_blank" rel="noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-400 hover:text-zinc-700 transition-colors">
+ className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-black/60 hover:text-zinc-700 transition-colors">
                         <Download size={11} strokeWidth={2.4} /> Receipt
                     </a>
                 </div>
@@ -1888,18 +1895,18 @@ function ReceiptCard({ r, money }) {
             {hasReward ? (
                 <div className="border-t mx-4 mb-4 pt-3.5" style={{ borderColor: `${ACCENT}22` }}>
                     <div className="flex items-center gap-1.5 mb-2.5">
-                        <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+ <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                             <Gift size={11} strokeWidth={2.5} className="text-white" />
                         </span>
-                        <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>
+ <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>
                             What you unlocked
                         </span>
                     </div>
 
                     {/* Reward message text */}
                     {r.reward_text && (
-                        <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-[12px] px-3 py-2.5 border border-white/80 mb-2.5">
+ <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-box-sm px-3 py-2.5 border border-white/80 mb-2.5">
                             {r.reward_text}
                         </p>
                     )}
@@ -1907,7 +1914,7 @@ function ReceiptCard({ r, money }) {
                     {/* Reward access button */}
                     {r.reward_url && (
                         <a href={r.reward_url} target="_blank" rel="noreferrer"
-                            className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-[14px] text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 hover:shadow-lg"
+ className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 "
                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
                             <RewardIcon size={13} strokeWidth={2.5} />
                             {rewardLabel}
@@ -1917,7 +1924,7 @@ function ReceiptCard({ r, money }) {
             ) : (
                 /* No reward: show a subtle "Pending delivery" or "No digital reward" note */
                 <div className="px-4 pb-3.5">
-                    <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-medium">
+ <div className="flex items-center gap-2 text-[12px] text-black/60 font-medium">
                         <Truck size={12} strokeWidth={2.2} />
                         <span>Physical or pending delivery</span>
                     </div>
@@ -1931,8 +1938,8 @@ function ReceiptCard({ r, money }) {
 /* ---------------- Shared ---------------- */
 function Empty({ title, sub, Icon, cta }) {
     return (
-        <div className="py-14 sm:py-18 text-center px-6 rounded-[20px] border border-white/70 bg-white/60 backdrop-blur-sm" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.06)" }}>
-            <span className="inline-flex w-16 h-16 rounded-[20px] items-center justify-center mb-5 text-zinc-400" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%)", boxShadow: "0 4px 16px rgba(16,24,40,0.08)" }}>
+        <div className="py-14 sm:py-18 text-center px-6 rounded-box-sm border border-white/70 bg-white/60 backdrop-blur-sm" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.06)" }}>
+            <span className="inline-flex w-16 h-16 rounded-box-sm items-center justify-center mb-5 text-black/60" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%)", boxShadow: "0 4px 16px rgba(16,24,40,0.08)" }}>
                 <Icon size={26} strokeWidth={1.7} />
             </span>
             <div className="text-base font-bold text-zinc-900">{title}</div>
@@ -1941,7 +1948,7 @@ function Empty({ title, sub, Icon, cta }) {
                 of them now offers the next step. */}
             {cta && (
                 <a href="/creators"
-                    className="mt-6 inline-flex items-center gap-2 min-h-[44px] px-6 rounded-[20px] text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 hover:shadow-lg"
+ className="mt-6 inline-flex items-center gap-2 min-h-[44px] px-6 rounded-box-sm text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 "
                     style={{ background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 6px 20px -4px ${ACCENT}55` }}>
                     <Compass size={15} strokeWidth={2.2} /> Find creators
                 </a>

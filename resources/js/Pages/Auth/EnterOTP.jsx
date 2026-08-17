@@ -248,7 +248,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                 <div className="flex items-center justify-center gap-3">
                                     <input
                                         type="text"
-                                        className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-[30px]   p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                                        className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-box   p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
                                         pattern="\d*"
                                         onChange={enterBCode}
                                         placeholder="Enter backup code..."
@@ -258,7 +258,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                     <button
                                         disabled={loading}
                                         onClick={verify}
-                                        className="pinkbg-i text-white px-3 py-2 w-full rounded-[30px]  "
+                                        className="pinkbg-i text-white px-3 py-2 w-full rounded-box  "
                                     >
                                         {processing || loading
                                             ? "processing..."
@@ -286,8 +286,8 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                             key={index}
                                             type="text"
                                             className="border-gray-300  text-center bg-gray-200 
-                                    text-black rounded-[12px] 
-                                    md:rounded-[15px]  w-full   text-xl font-bold
+                                    text-black rounded-box-sm 
+                                    md:rounded-box-sm  w-full   text-xl font-bold
                                      max-w-[50px] min-h-[50px] otp-input  px-1 py-1 "
                                             maxLength="1"
                                             value={data}
@@ -308,7 +308,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                         type="button"
                                         disabled={loading}
                                         onClick={verify}
-                                        className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-[30px]  "
+                                        className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-box  "
                                     >
                                         {loading
                                             ? "processing..."
@@ -367,7 +367,7 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess, onHide }
                                         ? "Checking device..."
                                         : "Use Face ID / Fingerprint"}
                                 </button>
-                                <p className="text-xs text-gray-500 text-center mt-2">
+                                <p className="text-xs text-black/60 text-center mt-2">
                                     Bypass OTP by verifying your identity with a
                                     saved passkey.
                                 </p>

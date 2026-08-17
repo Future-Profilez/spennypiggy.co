@@ -48,7 +48,7 @@ export default function Thankyou(props) {
         <>
             <Head title={"Thankyou"} />
             <style>{`
-            .thankyou-wrap { min-height:89vh; }
+            .thankyou-wrap { min-height:89dvh; }
             .giftthank {
               border:2px dashed var(--mint);
             }
@@ -66,7 +66,7 @@ export default function Thankyou(props) {
                     <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden mx-auto block mt-4 " >
                           <LazyLoadImage
                           src={orderDetails && orderDetails?.creator && orderDetails?.creator?.avatar_url || userphoto}
-                          alt="image-avatar" className="img-fluid rounded w-full h-full object-cover"  effect="blur"
+                          alt="image-avatar" className="max-w-full rounded w-full h-full object-cover"  effect="blur"
                           height={100}
                           width={100} />
                     </div>

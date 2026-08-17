@@ -104,6 +104,7 @@ class SeoController extends Controller
             '/test*',
             '/seed*',
             '/dev/',
+            '/brand/',
         ];
 
         // ⚠️ A non-production host does NOT get `Disallow: /`. Google has to CRAWL
@@ -137,6 +138,7 @@ class SeoController extends Controller
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-posts.xml\n";
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-shop-items.xml\n";
         $content .= "Sitemap: {$siteUrl}/seo/sitemap-tasks.xml\n";
+        $content .= "Sitemap: {$siteUrl}/seo/sitemap-help.xml\n";
 
         // Create response with aggressive cache prevention
         $response = new Response($content, 200, [

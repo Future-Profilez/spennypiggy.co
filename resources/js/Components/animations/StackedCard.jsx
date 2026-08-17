@@ -65,7 +65,7 @@ export default function StackedCard({
     return (
         <div
             ref={ref}
-            className={`md:h-[100vh] ${className}`} // md+: full viewport-height scroll runway
+            className={`md:h-[100dvh] ${className}`} // md+: full viewport-height scroll runway
         >
             <motion.div
                 style={{

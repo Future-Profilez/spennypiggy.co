@@ -367,6 +367,56 @@ class RiskMessages
             ],
         ],
 
+        // 12b — The creator's page is paused because they are BEHIND ON POSTING.
+        //
+        // Split out of CREATOR_SUBSCRIPTION_INACTIVE on 14 Aug 2026 (client
+        // direction, off the back of an Intercom ticket): the one collapsed
+        // "they'll be back shortly" answer told a supporter nothing they could
+        // act on, and this is the one pause reason where they genuinely can —
+        // a nudge to the creator is what ends it.
+        //
+        // ⚠️ It is also the only pause reason that discloses nothing private.
+        // A lapsed subscription or a Stripe account problem is the creator's
+        // billing position and stays behind the generic message; "they owe some
+        // posts" is a content rule, visible from their own public feed anyway.
+        //
+        // ⚠️ NO COUNT. Rule 1 forbids a number in supporter copy, and the
+        // requirement is the creator's own term — the creator is told ":required
+        // approved posts every :window days" on their dashboard, the supporter
+        // is told there are some outstanding.
+        'CREATOR_CONTENT_PAUSED' => [
+            'audience_class' => 'supporter',
+            'title' => "This creator's page is paused right now ⏸",
+            'body' => "They've got some new posts to publish before purchases can go through again — and it switches back on the moment they do.\n\nWorth giving them a nudge on their socials in the meantime. 🐷",
+            'next_step' => 'Give them a nudge — it comes back on as soon as they post.',
+            'cta' => null,
+        ],
+
+        // 20 — Creator sign-up is paused platform-wide.
+        //
+        // 🚨 This replaces the copy that used to live inline in
+        // RegisteredUserController: "New creator registration is temporarily
+        // paused due to system maintenance." That sentence was a LIE — the
+        // platform is not under maintenance, it has stopped opening new creator
+        // accounts because a safety threshold tripped. We do not have to say
+        // which threshold (rule 1), but we must not invent a different reason:
+        // the person finds out it was untrue the moment support tells them
+        // something else, and this is the first thing the platform ever says to
+        // them.
+        //
+        // ⚠️ The CTA has `route => null` DELIBERATELY. The action is the
+        // waitlist form rendered on the registration screen itself — sending
+        // someone somewhere else to leave an email is one step more than they
+        // will take, and this state exists precisely because we were losing
+        // them at this exact moment.
+        'CREATOR_SIGNUP_PAUSED' => [
+            'audience_class' => 'creator',
+            'title' => "We've paused new creator sign-ups ⏸",
+            'body' => "We're not opening new creator accounts at the moment — it's a temporary pause on our side, and it's nothing to do with you or anything you've entered.\n\nLeave your email and we'll write to you the moment it opens. You won't have to check back. 🐷",
+            'next_step' => "Leave your email and we'll tell you the moment sign-ups reopen.",
+            'cta' => ['label' => 'Tell me when it opens', 'route' => null],
+        ],
+
         // 13 — Posting rule. The WARNING is the highest-value message in the
         // brief: it prevents the pause happening at all, which is the cheapest
         // prevention on the list.

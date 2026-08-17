@@ -84,23 +84,21 @@ const NavItem = ({ item, active }) => {
         <Link
             href={item.href}
             onMouseEnter={() => iconRef.current?.startAnimation?.()}
-            className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-[20px] transition-all duration-200 ${
-                active 
-                    ? 'text-[#05EFB8] bg-[#05EFB8]/15 scale-105 font-semibold' 
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center px-3 py-1.5 rounded-box-sm transition-colors duration-200 ${
+                active
+                    ? 'text-[#05EFB8] bg-[#05EFB8]/15 font-semibold ring-1 ring-inset ring-[#05EFB8]/40'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
             }`}
         >
-            <IconComponent 
+            <IconComponent
                 ref={iconRef}
                 size={22}
                 duration={1.5}
                 color="currentColor"
-                className={`mb-0.5 transition-transform duration-200 ${
-                    active ? 'text-[#05EFB8]' : 'text-gray-400'
-                }`} 
+                className="mb-0.5"
             />
-            <span className={`text-[11px] leading-tight font-medium ${
-                active ? 'text-[#05EFB8]' : 'text-gray-400'
+            <span className={`text-[12px] leading-tight font-medium ${
+                active ? 'text-[#05EFB8]' : 'text-white/60'
             }`}>
                 {item.label}
             </span>

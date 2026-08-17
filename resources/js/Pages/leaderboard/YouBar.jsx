@@ -20,12 +20,12 @@ export default function YouBar({ you, windowDays, onShare }) {
 
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+84px)] sm:pb-[calc(env(safe-area-inset-bottom)+20px)]">
-            <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-4 rounded-box border border-black/[0.08] bg-white/85 px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_56px_-28px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+            <div className="pointer-events-auto mx-auto flex max-w-3xl items-center gap-4 rounded-box border border-black/[0.08] bg-white/85 px-4 py-3 backdrop-blur-xl">
                 <div className="shrink-0 text-center">
                     <span className="block font-gulfs text-28 leading-none text-[#0B0B0C] sm:text-32">
                         {you.rank}
                     </span>
-                    <span className="mt-1 block text-9 font-semibold uppercase tracking-[0.2em] text-black/35">
+                    <span className="mt-1 block text-12 font-semibold uppercase tracking-[0.2em] text-black/60">
                         of {you.total}
                     </span>
                 </div>
@@ -36,14 +36,14 @@ export default function YouBar({ you, windowDays, onShare }) {
                     <div className="flex flex-wrap items-center gap-2">
                         {tier.label && (
                             <span
-                                className={`rounded-full px-2 py-0.5 text-11 font-semibold uppercase tracking-[0.1em] ${tier.className}`}
+                                className={`rounded-full px-2 py-0.5 text-12 font-semibold uppercase tracking-[0.1em] ${tier.className}`}
                             >
                                 {tier.label}
                             </span>
                         )}
                         <MovementChip direction={you.direction} delta={you.delta} windowDays={windowDays} compact />
                     </div>
-                    <p className="mt-1 truncate text-12 text-black/55">
+                    <p className="mt-1 truncate text-12 text-black/60">
                         {next
                             ? next.supporters_gap > 0
                                 ? `${next.supporters_gap} more ${
@@ -57,7 +57,7 @@ export default function YouBar({ you, windowDays, onShare }) {
 
                 <button
                     onClick={onShare}
-                    className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-full bg-[#0B0B0C] px-5 text-11 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
+                    className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-full bg-[#0B0B0C] px-5 text-12 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
                 >
                     <Share2Icon size={13} strokeWidth={2.5} aria-hidden="true" />
                     Share

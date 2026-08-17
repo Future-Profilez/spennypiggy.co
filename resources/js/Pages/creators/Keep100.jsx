@@ -1,108 +1,214 @@
 import { Head, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
-import CreatorGuideLinks from './components/CreatorGuideLinks';
-import { Check, ArrowRight, DollarSign, ShieldCheck } from 'lucide-react';
+import AdPage from './components/AdPage';
+import {
+    ACCENT,
+    Eyebrow,
+    LedgerFrame,
+    LedgerRow,
+    SectionHead,
+    StartSelling,
+    StatCell,
+} from './components/Ledger';
+import { ArrowRight } from 'lucide-react';
 
-import { PRICE_FORMATTED, SUBSCRIPTION_COPY } from "@/constants/creatorSubscription";
+import {
+    PRICE_FORMATTED,
+    SUBSCRIPTION_COPY,
+} from '@/constants/creatorSubscription';
+
+/**
+ * Keep 100% — the pricing argument.
+ *
+ * ⚠️ NO SUPPORTER-FEE PERCENTAGE APPEARS ON THIS PAGE, including in the worked
+ * example. The rate differs per payment method and per creator (bespoke
+ * agreements), so any single figure is wrong for someone — the same rule
+ * `home/PricingSection.jsx` follows. The example shows the two numbers that ARE
+ * fixed: what you list, and what you receive.
+ */
 export default function Keep100() {
-  return (
-    <>
-      <Head title="Keep 100% — Creators Keep All Their Earnings">
-        <link rel="canonical" href="/creators/keep-100" />
-        <meta name="description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
-        <meta property="og:title" content="Keep 100% — Creators Keep All Their Earnings" />
-        <meta property="og:description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
-        <meta property="og:image" content="/siteicon.png" />
-        <meta property="og:url" content="https://spennypiggy.co/creators/keep-100" />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Keep 100% — Creators Keep All Their Earnings" />
-        <meta name="twitter:description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
-        <meta name="twitter:image" content="/siteicon.png" />
-      </Head>
-      <Guest>
-        <div className="bg-[#A2E4B8] min-h-dvh font-sans text-gray-900 pb-12 md:pb-16 relative ">
-          
-          <div className="relative z-1">
-          <div className="containerbox mx-auto">
-            <div className="pt-12 md:pt-18 lg:pt-32">
-              
-              <div className="text-center mb-12 md:mb-16">
-                <div className="bg-transparent border-0 shadow-none rounded-none max-w-3xl mx-auto">
-                  <h1 className="text-4xl md:!text-5xl lg:!text-6xl font-gulfs uppercase leading-[0.85] tracking-wide mb-4 text-black">
-                    You Keep <br/>
-                    <span className="underline decoration-[6px] decoration-yellow-300">100%</span> Of What <br/>
-                    You Earn
-                  </h1>
-                  <div className="flex justify-center mb-3">
-                    <Link href="/register" className="inline-flex items-center gap-3 bg-yellow-300 text-black font-black text-sm md:text-base py-3 px-6 rounded-full border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-1 hover:-translate-y-1 transition-all">
-                      <span>Start Selling — It's Free</span>
-                      <ArrowRight />
-                    </Link>
-                  </div>
-                  <div className="text-xs md:text-sm font-medium text-gray-700">
-                    {SUBSCRIPTION_COPY.promise} • {PRICE_FORMATTED} + VAT / month after • Cancel anytime
-                  </div>
-                </div>
-              </div>
+    const accent = ACCENT.earn;
+    const title = 'Keep 100% of what you list — Spenny Piggy for creators';
+    const description = `No revenue cut. The price you list is the amount that reaches you, supporters cover the platform fee at checkout, and payouts run weekly. ${SUBSCRIPTION_COPY.promise}.`;
+    const promise = `${SUBSCRIPTION_COPY.promise} · ${PRICE_FORMATTED} + VAT / month after · cancel anytime`;
 
-              <div className="grid md:grid-cols-2 gap-6 md:gap-10">
-                 
-                 <div className="bg-[#fdfbf7] p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group">
-                    <div className="bg-yellow-300 w-16 h-16 md:w-20 md:h-20 rounded-[30px]  border-[3px] border-black flex items-center justify-center mb-8">
-                       <DollarSign className="text-[#FF007F]" size={40} />
+    return (
+        <>
+            <Head title={title}>
+                <link rel="canonical" href="/creators/keep-100" />
+                <meta name="description" content={description} />
+                <meta property="og:title" content={title} />
+                <meta property="og:description" content={description} />
+                <meta property="og:image" content="/siteicon.png" />
+                <meta
+                    property="og:url"
+                    content="https://spennypiggy.co/creators/keep-100"
+                />
+                <meta property="og:type" content="website" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={title} />
+                <meta name="twitter:description" content={description} />
+                <meta name="twitter:image" content="/siteicon.png" />
+            </Head>
+
+            <Guest>
+                <AdPage>
+                    {/* Hero. The signature is the worked example: three cells
+                        where the first and the last are the same number. That
+                        equality IS the argument, so it is the hero rather than
+                        an illustration further down. */}
+                    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start lg:gap-16">
+                        <div>
+                            <Eyebrow accent={accent}>Pricing</Eyebrow>
+
+                            <h1 className="mt-5 font-gulfs text-5xl uppercase leading-[0.85] tracking-tight text-white sm:text-6xl md:text-[64px]">
+                                You keep
+                                <br />
+                                <span className="text-gradient-wishlist">
+                                    100%
+                                </span>{' '}
+                                of what
+                                <br />
+                                you list.
+                            </h1>
+
+                            <p className="mb-9 mt-7 max-w-lg text-base leading-relaxed text-gray-300 md:text-xl">
+                                There is no revenue cut. Supporters cover the
+                                platform fee at checkout and see their full total
+                                before they pay, so the number you set is the
+                                number that reaches your bank.
+                            </p>
+
+                            <StartSelling promise={promise} />
+                        </div>
+
+                        <div className="grid gap-3">
+                            <StatCell
+                                figure="£20.00"
+                                label="You list"
+                                note="The price you choose, in your own currency."
+                                className="rounded-box border-2 border-white/15 bg-white/[0.04]"
+                            />
+                            <StatCell
+                                figure="Their total"
+                                label="Supporter pays"
+                                note="Shown in full at checkout, before they pay. It varies by payment method."
+                                className="rounded-box border-2 border-white/15 bg-white/[0.04]"
+                            />
+                            {/* The one filled block on the page — it is the
+                                line the whole argument lands on. */}
+                            <div
+                                className="rounded-box border-2 border-black"
+                                style={{ backgroundColor: accent }}
+                            >
+                                <StatCell
+                                    figure="£20.00"
+                                    label="You receive"
+                                    note="Every penny of what you listed."
+                                    className="[&>div:first-child]:text-black [&>div:nth-child(2)]:text-black/60 [&>p]:text-black/80"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 text-black">What This Means</h2>
-                    <ul className="space-y-4 md:space-y-6">
-                       {[
-                          "No revenue cuts",
-                          "Supporters pay platform fee",
-                          "No earning caps"
-                       ].map((item, i) => (
-                          <li key={i} className="text-normal md:text-xl font-bold flex items-center gap-3 text-gray-800">
-                             <span className="w-3 h-3 bg-yellow-300 rounded-full border-[3px] border-black"></span>
-                             {item}
-                          </li>
-                       ))}
-                    </ul>
-                 </div>
 
-                 <div className="bg-black text-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[25px] md:rounded-[30px]  border-[3px] border-black relative overflow-hidden group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
-                       <ShieldCheck size={180} className="text-white" />
+                    {/* What never comes out */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="What never comes out"
+                            accent={accent}
+                            lead="The creator subscription is the only thing you ever pay us, and it does not start until you have made a sale."
+                        >
+                            One charge, and{' '}
+                            <span className="text-gradient-wishlist">
+                                only after you sell
+                            </span>
+                        </SectionHead>
+
+                        <LedgerFrame className="mt-10">
+                            <LedgerRow
+                                title="Revenue cut"
+                                line="We do not take a percentage of your listed price. Not on your first sale, not on your thousandth."
+                                figure="£0"
+                            />
+                            <LedgerRow
+                                title="Listing fees"
+                                line="List as much as you like across all seven ways to earn."
+                                figure="£0"
+                            />
+                            <LedgerRow
+                                title="Payout fees"
+                                line="Weekly payout runs to your own bank account through Stripe."
+                                figure="£0"
+                            />
+                            <LedgerRow
+                                title="Earning caps"
+                                line="Nothing throttles what you can take in a week or a month."
+                                figure="None"
+                            />
+                            <LedgerRow
+                                title="Creator subscription"
+                                line={`Charged monthly, starting after your first sale. ${SUBSCRIPTION_COPY.reassurance}`}
+                                figure={PRICE_FORMATTED}
+                                tag="+ VAT / mo"
+                            />
+                        </LedgerFrame>
                     </div>
-                    
-                    <div className="bg-white w-16 h-16 md:w-20 md:h-20 rounded-[30px]  border-[3px] border-black flex items-center justify-center mb-8 relative z-10">
-                       <ShieldCheck className="text-yellow-400" size={40} />
+
+                    {/* And it holds up */}
+                    <div className="mt-20 md:mt-28">
+                        <SectionHead
+                            eyebrow="And it holds up"
+                            accent={ACCENT.safe}
+                            lead="Every payment here is tied to a platform feature and carries the delivery record a card issuer asks for. That is what keeps payouts arriving."
+                        >
+                            Keeping all of it is no use{' '}
+                            <span className="text-gradient-wishlist">
+                                if the account closes
+                            </span>
+                        </SectionHead>
+
+                        <ul className="mt-10 grid gap-3 md:grid-cols-2">
+                            {[
+                                'Payments tied to platform features',
+                                'Dispute evidence gathered for you',
+                                'Delivery records on every transaction',
+                                'Weekly payouts, VAT released alongside',
+                            ].map((item) => (
+                                <li
+                                    key={item}
+                                    className="rounded-box border-2 border-white/15 bg-white/[0.04] px-5 py-4 text-base text-white md:text-lg"
+                                >
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+
+                        <Link
+                            href="/creators/stripe-safe"
+                            className="mt-6 inline-flex items-center gap-2 font-gulfs text-[12px] uppercase tracking-[0.18em] text-white underline decoration-2 underline-offset-4 hover:opacity-70 min-h-[44px]"
+                            style={{ textDecorationColor: ACCENT.safe }}
+                        >
+                            Why accounts stay safe
+                            <ArrowRight size={14} />
+                        </Link>
                     </div>
-                    <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 relative z-10 text-white">Why This Is Safe</h2>
-                    <ul className="space-y-6 relative z-10">
-                       {[
-                          "Payments tied to platform features",
-                          "Platform-managed disputes",
-                          "Chargeback protection included"
-                       ].map((item, i) => (
-                          <li key={i} className="text-normal md:text-xl font-bold flex items-center gap-4 text-gray-200">
-                             <div className="bg-yellow-300 p-1 rounded-full text-black border-[3px] border-black">
-                                <Check size={16} strokeWidth={4} />
-                             </div>
-                             {item}
-                          </li>
-                       ))}
-                    </ul>
-                 </div>
 
-              </div>
-
-              <div className="mt-8">
-                <CreatorGuideLinks />
-              </div>
-
-            </div>
-          </div>
-          </div>
-        </div>
-      </Guest>
-    </>
-  );
+                    {/* Close */}
+                    <div className="mt-20 text-center md:mt-28">
+                        <h2 className="font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl">
+                            List something.{' '}
+                            <span className="text-gradient-wishlist">
+                                Keep all of it.
+                            </span>
+                        </h2>
+                        <StartSelling
+                            promise={promise}
+                            align="center"
+                            className="mt-8"
+                        />
+                    </div>
+                </AdPage>
+            </Guest>
+        </>
+    );
 }

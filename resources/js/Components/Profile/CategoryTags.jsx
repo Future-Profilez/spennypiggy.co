@@ -28,7 +28,7 @@ export default function CategoryTags({ value, className = "" }) {
             {shown.map((tag, i) => (
                 <span
                     key={i}
-                    className="rounded-full border border-black/10 bg-[#FF007F]/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#C4006A]"
+                    className="rounded-full border border-black/10 bg-[#FF007F]/[0.06] px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-[#C4006A]"
                 >
                     {tag}
                 </span>
@@ -37,7 +37,7 @@ export default function CategoryTags({ value, className = "" }) {
                 <button
                     type="button"
                     onClick={() => setExpanded(true)}
-                    className="rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide text-gray-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-black"
+                    className="rounded-full px-2 py-1 text-[12px] font-black uppercase tracking-wide text-gray-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-black"
                 >
                     +{hidden} more
                 </button>
@@ -46,7 +46,7 @@ export default function CategoryTags({ value, className = "" }) {
                 <button
                     type="button"
                     onClick={() => setExpanded(false)}
-                    className="rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide text-gray-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-black"
+                    className="rounded-full px-2 py-1 text-[12px] font-black uppercase tracking-wide text-gray-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-black"
                 >
                     Less
                 </button>

@@ -4,7 +4,6 @@ import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import cartproductimg from '../../../assets/img/cartproductimg.png';
 import { useAlerts } from "@/Components/Alerts";
-import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -413,7 +412,7 @@ export default function SubCheckout(props) {
                             }
                         />
                         <div className="CartItemBox">
-                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-box   mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
+                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet rounded-box mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
                                 <div className='prodcartbox items-center'>
                                     <div className='productimg'>
                                         <img src={wish.perma_link || cartproductimg} alt={wish.wishname || "Product"} />
@@ -464,7 +463,7 @@ export default function SubCheckout(props) {
                                     )}
                                 </span>
                             </div>
-                            <span className="text-[10px] mb-4 text-black/60 font-normal mt-1 leading-tight block">
+                            <span className="text-[12px] mb-4 text-black/60 font-normal mt-1 leading-tight block">
                                 *Includes platform and payment processing fees. You will be charged in {wish?.currency}.
                             </span>
                         </div>
@@ -616,7 +615,7 @@ export default function SubCheckout(props) {
                             <button
                                 type="button"
                                 onClick={() => setShowStepUp(false)}
-                                className="w-full main-button !bg-white !text-black !border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                                className="border-2 border-black w-full main-button !bg-white !text-black !border-black"
                             >
                                 Cancel
                             </button>

@@ -64,7 +64,7 @@ const formatDate = (iso) => {
 
 const Card = ({ children, className = "" }) => (
     <div
-        className={`bg-white rounded-box border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] p-5 md:p-6 ${className}`}
+        className={`bg-white rounded-box border-[3px] border-black p-5 md:p-6 ${className}`}
     >
         {children}
     </div>
@@ -130,7 +130,7 @@ const ActivityHeatmap = ({ timeline = [] }) => {
     const max = Math.max(1, ...timeline.map((d) => d.content_count));
 
     const shade = (count) => {
-        if (count === 0) return "bg-gray-100 text-gray-400";
+        if (count === 0) return "bg-gray-100 text-black/60";
         const ratio = count / max;
         if (ratio > 0.66) return "bg-green-600 text-white";
         if (ratio > 0.33) return "bg-green-400 text-black";
@@ -187,7 +187,7 @@ const ActivityHeatmap = ({ timeline = [] }) => {
                             className={`aspect-square rounded-box-sm text-xs font-bold flex items-center justify-center border-2 transition-all
                                 ${shade(day.content_count)}
                                 ${isToday ? "border-black ring-2 ring-yellow-400" : "border-black/20"}
-                                ${isSelected ? "scale-105 ring-2 ring-[#FF007F]" : ""}`}
+                                ${isSelected ? "ring-2 ring-[#FF007F]" : ""}`}
                         >
                             {day.content_count > 0 ? day.content_count : ""}
                         </button>
@@ -209,7 +209,7 @@ const ActivityHeatmap = ({ timeline = [] }) => {
                         );
                     })()
                 ) : (
-                    <span className="text-gray-500">
+                    <span className="text-black/60">
                         Tap any day for detail. Darker means more content.
                     </span>
                 )}
@@ -315,7 +315,7 @@ const ActivityStatus = ({
                             type="button"
                             onClick={refresh}
                             disabled={refreshing}
-                            className="min-h-[44px] px-4 bg-white border-[3px] border-black rounded-box-sm font-bold text-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50"
+                            className="min-h-[44px] px-4 bg-white border-[3px] border-black rounded-box-sm font-bold text-sm disabled:opacity-50"
                         >
                             {refreshing ? "Refreshing…" : "↻ Refresh"}
                         </button>
@@ -372,7 +372,7 @@ const ActivityStatus = ({
                             heading the card reads as contradicting itself — a green
                             "safe" badge above a window saying 1 / 3. */}
                         <div className="mt-6 border-t border-black/10 pt-4">
-                            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-black/50">
+                            <p className="mb-3 text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                                 Separate rule &middot; Content membership posting
                             </p>
                             {/* ⚠️ The cadence payload is nested under
@@ -474,7 +474,7 @@ const ActivityStatus = ({
                                     <Link
                                         key={s.type}
                                         href={s.action_url}
-                                        className="flex items-start gap-3 border-2 border-black rounded-box-sm p-4 min-h-[44px] bg-[#fdfbf7] shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                        className="flex items-start gap-3 border-2 border-black rounded-box-sm p-4 min-h-[44px] bg-[#fdfbf7] active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                     >
                                         <span
                                             className="text-xl"
@@ -489,7 +489,7 @@ const ActivityStatus = ({
                                             <span className="block text-xs text-gray-600 mt-0.5">
                                                 {s.description}
                                             </span>
-                                            <span className="block text-xs text-gray-500 mt-1">
+                                            <span className="block text-xs text-black/60 mt-1">
                                                 ~{s.estimated_time}
                                             </span>
                                         </span>
@@ -531,6 +531,20 @@ const ActivityStatus = ({
                                 {postingCadence.required} member posts in the
                                 last {postingCadence.window_days} days
                             </p>
+
+                            {/* ⚠️ A post only counts once an admin approves it, so this
+                                number can read 0/3 on the day the creator published
+                                three. Saying so here is the difference between "the
+                                platform lost my posts" and "they are in the queue". */}
+                            {postingCadence.pending_review > 0 && (
+                                <p className="mt-1 text-sm font-semibold text-black/60">
+                                    {postingCadence.pending_review === 1
+                                        ? "1 more post is"
+                                        : `${postingCadence.pending_review} more posts are`}{" "}
+                                    waiting to be approved and will be counted
+                                    once that is done.
+                                </p>
+                            )}
 
                             {/* No subscribers yet → the rule can't pause anything, so don't show
                                 an "onboarding window" countdown that implies it might. */}
@@ -604,7 +618,7 @@ const ActivityStatus = ({
                                             {postingCadence.pause_in_days <= 1
                                                 ? "Pauses within 24 hours"
                                                 : `Pauses in about ${postingCadence.pause_in_days} days`}{" "}
-                                            <span className="text-gray-500">
+                                            <span className="text-black/60">
                                                 (
                                                 {formatDate(
                                                     postingCadence.pause_at,
@@ -640,7 +654,7 @@ const ActivityStatus = ({
                             {user?.username && (
                                 <Link
                                     href={`/${user.username}?page=feed`}
-                                    className="mt-4 inline-flex items-center justify-center min-h-[44px] px-5 bg-[#FF007F] text-white font-black uppercase text-sm tracking-wide border-[3px] border-black rounded-box-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                                    className="mt-4 inline-flex items-center justify-center min-h-[44px] px-5 bg-[#FF007F] text-black font-black uppercase text-sm tracking-wide border-[3px] border-black rounded-box-sm active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                 >
                                     Write a member post
                                 </Link>

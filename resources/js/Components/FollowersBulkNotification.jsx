@@ -65,7 +65,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     value={formData.title}
                     onChange={handleInputChange}
                     maxLength={maxTitleLength}
-                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-[14px] md:rounded-[18px]   w-full"
+                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-box-sm md:rounded-box-sm   w-full"
                     placeholder="Notification Title"
                 />
                 <div className="text-right text-xs text-gray-500">
@@ -82,7 +82,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     value={formData.body}
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
-                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-[14px] md:rounded-[18px]   w-full"
+                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-box-sm md:rounded-box-sm   w-full"
                     placeholder="Enter something..."
                 ></textarea>
                 <div className="text-right text-xs text-gray-500">
@@ -104,8 +104,8 @@ export default function FollowersBulkNotification({ trigger }) {
                     className={`${
                         loading
                             ? "bg-gray-400 text-black"
-                            : "bg-[#FF007F] hover:bg-pink-600"
-                    } uppercase w-full btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white`}
+ : "bg-[#FF007F] hover:brightness-110"
+ } uppercase w-full font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-black`}
                 >
                     {loading ? "Sending..." : "Send Notification"}
                 </button>
@@ -117,11 +117,11 @@ export default function FollowersBulkNotification({ trigger }) {
                         Notification History
                     </h3>
 
-                    <div className=" rounded-[30px]    ">
+                    <div className=" rounded-box    ">
                         {pwa_notification_details &&
                             pwa_notification_details?.map((value, key) => {
                                 return (
-                                    <div className="p-3 rounded-[30px]   border border-gray-400 shadow-sm mb-2">
+                                    <div className="p-3 rounded-box border border-gray-400 mb-2">
                                         <h2 className="line-clamp-1 font-bold text-black text-[15px]">
                                             {value?.title}
                                         </h2>

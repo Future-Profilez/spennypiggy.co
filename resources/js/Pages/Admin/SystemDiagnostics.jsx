@@ -34,7 +34,7 @@ const statusOf = (s) => STATUS[s] ?? STATUS.skipped;
 
 function Chip({ children, className = '' }) {
     return (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${className}`}>
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-semibold ${className}`}>
             {children}
         </span>
     );
@@ -44,7 +44,7 @@ function CountTile({ label, value, tone }) {
     return (
         <div className={`rounded-box-sm px-4 py-3 ring-1 ring-inset ${tone}`}>
             <div className="text-2xl font-semibold tabular-nums leading-none">{value}</div>
-            <div className="mt-1 text-[11px] font-medium uppercase tracking-wider opacity-70">{label}</div>
+            <div className="mt-1 text-[12px] font-medium uppercase tracking-wider opacity-70">{label}</div>
         </div>
     );
 }
@@ -73,14 +73,14 @@ function CheckCard({ result }) {
                     <p className="mt-1 break-words text-sm text-gray-600">{result.message}</p>
 
                     {result.ids?.length > 0 && (
-                        <p className="mt-1.5 font-mono text-[11px] text-gray-500">
+                        <p className="mt-1.5 font-mono text-[12px] text-black/60">
                             ids: {result.ids.join(', ')}
                         </p>
                     )}
                 </div>
 
                 <div className="flex flex-shrink-0 items-center gap-2">
-                    <span className="font-mono text-[11px] tabular-nums text-gray-400">
+                    <span className="font-mono text-[12px] tabular-nums text-black/60">
                         {Math.round(result.time_ms)}ms
                     </span>
                     {hasDetail && (
@@ -101,7 +101,7 @@ function CheckCard({ result }) {
                     {result.details?.length > 0 && (
                         <ul className="space-y-1.5">
                             {result.details.map((d, i) => (
-                                <li key={i} className="break-words font-mono text-[11px] leading-relaxed text-gray-700">
+                                <li key={i} className="break-words font-mono text-[12px] leading-relaxed text-gray-700">
                                     {d}
                                 </li>
                             ))}
@@ -110,7 +110,7 @@ function CheckCard({ result }) {
 
                     {result.remediation && (
                         <div className="mt-3 rounded-box-sm bg-gray-900 px-3 py-2.5">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="text-[12px] font-semibold uppercase tracking-wider text-white/60">
                                 What to do
                             </div>
                             <p className="mt-1 break-words text-xs leading-relaxed text-gray-100">
@@ -206,7 +206,7 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="min-w-0">
                                 <h3 className="text-base font-semibold text-gray-900">Health check</h3>
-                                <p className="mt-1 text-sm text-gray-500">
+                                <p className="mt-1 text-sm text-black/60">
                                     {app_version} · PHP {php_version} · Laravel {laravel_version}
                                 </p>
                             </div>
@@ -275,7 +275,7 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                                     <CountTile label="Skipped" value={counts.skipped ?? 0} tone="ring-gray-200 text-gray-600" />
                                 </div>
 
-                                <p className="mt-3 text-xs text-gray-500">
+                                <p className="mt-3 text-xs text-black/60">
                                     {report.timestamp} · {(report.duration_ms / 1000).toFixed(1)}s
                                     {report.previous_run_at
                                         ? ` · compared against ${report.previous_run_at}`
@@ -300,14 +300,14 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                             {grouped.length === 0 ? (
                                 <div className="mt-3 rounded-box bg-white p-8 text-center ring-1 ring-inset ring-black/[0.08]">
                                     <p className="text-sm font-medium text-gray-900">Nothing needs attention.</p>
-                                    <p className="mt-1 text-xs text-gray-500">
+                                    <p className="mt-1 text-xs text-black/60">
                                         Untick “Problems only” to see every check.
                                     </p>
                                 </div>
                             ) : (
                                 grouped.map(([group, rows]) => (
                                     <section key={group} className="mt-5">
-                                        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                                        <h4 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-black/60">
                                             {group}
                                         </h4>
                                         <div className="space-y-2">
@@ -324,7 +324,7 @@ export default function SystemDiagnostics({ auth, app_version, php_version, lara
                     {!report && !running && (
                         <div className="mt-6 rounded-box bg-white p-10 text-center ring-1 ring-inset ring-black/[0.08]">
                             <p className="text-sm font-medium text-gray-900">No run yet</p>
-                            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-gray-500">
+                            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-black/60">
                                 Each run is recorded, so the next one can tell you what changed rather than just what
                                 is currently true.
                             </p>

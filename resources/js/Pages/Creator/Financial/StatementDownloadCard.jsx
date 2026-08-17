@@ -95,17 +95,17 @@ export default function StatementDownloadCard({ taxYear }) {
     };
 
     return (
-        <div className="group bg-gray-50 rounded-[30px] p-4 border border-gray-200 transition-all">
+        <div className="group bg-gray-50 rounded-box p-4 border border-gray-200 transition-all">
             <div className="flex items-center gap-1.5 mb-1">
                 <FileText size={12} className="text-[#FF007F]" />
-                <span className="text-[14px] text-gray-400 uppercase font-bold">One-Click Statement</span>
+                <span className="text-[14px] text-black/60 uppercase font-bold">One-Click Statement</span>
             </div>
             <h4 className="text-normal font-bold text-gray-900 mb-3">Earnings Statement</h4>
 
             <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="w-full mb-2 rounded-lg border-gray-200 text-normal font-bold text-gray-900 focus:border-[#FF007F] focus:ring-[#FF007F]"
+                className="w-full mb-2 rounded-box-sm border-gray-200 text-normal font-bold text-gray-900 focus:border-[#FF007F] focus:ring-[#FF007F]"
             >
                 <option value="this_month">This month</option>
                 <option value="last_month">Last month</option>
@@ -119,14 +119,14 @@ export default function StatementDownloadCard({ taxYear }) {
                         type="date"
                         value={from}
                         onChange={(e) => setFrom(e.target.value)}
-                        className="w-1/2 rounded-lg border-gray-200 text-sm focus:border-[#FF007F] focus:ring-[#FF007F]"
+                        className="w-1/2 rounded-box-sm border-gray-200 text-sm focus:border-[#FF007F] focus:ring-[#FF007F]"
                         aria-label="From date"
                     />
                     <input
                         type="date"
                         value={to}
                         onChange={(e) => setTo(e.target.value)}
-                        className="w-1/2 rounded-lg border-gray-200 text-sm focus:border-[#FF007F] focus:ring-[#FF007F]"
+                        className="w-1/2 rounded-box-sm border-gray-200 text-sm focus:border-[#FF007F] focus:ring-[#FF007F]"
                         aria-label="To date"
                     />
                 </div>
@@ -139,7 +139,7 @@ export default function StatementDownloadCard({ taxYear }) {
                     type="button"
                     onClick={() => download("pdf")}
                     disabled={downloading}
-                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-lg text-normal font-bold transition-all"
+                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-box-sm text-normal font-bold transition-all"
                 >
                     <Download size={14} /> {downloading ? "..." : "PDF"}
                 </button>
@@ -147,7 +147,7 @@ export default function StatementDownloadCard({ taxYear }) {
                     type="button"
                     onClick={() => download("csv")}
                     disabled={downloading}
-                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-lg text-normal font-bold transition-all"
+                    className="flex items-center justify-center gap-2 w-1/2 bg-gray-900 hover:bg-[#FF007F] disabled:opacity-60 text-white py-2 rounded-box-sm text-normal font-bold transition-all"
                 >
                     <Download size={14} /> {downloading ? "..." : "CSV"}
                 </button>

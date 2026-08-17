@@ -31,7 +31,7 @@ export default function FounderBadge({
     };
 
     const variantClasses = {
-        default: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white shadow-lg',
+        default: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white ',
         minimal: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
         dark: 'bg-gradient-to-r from-yellow-600 via-yellow-700 to-yellow-800 text-white',
         outline: 'border-2 border-yellow-500 text-yellow-600 bg-transparent hover:bg-yellow-50'

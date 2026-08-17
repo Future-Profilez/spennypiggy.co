@@ -147,7 +147,7 @@ export default function StepUpModal({
                         <button
                             type="submit"
                             disabled={verifying || !otp || !typedConfirmation}
-                            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-box-sm bg-[#FF007F] px-6 text-[15px] font-semibold text-white disabled:opacity-50"
+                            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-box-sm bg-[#FF007F] px-6 text-[15px] font-semibold text-black disabled:opacity-50"
                         >
                             {verifying ? 'Processing…' : 'Confirm payment'}
                         </button>

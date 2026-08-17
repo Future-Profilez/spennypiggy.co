@@ -6,7 +6,7 @@
     <title>Verify Email</title>
     <style>
       html,body{background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-      .btn{display:inline-block;padding:10px 16px;border-radius:12px;border:2px solid #000;background:#FF007F;color:#fff;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+      .btn{display:inline-block;padding:10px 16px;border-radius:12px;border:2px solid #000;background:#FF007F;color:#000;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
     </style>
   </head>
   <body>

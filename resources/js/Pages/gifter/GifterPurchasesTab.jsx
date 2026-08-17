@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import PurchasesHub from "./PurchasesHub";
 
-const CARD = "bg-white border border-zinc-200/70 rounded-[30px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+const CARD = "bg-white border border-zinc-200/70 rounded-box ";
 
 /**
  * Owner-only profile tab: self-fetches the logged-in gifter's full hub payload
@@ -24,7 +24,7 @@ export default function GifterPurchasesTab() {
         return (
             <div className={`${CARD} py-12 text-center max-w-[1080px] mx-auto`}>
                 <div className="text-lg font-black uppercase tracking-widest text-black">Couldn’t load your purchases</div>
-                <div className="text-sm font-bold text-black/55 mt-2">Please refresh and try again.</div>
+                <div className="text-sm font-bold text-black/60 mt-2">Please refresh and try again.</div>
             </div>
         );
     }
@@ -41,13 +41,13 @@ function HubSkeleton() {
             <div className={`${CARD} grid lg:grid-cols-[1.1fr_0.9fr] overflow-hidden`}>
                 <div className="p-7 md:p-9 space-y-4">
                     <div className="h-3 w-32 bg-zinc-100 rounded" />
-                    <div className="h-9 w-52 bg-zinc-100 rounded-lg" />
+                    <div className="h-9 w-52 bg-zinc-100 rounded-box-sm" />
                     <div className="h-3 w-64 bg-zinc-100 rounded" />
-                    <div className="h-12 w-40 bg-zinc-100 rounded-[20px] mt-4" />
+                    <div className="h-12 w-40 bg-zinc-100 rounded-box-sm mt-4" />
                 </div>
                 <div className="bg-zinc-50 border-t lg:border-t-0 lg:border-l border-zinc-200/70 min-h-[200px] md:min-h-[260px] grid grid-cols-2 gap-2.5 p-7">
                     {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="aspect-square rounded-[20px] border border-zinc-200 bg-white" />
+                        <div key={i} className="aspect-square rounded-box-sm border border-zinc-200 bg-white" />
                     ))}
                 </div>
             </div>

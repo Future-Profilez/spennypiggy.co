@@ -70,7 +70,7 @@ function PiggyPotFillV3() {
                 <h2 className="text-center mt-2 text-black font-bold text-xl uppercase">
                         Loading..
                 </h2>
-                <h2 className="text-center mt-2 text-gray-600 font-bold text-normal capitalize">
+                <h2 className="text-center mt-2 text-black/80 font-bold capitalize">
                         Wait a moment...
                 </h2>
             </div>

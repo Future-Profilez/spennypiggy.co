@@ -23,28 +23,28 @@ function ProofModal({ proof, onClose }) {
     if (!proof) return null;
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-[30px]  p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-box  p-6 max-w-2xl w-full max-h-[85dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg">Submitted Proof</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-black text-2xl leading-none">&times;</button>
+                    <button onClick={onClose} className="text-black/60 hover:text-black text-2xl leading-none">&times;</button>
                 </div>
                 {proof.text && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-800 whitespace-pre-wrap">{proof.text}</div>
+                    <div className="mb-4 p-3 bg-gray-50 rounded-box-sm text-sm text-gray-800 whitespace-pre-wrap">{proof.text}</div>
                 )}
                 {proof.file && (
                     <div className="mt-2">
                         {/\.(jpg|jpeg|png|gif|webp)$/i.test(proof.file) ? (
-                            <img src={proof.file} alt="Proof" className="max-w-full rounded-lg border" />
+                            <img src={proof.file} alt="Proof" className="max-w-full rounded-box-sm border" />
                         ) : (
                             <a href={proof.file} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800">
+                                className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-box-sm text-sm font-bold hover:bg-gray-800">
                                 View Proof File
                             </a>
                         )}
                     </div>
                 )}
                 {!proof.text && !proof.file && (
-                    <p className="text-gray-400 text-sm italic">No proof content available.</p>
+                    <p className="text-black/60 text-sm italic">No proof content available.</p>
                 )}
             </div>
         </div>
@@ -68,7 +68,7 @@ function ResolveModal({ purchase, onClose, onDone }) {
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-[30px]  p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-box  p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
                 <h3 className="font-bold text-lg mb-2">Resolve Escalated Task</h3>
                 <p className="text-sm text-gray-600 mb-1"><strong>Task:</strong> {purchase.task_title}</p>
                 <p className="text-sm text-gray-600 mb-1"><strong>Creator:</strong> @{purchase.creator_username}</p>
@@ -76,7 +76,7 @@ function ResolveModal({ purchase, onClose, onDone }) {
                 <p className="text-sm text-gray-600 mb-4"><strong>Amount:</strong> {purchase.currency_symbol}{purchase.amount}</p>
 
                 {purchase.rejection_reason && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">
+                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-box-sm text-sm text-orange-800">
                         <strong>Rejection reason:</strong> {purchase.rejection_reason}
                     </div>
                 )}
@@ -87,7 +87,7 @@ function ResolveModal({ purchase, onClose, onDone }) {
                     <button
                         onClick={() => resolve('refund')}
                         disabled={loading}
-                        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
+                        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 rounded-box-sm transition-all"
                     >
                         <XCircle size={18} />
                         Refund<br/><span className="text-xs font-normal">Supporter wins</span>
@@ -95,15 +95,15 @@ function ResolveModal({ purchase, onClose, onDone }) {
                     <button
                         onClick={() => resolve('release')}
                         disabled={loading}
-                        className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
+                        className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-box-sm transition-all"
                     >
                         <CheckCircle size={18} />
                         Release<br/><span className="text-xs font-normal">Creator wins</span>
                     </button>
                 </div>
 
-                {loading && <p className="text-center text-sm text-gray-500 mt-3">Processing...</p>}
-                <button onClick={onClose} className="mt-3 w-full text-gray-400 text-sm hover:text-black">Cancel</button>
+                {loading && <p className="text-center text-sm text-black/60 mt-3">Processing...</p>}
+                <button onClick={onClose} className="mt-3 w-full text-black/60 text-sm hover:text-black">Cancel</button>
             </div>
         </div>
     );
@@ -139,9 +139,9 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-white">Task Orders</h1>
-                        <p className="text-gray-400 text-sm mt-1">Manage all task purchases — view proof, refund or release escalated orders</p>
+                        <p className="text-white/60 text-sm mt-1">Manage all task purchases — view proof, refund or release escalated orders</p>
                     </div>
-                    <button onClick={() => router.reload()} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 border border-gray-700">
+                    <button onClick={() => router.reload()} className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-box-sm text-sm font-medium hover:bg-gray-700 border border-gray-700">
                         <RefreshCw size={15} />
                         Refresh
                     </button>
@@ -164,39 +164,39 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                 </div>
 
                 {/* Filters */}
-                <form onSubmit={applyFilters} className="flex flex-wrap gap-3 bg-gray-900 p-4 rounded-[30px]  border border-gray-800">
+                <form onSubmit={applyFilters} className="flex flex-wrap gap-3 bg-gray-900 p-4 rounded-box  border border-gray-800">
                     <div className="relative flex-1 min-w-[200px]">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
                         <input
                             type="text"
                             placeholder="Search task, creator, supporter..."
                             value={data.search}
                             onChange={e => setData('search', e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF007F]"
+                            className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-box-sm text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF007F]"
                         />
                     </div>
                     <select value={data.status} onChange={e => setData('status', e.target.value)}
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF007F]">
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-box-sm text-sm text-white focus:outline-none focus:border-[#FF007F]">
                         <option value="">All Statuses</option>
                         {allStatuses.map(s => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
                     </select>
                     <select value={data.type} onChange={e => setData('type', e.target.value)}
-                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white focus:outline-none focus:border-[#FF007F]">
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-box-sm text-sm text-white focus:outline-none focus:border-[#FF007F]">
                         <option value="">All Types</option>
                         <option value="instant">Instant</option>
                         <option value="timed">Timed</option>
                     </select>
                     <button type="submit" disabled={processing}
-                        className="px-5 py-2 bg-[#FF007F] hover:bg-pink-600 text-white rounded-xl text-sm font-bold disabled:opacity-60">
+                        className="px-5 py-2 bg-[#FF007F] hover:brightness-110 text-black rounded-box-sm text-sm font-bold disabled:opacity-60">
                         Filter
                     </button>
                 </form>
 
                 {/* Table */}
-                <div className="bg-gray-900 rounded-[30px]  border border-gray-800 overflow-hidden">
+                <div className="bg-gray-900 rounded-box  border border-gray-800 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-800/60 text-gray-400 text-xs uppercase tracking-wider">
+                            <thead className="bg-gray-800/60 text-white/60 text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="px-5 py-4">Task</th>
                                     <th className="px-5 py-4">Creator</th>
@@ -212,7 +212,7 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                             <tbody className="divide-y divide-gray-800">
                                 {purchases.data.length === 0 && (
                                     <tr>
-                                        <td colSpan="9" className="px-5 py-12 text-center text-gray-500">No task orders found.</td>
+                                        <td colSpan="9" className="px-5 py-12 text-center text-white/60">No task orders found.</td>
                                     </tr>
                                 )}
                                 {purchases.data.map((p) => {
@@ -224,18 +224,18 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                                         <tr key={p.uuid} className={`hover:bg-gray-800/40 transition-colors ${isEscalated ? 'bg-red-900/10 border-l-2 border-red-500' : ''}`}>
                                             <td className="px-5 py-4">
                                                 <div className="font-medium text-white max-w-[160px] truncate" title={p.task_title}>{p.task_title}</div>
-                                                <div className="text-[11px] text-gray-500 mt-0.5">{formatDate(p.created_at)}</div>
+                                                <div className="text-[12px] text-white/60 mt-0.5">{formatDate(p.created_at)}</div>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="text-gray-200 font-medium">{p.creator_name}</div>
-                                                <div className="text-[11px] text-gray-500">@{p.creator_username}</div>
+                                                <div className="text-[12px] text-white/60">@{p.creator_username}</div>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <div className="text-gray-200 font-medium">{p.supporter_name}</div>
-                                                <div className="text-[11px] text-gray-500">@{p.supporter_username}</div>
+                                                <div className="text-[12px] text-white/60">@{p.supporter_username}</div>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${p.task_type === 'instant' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                                                <span className={`px-2 py-0.5 rounded text-[12px] font-bold uppercase ${p.task_type === 'instant' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
                                                     {p.task_type}
                                                 </span>
                                             </td>
@@ -243,19 +243,19 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                                                 {p.currency_symbol}{parseFloat(p.amount).toFixed(2)}
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className={`px-2 py-1 rounded-md text-[11px] font-semibold ${cfg.color}`}>
+                                                <span className={`px-2 py-1 rounded-box-sm text-[12px] font-semibold ${cfg.color}`}>
                                                     {cfg.label}
                                                 </span>
                                                 {p.rejection_count > 0 && (
-                                                    <div className="text-[10px] text-orange-400 mt-1">{p.rejection_count} rejection{p.rejection_count > 1 ? 's' : ''}</div>
+                                                    <div className="text-[12px] text-orange-400 mt-1">{p.rejection_count} rejection{p.rejection_count > 1 ? 's' : ''}</div>
                                                 )}
                                                 {isEscalated && p.rejection_reason && (
-                                                    <div className="text-[10px] text-red-400 mt-1 max-w-[140px] truncate" title={p.rejection_reason}>
+                                                    <div className="text-[12px] text-red-400 mt-1 max-w-[140px] truncate" title={p.rejection_reason}>
                                                         "{p.rejection_reason}"
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-5 py-4 text-[11px] text-gray-400">
+                                            <td className="px-5 py-4 text-[12px] text-white/60">
                                                 {p.task_type === 'timed' && p.sla_deadline ? (
                                                     <div className="flex items-center gap-1">
                                                         <Clock size={11} />
@@ -275,24 +275,24 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                                                 {hasProof ? (
                                                     <button
                                                         onClick={() => setProofModal(p.proof_content)}
-                                                        className="flex items-center gap-1 mx-auto px-2 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[11px] font-bold hover:bg-indigo-500/20 transition-all"
+                                                        className="flex items-center gap-1 mx-auto px-2 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-box-sm text-[12px] font-bold hover:bg-indigo-500/20 transition-all"
                                                     >
                                                         <Eye size={12} /> View Proof
                                                     </button>
                                                 ) : (
-                                                    <span className="text-gray-600 text-[11px]">—</span>
+                                                    <span className="text-gray-600 text-[12px]">—</span>
                                                 )}
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 {isEscalated ? (
                                                     <button
                                                         onClick={() => setResolveModal(p)}
-                                                        className="flex items-center gap-1 mx-auto px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[11px] font-bold hover:bg-red-500/20 transition-all"
+                                                        className="flex items-center gap-1 mx-auto px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-box-sm text-[12px] font-bold hover:bg-red-500/20 transition-all"
                                                     >
                                                         <AlertTriangle size={12} /> Resolve
                                                     </button>
                                                 ) : (
-                                                    <span className="text-gray-700 text-[11px]">—</span>
+                                                    <span className="text-gray-700 text-[12px]">—</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -307,9 +307,9 @@ export default function AdminTasksIndex({ auth, purchases, statusCounts, filters
                         <div className="p-4 border-t border-gray-800 flex justify-center gap-2 flex-wrap">
                             {purchases.links.map((link, i) => (
                                 <Link key={i} href={link.url || '#'}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                        link.active ? 'bg-[#FF007F] text-white' :
-                                        link.url    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' :
+                                    className={`px-3 py-1.5 rounded-box-sm text-xs font-bold transition-all ${
+                                        link.active ? 'bg-[#FF007F] text-black' :
+                                        link.url    ? 'bg-gray-800 text-white/60 hover:bg-gray-700' :
                                         'bg-gray-900 text-gray-600 cursor-not-allowed'
                                     }`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}

@@ -160,14 +160,14 @@ export default function SupportStory({ creator, gifter }) {
     })();
 
     return (
-      <div className="rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
+      <div className="rounded-box bg-[#fdfbf7] border-[3px] border-black transition-colors p-5">
         <div className="md:flex items-start justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <span className="px-3 py-1 rounded-full text-[12px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black ">
                 {icon} {typeLabel}
               </span>
-              <span className="inline-flex items-center justify-center min-w-[28px] h-[22px] px-2 rounded-full bg-white border-2 border-black text-[10px] tracking-widest text-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <span className="inline-flex items-center justify-center min-w-[28px] h-[22px] px-2 rounded-full bg-white border-2 border-black text-[12px] tracking-widest text-black font-black ">
                 #{idx}
               </span>
             </div>
@@ -175,9 +175,9 @@ export default function SupportStory({ creator, gifter }) {
             <p className="text-black font-black text-lg md:text-xl mt-3 mb-1">
               {title}
             </p>
-            <p className="text-[10px] md:text-[11px] uppercase tracking-widest text-gray-700 font-black">
+            <p className="text-[12px] md:text-[12px] uppercase tracking-widest text-gray-700 font-black">
               {subtitle}
-              <span className="ml-3 text-gray-500">{ev.created_at}</span>
+              <span className="ml-3 text-black/60">{ev.created_at}</span>
             </p>
           </div>
 
@@ -186,10 +186,10 @@ export default function SupportStory({ creator, gifter }) {
               {!isThankyou && (
                 <button
                   onClick={() => shareIndividualEvent(ev)}
-                  className="p-2 h-[30px] rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                  className="p-2 h-[30px] rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all group"
                   title="Share on X"
                 >
-                  <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
+                  <FaTwitter size={16} />
                 </button>
               )}
               {(() => {
@@ -221,7 +221,7 @@ export default function SupportStory({ creator, gifter }) {
                 }
                 if (!openUrl) return null;
                 const isExternal = /^https?:\/\//i.test(openUrl) && !openUrl.startsWith(window.location.origin);
-                const btnClass = "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all";
+                const btnClass = "px-4 py-2 rounded-full text-[12px] font-black uppercase tracking-widest bg-white border-2 border-black text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all";
                 if (isExternal) {
                   return (
                     <a href={openUrl} target="_blank" rel="noopener noreferrer" className={btnClass}>
@@ -249,14 +249,14 @@ export default function SupportStory({ creator, gifter }) {
           
           {/* Status Badges */}
           {(ev.status === 'disputed' || ev.status === 'review_hold' || (ev.dispute_status && ev.dispute_status !== 'none')) && (
-            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-yellow-300 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-yellow-300 border-2 border-black text-black text-[12px] font-black uppercase tracking-widest ">
               <span className="w-2 h-2 rounded-full bg-black mr-2 animate-pulse"></span>
               Reserved / Disputed
             </div>
           )}
           
           {(ev.status === 'refunded' || ev.dispute_status === 'lost') && (
-            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-red-400 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-red-400 border-2 border-black text-black text-[12px] font-black uppercase tracking-widest ">
               Refunded
             </div>
           )}
@@ -267,7 +267,7 @@ export default function SupportStory({ creator, gifter }) {
           ev.status !== 'review_hold' &&
           ev.status !== 'refunded' &&
           (!ev.dispute_status || ev.dispute_status === 'none') ? (
-            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-green-300 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-green-300 border-2 border-black text-black text-[12px] font-black uppercase tracking-widest ">
               {String(ev.status).replaceAll('_', ' ')}
             </div>
           ) : null}
@@ -275,18 +275,18 @@ export default function SupportStory({ creator, gifter }) {
           {isThankyou ? (
             <div className="mt-4">
               {ev.message ? (
-                <p className="text-black font-bold text-sm italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black">
+                <p className="text-black font-bold text-sm italic leading-relaxed bg-yellow-100 p-3 rounded-box  border-2 border-black">
                   {ev.message}
                 </p>
               ) : null}
               {ev.media_url ? (
                 <div className="mt-3">
                   <Popup
-                    modalclass="pinkmodal shadow-pink"
+                    modalclass="border-2 border-black pinkmodal"
                     space="0"
                     size="md"
                     action={false}
-                    classes="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    classes="px-4 py-2 rounded-full text-[12px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                     text={<>View</>}
                   >
                     <div className="video-payer-pop">
@@ -304,16 +304,16 @@ export default function SupportStory({ creator, gifter }) {
 
           {ev.type === 'gift_task' && ev.task?.reward_file ? (
             <div className="mt-4">
-              <a href={ev.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
+              <a href={ev.task.reward_file} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-4 rounded-full text-[12px] font-black uppercase tracking-widest bg-purple-300 border-2 border-black text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">Download Reward</a>
               {ev.task.reward_note ? (
-                <p className="mt-2 text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px]  border-2 border-black">Note: {ev.task.reward_note}</p>
+                <p className="mt-2 text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-box  border-2 border-black">Note: {ev.task.reward_note}</p>
               ) : null}
             </div>
           ) : null}
 
           {ev.type === 'gift_wish' && ev.wish?.reward_file ? (
             <div className="mt-4">
-              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
+              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-4 rounded-full text-[12px] font-black uppercase tracking-widest bg-[#FF007F] border-2 border-black text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all">Download Reward</a>
             </div>
           ) : null}
 
@@ -332,11 +332,11 @@ export default function SupportStory({ creator, gifter }) {
     <Authenticated auth={auth?.user || ''} user={auth?.user || ''}>
       <div className="bg-[#A2E4B8] min-h-dvh py-8 md:py-12 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="rounded-[25px] md:rounded-[30px]  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 mb-6">
+          <div className="rounded-box bg-white border-[3px] border-black p-6 md:p-8 mb-6">
             <h2 className="text-black font-black text-2xl md:text-3xl uppercase tracking-widest mb-2">
               Support Story
             </h2>
-            <p className="text-gray-600 font-bold">
+            <p className="text-black/80 font-bold">
               Shared journey of gifts, thank‑yous and progress with{' '}
               <span className="text-black">@{data?.creator?.username || creator}</span>
             </p>
@@ -359,13 +359,13 @@ export default function SupportStory({ creator, gifter }) {
               />
             </div>
 
-            <div className="mt-6 p-4 rounded-[25px] md:rounded-[30px]  bg-[#fdfbf7] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-black text-[11px] font-black uppercase tracking-widest mb-3">
+            <div className="mt-6 p-4 rounded-box bg-[#fdfbf7] border-[3px] border-black ">
+              <p className="text-black text-[12px] font-black uppercase tracking-widest mb-3">
                 Shared History Summary
               </p>
               <div className="flex flex-wrap items-center gap-6">
                 <div>
-                  <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                  <p className="text-gray-700 text-[12px] uppercase tracking-widest font-black">
                     Total Moments
                   </p>
                   <p className="text-black font-black text-xl">
@@ -374,7 +374,7 @@ export default function SupportStory({ creator, gifter }) {
                 </div>
                 <div className="w-px h-8 bg-black/20"></div>
                 <div>
-                  <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                  <p className="text-gray-700 text-[12px] uppercase tracking-widest font-black">
                     Gifts Exchanged
                   </p>
                   <p className="text-black font-black text-xl">{giftCount}</p>
@@ -390,10 +390,10 @@ export default function SupportStory({ creator, gifter }) {
                   const entries = Object.entries(sums);
                   return entries.map(([cur, amt]) => (
                     <div key={cur}>
-                      <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                      <p className="text-gray-700 text-[12px] uppercase tracking-widest font-black">
                         {cur} Earned
                       </p>
-                      <p className="text-green-600 font-black text-xl">
+                      <p className="text-green-600 font-black text-xl tabular-nums">
                         {formatMultiPrice(amt, cur)}
                       </p>
                     </div>
@@ -415,14 +415,14 @@ export default function SupportStory({ creator, gifter }) {
                 <button 
                   key={f.key}
                   onClick={() => setActiveType(f.key)}
-                  className={`px-4 py-2 rounded-full text-[13px] font-black uppercase tracking-widest border-[3px] border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all ${ activeType === f.key ? 'bg-yellow-300' : 'bg-white' }`} > {f.label} </button>
+                  className={`px-4 py-2 rounded-full text-[13px] font-black uppercase tracking-widest border-[3px] border-black text-black hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all ${ activeType === f.key ? 'bg-yellow-300' : 'bg-white' }`} > {f.label} </button>
               ))}
             </div>
 
             <div className="pt-6">
               <Link
                 href={`/${data?.creator?.username || creator}`}
-                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-[#FF007F] border-[3px] border-black text-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
               > View Creator Profile </Link>
             </div>
           </div>
@@ -443,7 +443,7 @@ export default function SupportStory({ creator, gifter }) {
                 <div className="text-center mt-8">
                   <button
                     onClick={() => fetchStory(data?.next_before || null, true)}
-                    className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
                   > Load More </button>
                 </div>
               ) : null}

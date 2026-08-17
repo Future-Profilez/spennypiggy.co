@@ -114,7 +114,7 @@ export default function CredentialsStep({
                                 </svg>
                             </span>
                             <span className="min-w-0">
-                                <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/60">
+                                <span className="block text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60">
                                     Signed in with Google
                                 </span>
                                 <span className="block truncate text-sm font-semibold text-black">
@@ -173,7 +173,7 @@ export default function CredentialsStep({
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword((v) => !v)}
-                                    className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-black/60 transition-colors hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                                    className="absolute right-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-black/60 transition-colors hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                                     aria-label={
                                         showPassword
                                             ? "Hide password"
@@ -232,7 +232,7 @@ export default function CredentialsStep({
                 )}
 
                 <div>
-                    <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-black/60">
+                    <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60">
                         Pronouns
                     </span>
                     <div

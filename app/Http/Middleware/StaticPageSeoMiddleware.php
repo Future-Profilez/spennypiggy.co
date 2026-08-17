@@ -55,6 +55,10 @@ class StaticPageSeoMiddleware
         $noIndexPrefixes = [
             'reset-password/',
             'admin/',
+            // Internal handover pages (email signatures). Public so the people
+            // installing them need no account, but there is nothing here a
+            // search result should ever lead to.
+            'brand/',
             'debug',
             'test',
             'checkout/',

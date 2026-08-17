@@ -154,29 +154,35 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
   const [posterLoaded, setPosterLoaded] = useState(false);
 
   return (
-    <div className={`${videoLoading ? 'd-none' : '' } `}>
+    <div className={`${videoLoading ? 'hidden' : '' } `}>
+      {/* 🚨 HOISTED ABOVE THE TERNARY. These keyframes and hover rules used to
+          render only inside the `intro ?` branch, so the EMPTY state — which now
+          uses the same viewfinder brackets and the same `introRing` pulse —
+          would have referenced an animation that did not exist in the document.
+          A missing keyframe is silent: the element simply sits still, which
+          reads as a dead card rather than a broken rule. */}
+      <style>{`
+        @keyframes introBreathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }
+        @keyframes introRing { 0% { transform: scale(1); opacity:.5 } 100% { transform: scale(1.7); opacity:0 } }
+        .intro-frame:hover .intro-poster { transform: scale(1.04) }
+        .intro-frame:hover .intro-bracket-tl { transform: translate(4px, 4px) }
+        .intro-frame:hover .intro-bracket-tr { transform: translate(-4px, 4px) }
+        .intro-frame:hover .intro-bracket-bl { transform: translate(4px, -4px) }
+        .intro-frame:hover .intro-bracket-br { transform: translate(-4px, -4px) }
+        .intro-frame:hover .intro-play { transform: scale(1.08) }
+        @media (prefers-reduced-motion: reduce) {
+          .intro-play-pulse, .intro-play-ring { animation: none !important }
+          .intro-frame:hover .intro-poster { transform: none }
+        }
+      `}</style>
+
       {intro ?
         <div className='relative'>
 
           {/* Intro video — framed like a viewfinder: the creator recording themselves,
               a moment you're invited to press play on. One affordance, one accent. */}
-          <style>{`
-            @keyframes introBreathe { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }
-            @keyframes introRing { 0% { transform: scale(1); opacity:.5 } 100% { transform: scale(1.7); opacity:0 } }
-            .intro-frame:hover .intro-poster { transform: scale(1.04) }
-            .intro-frame:hover .intro-bracket-tl { transform: translate(4px, 4px) }
-            .intro-frame:hover .intro-bracket-tr { transform: translate(-4px, 4px) }
-            .intro-frame:hover .intro-bracket-bl { transform: translate(4px, -4px) }
-            .intro-frame:hover .intro-bracket-br { transform: translate(-4px, -4px) }
-            .intro-frame:hover .intro-play { transform: scale(1.08) }
-            @media (prefers-reduced-motion: reduce) {
-              .intro-play-pulse, .intro-play-ring { animation: none !important }
-              .intro-frame:hover .intro-poster { transform: none }
-            }
-          `}</style>
-
           <div
-            className="intro-frame group relative cursor-pointer overflow-hidden rounded-box-sm bg-[#0B0B0F] md:rounded-box"
+            className="intro-frame group relative cursor-pointer overflow-hidden rounded-box bg-[#0B0B0F]"
             onClick={() => setClose(true)}
             role="button"
             tabIndex={0}
@@ -215,7 +221,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
             <span className="intro-bracket-br pointer-events-none absolute bottom-3 right-3 h-6 w-6 rounded-br-[6px] border-b-2 border-r-2 border-[#FF007F] transition-transform duration-300" />
 
             {/* Top-left label — one, not an eyebrow scaffold */}
-            <div className="absolute left-6 top-6 z-10 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/90">
+ <div className="absolute left-6 top-6 z-10 flex items-center gap-1.5 text-[12px] font-black uppercase tracking-[0.16em] text-white/90">
               <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-[#FF007F]" />
               Intro
             </div>
@@ -225,7 +231,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
               <div className="relative">
                 <span className="intro-play-ring intro-play-pulse absolute inset-0 rounded-full bg-[#FF007F]" style={{ animation: "introRing 2.2s ease-out infinite" }} />
                 <div
-                  className="intro-play intro-play-pulse relative flex h-16 w-16 items-center justify-center rounded-full bg-[#FF007F] text-white shadow-[0_8px_30px_rgba(255,0,127,0.45)] transition-transform duration-300"
+ className="intro-play intro-play-pulse relative flex h-16 w-16 items-center justify-center rounded-full bg-[#FF007F] text-black transition-transform duration-300"
                   style={{ animation: "introBreathe 2.6s ease-in-out infinite" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
@@ -240,7 +246,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
               <div className="font-gulfs text-lg uppercase leading-none tracking-wide text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.6)]">
                 Meet {user?.name}
               </div>
-              <div className="mt-1 text-[11px] font-semibold text-white/70">
+ <div className="mt-1 text-[12px] font-semibold text-white/70">
                 A 15-second hello
               </div>
             </div>
@@ -252,14 +258,14 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                   e.stopPropagation();
                   removeVideo();
                 }}
-                className="absolute right-5 top-5 z-30 flex h-8 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-3 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+ className="absolute right-5 top-5 z-30 flex h-11 items-center gap-1 rounded-full border border-white/25 bg-black/45 px-4 text-[12px] font-bold uppercase tracking-wide text-white backdrop-blur-sm transition-colors hover:bg-black/70"
               >
                 Remove
               </button>
             )}
 
             {IsloggedIn && intro && intro.approved !== 1 ? (
-              <div className="absolute inset-x-0 bottom-0 z-20 bg-black/80 px-6 py-2.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+ <div className="absolute inset-x-0 bottom-0 z-20 bg-black/80 px-6 py-2.5 text-[12px] font-semibold text-white backdrop-blur-sm">
                 In review — only you can see this until it's approved.
               </div>
             ) : (
@@ -297,7 +303,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                       v.play().then(() => setPopupNeedsInteraction(false)).catch(() => {});
                     }}
                   >
-                    <div className="bg-white/90 rounded-full p-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+ <div className="bg-white/90 rounded-full p-4 border-2 border-black ">
                       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
                         <polygon points="5,3 19,12 5,21" />
                       </svg>
@@ -310,21 +316,74 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
         </div>
         :
         <>
+        {/* No `fullscreen` prop needed: every Popup is full-screen on a phone now
+            (see Popup.jsx). The explicit flag would additionally force it
+            full-screen on DESKTOP, where a short upload form does not want the
+            whole viewport.
+            ⚠️ ABOVE the ternary — inside a branch these braces are an object
+            literal, not a comment, and fail the build. Third time in this pass. */}
         { IsloggedIn ?
-              <Popup modalclass="pinkmodal sendSurprize-modal shadow-pink" space="6" size="md" action={close} classes={`${classes} w-full`}
+ <Popup modalclass="border-2 border-black pinkmodal sendSurprize-modal" space="6" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
-                  <div className='cursor-pointer bg-white border-black  !rounded-[20px] md:!rounded-[30px]  p-3 py-4 flex items-center justify-content-center' >
-                    <div className='py-6'>
-                        <div className='svg-icon mx-auto flex justify-center' >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-black fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" ></path> <path d="M8 12H16" strokeWidth="1.5"></path> <path d="M12 16V8" strokeWidth="1.5"></path> </svg>
-                        </div>
-                        <p className='w-full text-center mt-2 text-lg' >Add Verification Video</p>
+                  /* 🚨 THE EMPTY STATE IS THE FILLED STATE, WAITING. It used to be
+                     a white box with an outline plus and a sentence — a generic
+                     upload placeholder that shared nothing with the cinematic
+                     viewfinder it becomes. Same dark ground, same pink corner
+                     brackets, same minimum height, so adding a video changes the
+                     CONTENT of the card and not the card.
+                     ⚠️ The height matching is not cosmetic: at a different height
+                     the whole rail below it jumps the moment a video is added.
+                     ⚠️ `rounded-box`, not the old `!rounded-box-sm md:!rounded-box`
+                     — this is a container, and `rounded-box-sm` is the token for
+                     things INSIDE one, which is why it read as less rounded than
+                     every card beside it. */
+                  <div className="intro-frame group relative w-full cursor-pointer overflow-hidden rounded-box border-[3px] border-black bg-[#0B0B0F] transition-[filter] duration-200 hover:brightness-110 active:brightness-95">
+                    {/* The viewfinder. Same device, same accent, same 6px inner
+                        radius as the filled card's brackets. */}
+                    <span className="intro-bracket-tl pointer-events-none absolute left-3 top-3 h-6 w-6 rounded-tl-[6px] border-l-2 border-t-2 border-[#FF007F] transition-transform duration-300" />
+                    <span className="intro-bracket-tr pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-tr-[6px] border-r-2 border-t-2 border-[#FF007F] transition-transform duration-300" />
+                    <span className="intro-bracket-bl pointer-events-none absolute bottom-3 left-3 h-6 w-6 rounded-bl-[6px] border-b-2 border-l-2 border-[#FF007F] transition-transform duration-300" />
+                    <span className="intro-bracket-br pointer-events-none absolute bottom-3 right-3 h-6 w-6 rounded-br-[6px] border-b-2 border-r-2 border-[#FF007F] transition-transform duration-300" />
+
+                    <div className="flex min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center md:min-h-[280px]">
+                      {/* A RECORD dot, not an upload arrow — it names the thing
+                          being asked for. The ring is the same pulse the filled
+                          card's play button uses, so the two read as one family. */}
+                      <span className="relative mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FF007F]">
+                        <span
+                          className="intro-play-ring pointer-events-none absolute inset-0 rounded-full bg-[#FF007F]"
+                          style={{ animation: "introRing 2.2s ease-out infinite" }}
+                        />
+                        <span className="relative h-4 w-4 rounded-full bg-black" />
+                      </span>
+
+                      <p className="font-gulfs text-[15px] uppercase leading-tight tracking-wide text-white md:text-lg">
+                        Add your verification video
+                      </p>
+                      {/* Says what to do AND why, in that order. The old copy was
+                          the label alone, so nothing on the card explained why a
+                          creator should bother. */}
+                      <p className="mt-1.5 max-w-[26ch] text-[12px] font-bold leading-[1.5] text-white/70 md:text-sm">
+                        A 15–30 second hello. It confirms you are really you, and
+                        it is the first thing supporters watch.
+                      </p>
+
+                      <span className="mt-4 inline-flex min-h-[36px] items-center rounded-box-sm border-2 border-[#FF007F] px-4 text-[11px] font-black uppercase tracking-[0.14em] text-[#FF007F] md:text-xs">
+                        Record or upload
+                      </span>
+
+                      {/* The reassurance belongs on the card, not only inside the
+                          form — "who can see this before it is approved" is the
+                          question that stops people uploading. */}
+                      <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                        Only you can see it until it is approved
+                      </p>
                     </div>
                   </div>
                 } >
               <div className='wrap' >
                 <h2 className="uppercase font-GillSans pb-1 font-large">Add Verification Video</h2>
-                <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
+                <p className='text-black/55 mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
                 <p className='text-red-600 mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >
                   <GlobalUploader view={true} ctxName='add-intro-context'

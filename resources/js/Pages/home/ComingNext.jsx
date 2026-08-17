@@ -16,11 +16,11 @@ export default function ComingNext() {
          <div className="flex flex-col lg:flex-row items-center gap-12" >
             <div className='w-full lg:w-1/2' >
                <div className='nextimage-wrap relative group wiggle' >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-box transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-box transform rotate-3 scale-105 opacity-70 blur-lg"></div>
                   <div className="relative rounded-box overflow-hidden border-2 border-white/10 group-hover:border-[#FF007F]/50 transition-colors duration-300">
                     <LazyLoadImage
                     alt={"image"}  effect="blur"
-                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-auto transition-[filter,opacity] duration-500 group-hover:brightness-[1.08]"
                     src={next}
                     width={"auto"} />
                   </div>
@@ -28,7 +28,7 @@ export default function ComingNext() {
             </div>
             <div className='w-full lg:w-1/2' >
                <div className="inline-block mb-4">
-                    <span className="bg-[#FF007F] text-white font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full">
+                    <span className="bg-[#FF007F] text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full">
                         Coming Soon
                     </span>
                </div>

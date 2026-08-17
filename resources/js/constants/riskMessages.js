@@ -52,6 +52,29 @@ export const RISK_MESSAGES = {
             "There's a one-off £1 card verification when you sign up — here's why.",
         next_step: 'Create an account — it takes about a minute.',
     },
+
+    // Mirrors CREATOR_SUBSCRIPTION_INACTIVE (supporter variant) — the creator
+    // cannot currently be paid.
+    //
+    // Browser-decided like the two above: every checkout screen already has a
+    // `card_capabilities` prop and refuses before it posts, so it needs the copy
+    // locally. The server says the same sentence through
+    // `CreatorAvailabilityMessageService` when the same purchase reaches it.
+    //
+    // 🚨 It replaced six hand-written copies, two of which printed
+    // "(Card Payments capability missing)" — an internal Stripe capability name,
+    // on a buyer's screen, about somebody else's account. A supporter can do
+    // nothing with it and it discloses the creator's payment setup to whoever
+    // opens the page.
+    //
+    // ⚠️ This is NOT the posting-gate message. That one is server-decided
+    // (`CREATOR_CONTENT_PAUSED`) because only the server knows whether the
+    // creator is behind on posts — do not add it here.
+    CREATOR_UNAVAILABLE: {
+        title: "This creator's page is paused right now ⏸",
+        body: "They'll be back shortly. Worth checking their socials in the meantime. 🐷",
+        next_step: 'Check back shortly.',
+    },
 };
 
 /**
@@ -60,6 +83,15 @@ export const RISK_MESSAGES = {
  */
 export function riskMessageBody(key) {
     return RISK_MESSAGES[key]?.body ?? '';
+}
+
+/**
+ * Headline for a state, for the call sites that render a panel rather than a
+ * toast. Falls back to an empty string so a mistyped key degrades to a body
+ * with no heading, never to `undefined` printed on screen.
+ */
+export function riskMessageTitle(key) {
+    return RISK_MESSAGES[key]?.title ?? '';
 }
 
 /**

@@ -139,7 +139,12 @@ class OptimizedProfileController extends Controller
             'first30DayEarnings' => $founderData['first30DayEarnings'],
             'founderData' => $founderData,
             'shouldShowFounderBanner' => $shouldShowFounderBanner,
-            'profile_overview' => $user->role == 1 ? $this->profileService->getProfileOverview($user->id) : null,
+            'profile_overview' => $user->role == 1
+                ? $this->profileService->overviewForViewer(
+                    $this->profileService->getProfileOverview($user->id),
+                    $user
+                )
+                : null,
         ]);
 
         if (app()->environment('production') && ! Auth::check()) {
@@ -297,15 +302,12 @@ class OptimizedProfileController extends Controller
             ]);
         }
 
-        $earnings = $this->profileService->getUserEarnings($user->id);
-
+        // Gated identically to the live handler in AuthenticatedSessionController.
+        // This controller is currently routed nowhere, so the gate is here to stop
+        // it being a hole the day it IS wired up — not because it leaks today.
         return response()->json([
             'success' => true,
-            'goal' => [
-                'fullfilled' => $earnings['fulfilled'],
-                'target' => $earnings['target'],
-                'currency' => $user->default_currency,
-            ],
+            'goal' => $this->profileService->goalPayloadFor($user),
         ]);
     }
 

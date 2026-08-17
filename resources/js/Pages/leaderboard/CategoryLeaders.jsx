@@ -48,7 +48,7 @@ export default function CategoryLeaders() {
 
         return (
             <div className="animate-fading category-item flex items-center gap-2.5 border-b border-black/[0.06] py-3 last:border-b-0 sm:gap-3">
-                <span className="w-6 shrink-0 text-center font-gulfs text-15 leading-none text-black/25">
+                <span className="w-6 shrink-0 text-center font-gulfs text-15 leading-none text-black/60">
                     {rank}
                 </span>
 
@@ -61,7 +61,7 @@ export default function CategoryLeaders() {
                         src={creator.avatar_url || userphoto}
                         alt=""
                         loading="lazy"
-                        className="h-10 w-10 shrink-0 rounded-box-sm object-cover shadow-[0_0_0_1px_rgba(0,0,0,0.08)]"
+                        className="h-10 w-10 shrink-0 rounded-box-sm object-cover "
                     />
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -70,7 +70,7 @@ export default function CategoryLeaders() {
                             </span>
                             <VerifiedBadge user={creator} size="sm" />
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-11 text-black/45">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-12 text-black/60">
                             <span className="truncate">@{creator.username}</span>
                             {!creator.engagement_score && (
                                 <span className="whitespace-nowrap">
@@ -93,10 +93,10 @@ export default function CategoryLeaders() {
     const EmptyState = ({ category }) => (
         <div className="animate-fading text-center py-12">
             <div className="mb-4">
-                <RiGiftLine size={48} className="text-gray-400 mx-auto" />
+                <RiGiftLine size={48} className="text-black/60 mx-auto" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No {category} Leaders Yet</h3>
-            <p className="text-gray-600">Be the first to make it to the {category} leaderboard!</p>
+            <p className="text-black/80">Be the first to make it to the {category} leaderboard!</p>
         </div>
     );
 
@@ -118,7 +118,7 @@ export default function CategoryLeaders() {
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors ml-2" 
+                        className="py-1 border border-red-500 text-red-500 inline-flex items-center min-h-[44px] px-3 rounded-box-sm hover:bg-red-50 transition-colors ml-2" 
                         onClick={fetchCategoryData}
                     >
                         Retry
@@ -134,7 +134,7 @@ export default function CategoryLeaders() {
     return (
         <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 mt-6">
             <h2 className="animate-fading text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-2">🏆 Category Leaders Creators</h2>
-            <p className="animate-fading text-gray-500 mb-6 ">Top performers in each category</p>
+            <p className="animate-fading text-black/60 mb-6 ">Top performers in each category</p>
 
             {/* Category Tabs */}
             <div className="category-tabs mb-6 mt-2">
@@ -148,7 +148,7 @@ export default function CategoryLeaders() {
                                 className={`animate-fading category-tab flex min-h-[44px] items-center space-x-2 rounded-full px-4 py-2 text-13 font-semibold transition-colors ${
                                     activeTab === category.key
                                         ? 'bg-[#0B0B0C] text-white'
-                                        : 'text-black/55 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/25'
+                                        : 'text-black/60 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/25'
                                 }`}
                             >
                                 <Icon size={16} className={category.color} />

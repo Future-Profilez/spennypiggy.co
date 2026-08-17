@@ -19,7 +19,7 @@ import { useAlerts } from "@/Components/Alerts";
 
 const FIELD =
     "w-full min-h-[44px] px-4 py-2.5 rounded-box-sm border-2 border-black bg-white " +
-    "text-[15px] text-black placeholder:text-black/40 " +
+    "text-[15px] text-black placeholder:text-black/60 " +
     "focus:outline-none focus:ring-2 focus:ring-black/20";
 
 const LABEL = "block text-[13px] font-semibold text-black mb-1.5";

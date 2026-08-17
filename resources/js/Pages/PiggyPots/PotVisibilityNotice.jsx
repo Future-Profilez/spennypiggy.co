@@ -92,7 +92,7 @@ export default function PotVisibilityNotice({
                 <button
                     type="button"
                     onClick={onFix}
-                    className="mt-2 inline-flex min-h-[40px] items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 text-xs font-black uppercase tracking-widest text-black shadow-[2px_2px_0px_#000] transition-transform hover:-translate-y-0.5"
+                    className="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-box-sm border-2 border-black bg-white px-4 text-xs font-black uppercase tracking-widest text-black transition-colors duration-200 hover:bg-black/[0.04]"
                 >
                     {fixLabel || 'Set a new deadline'}
                 </button>

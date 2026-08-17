@@ -12,6 +12,35 @@ import {
     ResponsiveContainer,
 } from "recharts";
 
+/**
+ * The income streams this chart draws, and their colours — ONE definition read
+ * by both the legend and the lines.
+ *
+ * 🚨 THREE OF THE EIGHT SERIES THE SERVER RETURNS WERE NEVER DRAWN.
+ * `LeaderBoardController::graphData()` answers with Wishes · PaidTask ·
+ * Piggy_Bank · Piggy_Pots · Memberships · Bills · Shops · Subscriptions; this
+ * chart plotted five of them, so a creator whose income is Piggy Pots, Shop
+ * sales or wish subscriptions read a flat chart and reasonably concluded they
+ * had earned nothing that month. Any key added to that endpoint's `$labelKey`
+ * match must be added here too.
+ *
+ * ⚠️ The legend used to map its own colours inline with a chain of ternaries
+ * while each `<Line>` repeated the hex — two lists that could disagree about
+ * which colour meant which product, on the one screen where that matters.
+ */
+const SERIES = [
+    { key: "Bills", label: "Bills", color: "#05EFB8" },
+    { key: "Memberships", label: "Memberships", color: "#8C52FF" },
+    // ⚠️ Brand yellow #E6EA7B is a 1.4:1 line against white — invisible as a
+    // stroke. This is the darker olive the chart already used for it.
+    { key: "Wishes", label: "Wishes", color: "#BEC50F" },
+    { key: "PaidTask", label: "Paid tasks", color: "#000000" },
+    { key: "Piggy_Bank", label: "Piggy bank", color: "#82CA9D" },
+    { key: "Piggy_Pots", label: "Piggy pots", color: "#FF007F" },
+    { key: "Shops", label: "Shop", color: "#7C838D" },
+    { key: "Subscriptions", label: "Subscriptions", color: "#B0764A" },
+];
+
 export default function MonthlyRevenue() {
     const [loading, setLoading] = useState(false);
     const [lists, setLists] = useState([]);
@@ -95,35 +124,30 @@ export default function MonthlyRevenue() {
     };
 
     return (
-        <section className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section className="bg-white rounded-box border-[3px] border-black overflow-hidden">
+            <div className="p-5 md:p-6 border-b-[3px] border-black flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">
-                        Monthly Revenue
+                    <h2 className="font-gulfs uppercase tracking-tight text-[18px] md:text-[22px] leading-[0.95]">
+                        Monthly revenue
                     </h2>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">
-                        Performance Overview ({lists.currency_symbol} {lists.currency?.toUpperCase()})
+                    <p className="mt-1 text-[12px] text-black/55">
+                        {lists.currency_symbol} {lists.currency?.toUpperCase()}
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {['Bills', 'Memberships', 'Wishes', 'PaidTask', 'Piggy_Bank'].map((key) => (
-                        <div key={key} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 
-                                key === 'Bills' ? 'var(--mint)' : 
-                                key === 'Memberships' ? 'var(--voilet)' : 
-                                key === 'Wishes' ? '#bec50f' : 
-                                key === 'PaidTask' ? '#000000' : '#82ca9d' 
-                            }} />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">{key.replace('_', ' ')}</span>
+                    {SERIES.map((s) => (
+                        <div key={s.key} className="flex items-center gap-1.5 rounded-box-xs border-2 border-black px-2 py-1">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                            <span className="font-gulfs uppercase tracking-[0.08em] text-[11px] leading-none">{s.label}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
-            <div className="p-6 pt-12">
+            <div className="p-5 md:p-6 pt-10">
                 {loading ? (
-                    <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-[24px] animate-pulse">
-                        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading Analytics...</p>
+                    <div className="h-[300px] flex items-center justify-center bg-black/[0.04] rounded-box-sm animate-pulse">
+                        <p className="font-gulfs uppercase tracking-[0.12em] text-[11px] text-black/50">Loading…</p>
                     </div>
                 ) : (
                     <div className="w-full">
@@ -160,46 +184,17 @@ export default function MonthlyRevenue() {
                                     itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
                                     labelStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9ca3af', marginBottom: '4px' }}
                                 />
-                                <Line
-                                    type="monotone"
-                                    dataKey="Bills"
-                                    stroke="var(--mint)"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="Memberships"
-                                    stroke="var(--voilet)"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="Wishes"
-                                    stroke="#bec50f"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="PaidTask"
-                                    stroke="#000000"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="Piggy_Bank"
-                                    stroke="#82ca9d"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
-                                />
+                                {SERIES.map((s) => (
+                                    <Line
+                                        key={s.key}
+                                        type="monotone"
+                                        dataKey={s.key}
+                                        stroke={s.color}
+                                        strokeWidth={3}
+                                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                        activeDot={{ r: 6, strokeWidth: 0 }}
+                                    />
+                                ))}
                             </LineChart>
                         </ResponsiveContainer>
                     </div>

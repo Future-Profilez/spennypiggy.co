@@ -74,7 +74,7 @@ function UnlockToast({ reduceMotion }) {
           <span className="w-8 h-8 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center text-base leading-none">{u.emoji}</span>
           <span className="leading-tight">
             <span className="block font-black text-black text-[12px]">{u.name} unlocked</span>
-            <span className="block font-gulfs uppercase tracking-wider text-[#FF007F] text-[11px]">{u.item} · just now</span>
+            <span className="block font-gulfs uppercase tracking-wider text-[#FF007F] text-[12px]">{u.item} · just now</span>
           </span>
         </motion.div>
       </AnimatePresence>
@@ -82,33 +82,36 @@ function UnlockToast({ reduceMotion }) {
   );
 }
 
-// One brand-style product card. Lifts and straightens on hover.
+// One brand-style product card.
+//
+// ⚠️ NO HOVER SCALE OR ROTATE (client rule, site-wide). This used to
+// `whileHover={{ scale: 1.06, rotate: 0, y: -6 }}` — growing an element on hover
+// is banned everywhere on this site. A coloured surface signals hover through
+// brightness instead, which is the same affordance without the reflow.
 function WishTile({ tile }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.06, rotate: 0, y: -6 }}
-      transition={{ type: "spring", stiffness: 300, damping: 18 }}
-      className={`w-40 md:w-44 rounded-box-sm border-2 border-black overflow-visible cursor-pointer ${tile.rot}`}
+    <div
+      className={`w-40 md:w-44 rounded-box-sm border-2 border-black overflow-visible transition-[filter] duration-300 hover:brightness-[1.06] motion-reduce:transition-none ${tile.rot}`}
       style={{ background: tile.bg }}
     >
       <div className="flex items-center justify-between px-3 pt-2.5">
         <span className={`font-gulfs uppercase tracking-wider text-[12px] leading-none ${tile.dark ? 'text-black' : 'text-white'}`}>
           {tile.label}
         </span>
-        <span className="font-black text-[11px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
+        <span className="font-black text-[12px] leading-none bg-white border-2 border-black rounded-full px-2 py-[3px] text-black">
           {tile.price}
         </span>
       </div>
       <div className="relative mx-3 mt-2.5 rounded-[12px] bg-white border-2 border-black h-16 flex items-center justify-center">
         <span className="text-[34px] leading-none">{tile.emoji}</span>
-        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[11px] leading-none">
+        <span className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-[#FF007F] border-2 border-black rounded-full flex items-center justify-center text-[12px] leading-none">
           ❤️
         </span>
       </div>
-      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[11px] tracking-widest py-[6px]">
+      <div className="mx-3 my-3 rounded-full bg-black text-white text-center font-gulfs uppercase text-[12px] tracking-widest py-[6px]">
         Unlock
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -208,7 +211,12 @@ export default function Hero({auth}) {
             <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
                 <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
                   <li>
-                    <a  href="#home"  className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`}
+                    {/* ⚠️ Touch targets were `px-[7px] py-[5px]` — ~24px tall, well
+                        under the 44px floor, on the ONLY navigation a logged-out
+                        mobile visitor gets. `.landing-bottom-bar ul a` sets
+                        `display:block` at a higher specificity than a utility
+                        class, so the height has to come from padding, not flex. */}
+                    <a  href="#home"  className={`px-2.5 py-3 md:px-3 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`}
                         onClick={(e) => handleNavItemClick(e, 'home')}
                         onMouseEnter={() => houseIconRef.current?.startAnimation()}
                     >
@@ -222,17 +230,17 @@ export default function Hero({auth}) {
                         and did nothing at all when tapped. `act-setup` is the real
                         features chapter (setup steps → ways to get paid → the
                         product mock-ups) and is declared in Welcome.jsx. */}
-                    <a href="#act-setup" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'act-setup' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'act-setup')}>
+                    <a href="#act-setup" className={`px-2.5 py-3 md:px-3 ${activeSection === 'act-setup' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'act-setup')}>
                       Features
                     </a>
                   </li>
                   <li>
-                    <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
+                    <a href="#reviews" className={`px-2.5 py-3 md:px-3 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
                       Reviews
                     </a>
                   </li>
                   <li>
-                    <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
+                    <a href="#faq" className={`px-2.5 py-3 md:px-3 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
                       FAQ's
                     </a>
                   </li>
@@ -335,9 +343,12 @@ export default function Hero({auth}) {
                   <div className="flex flex-col items-center lg:items-start gap-5">
                     <div className="relative inline-block">
                       <Magnetic strength={0.3}>
+                        {/* ⚠️ NO hover scale/rotate (client rule, site-wide). The
+                            gradient wash below is this button's hover state; the
+                            tap state is a brightness drop, never a shrink. */}
                         <Link
                           href={ctaHref}
-                          className="relative inline-flex items-center gap-3 md:gap-4 bg-[#FF007F] text-white font-black text-base md:text-xl py-3 px-7 md:px-9 rounded-full hover:scale-105 hover:rotate-1 transition-all duration-300 active:scale-[0.98] uppercase tracking-wide group overflow-hidden"
+                          className="relative inline-flex min-h-[52px] items-center gap-3 md:gap-4 bg-[#FF007F] text-black font-black text-base md:text-xl py-3 px-7 md:px-9 rounded-full transition-[filter,opacity] duration-300 active:brightness-95 uppercase tracking-wide group overflow-hidden"
                           onMouseEnter={() => ctaRef.current?.startAnimation()}
                         >
                           <span className="relative z-10">{ctaLabel}</span>
@@ -345,7 +356,7 @@ export default function Hero({auth}) {
                           <div className="absolute inset-0 bg-gradient-to-r from-[#E6EA7B] via-[#FF007F] to-[#05EFB8] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
                       </Magnetic>
-                      <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[11px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full">It's Free</span>
+                      <span className="absolute -top-4 -right-3 bg-white text-[#FF007F] text-[12px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full">It's Free</span>
                     </div>
 
                     {/* The promise, not a footnote. "No charge until your first
@@ -364,7 +375,10 @@ export default function Hero({auth}) {
 
                     <TrustBox />
 
-                    <p className="uppercase text-center lg:text-left max-w-[520px] text-gray-400 font-poppins text-[11px] xl:text-[12px] tracking-wider">
+                    {/* ⚠️ Was `text-gray-400` at 11px — under the AA contrast floor
+                        AND under the 12px type floor, on the one line that states
+                        the platform's pricing promise. */}
+                    <p className="uppercase text-center lg:text-left max-w-[520px] text-white/60 font-poppins text-[12px] tracking-wider">
                       {FREE_UNTIL_FIRST_SALE
                         ? <>*{SUBSCRIPTION_COPY.reassurance} After your first sale, a monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs.</>
                         : <>*A monthly {PRICE_FORMATTED} + VAT payment covers Stripe fees and compliance costs. No commission on your sales.</>}

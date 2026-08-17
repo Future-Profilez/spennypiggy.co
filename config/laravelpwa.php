@@ -5,10 +5,14 @@ return [
         'name' => 'Spenny Piggy',
         'short_name' => 'Spenny Piggy',
         'start_url' => '/',
-        // 🚨 background_color is the SPLASH SCREEN, and it was #ffffff — so an
-        // installed app whose every screen is dark opened on a full white flash
-        // before the first paint. It is the top of the page's own gradient now.
-        'background_color' => '#0B0413',
+        // 🚨 background_color IS the Android splash screen — Chrome paints it
+        // flat behind the 512 icon, and it cannot carry a gradient or artwork.
+        // It was #ffffff (a full white flash into a dark app), then near-black.
+        // It is brand pink now so the OS splash, the iOS launch images and the
+        // in-app launch screen in app.blade.php are all one field; changing it
+        // here means changing resources/proxy/manifest.json and site.webmanifest
+        // in the same commit, since those are the manifests actually served.
+        'background_color' => '#FF007F',
         // ⚠️ theme_color tints the system chrome around the app, so it must match
         // the HEADER, not the page. Four different colours were declared across
         // the manifest and the meta tags (#5D25FD here, #A2E4B8 twice in the
@@ -52,17 +56,26 @@ return [
                 'purpose' => 'any',
             ],
         ],
+        // ⚠️ DEAD CONFIG — `resources/views/vendor/laravelpwa/meta.blade.php` is
+        // included nowhere (`@laravelPWA` is commented out in app.blade.php), so
+        // nothing reads this. The live launch images are declared by
+        // App\Support\PwaSplash and rendered by app.blade.php.
+        //
+        // 🚨 Every entry here used to be `/siteicon.png` — a path that answers 404
+        // in production (no proxy route) at a size iOS would ignore anyway. Left
+        // pointing at the real route so wiring the vendor view back in cannot
+        // silently reinstate a broken set.
         'splash' => [
-            '640x1136' => '/siteicon.png',
-            '750x1334' => '/siteicon.png',
-            '828x1792' => '/siteicon.png',
-            '1125x2436' => '/siteicon.png',
-            '1242x2208' => '/siteicon.png',
-            '1242x2688' => '/siteicon.png',
-            '1536x2048' => '/siteicon.png',
-            '1668x2224' => '/siteicon.png',
-            '1668x2388' => '/siteicon.png',
-            '2048x2732' => '/siteicon.png',
+            '640x1136' => '/ios-splash/640x1136.png',
+            '750x1334' => '/ios-splash/750x1334.png',
+            '828x1792' => '/ios-splash/828x1792.png',
+            '1125x2436' => '/ios-splash/1125x2436.png',
+            '1242x2208' => '/ios-splash/1242x2208.png',
+            '1242x2688' => '/ios-splash/1242x2688.png',
+            '1536x2048' => '/ios-splash/1536x2048.png',
+            '1668x2224' => '/ios-splash/1668x2224.png',
+            '1668x2388' => '/ios-splash/1668x2388.png',
+            '2048x2732' => '/ios-splash/2048x2732.png',
         ],
         'shortcuts' => [
             [

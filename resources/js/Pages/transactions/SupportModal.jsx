@@ -3,6 +3,7 @@ import axios from 'axios';
 import Popup from '@/Components/Popup';
 import { router } from '@inertiajs/react';
 import GlobalUploader from '@/uploadcare/Uploader';
+import HelpSuggestions from '@/Components/Help/HelpSuggestions';
 import { route } from 'ziggy-js';
 
 export default function SupportModal({ show, event, initialType = 'contact', onClose }) {
@@ -20,6 +21,19 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
   const displayAmount = mergedEvent?.display_amount ?? mergedEvent?.amount ?? null;
   const txTitle = mergedEvent?.title || mergedEvent?.wish?.name || mergedEvent?.shop?.name || mergedEvent?.task?.title || mergedEvent?.membership?.level || mergedEvent?.bill?.name || mergedEvent?.piggy_pot?.title || null;
   const uploaderCtxName = useMemo(() => `support-ticket-${mergedEvent?.source || 'src'}-${mergedEvent?.source_id || '0'}`, [mergedEvent?.source, mergedEvent?.source_id]);
+
+  /**
+   * Deflection query — built from what this form already knows.
+   *
+   * The form knows it is a refund on a Paid Task; asking the reader to describe
+   * that again in a search box is a step they will not take. Generic suggestions
+   * would be ignored, so the module name is what makes them worth reading.
+   */
+  const helpQuery = useMemo(() => {
+    const module = String(mergedEvent?.type || mergedEvent?.source || '').replaceAll('_', ' ').trim();
+    const intent = type === 'refund' ? 'refund money back' : 'contact creator about my purchase';
+    return `${intent} ${module}`.trim();
+  }, [type, mergedEvent?.type, mergedEvent?.source]);
 
   useEffect(() => {
     if (show) {
@@ -110,18 +124,18 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
       <div className="bg-white text-black md:p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-xs font-black uppercase tracking-widest text-gray-500">Support Request</div>
+            <div className="text-xs font-black uppercase tracking-widest text-black/60">Support Request</div>
             <div className="text-xl font-black mt-1">
               {type === 'refund' ? 'Request Refund' : 'Contact Creator'}
             </div>
-            <div className="text-xs font-bold text-gray-600 mt-1">
+            <div className="text-xs font-bold text-black/80 mt-1">
               {mergedEvent?.creator?.username ? `@${mergedEvent.creator.username}` : ''}
             </div>
           </div>
         </div>
 
-        <div className="mt-4 rounded-[18px] border-2 border-black bg-gray-50 p-3">
-          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Transaction Details</div>
+        <div className="mt-4 rounded-box-sm border-2 border-black bg-gray-50 p-3">
+          <div className="text-[12px] font-black uppercase tracking-widest text-black/60">Transaction Details</div>
           <div className="mt-1 text-sm font-black text-black">
             {txLoading ? 'Loading…' : (txTitle ? txTitle : (mergedEvent?.type ? String(mergedEvent.type).replaceAll('_', ' ') : 'Transaction'))}
           </div>
@@ -141,7 +155,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <button
             type="button"
             onClick={() => setType('contact')}
-            className={`px-4 py-2 rounded-[15px] border-2 border-black text-xs font-black uppercase tracking-widest ${
+            className={`px-4 py-2 rounded-box-sm border-2 border-black text-xs font-black uppercase tracking-widest ${
               type === 'contact' ? 'bg-yellow-300' : 'bg-white'
             }`}
           >
@@ -150,7 +164,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <button
             type="button"
             onClick={() => setType('refund')}
-            className={`px-4 py-2 rounded-[15px] border-2 border-black text-xs font-black uppercase tracking-widest ${
+            className={`px-4 py-2 rounded-box-sm border-2 border-black text-xs font-black uppercase tracking-widest ${
               type === 'refund' ? 'bg-yellow-300' : 'bg-white'
             }`}
           >
@@ -158,46 +172,56 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           </button>
         </div>
 
+        {/*
+          Deflection. Sits ABOVE the message box on purpose: once someone has
+          written three paragraphs they are sending them whatever the answer
+          turns out to be. Renders nothing when there is no matching article, so
+          it never becomes a strip of noise above a form.
+        */}
+        <div className="mt-5">
+          <HelpSuggestions query={helpQuery} heading="Before you write — this might answer it" />
+        </div>
+
         {type === 'refund' ? (
           <div className="mt-4">
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Refund Reason*</div>
+            <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-2">Refund Reason*</div>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full min-h-[90px] bg-white border-2 border-black rounded-[20px] p-3 font-bold text-sm"
+              className="w-full min-h-[90px] bg-white border-2 border-black rounded-box-sm p-3 font-bold text-sm"
               placeholder="Write the reason for refund request…"
             />
           </div>
         ) : null}
 
         <div className="mt-4">
-          <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Message*</div>
+          <div className="text-[12px] font-black uppercase tracking-widest text-black/60 mb-2">Message*</div>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full min-h-[110px] bg-white border-2 border-black rounded-[20px] p-3 font-bold text-sm"
+            className="w-full min-h-[110px] bg-white border-2 border-black rounded-box-sm p-3 font-bold text-sm"
             placeholder="Write your message…"
           />
         </div>
 
         <div className="mt-4">
           <div className="flex items-center justify-between gap-4 mb-2">
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Attachments</div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">{attachments.length}/5</div>
+            <div className="text-[12px] font-black uppercase tracking-widest text-black/60">Attachments</div>
+            <div className="text-[12px] font-black uppercase tracking-widest text-black/60">{attachments.length}/5</div>
           </div>
           {attachments.length ? (
-            <div className="mb-3 rounded-[18px] border-2 border-black bg-white p-3">
+            <div className="mb-3 rounded-box-sm border-2 border-black bg-white p-3">
               <div className="space-y-2">
                 {attachments.map((a, idx) => (
                   <div key={`${a.uuid || a.url || 'file'}-${idx}`} className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-xs font-black truncate">{a.name || 'Attachment'}</div>
-                      <div className="text-[10px] font-bold text-gray-600">{a.size ? `${Math.ceil(a.size / 1024)} KB` : ''}</div>
+                      <div className="text-[12px] font-bold text-black/80">{a.size ? `${Math.ceil(a.size / 1024)} KB` : ''}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeAttachment(idx)}
-                      className="h-9 px-3 rounded-[12px] border-2 border-black font-black uppercase tracking-widest text-[10px] bg-white"
+                      className="h-9 px-3 rounded-box-sm border-2 border-black font-black uppercase tracking-widest text-[12px] bg-white"
                     >
                       Remove
                     </button>
@@ -206,7 +230,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
               </div>
             </div>
           ) : null}
-          <div className="rounded-[18px] border-2 border-black bg-gray-50 p-3">
+          <div className="rounded-box-sm border-2 border-black bg-gray-50 p-3">
             <div className="w-full">
               <GlobalUploader
                 ref={uploaderRef}
@@ -218,7 +242,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
                 sendFile={addAttachment}
               />
             </div>
-            <div className="mt-2 text-center text-[10px] font-bold text-gray-600">Up to 5 files. Max 5MB each.</div>
+            <div className="mt-2 text-center text-[12px] font-bold text-black/80">Up to 5 files. Max 5MB each.</div>
           </div>
         </div>
 
@@ -226,7 +250,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
           <button
             type="button"
             onClick={onClose}
-            className="h-11 px-5 rounded-[15px] border-2 border-black font-black uppercase tracking-widest text-xs bg-white"
+            className="h-11 px-5 rounded-box-sm border-2 border-black font-black uppercase tracking-widest text-xs bg-white"
           >
             Cancel
           </button>
@@ -234,7 +258,7 @@ export default function SupportModal({ show, event, initialType = 'contact', onC
             type="button"
             disabled={submitting}
             onClick={submitSupportTicket}
-            className="h-11 px-6 rounded-[15px] border-2 border-black font-black uppercase tracking-widest text-xs bg-[#FF007F] text-black disabled:opacity-70"
+            className="h-11 px-6 rounded-box-sm border-2 border-black font-black uppercase tracking-widest text-xs bg-[#FF007F] text-black disabled:opacity-70"
           >
             {submitting ? 'Sending…' : 'Send'}
           </button>

@@ -94,12 +94,12 @@ const Field = forwardRef(function Field(
             <div className="mb-1.5 flex items-baseline justify-between gap-3">
                 <label
                     htmlFor={id}
-                    className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/60"
+                    className="text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60"
                 >
                     {label}
                 </label>
                 {optional && (
-                    <span className="text-[11px] text-black/60">Optional</span>
+                    <span className="text-[12px] text-black/60">Optional</span>
                 )}
             </div>
 

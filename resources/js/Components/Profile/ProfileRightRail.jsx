@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
+import PriceFormat from "@/includes/PriceFormat";
 import {
     Sparkles,
     PiggyBank,
@@ -20,16 +21,14 @@ const ReportContentModal = lazy(
     () => import("@/Components/ReportContentModal"),
 );
 
-const gbp = (v) =>
-    new Intl.NumberFormat("en-GB", {
-        style: "currency",
-        currency: "GBP",
-        maximumFractionDigits: 0,
-    }).format(v || 0);
+// 🚨 This used to hardcode `currency: "GBP"` while the figure it formats is in
+// the CREATOR's default_currency — a USD creator's $80 rendered as £80. Use the
+// shared formatter, which converts into the viewer's currency like every other
+// money figure on the profile.
 
 // Mobile: light border, no shadow (fewer heavy boxes); desktop: full brutalist card
 const cardClasses =
-    "rounded-box border border-black/10 bg-white p-4 shadow-none sm:p-5 md:border-2 md:border-black";
+    "rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black";
 
 function CardTitle({ children, action }) {
     return (
@@ -72,7 +71,7 @@ function HighlightRow({ icon, iconBg, title, subtitle }) {
                 <div className="text-[13px] font-black leading-tight text-black">
                     {title}
                 </div>
-                <div className="text-[11px] font-semibold text-gray-500">
+                <div className="text-[12px] font-semibold text-gray-500">
                     {subtitle}
                 </div>
             </div>
@@ -81,7 +80,7 @@ function HighlightRow({ icon, iconBg, title, subtitle }) {
 }
 
 const tileClasses =
-    "flex flex-col items-center justify-center gap-1.5 rounded-box-sm border border-black/10 py-3.5 text-[11px] font-bold text-black transition-colors hover:border-black";
+    "flex flex-col items-center justify-center gap-1.5 rounded-box-sm border border-black/10 py-3.5 text-[12px] font-bold text-black transition-colors hover:border-black";
 
 export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
     // sections: optional allow-list of card keys — lets the sidebar and the About tab
@@ -92,6 +91,21 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
         profile_overview: ov,
         piggyPotTopSupporters,
     } = usePage().props;
+    const { formatMultiPrice } = PriceFormat();
+
+    // The creator can hide their earnings figures from visitors. The server then
+    // omits the amounts entirely and sends the percentage, so the progress bar
+    // survives without the money.
+    const earningsHidden = Boolean(ov?.earnings_hidden);
+    const earnedPercent = earningsHidden
+        ? Math.min(100, Math.max(0, Number(ov?.earned_percent) || 0))
+        : ov?.earned_target > 0
+          ? Math.min(
+                100,
+                Math.round(((ov?.earned || 0) / ov.earned_target) * 100),
+            )
+          : 0;
+    const money = (v) => formatMultiPrice(Math.round(v || 0), user?.default_currency);
 
     if (!user || user.role != 1) return null;
 
@@ -193,27 +207,29 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                             value={ov.tasks}
                         />
                     )}
-                    <OverviewRow
-                        icon={<Coins size={15} />}
-                        label="Total earned"
-                        value={gbp(ov.earned)}
-                        accent
-                    />
+                    {!earningsHidden && (
+                        <OverviewRow
+                            icon={<Coins size={15} />}
+                            label="Total earned"
+                            value={money(ov.earned)}
+                            accent
+                        />
+                    )}
                     </div>
-                    {ov.earned_target > 0 && (
+                    {(earningsHidden || ov.earned_target > 0) && (
                         <div className="mt-3">
                             <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-[#FF007F] to-[#FF7AB8]"
-                                    style={{
-                                        width: `${Math.min(100, Math.round(((ov.earned || 0) / ov.earned_target) * 100))}%`,
-                                    }}
+                                    style={{ width: `${earnedPercent}%` }}
                                 />
                             </div>
-                            <div className="mt-1.5 flex justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                            <div className="mt-1.5 flex justify-between text-[12px] font-bold uppercase tracking-wider text-gray-500">
                                 <span>Progress</span>
                                 <span>
-                                    {gbp(ov.earned)} / {gbp(ov.earned_target)}
+                                    {earningsHidden
+                                        ? `${earnedPercent}%`
+                                        : `${money(ov.earned)} / ${money(ov.earned_target)}`}
                                 </span>
                             </div>
                         </div>
@@ -290,10 +306,10 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                                         {(s.name || "?").charAt(0)}
                                     </span>
                                 )}
-                                <span className="w-full truncate text-[10px] font-bold text-black">
+                                <span title={s.name} className="w-full truncate text-[12px] font-bold text-black">
                                     {s.name}
                                 </span>
-                                <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-500">
+                                <span className="text-[12px] font-semibold uppercase tracking-wide text-gray-500">
                                     ×{s.purchases}
                                 </span>
                             </div>

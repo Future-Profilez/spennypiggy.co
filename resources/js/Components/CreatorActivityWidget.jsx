@@ -34,7 +34,7 @@ const CARD =
     "rounded-box border-[3px] border-black bg-white p-5 md:p-6 mt-6 lg:mt-0";
 
 const BTN_PRIMARY =
-    "inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white shadow-[3px_3px_0px_#000] transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+ "inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
 
 const BTN_QUIET =
     "inline-flex min-h-[48px] items-center text-xs font-black uppercase tracking-[0.14em] text-black/60 underline decoration-black/25 underline-offset-4 hover:text-black";
@@ -44,7 +44,7 @@ function Plate({ status }) {
 
     return (
         <span
-            className={`inline-flex items-center rounded-box-sm border-2 border-black px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${cls}`}
+ className={`inline-flex items-center rounded-box-sm border-2 border-black px-3 py-1 text-[12px] font-black uppercase tracking-[0.16em] ${cls}`}
         >
             {label}
         </span>
@@ -139,7 +139,7 @@ const CreatorActivityWidget = (props) => {
                 paused" in red directly above a blue "Grace" badge. */}
             {postingCadence && (
                 <div className="mt-6 border-t border-black/10 pt-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/45">
+                    <p className="text-[12px] font-black uppercase tracking-[0.18em] text-black/60">
                         Separate rule &middot; Posts for paying members
                     </p>
 
@@ -151,6 +151,7 @@ const CreatorActivityWidget = (props) => {
                         <PostMeter
                             have={postingCadence.member_posts ?? 0}
                             required={postingCadence.required ?? 3}
+                            pending={postingCadence.pending_review ?? 0}
                             nextDropOut={
                                 [...(postingCadence.counting_posts || [])].sort(
                                     (a, b) =>

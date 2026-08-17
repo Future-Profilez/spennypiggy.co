@@ -66,7 +66,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
             modalclass="pinkmodal max-w-2xl"
             size="xl"
             space="6"
-            classes={classes || "bg-yellow-500 border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-box-sm text-black group"}
+            classes={classes || "bg-yellow-500 border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-box-sm text-black group"}
             text={text || <Flag size={20} strokeWidth={2.5} />}
             action={isOpen}
             onHide={() => setIsOpen(false)}
@@ -80,7 +80,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
                     </div>
                     <div>
                         <h2 className="text-2xl font-gulfs uppercase text-black">Report Content</h2>
-                        <p className="text-sm font-bold text-gray-600">Submit a DMCA or Copyright complaint</p>
+                        <p className="text-sm font-bold text-black/80">Submit a DMCA or Copyright complaint</p>
                     </div>
                 </div>
 
@@ -100,7 +100,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
                                 required
                                 value={data.reporter_name}
                                 onChange={(e) => setData('reporter_name', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
+                                className="w-full rounded-box-sm border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
                                 placeholder="Jane Doe"
                             />
                         </div>
@@ -111,7 +111,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
                                 required
                                 value={data.reporter_email}
                                 onChange={(e) => setData('reporter_email', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
+                                className="w-full rounded-box-sm border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3"
                                 placeholder="jane@example.com"
                             />
                         </div>
@@ -121,14 +121,14 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
                         <label className="block text-sm font-black uppercase mb-1">Reported URL / Content Location</label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <LinkIcon size={18} className="text-gray-400" />
+                                <LinkIcon size={18} className="text-black/60" />
                             </div>
                             <input
                                 type="url"
                                 required
                                 value={data.reported_url}
                                 onChange={(e) => setData('reported_url', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10"
+                                className="w-full rounded-box-sm border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10"
                                 placeholder="https://spennypiggy.co/..."
                             />
                         </div>
@@ -136,23 +136,23 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
 
                     <div>
                         <label className="block text-sm font-black uppercase mb-1">Reason for Report</label>
-                        <p className="text-xs text-gray-500 mb-2">Please identify the copyrighted work and describe the allegedly infringing content.</p>
+                        <p className="text-xs text-black/60 mb-2">Please identify the copyrighted work and describe the allegedly infringing content.</p>
                         <div className="relative">
                             <div className="absolute top-3 left-3 pointer-events-none">
-                                <Edit3 size={18} className="text-gray-400" />
+                                <Edit3 size={18} className="text-black/60" />
                             </div>
                             <textarea
                                 required
                                 minLength={10}
                                 value={data.reason}
                                 onChange={(e) => setData('reason', e.target.value)}
-                                className="w-full rounded-[15px] border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10 min-h-[120px]"
+                                className="w-full rounded-box-sm border-2 border-black focus:ring-pink-500 focus:border-[#FF007F] p-3 pl-10 min-h-[120px]"
                                 placeholder="I am the copyright owner of this artwork. This creator is selling my digital art without permission..."
                             />
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 border-2 border-black rounded-[15px] p-4 mt-6">
+                    <div className="bg-gray-50 border-2 border-black rounded-box-sm p-4 mt-6">
                         <label className="flex items-start gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
@@ -182,7 +182,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
                         <button
                             type="submit"
                             disabled={processing || !data.good_faith_confirmed || !!(turnstileSiteKey && !data.cf_turnstile_response)}
-                            className="bg-red-600 text-white border-2 border-black px-8 py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-red-600 text-white border-2 border-black px-8 py-3 rounded-box-sm font-black uppercase tracking-wider active:translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {processing ? 'Submitting...' : 'Submit Report'}
                         </button>

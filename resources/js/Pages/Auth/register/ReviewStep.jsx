@@ -10,7 +10,7 @@ import { ROLE_CREATOR, accentFor } from "./constants";
  * now, before they press the button.
  *
  * The submit control is a plain <button> rather than the shared LoaderButton:
- * that component hardcodes `rounded-[30px]` and `main-button`, which fight the
+ * that component hardcodes `rounded-box` and `main-button`, which fight the
  * house radius tokens, and it renders its spinner whenever `disabled` is set —
  * so an unticked consent box would show the form as though it were saving.
  */

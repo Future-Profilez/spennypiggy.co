@@ -54,7 +54,7 @@ export default function MorConsent(props) {
 
                     {/* Gating Banner */}
                     {!finalStepsUnlocked && (
-                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-yellow-800">
+                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-box-sm text-yellow-800">
                             <p className="font-semibold">
                                 Admin Profile Approval Required
                             </p>
@@ -66,8 +66,8 @@ export default function MorConsent(props) {
                     )}
 
                     {/* Merchant of Record Agreement Card */}
-                    <div className="bg-white rounded-[30px]    shadow-lg border border-gray-200 overflow-hidden mb-8">
-                        <div className="p-8">
+                    <div className="bg-white rounded-box border border-gray-200 overflow-hidden mb-8">
+                        <div className="p-5 sm:p-8">
                             {/* Agreement Header */}
                             <div className="text-center mb-8">
                                 <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -83,7 +83,7 @@ export default function MorConsent(props) {
 
                             {/* Agreement Content */}
                             <div className="space-y-6 mb-8">
-                                <div className="bg-pink-50/50 rounded-[30px]  p-8 border border-pink-100">
+                                <div className="bg-pink-50/50 rounded-box-sm p-5 sm:p-8 border border-pink-100">
                                     <p className="text-gray-900 text-lg text-center font-bold leading-relaxed">
                                         I confirm that I understand and agree
                                         that I am the Merchant of Record (MoR)
@@ -100,11 +100,11 @@ export default function MorConsent(props) {
                                     
                                     <div className="grid grid-cols-1 gap-4">
                                         {acknowledgements.map((text, index) => (
-                                            <div key={index} className="flex items-start gap-4 p-4 rounded-[30px]  bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
-                                                <div className="w-6 h-6 bg-[#FF007F] text-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-                                                    <span className="text-[10px] font-bold">✓</span>
+                                            <div key={index} className="flex items-start gap-4 p-4 rounded-box-sm bg-gray-50/50 border border-gray-100 hover:border-pink-200 transition-colors">
+                                                <div className="w-6 h-6 bg-[#FF007F] text-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ">
+                                                    <span className="text-[12px] font-bold">✓</span>
                                                 </div>
-                                                <p className="text-gray-700 leading-relaxed font-medium">
+                                                <p className="text-black/80 leading-relaxed font-medium">
                                                     {text}
                                                 </p>
                                             </div>
@@ -112,7 +112,7 @@ export default function MorConsent(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-900 rounded-[30px]  p-6 shadow-xl">
+                                <div className="bg-gray-900 rounded-box-sm p-5 sm:p-6 ">
                                     <p className="text-white text-center font-bold text-sm leading-relaxed italic">
                                         "By continuing, I confirm that I have
                                         read, understood, and agree to this
@@ -122,10 +122,10 @@ export default function MorConsent(props) {
                             </div>
 
                             {/* Confirmation Checkbox */}
-                            <div className="bg-gray-50 rounded-[30px]   p-6 mb-8">
+                            <div className="bg-gray-50 rounded-box-sm p-5 sm:p-6 mb-8">
                                 <label
                                     htmlFor="mor_agreement"
-                                    className="flex items-start space-x-3 cursor-pointer"
+                                    className="flex items-start gap-3 cursor-pointer"
                                 >
                                     <input
                                         type="checkbox"
@@ -138,7 +138,7 @@ export default function MorConsent(props) {
                                                 e.target.checked,
                                             )
                                         }
-                                        className="mt-1 w-5 h-5 text-pink border-2 border-gray-300 rounded focus:ring-pink focus:ring-2"
+                                        className="mt-1 w-6 h-6 shrink-0 accent-[#FF007F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF007F]"
                                     />
                                     <p className="text-lg font-semibold text-gray-800 leading-relaxed">
                                         ✅ I confirm and agree to be the
@@ -158,7 +158,7 @@ export default function MorConsent(props) {
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    className="block w-full text-center bg-[#FF007F] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="block w-full text-center bg-[#FF007F] hover:brightness-110 text-black font-gulfs uppercase text-lg min-h-[48px] py-3 px-6 rounded-box-sm transition-colors duration-200 active:brightness-95 flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!data.mor_agreed || processing}
                                 >
                                     {processing ? (
@@ -193,7 +193,7 @@ export default function MorConsent(props) {
 
                             {/* Note */}
                             <div className="mt-6 text-center">
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-black/60">
                                     You must agree to these terms before you can
                                     connect your Stripe account and receive
                                     payments.
@@ -204,7 +204,8 @@ export default function MorConsent(props) {
 
                     {/* Security Notice */}
                     <div className="mt-8 text-center">
-                        <div className="inline-flex items-center space-x-2 bg-white/10 rounded-full px-6 py-3">
+                        {/* was bg-white/10 on a white page — an invisible surface */}
+                        <div className="inline-flex items-center gap-2 bg-black/[0.04] rounded-full px-6 py-3">
                             <svg
                                 className="w-5 h-5 text-mint"
                                 fill="none"

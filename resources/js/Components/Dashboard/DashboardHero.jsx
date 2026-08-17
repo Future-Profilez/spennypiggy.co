@@ -1,33 +1,40 @@
-import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
+import { ACCENT, TYPE } from '@/Components/UI/tokens';
 
 /**
  * The headline statement at the top of each creator finance dashboard.
  *
- * Modern, soft take on the brand: a vibrant gradient band with diffuse elevation
- * (no hard offset shadow, no heavy black borders), a count-up on the headline number,
- * and glass supporting tiles that sit on the gradient. One clear focal point; the
- * rest of the page stays quiet white cards with soft shadows.
+ * ONE number, stated as plainly as the house type can state it: an ink block,
+ * an accent offset, and the figure at display size with everything else quiet
+ * around it. The supporting figures sit in a joined strip under a rule, so they
+ * read as parts of the headline rather than as three more cards.
+ *
+ * ⚠️ It used to be a gradient band with a 60px diffuse glow and glass tiles —
+ * a second elevation language on a site whose entire frame is a hard offset,
+ * and the only surface on the creator screens drawn that way. The props are
+ * unchanged, so `bills/Billing_dashboard`, `membership/Membership_dashboard`
+ * and `bills/MySubscriptions` needed no edit.
  *
  * Props:
- *   accent    "pink" | "ink"            band gradient
- *   Icon      react-icon component      headline chip + faint watermark
- *   sticker   short string             soft status pill, top-right
- *   label     string
- *   amount    number                    headline value (counts up)
- *   prefix    string                    e.g. "£"
- *   suffix    string
+ *   accent    'pink' (default) | 'ink' | 'mint' | 'violet'  — 'ink' keeps the
+ *             legacy caller working and reads as the neutral, money-first state
+ *   Icon      react-icon component — headline chip and faint watermark
+ *   sticker   short string, top-right
+ *   label     what the figure IS
+ *   amount    the figure (counts up)
+ *   prefix / suffix
  *   trend     { value, positive } | null
- *   stats     [{ label, value, Icon }]  up to 3 supporting tiles
+ *   stats     [{ label, value, Icon }] — up to 3
  */
 export default function DashboardHero({
-    accent = "pink",
+    accent = 'pink',
     Icon,
     sticker,
     label,
     amount = 0,
-    prefix = "",
-    suffix = "",
+    prefix = '',
+    suffix = '',
     trend = null,
     stats = [],
 }) {
@@ -54,103 +61,136 @@ export default function DashboardHero({
         return () => cancelAnimationFrame(frame.current);
     }, [amount, reduce]);
 
-    const isInk = accent === "ink";
-    const band = isInk
-        ? "bg-gradient-to-br from-[#23232e] via-[#17171d] to-[#0c0c10]"
-        : "bg-gradient-to-br from-[#ff2e93] via-[#FF007F] to-[#d1006a]";
-    const glow = isInk
-        ? "shadow-[0_24px_60px_-24px_rgba(0,0,0,0.55)]"
-        : "shadow-[0_24px_60px_-22px_rgba(255,0,127,0.55)]";
+    /*
+     * `ink` is the legacy value for "no colour on this one" — it borrows mint,
+     * the accent this app already uses for money that has gone right.
+     *
+     * ⚠️ The accent used to be spent on an offset shadow. With shadows gone
+     * sitewide it goes on the FRAME: the hero is the one block on the page that
+     * carries a coloured border rather than a black one, which is what makes it
+     * read as the headline without a second elevation language.
+     */
+    const a = ACCENT[accent] ?? ACCENT.pink;
+    const accentHex = accent === 'ink' ? ACCENT.mint.hex : a.hex;
 
     const rounded = Math.round(display);
-    const shown = Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
+    const shown = Number.isFinite(rounded) ? rounded.toLocaleString() : '0';
 
     return (
-        <div
-            className={`relative ${band} ${glow} rounded-box p-6 md:p-8 mb-8 overflow-hidden ring-1 ring-white/10`}
+        <section
+            className="relative overflow-hidden rounded-box border-[3px] bg-[#0B0B0C] mb-8"
+            style={{ borderColor: accentHex }}
         >
-            {/* soft top-light sheen */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/15 to-transparent" />
-
-            {/* faint brand watermark */}
+            {/* The watermark is the only decoration, and it is the section's own
+                icon rather than an abstract shape. */}
             {Icon && (
                 <Icon
-                    className="pointer-events-none absolute -right-6 -bottom-10 opacity-[0.08] text-white"
+                    className="pointer-events-none absolute -right-8 -bottom-10 text-white opacity-[0.06]"
                     size="13rem"
                     aria-hidden="true"
                 />
             )}
 
-            {/* soft status pill */}
-            {sticker && (
-                <span className="absolute top-5 right-5 md:top-6 md:right-6 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm text-white/90 text-[11px] font-semibold tracking-wide px-3.5 py-1.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
-                    {sticker}
-                </span>
-            )}
-
-            <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-                {/* headline */}
-                <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-4">
+            <div className="relative p-5 md:p-8">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
                         {Icon && (
-                            <div className="w-11 h-11 shrink-0 bg-white/15 backdrop-blur-sm flex items-center justify-center rounded-box-sm ring-1 ring-white/20">
-                                <Icon className="text-white" size="1.3rem" />
-                            </div>
+                            <span
+                                className="w-10 h-10 md:w-11 md:h-11 shrink-0 grid place-items-center rounded-box-sm border-2 border-black"
+                                style={{ backgroundColor: accentHex }}
+                            >
+                                <Icon className="text-black" size="1.2rem" />
+                            </span>
                         )}
-                        <p className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-white/75">
+                        <p
+                            className={`${TYPE.eyebrow} truncate`}
+                            style={{ color: accentHex }}
+                        >
                             {label}
                         </p>
                     </div>
 
-                    <div className="flex items-end gap-4 flex-wrap">
-                        <h2 className="font-GillSans leading-[0.9] text-white text-5xl md:text-6xl xl:text-7xl tabular-nums">
-                            {prefix}
-                            {shown}
-                            {suffix}
-                        </h2>
-
-                        {trend && (
+                    {sticker && (
+                        <span className="shrink-0 inline-flex items-center gap-1.5 rounded-box-xs border-2 border-white/15 px-2.5 py-1 font-gulfs uppercase tracking-[0.1em] text-[11px] leading-none text-white/80">
                             <span
-                                className={`mb-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
-                                    trend.positive
-                                        ? "bg-[#A2E4B8]/90 text-[#0b3d24]"
-                                        : "bg-white/90 text-red-600"
-                                }`}
-                            >
-                                {trend.positive ? "↑" : "↓"} {Math.abs(trend.value)}%
-                            </span>
-                        )}
-                    </div>
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: accentHex }}
+                                aria-hidden="true"
+                            />
+                            {sticker}
+                        </span>
+                    )}
                 </div>
 
-                {/* supporting glass tiles */}
-                {stats.length > 0 && (
-                    <div className="flex flex-wrap gap-3 shrink-0">
-                        {stats.slice(0, 3).map((s, i) => {
-                            const SI = s.Icon;
-                            return (
-                                <div
-                                    key={i}
-                                    className="bg-white/10 backdrop-blur-sm ring-1 ring-white/15 rounded-box-sm px-4 py-3 min-w-[112px]"
-                                >
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                        {SI && (
-                                            <SI className="text-white/80" size="0.9rem" />
-                                        )}
-                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">
-                                            {s.label}
-                                        </p>
-                                    </div>
-                                    <p className="text-2xl font-bold text-white tabular-nums leading-none">
-                                        {s.value}
+                <div className="mt-5 flex items-end gap-4 flex-wrap">
+                    <h2
+                        className={`${TYPE.figure} text-white text-[44px] md:text-[68px] xl:text-[80px]`}
+                    >
+                        {prefix}
+                        {shown}
+                        {suffix}
+                    </h2>
+
+                    {trend && (
+                        /*
+                         * ⚠️ Down is not red. Earning less than last month is not
+                         * an error, and red here is the same mistake the
+                         * leaderboard's movement chip exists to avoid — it is
+                         * kept for a payment that genuinely failed.
+                         */
+                        <span
+                            className="mb-2 inline-flex items-center gap-1 rounded-box-xs border-2 border-black px-2.5 py-1 font-gulfs uppercase tracking-[0.08em] text-[12px] leading-none text-black"
+                            style={{
+                                backgroundColor: trend.positive
+                                    ? ACCENT.mint.hex
+                                    : '#FFFFFF',
+                            }}
+                        >
+                            {trend.positive ? '↑' : '↓'}{' '}
+                            {Math.abs(trend.value)}%
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {stats.length > 0 && (
+                /* The supporting figures abut, sharing hairlines — the same
+                   device as `StatStrip`, in the dark. */
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-white/12 border-t-[3px] border-black">
+                    {stats.slice(0, 3).map((s, i) => {
+                        const SI = s.Icon;
+                        const only = stats.length % 2 === 1 && i === stats.length - 1;
+                        return (
+                            <div
+                                key={s.label ?? i}
+                                className={`bg-[#0B0B0C] px-4 md:px-5 py-4 ${
+                                    only ? 'col-span-2 md:col-span-1' : ''
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    {SI && (
+                                        <SI
+                                            className="text-white/50"
+                                            size="0.85rem"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                    <p
+                                        className={`${TYPE.eyebrow} text-white/55`}
+                                    >
+                                        {s.label}
                                     </p>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-        </div>
+                                <p
+                                    className={`${TYPE.figure} text-white text-[22px] md:text-[26px]`}
+                                >
+                                    {s.value}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </section>
     );
 }

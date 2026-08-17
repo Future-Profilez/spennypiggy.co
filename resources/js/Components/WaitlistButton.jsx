@@ -121,7 +121,7 @@ export default function WaitlistButton({
                         On the list
                     </button>
                 )}
-                <p className="mt-1 text-center text-[11px] text-zinc-500">
+                <p className="mt-1 text-center text-[12px] text-zinc-500">
                     {isGuest
                         ? "We'll email you when it's back."
                         : "We'll tell you when it's back. Tap to stop."}
@@ -175,7 +175,7 @@ export default function WaitlistButton({
             </button>
 
             {message && (
-                <p className="mt-1 text-center text-[11px] text-zinc-600">{message}</p>
+                <p className="mt-1 text-center text-[12px] text-zinc-600">{message}</p>
             )}
         </div>
     );
@@ -187,7 +187,7 @@ export function WaitingCount({ count = 0, className = "" }) {
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full bg-[#FF007F] px-2 py-1 text-[10px] font-black uppercase text-white ${className}`}
+            className={`inline-flex items-center gap-1 rounded-full bg-[#FF007F] px-2 py-1 text-[12px] font-black uppercase text-black ${className}`}
             title="People waiting for this to come back in stock"
         >
             <BellRing size={11} strokeWidth={2.6} />

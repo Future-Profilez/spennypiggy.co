@@ -518,7 +518,7 @@ export default function Countries({ send, selectClassName = "" }) {
   return <>
     <div className="custom-country-select" >
       <select className={`${selectClassName} appearance-none`} onChange={(e)=>send(e.target.value )} >
-        <option className="bg-[#020617] text-gray-400" value={null} disabled selected >Choose Your Country</option>
+        <option className="bg-[#020617] text-white/60" value={null} disabled selected >Choose Your Country</option>
         {updated && updated.map((c, i)=>{ 
           return <>
             <option  className="bg-[#020617] text-white" key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>

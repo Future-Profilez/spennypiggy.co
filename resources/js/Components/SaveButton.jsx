@@ -33,8 +33,8 @@ export default function SaveButton({ productType, itemId, initialSaved = false, 
             title={saved ? "Saved for later" : "Save for later"}
             className={`inline-flex items-center gap-1.5 rounded-full font-medium text-xs transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007F]/40 backdrop-blur-sm ${
                 saved
-                    ? "bg-[#FF007F] text-white"
-                    : "bg-white/90 text-zinc-600 border border-zinc-200 hover:text-[#FF007F] shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+ ? "bg-[#FF007F] text-black"
+ : "bg-white/90 text-zinc-600 border border-zinc-200 hover:text-[#FF007F] "
             } ${label ? "px-3 py-1.5" : "w-9 h-9 justify-center"} ${className}`}
         >
             <Heart size={15} strokeWidth={2.2} fill={saved ? "currentColor" : "none"} />
