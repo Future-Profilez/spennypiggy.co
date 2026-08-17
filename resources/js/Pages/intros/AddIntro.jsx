@@ -221,7 +221,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
             <span className="intro-bracket-br pointer-events-none absolute bottom-3 right-3 h-6 w-6 rounded-br-[6px] border-b-2 border-r-2 border-[#FF007F] transition-transform duration-300" />
 
             {/* Top-left label — one, not an eyebrow scaffold */}
- <div className="absolute left-6 top-6 z-10 flex items-center gap-1.5 text-[12px] font-black uppercase tracking-[0.16em] text-white/90">
+            <div className="absolute left-6 top-6 z-10 flex items-center gap-1.5 text-[12px] font-black uppercase tracking-[0.16em] text-white/90">
               <span className="flex h-1.5 w-1.5 animate-pulse rounded-full bg-[#FF007F]" />
               Intro
             </div>
@@ -322,8 +322,8 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
             whole viewport.
             ⚠️ ABOVE the ternary — inside a branch these braces are an object
             literal, not a comment, and fail the build. Third time in this pass. */}
-        { IsloggedIn ?
- <Popup modalclass="border-2 border-black pinkmodal sendSurprize-modal" space="6" size="md" action={close} classes={`${classes} w-full`}
+        { IsloggedIn && auth?.user?.role === 1 ? 
+            <Popup modalclass="border-2 border-black pinkmodal sendSurprize-modal" space="6" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
                   /* 🚨 THE EMPTY STATE IS THE FILLED STATE, WAITING. It used to be
                      a white box with an outline plus and a sentence — a generic

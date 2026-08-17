@@ -363,77 +363,96 @@ export default function AddItem(props) {
             };
         };
 
-        const addShopItem = () => {
-            setLoading(true);
-            axios
-                .post(`/shop/add`, getSubmitData())
-                .then((res) => {
-                    // Close popup immediately
-                    setOpen(false);
+            const addShopItem = () => {
+        setLoading(true);
+        axios
+            .post(`/shop/add`, getSubmitData())
+            .then((res) => {
+                if (res.data.status) {
+                    resetUploader();
+                    window.dispatchEvent(new Event("closeAddOptions"));
+                    window.dispatchEvent(new Event("shop:item-changed"));
                     
-                    if (res.data.status) {
-                        resetUploader();
-                        window.dispatchEvent(new Event("closeAddOptions"));
-                        window.dispatchEvent(new Event("shop:item-changed"));
-                        setTimeout(() => {
-                            successAlert(res.data.msg || "Item Added !!");
-                        }, 100);
-                        update && update();
-                    } else {
-                        errorAlert(res.data.msg || "Failed to add a shop item.");
-                    }
-                    setLoading(false);
-                })
-                .catch((err) => {
-                    setLoading(false);
+                    // 1. Close popup immediately
                     setOpen(false);
-                    errorsHandling(err);
-                });
-        };
+                    // 2. Force a synchronous React flush to update the DOM
+                    setTimeout(() => {
+                        // 3. Force-click the document to ensure the popup overlay catches the close event
+                        document.body.click(); 
+                    }, 10);
 
-        const updateItem = () => {
-            setLoading(true);
-            axios
-                .post(`/shop/update/${item.uuid}`, getSubmitData())
-                .then((res) => {
-                    // Close popup immediately
+                    update && update();
+                    setTimeout(() => {
+                        successAlert(res.data.msg || "Item Added !!");
+                    }, 150);
+                } else {
+                    errorAlert(res.data.msg || "Failed to add a shop item.");
                     setOpen(false);
+                    setTimeout(() => { document.body.click(); }, 10);
+                }
+                setLoading(false);
+            })
+            .catch((err) => {
+                setLoading(false);
+                errorsHandling(err);
+                setOpen(false);
+                setTimeout(() => { document.body.click(); }, 10);
+            });
+    };
+
+    const updateItem = () => {
+        setLoading(true);
+        axios
+            .post(`/shop/update/${item.uuid}`, getSubmitData())
+            .then((res) => {
+                if (res.data.status) {
+                    resetUploader();
+                    window.dispatchEvent(new Event("closeAddOptions"));
+                    window.dispatchEvent(new Event("shop:item-changed"));
                     
-                    if (res.data.status) {
-                        resetUploader();
-                        window.dispatchEvent(new Event("closeAddOptions"));
-                        window.dispatchEvent(new Event("shop:item-changed"));
-                        setTimeout(() => {
-                            successAlert(res.data.msg || "Item Updated !!");
-                        }, 100);
-                        update && update();
-                    } else {
-                        errorAlert(res.data.msg || "Failed to update item.");
-                    }
-                    setLoading(false);
-                })
-                .catch((err) => {
-                    setLoading(false);
+                    // 1. Close popup immediately
                     setOpen(false);
-                    errorsHandling(err);
-                });
-        };
+                    // 2. Force a synchronous React flush to update the DOM
+                    setTimeout(() => {
+                        // 3. Force-click the document to ensure the popup overlay catches the close event
+                        document.body.click(); 
+                    }, 10);
+
+                    update && update();
+                    setTimeout(() => {
+                        successAlert(res.data.msg || "Item Updated !!");
+                    }, 150);
+                } else {
+                    errorAlert(res.data.msg || "Failed to update item.");
+                    setOpen(false);
+                    setTimeout(() => { document.body.click(); }, 10);
+                }
+                setLoading(false);
+            })
+            .catch((err) => {
+                setLoading(false);
+                errorsHandling(err);
+                setOpen(false);
+                setTimeout(() => { document.body.click(); }, 10);
+            });
+    };
 
         const trigger = (
                 <div className=" flex items-center">
- <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
+                    <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px]  
+                        min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px]">
                         <ShoppingBagIcon color="var(--pink)" size={24} />
                     </div>
                     <div className="pl-3 text-left">
- {/* Matches the other rows in the add-item chooser
- (Dashboard.jsx). This one had drifted onto a
- different face and a smaller size, so its title
- rendered at the same 14px as its own description
- and the row lost its heading. */}
- <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
+                        {/* Matches the other rows in the add-item chooser
+                        (Dashboard.jsx). This one had drifted onto a
+                        different face and a smaller size, so its title
+                        rendered at the same 14px as its own description
+                        and the row lost its heading. */}
+                        <h2 className="font-gulfs text-base md:text-xl !font-light font-black text-black uppercase tracking-normal md:tracking-wide leading-tight">
                             Sell Something
                         </h2>
- <p className="text-sm font-bold text-gray-700">
+                        <p className="text-sm font-bold text-gray-700">
                             Sell digital or physical items from your page
                         </p>
                     </div>
@@ -895,8 +914,8 @@ export default function AddItem(props) {
                                 <button
                                     onClick={isEdit ? updateItem : addShopItem}
                                     disabled={loading || !isChecked}
- className={`flex-[2] py-4 min-h-[44px] bg-[#FF007F] text-black border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 transition-all ${
- (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed translate-y-[2px] translate-x-[2px]' : ''
+                                    className={`flex-[2] py-4 min-h-[44px] bg-[#FF007F] text-black border-[3px] border-black rounded-box-sm font-black uppercase text-xs tracking-widest active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 transition-all ${
+                                    (loading || !isChecked) ? 'opacity-50 grayscale cursor-not-allowed translate-y-[2px] translate-x-[2px]' : ''
                                     }`}
                                 >
                                     {loading ? 'Processing...' : (isEdit ? 'Save Changes' : 'Publish Item')}

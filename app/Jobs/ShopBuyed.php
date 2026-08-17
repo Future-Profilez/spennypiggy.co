@@ -115,7 +115,7 @@ class ShopBuyed implements ShouldQueue
             EmailService::shopBuyed(
                 $this->payment,
                 $this->anon,
-                $this->amountUserPay
+                $this->amountUserPay,
             );
 
             Log::info('ShopBuyed Job: Email sent successfully', [

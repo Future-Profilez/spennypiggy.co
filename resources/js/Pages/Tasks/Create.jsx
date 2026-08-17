@@ -4,7 +4,14 @@ import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from "@/Components/InputError";
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import { Info, CheckCircle2, Clock, Zap, FileUp, AlertTriangle } from "lucide-react";
+import {
+    Info,
+    CheckCircle2,
+    Clock,
+    Zap,
+    FileUp,
+    AlertTriangle,
+} from "lucide-react";
 import RewardEditor, {
     emptyReward,
     rewardFromItem,
@@ -17,12 +24,12 @@ export default function Create({ auth, currencySymbol }) {
     const task = usePage().props?.task ?? null;
     const isEdit = Boolean(task);
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
-    const defaultCurrency = auth.user.default_currency || 'GBP';
+    const defaultCurrency = auth.user.default_currency || "GBP";
     const [showSummary, setShowSummary] = useState(false);
 
     // Calculate GBP conversion from current currency using existing rates
     const convertToGBP = (amount) => {
-        if (!amount || defaultCurrency === 'GBP') return parseFloat(amount);
+        if (!amount || defaultCurrency === "GBP") return parseFloat(amount);
         const rate = rates?.[defaultCurrency?.toUpperCase()];
         if (!rate) return null;
         return (parseFloat(amount) / rate).toFixed(2);
@@ -43,7 +50,7 @@ export default function Create({ auth, currencySymbol }) {
         "Reward / Unlockable",
         "Writing / Text Feature",
         "Digital File / Deliverable",
-        "Other (Describe Clearly)"
+        "Other (Describe Clearly)",
     ];
 
     const timeframes = [
@@ -51,7 +58,7 @@ export default function Create({ auth, currencySymbol }) {
         { label: "24h", value: 24 },
         { label: "48h", value: 48 },
         { label: "72h", value: 72 },
-        { label: "7d", value: 168 }
+        { label: "7d", value: 168 },
     ];
 
     const { data, setData, post, transform, processing, errors } = useForm({
@@ -96,7 +103,9 @@ export default function Create({ auth, currencySymbol }) {
                       }
                     : null,
             deliverable_note:
-                reward.type === "message" ? reward.body : reward.description || "",
+                reward.type === "message"
+                    ? reward.body
+                    : reward.description || "",
         };
     });
 
@@ -110,7 +119,7 @@ export default function Create({ auth, currencySymbol }) {
                 return;
             }
             setShowSummary(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
         post(isEdit ? route("task.update", task.uuid) : route("task.store"));
@@ -134,20 +143,30 @@ export default function Create({ auth, currencySymbol }) {
             <div className="loginPage bg-white px-4 py-8 md:py-18 min-h-dvh font-public-sans">
                 <div className="w-full">
                     <div className="mx-auto max-w-[900px]">
-                        <div className="text-center mb-8">  
+                        <div className="text-center mb-8">
                             <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider ">
-                                {isEdit ? 'Edit Task' : 'Create New Task'}
-                            </h2> 
+                                {isEdit ? "Edit Task" : "Create New Task"}
+                            </h2>
                             {task && task.is_suspended == 1 && (
                                 <div className="mt-4 p-4 bg-red-50 border-2 border-red-500 rounded-box-sm text-left">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            <svg
+                                                className="h-5 w-5 text-red-600"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                    clipRule="evenodd"
+                                                />
                                             </svg>
                                         </div>
                                         <div className="ml-3">
-                                            <h3 className="text-sm font-black uppercase tracking-wider text-red-800">Item Suspended</h3>
+                                            <h3 className="text-sm font-black uppercase tracking-wider text-red-800">
+                                                Item Suspended
+                                            </h3>
                                             {task.suspend_reason && (
                                                 <div className="mt-2 text-sm text-red-700 font-bold">
                                                     <p>{task.suspend_reason}</p>
@@ -159,7 +178,10 @@ export default function Create({ auth, currencySymbol }) {
                             )}
                             <div className="mt-4 p-4 bg-yellow-50 border-2 border-black rounded-box-sm ">
                                 <p className="text-black font-bold text-lg tracking-wide">
-                                    Paid Tasks are for things you’re happy to do. You define the task, price, and delivery. No custom requests outside your description. PG-13 only.
+                                    Paid Tasks are for things you’re happy to
+                                    do. You define the task, price, and
+                                    delivery. No custom requests outside your
+                                    description. PG-13 only.
                                 </p>
                             </div>
                         </div>
@@ -167,30 +189,59 @@ export default function Create({ auth, currencySymbol }) {
                         {showSummary ? (
                             <div className="bg-white border-2 border-black rounded-box p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <h3 className="text-2xl font-black uppercase mb-6 flex items-center gap-2">
-                                    <CheckCircle2 className="text-green-600" /> Confirm Task Details
+                                    <CheckCircle2 className="text-green-600" />{" "}
+                                    Confirm Task Details
                                 </h3>
-                                
+
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">Title</span>
-                                        <span className="font-black text-right max-w-[60%]">{data.title}</span>
+                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                            Title
+                                        </span>
+                                        <span className="font-black text-right max-w-[60%]">
+                                            {data.title}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">Category</span>
-                                        <span className="font-black">{data.category}</span>
+                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                            Category
+                                        </span>
+                                        <span className="font-black">
+                                            {data.category}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">Price</span>
-                                        <span className="font-black text-green-600">{currencySymbol}{data.price}</span>
+                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                            Price
+                                        </span>
+                                        <span className="font-black text-green-600">
+                                            {currencySymbol}
+                                            {data.price}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                        <span className="font-bold text-gray-500 uppercase text-sm">Delivery</span>
-                                        <span className="font-black uppercase">{data.type === 'instant' ? '⚡ Instant' : '⏳ Manual'}</span>
+                                        <span className="font-bold text-gray-500 uppercase text-sm">
+                                            Delivery
+                                        </span>
+                                        <span className="font-black uppercase">
+                                            {data.type === "instant"
+                                                ? "⚡ Instant"
+                                                : "⏳ Manual"}
+                                        </span>
                                     </div>
-                                    {data.type === 'timed' && (
+                                    {data.type === "timed" && (
                                         <div className="flex justify-between border-b-2 border-gray-100 pb-3">
-                                            <span className="font-bold text-gray-500 uppercase text-sm">Timeframe</span>
-                                            <span className="font-black">{timeframes.find(tf => tf.value === data.sla_hours)?.label || `${data.sla_hours}h`}</span>
+                                            <span className="font-bold text-gray-500 uppercase text-sm">
+                                                Timeframe
+                                            </span>
+                                            <span className="font-black">
+                                                {timeframes.find(
+                                                    (tf) =>
+                                                        tf.value ===
+                                                        data.sla_hours,
+                                                )?.label ||
+                                                    `${data.sla_hours}h`}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -199,7 +250,7 @@ export default function Create({ auth, currencySymbol }) {
                                     <div className="flex gap-3">
                                         <Info className="text-blue-600 shrink-0" />
                                         <p className="text-sm font-bold text-blue-900">
-                                            {data.type === 'timed' 
+                                            {data.type === "timed"
                                                 ? "Funds for manual tasks are held until you upload delivery proof. High-value tasks may experience additional verification delays."
                                                 : "Instant tasks are delivered immediately and are non-refundable once purchased."}
                                         </p>
@@ -207,18 +258,20 @@ export default function Create({ auth, currencySymbol }) {
                                 </div>
 
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    <button 
+                                    <button
                                         onClick={() => setShowSummary(false)}
                                         className="flex-1 px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:bg-gray-50 transition-all"
                                     >
                                         Edit Details
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={submit}
                                         disabled={processing}
                                         className="flex-[2] bg-[#FF007F] text-black px-6 py-4 border-2 border-black rounded-box-sm font-black uppercase hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50"
                                     >
-                                        {processing ? "Publishing..." : "Confirm & Publish Task"}
+                                        {processing
+                                            ? "Publishing..."
+                                            : "Confirm & Publish Task"}
                                     </button>
                                 </div>
                             </div>
@@ -235,7 +288,9 @@ export default function Create({ auth, currencySymbol }) {
                                 >
                                     {/* Title */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Title*</label>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                            Task Title*
+                                        </label>
                                         <input
                                             type="text"
                                             maxLength={100}
@@ -247,8 +302,13 @@ export default function Create({ auth, currencySymbol }) {
                                             placeholder="Keep the title clear and specific."
                                         />
                                         <div className="flex justify-between mt-2">
-                                            <p className="text-xs font-bold text-gray-500">This is what supporters will see before purchasing.</p>
-                                            <p className={`text-xs font-bold ${data.title.length >= 100 ? 'text-red-500' : 'text-black/60'}`}>
+                                            <p className="text-xs font-bold text-gray-500">
+                                                This is what supporters will see
+                                                before purchasing.
+                                            </p>
+                                            <p
+                                                className={`text-xs font-bold ${data.title.length >= 100 ? "text-red-500" : "text-black/60"}`}
+                                            >
                                                 {data.title.length}/100
                                             </p>
                                         </div>
@@ -260,7 +320,9 @@ export default function Create({ auth, currencySymbol }) {
 
                                     {/* Description */}
                                     <div className="mb-0">
-                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Task Description*</label>
+                                        <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                            Task Description*
+                                        </label>
                                         <textarea
                                             className="w-full border-2 border-black rounded-box-sm p-4 text-lg font-medium focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-black/60"
                                             rows="4"
@@ -287,22 +349,29 @@ export default function Create({ auth, currencySymbol }) {
                                                 {/* Hover alone hid a real payout warning from every
                                                     phone. tabIndex + focus-within makes it tap-reachable;
                                                     p-2/-m-2 gives a 44px hit area without moving the label. */}
-                                                {data.type === 'timed' && (
+                                                {data.type === "timed" && (
                                                     <div
                                                         className="group relative p-2 -m-2 cursor-help"
                                                         tabIndex={0}
                                                         role="button"
                                                         aria-label="Payout timing for high-value tasks"
                                                     >
-                                                        <Info size={14} className="text-blue-500" />
+                                                        <Info
+                                                            size={14}
+                                                            className="text-blue-500"
+                                                        />
                                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black text-white text-[12px] rounded-box-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50">
-                                                            High-value tasks may delay payout until delivery is confirmed.
+                                                            High-value tasks may
+                                                            delay payout until
+                                                            delivery is
+                                                            confirmed.
                                                         </div>
                                                     </div>
                                                 )}
                                             </label>
                                             <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700 z-10 pointer-events-none">
+                                                {/* Changed: Added w-8 and left-3 for better spacing */}
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 w-8 text-center font-black text-xl text-green-700 z-10 pointer-events-none">
                                                     {currencySymbol}
                                                 </span>
 
@@ -310,7 +379,8 @@ export default function Create({ auth, currencySymbol }) {
                                                     type="number"
                                                     placeholder="Minimum £4.99"
                                                     step="0.01"
-                                                    className="relative z-0 w-full border-2 border-black rounded-box-sm p-[18px] pl-10 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                    /* Changed: pl-10 to pl-8 */
+                                                    className="relative z-0 w-full border-2 border-black rounded-box-sm p-[18px] pl-13 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                     value={data.price}
                                                     onChange={(e) =>
                                                         setData(
@@ -322,39 +392,81 @@ export default function Create({ auth, currencySymbol }) {
                                             </div>
 
                                             {/* GBP Conversion Display */}
-                                            {data.price && defaultCurrency !== 'GBP' && (
-                                                <div className="mt-3 p-3 bg-blue-50 rounded-[15px] border-2 border-blue-200">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-bold text-blue-700 uppercase">Equivalent in GBP:</span>
-                                                        <span className="font-black text-lg text-blue-600">
-                                                            £{convertToGBP(data.price) || 'Loading...'}
-                                                        </span>
+                                            {data.price &&
+                                                defaultCurrency !== "GBP" && (
+                                                    <div className="mt-3 p-3 bg-blue-50 rounded-[15px] border-2 border-blue-200">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-bold text-blue-700 uppercase">
+                                                                Equivalent in
+                                                                GBP:
+                                                            </span>
+                                                            <span className="font-black text-lg text-blue-600">
+                                                                £
+                                                                {convertToGBP(
+                                                                    data.price,
+                                                                ) ||
+                                                                    "Loading..."}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
                                             {data.price > 0 && (
                                                 <div className="mt-4 p-4 bg-gray-50 rounded-box-sm border-2 border-black ">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
+                                                        <span className="text-sm font-bold text-gray-700 uppercase">
+                                                            Fans pay:
+                                                        </span>
                                                         <span className="font-black text-xl text-black">
-                                                            {new Intl.NumberFormat('en-GB', { 
-                                                                style: 'currency', 
-                                                                currency: defaultCurrency 
-                                                            }).format(calculateTotalSupporterPays(data.price, defaultCurrency, 0, auth?.user?.id).total_supporter_pays)}
+                                                            {new Intl.NumberFormat(
+                                                                "en-GB",
+                                                                {
+                                                                    style: "currency",
+                                                                    currency:
+                                                                        defaultCurrency,
+                                                                },
+                                                            ).format(
+                                                                calculateTotalSupporterPays(
+                                                                    data.price,
+                                                                    defaultCurrency,
+                                                                    0,
+                                                                    auth?.user
+                                                                        ?.id,
+                                                                )
+                                                                    .total_supporter_pays,
+                                                            )}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-sm font-bold text-gray-700 uppercase">You receive:</span>
+                                                        <span className="text-sm font-bold text-gray-700 uppercase">
+                                                            You receive:
+                                                        </span>
                                                         <span className="font-black text-xl text-green-600">
-                                                            {new Intl.NumberFormat('en-GB', { 
-                                                                style: 'currency', 
-                                                                currency: defaultCurrency 
-                                                            }).format(data.price)}
+                                                            {new Intl.NumberFormat(
+                                                                "en-GB",
+                                                                {
+                                                                    style: "currency",
+                                                                    currency:
+                                                                        defaultCurrency,
+                                                                },
+                                                            ).format(
+                                                                data.price,
+                                                            )}
                                                         </span>
                                                     </div>
-                                                    <p className="mt-2 text-xs text-gray-500 font-medium">Fans only see the total price to improve conversion</p>
-                                                    <p className="mt-1 text-xs text-gray-500 font-medium">Our fee is 19%. Uplift will show higher due to stripe / conversions to ensure you always receive 100% or slightly more.</p>
+                                                    <p className="mt-2 text-xs text-gray-500 font-medium">
+                                                        Fans only see the total
+                                                        price to improve
+                                                        conversion
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-gray-500 font-medium">
+                                                        Our fee is 19%. Uplift
+                                                        will show higher due to
+                                                        stripe / conversions to
+                                                        ensure you always
+                                                        receive 100% or slightly
+                                                        more.
+                                                    </p>
                                                 </div>
                                             )}
 
@@ -366,7 +478,9 @@ export default function Create({ auth, currencySymbol }) {
 
                                         {/* Category */}
                                         <div className="mb-0">
-                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">Category</label>
+                                            <label className="block font-black text-sm mb-2 uppercase tracking-wide text-gray-500">
+                                                Category
+                                            </label>
                                             <select
                                                 className="w-full border-2 border-black rounded-box-sm p-[18px] text-md focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 font-bold appearance-none cursor-pointer"
                                                 value={data.category}
@@ -378,7 +492,12 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                             >
                                                 {categories.map((cat) => (
-                                                    <option key={cat} value={cat}>{cat}</option>
+                                                    <option
+                                                        key={cat}
+                                                        value={cat}
+                                                    >
+                                                        {cat}
+                                                    </option>
                                                 ))}
                                             </select>
                                             <InputError
@@ -404,24 +523,32 @@ export default function Create({ auth, currencySymbol }) {
                                                         // for timed — fall back
                                                         // to a described promise.
                                                         reward:
-                                                            current.reward.type === "file"
-                                                                ? { ...current.reward, type: "message", file: null }
+                                                            current.reward
+                                                                .type === "file"
+                                                                ? {
+                                                                      ...current.reward,
+                                                                      type: "message",
+                                                                      file: null,
+                                                                  }
                                                                 : current.reward,
                                                     }))
                                                 }
                                                 className={`p-6 rounded-box border-2 border-black text-left transition-all ${
- data.type === "timed"
- ? "bg-blue-500 text-white translate-x-[-2px] translate-y-[-2px]"
- : "bg-white hover:bg-gray-50"
- }`}
+                                                    data.type === "timed"
+                                                        ? "bg-blue-500 text-white translate-x-[-2px] translate-y-[-2px]"
+                                                        : "bg-white hover:bg-gray-50"
+                                                }`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2">
-                                                    <Clock size={20} /> Timed / Manual
+                                                    <Clock size={20} /> Timed /
+                                                    Manual
                                                 </div>
                                                 <div
                                                     className={`text-sm font-bold ${data.type === "timed" ? "text-blue-100" : "text-gray-500"}`}
                                                 >
-                                                    Best for custom shoutouts or tasks. Funds are held until delivery.
+                                                    Best for custom shoutouts or
+                                                    tasks. Funds are held until
+                                                    delivery.
                                                 </div>
                                             </button>
 
@@ -431,18 +558,21 @@ export default function Create({ auth, currencySymbol }) {
                                                     setData("type", "instant")
                                                 }
                                                 className={`p-6 rounded-box border-2 border-black text-left transition-all ${
- data.type === "instant"
- ? "bg-[#FF007F] text-black translate-x-[-2px] translate-y-[-2px]"
- : "bg-white hover:bg-gray-50"
- }`}
+                                                    data.type === "instant"
+                                                        ? "bg-[#FF007F] text-black translate-x-[-2px] translate-y-[-2px]"
+                                                        : "bg-white hover:bg-gray-50"
+                                                }`}
                                             >
                                                 <div className="font-black text-xl uppercase mb-2 flex items-center gap-2">
-                                                    <Zap size={20} /> Instant Delivery
+                                                    <Zap size={20} /> Instant
+                                                    Delivery
                                                 </div>
                                                 <div
                                                     className={`text-sm font-bold ${data.type === "instant" ? "text-pink-100" : "text-gray-500"}`}
                                                 >
-                                                    Content is delivered immediately. Best for digital files or links.
+                                                    Content is delivered
+                                                    immediately. Best for
+                                                    digital files or links.
                                                 </div>
                                             </button>
                                         </div>
@@ -459,19 +589,34 @@ export default function Create({ auth, currencySymbol }) {
                                                     <button
                                                         key={tf.value}
                                                         type="button"
-                                                        onClick={() => setData("sla_hours", tf.value)}
+                                                        onClick={() =>
+                                                            setData(
+                                                                "sla_hours",
+                                                                tf.value,
+                                                            )
+                                                        }
                                                         className={`px-6 py-3 rounded-full border-2 border-black font-black transition-all ${
- data.sla_hours == tf.value
- ? "bg-blue-500 text-white -translate-y-1"
- : "bg-white hover:bg-blue-50"
- }`}
+                                                            data.sla_hours ==
+                                                            tf.value
+                                                                ? "bg-blue-500 text-white -translate-y-1"
+                                                                : "bg-white hover:bg-blue-50"
+                                                        }`}
                                                     >
                                                         {tf.label}
                                                     </button>
                                                 ))}
                                             </div>
                                             <p className="text-sm text-blue-800 mt-4 font-bold flex items-center gap-2">
-                                                <Clock size={16} /> You will have {timeframes.find(tf => tf.value === data.sla_hours)?.label || `${data.sla_hours}h`} to complete the task after purchase.
+                                                <Clock size={16} /> You will
+                                                have{" "}
+                                                {timeframes.find(
+                                                    (tf) =>
+                                                        tf.value ===
+                                                        data.sla_hours,
+                                                )?.label ||
+                                                    `${data.sla_hours}h`}{" "}
+                                                to complete the task after
+                                                purchase.
                                             </p>
                                             <InputError
                                                 message={errors.sla_hours}
@@ -483,7 +628,8 @@ export default function Create({ auth, currencySymbol }) {
                                     {/* What the buyer receives — one editor for every module. */}
                                     <div className="rounded-box border-[3px] border-black bg-pink-50 p-6 ">
                                         <p className="mb-4 flex items-center gap-2 text-lg font-black uppercase text-pink-900">
-                                            <FileUp className="text-[#FF007F]" /> What the buyer receives
+                                            <FileUp className="text-[#FF007F]" />{" "}
+                                            What the buyer receives
                                         </p>
                                         <p className="mb-5 text-sm font-bold text-pink-800">
                                             {data.type === "instant"
@@ -492,7 +638,9 @@ export default function Create({ auth, currencySymbol }) {
                                         </p>
                                         <RewardEditor
                                             value={data.reward}
-                                            onChange={(next) => setData("reward", next)}
+                                            onChange={(next) =>
+                                                setData("reward", next)
+                                            }
                                             ctxName="task-deliverable"
                                             errors={errors}
                                             // A timed task has no file yet — the
@@ -522,8 +670,17 @@ export default function Create({ auth, currencySymbol }) {
                                                     htmlFor="terms-checkbox"
                                                     className="cursor-pointer text-sm text-black font-black leading-tight flex flex-col gap-1"
                                                 >
-                                                    <span>PG-13 only. No sexual content. No custom requests outside these parameters.</span>
-                                                    <span className="text-red-600 text-xs">Failure to deliver may result in refunds or account action.</span>
+                                                    <span>
+                                                        PG-13 only. No sexual
+                                                        content. No custom
+                                                        requests outside these
+                                                        parameters.
+                                                    </span>
+                                                    <span className="text-red-600 text-xs">
+                                                        Failure to deliver may
+                                                        result in refunds or
+                                                        account action.
+                                                    </span>
                                                 </label>
                                             </div>
                                         </div>
@@ -534,7 +691,9 @@ export default function Create({ auth, currencySymbol }) {
                                         disabled={processing}
                                         className="border-2 border-black w-full bg-black text-white px-8 py-5 rounded-box-sm font-black text-xl uppercase hover:translate-x-[4px] hover:translate-y-[4px] transition-all disabled:opacity-50"
                                     >
-                                        {processing ? "Creating..." : "Continue to Summary"}
+                                        {processing
+                                            ? "Creating..."
+                                            : "Continue to Summary"}
                                     </button>
                                 </form>
                             </div>
