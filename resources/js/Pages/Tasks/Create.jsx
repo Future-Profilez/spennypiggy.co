@@ -14,21 +14,18 @@ import RewardEditor, {
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency, rates } = usePage().props;
-    console.log("Global Currency:", global_currency);
     const task = usePage().props?.task ?? null;
     const isEdit = Boolean(task);
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth.user.default_currency || 'GBP';
-    console.log("Default Currency:", defaultCurrency);
     const [showSummary, setShowSummary] = useState(false);
 
     // Calculate GBP conversion from current currency using existing rates
     const convertToGBP = (amount) => {
         if (!amount || defaultCurrency === 'GBP') return parseFloat(amount);
         const rate = rates?.[defaultCurrency?.toUpperCase()];
-        console.log(`Converting ${amount} ${defaultCurrency} to GBP at rate:`, rate);
         if (!rate) return null;
-        return (parseFloat(amount) * rate).toFixed(2);
+        return (parseFloat(amount) / rate).toFixed(2);
     };
 
     const categories = [
