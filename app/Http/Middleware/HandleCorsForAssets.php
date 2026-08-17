@@ -10,6 +10,25 @@ use Illuminate\Http\Response;
 class HandleCorsForAssets
 {
     /**
+     * 🚨 A SERVICE WORKER IS NOT A STATIC ASSET.
+     *
+     * This middleware runs AFTER the route, so its blanket `.js` rule below
+     * OVERWROTE the `Cache-Control: no-cache` the service-worker route sets on
+     * itself — the worker that decides push delivery and asset caching was being
+     * served with `max-age=31536000`. Browsers bypass the HTTP cache for a
+     * top-level worker script only once the cached copy is 24h old, so a deploy
+     * could sit a full day behind on every installed app, and any proxy in front
+     * would happily hold it for a year.
+     *
+     * These paths keep whatever cache header their own route decided.
+     */
+    private const NEVER_CACHE = [
+        'service-worker.js',
+        'new-service-worker.js',
+        'sw.js',
+    ];
+
+    /**
      * Handle an incoming request.
      *
      * @param  Closure(Request): (Response|RedirectResponse)  $next
@@ -21,6 +40,10 @@ class HandleCorsForAssets
 
         // Check if this is a request for font assets
         $path = $request->path();
+
+        if (in_array(ltrim($path, '/'), self::NEVER_CACHE, true)) {
+            return $response;
+        }
         if (preg_match('/\.(woff|woff2|eot|ttf|otf)$/i', $path)) {
             $response->headers->set('Access-Control-Allow-Origin', '*');
             $response->headers->set('Access-Control-Allow-Methods', 'GET, OPTIONS');

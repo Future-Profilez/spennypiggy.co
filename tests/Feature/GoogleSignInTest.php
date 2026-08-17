@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\Auth\GoogleController;
-use App\Models\AllowedDomain;
 use App\Models\GifterAddress;
 use App\Models\User;
 use App\Models\UserBackupCode;
@@ -138,34 +137,46 @@ class GoogleSignInTest extends TestCase
     }
 
     /**
-     * The domain allowlist holds six providers, so enforcing it on the Google path would refuse
-     * every Google Workspace address. Google has already proved the mailbox receives mail.
+     * A Google Workspace address is accepted on the Google path — Google has already proved the
+     * mailbox receives mail, so no domain check of ours needs to run at all.
      */
     public function test_a_workspace_domain_is_accepted_on_the_google_path(): void
     {
-        AllowedDomain::query()->delete();
-        AllowedDomain::create(['name' => 'gmail.com']);
-
-        $this->withSession($this->googleSession(['email' => 'priya@somecompany.com']))
+        $this->withSession($this->googleSession(['email' => 'priya@somecompany.test']))
             ->post('/register', $this->form(['username' => 'priyaworks']));
 
-        $this->assertDatabaseHas('users', ['email' => 'priya@somecompany.com']);
+        $this->assertDatabaseHas('users', ['email' => 'priya@somecompany.test']);
     }
 
-    /** …but the password path still enforces it. */
-    public function test_the_domain_allowlist_still_applies_without_google(): void
+    /**
+     * …and the domain policy is skipped there entirely, not merely satisfied. A disposable
+     * address is the sharpest test of that: the password path refuses it outright.
+     *
+     * ⚠️ REWRITTEN 16 Aug 2026. This asserted the old approved-list gate, and after that gate
+     * was replaced by `EmailDomainPolicy` it still passed — but only because `somecompany.com`
+     * happens to have no mail server today. It was a live DNS lookup masquerading as an
+     * assertion about our own code, and would have flipped to failing the day that domain
+     * gained an MX record.
+     */
+    public function test_the_domain_policy_is_skipped_on_the_google_path(): void
     {
-        AllowedDomain::query()->delete();
-        AllowedDomain::create(['name' => 'gmail.com']);
+        $this->withSession($this->googleSession(['email' => 'priya@mailinator.com']))
+            ->post('/register', $this->form(['username' => 'priyaworks']));
 
+        $this->assertDatabaseHas('users', ['email' => 'priya@mailinator.com']);
+    }
+
+    /** …but the password path refuses exactly that address. */
+    public function test_the_domain_policy_still_applies_without_google(): void
+    {
         $this->post('/register', $this->form([
-            'email' => 'priya@somecompany.com',
+            'email' => 'priya@mailinator.com',
             'password' => 'Spenny!2026x',
             'password_confirmation' => 'Spenny!2026x',
             'username' => 'priyaworks',
         ]))->assertSessionHasErrors('email');
 
-        $this->assertDatabaseMissing('users', ['email' => 'priya@somecompany.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'priya@mailinator.com']);
     }
 
     /**

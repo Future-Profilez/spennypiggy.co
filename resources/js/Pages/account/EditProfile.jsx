@@ -14,6 +14,16 @@ import { Switch } from "@headlessui/react";
 import { Link } from "@inertiajs/react";
 import ManagePasskey from "@/Components/ManagePasskey";
 import CoverBannerPicker from "@/Components/CoverBannerPicker";
+import BadgePicker, {
+    PrideBadgePicker,
+} from "@/Components/Badges/BadgePicker";
+import {
+    INTEREST_GROUPS,
+    MAX_INTERESTS,
+    MAX_PRIDE,
+    badgeLabels,
+    readBadges,
+} from "@/constants/badges";
 
 export default function EditProfile({
     profilepage,
@@ -36,6 +46,7 @@ export default function EditProfile({
         ...(user ?? {}),
         date_of_birth: user?.date_of_birth ?? auth?.user?.date_of_birth,
         creator_category: user?.creator_category ?? auth?.user?.creator_category,
+        pride_badges: user?.pride_badges ?? auth?.user?.pride_badges,
         country: user?.country ?? auth?.user?.country,
         min_surprise_amount: user?.min_surprise_amount ?? auth?.user?.min_surprise_amount,
         social_handle: user?.social_handle ?? auth?.user?.social_handle,
@@ -79,11 +90,11 @@ export default function EditProfile({
         cover: null,
         gender: profileUser?.gender || "he",
         date_of_birth: formatDate(profileUser?.date_of_birth),
-        creator_category: profileUser?.creator_category
-            ? typeof profileUser.creator_category === "string"
-                ? JSON.parse(profileUser.creator_category)
-                : profileUser.creator_category
-            : [],
+        // readBadges() takes either shape the column has held and drops
+        // anything not on the current list — a bare JSON.parse here threw on a
+        // malformed value and took the whole page with it.
+        creator_category: readBadges(profileUser?.creator_category),
+        pride_badges: readBadges(profileUser?.pride_badges, { pride: true }),
         country: profileUser?.country || "",
         social_image: null,
         min_surprise_amount: profileUser?.min_surprise_amount || 5,
@@ -101,13 +112,10 @@ export default function EditProfile({
             "date_of_birth",
             formatDate(profileUser?.date_of_birth),
         );
+        setData("creator_category", readBadges(profileUser?.creator_category));
         setData(
-            "creator_category",
-            profileUser?.creator_category
-                ? typeof profileUser.creator_category === "string"
-                    ? JSON.parse(profileUser.creator_category)
-                    : profileUser.creator_category
-                : [],
+            "pride_badges",
+            readBadges(profileUser?.pride_badges, { pride: true }),
         );
         setData("country", profileUser?.country || "");
         setData("min_surprise_amount", profileUser?.min_surprise_amount || 5);
@@ -120,6 +128,7 @@ export default function EditProfile({
         profileUser.gender,
         profileUser.date_of_birth,
         profileUser.creator_category,
+        profileUser.pride_badges,
         profileUser.country,
         profileUser.min_surprise_amount,
         profileUser.social_handle,
@@ -140,19 +149,15 @@ export default function EditProfile({
         const cardUsername = data?.username || user?.username || "";
 
         // The chip answers "what do I get" — the old card said nothing about it.
-        const rawCats = data?.creator_category;
-        const catList = Array.isArray(rawCats)
-            ? rawCats
-            : typeof rawCats === "string" && rawCats
-              ? (() => {
-                    try {
-                        const parsed = JSON.parse(rawCats);
-                        return Array.isArray(parsed) ? parsed : [];
-                    } catch {
-                        return [];
-                    }
-                })()
-              : [];
+        //
+        // 🚨 LABELS, resolved from the slugs — the field holds "video-creator"
+        // now, and this string is printed onto the share card every creator
+        // posts to their own socials.
+        //
+        // 🚨 INTEREST badges only. This card is the most public asset the
+        // platform generates and doubles as the profile's og:image; pride
+        // badges are opt-in identity data and never travel on it.
+        const catList = badgeLabels(data?.creator_category);
         // Two categories, not three. Three joined with " · " runs the pill to the
         // card's right edge and the 10px uppercase text reads as a cramped strip.
         const cardCategory = catList.length
@@ -395,53 +400,55 @@ export default function EditProfile({
     };
 
     const [username, setUsername] = useState(user?.username);
+    /* -------------------------------- badges ------------------------------ */
+
+    // ⚠️ The 17-item list that used to live here was a SECOND copy of the one in
+    // `Auth/register/constants.js`, so signup and this page could offer
+    // different things. Both now read `@/constants/badges`, which mirrors
+    // `App\Support\Badges` and is asserted in step with it by test.
     const [profileTags, setProfileTags] = useState([]);
+    const [prideTags, setPrideTags] = useState([]);
+
     useEffect(() => {
-        if (user?.creator_category) {
-            try {
-                // Handle both array and string format from DB
-                const categories =
-                    typeof user.creator_category === "string"
-                        ? JSON.parse(user.creator_category)
-                        : user.creator_category;
-                setProfileTags(Array.isArray(categories) ? categories : []);
-            } catch (e) {
-                console.error("Error parsing creator tags", e);
-                setProfileTags([]);
-            }
-        }
+        // readBadges() takes the column in either shape — it has held both a
+        // JSON string and a real array depending on which write path last
+        // touched it — and drops anything not on the current list. Legacy label
+        // values ("Video Creator") slugify onto their new slug, so a creator's
+        // existing choice survives with no backfill.
+        setProfileTags(readBadges(user?.creator_category));
+        setPrideTags(readBadges(user?.pride_badges, { pride: true }));
     }, [user]);
 
-    const handleProfileTags = (e) => {
-        const value = e.target.value;
-        setProfileTags((prevTags) => {
-            const newTags = prevTags.includes(value)
-                ? prevTags.filter((tag) => tag !== value)
-                : [...prevTags, value];
-            setData("creator_category", newTags);
-            return newTags;
+    const makeBadgeToggle = (setSelected, field, max) => (slug) => {
+        setSelected((prev) => {
+            const next = prev.includes(slug)
+                ? prev.filter((s) => s !== slug)
+                : prev.length >= max
+                  ? prev
+                  : [...prev, slug];
+            setData(field, next);
+            return next;
         });
     };
 
-    const creatortypes = [
-        { label: "Artist", value: "Artist" },
-        { label: "Activist", value: "Activist" },
-        { label: "DJ", value: "DJ" },
-        { label: "Beauty Creator", value: "Beauty Creator" },
-        { label: "Dancer", value: "Dancer" },
-        { label: "Developer", value: "Developer" },
-        { label: "Cosplay Creator", value: "Cosplay Creator" },
-        { label: "Education Creator", value: "Education Creator" },
-        { label: "Fashionista", value: "Fashionista" },
-        { label: "Gamer", value: "Gamer" },
-        { label: "Gym Bunny", value: "Gym Bunny" },
-        { label: "Musician", value: "Musician" },
-        { label: "Model", value: "Model" },
-        { label: "Podcaster", value: "Podcaster" },
-        { label: "Streamer", value: "Streamer" },
-        { label: "Video Creator", value: "Video Creator" },
-        { label: "Writer", value: "Writer" },
-    ];
+    const makeBadgeClear = (setSelected, field) => () => {
+        setSelected([]);
+        setData(field, []);
+    };
+
+    const handleProfileTags = makeBadgeToggle(
+        setProfileTags,
+        "creator_category",
+        MAX_INTERESTS,
+    );
+    const clearProfileTags = makeBadgeClear(setProfileTags, "creator_category");
+
+    const handlePrideTags = makeBadgeToggle(
+        setPrideTags,
+        "pride_badges",
+        MAX_PRIDE,
+    );
+    const clearPrideTags = makeBadgeClear(setPrideTags, "pride_badges");
 
     const generateSocialImage = async () => {
         const avatarToUse = localAvatar || user?.avatar;
@@ -1064,56 +1071,33 @@ export default function EditProfile({
                                 <ul>
                                     {user?.role === 1 && (
                                         <>
+                                            {/* One picker, shared with signup —
+                                                the list, the caps and the
+                                                selected styling all come from
+                                                the component so this page and
+                                                the registration step cannot
+                                                disagree about either set. */}
                                             <li className="mb-6">
-                                                <label className="block !text-lg font-medium !text-black mb-3">
-                                                    Profile Tags (Creator)
-                                                </label>
-                                                <div className="flex flex-wrap gap-3">
-                                                    {creatortypes.map(
-                                                        (s, index) => {
-                                                            const isSelected =
-                                                                profileTags.includes(
-                                                                    s.value,
-                                                                );
-                                                            return (
-                                                                <div
-                                                                    key={
-                                                                        s.value
-                                                                    }
-                                                                    className="relative"
-                                                                >
-                                                                    <input
-                                                                        id={`types-${index}`}
-                                                                        type="checkbox"
-                                                                        value={
-                                                                            s.value
-                                                                        }
-                                                                        className="hidden"
-                                                                        onChange={
-                                                                            handleProfileTags
-                                                                        }
-                                                                        checked={
-                                                                            isSelected
-                                                                        }
-                                                                    />
-                                                                    <label
-                                                                        htmlFor={`types-${index}`}
- className={`block px-4 py-2 text-normal rounded-full font-medium cursor-pointer min-w-[50px] !text-center transition-all duration-300 border 
-                                                                        ${
-                                                                            isSelected
- ? "bg-pink-600 border-[#FF007F] !text-white "
-                                                                                : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-50"
-                                                                        }`}
-                                                                    >
-                                                                        {
-                                                                            s.label
-                                                                        }
-                                                                    </label>
-                                                                </div>
-                                                            );
-                                                        },
-                                                    )}
-                                                </div>
+                                                <BadgePicker
+                                                    title="Your badges"
+                                                    hint="How supporters find you."
+                                                    groups={INTEREST_GROUPS}
+                                                    selected={profileTags}
+                                                    onToggle={handleProfileTags}
+                                                    onClear={clearProfileTags}
+                                                    max={MAX_INTERESTS}
+                                                />
+                                            </li>
+
+                                            <li className="mb-6">
+                                                <PrideBadgePicker
+                                                    title="Pride badges"
+                                                    hint={`Optional. Shown on your profile, and never used to advertise you. Up to ${MAX_PRIDE}.`}
+                                                    selected={prideTags}
+                                                    onToggle={handlePrideTags}
+                                                    onClear={clearPrideTags}
+                                                    max={MAX_PRIDE}
+                                                />
                                             </li>
 
                                             {/* <li className="mb-6">

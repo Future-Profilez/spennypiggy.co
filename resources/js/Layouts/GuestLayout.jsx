@@ -15,6 +15,10 @@ export default function Guest({children, auth, className}) {
     const pageprops = usePage().props;
     return <div className={`guest-layout ${className || ''}`}>
         <Header auth={auth ||''} />
+        {/* ⚠️ IN FLOW, and above every other strip — it is a banner now, not a
+            modal, so its position in the tree IS its position on the page. It
+            used to sit below `<main>` because a fixed scrim does not care. */}
+        <PwaInstallPrompt />
         <OnboardingNudge />
         <main >
             <NetworkStatusBanner />
@@ -24,7 +28,6 @@ export default function Guest({children, auth, className}) {
         <Footer auth={auth ||''} />
         <BrandToaster />
         <BottomBar />
-        <PwaInstallPrompt />
         <MaintenanceBanner />
         <FlashMessenger />
         <TermsUpdatePopup />

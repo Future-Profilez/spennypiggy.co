@@ -75,7 +75,7 @@ class VisitTrackingTest extends TestCase
         // "reserved" paths, which missed a hundred real routes — /creators,
         // /earnings, /account — and inflated the supporter funnel's first stage.
         // Now the matched route name decides, so this can never drift again.
-        foreach (['leaderboard', 'creators', 'earnings', 'account', 'login'] as $path) {
+        foreach (['leaderboard', 'earnings', 'account', 'login'] as $path) {
             $request = $this->request($path);
             $route = app('router')->getRoutes()->match(
                 Request::create('/'.$path, 'GET')

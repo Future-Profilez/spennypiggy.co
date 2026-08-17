@@ -16,6 +16,7 @@ import ReviewStep from "./register/ReviewStep";
 import SignupPausedPanel from "./register/SignupPausedPanel";
 import {
     MAX_CATEGORIES,
+    MAX_PRIDE,
     ROLE_CREATOR,
     ROLE_SUPPORTER,
     accentFor,
@@ -82,7 +83,11 @@ export default function Register() {
         password_confirmation: "",
         gender: "they",
         role: startsAsCreator ? ROLE_CREATOR : ROLE_SUPPORTER,
-        creator_category: "",
+        // Arrays, not the JSON string this used to post. The server validates
+        // both against App\Support\Badges — before that it wrote whatever
+        // arrived straight into a column two SEO builders print.
+        creator_category: [],
+        pride_badges: [],
         promo: "",
         country: "",
         country_code: "",
@@ -320,12 +325,19 @@ export default function Register() {
         setData((prev) => ({
             ...prev,
             role: nextRole,
-            // A supporter has no categories and no creator acknowledgement;
-            // clear them so a change of mind can't submit a stale value.
+            // A supporter has no badges and no creator acknowledgement; clear
+            // them so a change of mind can't submit a stale value.
             creator_category:
-                nextRole === ROLE_CREATOR ? prev.creator_category : "",
+                nextRole === ROLE_CREATOR ? prev.creator_category : [],
+            pride_badges: nextRole === ROLE_CREATOR ? prev.pride_badges : [],
             creator_email_receipt_ack: false,
         }));
+
+        if (nextRole !== ROLE_CREATOR) {
+            setCategories([]);
+            setPrideBadges([]);
+        }
+
         setStepKey("identity");
     };
 
@@ -383,19 +395,40 @@ export default function Register() {
 
     /* ------------------------------ categories ---------------------------- */
 
-    const [categories, setCategories] = useState([]);
+    /* -------------------------------- badges ------------------------------ */
 
-    const toggleCategory = (value) => {
-        setCategories((prev) => {
-            const next = prev.includes(value)
-                ? prev.filter((c) => c !== value)
-                : prev.length >= MAX_CATEGORIES
+    const [categories, setCategories] = useState([]);
+    const [prideBadges, setPrideBadges] = useState([]);
+
+    // One toggle for both sets — the caps differ but nothing else does, and two
+    // near-identical copies is how the interest list came to disagree with
+    // itself in the first place.
+    const makeToggle = (setSelected, field, max) => (slug) => {
+        setSelected((prev) => {
+            const next = prev.includes(slug)
+                ? prev.filter((s) => s !== slug)
+                : prev.length >= max
                   ? prev
-                  : [...prev, value];
-            setData("creator_category", JSON.stringify(next));
+                  : [...prev, slug];
+            setData(field, next);
             return next;
         });
     };
+
+    const makeClear = (setSelected, field) => () => {
+        setSelected([]);
+        setData(field, []);
+    };
+
+    const toggleCategory = makeToggle(
+        setCategories,
+        "creator_category",
+        MAX_CATEGORIES,
+    );
+    const clearCategories = makeClear(setCategories, "creator_category");
+
+    const togglePride = makeToggle(setPrideBadges, "pride_badges", MAX_PRIDE);
+    const clearPride = makeClear(setPrideBadges, "pride_badges");
 
     /* ------------------------------- referral ----------------------------- */
 
@@ -785,6 +818,10 @@ export default function Register() {
                             <CreatorProfileStep
                                 categories={categories}
                                 onToggleCategory={toggleCategory}
+                                onClearCategories={clearCategories}
+                                prideBadges={prideBadges}
+                                onTogglePride={togglePride}
+                                onClearPride={clearPride}
                                 referral={referral}
                                 referralLocked={!!referralFromUrl}
                                 onReferralChange={setReferral}

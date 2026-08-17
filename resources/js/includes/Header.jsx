@@ -49,6 +49,17 @@ import { Calendar, Shield as ShieldIcon, PiggyBank, UserX, Menu as MenuIcon, X a
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
 
+/*
+ * How long after the drawer last SCROLLED a click is swallowed.
+ *
+ * ⚠️ Long enough to cover the tap that arrests iOS momentum, short enough that
+ * someone who waits for the list to settle and then taps is never refused —
+ * a menu whose links stop working reads as a far worse bug than the one this
+ * fixes. Measured against real momentum: a flick settles well inside 300ms of
+ * its last `scroll` event.
+ */
+const SCROLL_CLICK_GUARD_MS = 300;
+
 export default function Header({ classMagicword }) {
     const { global_currency, auth } = usePage().props;
     const { url } = usePage();
@@ -101,6 +112,47 @@ export default function Header({ classMagicword }) {
 
         if (deltaX > 8 || deltaY > 8) {
             suppressMenuClickUntilRef.current = Date.now() + 350;
+        }
+    }, []);
+
+    /*
+     * 🚨 MOMENTUM SCROLLING FIRES NO `touchmove`, so the guard above cannot see
+     * it. On iOS the list keeps travelling after the finger lifts, and the tap
+     * that ARRESTS that momentum is a fresh touchstart/touchend with zero
+     * movement — indistinguishable from a deliberate tap on whatever happens to
+     * be under the thumb. That is the "menu scroll karo aur koi bhi link khul
+     * jaata hai" report, and it is why the drawer needed a second signal.
+     *
+     * `scroll` DOES fire throughout momentum, so "the list moved within the
+     * last SCROLL_CLICK_GUARD_MS" is the honest test. Wait for it to settle and
+     * a real tap still works; tap to stop it and nothing opens.
+     */
+    const lastMenuScrollAtRef = useRef(0);
+    const handleMenuScroll = useCallback(() => {
+        lastMenuScrollAtRef.current = Date.now();
+    }, []);
+
+    /*
+     * 🚨 CAPTURE PHASE, ON THE SCROLL CONTAINER — never per link. The two
+     * per-link guards this replaces covered `NavLinkWithIcon` and the profile
+     * row; the OTHER ~20 rows in this drawer are plain `onClick={toggleClass}`
+     * and were completely unguarded, so a scroll landed on whichever one it
+     * stopped over. A capture handler on the scroller intercepts every click
+     * inside it, including links added later, so the rule cannot drift out of
+     * step with the markup again.
+     *
+     * ⚠️ It must NOT wrap the close button or the header controls — those sit
+     * OUTSIDE this container, and suppressing a close tap right after a scroll
+     * would leave the drawer feeling stuck.
+     */
+    const swallowMenuClick = useCallback((e) => {
+        const now = Date.now();
+        const scrolling =
+            now - lastMenuScrollAtRef.current < SCROLL_CLICK_GUARD_MS;
+
+        if (now < suppressMenuClickUntilRef.current || scrolling) {
+            e.preventDefault();
+            e.stopPropagation();
         }
     }, []);
 
@@ -235,7 +287,17 @@ export default function Header({ classMagicword }) {
                 already, and an emoji beside a text link to the same place was the
                 duplication that made the left group look like three unrelated
                 things. No destination was removed. */}
-            <div className="headermain fixed top-0 left-0 w-full z-[100] py-[17px] bg-[#FF007F]">
+            {/* ⚠️ `top` is a VARIABLE, not 0. The install banner is a full-bleed
+                bar ABOVE this header (client direction, 16 Aug 2026), so when it
+                is on screen the header has to start below it. The banner sets
+                `--sp-topbanner-h` from its own measured height and clears it on
+                dismiss; with no banner the fallback is 0 and this is byte-for-byte
+                the old behaviour. Never type the banner's height here — it grows
+                when its steps expand. */}
+            <div
+                className="headermain fixed left-0 w-full z-[100] py-[17px] bg-[#FF007F]"
+                style={{ top: 'var(--sp-topbanner-h, 0px)' }}
+            >
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center gap-3">
                         {/* ── Zone 1 · brand ── */}
@@ -402,10 +464,15 @@ export default function Header({ classMagicword }) {
             </div>
             {/* Clears the fixed header. ⚠️ It must include the SAME safe-area inset the
                 header pads by, or in an installed iOS app the first content sits
-                under the bar by exactly the height of the status bar. */}
+                under the bar by exactly the height of the status bar.
+                ⚠️ And the install banner's height, for the same reason — the header
+                moved down by it, so everything below has to as well. */}
             <div
                 className="h-[67px] sm:h-[67px] md:h-[80px] lg:h-[80px] xl:h-[80px]"
-                style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+                style={{
+                    marginTop:
+                        'calc(env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px))',
+                }}
             ></div>
 
             {isActive ? (
@@ -447,6 +514,8 @@ export default function Header({ classMagicword }) {
                         className="overflow-y-auto overflow-x-hidden flex-grow"
                         onTouchStart={handleMenuTouchStart}
                         onTouchMove={handleMenuTouchMove}
+                        onScroll={handleMenuScroll}
+                        onClickCapture={swallowMenuClick}
                     >
                         {/* Tracks the close button, which is offset by the same
                             inset — without it the profile row slides under the

@@ -12,37 +12,23 @@
 export const ROLE_CREATOR = 1;
 export const ROLE_SUPPORTER = 0;
 
-/** Category groups. 17 flat chips gave a new creator no way in. */
-export const CREATOR_CATEGORY_GROUPS = [
-    {
-        group: "Performing",
-        items: ["Musician", "DJ", "Dancer", "Podcaster", "Streamer"],
-    },
-    {
-        group: "Making",
-        items: ["Artist", "Writer", "Video Creator", "Developer"],
-    },
-    {
-        group: "Style & body",
-        items: [
-            "Beauty Creator",
-            "Fashionista",
-            "Model",
-            "Cosplay Creator",
-            "Gym Bunny",
-        ],
-    },
-    {
-        group: "Community",
-        items: ["Gamer", "Education Creator", "Activist"],
-    },
-];
-
-export const CREATOR_CATEGORIES = CREATOR_CATEGORY_GROUPS.flatMap(
-    (g) => g.items,
-);
-
-export const MAX_CATEGORIES = 3;
+/**
+ * Badges.
+ *
+ * ⚠️ The list used to live HERE as 17 label strings, and a second copy of the
+ * same 17 lived in `Pages/account/EditProfile.jsx` — so signup and the account
+ * page could offer different things. Both now read `@/constants/badges`, which
+ * mirrors `App\Support\Badges` and is asserted in step with it by test.
+ *
+ * Re-exported under the old names so nothing outside this folder had to change.
+ */
+export {
+    INTEREST_GROUPS as CREATOR_CATEGORY_GROUPS,
+    INTEREST_BADGES as CREATOR_CATEGORIES,
+    MAX_INTERESTS as MAX_CATEGORIES,
+    MAX_PRIDE,
+    PRIDE_BADGES,
+} from "@/constants/badges";
 
 /**
  * Steps per role. `key` drives which screen renders; `label` is what the rail

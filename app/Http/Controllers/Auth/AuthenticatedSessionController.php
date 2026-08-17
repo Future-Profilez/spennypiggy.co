@@ -23,6 +23,7 @@ use App\SeoMeta;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
+use App\Support\Badges;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -640,8 +641,19 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
         $keywords = "{$user->name}, {$user->username}, creator, exclusive content, memberships, paid requests, Spenny Piggy";
-        if (! empty($user->creator_category)) {
-            $keywords .= ", {$user->creator_category}";
+
+        // Same rule and same reason as SeoTemplateService::setCreatorMeta():
+        // the column is JSON, so the old concatenation printed the literal
+        // `["Musician","Artist"]` into meta keywords.
+        //
+        // 🚨 INTEREST badges only — `users.pride_badges` is special-category
+        // data and never enters a meta tag. This is the copy every unfurler
+        // actually reads, so gating the service alone would not have been
+        // enough (the same trap getCreatorOgImage was in).
+        $badges = Badges::labels($user->creator_category);
+
+        if ($badges !== []) {
+            $keywords .= ', '.implode(', ', $badges);
         }
         if ($isWishPage && $wish) {
             $keywords = "{$wish->wishname}, exclusive content, {$user->name}, {$user->username}, Spenny Piggy";

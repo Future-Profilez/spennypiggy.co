@@ -64,8 +64,15 @@
                                        border-radius:50px;-webkit-border-radius:50px;">
                                 {{-- Signed URL built by the job. `env('APP_URL')` is NULL once the
                                      config is cached on deploy, and an unsigned `/user/{uuid}`
-                                     link let anyone verify any account's address. --}}
-                                <a href="{{ $data['verify_url'] ?? rtrim(config('app.url'), '/').'/user/'.$data['uuid'] }}"
+                                     link let anyone verify any account's address.
+
+                                     🚨 The old fallback built that unsigned URL by hand, so
+                                     whenever `verify_url` was absent the button shipped a link
+                                     `hasValidSignature()` REFUSES — a guaranteed "invalid or
+                                     expired" for a link the platform had just minted. The
+                                     fallback is the login page: a working page beats a
+                                     verification button that cannot work. --}}
+                                <a href="{{ $data['verify_url'] ?? route('login') }}"
                                     style="display:inline-block;font-family:'Outfit',Arial,sans-serif;font-weight:700;
                                            font-size:15px;color:#ffffff;text-decoration:none;padding:14px 38px;
                                            border-radius:50px;-webkit-border-radius:50px;">

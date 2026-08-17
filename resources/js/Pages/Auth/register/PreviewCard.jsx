@@ -1,3 +1,4 @@
+import { badgeFor } from "@/constants/badges";
 import { ROLE_CREATOR, accentFor } from "./constants";
 
 /**
@@ -79,16 +80,26 @@ export default function PreviewCard({ role, name, username, categories = [] }) {
                     </div>
                 </div>
 
+                {/* ⚠️ `categories` holds SLUGS now, not labels — resolve
+                    through badgeFor() or this renders "video-creator". Pride
+                    badges are deliberately NOT shown here: this card is the
+                    public preview, and that set is opt-in identity data. */}
                 {isCreator && categories.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5 border-t-2 border-dashed border-black/10 pt-3">
-                        {categories.map((c) => (
-                            <span
-                                key={c}
-                                className="rounded-full border-2 border-black bg-[#E6EA7B] px-2.5 py-0.5 text-xs font-semibold text-black"
-                            >
-                                {c}
-                            </span>
-                        ))}
+                        {categories.map((slug) => {
+                            const badge = badgeFor(slug);
+                            if (!badge) return null;
+
+                            return (
+                                <span
+                                    key={slug}
+                                    className="flex items-center gap-1 rounded-full border-2 border-black bg-[#E6EA7B] px-2.5 py-0.5 text-xs font-semibold text-black"
+                                >
+                                    <span aria-hidden="true">{badge.emoji}</span>
+                                    {badge.label}
+                                </span>
+                            );
+                        })}
                     </div>
                 )}
             </div>

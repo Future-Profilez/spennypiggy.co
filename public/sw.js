@@ -255,43 +255,13 @@ workbox.routing.setCatchHandler(async ({ request }) => {
 
 // ================================================================
 // PUSH NOTIFICATIONS
+//
+// 🚨 They live in `resources/proxy/sw-push.js`, which `scripts/build-sw.js`
+// PREPENDS to this file's build output — deliberately ABOVE the CDN
+// `importScripts` on line 2, because a failed import aborts evaluation of the
+// whole script and would take push down with the caching. Do not move them back
+// here.
 // ================================================================
-
-self.addEventListener('push', event => {
-  const options = {
-    body: event.data ? event.data.text() : 'No payload',
-    icon: '/images/icons/icon-192x192.png',
-    badge: '/images/icons/icon-72x72.png',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: '2'
-    },
-    actions: [
-      {
-        action: 'explore',
-        title: 'View',
-        icon: '/images/icons/checkmark.png'
-      },
-      {
-        action: 'close',
-        title: 'Close',
-        icon: '/images/icons/xmark.png'
-      },
-    ]
-  };
-  event.waitUntil(
-    self.registration.showNotification('SpennyPiggy', options)
-  );
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  if (event.action === 'explore') {
-    event.waitUntil(clients.openWindow('/'));
-  }
-});
 
 // ================================================================
 // CACHE MANAGEMENT

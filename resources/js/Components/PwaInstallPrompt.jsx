@@ -1,342 +1,441 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-export default function PwaInstallPrompt() {
-  const [visible, setVisible] = useState(false);
-  const [browserType, setBrowserType] = useState('');
-  const [showChromeHelp, setShowChromeHelp] = useState(false);
-  const deferredPromptRef = useRef(null);
+/**
+ * The install offer, as a BANNER at the top of the page — never a modal.
+ *
+ * 🚨 What this replaced was a full-screen `bg-black/40` scrim at
+ * `z-[9999999999]` centred over the homepage `<h1>`, plus a SECOND modal for
+ * the Chrome instructions. It interrupted a visitor to ask them to install an
+ * app for a product they were still reading about, and on the homepage it
+ * landed while the cookie bar was also up. A banner asks the same question and
+ * costs nothing to ignore, which is the whole reason to prefer it (client
+ * direction, 16 Aug 2026).
+ *
+ * ⚠️ Both modals are gone, including the instruction one. A "banner instead of
+ * a popup" that opens a popup the moment you press its only button has not
+ * changed anything — so the steps EXPAND INSIDE the banner.
+ *
+ * ⚠️ It renders IN FLOW, immediately, as the first thing under the fixed
+ * header. Two consequences, both deliberate:
+ *   · it scrolls away with the page rather than following the reader, so it
+ *     cannot cover a control the way a fixed strip can;
+ *   · it is decided synchronously on first render rather than on a timer, so
+ *     it paints with the page instead of pushing the content down 3s later —
+ *     a banner that arrives late is a layout shift under the reader's thumb.
+ */
 
-  const getLastShownDate = () => {
+/**
+ * ⚠️ A first-time visitor is NEVER offered the app. They have not been told
+ * what the product is yet, and visit 1 is also when the cookie bar is dealt
+ * with. The marker IS the gate: visit 1 records and shows nothing, visit 2
+ * onward is eligible. Deliberately not `sessionStorage` — a reload is not a
+ * return visit.
+ */
+const RETURN_VISIT_KEY = "pwa_install_seen_site";
+const LAST_SHOWN_KEY = "pwa_install_last_shown";
+const SHOW_AGAIN_DAYS = 30;
+
+function readLastShown() {
     try {
-      const lastShown = localStorage.getItem('pwa_install_last_shown');
-      return lastShown ? new Date(lastShown) : null;
-    } catch (error) {
-      console.error('Error reading PWA install date from localStorage:', error);
-      return null;
+        const raw = localStorage.getItem(LAST_SHOWN_KEY);
+        return raw ? new Date(raw) : null;
+    } catch {
+        return null;
     }
-  };
-
-  const setLastShownDate = () => {
-    try {
-      localStorage.setItem('pwa_install_last_shown', new Date().toISOString());
-    } catch (error) {
-      console.error('Error saving PWA install date to localStorage:', error);
-    }
-  };
-
-  /**
-   * ⚠️ A first-time visitor is NEVER prompted. Measured on the live homepage: the
-   * prompt is a full-screen `bg-black/40` scrim at z-[9999999999] centred over the
-   * `<h1>`, and it lands while the cookie bar still covers the trust points — so a
-   * first-time visitor met three overlays at once and could not read the pitch. It
-   * also asks someone to install an app for a product they have not been told about.
-   *
-   * The marker IS the gate: visit 1 records and shows nothing, visit 2 onward is
-   * eligible. Cookie consent is dealt with on visit 1, so the two never stack.
-   * Deliberately not `sessionStorage` — a reload is not a return visit.
-   */
-  const RETURN_VISIT_KEY = 'pwa_install_seen_site';
-
-  // ⚠️ Resolved ONCE per mount, into a ref. `shouldShowPrompt` is called from two
-  // places (the 3s timer and `beforeinstallprompt`), and the read below also WRITES
-  // the marker — so evaluating it per call would answer "first visit" the first time
-  // and "returning" the second, showing the prompt on the very visit it must not.
-  const isReturningRef = useRef(null);
-  if (isReturningRef.current === null) {
-    try {
-      isReturningRef.current = Boolean(localStorage.getItem(RETURN_VISIT_KEY));
-      if (!isReturningRef.current) {
-        localStorage.setItem(RETURN_VISIT_KEY, new Date().toISOString());
-      }
-    } catch (error) {
-      // Storage blocked (Safari private mode, hardened profiles) throws
-      // SecurityError. Fail closed: with no marker we cannot prove this is a
-      // return visit, and a wrongly-suppressed prompt costs far less than a
-      // modal over the headline.
-      isReturningRef.current = false;
-    }
-  }
-
-  const shouldShowPrompt = () => {
-    if (!isReturningRef.current) return false;
-
-    const lastShown = getLastShownDate();
-    if (!lastShown) return true; // Returning, never prompted before
-
-    const now = new Date();
-    const daysSinceShown = (now - lastShown) / (1000 * 60 * 60 * 24);
-    return daysSinceShown >= 30; // Show if 30+ days have passed
-  };
-
-  useEffect(() => {
-    // Detect browser type
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edge');
-    const isEdge = userAgent.includes('edge');
-    const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
-    const isIOS = /iphone|ipad|ipod/.test(userAgent);
-    
-    if (isChrome) setBrowserType('chrome');
-    else if (isEdge) setBrowserType('edge');
-    else if (isSafari || isIOS) setBrowserType('safari');
-    else setBrowserType('other');
-
-    // Show popup after 3 seconds, but only if enough time has passed
-    const timer = setTimeout(() => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      if (!isStandalone && shouldShowPrompt()) {
-        setVisible(true);
-      }
-    }, 3000);
-
-    // Listen for beforeinstallprompt (Chrome/Edge)
-    const onBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      deferredPromptRef.current = e;
-      
-      // Show the custom PWA prompt immediately when the event fires
-      // instead of waiting for the 3-second timer
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      if (!isStandalone && shouldShowPrompt()) {
-        setVisible(true);
-      }
-    };
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-    
-    // Debug utilities for development/testing
-    window.PwaPromptDebug = {
-      getLastShownDate: () => {
-        const date = getLastShownDate();
-        return date ? date.toISOString() : null;
-      },
-      getDaysSinceShown: () => {
-        const lastShown = getLastShownDate();
-        if (!lastShown) return 'Never shown';
-        const now = new Date();
-        const daysSinceShown = (now - lastShown) / (1000 * 60 * 60 * 24);
-        return Math.round(daysSinceShown * 100) / 100; // Round to 2 decimal places
-      },
-      shouldShow: () => shouldShowPrompt(),
-      resetTimer: () => {
-        try {
-          localStorage.removeItem('pwa_install_last_shown');
-        } catch (error) {
-          console.error('Error resetting PWA timer:', error);
-        }
-      },
-      forceShow: () => {
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        if (!isStandalone) {
-          setVisible(true);
-        } else {
-          console.log('❌ Cannot show prompt - app is already installed');
-        }
-      },
-      checkInstallCapability: () => {
-        if (deferredPromptRef.current) {
-          console.warn('✅ Native installation should work!');
-        } else {
-          console.warn('⚠️ No native install prompt - will show instructions');
-        }
-      },
-      testInstall: async () => {
-        if (deferredPromptRef.current) {
-          try {
-            await deferredPromptRef.current.prompt();
-            const { outcome } = await deferredPromptRef.current.userChoice;
-          } catch (error) {
-            console.error('Test install failed:', error);
-          }
-        } else {
-          console.log('❌ No deferred prompt available for testing');
-        }
-      }
-    };
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-      delete window.PwaPromptDebug;
-    };
-  }, []);
-
-  // Also hide the prompt if the app gets installed via any means
-  useEffect(() => {
-    const onAppInstalled = () => {
-      setLastShownDate();
-      setVisible(false);
-      setShowChromeHelp(false);
-    };
-
-    window.addEventListener('appinstalled', onAppInstalled);
-    return () => window.removeEventListener('appinstalled', onAppInstalled);
-  }, []);
-
-  const handleInstall = async () => {
-    if (browserType === 'chrome' || browserType === 'edge') {
-      const dp = deferredPromptRef.current;
-      
-      if (dp) {
-        try {
-          await dp.prompt();
-          const { outcome } = await dp.userChoice;
-          setLastShownDate();
-          setVisible(false);
-          deferredPromptRef.current = null;
-          return;
-        } catch (err) {
-          console.error('Native PWA install failed:', err);
-        }
-      }
-      
-      setLastShownDate(); // Track that we showed instructions
-      setShowChromeHelp(true);
-      return;
-    }
-    
-    // For Safari, show instructions immediately
-    if (browserType === 'safari') {
-      setLastShownDate(); 
-      setVisible(false);
-      return;
-    }
-    
-    // For other browsers, just close
-    setLastShownDate();
-    setVisible(false);
-  };
-  
-
-  const handleDismiss = () => {
-    setLastShownDate(); // Track interaction - don't show again for 30 days
-    setVisible(false);
-    setShowChromeHelp(false);
-  };
-
-  if (!visible && !showChromeHelp) return null;
-
-  const isSafari = browserType === 'safari';
-  const isChromium = browserType === 'chrome' || browserType === 'edge';
-
-  // Chrome Help Instructions
-  if (showChromeHelp) {
-    return (
-      <div className="fixed inset-0 z-[9999999999] flex items-end sm:items-center justify-center bg-black/40">
-        <div className="w-full sm:max-w-md sm:rounded-box sm:mx-auto bg-white border-t sm:border border-neutral-200 ">
-          <div className="p-4 sm:p-6">
-            <div className="text-center mb-4">
-              <div className="text-4xl mb-2">💻</div>
-              <h3 className="text-lg font-semibold text-neutral-900 ">
-                Install Spenny Piggy 🐷💖
-              </h3>
-            </div>
-            
-            <div className="space-y-3 text-sm text-neutral-700 ">
-              <div className="p-3 rounded-box-sm bg-green-50 border border-green-200">
-                <p className="font-medium mb-2">Chrome Install Steps:</p>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                    <div>
-                      <p className="font-medium">Look for install icon in address bar</p>
-                      <p className="text-xs text-neutral-500">Click the <span className="font-mono bg-neutral-200  px-1 rounded-box">⊕</span> or <span className="font-mono bg-neutral-200   px-1 rounded-box">Install</span> button</p>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center text-xs text-neutral-500">OR</div>
-                  
-                  <div className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                    <div>
-                      <p className="font-medium">Use Chrome menu</p>
-                      <p className="text-xs text-neutral-500">Click <span className="font-mono bg-neutral-200   px-1 rounded-box">⋮</span> → "Install Spenny Piggy..."</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="px-6 py-2 rounded-box   bg-pink-600 hover:bg-pink-700 text-white font-medium"
-              >
-                Got it! 🐷
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main PWA Install Prompt
-  return (
-    <div className="fixed inset-0 z-[9999999999] flex items-end sm:items-center justify-center bg-black/40">
-      <div className="w-full sm:max-w-md sm:rounded-box sm:mx-auto bg-white border-t sm:border border-neutral-200 ">
-        <div className="p-4 sm:p-6">
-          <h3 className="text-2xl font-gulfs uppercase text-neutral-900  ">
-            Add Spenny Piggy to Your Home Screen 🐷💖
-          </h3>
-          {/* 🚨 Content-first copy. This wording was "Never miss a tribute, task,
-              or juicy update… (or request payment 👀)" — the exact transfer/gifting
-              vocabulary the whole platform was cleaned of (see the content-compliance
-              rules in CLAUDE.md), plus a suggestive emoji on a product whose headline
-              claim is "Strictly SFW". This modal is the FIRST thing a visitor — or a
-              Stripe reviewer — sees on the homepage, so it is a Stripe-facing surface
-              and the ban list applies to it in full. No gift/tip/donation/tribute. */}
-          <p className="mt-2 text-sm text-neutral-700  ">
-            Get told the moment something sells.
-            <br />
-            📲 Install the app for push notifications when someone buys your content, orders a paid request, or messages you.
-          </p>
-
-          {isSafari ? (
-            <div className="mt-4 space-y-2 text-sm text-neutral-700  ">
-              <div className="p-3 rounded-box bg-blue-50  border border-blue-200  ">
-                <p className="font-medium">Safari Install Steps</p>
-                <ol className="list-decimal ml-5 mt-2 space-y-1 text-xs">
-                  <li>Tap the Share button (□↑) at the bottom</li>
-                  <li>Scroll down and tap "Add to Home Screen"</li>
-                  <li>Tap "Add" to finish</li>
-                </ol>
-              </div>
-              <p className="text-xs text-neutral-500">Safari doesn't allow automatic installs. These steps are required by the browser.</p>
-            </div>
-          ) : null}
-
-          <div className="mt-4 flex gap-3 justify-center">
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="px-4 py-2 rounded-box   border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
-            >
-              Not now
-            </button>
-
-            {isChromium ? (
-              <button
-                type="button"
-                onClick={handleInstall}
-                className="px-4 py-2 rounded-box   bg-pink-600 hover:bg-pink-700 text-white font-medium"
-              >
-                Install
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="px-4 py-2 rounded-box   bg-pink-600 hover:bg-pink-700 text-white font-medium"
-              >
-                Got it
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
+function recordShown() {
+    try {
+        localStorage.setItem(LAST_SHOWN_KEY, new Date().toISOString());
+    } catch {
+        /* storage blocked — the banner simply reappears next visit */
+    }
+}
+
+function isInstalled() {
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true
+    );
+}
+
+/** Which set of steps to show when the browser cannot install on its own. */
+function detectPlatform() {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) return "ios";
+    if (ua.includes("edg")) return "edge";
+    if (ua.includes("chrome")) return "chrome";
+    if (ua.includes("safari")) return "safari";
+    return "other";
+}
+
+/*
+ * ⚠️ NO MENU GLYPHS. `⋮` and `…` are not in the body face and rendered as a
+ * fallback that read as "(:)" on the live banner — a step that mis-describes
+ * the button it is pointing at is worse than no step. The menus are named in
+ * words and by POSITION instead, which also survives a browser changing its
+ * icon.
+ * ⚠️ Each step is one action. "Confirm to finish" was a third step on three of
+ * these platforms and is the browser's own dialog, so it is folded into the
+ * step that opens it.
+ */
+const STEPS = {
+    ios: [
+        "Tap the share button in Safari's toolbar.",
+        'Scroll down and choose "Add to Home Screen".',
+        'Tap "Add".',
+    ],
+    safari: [
+        "Open Safari's share menu.",
+        'Choose "Add to Dock", then confirm.',
+    ],
+    chrome: [
+        "Open Chrome's menu — the three dots, top right.",
+        'Choose "Install Spenny Piggy", then press Install.',
+    ],
+    edge: [
+        "Open Edge's menu — the three dots, top right.",
+        'Choose "Apps", then "Install this site as an app".',
+    ],
+    other: [
+        "Open your browser's menu.",
+        'Look for "Install" or "Add to Home Screen".',
+    ],
+};
+
+export default function PwaInstallPrompt() {
+    const platform = useRef(null);
+    if (platform.current === null) platform.current = detectPlatform();
+
+    /*
+     * ⚠️ Resolved ONCE, into a ref, because the read below also WRITES the
+     * marker — evaluating it twice would answer "first visit" the first time
+     * and "returning" the second, showing the banner on the very visit it must
+     * not.
+     */
+    const eligible = useRef(null);
+    if (eligible.current === null) {
+        let ok = false;
+        try {
+            const returning = Boolean(localStorage.getItem(RETURN_VISIT_KEY));
+            if (!returning) {
+                localStorage.setItem(RETURN_VISIT_KEY, new Date().toISOString());
+            } else {
+                const last = readLastShown();
+                ok =
+                    !last ||
+                    (Date.now() - last.getTime()) / 86400000 >= SHOW_AGAIN_DAYS;
+            }
+        } catch {
+            // Storage blocked (Safari private mode, hardened profiles) throws.
+            // Fail closed: with no marker we cannot prove this is a return
+            // visit, and a banner wrongly withheld costs far less than one
+            // shown to someone who has never seen the product.
+            ok = false;
+        }
+        eligible.current = ok && !isInstalled();
+    }
+
+    const [visible, setVisible] = useState(eligible.current);
+    const [showSteps, setShowSteps] = useState(false);
+    // Chromium hands us the install event; until it arrives we can only teach.
+    const [canInstallNatively, setCanInstallNatively] = useState(false);
+    const deferred = useRef(null);
+
+    useEffect(() => {
+        const onBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            deferred.current = e;
+            setCanInstallNatively(true);
+        };
+        const onInstalled = () => {
+            recordShown();
+            setVisible(false);
+        };
+
+        window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+        window.addEventListener("appinstalled", onInstalled);
+
+        // Kept because `Pages/PwaTest.jsx` and `utils/pwaDebug.js` drive it.
+        window.PwaPromptDebug = {
+            shouldShow: () => eligible.current,
+            forceShow: () => setVisible(true),
+            resetTimer: () => {
+                try {
+                    localStorage.removeItem(LAST_SHOWN_KEY);
+                    localStorage.removeItem(RETURN_VISIT_KEY);
+                } catch {
+                    /* nothing to reset */
+                }
+            },
+            canInstallNatively: () => Boolean(deferred.current),
+        };
+
+        return () => {
+            window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+            window.removeEventListener("appinstalled", onInstalled);
+            delete window.PwaPromptDebug;
+        };
+    }, []);
+
+    /*
+     * 🚨 THE BAR PUBLISHES ITS OWN HEIGHT, and the header reads it. This is a
+     * fixed bar ABOVE a fixed header, so something has to move the header down
+     * — and the height is not a constant: it grows when the steps expand and
+     * changes with the viewport. A typed number here would be the silent drift
+     * the variable exists to prevent, exactly like `--sp-bottombar-h`.
+     *
+     * ⚠️ Cleared on unmount AND on dismiss, or the header keeps a gap above it
+     * for a bar that is no longer there.
+     */
+    const barRef = useRef(null);
+    useEffect(() => {
+        const el = barRef.current;
+        const root = document.documentElement;
+        if (!el) {
+            root.style.removeProperty("--sp-topbanner-h");
+            return undefined;
+        }
+
+        const publish = () =>
+            root.style.setProperty(
+                "--sp-topbanner-h",
+                `${Math.round(el.getBoundingClientRect().height)}px`,
+            );
+
+        publish();
+        const observer = new ResizeObserver(publish);
+        observer.observe(el);
+
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty("--sp-topbanner-h");
+        };
+    }, [visible]);
+
+    if (!visible) return null;
+
+    const dismiss = () => {
+        recordShown();
+        setVisible(false);
+    };
+
+    const install = async () => {
+        const prompt = deferred.current;
+        if (!prompt) {
+            setShowSteps((open) => !open);
+            return;
+        }
+        try {
+            await prompt.prompt();
+            await prompt.userChoice;
+            recordShown();
+            deferred.current = null;
+            setVisible(false);
+        } catch {
+            // The browser refused to show its own dialog. Teach instead of
+            // failing silently — the button must always do something.
+            setShowSteps(true);
+        }
+    };
+
+    const steps = STEPS[platform.current] || STEPS.other;
+
+    return (
+        /*
+         * FULL-BLEED, ABOVE THE HEADER (client direction, 16 Aug 2026).
+         *
+         * 🚨 THE BAND IS WALLPAPER AND THE ICON IS THE TILE. Two earlier
+         * versions were rejected and both failed the same way: they imitated
+         * something else. A centred white card below the header was an orphan
+         * floating in a black gap, and the ink bar that replaced it was the App
+         * Store / Smart App Banner template with the colours swapped — icon,
+         * name, pill, dismiss — a shape that belongs to no product in
+         * particular. Neither used a single thing from this app's own language.
+         *
+         * So the bar stops describing the offer and SHOWS it: the app's icon is
+         * a black tile, and a MINT ground turns the strip into a piece of home
+         * screen with the app already sitting on it. Mint is also this app's
+         * action colour (the bottom bar's one button), and black on it measures
+         * 14.05:1 — the strongest pairing in the palette, which is what lets
+         * the type be full-strength display caps instead of a muted grey.
+         *
+         * ⚠️ MINT above the pink header, deliberately. Pink would blob into the
+         * header with no edge between them; ink read as borrowed chrome. Mint
+         * is a hard, brand-owned edge, and the 3px black rule underneath is the
+         * house frame doing the separating.
+         *
+         * ⚠️ NO top safe-area padding: the banner never renders in the
+         * installed app (`isInstalled()` hides it), so its only context is a
+         * browser tab, where the browser's own UI owns that inset and the
+         * header's existing handling is untouched.
+         */
+        <div
+            ref={barRef}
+            className="fixed inset-x-0 top-0 z-[101] border-b-[3px] border-[#000] bg-[#05EFB8]"
+        >
+            <div className="mx-auto flex max-w-6xl items-center gap-3 px-3 py-2 sm:gap-4 sm:px-4">
+                {/* 🚨 THE REAL APP ICON, at home-screen size — the bar SHOWS
+                    what you get instead of describing it. It replaced an
+                    invented "SP" monogram, a mark this brand uses nowhere else
+                    that said nothing about the outcome.
+
+                    ⚠️ `/android-chrome-192x192.png` is a ROUTE, not a bare
+                    `public/` path — a file under `public/` is not reliably
+                    served on the app domain (the documented `/siteicon.png`
+                    404), and this is the only image on the bar.
+                    ⚠️ Width and height are set so it cannot resize the bar as
+                    it loads — and the bar's height is what moves the header.
+                    ⚠️ `alt=""`: the title beside it already names the thing, so
+                    an alt string would be read out twice.
+                    ⚠️ The mint ring is what makes a black icon legible on an
+                    ink bar. Without it the tile disappears into the ground. */}
+                {/* 🚨 THE REAL APP ICON, as the tile it will become. It carries
+                    the identity, which is why the app's name is not typed out
+                    beside it — the mark IS the name, and the headline is free
+                    to carry the offer instead.
+
+                    ⚠️ No ring here, unlike the ink version: a black tile on
+                    mint is maximum contrast already, and a ring would only add
+                    a second edge inside a bar that has one.
+                    ⚠️ `rounded-[20px]` is a KNOWING exception to the radius
+                    tokens (client direction, 16 Aug 2026), not drift.
+                    `rounded-box-sm` is 16px on a phone and 20px from `md:`, and
+                    the responsive tokens exist because a corner is read against
+                    the size of the element it sits on — but this tile is 44px
+                    at EVERY width, so a corner that changes with the viewport
+                    would be answering a question this element never asks. Same
+                    reasoning as the toast's fixed 20px.
+                    ⚠️ `/android-chrome-192x192.png` is a ROUTE, not a bare
+                    `public/` path — a file under `public/` is not reliably
+                    served on the app domain (the documented `/siteicon.png`
+                    404), and this is the only image on the bar.
+                    ⚠️ Width and height are set so it cannot resize the bar as
+                    it loads — and the bar's height is what moves the header. */}
+                <img
+                    src="/android-chrome-192x192.png"
+                    alt=""
+                    width="44"
+                    height="44"
+                    className="h-11 w-11 shrink-0 rounded-[20px]"
+                />
+
+                <div className="min-w-0 flex-1">
+                    {/* The headline carries the OFFER because the icon already
+                        carries the identity. Three plain words, active, and
+                        short enough to hold one line on a 390px phone — which
+                        it must, since the bar's height is what the header and
+                        the whole page below it move down by. */}
+                    <p className="font-gulfs uppercase tracking-[0.08em] text-[13px] leading-none text-black sm:text-[15px]">
+                        Get the app
+                    </p>
+                    {/* Content-first copy: a Stripe-facing surface like every
+                        other public string, so no gift / tip / donation
+                        wording — and no bare "Free" either, which on this
+                        platform is the unqualified free claim the landing page
+                        had to have removed.
+                        ⚠️ Two strings, not one truncated: the full line cut to
+                        "Get told the moment s…" at 390px, and an ellipsis
+                        mid-word says nothing where a shorter sentence written
+                        for that width says the whole thing. `truncate` stays as
+                        the guard that keeps the bar one line whatever the copy
+                        becomes.
+                        ⚠️ `text-black/70` on mint is 9.9:1 — the opacity is
+                        hierarchy, not a contrast compromise. */}
+                    <p className="mt-1 truncate text-[12px] leading-[1.4] text-black/70 sm:text-[13px]">
+                        <span className="sm:hidden">Sale alerts on your phone</span>
+                        <span className="hidden sm:inline">
+                            Get told the moment something sells.
+                        </span>
+                    </p>
+                </div>
+
+                <InstallButton
+                    onClick={install}
+                    native={canInstallNatively}
+                    open={showSteps}
+                />
+                <DismissButton onClick={dismiss} />
+            </div>
+
+            {showSteps ? (
+                <div className="mx-auto max-w-6xl px-3 pb-3 sm:px-4">
+                    <ol className="space-y-1.5 border-t-2 border-black/15 pt-3 text-[13px] leading-[1.45] text-black/75">
+                        {steps.map((step, i) => (
+                            <li key={step} className="flex gap-2.5">
+                                {/* The steps ARE a sequence — you cannot add to
+                                    the home screen before opening the share
+                                    menu — so the numbering carries information
+                                    rather than decorating the list. */}
+                                <span className="font-gulfs shrink-0 text-[12px] leading-[1.45] text-black">
+                                    {i + 1}
+                                </span>
+                                <span>{step}</span>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+/*
+ * ⚠️ The label states what pressing it does. On Chromium with the install
+ * event in hand that is "Install"; everywhere else the browser will not let a
+ * page install anything, so promising "Install" and then showing a list of
+ * manual steps would be the button lying about its own outcome.
+ */
+function InstallButton({ onClick, native, open }) {
+    return (
+        /* BLACK on the mint band. The bar is one saturated colour, so a second
+           brand hue on it would be a third thing competing for the eye — black
+           is 14.05:1 against mint and is the only fill on this bar, which is
+           what makes it read as the one thing to press.
+           ⚠️ `rounded-box-sm` (16/20px), inside the 25px ceiling.
+
+           🚨 THE PILL IS 36px TALL AND THE TAP TARGET IS STILL 44px. It was a
+           44px block, which on a bar this slim read as a slab rather than a
+           control (client direction, 16 Aug 2026: make it smaller). The size
+           came off the padding and the type — never off the target — and the
+           missing 8px is given back as an invisible `before:` hit area, the
+           same device the account page's switches use. A button small enough
+           to look tidy and small enough to miss is worse than no button. */
+        <button
+            type="button"
+            onClick={onClick}
+            aria-expanded={native ? undefined : open}
+            className="relative inline-flex h-9 shrink-0 items-center justify-center rounded-box-sm bg-black px-3.5 font-gulfs uppercase tracking-[0.12em] text-[11px] leading-none text-white transition-[filter,opacity] duration-200 before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] hover:brightness-150 active:opacity-90"
+        >
+            {/* ⚠️ Two words max — this sits in a bar whose height the whole
+                page is pushed down by, so the label may never wrap. */}
+            {native ? "Install" : open ? "Hide" : "How"}
+        </button>
+    );
+}
+
+function DismissButton({ onClick }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-label="Dismiss"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-box-sm text-black/60 transition-opacity duration-200 hover:opacity-100"
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+            >
+                <path
+                    d="M2 2l12 12M14 2L2 14"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                />
+            </svg>
+        </button>
+    );
+}

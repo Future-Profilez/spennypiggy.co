@@ -44,6 +44,7 @@ import {
     GlobeIcon,
     ShieldCheckIcon,
     ShoppingBagIcon,
+    LinkIcon,
 } from "@animateicons/react/lucide";
 import {
     Shield,
@@ -430,6 +431,18 @@ export default function Accountsetting(props) {
                                 title="My Listings"
                                 subtitle="Every wish, shop item, pot and subscription in one place"
                                 onClick={() => router.visit(route("catalogue.index"))}
+                            />
+
+                            {/*
+                                The editor is the only way in — the bio page itself
+                                shows an "Edit this page" line, but only to a creator
+                                who already knows the URL exists.
+                            */}
+                            <SettingItem
+                                icon={LinkIcon}
+                                title="Link in Bio"
+                                subtitle="One link for your Instagram or TikTok bio"
+                                onClick={() => router.visit(route("bio.edit"))}
                             />
 
                             <SettingItem

@@ -610,13 +610,18 @@ Route::get('/pwa-debug', function () {
     return response()->json([
         'manifest_url' => url('/site.webmanifest'),
         'service_worker_url' => url('/service-worker.js'),
-        'manifest_exists' => file_exists(public_path('site.webmanifest')),
-        'service_worker_exists' => file_exists(public_path('service-worker.js')),
+        // ⚠️ Both files are served by ROUTES reading `resources/proxy/`, not from
+        // `public/` — which is not reachable on this domain at all. These checks
+        // read `public_path()`, so the one endpoint written to diagnose a missing
+        // service worker reported it missing on every environment including the
+        // ones where it works, and `manifest_content` was always null.
+        'manifest_exists' => file_exists(resource_path('proxy/site.webmanifest')),
+        'service_worker_exists' => file_exists(resource_path('proxy/service-worker.js')),
         'is_https' => request()->isSecure(),
         'host' => request()->getHost(),
         'user_agent' => request()->userAgent(),
-        'manifest_content' => file_exists(public_path('site.webmanifest'))
-            ? json_decode(file_get_contents(public_path('site.webmanifest')), true)
+        'manifest_content' => file_exists(resource_path('proxy/site.webmanifest'))
+            ? json_decode(file_get_contents(resource_path('proxy/site.webmanifest')), true)
             : null,
     ]);
 })->name('pwa.debug');
@@ -706,6 +711,10 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     });
 });
 
+// 🚨 THIS ROUTE IS THE SERVICE WORKER — `public/service-worker.js` is not served
+// on this domain and never was (only `public/build/**` is). `scripts/build-sw.js`
+// writes `resources/proxy/service-worker.js`, and `MagicBellNotification.jsx`
+// registers `/service-worker.js`. All three have to keep naming the same file.
 Route::get('/service-worker.js', function () {
     $assetRoot = rtrim(asset('/'), '/');
     $content = file_get_contents(resource_path('proxy/service-worker.js'));
@@ -713,8 +722,26 @@ Route::get('/service-worker.js', function () {
 
     return response($content, 200, [
         'Content-Type' => 'text/javascript',
+        // ⚠️ A cached service-worker script is a deploy that never reaches the
+        // installed app. Browsers bypass the HTTP cache for the worker only once
+        // its cached copy is 24h old, so without this a creator can sit a full
+        // day behind on the worker that decides their push and their caching.
+        'Cache-Control' => 'no-cache, must-revalidate',
     ]);
 })->name('service.worker');
+
+// ⚠️ The offline page is PRECACHED by the service worker, so this route existing
+// is what makes install succeed — `precacheAndRoute` fetches every entry during
+// install and one 404 rejects the whole install, leaving the worker inactive and
+// push dead with it. It answered 404 in production until 2026-08-15, which also
+// meant `setCatchHandler` had nothing to serve and the branded offline screen had
+// never been seen by anyone.
+Route::get('/offline.html', function () {
+    return response(file_get_contents(public_path('offline.html')), 200, [
+        'Content-Type' => 'text/html; charset=UTF-8',
+        'X-Robots-Tag' => 'noindex, nofollow',
+    ]);
+})->name('offline.page');
 
 Route::get('/new-service-worker.js', function () {
     $assetRoot = rtrim(asset('/'), '/');

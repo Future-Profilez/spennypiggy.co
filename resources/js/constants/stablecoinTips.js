@@ -108,4 +108,18 @@ export const STABLECOIN_COPY = {
         line: "A straight tip in USDC. Voluntary, with nothing to deliver in return.",
         detail: STABLECOIN_TIPS_LIVE ? "Settles on its own rail" : "Coming soon",
     },
+    /**
+     * 🚨 Used where this sits BESIDE Stripe-processed buttons — the link-in-bio
+     * page. Everything else a supporter can press on that page is a content
+     * purchase settled by Stripe; this one is not, and saying so is what keeps
+     * the two from reading as one offer.
+     *
+     * ⚠️ Naming the rail is the whole point, so do not shorten it to "separate
+     * rail". Everywhere the distinction is not load-bearing, use `card.detail`
+     * or `points`, which is why this is a separate key rather than a rewrite of
+     * either.
+     */
+    railNote: STABLECOIN_TIPS_LIVE
+        ? "Settles on its own rail — not through Stripe."
+        : "When it arrives it will settle on its own rail — not through Stripe.",
 };

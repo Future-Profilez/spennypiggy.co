@@ -82,7 +82,7 @@ export default function IdentityStep({
                 value={data.name}
                 autoComplete="name"
                 autoFocus
-                placeholder="Priya Sharma"
+                placeholder="Eg. Ava Collins"
                 status={fieldStatus("name")}
                 error={fieldError("name")}
                 onChange={(e) => setData("name", e.target.value)}

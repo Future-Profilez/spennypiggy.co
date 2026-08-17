@@ -53,6 +53,7 @@ use App\Services\Risk\EffectiveLimitsService;
 use App\Services\Risk\RiskIdentityService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\Badges;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
 use Carbon\Carbon;
@@ -217,7 +218,13 @@ class ProfileController extends Controller
                     'username' => ['string', 'lowercase', 'regex:/^[a-zA-Z0-9_\.]+$/', 'max:20', Rule::unique('users')->ignore($user->id)],
                     'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
                     'bio' => ['nullable', 'string', 'max:255'], // updated
-                    'creator_category' => ['nullable', 'array'],
+                    // Checked against App\Support\Badges, the ONE definition —
+                    // this used to accept any array of any strings, into a
+                    // column two SEO builders print into meta keywords.
+                    'creator_category' => ['nullable', 'array', 'max:'.Badges::MAX_INTERESTS],
+                    'creator_category.*' => [Rule::in(Badges::interestSlugs())],
+                    'pride_badges' => ['nullable', 'array', 'max:'.Badges::MAX_PRIDE],
+                    'pride_badges.*' => [Rule::in(Badges::prideSlugs())],
                     'gender' => ['nullable', 'string', 'max:50'],
                     'country' => ['nullable', 'string', 'max:100'],
                     'date_of_birth' => ['nullable', 'date', 'before:today'],
@@ -244,7 +251,25 @@ class ProfileController extends Controller
                 if ($request->has('date_of_birth')) {
                     $user->date_of_birth = $request->date_of_birth;
                 }
-                $user->creator_category = ! empty($request->creator_category) ? json_encode($request->creator_category) : null;
+                // Sanitised again on the way in, so an unknown slug is dropped
+                // rather than stored even if validation is ever loosened.
+                //
+                // ⚠️ Both fields are only written when the request CARRIED them.
+                // Several callers post a partial profile payload, and treating
+                // an absent field as "the creator cleared it" would silently
+                // wipe their badges on an unrelated save — the same trap
+                // `columnsWithFile()` documents for a paid reward file.
+                if ($request->has('creator_category')) {
+                    $badges = Badges::sanitiseInterests($request->input('creator_category'));
+                    $user->creator_category = $badges !== [] ? json_encode($badges) : null;
+                }
+
+                if ($request->has('pride_badges')) {
+                    // 🚨 Not in $fillable (special-category data) — assigned
+                    // explicitly here, never mass-assigned.
+                    $pride = Badges::sanitisePride($request->input('pride_badges'));
+                    $user->pride_badges = $pride !== [] ? json_encode($pride) : null;
+                }
 
                 if ($request->email !== $user->email) {
                     // Direct update to ensure it persists and bypasses any potential model interference

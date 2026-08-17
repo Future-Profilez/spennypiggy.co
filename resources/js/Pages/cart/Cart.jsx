@@ -228,9 +228,15 @@ export default function Cart(props) {
                         }}
                     >
                         <div className="container">
-                            <div className="m-auto max-w-[820px] px-2 pt-5">
-                                <header className="mb-5">
-                                    <h1 className="font-gulfs text-2xl uppercase text-black md:text-3xl">
+                            {/* ⚠️ Desktop spacing at every width put ~57px of empty
+                                page between the header strip and the heading on a
+                                phone — the basket total was below the fold before
+                                anything had been read. */}
+                            <div className="m-auto max-w-[820px] px-2 pt-2 md:pt-5">
+                                <header className="mb-4 md:mb-5">
+                                    {/* `font-gulfs` ink sits low in its own line box, so
+                                        default leading reads as a second top margin. */}
+                                    <h1 className="font-gulfs text-2xl uppercase leading-none text-black md:text-3xl">
                                         Your basket
                                     </h1>
                                     <p className="mt-1 text-sm text-black/60">
