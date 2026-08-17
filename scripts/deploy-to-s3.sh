@@ -137,16 +137,16 @@ if [ -d "public/fonts" ]; then
     }
 fi
 
-# Upload service worker (no cache)
-if [ -f "public/service-worker.js" ]; then
-    log_info "Uploading service worker..."
-    aws s3 cp public/service-worker.js s3://$S3_BUCKET/service-worker.js \
-        --cache-control "public, max-age=0, must-revalidate" \
-        --content-type "application/javascript" \
-        --metadata-directive REPLACE || {
-        log_warning "Failed to upload service worker"
-    }
-fi
+# 🚨 THE SERVICE WORKER IS NOT AN S3 ASSET AND MUST NOT BE UPLOADED HERE.
+#
+# A worker only controls the origin it is served from, so a copy on the CDN can
+# never control spennypiggy.co — and `scripts/build-sw.js` no longer writes
+# `public/service-worker.js` at all. The app serves it from the `service.worker`
+# route (reading `resources/proxy/service-worker.js`), which is also the only way
+# it gets a `Cache-Control` a browser will respect for a worker script.
+#
+# This block was a `[ -f ... ]` guard around a file that stopped existing, so it
+# logged nothing and did nothing while reading like a working deploy step.
 
 # Upload manifest.json and other PWA files
 if [ -f "public/manifest.json" ]; then

@@ -42,6 +42,10 @@ export default function Authenticated(props){
             </div>
         )}
         <Header auth={auth} cart_count={cart_count} />
+        {/* ⚠️ IN FLOW, and above every other strip — it is a banner now, not a
+            modal, so its position in the tree IS its position on the page. It
+            used to sit below `<main>` because a fixed scrim does not care. */}
+        <PwaInstallPrompt />
         <OnboardingNudge />
         {/* ⚠️ The fixed bottom nav is `md:hidden`, so the clearance must lift at
             `md:` too. At `sm:pb-0` every screen between 640px and 768px — the
@@ -55,7 +59,6 @@ export default function Authenticated(props){
         </main>
         <Footer auth={auth} />
         <BottomBar />
-        <PwaInstallPrompt />
         <MaintenanceBanner />
         {/*
           * ⚠️ A top-level sibling, NOT inside `<main>` where this used to live.

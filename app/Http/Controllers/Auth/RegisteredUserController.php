@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\IpTracker;
 use App\Jobs\LinkUserToCrmCreator;
 use App\Jobs\WelcomeUser;
-use App\Models\AllowedDomain;
 use App\Models\CreatorReferral;
 use App\Models\Follow;
 use App\Models\GifterAddress;
@@ -21,6 +20,8 @@ use App\Models\UserVerificationStatus;
 use App\Services\SignupLeadService;
 use App\Services\UserProfileService;
 use App\Services\VisitTracker;
+use App\Support\Badges;
+use App\Support\EmailDomainPolicy;
 use App\Support\GifterVerificationCharge;
 use App\Support\PresetCovers;
 use App\Support\RiskMessages;
@@ -120,11 +121,24 @@ class RegisteredUserController extends Controller
 
         $validator->after(function ($validator) use ($request) {
             $email = (string) $request->input('email', '');
-            if ($email !== '' && str_contains($email, '@')) {
-                $domain = strtolower(trim(explode('@', $email)[1] ?? ''));
-                if ($domain !== '' && ! AllowedDomain::where('name', $domain)->exists()) {
-                    $validator->errors()->add('email', 'Invalid Email Id.');
-                }
+
+            if ($email === '' || ! str_contains($email, '@')) {
+                return;
+            }
+
+            // 🚨 Was an APPROVED-LIST check answering every refusal with
+            // "Invalid Email Id." — which reads as "you typed it wrong", so
+            // people retyped a perfectly good business address and left. See
+            // App\Support\EmailDomainPolicy for why the list could not do the
+            // job it was written for.
+            if ($error = EmailDomainPolicy::errorFor($email)) {
+                $validator->errors()->add('email', $error);
+
+                return;
+            }
+
+            if (EmailDomainPolicy::aliasOfExistingAccount($email)) {
+                $validator->errors()->add('email', 'An account already exists for this mailbox. Try signing in, or use the password reset.');
             }
         });
 
@@ -219,6 +233,16 @@ class RegisteredUserController extends Controller
             // `role` made "POST /register with role=2" a route to platform admin
             // (including the founder payout triggers).
             'role' => ['required', Rule::in([0, 1, '0', '1'])],
+            // 🚨 Both badge fields were previously written STRAIGHT from the
+            // request with no validation at all, into a column that
+            // SeoTemplateService and AuthenticatedSessionController concatenate
+            // into a public <meta name="keywords"> tag — so any string this form
+            // was handed was published to every crawler. Checked against
+            // App\Support\Badges here, and sanitised again below.
+            'creator_category' => ['nullable', 'array', 'max:'.Badges::MAX_INTERESTS],
+            'creator_category.*' => [Rule::in(Badges::interestSlugs())],
+            'pride_badges' => ['nullable', 'array', 'max:'.Badges::MAX_PRIDE],
+            'pride_badges.*' => [Rule::in(Badges::prideSlugs())],
             'promo' => ['nullable', 'string'], // referral code
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
         ], $messages);
@@ -298,12 +322,19 @@ class RegisteredUserController extends Controller
         // would also reject every Google Workspace address — the list holds six domains — so the
         // button would refuse a large share of the people it is meant to let in.
         if (! $google) {
-            $domain = strtolower(explode('@', $request->email)[1] ?? '');
-            $allowedDomains = AllowedDomain::pluck('name')->toArray();
+            if ($error = EmailDomainPolicy::errorFor($request->email)) {
+                throw ValidationException::withMessages(['email' => $error]);
+            }
 
-            if (! in_array($domain, $allowedDomains)) {
+            // 🚨 `jane@gmail.com`, `jane+1@gmail.com` and `j.a.ne@gmail.com` are
+            // ONE mailbox. `unique:users,email` only catches the exact spelling,
+            // so all three registered, all three passed the device and IP caps,
+            // and all three received a verification link — the cheapest way to
+            // mint accounts in bulk, and nothing to do with which domains are
+            // permitted.
+            if (EmailDomainPolicy::aliasOfExistingAccount($request->email)) {
                 throw ValidationException::withMessages([
-                    'email' => 'Invalid Email Id.',
+                    'email' => 'An account already exists for this mailbox. Try signing in, or use the password reset.',
                 ]);
             }
         }
@@ -342,6 +373,17 @@ class RegisteredUserController extends Controller
             ? $creatorCovers[array_rand($creatorCovers)]
             : PresetCovers::FAN_DEFAULT;
 
+        // Badges are a creator-only step, so a supporter posting either field
+        // is discarded here rather than trusted — the picker is never rendered
+        // for them and the column would be meaningless on a fan profile.
+        $isCreator = (int) $request->role === 1;
+        $creatorBadges = $isCreator
+            ? Badges::sanitiseInterests($request->input('creator_category'))
+            : [];
+        $prideBadges = $isCreator
+            ? Badges::sanitisePride($request->input('pride_badges'))
+            : [];
+
         $user = User::create([
             'uuid' => Uuid::uuid4()->toString(),
             'name' => $request->name,
@@ -350,7 +392,13 @@ class RegisteredUserController extends Controller
             'gender' => $request->gender ?? null,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-            'creator_category' => $request->creator_category ?? null,
+            // Sanitised, never the raw request value: unknown slugs are dropped
+            // rather than stored, and only a creator can carry badges at all.
+            // Stored as JSON to match how the profile form has always written
+            // this column. NULL, not '[]', so "never picked" stays distinct.
+            'creator_category' => $creatorBadges !== []
+                ? json_encode($creatorBadges)
+                : null,
             'ip_address' => $ip_address,
             'country' => $request->country_code ?? null,
             'terms_accepted_at' => now(),
@@ -399,6 +447,14 @@ class RegisteredUserController extends Controller
             'tfa_key' => $secret,
             'cover' => $assignedCover,
             'cover_approved' => 1,
+            // 🚨 Pride badges are special-category data and are deliberately NOT
+            // in `$fillable` — so a stray `update($request->all())` anywhere on
+            // the platform can never set them. Written here after validation
+            // against App\Support\Badges. NULL when nothing was picked, so
+            // "declined to say" and "picked none" are not stored differently.
+            'pride_badges' => $prideBadges !== []
+                ? json_encode($prideBadges)
+                : null,
         ]);
 
         // A waiting lead who has now got in must be CLOSED, or the notify sweep
@@ -492,6 +548,16 @@ class RegisteredUserController extends Controller
         /* =========================SEND WELCOME EMAIL========================== */
         WelcomeUser::dispatch($user);
         LinkUserToCrmCreator::dispatch($user->id, $request->input('crm_invite_token'));
+
+        // 🚨 Registration sends the verification link. It used to be dispatched
+        // ONLY from a mount effect on the verification page, so anything that
+        // stopped that page's JavaScript running — a blocked script, a failed
+        // XHR, closing the tab during the redirect — meant the account was
+        // created and no verification email ever went out. A Google signup
+        // arrives already verified and needs none.
+        if (! $user->email_verified_at) {
+            EmailVerificationNotificationController::dispatchLink($user);
+        }
 
         // The verified profile has been spent. Leaving it in the session would let a second POST
         // to /register create another account carrying the same Google-verified email flag.

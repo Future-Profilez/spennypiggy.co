@@ -72,6 +72,14 @@ class UserProfileService
                 'default_currency',
                 'country',
                 'creator_category',
+                // ⚠️ Pride badges ARE public — a badge is worn to be seen, and
+                // the creator opted in by picking one. What they must never
+                // reach is a meta tag, an OpenGraph card, a share caption, an
+                // ad audience or a Stripe payload; that is enforced at those
+                // surfaces (see App\Support\Badges) rather than by hiding the
+                // column here. An unselected column is null, which would read
+                // as "never picked" and silently blank the creator's own badges.
+                'pride_badges',
                 'identity_status',
                 // The badge tier is derived from these; an admin rejection of
                 // the identity check outranks Stripe's pass, and a suspended

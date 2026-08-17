@@ -1,23 +1,37 @@
 import { useState } from "react";
 import Field from "./Field";
 import StepShell, { RHYTHM } from "./StepShell";
+import BadgePicker, {
+    PrideBadgePicker,
+} from "@/Components/Badges/BadgePicker";
 import {
     CREATOR_CATEGORY_GROUPS,
     MAX_CATEGORIES,
+    MAX_PRIDE,
     accentFor,
     ROLE_CREATOR,
 } from "./constants";
 
 /**
- * Creator-only screen: what you make, and who sent you.
+ * Creator-only screen: what you make, who you are, and who sent you.
  *
- * The categories were 17 ungrouped chips with "select at least one" enforced by
- * a toast after the fact. They're grouped now, capped at three, and the button
- * says what's missing instead of sitting disabled with no explanation.
+ * The categories were 17 ungrouped text chips with "select at least one"
+ * enforced by a toast after the fact. They're badges now — grouped, iconed and
+ * capped — and the button says what's missing instead of sitting disabled with
+ * no explanation.
+ *
+ * 🚨 Pride badges are a SEPARATE picker writing a SEPARATE field, and it is
+ * optional in a way the interest picker is not. They are special-category data
+ * (see `App\Support\Badges`), so they must never be required to finish signup
+ * and must never travel in the same field as the public interest badges.
  */
 export default function CreatorProfileStep({
     categories,
     onToggleCategory,
+    onClearCategories,
+    prideBadges = [],
+    onTogglePride,
+    onClearPride,
     referral,
     referralLocked,
     onReferralChange,
@@ -27,7 +41,6 @@ export default function CreatorProfileStep({
     onSubmit,
 }) {
     const accent = accentFor(ROLE_CREATOR);
-    const atLimit = categories.length >= MAX_CATEGORIES;
     const chosen = categories.length;
     const [showReferral, setShowReferral] = useState(
         referralLocked || !!referral,
@@ -36,72 +49,38 @@ export default function CreatorProfileStep({
     return (
         <StepShell
             role={ROLE_CREATOR}
-            title="What do you make?"
+            title="Add your badges"
             subtitle={`Pick up to ${MAX_CATEGORIES} — it's how supporters find you.`}
             onSubmit={onSubmit}
-            action={chosen < 1 ? "Pick at least one category" : "Continue"}
+            action={chosen < 1 ? "Pick at least one badge" : "Continue"}
             actionDisabled={chosen < 1}
         >
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-black/60">
-                    Categories
-                </span>
-                <span
-                    className="text-xs font-semibold"
-                    style={{ color: chosen ? accent.hex : undefined }}
-                >
-                    {chosen} of {MAX_CATEGORIES}
-                </span>
-            </div>
-
             {/* Grouped, but the group name rides on the same line as its
-                    chips rather than taking a row of its own — four extra rows
-                    of legend is what pushed this screen past the fold. */}
-            <div className="space-y-3">
-                {CREATOR_CATEGORY_GROUPS.map((group) => (
-                    <fieldset key={group.group}>
-                        <legend className="sr-only">{group.group}</legend>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="mr-1 w-full text-[12px] font-semibold uppercase tracking-[0.12em] text-black/60 sm:w-auto">
-                                {group.group}
-                            </span>
-                            {group.items.map((item) => {
-                                const selected = categories.includes(item);
-                                const blocked = atLimit && !selected;
-                                return (
-                                    <button
-                                        key={item}
-                                        type="button"
-                                        aria-pressed={selected}
-                                        disabled={blocked}
-                                        onClick={() => onToggleCategory(item)}
-                                        className={`min-h-[44px] rounded-full border-2 px-3.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 ${
-                                            selected
-                                                ? "border-black text-white"
-                                                : blocked
-                                                  ? // Disabled controls are exempt from the
-                                                    // contrast floor and have to LOOK disabled;
-                                                    // raising this to /60 made a chip you cannot
-                                                    // press read as one you can.
-                                                    "cursor-not-allowed border-black/10 bg-white text-black/60"
-                                                  : "border-black/15 bg-white text-black/70 hover:border-black/40"
-                                        }`}
-                                        style={
-                                            selected
-                                                ? {
-                                                      backgroundColor:
-                                                          accent.hex,
-                                                  }
-                                                : undefined
-                                        }
-                                    >
-                                        {item}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </fieldset>
-                ))}
+                chips rather than taking a row of its own — five extra rows
+                of legend is what would push this screen past the fold. */}
+            <BadgePicker
+                title="Your badges"
+                groups={CREATOR_CATEGORY_GROUPS}
+                selected={categories}
+                onToggle={onToggleCategory}
+                onClear={onClearCategories}
+                max={MAX_CATEGORIES}
+                accentHex={accent.hex}
+            />
+
+            {/* Optional, and said so — this is the only field on the whole
+                signup flow asking for something a creator has every right to
+                keep to themselves. */}
+            <div className={RHYTHM.panelDivide}>
+                <PrideBadgePicker
+                    title="Pride badges"
+                    hint={`Optional. Shown on your profile, and never used to advertise you. Up to ${MAX_PRIDE}.`}
+                    selected={prideBadges}
+                    onToggle={onTogglePride}
+                    onClear={onClearPride}
+                    max={MAX_PRIDE}
+                    accentHex={accent.hex}
+                />
             </div>
 
             {/* Referral is a minority case, so it costs a tap rather than a

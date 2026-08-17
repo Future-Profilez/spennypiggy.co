@@ -86,6 +86,11 @@ class MaintenanceMode
         'robots.txt',
         'sw.js',
         'service-worker.js',
+        // ⚠️ The service worker PRECACHES this page, and `precacheAndRoute`
+        // rejects the whole install if one entry fails — so a 503 here during a
+        // maintenance window leaves the worker inactive, taking push down with
+        // it for anyone whose browser happened to update during the window.
+        'offline.html',
         'manifest.json',
         'manifest.webmanifest',
     ];

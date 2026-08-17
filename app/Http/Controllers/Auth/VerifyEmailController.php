@@ -49,8 +49,18 @@ class VerifyEmailController extends Controller
     public function emailVerify(Request $request, $uuid)
     {
         if (! $request->hasValidSignature()) {
+            // ⚠️ An expired link is a DEAD END unless the person is handed the
+            // screen that mints a new one. Someone still signed in goes
+            // straight there (it sends a fresh link on arrival); everyone else
+            // is told to sign in, and `mustHaveToVerify` lands them on the
+            // same screen the moment they do.
+            if ($request->user() && ! $request->user()->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice')
+                    ->with('error', 'That link had expired, so we have sent you a fresh one.');
+            }
+
             return redirect()->route('login')
-                ->with('error', 'This verification link is invalid or has expired. Sign in and request a new one.');
+                ->with('error', 'That verification link has expired. Sign in with the same email and we will send you a new one — there is no need to register again.');
         }
 
         try {

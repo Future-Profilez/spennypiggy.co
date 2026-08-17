@@ -16,7 +16,11 @@ return new class extends Migration
         Schema::table('posts', function (Blueprint $table) {
             $table->string('slug')->nullable()->unique()->after('title');
             $table->boolean('is_pinned')->default(false)->after('approved');
-            $table->json('media')->nullable()->after('image');
+            if (Schema::hasColumn('posts', 'image')) {
+                $table->json('media')->nullable()->after('image');
+            } else {
+                $table->json('media')->nullable();
+            }
         });
 
         // Backfill existing posts with unique slugs

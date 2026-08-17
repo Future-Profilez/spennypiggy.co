@@ -128,7 +128,7 @@ class BlockedPaymentNoticeTest extends TestCase
      */
     public function test_a_signed_in_supporter_is_not_treated_as_a_guest(): void
     {
-        $user = User::factory()->create(['name' => 'Priya Sharma', 'email' => 'priya@example.com']);
+        $user = User::factory()->create(['name' => 'Ava Collins', 'email' => 'priya@example.com']);
 
         BlockedPaymentNotice::send(
             $this->ui('SPEND_CAP_REACHED', RiskMessages::AUDIENCE_AUTH),

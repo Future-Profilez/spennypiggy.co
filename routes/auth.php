@@ -23,6 +23,8 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\BioLinkController;
+use App\Http\Controllers\BioPageController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CreatorExpenseController;
 use App\Http\Controllers\CreatorFinancialController;
@@ -73,7 +75,13 @@ Route::middleware('guest')->group(function () {
     })->name('invite');
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // 🚨 Had NO throttle at all. The device cookie and the 3-accounts-per-IP cap
+    // are the only other brakes, and a script ignores the first while the second
+    // has no time window — so a caller could create accounts as fast as the
+    // server would answer. Rate limiting is what actually stops someone
+    // hammering this endpoint; the email-domain list never could.
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:10,60');
 
     // Sign in / sign up with Google. The callback NEVER creates a user — a new person is sent
     // back to `register` with their verified profile in the session, so the account is still
@@ -406,11 +414,22 @@ Route::middleware('auth')->group(function () {
 
     /* send surprise amount */
     Route::get('verification', [EmailVerificationPromptController::class, '__invoke'])->name('verification.notice');
-    // Throttled: it sends mail on every hit and the verification page calls it on
-    // mount, so an open loop here is a self-inflicted mail bomb.
-    Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
-        ->middleware('throttle:3,10')
+    // Throttled: it sends mail on every hit, so an open loop here is a
+    // self-inflicted mail bomb. The controller's own 60s cooldown is what the
+    // screen counts down; this is the abuse backstop behind it.
+    //
+    // ⚠️ GET is kept alongside POST deliberately — a browser holding the
+    // previously deployed page still calls it that way, and during a deploy
+    // window that would be a resend button that does nothing.
+    Route::match(['get', 'post'], 'email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
+        ->middleware('throttle:6,10')
         ->name('verification.email');
+    // Correcting a typo'd address before it is verified. Without this the only
+    // exit from the verification screen was to log out, which strands the
+    // account behind a unique email nobody can receive mail at.
+    Route::post('verification/change-email', [EmailVerificationNotificationController::class, 'changeEmail'])
+        ->middleware('throttle:5,60')
+        ->name('verification.change-email');
     // Cheap poll for the verification screen, so it can stop reloading the whole page
     // every 5 seconds while it waits.
     Route::get('email/verification-status', [EmailVerificationNotificationController::class, 'status'])
@@ -879,6 +898,33 @@ Route::middleware('auth')->group(function () {
             ->middleware(['identityBeforeListing', 'throttle:10,1'])
             ->name('catalogue.duplicate');
 
+        /*
+         * The creator's own editor for their link-in-bio page.
+         *
+         * ⚠️ Single-segment, so it MUST stay above the `/{username}/{page?}`
+         * catch-all at the end of this file — same trap as `/my-listings`.
+         *
+         * Every write is POST: they change what a public page advertises, and a
+         * GET carries no CSRF token.
+         */
+        Route::get('/bio-links', [BioLinkController::class, 'index'])->name('bio.edit');
+
+        Route::post('/bio-links', [BioLinkController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('bio.links.store');
+
+        Route::post('/bio-links/{link}/update', [BioLinkController::class, 'update'])
+            ->middleware('throttle:60,1')
+            ->name('bio.links.update');
+
+        Route::post('/bio-links/reorder', [BioLinkController::class, 'reorder'])
+            ->middleware('throttle:60,1')
+            ->name('bio.links.reorder');
+
+        Route::post('/bio-links/{link}/delete', [BioLinkController::class, 'destroy'])
+            ->middleware('throttle:30,1')
+            ->name('bio.links.destroy');
+
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
@@ -1181,6 +1227,33 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
 Route::get('/{username}/post/{slug}', [PostsController::class, 'showPostDetail'])
     ->middleware('check.block')
     ->name('post.show');
+
+/*
+ * 🚨 The link-in-bio page. MUST stay above the `/{username}/{page?}` catch-all
+ * below — Laravel matches in registration order, so declared after it the
+ * segment "bio" is read as a page name and answered with an empty profile
+ * rather than this controller. `route:list` shows the route either way, which
+ * is what makes that failure hard to see. Same reason `/{username}/post/{slug}`
+ * sits where it does.
+ *
+ * The profile controller is deliberately untouched: this is a separate screen
+ * with its own payload, not another `{page}` value.
+ */
+Route::get('/{username}/bio', [BioPageController::class, 'show'])
+    ->middleware('check.block')
+    ->name('bio.show');
+
+/*
+ * The counting redirect. Three segments, so the two-segment catch-all cannot
+ * match it whatever the order — declared here for cohesion with the page.
+ *
+ * 🚨 It takes a uuid and NOTHING else. The destination is rebuilt server-side
+ * from App\Support\BioLinkPlatforms, so there is no URL in the request for a
+ * caller to point anywhere.
+ */
+Route::get('/bio/go/{link}', [BioPageController::class, 'go'])
+    ->middleware(['check.block', 'throttle:120,1'])
+    ->name('bio.go');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     ->middleware('check.block')

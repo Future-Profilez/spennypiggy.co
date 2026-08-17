@@ -48,7 +48,13 @@
      The safe-area inset is NOT included here — it is a property of the device
      rather than of the bar, so each consumer adds it. */
   --sp-bottombar-row: 48px;
-  --sp-bottombar-h: calc(var(--sp-bottombar-row) + 9px);
+  /* row + 2px top + 2px bottom + the 1px top rule.
+     ⚠️ The ROW is 48px and must stay there — it is the tap target, and the
+     labels and the active marker are laid out against it. Only the bar's own
+     padding was trimmed (4px -> 2px, client direction 15 Aug 2026: "bottom bar
+     seems too thick"), which takes the painted bar 57px -> 53px and moves it
+     closer to iOS's own 49pt tab row without touching anything you press. */
+  --sp-bottombar-h: calc(var(--sp-bottombar-row) + 5px);
 
   /* The mint circle's DIAMETER. It is drawn by `.retro-nav-add::before`, not by
      the button itself, so it no longer governs anything's layout — but keep it
@@ -56,19 +62,72 @@
      which is what makes the circle read as the same object as the tabs beside
      it rather than as a badge floating in the bar. */
   --sp-bottombar-circle: 48px;
+
+  /* How much of the home-indicator inset the bar is allowed to spend, and the
+     capped value itself. 🚨 EVERY consumer reads `--sp-bottombar-inset`, never
+     `env(safe-area-inset-bottom)` directly: the bar spends at most 20px of it,
+     so a clearance that added the full 34px would reserve 14px the bar does not
+     occupy and leave a gap under the page. Same rule as the height — one
+     definition, everything derived. */
+  --sp-bottombar-inset-max: 20px;
+  --sp-bottombar-inset: min(
+    env(safe-area-inset-bottom, 0px),
+    var(--sp-bottombar-inset-max)
+  );
+}
+
+/* 🚨 THE INSTALLED APP IS THE ONE PLACE THE INSET IS REAL, so it is the one
+   place the row has to give ground. In a browser tab `env(safe-area-inset-bottom)`
+   is 0 and the bar paints 53px; in the installed app it is ~34px on a notched
+   iPhone and the SAME rule paints 87px — a third taller, which is what was
+   reported as "bottom bar ki height jyada aati h PWA app me". Nothing was wrong
+   with the CSS: the device simply adds a band that a browser tab does not.
+
+   Apple's own tab bar is 49pt of row over that 34pt inset = 83pt total. This
+   bar lands UNDER that, at 44 + 2 + 2 + 1 + 20 = **69px**, because the inset it
+   spends is capped — see `--sp-bottombar-inset`. Two rounds of "still too tall"
+   is what took it there; the row is untouched, only the empty band below it.
+
+   ⚠️ 44px is the touch floor and the row must never go below it — this is the
+   full tap target, and the labels and the active marker are laid out against
+   it. Measured at 44: icon 22px + label 12px still fit with the marker's 7px
+   lane intact and 0px of overflow.
+   ⚠️ `--sp-bottombar-h` is a calc over this variable, so the page clearance,
+   the Intercom offset and the messenger's max-height all follow on their own —
+   that is the whole reason the variable exists. Never retype a height.
+   ⚠️ BOTH selectors, deliberately: the media query is the standard, and
+   `html.sp-standalone` is stamped by the detection IIFE in `app.blade.php`
+   (which also reads `navigator.standalone`) for the iOS versions that answer
+   the media query unreliably. Either one alone leaves a cohort on the browser
+   geometry inside the installed app. */
+@media all and (display-mode: standalone) {
+  :root {
+    --sp-bottombar-row: 44px;
+    --sp-bottombar-circle: 44px;
+  }
+}
+html.sp-standalone {
+  --sp-bottombar-row: 44px;
+  --sp-bottombar-circle: 44px;
 }
 
 /* When the docked bar is on screen (logged-in mobile), give the page enough
    bottom padding that content can scroll clear of it.
 
-   ⚠️ The +8px is BREATHING ROOM, not clearance — the bar's own height and the
+   ⚠️ The +16px is BREATHING ROOM, not clearance — the bar's own height and the
    safe-area inset are already counted, so this is the only part that is a
-   judgement call. It was 16px, which reads as a band of dead page above the bar
-   on a phone; the bar is a hard edge of its own and does not need a margin to
-   separate it from content. Do not fold the inset or the bar height into this
-   number: they come from the variable so all three consumers stay in step. */
+   judgement call. Do not fold the inset or the bar height into this number:
+   they come from the variable so all three consumers stay in step.
+
+   🚨 It was briefly 8px, on the reasoning that the bar is a hard edge and needs
+   no margin. That is true of a PARAGRAPH and false of a CONTROL: a page whose
+   last element is a 48px button left it 8px under a 48px nav row, which reads
+   as "the button is behind the bar" and invites a mis-tap on the nav instead —
+   reported from a phone, 15 Aug 2026. The bar lost 4px of its own padding in
+   the same pass, so the total reserve barely moved (65px -> 69px) while the
+   visible gap doubled. */
 body:has(.retro-bottom-bar) main {
-  padding-bottom: calc(var(--sp-bottombar-h) + 8px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--sp-bottombar-h) + 16px + var(--sp-bottombar-inset));
 }
 @media (min-width: 768px) {
   body:has(.retro-bottom-bar) main {
@@ -102,10 +161,25 @@ body:has(.retro-bottom-bar) main {
   max-width: none !important;
   margin: 0 !important;
   z-index: 999999 !important;
-  /* ⚠️ 4px, and `--sp-bottombar-h` counts it as 4 + 4 + 1. Changing this number
+  /* ⚠️ 2px, and `--sp-bottombar-h` counts it as 2 + 2 + 1. Changing this number
      without changing that calc is exactly the silent drift the calc exists to
-     prevent. */
-  padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+     prevent. The horizontal 8px is unrelated and must stay equal to
+     `.retro-nav-*`'s own horizontal padding (see the flex-basis note below).
+
+     🚨 THE INSET IS CAPPED AT `--sp-bottombar-inset-max` (20px), and that cap is
+     the whole reason the installed app's bar is not 83px tall.
+     `env(safe-area-inset-bottom)` is **34px on a notched iPhone** and it is pure
+     empty padding under the row — in a browser tab it is 0, which is why the bar
+     measures 49px on a desktop and a third taller on a phone. That difference,
+     not the row, is what was reported twice as "bottom bar ki height jyada aati
+     hai PWA me".
+
+     ⚠️ Apple's own tab bar spends the full 34pt (49 + 34 = 83pt) and we
+     deliberately do not: 20px still clears the home indicator, which is a ~5px
+     bar drawn inside a ~21px zone, so nothing tappable lands on it. Do NOT take
+     this below ~16px — at that point the labels start sitting on the indicator
+     and iOS's own swipe-up gesture competes with the tab underneath it. */
+  padding: 2px 8px calc(2px + var(--sp-bottombar-inset)) !important;
 }
 
 /* Targets tile the full width rather than sitting in a row of islands — on a
@@ -408,7 +482,7 @@ body:has(.retro-bottom-bar) main {
   #intercom-launcher-frame,
   #intercom-container [class*="intercom-with-namespace"],
   .intercom-namespace [class*="intercom-with-namespace"] {
-    bottom: calc(var(--sp-bottombar-h) + 12px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(var(--sp-bottombar-h) + 12px + var(--sp-bottombar-inset)) !important;
     margin-bottom: 0 !important;
   }
   /* The open messenger has to clear it too, or its footer hides behind the nav.
@@ -416,6 +490,6 @@ body:has(.retro-bottom-bar) main {
      one exists for the height, which is its own problem. */
   .intercom-namespace .intercom-messenger-frame,
   #intercom-container .intercom-messenger-frame {
-    max-height: calc(100dvh - var(--sp-bottombar-h) - 48px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100dvh - var(--sp-bottombar-h) - 48px - var(--sp-bottombar-inset)) !important;
   }
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\SeoMeta;
+use App\Support\Badges;
 
 /**
  * Titles, descriptions and structured data for the dynamic pages (creator profiles,
@@ -33,8 +34,19 @@ class SeoTemplateService
         SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
 
         $keywords = "{$creator->name}, {$creator->username}, creator, exclusive content, memberships, Spenny Piggy";
-        if (! empty($creator->creator_category)) {
-            $keywords .= ", {$creator->creator_category}";
+
+        // ⚠️ Read through Badges, never the raw column. It holds JSON, so the
+        // old concatenation published the literal string `["Musician","Artist"]`
+        // into a public <meta name="keywords"> tag.
+        //
+        // 🚨 INTEREST badges only. `users.pride_badges` is special-category data
+        // and must never reach a meta tag, an OpenGraph tag or a share caption —
+        // that separation is the entire reason it has its own column. Asserted
+        // by tests/Feature/BadgeSeoGateTest.php.
+        $badges = Badges::labels($creator->creator_category);
+
+        if ($badges !== []) {
+            $keywords .= ', '.implode(', ', $badges);
         }
         SeoMeta::addTag('meta', ['name' => 'keywords', 'content' => $keywords]);
 
