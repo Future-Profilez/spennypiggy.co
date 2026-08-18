@@ -156,25 +156,25 @@ export default function Popup(props) {
                         header, and it is what gives the close button something to
                         sit on instead of floating over the first line of content. */}
                     {!hidecontrols ?
- <div className='shrink-0 min-h-[56px] md:min-h-0 px-[30px] py-[20px] bg-[#FF007F] flex !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
+                    <div className='shrink-0 min-h-[56px] md:min-h-0 px-[30px] py-[20px] bg-[#FF007F] flex !border-l-0 !border-r-0 !border-t-0 border-b-[3px] border-black items-center '>
                         <span className=' border-black border-2 bg-red-500 mr-2 w-4 h-4 rounded-full hidden md:block'></span>
                         <span className=' border-black border-2 bg-yellow-400 mr-2 w-4 h-4 rounded-full hidden md:block'></span>
                         <span className=' border-black border-2 bg-green-400 mr-2 w-4 h-4 rounded-full hidden md:block'></span>
                     </div> : ''
                     }
                     {!hideclose && (
- <button
- onClick={closeModal}
- aria-label="Close"
- className='absolute right-4 top-3 z-10 inline-flex min-h-[44px] min-w-[44px] items-center justify-center bg-white border-2 border-black rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all'
+                    <button
+                    onClick={closeModal}
+                    aria-label="Close"
+                    className='absolute right-4 top-3 z-10 inline-flex min-h-[44px] min-w-[44px] items-center justify-center bg-white border-2 border-black rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all'
                       // A panel that reaches the screen edge sits under the status bar
                       // in an installed PWA. That is now true of EVERY popup on a
                       // phone, not just `fullscreen` ones — so the inset is applied
                       // whenever the panel is edge-to-edge. `env()` resolves to 0 in a
                       // browser tab and on desktop, so the same value is safe there and
                       // the desktop modal is unaffected.
- style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.25rem))' }}
- >
+                    style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.25rem))' }}
+                    >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                     )}

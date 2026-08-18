@@ -143,11 +143,7 @@ export default function Index({ auth, piggyPots, allPotsList, filter_pot_id }) {
                 if (page.props.errors && Object.keys(page.props.errors).length > 0) {
                     errorAlert('Please check the form for errors.');
                 } else {
-                    successAlert(
-                        isEditing
-                            ? 'Piggy Pot updated successfully!'
-                            : 'Piggy Pot created successfully!',
-                    );
+                    // successAlert(isEditing ? 'Piggy Pot updated successfully!' : 'Piggy Pot created successfully!',);
                     closeAndResetModal();
                 }
             },

@@ -116,12 +116,7 @@ export default function PiggyPotModal({
                 ) {
                     errorAlert("Please check the form for errors.");
                 } else {
-                    successAlert(
-                        isEditing
-                            ? "Piggy Pot updated successfully!"
-                            : "Piggy Pot created successfully!",
-                    );
-
+                    // successAlert(isEditing ? "Piggy Pot updated successfully!" : "Piggy Pot created successfully!",);
                     handleClose();
 
                     if (onSuccessCallback) {

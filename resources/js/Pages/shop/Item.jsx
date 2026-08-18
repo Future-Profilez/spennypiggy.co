@@ -348,6 +348,7 @@ export default function ShopDetailItem(props) {
                                     </p>
                                 )}
 
+
                                 <div className="!py-4 sm:flex items-center justify-between">
                                     <div className=" mb-3">
                                         <h3 className="text-3xl font-bold flex flex-col ">
@@ -388,8 +389,7 @@ export default function ShopDetailItem(props) {
                                                                     </div>
                                                             )}
                                                         </>
-                                                    ) : price > 0 ? (
-                                                        isOwner ? (
+                                                    ) : price > 0 ? ( isOwner ? (
                                                             <div className="flex flex-col">
                                                                 <span>{formatMultiPrice(price, itemCurrency)}</span>
                                                                 {parseFloat(shippingPrice) > 0 && (
@@ -398,17 +398,10 @@ export default function ShopDetailItem(props) {
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col">
+                                                                {console.log("supporterPays", itemCurrency)}
                                                                 <div className="flex items-baseline">
                                                                     <span className="text-4xl font-bold">
-                                                                        {formatMultiPrice(
-                                                                            calculateTotalSupporterPays(
-                                                                                baseRegularPriceToGrossUp,
-                                                                                itemCurrency,
-                                                                                0,
-                                                                                creatorIdOf(shop)
-                                                                            ).total_supporter_pays,
-                                                                            itemCurrency
-                                                                        )}
+                                                                        {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency)}
                                                                     </span>
                                                                 </div>
                                                                 <span className="text-[14px] text-gray-500 font-normal mt-1 leading-tight">

@@ -1548,9 +1548,9 @@ class ShopsController extends Controller
                 $creatorNetAmount = ($symbol->symbol ?? '£').number_format($listedPriceToGrossUp, $digits);
 
                 if ($stripeid->anonymous == 0) {
-                    ShopBuyed::dispatch($stripeid, false, $creatorNetAmount);
+                    ShopBuyed::dispatch($stripeid, false, $creatorNetAmount, $symbol->symbol);
                 } else {
-                    ShopBuyed::dispatch($stripeid, true, $creatorNetAmount);
+                    ShopBuyed::dispatch($stripeid, true, $creatorNetAmount, $symbol->symbol);
                 }
 
                 // Create deliverable record for shop item
