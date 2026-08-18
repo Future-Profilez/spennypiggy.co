@@ -209,14 +209,14 @@ export default function Hero({auth}) {
   return <>
         {!auth?.user && (
             <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
-                <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
+                <ul className="px-3 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
                   <li>
                     {/* ⚠️ Touch targets were `px-[7px] py-[5px]` — ~24px tall, well
                         under the 44px floor, on the ONLY navigation a logged-out
                         mobile visitor gets. `.landing-bottom-bar ul a` sets
                         `display:block` at a higher specificity than a utility
                         class, so the height has to come from padding, not flex. */}
-                    <a  href="#home"  className={`px-2.5 py-3 md:px-3 ${activeSection === 'home' ? 'active text-[#FF007F]' : 'text-white'}`}
+                    <a  href="#home"  className={`mt-2 px-2.5 py-3 md:px-3 ${activeSection === 'home' ? 'active text-[#FF007F] !bg-none ' : 'text-white'}`}
                         onClick={(e) => handleNavItemClick(e, 'home')}
                         onMouseEnter={() => houseIconRef.current?.startAnimation()}
                     >
@@ -230,17 +230,17 @@ export default function Hero({auth}) {
                         and did nothing at all when tapped. `act-setup` is the real
                         features chapter (setup steps → ways to get paid → the
                         product mock-ups) and is declared in Welcome.jsx. */}
-                    <a href="#act-setup" className={`px-2.5 py-3 md:px-3 ${activeSection === 'act-setup' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'act-setup')}>
+                    <a href="#act-setup" className={`px-2.5 py-3 md:px-3 ${activeSection === 'act-setup' ? 'active text-[#FF007F] !bg-none ' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'act-setup')}>
                       Features
                     </a>
                   </li>
                   <li>
-                    <a href="#reviews" className={`px-2.5 py-3 md:px-3 ${activeSection === 'reviews' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
+                    <a href="#reviews" className={`px-2.5 py-3 md:px-3 ${activeSection === 'reviews' ? 'active text-[#FF007F] !bg-none ' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
                       Reviews
                     </a>
                   </li>
                   <li>
-                    <a href="#faq" className={`px-2.5 py-3 md:px-3 ${activeSection === 'faq' ? 'active text-[#FF007F]' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
+                    <a href="#faq" className={`px-2.5 py-3 md:px-3 ${activeSection === 'faq' ? 'active text-[#FF007F] !bg-none ' : 'text-[#ffffff]'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
                       FAQ's
                     </a>
                   </li>

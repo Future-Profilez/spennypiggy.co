@@ -208,7 +208,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 if (e.target.src !== fallback) e.target.src = fallback;
                 setPosterLoaded(true);
               }}
-              className="intro-poster block max-h-[340px] w-full object-cover !min-h-[220px] transition-transform duration-[600ms] ease-out md:!min-h-[280px] lg:!min-h-[320px]"
+              className="intro-poster block max-h-[300px] w-full object-cover !min-h-[180px] transition-transform duration-[600ms] ease-out md:!min-h-[280px] lg:!min-h-[320px]"
             />
 
             {/* Cinematic scrim so the label + name read against any frame */}

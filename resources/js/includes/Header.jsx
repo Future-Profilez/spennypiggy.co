@@ -345,19 +345,7 @@ export default function Header({ classMagicword }) {
                                 <Link
                                     key={item.label}
                                     href={item.href}
- /*
- * 🚨 BLACK ON PINK — the bar is a solid #FF007F band, and
- * black clears AA on it at 5.56:1 where white sits at 3.78:1.
- * Every link is full-strength black (client direction,
- * 14 Aug 2026), so the active page is marked by an UNDERLINE
- * rather than by a contrast step — with all three at the same
- * weight there is no colour difference left to carry it.
- * ⚠️ The hover is brand yellow #E6EA7B, which measures 2.95:1
- * on this pink and is under AA. It is a transient state on a
- * link whose resting colour clears AA, and it is the client's
- * own direction — do not extend it to a resting state.
- */
-                                    className={`font-gulfs uppercase text-[18px] tracking-wider transition-colors text-black hover:text-[#E6EA7B] ${
+                                    className={`font-gulfs uppercase text-[18px] tracking-wider transition-colors text-[#E6EA7B] hover:text-[#E6EA7B]/80 ${
                                         item.active ? "underline underline-offset-8 decoration-2" : ""
                                     }`}
                                 >
@@ -434,7 +422,7 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
- className="uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black border border-black/30 hover:border-black/55 hover:bg-black/[0.08] transition-colors"
+ className="bg-white hover:bg-gray-200 uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black  transition-colors"
                                     >
                                         Login
                                     </Link>

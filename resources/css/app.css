@@ -411,14 +411,13 @@ body {
     display: flex;
     background: #fff;
     width: 100%;
-    padding: 7px;
     margin: 0;
     border-radius: 50px;
     justify-content: space-between;
 }
 .landing-bottom-bar li a.active,
 .landing-bottom-bar li a:focus {
-    background: var(--mint);
+    color: var(--mint) !         important;
 }
 .landing-bottom-bar ul a {
     color: #000 !important;

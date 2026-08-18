@@ -186,17 +186,19 @@ function BillItem(props) {
                     onClick={onCardClick}
                     className="cursor-pointer relative !overflow-hidden !bg-white p-2.5 !pb-0"
                 >
-                    <LazyLoadImage
-                        alt={itm?.name || ""}
-                        effect="blur"
-                        height={193}
-                        src={imageSrc}
-                        className="!rounded-box object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
-                        width={220}
-                    />
+                    <div className="relative">
+                        <LazyLoadImage
+                            alt={itm?.name || ""}
+                            effect="blur"
+                            // height={193}
+                            src={imageSrc}
+                            className="!rounded-box-sm object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
+                            width={220}
+                        />
 
-                    <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
-                        {periodDisplay} Subscribable
+                        <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
+                            {periodDisplay} Subscribable
+                        </div>
                     </div>
 
                     {IsloggedIn && (

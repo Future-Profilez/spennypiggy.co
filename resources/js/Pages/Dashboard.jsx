@@ -1838,7 +1838,7 @@ export default function Dashboard(props) {
                                                                                             {wish_categories &&
                                                                                             wish_categories.length ? (
                                                                                                 <>
-                                                                                                    <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
+                                                                                                    <div className="new-wish-cats flex items-center mb-3 md:mb-6 gap-2 flex-wrap p-2">
                                                                                                         <Link
                                                                                                             preserveScroll
                                                                                                             href={route(

@@ -189,7 +189,7 @@ export default function Board(props) {
         <Authenticated auth={auth && auth.user}>
             <Head title="Leaderboard" />
 
-            <div className="min-h-dvh bg-white pt-4">
+            <div className="min-h-dvh bg-white pt-6">
                 <div className="containerbox pb-32 pt-2 sm:pb-12">
                     <div className="flex flex-wrap items-start -mx-4">
                         <div className="w-full px-4 xl:w-2/3">
