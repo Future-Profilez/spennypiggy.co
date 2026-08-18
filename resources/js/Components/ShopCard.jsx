@@ -217,12 +217,8 @@ export default function ShopCard({
                                 </span>
                                 <span className="mt-0.5 hidden text-[12px] font-normal text-gray-500 sm:inline">
                                     *Includes platform and payment processing fees
-                                    {isPhysical &&
-                                        shippingPrice > 0 &&
-                                        " and shipping"}
-                                    {isPhysical &&
-                                        shippingPrice === 0 &&
-                                        ". Free shipping"}
+                                    {isPhysical && shippingPrice > 0 && " and shipping"}
+                                    {isPhysical && shippingPrice === 0 && ". Free shipping"}
                                 </span>
                             </>
                         )}
