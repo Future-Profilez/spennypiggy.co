@@ -29,9 +29,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/products', [ProductController::class, 'index']);
-Route::post('/create-product', [ProductController::class, 'store']);
-Route::put('/products/{id}', [ProductController::class, 'update']);
+// Stripe product CRUD. These hit the platform Stripe secret key (list every
+// product, create a product, rename any product by id), so they MUST be gated —
+// they were previously public on `[api]` only, which let an unauthenticated
+// caller read/create/tamper with Stripe products. Behind the same admin guard
+// as the /admin API group below.
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/create-product', [ProductController::class, 'store']);
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+});
 
 // Cart API routes - using web middleware to maintain session authentication
 Route::middleware('web')->group(function () {

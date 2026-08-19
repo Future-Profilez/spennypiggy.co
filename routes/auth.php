@@ -1147,6 +1147,8 @@ if (app()->environment('local')) {
 }
 
 Route::get('/test-intercom-diagnostic', function () {
+    abort_unless(app()->environment(['local', 'testing']), 404);
+
     return view('intercom-test');
 })->name('intercom.diagnostic');
 
@@ -1309,6 +1311,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/force-error/error/file', function () {
+    abort_unless(app()->environment(['local', 'testing']), 404);
+
     throw new Exception('Testing Handler.php');
 });
 
