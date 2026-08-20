@@ -1,4 +1,5 @@
 import Avatar from "@/includes/Avatar";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 import { Link } from "@inertiajs/react";
 import { useState } from "react";
 
@@ -8,7 +9,10 @@ import { useState } from "react";
 function ShowcaseCard({ c, cat }) {
   return (
     <Link
-      href={`/${c.username}`}
+      /* Discovery-tagged: this card is Spenny Piggy choosing to show this
+         creator, so the visit it produces is SP-generated. An untagged link
+         here is a placement that never appears in the creator's numbers. */
+      href={discoveryLink(c.username, cat.source)}
       /* ⚠️ No hover lift, no hover scale (client rule, site-wide). A card surface
          signals hover with its own background, which costs no reflow and works
          identically under `prefers-reduced-motion`. */
@@ -141,6 +145,7 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
     {
       key: "trending",
       label: "Trending",
+      source: DISCOVERY_SOURCE.TRENDING,
       accent: "#FF007F",
       data: trending || [],
       badge: () => "Trending",
@@ -148,6 +153,7 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
     {
       key: "new",
       label: "New",
+      source: DISCOVERY_SOURCE.NEW_CREATORS,
       accent: "#E6EA7B",
       data: newVerified || [],
       badge: () => "Newly verified",
@@ -155,6 +161,10 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
     {
       key: "top",
       label: "Top earners",
+      /* No reserved key for "top earners" — the brief's list has none, and an
+         invented one is refused by the server. Recorded as trending, the
+         closest reserved surface, rather than silently dropped. */
+      source: DISCOVERY_SOURCE.TRENDING,
       accent: "#05EFB8",
       data: topEarners || [],
       badge: (c) => {

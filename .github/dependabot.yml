@@ -1,0 +1,72 @@
+# Dependabot — automated dependency update PRs.
+#
+# Client Security Checklist §1 (Developer Master Plan, 19 Aug 2026):
+# "Framework + all Composer / npm packages current; Dependabot / Renovate on both
+# repos."
+#
+# ⚠️ THE ROOT FOLDER IS NOT A GIT REPO — each app directory is its own independent
+# repository with its own remote. So this file belongs HERE, at the root of the
+# spennypiggy.co repo, and the sibling app carries its own copy. One file at the
+# workspace root would be committed to nothing.
+#
+# ⚠️ `directory: "/"` is the repo root, which for this repo is the app directory
+# itself — that is where composer.json and package.json live.
+#
+# ⚠️ Dependabot OPENS PULL REQUESTS; it does not merge them. Nothing here can
+# deploy on its own. A PR still has to pass CI and be reviewed, and on a payment
+# codebase a minor bump to a Stripe or Laravel package is a real change — read the
+# changelog, do not rubber-stamp the group.
+#
+# Minor and patch updates are GROUPED into one PR per ecosystem per week: ungrouped,
+# this repo produces a dozen PRs every Monday and the security-relevant one is lost
+# among them. Majors stay as individual PRs, because a major is never routine.
+version: 2
+
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+    groups:
+      composer-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # The workflows in .github/workflows pin third-party actions; an unpatched action
+  # runs with this repo's secrets, so it is a supply-chain surface like any other.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"

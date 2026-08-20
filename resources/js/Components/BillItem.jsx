@@ -13,6 +13,7 @@ import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
+import discoveryLink from "@/lib/discoveryLink";
 
 function BillItem(props) {
     useAlerts();
@@ -20,7 +21,10 @@ function BillItem(props) {
         usePage().props;
     const __pageProps = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-    const { itm, itemid, IsloggedIn, classes } = props;
+    /* `discoverySource` is set ONLY by a Spenny-Piggy-chosen surface (Discover's
+       grid and carousels). Undefined everywhere else — a creator's own profile
+       listing their bills is their traffic, not ours. */
+    const { itm, itemid, IsloggedIn, classes, discoverySource } = props;
 
     const isZeroDecimalCurrency = (curr) => {
         const zeroDecimalCurrencies = [
@@ -370,9 +374,16 @@ function BillItem(props) {
                             <Link
                                 as="button"
                                 method="get"
-                                href={route("user.show", {
-                                    username: itm.user.username,
-                                })}
+                                href={
+                                    discoverySource
+                                        ? discoveryLink(
+                                              itm.user.username,
+                                              discoverySource
+                                          )
+                                        : route("user.show", {
+                                              username: itm.user.username,
+                                          })
+                                }
                                 className="ml-1 text-xs font-black uppercase text-[#FF007F] underline hover:opacity-90"
                             >
                                 @{itm.user.username}

@@ -1,0 +1,12 @@
+# Spenny Piggy — security contact (RFC 9116)
+#
+# ⚠️ This static copy exists so the file is present in the repo and works on a
+# plain web server. On Vapor the canonical copy is the `/.well-known/security.txt`
+# ROUTE in routes/web.php — Lambda does not serve arbitrary files out of public/,
+# which is why robots.txt in this directory is parked as `robots.txt.backup` and
+# served from a route instead. Keep the two in step.
+
+Contact: mailto:security@spennypiggy.co
+Expires: 2027-08-19T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://spennypiggy.co/.well-known/security.txt

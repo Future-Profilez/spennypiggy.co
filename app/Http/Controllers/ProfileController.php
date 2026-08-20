@@ -228,6 +228,13 @@ class ProfileController extends Controller
                     'gender' => ['nullable', 'string', 'max:50'],
                     'country' => ['nullable', 'string', 'max:100'],
                     'date_of_birth' => ['nullable', 'date', 'before:today'],
+                    // Discovery Phase 4 — the creator's own opt-in to Birthday
+                    // Discovery. `sometimes`, like every other partial-payload
+                    // field on this form: several callers post a subset, and
+                    // treating an absent field as "they switched it off" would
+                    // silently remove a creator from the campaign on an
+                    // unrelated save.
+                    'birthday_discovery_opt_in' => ['sometimes', 'boolean'],
                     // Both of these are written straight to the users table and
                     // then interpolated into an image URL by the accessors
                     // (`https://ucarecdn.com/{uuid}/{modifier}`), so the shape
@@ -250,6 +257,60 @@ class ProfileController extends Controller
                 $user->country = $request->country;
                 if ($request->has('date_of_birth')) {
                     $user->date_of_birth = $request->date_of_birth;
+
+                    /*
+                     * 🚨 DERIVE THE TWO PUBLISHABLE COMPONENTS, AND ONLY THOSE.
+                     *
+                     * `birthday_day` / `birthday_month` are what Birthday
+                     * Discovery reads — see
+                     * `App\Services\Discovery\BirthdayDiscoveryService`, whose
+                     * every query selects them and never `date_of_birth`. The
+                     * birth year stays on this row for Stripe Connect's dob
+                     * prefill and nothing else; it is never published anywhere,
+                     * which the plan states three times.
+                     *
+                     * ⚠️ Derived HERE rather than mass-assigned: the two columns
+                     * are deliberately not `$fillable`, so a request cannot post
+                     * a day the creator never entered.
+                     *
+                     * ⚠️ Clearing the birthday clears both, or a creator who
+                     * removed their date would stay in next week's campaign on
+                     * a stale day.
+                     */
+                    if (filled($request->date_of_birth)) {
+                        try {
+                            $dob = Carbon::parse($request->date_of_birth);
+                            $user->birthday_day = (int) $dob->day;
+                            $user->birthday_month = (int) $dob->month;
+                        } catch (\Throwable $e) {
+                            // Validation has already accepted it as a date; if it
+                            // is somehow unparseable, leave the components alone
+                            // rather than writing a wrong day.
+                            Log::warning('Skipping birthday component derive — unparseable date_of_birth', [
+                                'user_id' => $user->id,
+                            ]);
+                        }
+                    } else {
+                        $user->birthday_day = null;
+                        $user->birthday_month = null;
+                    }
+                }
+
+                /*
+                 * Discovery Phase 4 opt-in.
+                 *
+                 * ⚠️ Only written when the request CARRIED it — same rule as the
+                 * badge fields below.
+                 *
+                 * 🚨 A creator cannot opt IN without a birthday on file: there
+                 * would be nothing to feature them on, and they would sit in the
+                 * opted-in count that gates the collection page while never
+                 * appearing on it.
+                 */
+                if ($request->has('birthday_discovery_opt_in')) {
+                    $optIn = $request->boolean('birthday_discovery_opt_in');
+
+                    $user->birthday_discovery_opt_in = $optIn && $user->birthday_month !== null;
                 }
                 // Sanitised again on the way in, so an unknown slug is dropped
                 // rather than stored even if validation is ever loosened.

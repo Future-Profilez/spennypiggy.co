@@ -413,6 +413,38 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping();
 
         /*
+        | Discovery Phase 4 — Birthday Discovery.
+        |
+        | 🚨 BOTH OF THESE ARE SCHEDULED BUT SEND NOTHING UNTIL A FLAG IS FLIPPED.
+        | `discovery.birthday.birthday_reminders` and
+        | `discovery.birthday.birthdays_this_week` both default to FALSE, per the
+        | Master Plan: everything is built and shipped, sending is switched off
+        | until Jack turns it on, and turning it on is a config change with no
+        | deploy. With the flags off each command runs, logs what it WOULD have
+        | sent, and returns success — so a scheduler that is doing nothing is
+        | still visibly alive.
+        |
+        | ⚠️ These only run where `schedule:work` (or the Vapor scheduler) is up.
+        | Sending is synchronous inside each command, so neither needs
+        | `queue:work` — but neither runs at all without a scheduler.
+        */
+        $schedule->command('birthday:remind')
+            ->dailyAt('09:30')
+            ->withoutOverlapping();
+
+        /*
+        | ⚠️ DAILY, not `->mondays()`, and that is deliberate — see the command's
+        | class note. One run is capped at `discovery.birthday.weekly_batch`
+        | recipients, and because the claim key is the ISO WEEK every later run
+        | in the same week continues the same send without ever mailing anybody
+        | twice. Monday's run is the campaign; the rest of the week is its
+        | continuation, plus anyone who signed up after it started.
+        */
+        $schedule->command('birthday:weekly')
+            ->dailyAt('09:45')
+            ->withoutOverlapping();
+
+        /*
         | Move existing subscribers onto a creator's REDUCED platform rate.
         |
         | 🚨 Without this the feature is half-built and fails silently: a Stripe

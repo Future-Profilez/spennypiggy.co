@@ -74,9 +74,11 @@
                                             </div>
                                             @endif
                                         </td>
-                                        @if (!empty($creator['username']))
+                                        {{-- Discovery-tagged by the mailable (`personalised`);
+                                             never hand-build the query string here. --}}
+                                        @if (!empty($creator['url']))
                                         <td valign="middle" align="right" style="white-space:nowrap;">
-                                            <a href="{{ url('/'.$creator['username']) }}" target="_blank"
+                                            <a href="{{ $creator['url'] }}" target="_blank"
                                                style="font-family:'Outfit',Arial,sans-serif;font-size:13px;
                                                       font-weight:700;color:#FF007F;text-decoration:none;">
                                                 View &rsaquo;

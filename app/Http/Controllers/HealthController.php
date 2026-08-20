@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Release;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,15 @@ class HealthController extends Controller
             'status' => 'healthy',
             'timestamp' => now()->toISOString(),
             'environment' => app()->environment(),
-            'version' => config('app.version', '1.0.0'),
+            // 🚨 This used to be `config('app.version', '1.0.0')` against a config
+            // key that existed in NO config file, so every deploy of every
+            // environment answered "1.0.0". CI curls this endpoint to validate a
+            // deploy — a constant here cannot tell the release it just shipped
+            // from the one it replaced. See App\Support\Release for where the
+            // value now comes from; `null` with a source of "unset" is a
+            // legitimate answer and is deliberately preferred to a made-up one.
+            'version' => Release::version(),
+            'version_source' => Release::source(),
             'checks' => [],
         ];
 

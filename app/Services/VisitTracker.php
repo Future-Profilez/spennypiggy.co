@@ -65,6 +65,8 @@ class VisitTracker
         'creators.disputes' => 'ad_disputes',
         'creators.founder-bonus' => 'ad_founder_bonus',
         'creators.keep-100' => 'ad_keep_100',
+        'creators.discovery' => 'ad_discovery',
+        'creators.link-in-bio' => 'ad_link_in_bio',
     ];
 
     /**
@@ -86,6 +88,8 @@ class VisitTracker
         'ad_disputes',
         'ad_founder_bonus',
         'ad_keep_100',
+        'ad_discovery',
+        'ad_link_in_bio',
     ];
 
     /**

@@ -64,6 +64,13 @@ import {
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
 import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
+import DiscoveryStatsPanel from "@/Components/discovery/DiscoveryStatsPanel";
+import OpportunityPanel from "@/Components/earnings/OpportunityPanel";
+import MoreCreators from "@/Components/discovery/MoreCreators";
+import {
+    DISCOVERY_DASHBOARD_LINES,
+    DISCOVERY_DASHBOARD_TITLE,
+} from "@/constants/discovery";
 import AddGift from "./feed/AddGift";
 import { CiGift } from "react-icons/ci";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
@@ -151,6 +158,21 @@ export default function Dashboard(props) {
         monthly_charges,
         profile_overview,
         pending_profile_changes,
+        // Discovery Phase 2. An OBJECT of real month-to-date figures for the
+        // owner of a creator profile; null on every other view. Null is "not
+        // your dashboard", never "no data yet" — zeros are a real payload.
+        discovery_panel: discoveryPanel = null,
+        // Discovery Phase 3 — up to four cards for the row at the foot of this
+        // profile. An ARRAY, and a short one is a correct answer: the server
+        // renders fewer rather than padding a slot with an ineligible creator,
+        // and never with the creator whose profile this is. Empty = no row.
+        // Enhanced Creator Earnings + Revenue Opportunity Centre (brief §C).
+        // An OBJECT for the OWNER of a creator profile; null on every other
+        // view — it names their supporters and what each has spent, and this
+        // page is also the public profile. Null is "not your dashboard", never
+        // "no data yet": a creator with no sales gets a real payload of zeros.
+        opportunity_panel: opportunityPanel = null,
+        more_creators: moreCreators = [],
     } = props;
 
     const [showPotModal, setShowPotModal] = useState(false);
@@ -824,14 +846,14 @@ export default function Dashboard(props) {
  border-[3px]
  border-black
  rounded-box-sm
-                                                                
+
  font-black
  uppercase
  tracking-wider
  text-black
  hover:translate-x-[2px]
  hover:translate-y-[2px]
-                                                                
+
  transition-all
 "
                                                           >
@@ -1118,35 +1140,75 @@ export default function Dashboard(props) {
                                                 <CreatorRiskBanner />
                                             )}
 
-                                            {/* Owner-only shortcut into the Revenue Opportunity Centre —
- surfaced here so a creator discovers it while looking at their
- own profile. Neo-brutalist to match the surrounding profile UI. */}
-                                            {IsloggedIn && (
-                                                <Link
-                                                    href={route(
-                                                        "financial.opportunities",
-                                                    )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
-                                                >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] text-2xl">
-                                                        📈
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-[#FF007F]">
-                                                            Grow your income
-                                                        </div>
-                                                        
-                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
-                                                            Who spends the most,
-                                                            who&apos;s gone
-                                                            quiet, and how to
-                                                            earn more.
-                                                        </div>
-                                                    </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#05EFB8] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
-                                                        ›
-                                                    </span>
-                                                </Link>
+                                            {/* Discovery Phase 2 — what Spenny Piggy brought this
+                                                creator this month, above every other owner-only
+                                                card on their dashboard. The brief asks for it to be
+                                                prominent, and it sits outside the tab system on
+                                                purpose so it reads on every tab, not only About.
+
+                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE NUMBERS. The
+                                                plan is explicit that the panel "stays visible at 0
+                                                … It is the pitch" — a creator with no Discovery
+                                                data yet sees three zeros and the explanatory line,
+                                                which is exactly what tells them the feature exists.
+                                                The only gate is `discovery_panel != null`, which
+                                                the controller sets for the OWNER of a role-1
+                                                profile and nobody else: a visitor must not read
+                                                this creator's numbers, and a supporter's dashboard
+                                                has none to read.
+
+                                                ⚠️ tone="light" because this page is white; the same
+                                                component renders dark on the marketing surfaces.
+                                                live because these are real Phase 1 figures — it is
+                                                NOT read off `discovery.analytics_live`, which
+                                                governs the mock numbers in marketing and stays
+                                                false until the client flips it. */}
+                                            {discoveryPanel && (
+                                                <DiscoveryStatsPanel
+                                                    className="mt-3"
+                                                    stats={discoveryPanel}
+                                                    live={true}
+                                                    tone="light"
+                                                    title={
+                                                        DISCOVERY_DASHBOARD_TITLE
+                                                    }
+                                                    lines={
+                                                        DISCOVERY_DASHBOARD_LINES
+                                                    }
+                                                />
+                                            )}
+
+                                            {/* Enhanced Creator Earnings + Revenue Opportunity Centre.
+                                                Client brief: Developer Master Plan, 19 Aug 2026, §C row 9 —
+                                                "sits alongside the SP Discovery panel so the dashboard tells
+                                                one story: what SP brought you, what it's worth, what to do
+                                                next". Hence directly beneath the panel above, in the same
+                                                owner-only column, outside the tab system so it reads on
+                                                every tab.
+
+                                                🚨 THIS REPLACED A PLAIN "Grow your income" LINK, and that is
+                                                the whole point of the row. The link was a door to the
+                                                numbers; the brief asks for the numbers themselves to be on
+                                                the dashboard. The module carries its own link through to the
+                                                full Opportunity Centre at the foot, so the old route in is
+                                                not lost — it is just no longer the only thing here.
+
+                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE FIGURES, for the same
+                                                reason as the Discovery panel: a creator with no sales sees
+                                                zeros and the empty-state lines, which is what tells them the
+                                                capability exists. The only gate is `opportunity_panel != null`,
+                                                which the controller sets for the OWNER of a role-1 profile and
+                                                nobody else — this payload names their supporters and what each
+                                                has spent, and this page is also the PUBLIC profile.
+
+                                                ⚠️ Each of the brief's nine rows draws whether or not it is
+                                                ready; `config/earnings_intelligence.php` decides which ones
+                                                grey to "Coming soon". A row is never simply absent. */}
+                                            {opportunityPanel && (
+                                                <OpportunityPanel
+                                                    className="mt-3"
+                                                    panel={opportunityPanel}
+                                                />
                                             )}
 
                                             {/* Owner-only. The six module tabs below show one type
@@ -2608,6 +2670,20 @@ export default function Dashboard(props) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Discovery Phase 3 — "More creators to support".
+
+                            Inside `.container` and BELOW the profile body, so it is the last
+                            thing a supporter reads on any tab rather than a competing block
+                            partway down someone else's page.
+
+                            ⚠️ Renders on the OWNER's view too — this one page is both the
+                            public profile and the creator's own dashboard, and the row points
+                            away from it at four other creators. See the controller note.
+
+                            ⚠️ Returns null on an empty list, so there is no heading with
+                            nothing under it and no gap on a fan profile. */}
+                        <MoreCreators creators={moreCreators} />
                     </div>
                 </div>
 

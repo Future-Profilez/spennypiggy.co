@@ -166,6 +166,21 @@ export default function Opportunities({
     listings = {},
     actions = [],
     totals = {},
+    /*
+     * Row 7 of the brief, flagged in `config/earnings_intelligence.php`.
+     *
+     * 🚨 FALSE HIDES THE CONTROL, IT DOES NOT GREY IT. Every other row on this
+     * page is a read; this one queues an email and a push to a supporter. A
+     * disabled-looking-but-live control on a sending path is a different class
+     * of mistake from a greyed statistic.
+     *
+     * ⚠️ Defaults TRUE so the button does not disappear if an older cached page
+     * payload arrives without the key — the server-side gates in
+     * `remindSupporter` (ownership, repeat buyer, 30 days quiet, consent,
+     * cross-sender cooldown, dedup claim) are the real enforcement, and they
+     * have not moved.
+     */
+    reminders_enabled = true,
 }) {
     // A brand-new creator has no supporters yet, so the supporter/retention/alert
     // sections would all read empty. Show them a "getting started" path instead —
@@ -216,10 +231,18 @@ export default function Opportunities({
                                         </span>
                                     </div>
 
-                                    <div className="mt-5 grid grid-cols-3 gap-3">
+                                    {/* 🚨 "Paid you" and "You earned" are DIFFERENT NUMBERS and are
+                                        labelled as such. The first is LedgerRules.buyerPaid — what the
+                                        supporter was charged, and what their own bank statement says.
+                                        The second is LedgerRules.creatorGross — the creator's share of
+                                        those same sales. This block used to show the first under the
+                                        word "Lifetime", which reads as earnings and is short of the
+                                        supporter's real spend by the whole fee stack. */}
+                                    <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
                                         {[
-                                            { label: 'Lifetime', value: moneyShort(totals.lifetime_value, currency), tint: 'text-[#05EFB8]' },
-                                            { label: 'This month', value: moneyShort(totals.monthly_value, currency), tint: 'text-[#FF007F]' },
+                                            { label: 'Paid you', value: moneyShort(totals.lifetime_value, currency), tint: 'text-[#FF007F]' },
+                                            { label: 'You earned', value: moneyShort(totals.lifetime_earned, currency), tint: 'text-[#05EFB8]' },
+                                            { label: 'This month', value: moneyShort(totals.monthly_value, currency), tint: 'text-white' },
                                             { label: 'Avg / supporter', value: moneyShort(totals.average_supporter_value, currency), tint: 'text-white' },
                                         ].map((s) => (
                                             <div key={s.label} className="rounded-box-sm bg-white/5 p-3 ring-1 ring-white/10">
@@ -285,8 +308,22 @@ export default function Opportunities({
                                     return (
                                         <div key={r.label}>
                                             <div className="mb-1 flex items-center justify-between gap-2">
-                                                <span className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                                                    <span aria-hidden>{r.icon}</span> {r.label}
+                                                {/* ⚠️ The label is the client's current feature name
+                                                    (brief §C row 2); `r.product` is what the SAME thing is
+                                                    called in the creator's own menu. Without it a creator
+                                                    reading "Recurring Content" has to work out that it is
+                                                    the feature their nav calls "Bills". Null where they
+                                                    already agree, and nothing extra renders. */}
+                                                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-800">
+                                                    <span aria-hidden>{r.icon}</span>
+                                                    <span className="truncate">
+                                                        {r.label}
+                                                        {r.product && (
+                                                            <span className="ml-1.5 font-normal text-black/45">
+                                                                ({r.product})
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </span>
                                                 <span className="tabular-nums text-sm font-bold text-gray-900">
                                                     {money(r.total, currency)}
@@ -550,7 +587,7 @@ export default function Opportunities({
                                             {/* Identity */}
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="truncate font-bold text-gray-900">{s.name || 'Supporter'}</span>
+                                                    <span className="truncate font-bold text-gray-900">{s.name || 'Anonymous'}</span>
                                                     {s.vip?.level && (
                                                         <span
                                                             className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-bold text-gray-900"
@@ -577,6 +614,13 @@ export default function Opportunities({
                                                     {s.first_purchase && (
                                                         <span className="hidden sm:inline"> · since {shortDate(s.first_purchase)}</span>
                                                     )}
+                                                    {/* ⚠️ Country completes the three fields a creator is
+                                                        allowed to see about a supporter — display name (or
+                                                        Anonymous), amount, country. Nothing else about the
+                                                        person may join this line, and an email address never
+                                                        can: the social-channels prompt on each action is the
+                                                        answer to "how do I reach them?". */}
+                                                    {s.country && <span> · {s.country}</span>}
                                                 </div>
                                             </div>
 
@@ -585,7 +629,12 @@ export default function Opportunities({
                                                 <div className="font-anton text-xl leading-none tabular-nums text-gray-900">
                                                     {moneyShort(s.lifetime_spent, currency)}
                                                 </div>
-                                                <div className="text-[12px] font-bold uppercase tracking-wide text-black/60">lifetime</div>
+                                                {/* ⚠️ "spent with you", not "lifetime". The figure is
+                                                    LedgerRules.buyerPaid — what this person was charged,
+                                                    which is what their own statement says and is NOT the
+                                                    creator's share of it. The bare word "lifetime" reads
+                                                    as earnings. */}
+                                                <div className="text-[12px] font-bold uppercase tracking-wide text-black/60">spent with you</div>
                                                 {s.monthly_spent > 0 && (
                                                     <div className="mt-1 text-[13px] font-bold tabular-nums text-[#FF007F]">
                                                         +{money(s.monthly_spent, currency)} this mo.
@@ -594,7 +643,7 @@ export default function Opportunities({
                                             </div>
                                         </div>
 
-                                        {s.at_risk && (
+                                        {s.at_risk && reminders_enabled && (
                                             <div className="mt-3 border-t border-gray-100 pt-3">
                                                 <RemindButton supporterId={s.supporter_id} />
                                             </div>

@@ -16,6 +16,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\PiggyPotStatusService;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -330,6 +331,10 @@ class PiggyPotPaymentController extends Controller
                     // The rates this charge was priced at. Read back by every recompute
                     // path so a later change to the creator's deal cannot re-price it.
                     ...Helpers::feeRateColumns($breakdown),
+                    // Discovery Phase 1 — persisted here so finance:sync-transactions
+                    // can attribute the ledger row it rebuilds later, with no cookie
+                    // and no ambient event metadata to read.
+                    'discovery_source' => AttributionService::sourceForCreator($creator->id),
                 ]);
             });
         } catch (\RuntimeException $e) {

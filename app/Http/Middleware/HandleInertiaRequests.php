@@ -153,6 +153,19 @@ class HandleInertiaRequests extends Middleware
                 'is_in_grace_period' => $user->is_in_grace_period,
                 'financial_profile' => $user->financialProfile,
                 'date_of_birth' => $user->date_of_birth,
+                /*
+                 * Discovery Phase 4 — the creator's own Birthday Discovery
+                 * switch, so the profile settings form can render its current
+                 * state.
+                 *
+                 * ⚠️ This is the SIGNED-IN user's own row, which is why the full
+                 * `date_of_birth` above is acceptable here and is not on any
+                 * public payload. 🚨 The birth year is never published: no
+                 * public surface, e-mail or collection card carries it — see
+                 * `App\Services\Discovery\BirthdayDiscoveryService`, which
+                 * reads `birthday_day` / `birthday_month` instead.
+                 */
+                'birthday_discovery_opt_in' => (bool) ($user->birthday_discovery_opt_in ?? false),
             ];
 
             // If the user is an admin or we are on a specific route that needs more, we could add them,

@@ -136,8 +136,18 @@ class BlockedPaymentNoticeTest extends TestCase
             $user
         );
 
+        /*
+         * ⚠️ 'Ava', from the ACCOUNT'S NAME — not 'Priya', from the address they
+         * happen to have typed. That distinction is the whole point of this test:
+         * a signed-in supporter is greeted by who we know them to be, and
+         * `firstNameOf()` reads `$user->name` for exactly that reason.
+         *
+         * This asserted 'Priya' and had been failing on it — a stale expectation
+         * that contradicted the test's own title, found 20 Aug 2026 while
+         * triaging a full-suite run. The code was right.
+         */
         Mail::assertQueued(PaymentCouldNotGoThrough::class, function ($mail) {
-            return $mail->isGuest === false && $mail->firstName === 'Priya';
+            return $mail->isGuest === false && $mail->firstName === 'Ava';
         });
     }
 

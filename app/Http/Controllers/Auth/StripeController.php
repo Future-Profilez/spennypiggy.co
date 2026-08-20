@@ -47,6 +47,7 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorJourneyService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -1864,6 +1865,9 @@ class StripeController extends Controller
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),
                 'updated_at' => now(),
+                // Discovery Phase 1 — syncWishes() reads the source through
+                // StripePaymentItems->payment, so it belongs on the detail row.
+                'discovery_source' => AttributionService::sourceForCreator($owner_id),
             ]);
 
             Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);
@@ -2178,6 +2182,8 @@ class StripeController extends Controller
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
+                    // Discovery Phase 1 — see the logged-in branch above.
+                    'discovery_source' => AttributionService::sourceForCreator($cart[0]->owner_id ?? null),
                 ]);
 
                 Helpers::applyDigitalWaiver($stripeid, (bool) request()->digital_waiver);
@@ -2475,6 +2481,10 @@ class StripeController extends Controller
                 // On a RECURRING row this is also the grandfathering record: the
                 // supporter keeps this rate at renewal unless a LOWER one is agreed.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — and on a recurring row this is also the
+                // inheritance record: every renewal copies it forward, because the
+                // surface that introduced the supporter earned the whole stream.
+                'discovery_source' => AttributionService::sourceForCreator($wish->user_id),
             ]);
 
             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
@@ -3132,6 +3142,9 @@ class StripeController extends Controller
                 // Grandfathered: the rate the supporter subscribed at, never the
                 // creator's current agreement.
                 ...Helpers::copyFeeRateColumns($subscription),
+                // Discovery Phase 1 — inherited from the subscription, the same way
+                // the rates above are. This detail row is what syncWishes() reads.
+                'discovery_source' => $subscription->discovery_source,
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -3883,6 +3896,9 @@ class StripeController extends Controller
                 // The rates this charge was priced at. Read back by every recompute
                 // path so a later change to the creator's deal cannot re-price it.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — persisted here so finance:sync-transactions can
+                // attribute the ledger row it rebuilds later, with no cookie to read.
+                'discovery_source' => AttributionService::sourceForCreator($creator->id),
             ]);
 
             Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);

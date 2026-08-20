@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 
 /**
- * Moving between the six creator guides.
+ * Moving between the creator guides.
  *
  * ⚠️ Rendered on the DARK field, so this is a quiet outlined row rather than the
  * cream card with black-bordered pills it used to be. That card was the loudest
@@ -24,6 +24,8 @@ export default function CreatorGuideLinks() {
         { href: '/creators/founder-bonus', label: 'Founder bonus' },
         { href: '/creators/stripe-safe', label: 'Stripe safe' },
     { href: '/creators/disputes', label: 'Disputes' },
+        { href: '/creators/discovery', label: 'Get discovered' },
+        { href: '/creators/link-in-bio', label: 'Link in bio' },
   ];
 
     const path = (url || '').split('?')[0].replace(/\/$/, '') || '/creators';

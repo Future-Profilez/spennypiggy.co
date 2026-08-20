@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\FreezesLedgerFx;
+use App\Services\Discovery\AttributionService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class FinancialTransaction extends Model
@@ -20,6 +22,8 @@ class FinancialTransaction extends Model
         'compliance_fee',
         'admin_fee',
         'fee_profile',
+        'discovery_source',
+        'discovery_class',
         'uuid',
         'user_id',
         'supporter_id',
@@ -66,6 +70,61 @@ class FinancialTransaction extends Model
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
+            }
+        });
+
+        /*
+         * Discovery Phase 1 — stamp the ledger row with the source that earned it.
+         *
+         * 🚨 WRAPPED, AND NEVER ALLOWED TO THROW. This runs inside the checkout
+         * path; a supporter must never lose a purchase because attribution
+         * failed. `AttributionService` wraps its own body too — this is the
+         * second belt.
+         *
+         * ⚠️ TWO SOURCES, IN THIS ORDER, AND THIS IS THE ONLY PLACE EITHER IS
+         * READ — a dozen call sites write ledger rows and none of them should
+         * have to remember analytics:
+         *
+         *   1. The visitor's `sp_disc` cookie, where a browser is present. That
+         *      is a redirect-completed purchase.
+         *   2. The payment's own Stripe metadata, where one is not. A row
+         *      written by a Stripe WEBHOOK or by `finance:sync-transactions` has
+         *      no browser attached, and bank payments (SEPA/ACH) settle
+         *      asynchronously — so they are ALWAYS case 2. The webhook remembers
+         *      the event's metadata for the request
+         *      (`AttributionService::rememberPaymentMetadata()`) and this hook
+         *      reads it back.
+         *
+         * ⚠️ Attribution is claimed atomically inside `AttributionService`, so
+         * whichever path gets there first wins and a retried webhook or a resync
+         * neither overwrites the source nor duplicates the purchase event.
+         */
+        static::created(function ($model) {
+            try {
+                if ($model->type !== 'income') {
+                    return;
+                }
+
+                $service = app(AttributionService::class);
+
+                // 1. A browser with the visitor's cookie.
+                if (! app()->runningInConsole() && app()->bound('request') && request()->cookies !== null) {
+                    if ($service->attributeTransaction($model, request()) !== null) {
+                        return;
+                    }
+                }
+
+                // 2. No browser — the source rode in on the payment.
+                $metadata = AttributionService::ambientMetadata();
+
+                if ($metadata !== []) {
+                    $service->attributeTransactionFromMetadata($model, $metadata);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Discovery: ledger attribution hook failed', [
+                    'transaction' => $model->getKey(),
+                    'error' => $e->getMessage(),
+                ]);
             }
         });
 

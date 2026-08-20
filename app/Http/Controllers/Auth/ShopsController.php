@@ -32,6 +32,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemFunnelService;
 use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
@@ -1269,6 +1270,10 @@ class ShopsController extends Controller
                 // The rates this charge was priced at. Read back by every recompute
                 // path so a later change to the creator's deal cannot re-price it.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — this row's ledger entry is written later by
+                // finance:sync-transactions, in a worker with no cookie, so the
+                // source has to be persisted here while the browser is present.
+                'discovery_source' => AttributionService::sourceForCreator($shop->user_id),
             ]);
 
             // Apply digital waiver confirmation

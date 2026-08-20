@@ -18,10 +18,12 @@ use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
+use App\Services\Discovery\AttributionService;
 use App\Services\Risk\ReservePolicy;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class SyncFinancialTransactions extends Command
 {
@@ -101,6 +103,48 @@ class SyncFinancialTransactions extends Command
         $this->info('Sync completed successfully!');
     }
 
+    /**
+     * Discovery Phase 1 — stamp this ledger row from the source its PAYMENT row carries.
+     *
+     * 🚨 THIS COMMAND IS WHERE SHOP, TASK, BILL, MEMBERSHIP AND WISH LEDGER ROWS
+     * ARE ACTUALLY BORN. Nothing on the payment path creates them, so before the
+     * `discovery_source` column existed those five modules were unattributable in
+     * principle: this runs in a queued worker with no visitor cookie, and the
+     * ambient Stripe metadata is deliberately NOT propagated across the queue
+     * because one pass rebuilds EVERY row belonging to a creator — one payment's
+     * source would leak onto all of them.
+     *
+     * ⚠️ Called after `updateOrCreate`, not left to the `FinancialTransaction::created`
+     * hook: that hook fires only on INSERT, so a row created by an earlier run
+     * before its payment carried a source would never be attributed at all.
+     *
+     * ⚠️ Routes through `AttributionService`, which claims the row with a targeted
+     * `whereKey(...)->update()` — never `save()` (the reserve `updating` guard) —
+     * and refuses to overwrite a row that is already attributed or to write a
+     * second `discovery_events` purchase row. Re-running this command is a no-op.
+     *
+     * ⚠️ Never throws. A sync run must not fail because analytics did.
+     *
+     * @param  mixed  $paymentRow  the payment model that produced this ledger row
+     */
+    private function attributeDiscovery(FinancialTransaction $transaction, $paymentRow): void
+    {
+        try {
+            $source = $paymentRow->discovery_source ?? null;
+
+            if (! is_string($source) || $source === '') {
+                return;
+            }
+
+            app(AttributionService::class)->attributeTransactionFromSource($transaction, $source);
+        } catch (\Throwable $e) {
+            Log::warning('Discovery: sync attribution failed', [
+                'transaction' => $transaction->getKey(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function syncRyeProducts($userId = null)
     {
         $this->info('Syncing Rye Products...');
@@ -163,7 +207,7 @@ class SyncFinancialTransactions extends Command
                 $status = $riskData['status'];
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, RyeProductPayment::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => RyeProductPayment::class,
                         'source_id' => $payment->id,
@@ -191,6 +235,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
             }
         });
     }
@@ -215,6 +266,16 @@ class SyncFinancialTransactions extends Command
             }
 
             $metadata = json_decode($payment->metadata, true);
+
+            // Discovery Phase 1 — this command runs with no browser attached, so
+            // the only source available is the one Stripe handed back with the
+            // payment. The stored metadata IS that payload, so a checkout the
+            // webhook never turned into a ledger row is still attributable when
+            // this reconciliation writes it. The `FinancialTransaction::created`
+            // hook reads it; it only ever applies to a row whose creator the
+            // metadata names, and never overwrites an attributed row.
+            AttributionService::rememberPaymentMetadata(is_array($metadata) ? $metadata : []);
+
             $wishItems = [];
 
             // Try to find items in flattened metadata (item_1_wish_id, item_2_wish_id, etc.)
@@ -299,7 +360,7 @@ class SyncFinancialTransactions extends Command
 
                 $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, StripePaymentItems::class, $paymentItem->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => StripePaymentItems::class,
                         'source_id' => $paymentItem->id,
@@ -325,9 +386,19 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
                 $count++;
             }
         }
+
+        // One payment's metadata must never attribute another payment's rows.
+        AttributionService::forgetPaymentMetadata();
 
         $this->info("Synced {$count} orphan wish items.");
     }
@@ -619,7 +690,7 @@ class SyncFinancialTransactions extends Command
                 }
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, MembershipPayment::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => MembershipPayment::class,
                         'source_id' => $payment->id,
@@ -647,6 +718,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
 
                 $this->ensureRiskLedgerPayment(
                     $creator,
@@ -710,7 +788,7 @@ class SyncFinancialTransactions extends Command
                 $taskCreator = $purchase->creator;
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $taskCreator, $purchase->created_at, TaskPurchase::class, $purchase->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => TaskPurchase::class,
                         'source_id' => $purchase->id,
@@ -738,6 +816,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $purchase->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $purchase);
 
                 if ($taskCreator) {
                     $this->ensureRiskLedgerPayment(
@@ -804,7 +889,7 @@ class SyncFinancialTransactions extends Command
                 }
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, BillPayment::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => BillPayment::class,
                         'source_id' => $payment->id,
@@ -832,6 +917,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
 
                 $this->ensureRiskLedgerPayment(
                     $creator,
@@ -905,7 +997,7 @@ class SyncFinancialTransactions extends Command
                 }
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $item->created_at, StripePaymentItems::class, $item->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => StripePaymentItems::class,
                         'source_id' => $item->id,
@@ -933,6 +1025,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $item->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $item->payment);
 
                 if ($creator) {
                     $this->ensureRiskLedgerPayment(
@@ -999,7 +1098,7 @@ class SyncFinancialTransactions extends Command
                 }
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, ShopPayment::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => ShopPayment::class,
                         'source_id' => $payment->id,
@@ -1027,6 +1126,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
 
                 $this->ensureRiskLedgerPayment(
                     $creator,
@@ -1084,7 +1190,7 @@ class SyncFinancialTransactions extends Command
                 }
                 $reserve = $this->determineReserve($creatorAmount, $riskData, $creator, $payment->created_at, TipGoalsPayment::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => TipGoalsPayment::class,
                         'source_id' => $payment->id,
@@ -1112,6 +1218,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
 
                 if ($creator) {
                     $this->ensureRiskLedgerPayment(
@@ -1171,7 +1284,7 @@ class SyncFinancialTransactions extends Command
                 $status = (string) ($riskData['status'] ?? $defaultStatus);
                 $reserve = $this->determineReserve($amount, $riskData, $creator, $payment->created_at, PiggyPotContribution::class, $payment->id);
 
-                FinancialTransaction::updateOrCreate(
+                $ledgerRow = FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => PiggyPotContribution::class,
                         'source_id' => $payment->id,
@@ -1199,6 +1312,13 @@ class SyncFinancialTransactions extends Command
                         'transaction_date' => $payment->created_at,
                     ]
                 );
+
+                // Discovery Phase 1 — attribute from the source this PAYMENT row
+                // carries. This worker has no cookie and no event metadata, and
+                // the ambient metadata is deliberately not carried across the
+                // queue (one pass rebuilds every row a creator has). Idempotent:
+                // an attributed row is never re-stamped and never re-evented.
+                $this->attributeDiscovery($ledgerRow, $payment);
 
                 // Ensure the risk engine's Payment table has a row for this contribution
                 // so reserve-hold and payout visibility are consistent with every other

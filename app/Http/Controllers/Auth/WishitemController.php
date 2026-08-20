@@ -41,6 +41,7 @@ use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
@@ -1849,6 +1850,9 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
+            // Discovery Phase 1 — syncRyeProducts() rebuilds this row's ledger entry
+            // in a worker with no cookie, so the source is persisted here.
+            $ryeProductPayment->discovery_source = AttributionService::sourceForCreator($orderDetails->creator->id ?? null);
             Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
             $ryeProductPayment->save();
 

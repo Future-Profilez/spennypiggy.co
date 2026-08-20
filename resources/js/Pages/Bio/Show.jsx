@@ -1,7 +1,9 @@
 import { Head, Link } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import axios from "axios";
 import VerifiedBadge from "@/Components/VerifiedBadge";
+import { BIO_TIP_COPY } from "@/constants/bioTip";
 import {
     STABLECOIN_COPY,
     STABLECOIN_TIPS_ANNOUNCED,
@@ -17,11 +19,25 @@ import {
  * the header, the bottom bar and the toaster — app chrome, for someone already
  * inside the app, which is not who arrives here.
  *
- * 🚨 EVERY BUTTON GOES SOMEWHERE THAT ALREADY EXISTS. Internal links land on
- * profile pages that are already gated; external ones leave through the counting
- * redirect, which rebuilds its destination server-side. There is no checkout, no
- * price and no payment method on this page, and adding one would make it a new
- * Stripe surface rather than a layout change.
+ * 🚨 THIS PAGE SELLS, AND IT STILL CONTAINS NO CHECKOUT. (Superseded 21 Aug 2026
+ * — this docblock previously said "there is no checkout, no price and no payment
+ * method on this page", which was true until the B stream and is not any more.)
+ * An item card shows a LISTED price and leads, in one tap, to the buying path
+ * that listing already had on the main site: `/bio/buy/{uuid}` counts the click,
+ * stamps the visitor as `bio-link`, and redirects to a checkout rebuilt
+ * server-side from the stored row. There is still no payment form, no price
+ * calculation and no payment-method choice in this file, and adding one would
+ * make it a second checkout rather than a second way in to the first.
+ *
+ * 🚨 THE PRICE ON A CARD IS THE CREATOR'S LISTED PRICE, NOT THE SUPPORTER'S
+ * TOTAL. What a supporter pays is grossed up per fee profile by
+ * `Helpers::calculateStripeDirectChargeFlow` at the checkout, once. Never
+ * compute, adjust or "estimate" a price in this file — the page and the checkout
+ * would print different numbers on the one screen a creator shares everywhere.
+ *
+ * 🚨 EVERY OTHER BUTTON GOES SOMEWHERE THAT ALREADY EXISTS. Internal links land
+ * on profile pages that are already gated; external ones leave through the
+ * counting redirect, which rebuilds its destination server-side.
  *
  * ── Design ────────────────────────────────────────────────────────────────
  *
@@ -50,7 +66,9 @@ import {
 export default function BioShow({
     creator,
     links = [],
+    items = [],
     featured = null,
+    tip = null,
     bioUrl,
     isOwner = false,
     stats = null,
@@ -87,7 +105,7 @@ export default function BioShow({
         copyLink();
     };
 
-    const nothingToShow = links.length === 0 && !featured;
+    const nothingToShow = links.length === 0 && items.length === 0 && !featured;
 
     return (
         <>
@@ -98,6 +116,17 @@ export default function BioShow({
                     <Header creator={creator} />
 
                     {featured ? <Featured item={featured} /> : null}
+
+                    {/*
+                        🚨 The items come FIRST, above every link. The whole
+                        argument for switching to this page is that the thing a
+                        supporter wants to buy is on the first screen they land
+                        on — a card under a list of buttons is the four-tap
+                        journey the brief exists to remove.
+                    */}
+                    {items.length > 0 ? (
+                        <ItemGrid items={items} isOwner={isOwner} />
+                    ) : null}
 
                     {internal.length > 0 ? (
                         <LinkGroup
@@ -116,7 +145,7 @@ export default function BioShow({
                         />
                     ) : null}
 
-                    {STABLECOIN_TIPS_ANNOUNCED ? <Stablecoin /> : null}
+                    {STABLECOIN_TIPS_ANNOUNCED ? <Stablecoin tip={tip} /> : null}
 
                     {nothingToShow ? <Empty creator={creator} /> : null}
 
@@ -263,6 +292,171 @@ function Featured({ item }) {
 }
 
 /**
+ * ⚠️ THE LISTED PRICE, FORMATTED — NEVER CALCULATED. `Intl` puts the right
+ * symbol on the number the creator set; nothing here adds a fee, a tax or a
+ * gross-up. What the supporter pays is produced once, at the checkout, by
+ * `Helpers::calculateStripeDirectChargeFlow`.
+ */
+const money = (value, currency) =>
+    new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: (currency || "GBP").toUpperCase(),
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Number(value) || 0);
+
+/**
+ * The things this creator sells — the reason to switch to this page.
+ *
+ * 🚨 ONE FRAME, CARDS ABUTTING. Same device as the link block and the same
+ * reason: the hairline is `gap-px` over the green parent, never a border per
+ * card, because adjacent borders double up.
+ *
+ * ⚠️ AN ODD CARD COUNT SPANS THE LAST TILE ACROSS BOTH COLUMNS, or the parent
+ * shows through as a solid green block where the missing tile would be. Handled
+ * here so no caller has to remember it — the trap `StatStrip` documents.
+ *
+ * ⚠️ Two columns on a phone, matching the wish, shop and pot grids. The page
+ * opens in an in-app browser and its job is to be read in one scroll; a
+ * single-column list of twelve cards is four screens of scrolling.
+ */
+function ItemGrid({ items, isOwner }) {
+    const odd = items.length % 2 === 1;
+
+    return (
+        <section className="mt-7">
+            <div className="mb-2.5 flex items-center gap-2.5 px-1">
+                <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-black/60">
+                    Buy from me
+                </span>
+                <span
+                    className="h-[3px] flex-1 rounded-full"
+                    style={{ backgroundColor: "#FF007F" }}
+                />
+            </div>
+
+            <div className="overflow-hidden rounded-box border-[3px] border-[#000] bg-[#A2E4B8]">
+                <div className="grid grid-cols-2 gap-px">
+                    {items.map((item, index) => (
+                        <ItemCard
+                            key={item.uuid}
+                            item={item}
+                            isOwner={isOwner}
+                            wide={odd && index === items.length - 1}
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * ⚠️ THE HREF IS THE COUNTING REDIRECT, NEVER THE CHECKOUT ITSELF. `/bio/buy/
+ * {uuid}` counts the tap, stamps the visitor as `bio-link` so the sale is
+ * recorded as the creator's own traffic, and rebuilds the destination
+ * server-side from the stored row. A card that linked straight to a checkout
+ * would be an unattributed sale and an unrecorded click, neither of which can be
+ * recovered afterwards.
+ *
+ * ⚠️ It is a plain `<a>`, not an Inertia `<Link>`. The destination is a 302 to a
+ * page outside this one's component tree — several of them leave Inertia
+ * entirely for a Stripe-hosted checkout — and an Inertia visit cannot follow a
+ * redirect that ends somewhere it does not control.
+ *
+ * ⚠️ "Sign in to buy" is a WARNING, not the gate. Bills, Memberships, Paid Tasks
+ * and Shop orders need an account so they can be tracked, delivered, renewed and
+ * cancelled, and each buy path refuses a guest itself. Saying so on the card only
+ * stops the supporter meeting a login screen with no explanation.
+ */
+function ItemCard({ item, isOwner, wide }) {
+    const hidden = isOwner && !item.is_active;
+
+    return (
+        <a
+            href={item.url}
+            className={[
+                "group flex flex-col p-3",
+                "transition-[background-color] duration-200",
+                wide ? "col-span-2" : "",
+                hidden
+                    ? "bg-white/55 text-black/45"
+                    : "bg-white text-black hover:bg-[#FFF3F8] active:bg-[#FFE7F2]",
+            ].join(" ")}
+        >
+            <div className="mb-2.5 h-[126px] w-full overflow-hidden rounded-box-sm border-2 border-[#000] bg-[#A2E4B8]">
+                {item.image ? (
+                    <img
+                        src={item.image}
+                        alt=""
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-[filter] duration-500 group-hover:brightness-[1.08]"
+                    />
+                ) : (
+                    <span className="flex h-full w-full items-center justify-center font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/35">
+                        {item.type_label}
+                    </span>
+                )}
+            </div>
+
+            <span className="inline-block w-fit rounded-box-xs bg-black/[0.08] px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-black/60">
+                {item.type_label}
+            </span>
+
+            <p className="mt-1.5 line-clamp-2 font-gulfs text-[13px] uppercase leading-[1.2] tracking-tight">
+                {item.title}
+            </p>
+
+            <div className="mt-auto pt-2.5">
+                {item.price !== null && item.price !== undefined ? (
+                    <p className="font-poppins text-[13px] font-semibold leading-[1.3] text-black">
+                        {money(item.price, item.currency)}
+                        {item.price_note ? (
+                            <span className="font-normal text-black/55">
+                                {" "}
+                                {item.price_note}
+                            </span>
+                        ) : null}
+                    </p>
+                ) : null}
+
+                {/*
+                    ⚠️ A pot has no price — any amount within the platform limits
+                    buys it — so it shows progress instead. `percent` is null when
+                    the creator set no target, and a null bar is omitted rather
+                    than drawn at 0: "no goal" and "nobody has bought" are
+                    different things and a 0% bar states the second.
+                */}
+                {item.percent !== null && item.percent !== undefined ? (
+                    <div className="h-2.5 w-full overflow-hidden rounded-box-xs border-2 border-[#000] bg-white">
+                        <div
+                            className="h-full bg-[#FF007F]"
+                            style={{ width: `${item.percent}%` }}
+                        />
+                    </div>
+                ) : null}
+
+                <span
+                    className={[
+                        "mt-2 flex min-h-[38px] items-center justify-center rounded-box-sm px-2",
+                        "font-gulfs text-[11px] uppercase tracking-[0.14em] text-black",
+                        hidden ? "bg-black/[0.06]" : "bg-[#FF007F]",
+                    ].join(" ")}
+                >
+                    {hidden ? "Hidden" : item.cta}
+                </span>
+
+                {item.requires_account ? (
+                    <span className="mt-1.5 block font-poppins text-[10.5px] leading-[1.4] text-black/45">
+                        Sign in to buy
+                    </span>
+                ) : null}
+            </div>
+        </a>
+    );
+}
+
+/**
  * 🚨 ONE FRAME, ROWS ABUTTING. See the page docblock — this is the platform's
  * own grouping device and it is what stops the page reading as a link list.
  *
@@ -375,8 +569,13 @@ function LinkRow({ link, accent, isOwner }) {
  * its own rail: every other button here is a Stripe-processed content purchase
  * and this one is not, so saying so is what keeps the two from reading as one.
  */
-function Stablecoin() {
-    const live = STABLECOIN_TIPS_LIVE;
+function Stablecoin({ tip }) {
+    // ⚠️ TWO SWITCHES, AND THE SERVER'S ONE WINS. `STABLECOIN_TIPS_LIVE` is a JS
+    // constant that governs the marketing tense; the button may only be pressed
+    // when `config('discovery.labels.tips')` says so, which arrives as
+    // `tip.live`. A label flip must be a config change with no deploy (Master
+    // Plan §F), so the constant can never be what enables a payment.
+    const live = STABLECOIN_TIPS_LIVE && !!tip?.live;
 
     return (
         <section
@@ -424,7 +623,273 @@ function Stablecoin() {
             >
                 {STABLECOIN_COPY.railNote}
             </p>
+
+            {tip ? <TipAmounts tip={tip} live={live} /> : null}
         </section>
+    );
+}
+
+/**
+ * The Tip flow — built in full, switched off.
+ *
+ * 🚨 EVERY NUMBER COMES FROM THE SERVER. The presets, the minimum, the maximum
+ * and the admin fee arrive in `tip` from `BioTipService::payload()`, and the
+ * total is priced by `POST /bio/tip/quote`, which freezes the rate it used. This
+ * component never computes a total and never converts a currency — the same rule
+ * that keeps a listed price off the item cards, for the same reason: two places
+ * that can each produce a figure will eventually produce two figures.
+ *
+ * 🚨 THE GREYED STATE IS NOT A STYLE. While the rail is off, the controls are
+ * `disabled`, the fieldset is inert, and the server answers 503 to both
+ * endpoints regardless — a disabled button is a rendering decision and anyone
+ * can post past it. The "Coming soon" badge is the only thing separating an
+ * illustration from an offer, exactly as it is on the marketing pages.
+ *
+ * ⚠️ LITERAL PATHS, NOT `route()`. A named route is invisible to the frontend
+ * until `ziggy:generate` runs, and `route()` THROWS for a name it does not carry
+ * — which surfaces as whatever the nearest catch handler says rather than as the
+ * missing route it is. Vapor regenerates on deploy, so this only bites local and
+ * dev, which is exactly where it wastes the time.
+ *
+ * ⚠️ No settlement speed is stated anywhere, and the provider is never named.
+ */
+function TipAmounts({ tip, live }) {
+    const [amount, setAmount] = useState("");
+    const [custom, setCustom] = useState("");
+    const [quote, setQuote] = useState(null);
+    const [error, setError] = useState(null);
+
+    const chosen = Number(custom || amount) || 0;
+
+    // ⚠️ Client-side range checking is a COURTESY, never the rule.
+    // `BioTipService::amountError()` refuses the same values on the server, and
+    // that is the one that decides.
+    const outOfRange =
+        chosen > 0 && (chosen < tip.min || chosen > tip.max);
+
+    useEffect(() => {
+        if (!live || chosen <= 0 || outOfRange) {
+            setQuote(null);
+
+            return undefined;
+        }
+
+        // ⚠️ axios, NOT `fetch`. `bootstrap.js` configures axios with the app's
+        // XSRF handling; a raw `fetch` POST carries no CSRF token and is answered
+        // 419 by the `web` group, which surfaces as "the quote never loads".
+        //
+        // The rate is frozen by the QUOTE, so a keystroke must not mint one per
+        // character — that would also freeze a rate nobody asked for.
+        const controller = new AbortController();
+        const id = setTimeout(() => {
+            axios
+                .post(
+                    "/bio/tip/quote",
+                    { amount: chosen },
+                    { signal: controller.signal },
+                )
+                .then(({ data }) => {
+                    if (data?.status) {
+                        setQuote(data.quote);
+                        setError(null);
+                    } else {
+                        setQuote(null);
+                        setError(data?.message || null);
+                    }
+                })
+                .catch((e) => {
+                    // A failed quote CLEARS the figure rather than leaving a
+                    // stale one beside a new amount.
+                    setQuote(null);
+                    setError(e?.response?.data?.message || null);
+                });
+        }, 400);
+
+        return () => {
+            clearTimeout(id);
+            controller.abort();
+        };
+    }, [chosen, live, outOfRange]);
+
+    return (
+        <div
+            className={[
+                "mt-4 border-t-2 pt-3.5",
+                live ? "border-black/20" : "border-black/10",
+            ].join(" ")}
+        >
+            <div className="flex items-center justify-between gap-2">
+                <span
+                    className={[
+                        "font-gulfs text-[10.5px] uppercase tracking-[0.16em]",
+                        live ? "text-black/70" : "text-black/40",
+                    ].join(" ")}
+                >
+                    {BIO_TIP_COPY.chooseLabel}
+                </span>
+
+                {live ? null : (
+                    <span className="shrink-0 rounded-box-xs bg-black/10 px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-black/50">
+                        {BIO_TIP_COPY.comingSoon}
+                    </span>
+                )}
+            </div>
+
+            {/*
+                ⚠️ `fieldset[disabled]` turns off every control inside it in one
+                place — including ones added later. Greying them individually is
+                how one eventually stays live.
+            */}
+            <fieldset disabled={!live} className="mt-2.5 min-w-0">
+                <div className="grid grid-cols-3 gap-1.5">
+                    {(tip.presets || []).map((preset) => (
+                        <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                                setAmount(String(preset));
+                                setCustom("");
+                            }}
+                            className={[
+                                "min-h-[40px] rounded-box-xs border-2 px-1",
+                                "font-gulfs text-[11px] uppercase tracking-[0.1em]",
+                                "transition-[background-color,opacity] duration-200",
+                                live
+                                    ? "border-[#000] text-black"
+                                    : "border-black/20 text-black/35",
+                                live && String(preset) === amount && !custom
+                                    ? "bg-[#FF007F]"
+                                    : "bg-white/60",
+                            ].join(" ")}
+                        >
+                            ${preset}
+                        </button>
+                    ))}
+                </div>
+
+                <label className="mt-2.5 block">
+                    <span
+                        className={[
+                            "font-gulfs text-[10px] uppercase tracking-[0.14em]",
+                            live ? "text-black/60" : "text-black/35",
+                        ].join(" ")}
+                    >
+                        {BIO_TIP_COPY.customLabel} (${tip.min} – ${tip.max})
+                    </span>
+                    <input
+                        type="number"
+                        inputMode="decimal"
+                        min={tip.min}
+                        max={tip.max}
+                        step="0.01"
+                        value={custom}
+                        onChange={(e) => {
+                            setCustom(e.target.value);
+                            setAmount("");
+                        }}
+                        placeholder={BIO_TIP_COPY.customPlaceholder}
+                        className={[
+                            "mt-1 min-h-[44px] w-full rounded-box-xs border-2 px-3",
+                            "font-poppins text-[14px] leading-[1.4]",
+                            live
+                                ? "border-[#000] bg-white text-black"
+                                : "border-black/20 bg-white/50 text-black/40",
+                        ].join(" ")}
+                    />
+                </label>
+
+                <button
+                    type="button"
+                    className={[
+                        "mt-2.5 min-h-[46px] w-full rounded-box-sm border-[3px] px-3",
+                        "font-gulfs text-[12px] uppercase tracking-[0.14em]",
+                        "transition-[filter] duration-200",
+                        // ⚠️ ONE text-colour utility per branch. Two on the same
+                        // element under the same variant is a conflicting pair
+                        // `npm run check` fails the build on — and the one that
+                        // wins is decided by stylesheet order, not source order.
+                        live
+                            ? "border-[#000] bg-[#FF007F] text-black hover:brightness-110 active:brightness-95"
+                            : "border-black/20 bg-black/[0.06] text-black/40",
+                    ].join(" ")}
+                >
+                    {live ? BIO_TIP_COPY.action : BIO_TIP_COPY.actionDisabled}
+                </button>
+            </fieldset>
+
+            {outOfRange ? (
+                <p className="mt-2 font-poppins text-[11.5px] leading-[1.5] text-[#B91C1C]">
+                    Tips are ${tip.min} to ${tip.max}.
+                </p>
+            ) : null}
+
+            {error ? (
+                <p className="mt-2 font-poppins text-[11.5px] leading-[1.5] text-[#B91C1C]">
+                    {error}
+                </p>
+            ) : null}
+
+            {/*
+                The frozen quote. It prints the tip and the fee as two numbers
+                because they are two numbers — the creator receives the first and
+                the second is added on top.
+            */}
+            {quote ? (
+                <dl className="mt-2.5 font-poppins text-[11.5px] leading-[1.6] text-black/70">
+                    <div className="flex justify-between gap-3">
+                        <dt>Tip</dt>
+                        <dd className="tabular-nums">
+                            ${quote.amount.toFixed(2)}
+                        </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                        <dt>Admin fee</dt>
+                        <dd className="tabular-nums">
+                            ${quote.admin_fee.toFixed(2)}
+                        </dd>
+                    </div>
+                    <div className="flex justify-between gap-3 font-semibold text-black">
+                        <dt>Total</dt>
+                        <dd className="tabular-nums">
+                            ${quote.total.toFixed(2)} {quote.currency}
+                        </dd>
+                    </div>
+                    {quote.display ? (
+                        <div className="flex justify-between gap-3 text-black/50">
+                            <dt>Approximately</dt>
+                            <dd className="tabular-nums">
+                                {money(quote.display.total, quote.display.currency)}
+                            </dd>
+                        </div>
+                    ) : null}
+                </dl>
+            ) : null}
+
+            <p
+                className={[
+                    "mt-2.5 font-poppins text-[11px] leading-[1.5]",
+                    live ? "text-black/55" : "text-black/40",
+                ].join(" ")}
+            >
+                {BIO_TIP_COPY.feeNote}
+            </p>
+            <p
+                className={[
+                    "mt-1 font-poppins text-[11px] leading-[1.5]",
+                    live ? "text-black/55" : "text-black/40",
+                ].join(" ")}
+            >
+                {BIO_TIP_COPY.fxNote}
+            </p>
+            <p
+                className={[
+                    "mt-1 font-poppins text-[11px] leading-[1.5]",
+                    live ? "text-black/55" : "text-black/40",
+                ].join(" ")}
+            >
+                {BIO_TIP_COPY.natureNote}
+            </p>
+        </div>
     );
 }
 

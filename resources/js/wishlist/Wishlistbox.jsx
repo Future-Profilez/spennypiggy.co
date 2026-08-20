@@ -16,6 +16,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import RemoveWish from "./RemoveWish";
 import { Link, usePage } from "@inertiajs/react";
+import discoveryLink from "@/lib/discoveryLink";
 import SaveButton from "@/Components/SaveButton";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
@@ -34,6 +35,12 @@ export default function Wishlistbox(props) {
         classes,
         showall,
         isOverlay,
+        /* Discovery attribution. Set ONLY by a surface Spenny Piggy chose to
+           put this creator on (Discover's grid and carousels). Left undefined
+           on the creator's own profile and anywhere the supporter already
+           picked them — tagging those would inflate the one number the
+           Discovery report exists to make credible. */
+        discoverySource,
     } = props;
 
     const effectiveAuth = auth || globalAuth;
@@ -470,9 +477,16 @@ export default function Wishlistbox(props) {
                                 By
                             </span>
                             <Link
-                                href={route("user.show", {
-                                    username: itm.user.username,
-                                })}
+                                href={
+                                    discoverySource
+                                        ? discoveryLink(
+                                              itm.user.username,
+                                              discoverySource
+                                          )
+                                        : route("user.show", {
+                                              username: itm.user.username,
+                                          })
+                                }
                                 className="min-w-0 truncate text-[10px] font-bold uppercase text-[#FF007F] transition-opacity hover:underline hover:opacity-80 sm:text-xs"
                             >
                                 @{itm.user.username}

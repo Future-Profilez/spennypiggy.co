@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import userphoto from '../../../../assets/siteicon.png';
+import discoveryLink, { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
 
 /**
  * DiscoverHero — the signature of the Discover page.
@@ -51,16 +52,23 @@ export default function DiscoverHero({
             });
     }, [faces]);
 
+    /*
+     * 🚨 Every ticker row is Spenny Piggy putting a creator in front of a
+     * supporter, so each one carries its own Discovery source. `trending` for
+     * the two creator rails (there is no reserved "top earners" key and
+     * `trending` is the closest of the twelve) and `new-wishes` for the wish
+     * rail. An untagged row here would be invisible in the report for ever.
+     */
     const ticker = useMemo(() => {
         const out = [];
         (topEarners || []).slice(0, 5).forEach((c) => {
             if (!c?.username) return;
-            out.push({ k: `e-${c.id}`, mark: '◆', to: `/${c.username}`,
+            out.push({ k: `e-${c.id}`, mark: '◆', to: discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING),
                 text: <><b className="text-white">@{c.username}</b> top earner this week</> });
         });
         (featuredCreators || []).slice(0, 8).forEach((c) => {
             if (!c?.username) return;
-            out.push({ k: `v-${c.id}`, mark: '↗', to: `/${c.username}`,
+            out.push({ k: `v-${c.id}`, mark: '↗', to: discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING),
                 text: c.clicks_24h
                     ? <><b className="text-white">@{c.username}</b> · {c.clicks_24h} views today</>
                     : <><b className="text-white">@{c.username}</b> trending now</> });
@@ -69,7 +77,7 @@ export default function DiscoverHero({
             const title = w?.wishname || w?.title || w?.name;
             const uname = w?.user?.username;
             if (!title || !uname) return;
-            out.push({ k: `w-${w.id}`, mark: '✦', to: `/${uname}`,
+            out.push({ k: `w-${w.id}`, mark: '✦', to: discoveryLink(uname, DISCOVERY_SOURCE.NEW_WISHES),
                 text: <><b className="text-white">@{uname}</b> · {String(title).slice(0, 28)}</> });
         });
         return out.sort((a, b) => (a.k.charCodeAt(0) + a.k.length) - (b.k.charCodeAt(0) + b.k.length));

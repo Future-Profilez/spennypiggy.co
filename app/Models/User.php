@@ -77,6 +77,14 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'product_updates_enabled',
         'creator_updates_enabled',
         'date_of_birth',
+        // Discovery Phase 4 — the creator's own opt-in to Birthday Discovery.
+        // Fillable because the creator sets it themselves on their profile
+        // settings, unlike `exclude_from_discovery` above (a back-office
+        // control). ⚠️ `birthday_day` / `birthday_month` are deliberately NOT
+        // fillable: they are DERIVED from `date_of_birth` by
+        // ProfileController, and a request that could set them directly could
+        // publish a day the creator never entered.
+        'birthday_discovery_opt_in',
         'utm_source',
         'utm_medium',
         'utm_campaign',
@@ -104,6 +112,16 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // set from the admin app, and nothing on the website should be able to
         // flip it through mass assignment. Write it with forceFill()->save().
         'bonus_scheme_eligible' => 'boolean',
+        // Discovery Phase 3 — the admin "exclude from Discovery" switch. Stops
+        // Spenny Piggy RECOMMENDING this creator; it does not hide their
+        // profile, their links or their catalogue (that is `suspended_account`).
+        // Read by App\Services\Discovery\CreatorRecommendationService.
+        //
+        // ⚠️ Deliberately NOT in $fillable, for the same reason as the line
+        // above: it is a back-office control written from the admin app, and
+        // nothing a creator submits should be able to flip it. Write it with
+        // forceFill()->save().
+        'exclude_from_discovery' => 'boolean',
         // Written by CreatorJourneyService, read by the admin app's onboarding drip.
         'journey_step_at' => 'datetime',
         'journey_completed_at' => 'datetime',
@@ -123,6 +141,9 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'product_updates_enabled' => 'boolean',
         'creator_updates_enabled' => 'boolean',
         'date_of_birth' => 'date',
+        'birthday_discovery_opt_in' => 'boolean',
+        'birthday_day' => 'integer',
+        'birthday_month' => 'integer',
     ];
 
     protected $appends = [

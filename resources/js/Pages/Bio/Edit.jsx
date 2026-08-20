@@ -14,13 +14,31 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
  * ⚠️ The internal buttons are DERIVED from what the creator actually sells, so
  * they cannot be deleted — only hidden. Removing the row would just bring the
  * button back with its defaults on the next render.
+ *
+ * 🚨 THE ITEM PICKER SUBMITS A TYPE AND ONE OF THE CREATOR'S OWN LISTING UUIDs,
+ * AND NOTHING ELSE. No title, no price, no image — every word and number on a
+ * card is read from the live listing when the page renders, so a price edited
+ * here can never disagree with the checkout it links to. There is deliberately
+ * no free-text field on an item: the listing's own title has already been
+ * through `NoExpenseOrBrandName` and the media scan, and a bio page that could
+ * rename its own cards would be a new moderated surface.
+ *
+ * ⚠️ THE ITEM ENDPOINTS ARE WRITTEN AS LITERAL PATHS, NOT `route()`. A named
+ * route is invisible to the frontend until `ziggy:generate` runs, and `route()`
+ * THROWS for a name it does not carry — inside a handler that surfaces as
+ * whatever the catch says rather than as the missing route it is. Vapor
+ * regenerates on deploy, so it only bites local and dev, which is where it costs
+ * the most time.
  */
 export default function BioEdit({
     auth,
     links = [],
+    items = [],
+    catalogue = [],
     platforms = [],
     bioUrl,
     maxExternal,
+    maxItems = 12,
     externalCount = 0,
     stats = null,
 }) {
@@ -91,6 +109,18 @@ export default function BioEdit({
                         ) : null}
                     </section>
 
+                    {/*
+                        🚨 What you SELL comes before what you LINK TO, in the
+                        editor as on the page. The cards are the reason to switch
+                        to this link; the buttons are what every other
+                        link-in-bio already does.
+                    */}
+                    <ItemsSection
+                        items={items}
+                        catalogue={catalogue}
+                        maxItems={maxItems}
+                    />
+
                     <AddLink platforms={platforms} atLimit={atLimit} />
 
                     <section className="mt-6">
@@ -120,6 +150,260 @@ export default function BioEdit({
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+/** ⚠️ The LISTED price, formatted — never calculated. See `Bio/Show.jsx`. */
+const money = (value, currency) =>
+    new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: (currency || "GBP").toUpperCase(),
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Number(value) || 0);
+
+/**
+ * "What you sell" — the item selection and its order.
+ *
+ * ⚠️ The picker offers the creator's LIVE listings only, straight from
+ * `CatalogueService` (the My Listings screen's own list, not a second one). A
+ * scheduled or in-review listing is deliberately absent: a card a supporter
+ * cannot buy is not a card, and the creator adds it here the day it goes live.
+ */
+function ItemsSection({ items, catalogue, maxItems }) {
+    const ordered = useMemo(
+        () => [...items].sort((a, b) => a.sort_order - b.sort_order),
+        [items],
+    );
+
+    // A listing already on the page is not offered again — re-adding it would
+    // only reactivate the row it already has, which reads as nothing happening.
+    const chosen = useMemo(
+        () => new Set(ordered.map((i) => i.catalogue_key)),
+        [ordered],
+    );
+
+    const available = useMemo(
+        () => (catalogue || []).filter((row) => !chosen.has(row.key)),
+        [catalogue, chosen],
+    );
+
+    const atLimit = ordered.length >= maxItems;
+
+    return (
+        <section className="mt-6">
+            <h2 className="font-gulfs text-[13px] uppercase tracking-[0.18em] text-black/70">
+                What you sell
+            </h2>
+            <p className="mt-1 max-w-[52ch] font-poppins text-[13px] leading-[1.6] text-black/60">
+                These show as cards at the top of your page. Tapping one takes
+                your supporter straight to its checkout.
+            </p>
+
+            <AddItem available={available} atLimit={atLimit} maxItems={maxItems} />
+
+            <div className="mt-3 flex flex-col gap-3">
+                {ordered.map((item, index) => (
+                    <ItemRow
+                        key={item.uuid}
+                        item={item}
+                        index={index}
+                        total={ordered.length}
+                        order={ordered.map((i) => i.uuid)}
+                    />
+                ))}
+            </div>
+
+            {ordered.length === 0 ? (
+                <p className="mt-3 rounded-box-sm border-2 border-dashed border-black/25 px-4 py-6 text-center font-poppins text-[13px] leading-[1.6] text-black/55">
+                    Nothing chosen yet. Pick the things you most want people to
+                    buy — they go first, above every link.
+                </p>
+            ) : null}
+        </section>
+    );
+}
+
+function AddItem({ available, atLimit, maxItems }) {
+    const [selected, setSelected] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    const row = available.find((r) => r.key === selected);
+
+    const submit = (e) => {
+        e.preventDefault();
+
+        if (busy || !row) return;
+
+        setBusy(true);
+        router.post(
+            // ⚠️ Literal path, not `route()` — see this file's docblock.
+            "/bio-links/items",
+            { type: row.type, uuid: row.uuid },
+            {
+                preserveScroll: true,
+                onSuccess: () => setSelected(""),
+                onFinish: () => setBusy(false),
+            },
+        );
+    };
+
+    if (atLimit) {
+        return (
+            <p className="mt-3 rounded-box-sm border-2 border-[#000] bg-white px-4 py-3 font-poppins text-[13px] leading-[1.6] text-black/60">
+                You are showing the maximum of {maxItems} items. Remove one to
+                add another.
+            </p>
+        );
+    }
+
+    if (available.length === 0) {
+        return (
+            <p className="mt-3 rounded-box-sm border-2 border-dashed border-black/25 px-4 py-4 font-poppins text-[13px] leading-[1.6] text-black/55">
+                Everything you have live is already on your page.
+            </p>
+        );
+    }
+
+    return (
+        <form
+            onSubmit={submit}
+            className="mt-3 rounded-box border-[3px] border-[#000] bg-white p-4"
+        >
+            <label className="block">
+                <span className="font-gulfs text-[11px] uppercase tracking-[0.16em] text-black/60">
+                    Add an item
+                </span>
+                <select
+                    value={selected}
+                    onChange={(e) => setSelected(e.target.value)}
+                    className="mt-1 min-h-[48px] w-full rounded-box-sm border-2 border-[#000] bg-white px-3 font-poppins text-[14px] text-black"
+                >
+                    <option value="">Choose one of your listings…</option>
+                    {available.map((r) => (
+                        <option key={r.key} value={r.key}>
+                            {r.type_label} — {r.title}
+                            {r.price !== null && r.price !== undefined
+                                ? ` (${money(r.price, r.currency)})`
+                                : ""}
+                        </option>
+                    ))}
+                </select>
+            </label>
+
+            <button
+                type="submit"
+                disabled={busy || !row}
+                className="mt-3 min-h-[48px] w-full rounded-box-sm bg-[#FF007F] px-4 font-gulfs text-[13px] uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-40"
+            >
+                {busy ? "Processing…" : "Add to my page"}
+            </button>
+        </form>
+    );
+}
+
+function ItemRow({ item, index, total, order }) {
+    const [busy, setBusy] = useState(false);
+
+    const move = (direction) => {
+        if (busy) return;
+
+        const next = [...order];
+        const target = index + direction;
+
+        if (target < 0 || target >= total) return;
+
+        [next[index], next[target]] = [next[target], next[index]];
+
+        setBusy(true);
+        router.post(
+            "/bio-links/items/reorder",
+            { order: next },
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    };
+
+    const toggle = () => {
+        if (busy) return;
+        setBusy(true);
+        router.post(
+            `/bio-links/items/${item.uuid}`,
+            { is_active: !item.is_active },
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    };
+
+    const remove = () => {
+        if (busy) return;
+        setBusy(true);
+        router.post(
+            `/bio-links/items/${item.uuid}/remove`,
+            {},
+            { preserveScroll: true, onFinish: () => setBusy(false) },
+        );
+    };
+
+    return (
+        <div
+            className={[
+                "rounded-box-sm border-[3px] border-[#000] p-3",
+                item.is_active ? "bg-white" : "bg-black/[0.04]",
+            ].join(" ")}
+        >
+            <div className="flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-box-xs border-2 border-[#000] bg-black/[0.06]">
+                    {item.image ? (
+                        <img
+                            src={item.image}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                        />
+                    ) : null}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                    <p className="truncate font-gulfs text-[14px] uppercase leading-[1.2] text-black">
+                        {item.title}
+                    </p>
+                    <p className="mt-0.5 font-poppins text-[12px] leading-[1.5] text-black/50">
+                        {item.type_label}
+                        {item.price !== null && item.price !== undefined
+                            ? ` · ${money(item.price, item.currency)}`
+                            : ""}
+                        {item.clicks > 0 ? ` · ${item.clicks} taps` : ""}
+                    </p>
+                </div>
+
+                <div className="flex shrink-0 gap-1">
+                    <IconButton
+                        onClick={() => move(-1)}
+                        disabled={index === 0}
+                        label="Move up"
+                    >
+                        ↑
+                    </IconButton>
+                    <IconButton
+                        onClick={() => move(1)}
+                        disabled={index === total - 1}
+                        label="Move down"
+                    >
+                        ↓
+                    </IconButton>
+                </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+                <RowAction onClick={toggle} disabled={busy}>
+                    {item.is_active ? "Hide" : "Show"}
+                </RowAction>
+                {/* ⚠️ A selection IS removable, unlike a derived link button —
+                    it is the creator's own choice. The listing is untouched. */}
+                <RowAction onClick={remove} disabled={busy} tone="danger">
+                    Remove
+                </RowAction>
+            </div>
+        </div>
     );
 }
 

@@ -1,6 +1,11 @@
 import { Link, Head, router } from "@inertiajs/react";
 import { lazy, Suspense, useEffect } from "react";
 import Hero from './home/Hero';
+// 🚨 EAGER, unlike every other section on this page. It sits directly beneath
+// the hero — the second thing a visitor sees — so a lazy chunk would flash its
+// Suspense placeholder inside the LCP window on the most valuable slot on the
+// site. Client brief: Developer Master Plan, 19 Aug 2026, A1.
+import DiscoverySection from './home/DiscoverySection';
 import Guest from '@/Layouts/GuestLayout';
 import LiveBar from '@/includes/LiveBar';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
@@ -47,6 +52,7 @@ const StablecoinTipsAnnouncement = lazy(() => import('./home/StablecoinTipsAnnou
 // in git history); leaving its entry would have left the rail with a stop that
 // scrolls nowhere, and `route:list`-style checks do not exist for anchors.
 const CHAPTERS = [
+    { id: 'act-discover', label: 'Discover' },
     { id: 'act-proof', label: 'Proof' },
     { id: 'act-earn', label: 'Earn' },
     { id: 'act-setup', label: 'Set up' },
@@ -54,7 +60,7 @@ const CHAPTERS = [
     { id: 'act-join', label: 'Join' },
 ];
 
-export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
+export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel, discovery }) {
 
     useEffect(() => {
         // PWA Mode: If logged in, redirect directly to profile page
@@ -131,6 +137,12 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 ]}
              />
             <Hero auth={auth} />
+
+            {/* ── A1 · Discovery ──
+                Client brief places this "directly beneath the hero — the second
+                thing a visitor sees", which is why it now precedes the bespoke-
+                pricing note rather than following it. Not lazy: see the import. */}
+            <DiscoverySection discovery={discovery} />
 
             {/* Aimed at a handful of creators, so it sits under the hero rather
                 than inside it — visible early without displacing the pitch that

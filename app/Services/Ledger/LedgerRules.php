@@ -6,6 +6,7 @@ use App\Models\Deliverable;
 use App\Models\FinancialTransaction;
 use App\Models\ShopPayment;
 use App\Models\TaskPurchase;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -47,6 +48,98 @@ final class LedgerRules
 
     /** Statuses that mean the money has not settled yet. */
     public const IN_FLIGHT_STATUSES = ['processing', 'pending', 'review_hold'];
+
+    /**
+     * The SQL form of `creatorGross()` — what the sale is worth to the creator.
+     *
+     * 🚨 SQL TWIN OF A PHP READER. An aggregate screen cannot hydrate ten thousand
+     * rows to call `creatorGross()` on each one, so it needs the expression — and
+     * a hand-typed copy of that expression in a service is exactly how the four
+     * surfaces this class was written to reconcile drifted apart in the first
+     * place. Keep these two constants and their PHP twins in step: change one,
+     * change the other, in the same commit.
+     */
+    public const CREATOR_GROSS_SQL = '(net_amount + COALESCE(vat_amount, 0))';
+
+    /**
+     * The SQL form of `buyerPaid()` — what the SUPPORTER was charged.
+     *
+     * ⚠️ Includes the same legacy fallback the PHP reader has: a row written
+     * before `gross_amount` was populated is rebuilt from its own parts rather
+     * than reported as a £0 purchase. `NULLIF(...,0)` is what makes both NULL and
+     * a stored zero fall through to the rebuild.
+     */
+    public const BUYER_PAID_SQL =
+        '(COALESCE(NULLIF(gross_amount, 0), '
+        .'net_amount + COALESCE(vat_amount, 0) + COALESCE(platform_fee, 0) + COALESCE(stripe_fee, 0)'
+        .'))';
+
+    /**
+     * The SQL form of `countsTowardTotals()`: constrain a `financial_transactions`
+     * query to the rows a total is allowed to include.
+     *
+     * 🚨 This is `COUNTED_STATUSES` **plus the fulfilment gate**, and the second
+     * half is the one that gets forgotten. A `whereNotIn('status', [...refunded,
+     * disputed...])` filter looks like it does the job and does not: it lets
+     * `processing` (bank money that has not settled) through, and it counts a
+     * physical shop order nobody has posted and a timed task nobody has accepted.
+     * A screen filtering that way reports MORE than the earnings dashboard and
+     * more than the payout run will pay — three numbers, one pot of money.
+     *
+     * The two exclusions mirror `resolveFulfilment()` exactly, including its
+     * deliberate inclusiveness: an orphaned task purchase, a task whose row is
+     * gone, a shop payment with no shop, and any non-physical shop item all stay
+     * counted, because the payout engine pays them and showing the creator less
+     * than they are paid is the same bug in the other direction.
+     *
+     * @param  Builder|\Illuminate\Database\Query\Builder  $query
+     */
+    public static function countedScope($query)
+    {
+        // Inlined rather than bound: the list is a class constant of literals, and
+        // a variable-length IN list cannot be expressed as a single placeholder.
+        $earned = "'".implode("','", self::EARNED_TASK_STATUSES)."'";
+
+        return $query
+            ->whereIn('status', self::COUNTED_STATUSES)
+            // A TIMED paid task is still escrow until the buyer accepts it. An
+            // INSTANT task is fulfilled on payment and is deliberately NOT gated
+            // — the earnings screens used to exclude it, so creators were paid
+            // money their own dashboard never showed.
+            ->whereRaw(
+                // ⚠️ COALESCE, because `source` is a NULLABLE morph. `NULL = ?` is
+                // NULL, and `NOT (NULL AND TRUE)` is NULL — which SQL treats as
+                // false, silently DROPPING a row whose source_type is null and
+                // whose source_id happens to collide with a task_purchases id.
+                // The comparison has to yield a real boolean before the NOT.
+                "NOT (COALESCE(financial_transactions.source_type, '') = ? AND EXISTS ("
+                .' SELECT 1 FROM task_purchases tp'
+                .' LEFT JOIN tasks t ON t.id = tp.task_id'
+                .' WHERE tp.id = financial_transactions.source_id'
+                ."   AND COALESCE(t.type, 'timed') = 'timed'"
+                ."   AND tp.status NOT IN ({$earned})"
+                .'))',
+                [TaskPurchase::class]
+            )
+            // A PHYSICAL shop item is earned when the parcel is marked delivered.
+            // The deliverable is picked by lowest id, matching `fulfilmentMap()`'s
+            // `orderBy('id')->first()` — `hasOne()` on session_id has no
+            // deterministic order and the two must not disagree.
+            ->whereRaw(
+                // Same null-safety as the task branch above.
+                "NOT (COALESCE(financial_transactions.source_type, '') = ? AND EXISTS ("
+                .' SELECT 1 FROM shop_payments sp'
+                .' JOIN shops s ON s.id = sp.shop_id'
+                .' WHERE sp.id = financial_transactions.source_id'
+                ."   AND s.type = 'physical'"
+                .'   AND COALESCE(('
+                .'     SELECT d.status FROM deliverables d'
+                .'     WHERE d.session_id = sp.session_id ORDER BY d.id LIMIT 1'
+                ."   ), '') <> 'delivered'"
+                .'))',
+                [ShopPayment::class]
+            );
+    }
 
     /**
      * Resolve the fulfilment state of a whole set of ledger rows in a fixed number

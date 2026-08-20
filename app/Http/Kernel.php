@@ -23,7 +23,9 @@ use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\RequireActiveMembership;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StaticPageSeoMiddleware;
+use App\Http\Middleware\TrackDiscoveryVisit;
 use App\Http\Middleware\TrackSiteVisit;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
@@ -93,6 +95,21 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
+            /*
+             * 🚨 FIRST in the group, and it must stay first.
+             *
+             * It sets the response headers on the way OUT, so anything that
+             * short-circuits ahead of it (the suspended-user check, an Inertia
+             * redirect, a CSRF failure) would answer with no security headers at
+             * all. First in, last out — every web response carries them.
+             *
+             * ⚠️ Registered 20 Aug 2026. This class had existed for months with
+             * ZERO references anywhere: no HSTS, no CSP, no X-Frame-Options and no
+             * nosniff shipped in production, because `public/.htaccess` — the only
+             * other place headers were written — is inert on Vapor (Lambda runs no
+             * Apache). Its CSP is REPORT-ONLY; see config/security.php.
+             */
+            SecurityHeaders::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -112,6 +129,10 @@ class Kernel extends HttpKernel
             // Last in the group: it runs after the response exists, counts an
             // anonymous page view, and can never block a page from rendering.
             TrackSiteVisit::class,
+            // Discovery Phase 1 attribution. Separate from TrackSiteVisit on
+            // purpose — that one is anonymous counters, this one names a
+            // creator and a visitor. See both docblocks.
+            TrackDiscoveryVisit::class,
         ],
 
         'api' => [

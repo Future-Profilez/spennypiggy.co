@@ -1,5 +1,26 @@
 name: CI/CD Pipeline with Performance Testing
 
+# 🚨 THE DEPLOY CHAIN WAS DEAD END TO END. Two separate faults, both invisible
+# because a skipped job in GitHub Actions is not a failure — nothing goes red,
+# the deploy simply never happens.
+#
+#   1. `deploy-production` had `needs: deploy-staging`, and `deploy-staging` only
+#      runs on `refs/heads/develop`. Production deploys from `main`, so its one
+#      dependency could never have run in the same workflow run: production has
+#      never been deployable from CI.
+#   2. `deploy-staging` had `needs: [build-and-test, lighthouse-ci]`, and
+#      `lighthouse-ci` is `if: github.event_name == 'pull_request'`. On a PUSH it
+#      is skipped — and a skipped dependency skips the dependent job — so the
+#      develop deploy never ran either.
+#
+# Both now depend on `build-and-test` alone, which is the gate that actually has
+# to pass before anything ships. Do not chain a deploy to a job with a narrower
+# branch or event filter than its own.
+#
+# ⚠️ The real default branch of BOTH repos is `main` (the root CLAUDE.md still
+# says `bank`; that is stale). `develop` is the develop-branch trigger this
+# workflow was written for — nothing here verifies such a branch exists.
+
 on:
   pull_request:
     branches: [main, develop]
@@ -182,8 +203,20 @@ jobs:
   # Deploy to staging environment
   deploy-staging:
     runs-on: ubuntu-latest
-    needs: [build-and-test, lighthouse-ci]
+    # NOT `lighthouse-ci` as well: it is pull-request-only, so on a push it is
+    # skipped and skipped-dependency means skipped-job. See the note at the top.
+    needs: build-and-test
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    # ⚠️ There is no `staging` anywhere in the infrastructure — `vapor.yml`
+    # defines exactly two environments, `development` and `production`, and this
+    # job deploys `development` to dev.spennypiggy.co. The name below is a GITHUB
+    # environment (approvals + scoped secrets), which is a different thing from a
+    # Vapor environment and may well be where VAPOR_API_TOKEN is scoped.
+    # TODO(human): confirm in repo Settings → Environments whether an environment
+    # named `staging` exists and holds VAPOR_API_TOKEN / reviewers. If it does,
+    # rename it to `development` and change the line below to match; if the token
+    # is a repository-level secret, just change the line. NOT renamed here because
+    # renaming it blind would break the deploy it is supposed to fix.
     environment: 
       name: staging
       url: https://dev.spennypiggy.co
@@ -211,11 +244,28 @@ jobs:
       - name: Build for production
         run: npm run build:production
 
-      - name: Deploy to Vapor Staging
+      # Carries the commit INTO the artifact so /health can report what is live.
+      # `--commit` below only labels the artifact record in the Vapor API; it
+      # never reaches the running application, and `.git` is in `.vaporignore`
+      # so a vapor.yml build step cannot ask git either.
+      - name: Stamp the release
+        run: npm run release:stamp
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+
+      # `--message` was the constant "Deploy from CI/CD pipeline" on every single
+      # deploy, which makes `vapor deploy:list` — the list `vapor rollback` reads
+      # — a column of identical strings. The commit subject is passed through an
+      # ENV var, never interpolated straight into the shell: a commit message is
+      # attacker-controlled text.
+      - name: Deploy to Vapor (vapor environment "development")
         run: |
-          php vendor/bin/vapor deploy development --message="Deploy from CI/CD pipeline" --commit="${{ github.sha }}"
+          php vendor/bin/vapor deploy development \
+            --commit="${{ github.sha }}" \
+            --message="$(printf '%s' "$DEPLOY_MESSAGE" | head -n 1 | cut -c1-72)"
         env:
           VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+          DEPLOY_MESSAGE: ${{ github.event.head_commit.message }}
 
       - name: Wait for deployment
         run: sleep 30
@@ -234,7 +284,11 @@ jobs:
   # Deploy to production environment  
   deploy-production:
     runs-on: ubuntu-latest
-    needs: deploy-staging
+    # 🚨 WAS `needs: deploy-staging`. That job only runs on `develop`; this one
+    # only runs on `main`. A job can never need one that cannot run in the same
+    # run, so production was unreachable from CI. `build-and-test` is the gate
+    # that actually matters before shipping.
+    needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: 
       name: production
@@ -263,11 +317,19 @@ jobs:
       - name: Build for production
         run: npm run build:production
 
+      - name: Stamp the release
+        run: npm run release:stamp
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+
       - name: Deploy to Vapor Production
         run: |
-          php vendor/bin/vapor deploy production --message="Deploy from CI/CD pipeline" --commit="${{ github.sha }}"
+          php vendor/bin/vapor deploy production \
+            --commit="${{ github.sha }}" \
+            --message="$(printf '%s' "$DEPLOY_MESSAGE" | head -n 1 | cut -c1-72)"
         env:
           VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+          DEPLOY_MESSAGE: ${{ github.event.head_commit.message }}
 
       - name: Wait for deployment
         run: sleep 60

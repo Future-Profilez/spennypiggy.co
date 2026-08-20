@@ -5,6 +5,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 import FollowButton from "@/Pages/Profile/FollowButton";
 import MovementChip from "./MovementChip";
 import { rankTier } from "./rankTier";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 
 /**
  * One rung on the rail.
@@ -41,7 +42,7 @@ export default function RankRow({ row, windowDays, isYou = false }) {
             </span>
 
             <Link
-                href={`/${row.username}`}
+                href={discoveryLink(row.username, DISCOVERY_SOURCE.TRENDING)}
                 onClick={() => trackSearchClick(row.id, row.username)}
                 className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3"
             >

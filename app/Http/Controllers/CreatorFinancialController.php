@@ -30,6 +30,7 @@ use App\Services\NotificationDeliveryService;
 use App\Services\NotificationDispatcher;
 use App\Services\Risk\PayoutService;
 use App\Services\Risk\ReservePolicy;
+use App\Support\OpportunityPanelPayload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -1152,6 +1154,29 @@ class CreatorFinancialController extends Controller
 
             Log::info("CreatorFinancialController: Sync completed for user {$user->id}");
 
+            /*
+             * The Opportunity Centre and its dashboard module are cached, and this
+             * button is the creator's explicit "show me what has actually happened".
+             * Leaving the caches in place would mean a creator who has just made a
+             * sale presses Refresh, the ledger resyncs — and the panel that told
+             * them to press it does not move.
+             *
+             * ⚠️ THE KEY IS PER-CURRENCY AND THE DISPLAY CURRENCY FOLLOWS A COOKIE,
+             * so clearing only the account default would leave the key the creator
+             * is actually reading untouched. All three candidates are dropped: the
+             * cookie they are on now, their account default, and GBP.
+             */
+            $currencies = array_unique(array_filter([
+                strtoupper((string) $request->cookie('currency')),
+                strtoupper((string) ($user->default_currency ?: '')),
+                'GBP',
+            ]));
+
+            foreach ($currencies as $ccy) {
+                OpportunityPanelPayload::forget($user->id, $ccy);
+                Cache::forget('opportunity_centre_v1_'.$user->id.'_'.$ccy);
+            }
+
             // back(), not a hardcoded route — this is called from the financial
             // dashboard, the earnings page and support history, and sending the
             // other two to the dashboard would read as the button navigating away.
@@ -1395,7 +1420,34 @@ class CreatorFinancialController extends Controller
         $user = Auth::user();
         $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
 
-        $data = app(CreatorOpportunityService::class)->for($user, $displayCurrency);
+        /*
+         * ⚠️ CACHED, because this is ~20 queries — a supporter roll-up, a
+         * retention scan, a revenue group-by, an abandoned-checkout window and a
+         * listing-performance sweep — and a creator checking on their numbers
+         * reloads it. Same TTL as the dashboard module, so the compact panel and
+         * the full page can never show a creator two different answers to the
+         * same question within one window.
+         *
+         * ⚠️ The escape hatch is the existing "Refresh records" button
+         * (`financial.refresh`), which drops this key along with re-syncing the
+         * ledger — a creator who has just made a sale and wants to see it has
+         * somewhere to press.
+         */
+        $data = Cache::remember(
+            'opportunity_centre_v1_'.$user->id.'_'.$displayCurrency,
+            (int) config('earnings_intelligence.panel_cache_seconds', 300),
+            fn () => app(CreatorOpportunityService::class)->for($user, $displayCurrency)
+        );
+
+        /*
+         * The brief's nine rows and their live/coming-soon state, so this page
+         * greys exactly what the dashboard module greys. One list, from
+         * `config/earnings_intelligence.php` — a page assembling its own copy is
+         * a page that can be handed a different verdict from the others.
+         */
+        $data['rows'] = OpportunityPanelPayload::rows();
+        $data['social_prompt'] = CreatorOpportunityService::SOCIAL_CHANNELS_PROMPT;
+        $data['reminders_enabled'] = OpportunityPanelPayload::rowIsLive('reminder_action');
 
         if ($request->wantsJson()) {
             return response()->json($data);
@@ -1736,12 +1788,23 @@ class CreatorFinancialController extends Controller
     {
         $creator = Auth::user();
 
-        // Ownership + at-risk, straight from the ledger.
-        $row = FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('supporter_id', $supporterId)
-            ->where('type', 'income')
-            ->whereNotIn('status', ['disputed', 'refunded', 'review_hold', 'pending', 'failed'])
+        /*
+         * Ownership + at-risk, straight from the ledger.
+         *
+         * 🚨 THE SAME GATE THE PANEL USED TO PICK THIS SUPPORTER —
+         * `LedgerRules::countedScope()`, exactly as `CreatorOpportunityService`
+         * does. This used to carry its own `whereNotIn(status, …)` list, which
+         * counted rows the panel does not: a supporter the screen showed with two
+         * purchases could be refused here with "reminders unlock for repeat
+         * supporters", or the reverse, and the creator would have no way to tell
+         * why the button disagreed with the row it sits on.
+         */
+        $row = LedgerRules::countedScope(
+            FinancialTransaction::query()
+                ->where('user_id', $creator->id)
+                ->where('supporter_id', $supporterId)
+                ->where('type', 'income')
+        )
             ->selectRaw('COUNT(*) as purchases, MAX(transaction_date) as last_purchase')
             ->first();
 

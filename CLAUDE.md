@@ -413,6 +413,481 @@ now an ink block with an accent offset and a joined stat strip under a rule; **p
 so its three callers needed no edit. `accent="ink"` still means "no colour on this one" and
 borrows mint.
 
+## 🚨 One label map decides LIVE NOW vs COMING SOON (20 Aug 2026, spennypiggy.co)
+
+`config/discovery.php` is the ONE place the Discovery marketing surfaces read their
+capability labels from — the landing-page section (A1), and, as they are built,
+`/creators/discovery` (A2) and `/creators/link-in-bio` (A3) — all three live. Client brief: "Spenny Piggy ·
+Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
+
+- 🚨 **NOTHING MAY BE LABELLED LIVE NOW THAT IS NOT LIVE IN THE PRODUCT.** This is a
+  standing client prohibition, and it is the one that reaches an actual creator: they sign
+  up for a capability the label promised. `tests/Feature/DiscoveryMarketingTest.php` pins
+  the live set against a list of the code that backs each claim, so adding a key fails the
+  suite until someone records the evidence.
+- 🚨 **The flags are in PHP config, NOT in a JS constant.** Section F of the plan requires
+  a label flip to be a config change with **no deploy**; a JS constant means an edit, a
+  rebuild and a release. `DISCOVERY_ANALYTICS_LIVE` (env, default **false**) is the only
+  env var this adds. Four flips are already scheduled — analytics (Discovery Phase 2),
+  `more_creators` (Mon 31 Aug), `birthday` (Phase 4), `tips` (when Bridge lands).
+- ⚠️ **Copy still lives in `resources/js/constants/discovery.js`**, the house pattern (see
+  `constants/stablecoinTips.js`) — transcribed **word for word** from the brief and reused
+  by A2. Items are stored as one flat list carrying a `key`, never their own label, so a
+  capability moving from COMING SOON to LIVE NOW needs no edit in either file. An unknown
+  key falls to COMING SOON: the safe direction.
+- **`Components/discovery/DiscoveryStatsPanel.jsx` is the Phase-2 dashboard component**,
+  not a marketing lookalike. The brief's wording is "build as the real dashboard component
+  with mock data + flag", and from Phase 2 the creator dashboard renders this same file
+  with real attribution numbers. ⚠️ While `live` is false the coming-soon badge is not
+  optional — the figures (428 / 62 / £625, supplied by the client) are illustrative and
+  the badge is the only thing separating an illustration from a claim. ⚠️ **Zero is a
+  state, not an absence**: the panel stays visible at 0 with an explanatory line and never
+  returns null.
+- ⚠️ **`Pages/home/DiscoverySection.jsx` is imported EAGERLY in `Welcome.jsx`** while every
+  other homepage section is `lazy()`. It sits directly beneath the hero — the second thing
+  a visitor sees — so a Suspense placeholder would flash inside the LCP window. It also
+  adds the `act-discover` stop to that file's `CHAPTERS` rail; every id there must exist in
+  the markup.
+- **UTM attribution needed no work** — `app.jsx` captures `utm_source/medium/campaign` on
+  any page into localStorage, `users` already carries the columns, and
+  `users.signup_landing_page` records the ad page. New `/creators/*` pages inherit it, but
+  🚨 **must be registered in BOTH `VisitTracker::AD_LANDING_ROUTES` and `PAGE_TYPES`** or
+  their visit counters are incremented in the cache, never written to the database, and
+  expire unread — the page reports zero visits forever and nothing errors.
+- **`App\Support\DiscoveryPayload::forInertia()`** is the one shape all three surfaces
+  send. A page assembling its own copy of that array is a page that can be handed a
+  different label map from the others, which is the drift the config was centralised to
+  prevent.
+- ⚠️ **`/creators/discovery` (A2) draws Discover rather than screenshotting or embedding
+  it** — a deliberate, flagged departure from the brief's "screenshot or live embed". Both
+  alternatives put **real creators' names and faces into a paid advert**: a screenshot
+  freezes whoever was on Discover that morning into an asset nobody can revoke, and an
+  embed does it live, with the whole app's weight and a second header inside the frame. A
+  public profile is not the same permission as appearing in our advertising. The frame
+  shows the real page's layout with anonymous placeholders and links out to the live page.
+  Swap it for a screenshot once Jack confirms the creators have agreed.
+- 🚨 **A3 SHIPS SECTIONS 3 AND 6 AS "COMING SOON" WHERE THE BRIEF SAYS "LIVE NOW"** — the
+  one deliberate departure on these pages, flagged rather than decided quietly.
+  **`/{username}/bio` already existed** (`BioPageController`, `BioLinkController`,
+  `Pages/Bio/Show.jsx`, editor at `/bio-links`) but its own docblock states it has **"no
+  checkout, no price and no payment method"**: its rows link out to profile pages. Selling
+  from the bio page is the B stream, due Fri 28 Aug — three days AFTER the plan puts the ad
+  page live on Tue 25. The plan lists *"Mark anything LIVE NOW in marketing that is not
+  live in the product"* under **Never**, and a standing prohibition beats a section label.
+  The `bio_direct_sales` key flips both sections the day B lands, no deploy.
+  ⚠️ `bio_phone` (section 4) IS live and is labelled so — that page genuinely renders no
+  layout and opens in one scroll.
+- ⚠️ **The brief bans "instant" / "immediate" / "seconds" from A3 outright** (no settlement
+  speed has been confirmed for stablecoin tips), plus competitor names, payment-provider
+  names and any creator's earnings. Asserted by test. 🚨 **That scan must blank comments
+  first** — the constants file's own docblocks name the banned words in order to prohibit
+  them, and it must start AFTER the section's header comment, not at the marker inside it,
+  or the fragment has no opening `/*` for the strip to match. Both mistakes were made and
+  fixed while writing that test.
+- ⚠️ **A3's Tip block is copied from `Pages/Bio/Show.jsx`'s `Stablecoin` component** —
+  dashed edge (the house signal for "announced, not built"), greyed, on the bio page's own
+  `#A2E4B8` ground — because the brief asks for it "greyed out exactly as it appears in the
+  product". Change both together. ⚠️ Note `constants/stablecoinTips.js` documents the
+  provider as **Coinflow** while the 19 Aug plan states the stablecoin rail is **Bridge**
+  and supersedes older references; neither name is user-facing, so nothing rendered is
+  wrong, but the two documents disagree and the B stream needs that settled.
+- ⚠️ **A "keep intact" phrase cannot be asserted against the rendered HTML.** There is no
+  Inertia SSR here, so a server response carries only the props JSON — every word of
+  marketing copy lives in the JS bundle and arrives client-side. The test asserts against
+  `constants/discovery.js` **and** that the page still imports the constant holding them;
+  an earlier version hit the route and searched the body, and failed on all four phrases
+  for that reason. ⚠️ The house display style renders them **uppercase** (`font-gulfs
+  uppercase`), same as the landing-page headline — the words are verbatim, the casing is
+  typography.
+
+## 🚨 Discovery attribution — Phase 1 (20 Aug 2026, spennypiggy.co)
+
+Every profile visit and every purchase is recorded as **creator-generated** (their own
+audience) or **SP-generated** (a surface we chose to put them on). Every figure later phases
+publish — the dashboard banner, the marketing proof point, "we show you what Discovery is
+worth" — is this table, summed. Reference: Developer Master Plan, 19 Aug 2026, §C Phase 1.
+
+- 🚨 **A SURFACE THAT IS NOT TAGGED IS INVISIBLE FOR EVER.** Attribution is recorded at the
+  moment of the visit; there is no backfill for a click nobody marked. Any internal link
+  where *Spenny Piggy* chose to show a creator must go through
+  `resources/js/lib/discoveryLink.js`.
+- **`App\Support\DiscoverySources`** holds the twelve reserved keys and the class each
+  belongs to. ⚠️ **An unknown key is CREATOR-generated, never SP** — the published number is
+  "how many people SP brought you", so the safe direction to fail is the one that
+  under-claims. ⚠️ **`bio-link` is creator-generated**: the brief is explicit that sales
+  from a creator's own link are their traffic.
+- 🚨 **`TrackDiscoveryVisit` is deliberately NOT folded into `TrackSiteVisit`.** That class
+  guarantees it stores no personal data — load-bearing for consent and deletion requests —
+  and this one writes a row naming a creator and a visitor. `discovery_events` therefore
+  cascades on user delete and identifies a logged-out visitor only by the existing
+  anonymous `sp_v` cookie, never an IP or a fingerprint.
+- ⚠️ **The `sp_disc` cookie is a MAP keyed by creator, and it is LAST-touch** (the opposite
+  of `VisitTracker`'s first-touch landing cookie). One global "last source" would credit
+  Discovery with a sale that came from a different creator's own bio link in the same
+  browser. It is capped at `AttributionService::MAX_TRACKED_CREATORS` (20) — uncapped, a
+  crawler grows it past the 4KB header limit and the browser drops it silently.
+- ⚠️ **`TrackDiscoveryVisit` writes the cookie back onto the REQUEST after queueing it**, or
+  the very first tagged visit — the one that matters most — records with no source.
+- **`financial_transactions.discovery_source` / `.discovery_class`** carry the source on the
+  ledger row itself, per the brief. `DiscoveryReportService::ledgerEarnings()` cross-checks
+  the event total against it; **when they disagree the ledger is right**, because it is what
+  the creator is paid from. Columns mirrored into the admin app's model (read-only there).
+- 🚨 **A ROW WITH NO BROWSER IS ATTRIBUTED FROM STRIPE METADATA** (20 Aug 2026 — this closes
+  the Phase 1 known gap). Bank payments (SEPA/ACH) settle asynchronously via webhook, days
+  after the supporter closed the tab, so the cookie can never see them.
+  `Helpers::buildStripeMetadata()` stamps **`sp_discovery_source`** (`AttributionService::METADATA_KEY`)
+  into the `$commonFields` merge at checkout — the one moment a browser is present — resolved
+  from the cookie for the `creator_id` that switch already resolved. ⚠️ **No resolvable
+  numeric creator (`platform`, blank, a type with no creator) omits the key rather than
+  guessing**, and only a `DiscoverySources::normalise()`-approved key is ever stored.
+  `StripeWebhookController::handle()` then calls `AttributionService::rememberPaymentMetadata($metadata)`
+  once per event (beside `openNotificationContext`, same reasoning, cleared in a `finally`),
+  and the **`FinancialTransaction::created` hook is still the ONE hook** — cookie first,
+  remembered metadata second (`attributeTransactionFromMetadata`). `syncOrphanCheckouts` does
+  the same from `stripe_payment_details.metadata`, the stored copy of that payload.
+  - ⚠️ **The metadata's `creator_id` must equal the ledger row's `user_id` or the source is
+    refused.** One event can write several rows (a basket spanning creators) and a source key
+    only ever meant the creator whose cookie entry produced it.
+  - 🚨 **Idempotent by CLAIMING the row**: the stamp is a targeted
+    `whereKey(...)->where(discovery_source null/'')->update(...)` (never `save()` — the reserve
+    `updating` guard), and a 0-row result means someone already attributed it, so no second
+    `discovery_events` purchase row is written. An attributed row is never overwritten —
+    last-touch is decided at purchase time, not at replay time.
+  - 🚨 **CLOSED (20 Aug 2026) — THE SOURCE IS PERSISTED ON THE PAYMENT ROW.** Shop, task,
+    bill, membership and wish ledger rows are written by the queued `SyncCreatorLedger` →
+    `finance:sync-transactions`, in a worker with neither cookie nor event metadata (only pot
+    and tip FTs are written inline by the webhook). The ambient metadata is still deliberately
+    NOT propagated across the queue — that job rebuilds ALL of a creator's rows, so one
+    payment's source would leak onto every other row it touched. Instead a nullable
+    **`discovery_source` (40) column** (migration `2026_08_20_200000`) sits on every table the
+    sync reads: `shop_payments`, `task_purchases`, `piggy_pot_contributions`,
+    `tip_goals_payments`, `stripe_payment_details`, `wish_item_subscriptions`, `bill_payments`,
+    `membership_payments`, `rye_product_payments`. ⚠️ **Longer than the `fee_profile` list** —
+    bills/memberships/Rye choose no payment method but do produce ledger rows; follow
+    `SyncFinancialTransactions`, never the fee-profile list.
+    - **Only the key is stored; the class is DERIVED** via `DiscoverySources::classFor()`. One
+      definition beats nine copies. (`financial_transactions` keeps its denormalised
+      `discovery_class` on purpose — the report groups by it on every read.)
+    - **One resolution, used everywhere:** `AttributionService::sourceForCreator($creatorId, $metadata = null)`
+      — cookie first, then the payment's own Stripe metadata (creator-id checked). Both the
+      payment-row column and `Helpers::buildStripeMetadata()`'s `sp_discovery_source` read it,
+      so the key Stripe carries and the key the row stores can never disagree.
+    - **Set at purchase time** in all seven one-off checkouts plus both `TaskPurchase` creates
+      (redirect + webhook, from the session metadata, so whichever wins the race stores the same
+      value). ⚠️ **A RENEWAL INHERITS the original sale's source** — bill, membership and wish
+      subscription renewals copy the column forward exactly as `copyFeeRateColumns` does, and
+      the wish renewal's `StripePaymentDetail` inherits it from the subscription. There is no
+      browser on month 2, and the surface that introduced the supporter earned the stream.
+    - **The sync reads it back** through `SyncFinancialTransactions::attributeDiscovery()`,
+      called after EVERY `updateOrCreate` (all nine sections). ⚠️ Explicitly, not via the
+      `FinancialTransaction::created` hook — that fires only on INSERT, so a row created by an
+      earlier run would never be attributed. It routes through `AttributionService::attributeTransactionFromSource()`
+      → the same `stamp()`, so a re-run never overwrites an attributed row and never writes a
+      second `discovery_events` purchase row. Wrapped: attribution never fails a sync run.
+    - ⚠️ **Admin app needs nothing.** It declares its own copies of these models but never
+      inserts a payment row (no `*Payment::create` anywhere in it) and its copies do not carry
+      `fee_profile` either; `$fillable` does not affect reads. Migration in this app only.
+    - Tests: `tests/Feature/DiscoveryPaymentSourceTest.php` (7).
+- **Tagged so far:** homepage showcase (`trending`, `new-creators`) and Discover's
+  `CreatorCard` (`search-recs`). ⚠️ **Discover's item grid, featured carousels and the
+  automated supporter emails are NOT yet tagged** — `DiscoverySources::LIVE_KEYS` lists what
+  is wired, and the brief's "tag every SP surface that exists today" is not finished.
+- Tests: `tests/Feature/DiscoveryAttributionTest.php` (12), including the two cases the
+  brief asks to be shown end to end. ⚠️ One test asserts the JS key list matches the PHP
+  one — a key the helper offers but the server refuses is dropped silently, which looks
+  exactly like a tagged link that works.
+
+## 🚨 Discovery Phase 3 · security headers · and three traps found on 20 Aug 2026
+
+### Phase 3 — "More creators to support"
+`App\Services\Discovery\CreatorRecommendationService` picks four creators (Similar ·
+Emerging · Popular · Discovery Pick) for the foot of every public profile.
+
+- 🚨 **NOTHING READS AN AMOUNT.** "Popular" is a COUNT of distinct supporters, not a sum of
+  money, and `card()` whitelists six keys by name rather than spreading a row — an internal
+  signal cannot reach a card by being added to the pool. Verified in the browser and pinned
+  by test.
+- **`users.exclude_from_discovery`** (migration `2026_08_20_100000`) is the admin switch.
+  ⚠️ **Cast only, deliberately NOT `$fillable`** — same rule as `bonus_scheme_eligible`;
+  write it with `forceFill()`. ⚠️ **The admin app still needs this column in its own `User`
+  casts and a toggle on the creator screen** — shared DB, migration in this app only.
+- Two caches: the platform pool (`discovery_pool_v1`, 900s, capped at 750 creators) and the
+  per-profile selection (`discovery_more_creators_v1_{id}_{hourBucket}`, 900s, pure PHP over
+  the pool). Warm cache is **zero queries per profile view**. The rotation bucket is in the
+  key, so the Pick flips hourly regardless of write time.
+- Exposure balancing damps Emerging/Pick only — `1 / (1 + log10(1 + exposure_14d / 25))`,
+  never a hard cut-off. Bands are internal and never leave the service.
+- A small pool renders FEWER cards; it never pads with an ineligible creator.
+
+### Security headers now actually ship
+`SecurityHeaders` was registered nowhere in either app (and `public/.htaccess` is inert on
+Lambda), so nothing shipped. Both apps now send `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, plus HSTS on HTTPS.
+
+- 🚨 **THE SITE-WIDE `Referrer-Policy` IS A FLOOR, NOT A CEILING.** The middleware is first
+  in the `web` group, so its "after" work runs last and a plain `set()` **overwrote** the
+  stricter `no-referrer` that `GuestPurchaseController` and `MaintenanceAccessController`
+  set on purpose — a signed URL carrying the guest's EMAIL, and one carrying a bypass
+  TOKEN. That was a security downgrade introduced by security hardening. It is now guarded
+  with `if (! $response->headers->has('Referrer-Policy'))`. Caught by
+  `GuestPurchaseLookupTest`.
+- ⚠️ **CSP ships `Report-Only` and must be watched before it is enforced**
+  (`SECURITY_CSP_ENFORCE`, default false). It is also **skipped in `local`/`testing`**, so a
+  developer never sees a violation locally — the first report will come from a deployed
+  environment. If enforced today it would break the un-nonced inline `gtag`/JSON-LD blocks
+  in `app.blade.php`. 🚨 On Vapor `ASSET_URL` points at the S3/CloudFront host, so a policy
+  listing only `'self'` would block **the whole app bundle** — not reproducible locally,
+  where `ASSET_URL` is empty. `assetOrigin()` threads that host through every directive.
+- ⚠️ `payment` and `camera` are **delegated to Stripe, not denied** — denying them kills
+  Apple/Google Pay and Stripe Identity capture. `COOP` is `same-origin-allow-popups` because
+  Google sign-in and Connect onboarding talk back through `window.opener`.
+- **Password policy is `min(12)->uncompromised()`** in both apps, applied only when a
+  password is SET (existing 8-character accounts still sign in). The HIBP verifier is
+  rebound to a **3s** timeout — the stock 30s outlives the Lambda, which would turn its
+  fail-open into a 504 on registration.
+- 🚨 **`Auth::logoutOtherDevices()` DOES NOT YET REJECT OTHER SESSIONS.** It rotates the
+  password hash; the `auth.session` middleware is what actually turns other sessions away,
+  and it is deliberately NOT on the `web` group (enabling it wrongly can log out every
+  user). "Log out everywhere" therefore does not work today — a decision for a human, not
+  a bug to quietly fix.
+- ⚠️ **`bill/checkout/{uuid}` and `membership/checkout/{uuid}` are each registered TWICE**
+  in `routes/auth.php` — once inside the `auth` group and again near the bottom. Laravel
+  keys on method+URI and the LAST registration wins, so the live route carries **no**
+  `Authenticate` middleware. The login requirement comes from the `!Auth::check()` redirect
+  in `buyBill`/`buyLevel`. Do not remove that redirect on the strength of the route group
+  above it.
+
+### Three traps this session cost real time
+- 🚨 **`php artisan test` EXITED 0 WITH FAILING TESTS**, twice. Do not gate a release on the
+  exit code alone — parse the `Tests:` summary line. This matters for the Section F
+  regression gate.
+- 🚨 **`wish_items` had two columns no migration declared** (`reward`, `ai_generated`), so a
+  database built from migrations produced a table the app cannot insert into — which is why
+  the wish paths had no feature test: they could not run. Same fault as `shops`; fixed by
+  guarded additive migration `2026_08_20_300000` with an empty `down()`. **Verified the
+  fresh-built schema now matches live, 50 columns to 50.**
+- ⚠️ **`['a' => 0] + $overrides` KEEPS THE LEFT VALUE.** A test helper used `+` to apply
+  overrides, so every "this creator should be excluded" fixture silently built a perfectly
+  eligible creator and then asserted it was excluded. Use `array_merge`.
+- ⚠️ **The test suite must never call HaveIBeenPwned.** `Password::defaults()` applies in
+  tests too, so `uncompromised()` put a real HTTP request in every registration test —
+  network-dependent, and it failed a password that met our own policy (`Password123!` is 12
+  characters but is in the breach corpus). The verifier is offline in `testing` only.
+
+## 🚨 The bio page sells now — Link in Bio, B stream (21 Aug 2026, spennypiggy.co)
+
+`/{username}/bio` carries item cards that lead, in one tap, straight into the checkout
+each listing already had. Client brief: Developer Master Plan, 19 Aug 2026, §B.
+🚨 **`Pages/Bio/Show.jsx`'s old docblock claim — "no checkout, no price and no payment
+method" — is SUPERSEDED and has been rewritten in place.** Anything still quoting it
+(including the A3 note above) is describing the page as it was before this.
+
+- 🚨 **THERE IS STILL NO CHECKOUT ON THIS PAGE, AND THAT IS THE WHOLE DESIGN.** A card is
+  a link to a buying path that already exists: wish → `wish.subscribe.checkout` ·
+  shop → `single-shop-list` (its own page, which carries `BuyShopItem` and the
+  shipping/quantity fields an order needs) · task → `task.show` · bill →
+  `bill.checkout` · membership → `membership.checkout` · pot → the profile's pot grid
+  with `?pot={uuid}`. Every rule runs where it always did, on arrival:
+  `CheckoutMethodResolver`, the risk engine, `Helpers::priceWithinLimits`, the
+  supporter-account requirement, the £1 card-verification gate, `fee_profile`
+  threading, and the Deliverable. **Nothing in this feature creates a payment intent or
+  computes a price.**
+- 🚨 **A CARD SHOWS THE CREATOR'S LISTED PRICE, NEVER THE SUPPORTER'S TOTAL.**
+  `creator_bio_items` (migration `2026_08_21_100000`) stores a **type and an id and
+  nothing else** — no title, no price, no image. Every word and figure is read from the
+  live listing at render, so an edited price, a closed pot, a sold-out item and a
+  moderation hold all take effect with no editing and no cron. A denormalised price on
+  the page a creator shares everywhere is a price that will eventually disagree with the
+  checkout behind it.
+- 🚨 **MODERATION IS THE PROFILE'S OWN FILTER, REUSED.** `BioPageService::items()`
+  selects only listings whose approval columns are clear, that are not suspended and
+  (pots) that `PiggyPotStatusService::scopePubliclyVisible` accepts — so an item held by
+  `CheckMediaModeration` has no card. The selection row **survives** the hold and the
+  card returns on its own when an admin clears it. There is deliberately **no free-text
+  field on an item**: the listing's title has already been through
+  `NoExpenseOrBrandName` and the media scan, and a renameable card would be a new
+  moderated surface. ⚠️ The live filter is **re-run at click time**, not trusted from a
+  render that can be a minute stale.
+- **`App\Support\BioSellableItems`** is the ONE place a card becomes a checkout —
+  `checkoutUrl()`, `requiresAccount()` (Bills/Memberships/Tasks/Shop true;
+  guest checkout only for Wishes and Piggy Pot, matching the compliance rule), `cta()`,
+  `MAX_ITEMS` (12). ⚠️ **The type list is `CatalogueRegistry::TYPES`, never restated** —
+  and the editor's picker is `CatalogueService::for(..., status: live)`, the same list
+  My Listings shows.
+- 🚨 **PIGGY POT IS THE ONE TYPE WITH NO STANDALONE CHECKOUT PAGE.** It is bought through
+  `PiggyPotWidget`, opened as a popup by `PiggyPotsGrid`, so the deep link is
+  `/{username}/piggy-pots?pot={uuid}` and that grid now opens the named pot on arrival.
+  ⚠️ The parameter can only select from the pots the server already sent, so it can never
+  surface one the page was not allowed to show. Building a second pot checkout to avoid
+  the hop would create the new Stripe surface this feature exists to avoid.
+- **Attribution: `/bio/buy/{uuid}` is the load-bearing moment.** It counts the tap, sets
+  the `sp_disc` cookie to **`bio-link`** (CREATOR-generated — the brief is explicit that
+  sales from a creator's own link are their traffic), and redirects to a destination
+  rebuilt server-side from the stored row. `AttributionService::sourceForCreator()` reads
+  exactly that cookie inside every buy path, so the key reaches the payment row and
+  `financial_transactions.discovery_source` with no further wiring.
+  🚨 **The page also stamps, and when it does it DROPS the shared-cache header** —
+  `sp_disc` is a per-visitor map, and a CDN holding a response with that `Set-Cookie` on
+  it would hand one visitor's attribution to the next hundred. The page only queues the
+  cookie when the map would actually change, so a repeat view is still edge-cached; the
+  redirect stamps unconditionally and is never cached, which is what makes it the
+  reliable one.
+- **Tip button — built in full, switched off.** `App\Support\BioTipRail` (USD/USDC, min
+  $5, max $1,000, presets 10/25/50/100/250/500, £1 admin fee **added to** the tip) +
+  `App\Services\Bio\BioTipService` (`payload()`, `quote()` which FREEZES the rate,
+  `amountError()`, and `send()` — the single unimplemented seam) + `BioTipController`
+  (`/bio/tip/quote`, `/bio/tip/{username}`). Switched by the existing
+  **`config('discovery.labels.tips')`** key, the same one the three marketing surfaces
+  read, so one flip turns the product on and removes COMING SOON from the ads together —
+  a config change, no deploy.
+  - 🚨 **The greyed button is a rendering decision; BOTH endpoints answer 503 while the
+    flag is off.** Anyone can post past a disabled control.
+  - 🚨 **NEVER "instant" / "immediate" / "seconds", and NEVER the provider's name** on any
+    user-facing surface. No settlement speed has been confirmed by anybody.
+  - 🚨 **A tip is the ONE payment with no deliverable**, so it creates no `Deliverable`,
+    carries no `fee_profile`, never calls `calculateStripeDirectChargeFlow`, and is
+    deliberately NOT run through `Helpers::priceWithinLimits` (that rule is the
+    content-first per-feature price band and would apply the wrong floor and ceiling).
+  - ⚠️ **THE PROVIDER IS UNSETTLED IN OUR OWN DOCUMENTS.** `constants/stablecoinTips.js`
+    records Coinflow (spec 6 Aug 2026); the 19 Aug plan says Bridge and supersedes older
+    references. Everything built here is provider-agnostic and neither name is
+    user-facing — but the two documents disagree and only the client can settle it.
+- ⚠️ **`config/discovery.php`'s `bio_direct_sales` key must flip to `live` the day this
+  ships** — that is what turns A3's sections 3 and 6 from COMING SOON to LIVE NOW.
+- ⚠️ The Tip amount UI is appended INSIDE `Show.jsx`'s existing `Stablecoin` component
+  rather than replacing it, so A3's copy of that card (which the brief requires to look
+  "exactly as it appears in the product") is still a truthful subset.
+- Tests: `tests/Feature/BioDirectSalesTest.php`.
+
+## 🚨 Enhanced Creator Earnings + Revenue Opportunity Centre (21 Aug 2026, spennypiggy.co)
+
+The brief's nine rows (Developer Master Plan, 19 Aug 2026, §C) were **already built** as
+`CreatorOpportunityService` + `CreatorFinancialController::opportunities()` + the
+`Creator/Financial/Opportunities` page. Rows 1–8 existed; **row 9 did not** — the module was
+a page you had to go and find, reached by a plain "Grow your income" link. That link is now
+`Components/earnings/OpportunityPanel.jsx`, rendered directly under `DiscoveryStatsPanel` in
+the owner-only column of `Pages/Dashboard.jsx`. **Find out what exists before building here —
+`VipScoreService`, `SupporterLapseService`, `NotificationDispatcher` and
+`EngagementNotification` all already back parts of this.**
+
+- 🚨 **`LedgerRules` NOW HAS A SQL SIDE, AND IT IS THE ONLY ONE.** `CREATOR_GROSS_SQL`,
+  `BUYER_PAID_SQL` and **`countedScope($query)`** are the aggregate twins of `creatorGross()`,
+  `buyerPaid()` and `countsTowardTotals()`. An aggregate screen cannot hydrate every row to
+  call the PHP readers, so before this it retyped the expressions — which is exactly how the
+  four surfaces `LedgerRules` reconciles drifted apart originally. **Change one, change its
+  twin, same commit.** Pinned row-by-row by `EarningsIntelligenceTest`.
+- 🚨 **`whereNotIn('status', [refunded, disputed, review_hold, pending, failed])` IS NOT THE
+  MONEY GATE and looks exactly like it.** It admits `processing` (bank money that has not
+  settled) and applies **no fulfilment gate at all**, so it counts a physical shop order
+  nobody posted and a timed task nobody accepted. `CreatorOpportunityService::incomeQuery()`
+  and `remindSupporter()` both carried one, so the Opportunity Centre reported a bigger pot
+  than the earnings dashboard beside it and than the payout run. Both now use
+  `LedgerRules::countedScope()`. ⚠️ `SOLD_EXCLUDED_STATUSES` is the one deliberate survivor —
+  "has this creator ever sold a membership" is not a money question, and a settling bank
+  payment means yes.
+- ⚠️ **`countedScope()`'s morph comparison is `COALESCE(source_type,'')`, not `source_type`.**
+  `source` is a nullable morph; `NOT (NULL AND TRUE)` is NULL, which SQL drops — so a row with
+  a null `source_type` whose `source_id` collided with a `task_purchases` id vanished from
+  every total, silently. The shop branch picks the deliverable by **lowest id**, matching
+  `fulfilmentMap()`'s `orderBy('id')->first()`; `hasOne()` on `session_id` has no deterministic
+  order and the two must not disagree.
+- 🚨 **A supporter's "lifetime spend" is `buyerPaid()`, not `creatorGross()`.** This screen
+  labelled the creator's gross as the supporter's spend — short of what that person was
+  actually charged by the whole fee stack, and in disagreement with their own Purchase Hub.
+  `supporters()` now returns **both**: `lifetime_spent` (what they paid) and `lifetime_earned`
+  (what the creator kept), and the UI labels them "Paid you" / "You earned". Revenue-by-feature
+  stays `creatorGross()` — that one genuinely is the creator's revenue.
+- **Row 2 labels are the brief's current feature names**, with the in-product menu name
+  carried alongside as `product` so a creator reading "Recurring Content" can find the thing
+  their nav calls "Bills": Memberships · Recurring Content (Bills) · Sell Exclusive Content
+  (Wishlist) · Paid Tasks · Shop (Sell Something) · Content Goals (Piggy Pots).
+  🚨 **The brief's seventh name is "Tips" and we ship "Piggy Bank"** — tip/donation vocabulary
+  is banned on every user-facing surface by the Stripe content-first rule, and a standing
+  prohibition beats a row label (same call as the A3 ad page). Pinned by two tests.
+  ⚠️ `RyeProductPayment` is absent from the map, so Oink Store income is not in this
+  breakdown — it is kill-switched, and the brief lists seven features.
+- **Row 8's prompt is one constant**, `CreatorOpportunityService::SOCIAL_CHANNELS_PROMPT`,
+  transcribed verbatim. ⚠️ **It is a privacy control, not copy.** The platform never gives a
+  creator a supporter's email, so an action that says "contact this person" must say how, or
+  the next question becomes "show me their address". Supporter privacy on these screens is
+  exactly three fields: **display name (or Anonymous), amount, country**.
+- **`App\Support\OpportunityPanelPayload`** is the one shape the dashboard module receives —
+  same arrangement as `DiscoveryPayload`. ⚠️ **`supporterCard()` whitelists keys by name**
+  (never spreads the service row), so `supporter_id` and `username` cannot reach a dashboard
+  by being added upstream. 🚨 **Owner-and-creator gated in
+  `AuthenticatedSessionController`** — `/{username}` is also the PUBLIC profile, and this
+  payload is a creator's customer list.
+- **`config/earnings_intelligence.php` decides LIVE vs greyed "Coming soon", per row, in
+  config** — Section F requires a label flip with no deploy, so it is PHP config and not a JS
+  constant (copy lives in `resources/js/constants/earningsIntelligence.js`, the house
+  pattern). Env: `EI_ROW_*` (nine, all default **true**) and `EI_PANEL_CACHE_SECONDS` (300).
+  🚨 **All nine rows always draw; only their `live` flag varies** — the brief's own rule is
+  that an unfinished row ships greyed rather than missing. ⚠️ **Greying keys on the FLAG,
+  never on whether data arrived**: a creator with no alerts this week must not be told the
+  feature is "Coming soon". ⚠️ **Row 7 (`reminder_action`) HIDES its control when false
+  rather than greying it** — every other row is a read; that one sends mail.
+- **Caching:** `opportunity_panel_v1_{id}_{CCY}` (dashboard) and
+  `opportunity_centre_v1_{id}_{CCY}` (full page), both `EI_PANEL_CACHE_SECONDS` — the same TTL
+  as `DiscoveryPayload::dashboardStatsFor` above it, because two panels side by side that
+  refresh on different clocks read as one being broken. ⚠️ **The key is per-currency and the
+  display currency follows a COOKIE**, so `financial.refresh` drops all three candidates
+  (cookie, account default, GBP). `forDashboard()` swallows its own failures — an analytics
+  roll-up must never 500 a public profile.
+- **No new routes and no migration.** `financial.opportunities` and
+  `financial.opportunities.remind` (`throttle:10,1`) already existed.
+- Tests: `tests/Feature/EarningsIntelligenceTest.php` (12), alongside the existing
+  `CreatorOpportunityTest.php` (9).
+
+## 🚨 A public property on a Mailable silently overwrites its view data
+
+`Mailable::buildViewData()` reflects over **public** properties and merges them
+**over** the `Content(with: […])` array. So a promoted constructor property named the
+same as a key `content()` computes wins — and the computed version is discarded.
+
+- **Live consequence, found 20 Aug 2026:** `ReactivationReminder::content()` passed
+  `taggedCreators()` (each profile URL carrying `?sp_d=personalised`) under the key
+  `creators`, and `public array $creators` replaced it with the raw untagged input. The
+  email rendered perfectly — right creators, working links — and carried **no attribution
+  at all**. Measured: `taggedCreators()` returned a tagged URL while the rendered HTML
+  contained **zero** `sp_d=`. Discovery attribution has no backfill, so every visit and
+  purchase that email produced is permanently recorded as creator-generated.
+- **Fix:** make the property `protected`. It still serializes for the queue, so nothing
+  about dispatching changes.
+- ⚠️ **Check any mailable that transforms a constructor value in `content()`.**
+  `AbandonedCheckoutReminder` was checked and is fine — its tagged URL uses a key no public
+  property shares. The collision only bites when the names match.
+
+## 🚨 The admin app's health endpoints did not exist
+
+`admin.spennypiggy.co/vapor.yml` sets `health-check: '/vapor-health'`, but
+`routes/health.php` was never `require`d — `RouteServiceProvider` grouped only `api.php`
+and `web.php` — so `/vapor-health`, `/health` and `/ping` all 404'd. Every health check
+Vapor made against that app failed, and **nothing reported it**: a 404 reads as an
+unhealthy app, not as a missing route.
+
+- Now registered with **no middleware group**, deliberately. The `web` group carries
+  sessions, CSRF and this app's maintenance-mode middleware — behind those, the one request
+  that must answer during an incident is the one that stops answering when the site is taken
+  down. The file's own docblock asks for the same thing.
+- The three endpoints return a literal status and nothing else, so there is nothing for an
+  unauthenticated caller to learn.
+- ⚠️ The website is NOT affected: its `vapor.yml` sets `health-checks: false` and its health
+  routes resolve anyway.
+
+## ⚠️ A cache key must carry every input that changes the payload
+
+`BioPageService::items($user, $isOwner)` returns a different list for an owner (who sees
+their inactive selections) than for a visitor — and cached both under `bio_items_{id}`.
+The live flow hid it, because the owner is always signed in and takes the
+`auth()->check()` branch that skips the cache. That is what made it dangerous: the fault
+only surfaces the day something calls it for an owner without a session — a queued job, an
+artisan command, an SSR render — and then it serves the wrong payload in silence.
+
+⚠️ **Changing a cache key means changing its eviction too.** The first fix left
+`forgetCaches()` forgetting the bare key, so a creator editing what their bio page sells
+would have gone on serving the stale public list until the TTL expired — exactly when it
+is most wrong. Both variants are now forgotten.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

@@ -66,6 +66,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Services\AbandonedCheckoutService;
 use App\Services\ActivityLogger;
+use App\Services\Discovery\AttributionService;
 use App\Services\DiscoveryService;
 use App\Services\Risk\IdentityRollupService;
 use App\Services\Risk\MoneyNormalizer;
@@ -263,6 +264,16 @@ class StripeWebhookController extends Controller
         // the context travels with them through the queue automatically.
         $this->openNotificationContext($data, $metadata);
 
+        // Discovery Phase 1 — a webhook has no browser, so the source that
+        // earned the sale travels in the payment's own Stripe metadata (stamped
+        // at checkout by `Helpers::buildStripeMetadata`). Remembered ONCE here,
+        // for the same reason as the notification context above: this event may
+        // write several ledger rows several methods away, and the
+        // `FinancialTransaction::created` hook reads it back rather than every
+        // processor having to remember analytics. Bank payments (SEPA/ACH)
+        // settle asynchronously and reach the ledger ONLY this way.
+        AttributionService::rememberPaymentMetadata($metadata);
+
         try {
             switch ($type) {
                 // --- Identity Verification Events ---
@@ -437,6 +448,9 @@ class StripeWebhookController extends Controller
                 ]);
             }
             throw $e;
+        } finally {
+            // One event's metadata must never attribute the next one's rows.
+            AttributionService::forgetPaymentMetadata();
         }
 
         if ($webhookStatus) {
@@ -1889,6 +1903,10 @@ class StripeWebhookController extends Controller
                 'vat_amount' => $vat,
                 'transfer_amount' => $transferAmount,
                 'dispute_status' => 'none',
+                // Discovery Phase 1 — same value the redirect handler records, from
+                // the same session metadata, so whichever path wins the race stores
+                // an identical source for finance:sync-transactions to read back.
+                'discovery_source' => AttributionService::sourceForCreator($creatorId ?? $task->creator_id, $metadata),
             ]);
         } catch (QueryException $e) {
             $existing = $session?->id ? TaskPurchase::where('stripe_session_id', $session->id)->first() : null;
@@ -2660,6 +2678,10 @@ class StripeWebhookController extends Controller
         $subs->save();
 
         $newSubs = new BillPayment;
+        // Discovery Phase 1 — a renewal is inherited from whatever earned the
+        // original sale; there is no browser on month 2. Same grandfathering
+        // principle as the fee rates.
+        $newSubs->discovery_source = $subs->discovery_source;
         $newSubs->stripe_id = $subs->stripe_id;
         $newSubs->session_id = $subs->session_id;
         $newSubs->bills_id = $subs->bills_id;
@@ -2801,6 +2823,8 @@ class StripeWebhookController extends Controller
         $subs->save();
 
         $newSubs = new MembershipPayment;
+        // Discovery Phase 1 — inherited from the original sale. See handleBillSubscriptionUpdate.
+        $newSubs->discovery_source = $subs->discovery_source;
         $newSubs->stripe_id = $subs->stripe_id;
         $newSubs->session_id = $subs->session_id;
         $newSubs->membership_id = $subs->membership_id;
@@ -3322,6 +3346,12 @@ class StripeWebhookController extends Controller
                         // supporter is grandfathered onto what they signed up at
                         // unless a lower rate has since been agreed and repriced.
                         ...Helpers::copyFeeRateColumns($wishSubscription),
+                        // Discovery Phase 1 — a renewal is INHERITED from whatever
+                        // earned the original sale. There is no browser on month 2,
+                        // and the surface that introduced the supporter is what the
+                        // recurring revenue is credited to. Same grandfathering
+                        // principle as the fee rates copied above.
+                        'discovery_source' => $wishSubscription->discovery_source,
                     ]
                 );
 
@@ -3529,6 +3559,8 @@ class StripeWebhookController extends Controller
         }
 
         $newSubs = new WishItemSubscription;
+        // Discovery Phase 1 — inherited from the original sale. See handleBillSubscriptionUpdate.
+        $newSubs->discovery_source = $wish_subscription->discovery_source;
         $newSubs->stripe_id = $wish_subscription->stripe_id;
         $newSubs->session_id = $wish_subscription->session_id;
         $newSubs->wish_item_id = $wish_subscription->wish_item_id;
@@ -3826,7 +3858,21 @@ class StripeWebhookController extends Controller
         try {
             NotificationContext::clear();
 
-            $meta = (array) ($metadata ?? []);
+            /*
+             * 🚨 NEVER `(array)` A STRIPE OBJECT. `$metadata` arrives as
+             * `$event->data->object->metadata`, a `Stripe\StripeObject`, and a
+             * plain array cast returns its INTERNALS (`\0*\0_values`, `_opts`,
+             * …) rather than the metadata keys. Every lookup below then missed,
+             * so `context_type`, `creator_id`, `buyer_id` and `guest_email` were
+             * silently null on every webhook-sourced notification log — no error,
+             * just empty columns. This is the same trap CLAUDE.md documents for
+             * `StripeControl::capabilitiesMap()`, found again here 20 Aug 2026.
+             */
+            $meta = match (true) {
+                is_array($metadata) => $metadata,
+                is_object($metadata) && method_exists($metadata, 'toArray') => $metadata->toArray(),
+                default => [],
+            };
 
             $sessionId = $data->id ?? null;
             if (is_string($sessionId) && ! str_starts_with($sessionId, 'cs_')) {

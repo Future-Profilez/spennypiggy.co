@@ -25,6 +25,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemFunnelService;
 use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
@@ -980,6 +981,11 @@ class TaskController extends Controller
                 'dispute_status' => 'none',
                 'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
                 'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
+                // Discovery Phase 1 — the ledger row for this purchase is written
+                // later by finance:sync-transactions, which has no cookie and no
+                // event metadata. Resolved from the cookie if a browser is here,
+                // else from the session metadata the checkout stamped.
+                'discovery_source' => AttributionService::sourceForCreator($creatorId, $metadata),
             ]);
         } catch (QueryException $e) {
             $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();

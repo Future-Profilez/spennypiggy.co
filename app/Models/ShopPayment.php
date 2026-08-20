@@ -13,6 +13,10 @@ class ShopPayment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        // Discovery Phase 1 — the source that earned this sale, read back by
+        // finance:sync-transactions when it writes the ledger row (no browser,
+        // no Stripe event metadata in that worker). Class is derived, never stored.
+        'discovery_source',
         'platform_fee_rate',
         'compliance_fee_rate',
         'fee_source',

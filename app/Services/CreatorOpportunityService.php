@@ -9,6 +9,7 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Services\Ledger\LedgerRules;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,8 +24,16 @@ use Illuminate\Support\Facades\DB;
  */
 class CreatorOpportunityService
 {
-    /** Matches the ledger definition used by the dashboard and payout engine. */
-    private const EXCLUDED_STATUSES = ['disputed', 'refunded', 'review_hold', 'pending', 'failed'];
+    /**
+     * Statuses that keep a row out of "has this creator ever sold one of these".
+     *
+     * ⚠️ DELIBERATELY LOOSER THAN THE MONEY GATE and used for nothing else. A
+     * bank payment still settling means the creator DOES sell memberships, so
+     * telling them to "offer a membership" would be wrong. Every figure that is
+     * money goes through `LedgerRules::countedScope()` instead — see
+     * `incomeQuery()`.
+     */
+    private const SOLD_EXCLUDED_STATUSES = ['disputed', 'refunded', 'review_hold', 'pending', 'failed'];
 
     /** Spend (GBP, lifetime) at which a supporter is worth a personal thank-you. */
     private const HIGH_VALUE_GBP = 250.0;
@@ -46,8 +55,39 @@ class CreatorOpportunityService
 
     private const LEVEL3_MIN = 50;
 
-    /** Net + VAT — the money a row is worth. Single definition for every sum. */
-    private const GROSS_EXPR = 'net_amount + COALESCE(vat_amount, 0)';
+    /**
+     * 🚨 TWO DIFFERENT NUMBERS, AND THIS SCREEN NEEDS BOTH.
+     *
+     * `EARNED_EXPR` is `LedgerRules::creatorGross()` — net + VAT, what the sale is
+     * worth to the CREATOR. That is what "revenue by feature" means.
+     *
+     * `SPEND_EXPR` is `LedgerRules::buyerPaid()` — what the SUPPORTER was charged.
+     * That is what "lifetime spend" means, and it is the figure on the
+     * supporter's own bank statement. This screen used to label the creator's
+     * gross as a supporter's "spend", which understates every top-supporter row
+     * by the whole fee stack and disagrees with the supporter's own Purchase Hub.
+     *
+     * Neither is retyped here — both come from `LedgerRules`, so the SQL a total
+     * is built from and the PHP a single row is read with cannot drift.
+     */
+    private const EARNED_EXPR = LedgerRules::CREATOR_GROSS_SQL;
+
+    private const SPEND_EXPR = LedgerRules::BUYER_PAID_SQL;
+
+    /**
+     * 🚨 ROW 8 OF THE BRIEF, VERBATIM, AND IT IS A PRIVACY CONTROL — not a nicety.
+     *
+     * The platform never hands a creator a supporter's email or any other contact
+     * detail (supporter privacy: display name or Anonymous, amount, country). So
+     * every action that says "contact this person" has to say HOW, and the answer
+     * is the creator's own audience, not ours. Without this line the obvious next
+     * question is "how?", and the obvious wrong answer is "show me their email".
+     *
+     * One constant, so the wording cannot drift between the five actions that
+     * carry it. Transcribed word for word from the Developer Master Plan,
+     * 19 Aug 2026, §C row 8.
+     */
+    public const SOCIAL_CHANNELS_PROMPT = 'Consider contacting this supporter through your social channels if appropriate.';
 
     /** VIP lookups are a query each, so only the top slice gets enriched. */
     private const VIP_ENRICH_LIMIT = 10;
@@ -63,13 +103,23 @@ class CreatorOpportunityService
 
     public function __construct(private VipScoreService $vip) {}
 
-    /** Base income-ledger query — the one place the ledger definition lives. */
+    /**
+     * Base income-ledger query.
+     *
+     * 🚨 THE GATE IS `LedgerRules::countedScope()`, NOT A LOCAL STATUS LIST. This
+     * method used to carry its own `whereNotIn(status, [...])`, which admitted
+     * `processing` rows (bank money that has not settled) and applied no
+     * fulfilment gate at all — so the Opportunity Centre reported a bigger pot of
+     * money than the earnings dashboard beside it and than the payout run that
+     * actually pays. One ledger, four surfaces; this is the fourth.
+     */
     private function incomeQuery(User $creator)
     {
-        return FinancialTransaction::query()
-            ->where('user_id', $creator->id)
-            ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES);
+        return LedgerRules::countedScope(
+            FinancialTransaction::query()
+                ->where('user_id', $creator->id)
+                ->where('type', 'income')
+        );
     }
 
     /** Convert a minor-unit-free amount between currencies (same-currency = no-op). */
@@ -105,8 +155,15 @@ class CreatorOpportunityService
             'actions' => $this->suggestedActions($creator, $supporters, $retention, $currency),
             'totals' => [
                 'supporters' => $supporters->count(),
+                // What supporters have PAID (LedgerRules::buyerPaid) …
                 'lifetime_value' => round((float) $supporters->sum('lifetime_spent'), 2),
                 'monthly_value' => round((float) $supporters->sum('monthly_spent'), 2),
+                // … and what the creator KEPT on the same purchases
+                // (LedgerRules::creatorGross). Reported side by side rather than
+                // as one blended figure: a single number here would have to be
+                // labelled either "spent" or "earned" and would be wrong for the
+                // other reading, which is the confusion this pair removes.
+                'lifetime_earned' => round((float) $supporters->sum('lifetime_earned'), 2),
                 'average_supporter_value' => $supporters->isEmpty()
                     ? 0.0
                     : round((float) $supporters->sum('lifetime_spent') / $supporters->count(), 2),
@@ -353,34 +410,57 @@ class CreatorOpportunityService
      * pounds to yen). Every feature is returned even at zero, so a creator can see
      * what they are NOT selling — that is itself an opportunity.
      */
-    private function revenueByType(User $creator, string $currency): array
+    public function revenueByType(User $creator, string $currency = 'GBP'): array
     {
-        // class basename → [display label, colour, icon]. Matches the dashboard's
-        // "Income by Type" widget so the two screens agree.
+        /*
+         * class basename → [display label, colour, icon, in-product name].
+         *
+         * The labels are the client's own feature names from the 19 Aug Developer
+         * Master Plan (row 2), which asks for "current feature names in the UI;
+         * internal keys can keep old names" — so the source_type keys are
+         * untouched and only what a creator reads has changed.
+         *
+         * ⚠️ The fourth element is the name in the creator's OWN NAVIGATION, and it
+         * is not decoration. A creator whose menu says "Bills" and whose earnings
+         * screen says "Recurring Content" has to work out that those are the same
+         * product; the sub-label removes that step. Where the two agree it is null
+         * and nothing extra renders.
+         *
+         * 🚨 `TipGoalsPayment` stays "Piggy Bank". The brief's row 2 lists this
+         * feature as "Tips", and tip/donation vocabulary is banned outright on
+         * every user-facing surface by the Stripe content-first compliance rule —
+         * a standing prohibition beats a row label, exactly as it did for the A3
+         * ad page. `CreatorOpportunityTest` pins it (`assertArrayNotHasKey('Tips')`).
+         */
         $map = [
-            'MembershipPayment' => ['Memberships', '#8b5cf6', '⭐'],
-            'BillPayment' => ['Bills', '#3b82f6', '📄'],
-            'StripePaymentItems' => ['Wishes', '#05EFB8', '🛒'],
-            'WishItemSubscription' => ['Wishes', '#05EFB8', '🛒'],
-            'TaskPurchase' => ['Tasks', '#f59e0b', '✅'],
-            'ShopPayment' => ['Shop', '#f97316', '🛍️'],
-            'PiggyPotContribution' => ['Piggy Pot', '#ec4899', '🐷'],
-            // "Piggy Bank", never "Tips" — tip/donation wording is banned on every
-            // user-facing surface (Stripe content-first compliance).
-            'TipGoalsPayment' => ['Piggy Bank', '#FF007F', '🔓'],
+            'MembershipPayment' => ['Memberships', '#8b5cf6', '⭐', null],
+            'BillPayment' => ['Recurring Content', '#3b82f6', '📄', 'Bills'],
+            'StripePaymentItems' => ['Sell Exclusive Content', '#05EFB8', '🛒', 'Wishlist'],
+            'WishItemSubscription' => ['Sell Exclusive Content', '#05EFB8', '🛒', 'Wishlist'],
+            'TaskPurchase' => ['Paid Tasks', '#f59e0b', '✅', null],
+            'ShopPayment' => ['Shop', '#f97316', '🛍️', 'Sell Something'],
+            'PiggyPotContribution' => ['Content Goals', '#ec4899', '🐷', 'Piggy Pots'],
+            'TipGoalsPayment' => ['Piggy Bank', '#FF007F', '🔓', null],
         ];
 
         // Seed every feature at zero, in display order.
         $totals = [];
-        foreach ($map as [$label, $color, $icon]) {
-            $totals[$label] ??= ['label' => $label, 'total' => 0.0, 'count' => 0, 'color' => $color, 'icon' => $icon];
+        foreach ($map as [$label, $color, $icon, $product]) {
+            $totals[$label] ??= [
+                'label' => $label,
+                'product' => $product,
+                'total' => 0.0,
+                'count' => 0,
+                'color' => $color,
+                'icon' => $icon,
+            ];
         }
 
         $rows = $this->incomeQuery($creator)
             ->select(
                 'source_type',
                 'currency',
-                DB::raw('SUM('.self::GROSS_EXPR.') as total'),
+                DB::raw('SUM('.self::EARNED_EXPR.') as total'),
                 DB::raw('COUNT(*) as cnt'),
             )
             ->groupBy('source_type', 'currency')
@@ -400,7 +480,14 @@ class CreatorOpportunityService
         }
 
         return collect($totals)
-            ->map(fn ($t) => ['label' => $t['label'], 'total' => round($t['total'], 2), 'count' => $t['count'], 'color' => $t['color'], 'icon' => $t['icon']])
+            ->map(fn ($t) => [
+                'label' => $t['label'],
+                'product' => $t['product'],
+                'total' => round($t['total'], 2),
+                'count' => $t['count'],
+                'color' => $t['color'],
+                'icon' => $t['icon'],
+            ])
             ->values()
             ->all();
     }
@@ -419,13 +506,14 @@ class CreatorOpportunityService
             ->select(
                 'supporter_id',
                 'currency',
-                DB::raw('SUM('.self::GROSS_EXPR.') as gross_total'),
+                DB::raw('SUM('.self::SPEND_EXPR.') as spend_total'),
+                DB::raw('SUM('.self::EARNED_EXPR.') as earned_total'),
                 DB::raw('COUNT(*) as purchases'),
                 DB::raw('MIN(transaction_date) as first_purchase'),
                 DB::raw('MAX(transaction_date) as last_purchase'),
             )
             ->selectRaw(
-                'SUM(CASE WHEN transaction_date >= ? THEN '.self::GROSS_EXPR.' ELSE 0 END) as month_total',
+                'SUM(CASE WHEN transaction_date >= ? THEN '.self::SPEND_EXPR.' ELSE 0 END) as month_total',
                 [$monthStart]
             )
             ->groupBy('supporter_id', 'currency')
@@ -435,13 +523,15 @@ class CreatorOpportunityService
 
         foreach ($rows as $row) {
             $id = (int) $row->supporter_id;
-            $converted = $this->convert((float) $row->gross_total, $row->currency, $currency);
+            $converted = $this->convert((float) $row->spend_total, $row->currency, $currency);
+            $earnedConverted = $this->convert((float) $row->earned_total, $row->currency, $currency);
             $monthConverted = $this->convert((float) $row->month_total, $row->currency, $currency);
 
             if (! isset($bySupporter[$id])) {
                 $bySupporter[$id] = [
                     'supporter_id' => $id,
                     'lifetime_spent' => 0.0,
+                    'lifetime_earned' => 0.0,
                     'monthly_spent' => 0.0,
                     'purchases' => 0,
                     'first_purchase' => $row->first_purchase,
@@ -450,6 +540,7 @@ class CreatorOpportunityService
             }
 
             $bySupporter[$id]['lifetime_spent'] += $converted;
+            $bySupporter[$id]['lifetime_earned'] += $earnedConverted;
             $bySupporter[$id]['monthly_spent'] += $monthConverted;
             $bySupporter[$id]['purchases'] += (int) $row->purchases;
 
@@ -469,7 +560,12 @@ class CreatorOpportunityService
         // Names/avatars only for the slice we actually display — loading every
         // supporter's user row would be wasteful, and only the top rows render.
         $topIds = $collection->take(self::VIP_ENRICH_LIMIT)->pluck('supporter_id')->all();
-        $users = User::whereIn('id', $topIds)->get(['id', 'name', 'username', 'avatar'])->keyBy('id');
+        // ⚠️ `country` is here because supporter privacy on this screen is exactly
+        // three things — display name (or Anonymous), amount, country — and the
+        // brief names all three. It is NOT a licence to widen the select: an
+        // email address must never reach a creator, which is what row 8's
+        // social-channels prompt exists to answer instead.
+        $users = User::whereIn('id', $topIds)->get(['id', 'name', 'username', 'avatar', 'country'])->keyBy('id');
 
         // Engagement Level for EVERY supporter, in ONE batched call (six source
         // queries total, regardless of count — not per supporter). Enriching all
@@ -485,8 +581,15 @@ class CreatorOpportunityService
             $row['name'] = $user->name ?? null;
             $row['username'] = $user->username ?? null;
             $row['avatar'] = $user->avatar ?? null;
+            $row['country'] = $user->country ?? null;
             $row['currency'] = $currency;
+            // 🚨 `lifetime_spent` is what the SUPPORTER was charged; `lifetime_earned`
+            // is what the creator kept on those same purchases. The screen shows the
+            // first as "spent with you" and the second as "you earned" — labelling
+            // either with the other's word is the confusion `LedgerRules` exists to
+            // stop, and the two figures differ by the whole fee stack.
             $row['lifetime_spent'] = round($row['lifetime_spent'], 2);
+            $row['lifetime_earned'] = round($row['lifetime_earned'], 2);
             $row['monthly_spent'] = round($row['monthly_spent'], 2);
             $row['average_order_value'] = $row['purchases'] > 0
                 ? round($row['lifetime_spent'] / $row['purchases'], 2)
@@ -709,7 +812,7 @@ class CreatorOpportunityService
         $rows = $this->incomeQuery($creator)
             ->whereNotNull('supporter_id')
             ->where('transaction_date', '>=', $windowStart)
-            ->select('currency', DB::raw('MAX('.self::GROSS_EXPR.') as biggest'))
+            ->select('currency', DB::raw('MAX('.self::SPEND_EXPR.') as biggest'))
             ->groupBy('currency')
             ->get();
 
@@ -752,7 +855,7 @@ class CreatorOpportunityService
                 'detail' => ($highValue['name'] ?? 'A supporter').' has spent '
                     .$this->fmtMoney((float) $highValue['lifetime_spent'], $currency)
                     .' with you across '.$highValue['purchases'].' purchase(s). A personal thank-you goes a long way.',
-                'hint' => 'Consider reaching out through your own social channels, if appropriate.',
+                'hint' => self::SOCIAL_CHANNELS_PROMPT,
             ];
         }
 
@@ -790,7 +893,7 @@ class CreatorOpportunityService
                 'detail' => ($platinumSupporter['name'] ?? 'A supporter').' has spent '
                     .$this->fmtMoney((float) $platinumSupporter['lifetime_spent'], $currency)
                     .' with you — one of your most valuable supporters.',
-                'hint' => 'Consider reaching out through your own social channels, if appropriate.',
+                'hint' => self::SOCIAL_CHANNELS_PROMPT,
             ];
         }
 
@@ -808,7 +911,7 @@ class CreatorOpportunityService
                 'title' => 'Follow up with a VIP',
                 'detail' => ($goldSupporter['name'] ?? 'A supporter').' is a Level 3 supporter across '
                     .$goldSupporter['purchases'].' purchase(s).',
-                'hint' => 'Consider reaching out through your own social channels, if appropriate.',
+                'hint' => self::SOCIAL_CHANNELS_PROMPT,
             ];
         }
 
@@ -858,7 +961,7 @@ class CreatorOpportunityService
         return FinancialTransaction::query()
             ->where('user_id', $creator->id)
             ->where('type', 'income')
-            ->whereNotIn('status', self::EXCLUDED_STATUSES)
+            ->whereNotIn('status', self::SOLD_EXCLUDED_STATUSES)
             ->distinct()
             ->pluck('source_type')
             ->map(fn ($t) => class_basename($t))

@@ -65,6 +65,7 @@ use App\Models\User;
 use App\Models\UserCart;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
+use App\Support\DiscoveryPayload;
 use App\Support\PresetCovers;
 use App\Support\PwaSplash;
 use Carbon\Carbon;
@@ -264,6 +265,11 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         'newVerifiedCreators' => $newVerifiedCreators(),
         'topEarners' => $topEarnersData()['data'],
         'topEarnersLabel' => $topEarnersData()['label'],
+        // Discovery section (A1). Passed per-route rather than shared globally
+        // in HandleInertiaRequests — only the marketing surfaces and, later, the
+        // creator dashboard need it, and the shared payload rides on every
+        // request in the app.
+        'discovery' => DiscoveryPayload::forInertia(),
     ]);
 })->name('home');
 
@@ -432,6 +438,24 @@ Route::get('/creators/disputes', function () {
 Route::get('/creators/founder-bonus', function () {
     return Inertia::render('creators/FounderBonus');
 })->name('creators.founder-bonus');
+
+// A2 — the Discovery ad landing page. It reads the SAME label map as the
+// homepage Discovery section, so the two pages can never disagree about which
+// capabilities are live (see config/discovery.php).
+Route::get('/creators/discovery', function () {
+    return Inertia::render('creators/Discovery', [
+        'discovery' => DiscoveryPayload::forInertia(),
+    ]);
+})->name('creators.discovery');
+
+// A3 — the Link in Bio ad landing page. Reads the same label map, which is why
+// its sections 3 and 6 correctly show COMING SOON until the B stream ships the
+// direct-checkout bio page (see config/discovery.php, `bio_direct_sales`).
+Route::get('/creators/link-in-bio', function () {
+    return Inertia::render('creators/LinkInBio', [
+        'discovery' => DiscoveryPayload::forInertia(),
+    ]);
+})->name('creators.link-in-bio');
 
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
@@ -947,6 +971,8 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/features', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/discovery', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/link-in-bio', 'priority' => '0.7', 'changefreq' => 'weekly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
@@ -1243,6 +1269,49 @@ Route::prefix('help')->name('help.')->group(function () {
     Route::get('/{category}', [HelpController::class, 'category'])->name('category');
     Route::get('/{category}/{article}', [HelpController::class, 'article'])->name('article');
 });
+
+/*
+|--------------------------------------------------------------------------
+| /.well-known/security.txt (RFC 9116)
+|--------------------------------------------------------------------------
+| Client Security Checklist §3 (Developer Master Plan, 19 Aug 2026).
+|
+| 🚨 MUST stay ABOVE `require auth.php`. That file ends with the
+| `/{username}/{page?}` profile catch-all, which matches TWO segments — so
+| `.well-known/security.txt` declared below it is read as a creator called
+| ".well-known" and answered with the profile 404. `route:list` shows the route
+| either way, which is exactly what makes this invisible.
+|
+| 🚨 SERVED FROM A ROUTE, not from `public/.well-known/security.txt`. Vapor runs
+| on Lambda and does not serve arbitrary files out of `public/` on the app domain
+| — the same reason this app parks `public/robots.txt.backup` and answers robots
+| from `SeoController::robotsTxt`. The static file is kept in the repo for plain
+| web servers and must be kept in step with the literals below.
+|
+| ⚠️ `security@spennypiggy.co` MUST BE CONFIRMED TO EXIST AND BE MONITORED before
+| this ships. An address in this file that bounces is worse than no file: it tells
+| a finder we invite reports and then swallows them. Whoever owns the Google
+| Workspace domain needs to create or alias it.
+|
+| ⚠️ `Expires` is a HARD DATE, deliberately not `now()->addYear()`. The field's
+| whole purpose is to prove somebody still maintains this; a date that rolls
+| forward on every request proves nothing. RFC 9116 requires under a year out —
+| renew it, and the static copy, before 19 Aug 2027.
+*/
+Route::get('/.well-known/security.txt', function () {
+    $content = implode("\n", [
+        'Contact: mailto:security@spennypiggy.co',
+        'Expires: 2027-08-19T23:59:59.000Z',
+        'Preferred-Languages: en',
+        'Canonical: https://spennypiggy.co/.well-known/security.txt',
+    ])."\n";
+
+    return response($content, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'public, max-age=86400',
+        'X-Robots-Tag' => 'noindex',
+    ]);
+})->name('security.txt');
 
 require __DIR__.'/auth.php';
 

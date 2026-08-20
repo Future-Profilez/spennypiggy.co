@@ -13,6 +13,7 @@ import {
 } from "@animateicons/react/lucide";
 import { Gift } from "lucide-react";
 import IntroVideos from './IntrosVideos';
+import { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
 import TopSupporters from '../leaderboard/TopSupporters';
 import DiscoverHero from './components/DiscoverHero';
 import HowItWorks from './components/HowItWorks';
@@ -289,6 +290,12 @@ export default function Discover(props) {
                                                 items={featuredWishes}
                                                 type="wish"
                                                 icon={<Gift />}
+                                                /* Wishes we chose to feature. `new-wishes` is the
+                                                   reserved wish-collection key — the closest of the
+                                                   twelve; there is no "trending wishes" key and
+                                                   folding these into `trending` would make the
+                                                   creator-trending figure unreadable. */
+                                                discoverySource={DISCOVERY_SOURCE.NEW_WISHES}
                                             />
                                         )}
                                     </>
@@ -304,6 +311,7 @@ export default function Discover(props) {
                                                 items={featuredCreators}
                                                 type="creator"
                                                 icon={<FlameIcon />}
+                                                discoverySource={DISCOVERY_SOURCE.TRENDING}
                                             />
                                         )}
                                         {newVerifiedCreators && newVerifiedCreators.length > 0 && (
@@ -314,6 +322,7 @@ export default function Discover(props) {
                                                 items={newVerifiedCreators}
                                                 type="creator"
                                                 icon={<CircleCheckIcon />}
+                                                discoverySource={DISCOVERY_SOURCE.NEW_CREATORS}
                                             />
                                         )}
 
@@ -325,6 +334,10 @@ export default function Discover(props) {
                                                 items={topEarners}
                                                 type="creator"
                                                 icon={<PoundSterlingIcon />}
+                                                /* No "top earners" key exists. `trending` is the
+                                                   closest of the twelve — both are "who is doing
+                                                   well right now", chosen by us. */
+                                                discoverySource={DISCOVERY_SOURCE.TRENDING}
                                             />
                                         )}
                                     </div>
@@ -350,6 +363,7 @@ export default function Discover(props) {
                                         items={featuredWishes}
                                         type="wish"
                                         icon={<Gift />}
+                                        discoverySource={DISCOVERY_SOURCE.NEW_WISHES}
                                     />
                                 )}
 
@@ -361,6 +375,7 @@ export default function Discover(props) {
                                         items={featuredBills}
                                         type="bill"
                                         icon={<Gift />}
+                                        discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                                     />
                                 )}
 
@@ -372,6 +387,7 @@ export default function Discover(props) {
                                         items={featuredMemberships}
                                         type="membership"
                                         icon={<Gift />}
+                                        discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                                     />
                                 )}
 
@@ -383,6 +399,7 @@ export default function Discover(props) {
                                         items={featuredTasks}
                                         type="task"
                                         icon={<Gift />}
+                                        discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                                     />
                                 )}
 
@@ -394,6 +411,7 @@ export default function Discover(props) {
                                         items={featuredShops}
                                         type="shop"
                                         icon={<Gift />}
+                                        discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                                     />
                                 )}
                             </>

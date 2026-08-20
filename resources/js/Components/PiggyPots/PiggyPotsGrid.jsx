@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Gift } from "lucide-react";
 import AddMoreTile from "@/Components/AddMoreTile";
 import Nocontent from "@/includes/Nocontent";
@@ -38,6 +38,39 @@ export default function PiggyPotsGrid({
     feed,
 }) {
     const [activePiggyPot, setActivePiggyPot] = useState(null);
+
+    /**
+     * 🚨 `?pot={uuid}` OPENS THAT POT ON ARRIVAL. A Piggy Pot is the one sellable
+     * type with no page of its own — it is bought through the widget this grid
+     * opens as a popup — so without a deep link there is no way to send someone
+     * to a SPECIFIC pot's checkout. The link-in-bio page's item cards rely on
+     * this (`App\Support\BioSellableItems::checkoutUrl`), and building a second
+     * pot checkout to avoid it would create a new Stripe surface, which is
+     * exactly what that feature must not do.
+     *
+     * ⚠️ It only ever OPENS an existing widget. There is no new payment path
+     * here: the popup, its risk checks, its price preview and its `piggy-pot.pay`
+     * POST are the same ones a supporter reaches by tapping the tile.
+     *
+     * ⚠️ A uuid that is not in this creator's visible pots does nothing at all —
+     * the parameter can only select from what the server already sent, so it can
+     * never surface a pot the page was not allowed to show.
+     *
+     * ⚠️ Runs once per pot list, not on every render, and it does not rewrite the
+     * URL: a supporter who closes the popup and refreshes expects the pot they
+     * followed a link to, not an empty page.
+     */
+    useEffect(() => {
+        if (typeof window === "undefined" || !piggyPots?.length) return;
+
+        const wanted = new URLSearchParams(window.location.search).get("pot");
+
+        if (!wanted) return;
+
+        const match = piggyPots.find((p) => p?.uuid === wanted);
+
+        if (match) setActivePiggyPot(match);
+    }, [piggyPots]);
 
     const content = useMemo(() => {
         if (piggyPots && piggyPots.length > 0) {

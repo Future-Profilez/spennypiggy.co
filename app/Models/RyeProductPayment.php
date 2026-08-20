@@ -16,6 +16,10 @@ class RyeProductPayment extends Model
     }
 
     protected $fillable = [
+        // Discovery Phase 1 — the source that earned this sale, read back by
+        // finance:sync-transactions when it writes the ledger row (no browser,
+        // no Stripe event metadata in that worker). Class is derived, never stored.
+        'discovery_source',
         'user_id',
         'currency',
         'amount',
