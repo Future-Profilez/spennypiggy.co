@@ -183,7 +183,7 @@ jobs:
         LHCI_BUILD_CONTEXT__COMMIT_TIME: ${{ github.event.head_commit.timestamp }}
         
     - name: Upload Lighthouse results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: lighthouse-results
@@ -213,7 +213,7 @@ jobs:
           --assert.assertMatrix[0].assertions.categories:seo=0.90
           
     - name: Upload performance monitoring results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: production-performance-results
