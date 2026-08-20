@@ -79,7 +79,7 @@ jobs:
         echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env
         
     - name: Cache Composer dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: /tmp/composer-cache
         key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
