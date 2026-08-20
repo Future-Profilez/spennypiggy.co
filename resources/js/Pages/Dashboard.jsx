@@ -1127,6 +1127,31 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
+                                            {/* 🚨 THE FIRST THING A CREATOR SEES ON THEIR OWN
+                                                DASHBOARD, ON EVERY TAB.
+
+                                                It used to render inside the About tab, so the one
+                                                card that answers "what do I do next" was only
+                                                visible if the creator happened to be on that tab —
+                                                a creator who landed on Wishes or Shop saw no next
+                                                step at all. It now sits in the owner column
+                                                OUTSIDE the tab system, for the same reason the
+                                                Discovery and Opportunity panels do.
+
+                                                ⚠️ Gated on IsloggedIn (the viewer IS the profile
+                                                owner) ONLY — never on UserStripeConnected, which is
+                                                where it once sat. Three of the six journey steps
+                                                come BEFORE Stripe, so that gate hid the card from
+                                                every creator still on profile, identity or payouts
+                                                — the ones needing it most. The component self-gates
+                                                on auth.journey and disappears once the journey is
+                                                done, so a finished creator sees nothing here. */}
+                                            {IsloggedIn && (
+                                                <div className="mb-3">
+                                                    <CreatorJourneyCard />
+                                                </div>
+                                            )}
+
                                             {IsloggedIn && (
                                                 <PendingChangesNotice
                                                     assets={
@@ -1219,9 +1244,9 @@ export default function Dashboard(props) {
                                                     href={route(
                                                         "catalogue.index",
                                                     )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                    className="group mt-3 flex items-center gap-4 rounded-box border border-[#000] bg-white px-4 py-4 transition-colors duration-150 hover:bg-black/[0.04]"
                                                 >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#05EFB8] text-2xl">
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border border-[#000] bg-[#05EFB8] text-2xl">
                                                         🗂️
                                                     </span>
                                                     <div className="min-w-0 flex-1">
@@ -1235,7 +1260,7 @@ export default function Dashboard(props) {
                                                             stuck.
                                                         </div>
                                                     </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#000] bg-[#FF007F] text-black text-lg font-black">
                                                         ›
                                                     </span>
                                                 </Link>
@@ -1283,20 +1308,6 @@ export default function Dashboard(props) {
                                                                         >
                                                                             {/* About tab: single-column flow — intro, status, highlights, posts */}
                                                                             <div className="flex flex-col gap-4 about-sec self-start w-full">
-                                                                                {/* ⚠️ First thing in the creator's own About tab, above the founder and
-                                                                                    referral promos. This is the single "what do I do next" instruction;
-                                                                                    below a promo it stops reading as an instruction.
-
-                                                                                    Gated on IsloggedIn (viewer IS the profile owner) ONLY — deliberately
-                                                                                    NOT on UserStripeConnected, which is where it used to sit. Three of the
-                                                                                    six journey steps come BEFORE Stripe, so that gate hid the card from
-                                                                                    every creator still on profile, identity or payouts — 26 of the 45 with
-                                                                                    a card to show, and the ones needing it most. The component self-gates
-                                                                                    on auth.journey and disappears once the journey is done. */}
-                                                                                {IsloggedIn && (
-                                                                                    <CreatorJourneyCard />
-                                                                                )}
-
                                                                                 {/* Owner-only promos: founder offer + referral, at the top of their own tab */}
                                                                                 {props.founderData
                                                                                     ?.isEligible &&

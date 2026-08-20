@@ -6,11 +6,16 @@ use App\Helpers;
 use App\Mail\PlatformRiskAlert;
 use App\Models\Admin;
 use App\Models\AuditLog;
+use App\Models\CreatorMetric;
 use App\Models\EarlyFraudWarning;
+use App\Models\Payment;
 use App\Models\PlatformRiskState;
 use App\Models\RiskSetting;
+use App\Models\SecurityEvent;
 use App\Support\PlatformGmvTrigger;
+use App\Support\SecurityEventLog;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -58,6 +63,12 @@ class MonitorPlatformRiskState extends Command
         $dailyCautionFloor = (int) ($triggers['daily_gmv_caution_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_DAILY_CAUTION_FLOOR);
         $dailyThrottleFloor = (int) ($triggers['daily_gmv_throttle_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_DAILY_THROTTLE_FLOOR);
         $weeklyFloor = (int) ($triggers['weekly_gmv_spike_floor_minor'] ?? PlatformGmvTrigger::DEFAULT_WEEKLY_FLOOR);
+
+        // 🚨 Security Checklist §3 — "unusual refund volume". Run FIRST, before
+        // any trigger below, because every one of them `return`s on firing: put
+        // this at the bottom and a frozen platform would stop reporting its own
+        // refund rate at exactly the moment somebody wants to know it.
+        $this->checkRefundVolume();
 
         // 1. Calculate Dispute Rate (30d)
         // Spec: If dispute_rate_pct >= 0.7% -> FREEZE
@@ -378,6 +389,23 @@ class MonitorPlatformRiskState extends Command
             ],
         ]);
 
+        $this->notifyAdmins($newState, $reasons, $metrics);
+    }
+
+    /**
+     * Mail every admin about a platform-level risk event.
+     *
+     * Extracted from `transitionState` so the refund-volume watch can reuse the
+     * SAME path rather than inventing a second admin notification system — the
+     * recipient list, the environment behaviour and the template are all
+     * already right here, and two of them would drift.
+     *
+     * @param  string|null  $headline  a subject line for an alert that is not a
+     *                                 state transition; null keeps the original
+     *                                 "State changed to X" subject exactly.
+     */
+    private function notifyAdmins($state, $reasons, $metrics, ?string $headline = null): void
+    {
         try {
 
             $allRecipients = [
@@ -403,17 +431,165 @@ class MonitorPlatformRiskState extends Command
             $allRecipients = array_values(array_unique(array_filter($allRecipients)));
 
             foreach ($allRecipients as $email) {
-                Mail::to($email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
+                Mail::to($email)->send(new PlatformRiskAlert($state, $reasons, $metrics, $headline));
                 Helpers::sendNotification(
-                    "Platform Risk Alert: {$newState}",
-                    "System state changed to {$newState}. Reasons: ".implode(', ', $reasons),
+                    "Platform Risk Alert: {$state}",
+                    $headline ?? "System state changed to {$state}. Reasons: ".implode(', ', $reasons),
                     $email
                 );
             }
 
-            $this->info('Platform state change notifications sent.');
+            $this->info('Platform risk notifications sent.');
         } catch (\Exception $e) {
+            // 🚨 The state transition above has already been written. Alerting
+            // must never be able to undo or block the thing it observes.
             Log::error('Failed to send Platform Risk Alert email: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * "Unusual refund volume" — Security Checklist §3.
+     *
+     * The audit found this measured and never reported: `RiskService` has
+     * computed `refund_rate_30d` against `high_refund_rate` (0.05) for a long
+     * time, and does something about it — but only to the CREATOR, by raising
+     * their reserve. `MonitorPlatformRiskState` alerted admins on dispute rate
+     * and EFW spikes and on nothing to do with refunds, so a platform-wide
+     * refund problem was visible in the database and in nobody's inbox.
+     *
+     * 🚨 IT DOES NOT CHANGE THE PLATFORM STATE. Refund rate is not one of the
+     * spec'd state triggers, and wiring it into `transitionState` would mean a
+     * bad refund week could FREEZE the platform — a consequence nobody asked
+     * for. This reports; the state machine above is untouched.
+     *
+     * THRESHOLDS, and why each one is where it is:
+     *  - The RATE is not defined here. It is read from the risk engine's own
+     *    `risk_thresholds.high_refund_rate`, so the number an admin is alerted
+     *    on and the number a creator is scored on cannot drift apart.
+     *  - A FLOOR of 50 transactions, because a 100% refund rate over three
+     *    payments is a creator having a bad week, not a platform incident, and
+     *    alerting on it teaches the reader to ignore the mail.
+     *  - OR five creators individually over the threshold, mirroring the
+     *    existing `creators_over_trigger_count` — a cluster is a signal even
+     *    when the platform average is fine.
+     *  - A 24-HOUR COOLDOWN. The metric is a 30-day rolling window, so it moves
+     *    by fractions of a percent between scheduler ticks; mailing on every run
+     *    would send the same number dozens of times a day.
+     *
+     * 🚨 NEVER THROWS. This runs ahead of the state machine and must not be able
+     * to stop it.
+     */
+    private function checkRefundVolume(): void
+    {
+        try {
+            // ⚠️ The SAME setting `RiskService::evaluateRisk` reads, with the
+            // same defaults. Two copies of "what counts as a high refund rate"
+            // is how the admin alert and the creator's reserve end up disagreeing.
+            $thresholds = RiskSetting::get('risk_thresholds') ?: [
+                'high_refund_rate' => 0.05,
+                'min_tx_count' => 1,
+            ];
+
+            $refundRateTrigger = (float) ($thresholds['high_refund_rate'] ?? 0.05);
+            $minTxPerCreator = (int) ($thresholds['min_tx_count'] ?? 1);
+
+            $since = now()->subDays(30);
+            $countedStatuses = ['succeeded', 'review_hold', 'refunded', 'disputed'];
+
+            $totalTx = (int) Payment::whereIn('status', $countedStatuses)->where('created_at', '>=', $since)->count();
+            $refunds = (int) Payment::where('status', 'refunded')->where('created_at', '>=', $since)->count();
+
+            $refundRate = $totalTx > 0 ? $refunds / $totalTx : 0.0;
+
+            // Read straight off the metrics the risk engine already maintains —
+            // recomputing per creator here would be a second implementation of
+            // a number that already exists, and the two would disagree.
+            $creatorsOver = (int) CreatorMetric::where('refund_rate_30d', '>', $refundRateTrigger)
+                ->where('tx_30d', '>=', $minTxPerCreator)
+                ->count();
+
+            $minTx = (int) config('security_alerts.refund_volume.min_transactions', 50);
+            $creatorFloor = (int) config('security_alerts.refund_volume.creators_over_threshold', 5);
+
+            $platformOver = $refundRate > $refundRateTrigger && $totalTx >= $minTx;
+            $clusterOver = $creatorsOver >= $creatorFloor;
+
+            $this->info(sprintf(
+                'Refund rate (30d): %.2f%% over %d transactions · %d creator(s) over %.2f%%',
+                $refundRate * 100,
+                $totalTx,
+                $creatorsOver,
+                $refundRateTrigger * 100
+            ));
+
+            if (! $platformOver && ! $clusterOver) {
+                // Report a suppressed trigger for the same reason the GMV floors
+                // do: "the trigger never fired" and "the trigger was held back
+                // by its floor" must be tellable apart in the log.
+                if ($refundRate > $refundRateTrigger && $totalTx < $minTx) {
+                    $this->warn("SUPPRESSED REFUND_VOLUME — rate cleared but only {$totalTx} transactions (floor {$minTx}).");
+                    Log::info('Refund volume trigger suppressed by transaction floor', [
+                        'refund_rate' => $refundRate,
+                        'total_tx' => $totalTx,
+                        'floor' => $minTx,
+                    ]);
+                }
+
+                return;
+            }
+
+            $reasons = array_values(array_filter([
+                $platformOver ? 'PLATFORM_REFUND_RATE' : null,
+                $clusterOver ? 'CREATOR_REFUND_CLUSTER' : null,
+            ]));
+
+            $metrics = [
+                'refund_rate' => round($refundRate * 100, 3).'%',
+                'threshold' => round($refundRateTrigger * 100, 3).'%',
+                'refunds_30d' => $refunds,
+                'transactions_30d' => $totalTx,
+                'creators_over_threshold' => $creatorsOver,
+                'transaction_floor' => $minTx,
+            ];
+
+            $event = SecurityEventLog::record(SecurityEvent::REFUND_VOLUME, [
+                'severity' => 'warning',
+                'description' => sprintf(
+                    'Refund rate %.2f%% over %d transactions in 30 days; %d creator(s) individually over %.2f%%.',
+                    $refundRate * 100,
+                    $totalTx,
+                    $creatorsOver,
+                    $refundRateTrigger * 100
+                ),
+                'context' => $metrics + ['reasons' => $reasons],
+            ]);
+
+            if ($this->option('dry-run')) {
+                $this->warn('DRY RUN: would raise a refund-volume alert ('.implode(', ', $reasons).')');
+
+                return;
+            }
+
+            $cooldown = (int) config('security_alerts.refund_volume.cooldown_minutes', 1440);
+
+            // Cache::add, not has()+put() — two schedulers overlapping would
+            // otherwise both pass the check and both send.
+            if ($cooldown > 0 && ! Cache::add('security_alert:refund_volume', true, now()->addMinutes($cooldown))) {
+                $this->line('Refund-volume alert suppressed by cooldown.');
+
+                return;
+            }
+
+            $this->notifyAdmins(
+                'REFUND VOLUME',
+                $reasons,
+                $metrics,
+                sprintf('⚠️ Platform Risk Alert: refund volume %.2f%% (30d)', $refundRate * 100)
+            );
+
+            SecurityEventLog::markAlerted($event);
+        } catch (\Throwable $e) {
+            Log::warning('Refund volume check failed', ['error' => $e->getMessage()]);
         }
     }
 }

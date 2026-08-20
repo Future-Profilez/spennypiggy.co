@@ -188,27 +188,35 @@ return [
         /*
          * Link in Bio (A3).
          *
-         * 🚨 `bio_direct_sales` IS COMING SOON EVEN THOUGH THE BRIEF LABELS ITS
-         * SECTIONS "LIVE NOW", and that is deliberate — flagged to Jack, not
-         * decided quietly. `/{username}/bio` exists and is live, but it carries
-         * NO checkout, NO price and NO payment method (see the docblock at the
-         * top of `Pages/Bio/Show.jsx`, which says so explicitly): its buttons
-         * link out to profile pages. Selling straight from the bio page is what
-         * the B stream builds, due Fri 28 Aug — three days AFTER the plan puts
-         * this ad page live on Tue 25.
+         * ✅ `bio_direct_sales` FLIPPED TO LIVE ON 20 AUG 2026, in the same
+         * release that carries the B stream. It had shipped COMING SOON against
+         * the brief's own "LIVE NOW" label — flagged to Jack rather than decided
+         * quietly — because `/{username}/bio` sold nothing: its rows linked out
+         * to profile pages, and direct selling was the B stream, due Fri 28 Aug,
+         * three days AFTER this ad page goes live on Tue 25.
          *
-         * The plan's own standing prohibition wins over its section labels:
-         * "Mark anything LIVE NOW in marketing that is not live in the product"
-         * is listed under Never. So the page ships on time and advertises the
-         * capability honestly, and this key flips the moment B lands — a config
-         * change, no deploy. It covers section 3 (cards -> straight to checkout)
-         * and section 6 (choosing which EARNING ITEMS appear); today's editor
-         * orders links, not items.
+         * ⚠️ THE FLIP MUST TRAVEL IN THE SAME RELEASE AS THE CODE IT CLAIMS.
+         * The label lives in this file, so it deploys with the app — flipping it
+         * on a branch that ships before B would put a LIVE NOW claim on a
+         * capability no creator has. Verified before flipping:
+         *   - `bio/buy/{item}` routed (BioPageController@buy -> real checkout)
+         *   - `creator_bio_items` migration RAN; BioSellableItems::checkoutUrl
+         *   - editor item picker: bio.items.store / .reorder / .update / .destroy
+         *   - BioDirectSalesTest — 19 passed
+         *
+         * 🚩 ONE CLAUSE OF SECTION 6 IS STILL AHEAD OF THE PRODUCT and is a copy
+         * question for Jack, not a flag: "Choose which items appear, in what
+         * order, and what it looks like." The first two are live and the editor
+         * also carries hide/show and custom button text — but there is NO theme,
+         * colour or appearance control anywhere in `Pages/Bio/Edit.jsx`. Either
+         * that clause comes out of the copy or a control gets built; the rest of
+         * the section is genuinely live, so holding the whole key back over three
+         * words would under-claim a shipped feature.
          *
          * `bio_phone` is genuinely live: the page renders no layout, opens on a
          * phone in one scroll, and has been shipped for some time.
          */
-        'bio_direct_sales' => 'coming_soon',
+        'bio_direct_sales' => 'live',
         'bio_phone' => 'live',
         'tips' => 'coming_soon',
     ],

@@ -295,7 +295,7 @@ export default function Header({ classMagicword }) {
                 the old behaviour. Never type the banner's height here — it grows
                 when its steps expand. */}
             <div
-                className="headermain fixed left-0 w-full z-[100] py-[17px] bg-[#FF007F]"
+                className="headermain fixed left-0 w-full z-[100] py-[14px] bg-[#FF007F]"
                 style={{ top: 'var(--sp-topbanner-h, 0px)' }}
             >
                 <div className="container mx-auto px-4">

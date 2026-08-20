@@ -6,6 +6,7 @@ use App\Models\Concerns\HasCreatorWatermark;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
 use App\Support\MediaUrl;
+use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -189,6 +190,15 @@ class Shop extends Model
         return $data;
     }
 
+    /**
+     * The digital good a Shop buyer paid for. Signed — this accessor is only
+     * appended by withDeliverable(), i.e. once the viewer is known to be
+     * entitled, and signing is what stops that one reveal becoming a permanent
+     * link the buyer keeps after a refund or chargeback.
+     *
+     * ⚠️ A non-Uploadcare host (a creator's own https link) is returned
+     * untouched — SecureMedia only signs ucarecdn.com.
+     */
     public function getRewardFileUrlAttribute()
     {
         $url = false;
@@ -200,7 +210,7 @@ class Shop extends Model
             }
         }
 
-        return $url;
+        return SecureMedia::sign($url);
     }
 
     /**

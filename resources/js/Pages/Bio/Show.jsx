@@ -2,6 +2,27 @@ import { Head, Link } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import axios from "axios";
+import {
+    ChevronRight,
+    ClipboardList,
+    Crown,
+    Gift,
+    Newspaper,
+    PiggyBank,
+    RefreshCw,
+    ShoppingBag,
+    Sparkles,
+} from "lucide-react";
+import {
+    FaDiscord,
+    FaInstagram,
+    FaLink,
+    FaSpotify,
+    FaTiktok,
+    FaTwitch,
+    FaXTwitter,
+    FaYoutube,
+} from "react-icons/fa6";
 import VerifiedBadge from "@/Components/VerifiedBadge";
 import { BIO_TIP_COPY } from "@/constants/bioTip";
 import {
@@ -52,11 +73,42 @@ import {
  * `#A2E4B8` parent. A black rule would read as a table; the ground showing
  * through makes the block belong to this page rather than sit on it.
  *
+ * ⚠️ THREE RADII, AND EVERY CORNER IS ONE OF THEM. `rounded-box` (24/30px) is
+ * for things that CONTAIN other things — the featured card, the item block, the
+ * QR panel, the owner and empty panels. `rounded-box-sm` (16/20px) is for what
+ * sits inside one: avatar, thumbnails, link tiles, buttons, CTA pills, and the
+ * announced-tip strip, which is an alert ROW and not a panel however wide it
+ * looks. `rounded-box-xs` (10/12px) is badges and progress bars. The bars were
+ * the last `rounded-full` on the page apart from the circular social chips, and
+ * a pill bar beside a 10px badge is exactly the mixed-radius look the house
+ * tokens exist to stop. ⚠️ Never hardcode a pixel radius here — the tokens are
+ * responsive (`resources/css/theme.css`) and a fixed number breaks at one width
+ * or the other.
+ *
+ * ⚠️ EVERY LINE ON THIS PAGE IS 2px (14 Aug 2026 house rule, tightened here
+ * 20 Aug 2026). It was 3px on the frames and 2px on the controls, which is a
+ * difference nobody reads as hierarchy and everybody reads as inconsistency —
+ * on a phone-width page, a 3px frame around a 2px frame is just a thicker blob.
+ * Depth is border COLOUR and SPACE, never weight. ⚠️ Do NOT write it as
+ * `border-2 border-black`: `resources/css/index.css` defines `.border-black` as
+ * a full `border` SHORTHAND, which silently overwrites the width. Every border
+ * here is `border border-[#000]`.
+ *
+ * ⚠️ THE HEADER IS A CARD, NOT LOOSE TYPE ON THE GROUND. The name, handle and
+ * bio sat directly on the green while everything below them was framed, so the
+ * one block naming the creator was the only unstructured thing on the page. The
+ * avatar overlaps the card's top edge, which is what keeps it from reading as a
+ * fourth stacked frame.
+ *
  * ⚠️ THE TWO GROUPS ENCODE A REAL DIFFERENCE — on-platform costs money,
  * off-platform does not — and that is the only thing a visitor needs to sort by.
  * ONE accent per group, never per row: pink carries the paid group because pink
  * is this platform's money colour, and the external group carries no accent at
  * all. That restraint IS the hierarchy.
+ *
+ * ⚠️ THE OFF-PLATFORM GROUP IS A ROW OF MARKS, NOT ROWS — see `SocialStrip`.
+ * The one-frame device below applies to the PAID group; seven social accounts
+ * rendered at full row width outweighed the things that earn money.
  *
  * ⚠️ NO ENTRANCE ANIMATION. The page is opened from a social app on whatever
  * connection the visitor has, and staggering the content delays the one thing it
@@ -105,15 +157,51 @@ export default function BioShow({
         copyLink();
     };
 
-    const nothingToShow = links.length === 0 && items.length === 0 && !featured;
+    /*
+        🚨 "NOTHING TO SELL" IS NOT "NOTHING ON THE PAGE". This asked for links,
+        items AND the pot to be empty, and the internal buttons are derived — a
+        creator with a single post has seven of them — so the one creator who
+        genuinely had nothing buyable got a tidy navigation list and no prompt at
+        all. A supporter who followed a link expecting to buy something needs to
+        be told there is nothing yet, and the creator needs to be told to add
+        something. It is now keyed on the sellable things only.
+    */
+    const nothingToSell = items.length === 0 && !featured;
 
     return (
         <>
             <Head title={`${creator.name || creator.username} — links`} />
 
-            <div className="min-h-dvh bg-fixed bg-[#A2E4B8] px-4 pb-14 pt-9">
+            {/*
+                🚨 BLACK GROUND, AND THE FRAMES ARE GONE WITH IT (20 Aug 2026,
+                client direction). The page was mint with a black 2px outline
+                around every block — and outlines on a pale ground are what made
+                it read as a form rather than a shopfront. Depth is now SOLID
+                FILL and SPACE: near-black page, one raised surface (#151515) for
+                anything you can tap, hairlines only INSIDE a surface. The house
+                rule that produced the outlines (border weight → colour → space)
+                is unchanged; this is the third of its three tools, which this
+                page had never used.
+
+                ⚠️ Black is also what makes the creator's own pictures the
+                loudest thing here. On mint, every cover and every product photo
+                sat inside a competing colour.
+            */}
+            {/*
+                🚨 THE TOP SPACING LIVES ON THE SHELL, NEVER ON THE HERO. A
+                `mt` on the first child COLLAPSES THROUGH this container, so the
+                shell itself started 20px down the page — and `html`/`body` are
+                BLACK in this app's stylesheet, so that gap rendered as a black
+                band across the top of the page on desktop. Padding does not
+                collapse.
+            */}
+            <div className="min-h-dvh bg-[#FFF6EC] pb-16 md:pt-5">
                 <main className="mx-auto w-full max-w-[520px]">
-                    <Header creator={creator} />
+                    <Header
+                        creator={creator}
+                        social={external}
+                        isOwner={isOwner}
+                    />
 
                     {featured ? <Featured item={featured} /> : null}
 
@@ -125,29 +213,22 @@ export default function BioShow({
                         journey the brief exists to remove.
                     */}
                     {items.length > 0 ? (
-                        <ItemGrid items={items} isOwner={isOwner} />
+                        <ItemList items={items} isOwner={isOwner} />
                     ) : null}
 
                     {internal.length > 0 ? (
                         <LinkGroup
                             eyebrow="Get my content"
-                            accent="#FF007F"
                             links={internal}
-                            isOwner={isOwner}
-                        />
-                    ) : null}
-
-                    {external.length > 0 ? (
-                        <LinkGroup
-                            eyebrow="Find me elsewhere"
-                            links={external}
                             isOwner={isOwner}
                         />
                     ) : null}
 
                     {STABLECOIN_TIPS_ANNOUNCED ? <Stablecoin tip={tip} /> : null}
 
-                    {nothingToShow ? <Empty creator={creator} /> : null}
+                    {nothingToSell ? (
+                        <Empty creator={creator} isOwner={isOwner} />
+                    ) : null}
 
                     <Tools
                         bioUrl={bioUrl}
@@ -158,7 +239,12 @@ export default function BioShow({
                         share={share}
                     />
 
-                    {isOwner ? <OwnerBar stats={stats} /> : null}
+                    {isOwner ? (
+                        <OwnerBar
+                            stats={stats}
+                            featuredClicks={featured?.clicks || 0}
+                        />
+                    ) : null}
 
                     <Footer creator={creator} />
                 </main>
@@ -168,49 +254,160 @@ export default function BioShow({
 }
 
 /**
- * ⚠️ The avatar is a SQUIRCLE, not a circle. `rounded-box-sm` is the house
- * avatar shape (the leaderboard uses it for the same reason) and a circular
- * avatar over a stack of links is the one shape that would make this page
- * indistinguishable from every other link-in-bio.
+ * The hero — ONE CARD THAT INTRODUCES A PERSON, not a centred avatar floating
+ * on a coloured ground.
+ *
+ * 🚨 IT IS LEFT-ALIGNED AND PHOTO-LED, which is the single biggest thing
+ * separating this from a link list. Every reference the client sent leads with
+ * the creator at size — a cover photo bled to the edges with the name over or
+ * under it — and every one of them centres nothing. A centred circle above a
+ * stack of buttons IS the Linktree layout; it is what a visitor has already
+ * seen a hundred times, and it says the page is a menu rather than a shopfront.
+ *
+ * ⚠️ THE COVER IS OPTIONAL AND THE CARD MUST LOOK FINISHED WITHOUT IT. Most
+ * creators have no cover approved, so the no-cover branch is the DEFAULT case,
+ * not the fallback: the card simply starts at the avatar row with the mint
+ * ground showing through, and nothing is left hanging where a band would be.
+ *
+ * ⚠️ Both images are approval-gated in `User` (`avatar_url` / `cover_url` return
+ * null for an unreviewed upload to everyone but the owner). Nothing here checks
+ * moderation again — and nothing here may bypass it.
+ *
+ * ⚠️ The avatar stays a SQUIRCLE. `rounded-box-sm` is the house avatar shape
+ * (the leaderboard uses it for the same reason) and a circular avatar over a
+ * stack of links is the one shape that would make this page indistinguishable
+ * from every other link-in-bio.
  */
-function Header({ creator }) {
+function Header({ creator, social = [], isOwner }) {
+    const hasCover = Boolean(creator.cover_url);
+
     return (
-        <header className="text-center">
-            {/*
-                ⚠️ Arbitrary sizing: this project remaps the numeric spacing
-                scale, so `h-24` is not a size you can predict from the class
-                name. Comment sits here, not between the attributes — `/* *​/`
-                in JSX attribute position is a syntax error.
-            */}
-            {creator.avatar_url ? (
-                <img
-                    src={creator.avatar_url}
-                    alt=""
-                    width={92}
-                    height={92}
-                    className="mx-auto h-[92px] w-[92px] rounded-box-sm border-[3px] border-[#000] object-cover"
-                />
+        /*
+            🚨 THE COVER IS FRAMED, NOT BLED (20 Aug 2026, after three passes at
+            blending it). A bled cover has to dissolve into the page, and a
+            creator's cover is usually a dark banner — faded into a cream ground
+            it goes grey and muddy at exactly the size it is most visible, and no
+            amount of mask tuning fixes an image that is fighting the ground. In
+            a frame it is simply the picture the creator uploaded: full strength,
+            straight edges, one hairline around it. It also matches how every
+            other card on this page (and in the app) is built, which is what
+            makes the page read as one thing.
+
+            ⚠️ The avatar overlaps the seam and is the only element allowed to
+            cross it. That overlap is what stops the card reading as two stacked
+            rectangles.
+        */
+        <header className="md:mx-4 md:overflow-hidden md:rounded-box md:border md:border-[#000] md:bg-white">
+            {hasCover ? (
+                /*
+                    🚨 TWO BEHAVIOURS, ONE MARKUP. On a PHONE the cover is
+                    full-bleed and fades out of its own bottom edge — the screen
+                    is the frame, and a bordered card inside a 390px viewport
+                    just adds two lines nobody needed. On DESKTOP it is a framed
+                    card, because a bled banner in a 520px column floating on a
+                    wide cream page has three hard edges and looks like a stray
+                    image.
+
+                    ⚠️ The fade is a MASK (removes alpha) and not an overlay
+                    (adds paint): a wash in the page colour turned this dark
+                    cover grey. Both spellings are declared — unprefixed for
+                    Chrome/Firefox, `-webkit-` for Safari and the iOS in-app
+                    browsers this page is mostly opened in — and both are
+                    switched OFF at `md`, where the frame does the work instead.
+                */
+                <div
+                    className={[
+                        "w-full bg-[#FFF6EC]",
+                        "h-[200px] [mask-image:linear-gradient(to_bottom,#000_0%,#000_58%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_58%,transparent_100%)]",
+                        "md:h-[142px] md:border-b md:border-[#000] md:[mask-image:none] md:[-webkit-mask-image:none]",
+                    ].join(" ")}
+                >
+                    <img
+                        src={creator.cover_url}
+                        alt=""
+                        className="h-full w-full object-cover object-center"
+                    />
+                </div>
             ) : null}
 
-            <h1 className="mt-4 flex items-center justify-center gap-2 font-gulfs text-[30px] uppercase leading-[1.02] tracking-tight text-black">
-                {creator.name || creator.username}
-                <VerifiedBadge tier={creator.verified_badge} founder={creator.is_founder} />
-            </h1>
+            <div
+                className={[
+                    // 🚨 `relative z-10`, and it is load-bearing on the PHONE.
+                    // `mask-image` creates a stacking context, so the masked
+                    // cover painted OVER this block and its own fade dimmed the
+                    // top of the avatar — an overlay nobody drew. The same trap
+                    // bit the earlier gradient version for the same reason.
+                    "relative z-10 px-5 pb-6 text-center md:pb-5",
+                    hasCover ? "pt-0" : "pt-6",
+                ].join(" ")}
+            >
+                {creator.avatar_url ? (
+                    <img
+                        src={creator.avatar_url}
+                        alt=""
+                        width={92}
+                        height={92}
+                        className={[
+                            "mx-auto h-[92px] w-[92px] rounded-box-sm border border-[#000] bg-white object-cover",
+                            hasCover ? "-mt-[70px] md:-mt-[46px]" : "",
+                        ].join(" ")}
+                    />
+                ) : (
+                    <span
+                        className={[
+                            "mx-auto flex h-[92px] w-[92px] items-center justify-center rounded-box-sm border border-[#000] bg-[#FF007F] font-gulfs text-[32px] uppercase leading-none text-black",
+                            hasCover ? "-mt-[70px] md:-mt-[46px]" : "",
+                        ].join(" ")}
+                    >
+                        {(creator.name || creator.username || "?").charAt(0)}
+                    </span>
+                )}
 
-            {/*
-                ⚠️ The handle is the BODY face, not `gulfs`. Set in the display
-                face it reads as a smaller copy of the name directly above it
-                rather than as a different kind of information.
-            */}
-            <p className="mt-1.5 font-poppins text-[14px] leading-[1.4] text-black/55">
-                @{creator.username}
-            </p>
+                {/*
+                    🚨 THE DISPLAY FACE IS SPENT HERE AND ALMOST NOWHERE ELSE.
+                    `gulfs` caps was carrying the name, every item title, every
+                    link, every button and every eyebrow, so nothing on the page
+                    could be emphasised. It now sets the creator's name and the
+                    small section rules; Poppins with real weights carries
+                    everything a person actually reads.
+                */}
+                {/*
+                    ⚠️ THE TICK SITS ON THE NAME'S OPTICAL CENTRE, NOT ITS TOP.
+                    `items-start` on a 30px display cap floated the badge level
+                    with the cap height, which reads as a stray dot beside the
+                    word rather than as part of it. `items-center` on the flex
+                    row plus the explicit `md` size (18px) locks it to the middle
+                    of the word at any name length. ⚠️ Never size it with a
+                    Tailwind text class — the component draws an SVG at a fixed
+                    pixel size from its own `SIZES` map (`lg` = 24px here, which
+                    is the tick reading as part of the name rather than as a
+                    footnote to it).
+                */}
+                <h1 className="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 font-gulfs text-[24px] uppercase leading-[1.05] tracking-tight text-black">
+                    <span className="min-w-0 break-words">
+                        {creator.name || creator.username}
+                    </span>
+                    <VerifiedBadge
+                        tier={creator.verified_badge}
+                        founder={creator.is_founder}
+                        size="lg"
+                    />
+                </h1>
 
-            {creator.bio ? (
-                <p className="mx-auto mt-3 max-w-[38ch] font-poppins text-[14px] leading-[1.6] text-black/75">
-                    {creator.bio}
+                <p className="mt-1.5 font-poppins text-[13.5px] leading-[1.3] text-black/45">
+                    @{creator.username}
                 </p>
-            ) : null}
+
+                {creator.bio ? (
+                    <p className="mx-auto mt-2.5 max-w-[38ch] font-poppins text-[13.5px] leading-[1.6] text-black/70">
+                        {creator.bio}
+                    </p>
+                ) : null}
+
+                {social.length > 0 ? (
+                    <SocialChips links={social} isOwner={isOwner} />
+                ) : null}
+            </div>
         </header>
     );
 }
@@ -245,31 +442,37 @@ function Featured({ item }) {
     return (
         <Link
             href={item.url}
-            className="mt-7 block overflow-hidden rounded-box border-[3px] border-[#000] bg-white transition-[filter] duration-200 hover:brightness-[1.04] active:brightness-95"
+            className="mx-4 mt-8 block overflow-hidden rounded-box border border-[#000] bg-white transition-[background-color] duration-200 hover:bg-[#FFF3F8] active:brightness-[0.98]"
         >
             {item.image ? (
                 <img
                     src={item.image}
                     alt=""
-                    className="h-44 w-full border-b-[3px] border-[#000] object-cover"
+                    className="h-48 w-full object-cover"
                     loading="lazy"
                 />
             ) : null}
 
             <div className="p-4">
-                <span className="inline-block rounded-box-xs bg-[#FF007F] px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.18em] text-black">
+                <span className="inline-block rounded-box-xs border border-[#000] bg-[#FF007F] px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.18em] text-black">
                     Open now
                 </span>
 
-                <p className="mt-2.5 font-gulfs text-[20px] uppercase leading-[1.1] text-black">
+                <p className="mt-3 font-poppins text-[19px] font-bold leading-[1.2] text-black">
                     {item.title}
                 </p>
 
                 {item.percent !== null ? (
-                    <div className="mt-3.5">
-                        <div className="h-4 w-full overflow-hidden rounded-box-xs border-2 border-[#000] bg-white">
+                    <div className="mt-4">
+                        {/*
+                            ⚠️ MINT IS THE PROGRESS COLOUR, PINK IS THE MONEY
+                            COLOUR. They were the same, so a full bar and a buy
+                            button competed. Mint also survives the dark ground,
+                            which the old white track did not.
+                        */}
+                        <div className="h-3 w-full overflow-hidden rounded-box-xs border border-[#000] bg-white">
                             <div
-                                className="h-full bg-[#FF007F] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                                className="h-full bg-[#A2E4B8] transition-[width] duration-700 ease-out motion-reduce:transition-none"
                                 style={{ width: `${width}%` }}
                             />
                         </div>
@@ -279,7 +482,7 @@ function Featured({ item }) {
                             the tile whose whole job is to be the first thing
                             someone buys.
                         */}
-                        <p className="mt-1.5 font-gulfs text-[11px] uppercase tracking-[0.16em] text-black/55">
+                        <p className="mt-2 font-poppins text-[12px] leading-[1.4] text-black/50">
                             {item.percent === 0
                                 ? "Be the first"
                                 : `${item.percent}% of the way there`}
@@ -308,44 +511,44 @@ const money = (value, currency) =>
 /**
  * The things this creator sells — the reason to switch to this page.
  *
- * 🚨 ONE FRAME, CARDS ABUTTING. Same device as the link block and the same
- * reason: the hairline is `gap-px` over the green parent, never a border per
- * card, because adjacent borders double up.
+ * 🚨 A PRODUCT ROW, NOT A TILE IN A GRID. The two-column grid gave each listing
+ * a 126px thumbnail, a truncated title and a price squeezed under it, which is
+ * how you lay out a catalogue nobody is expected to read. Every commerce
+ * reference the client sent lays a purchase out the same way instead — picture
+ * left, what it is and what it costs beside it, one unmistakable button — and
+ * that is also what a supporter arriving from a story needs: not twelve options
+ * scanned at speed, but one they can act on. Measured: a row is ~112px tall
+ * against ~125px per item in the grid, so this is SHORTER as well as clearer.
  *
- * ⚠️ AN ODD CARD COUNT SPANS THE LAST TILE ACROSS BOTH COLUMNS, or the parent
- * shows through as a solid green block where the missing tile would be. Handled
- * here so no caller has to remember it — the trap `StatStrip` documents.
+ * 🚨 ONE FRAME, ROWS ABUTTING, hairline via `gap-px` over the mint parent —
+ * the house device, unchanged. Never a border per row: adjacent borders double
+ * up and need a per-position reset at every breakpoint.
  *
- * ⚠️ Two columns on a phone, matching the wish, shop and pot grids. The page
- * opens in an in-app browser and its job is to be read in one scroll; a
- * single-column list of twelve cards is four screens of scrolling.
+ * ⚠️ THE TITLE IS SET IN THE BODY FACE. It is the creator's own words, of any
+ * length, in any language; `gulfs` caps mangles a long one and cannot render
+ * accents at all. Display caps stay for OUR words — section rules and buttons.
  */
-function ItemGrid({ items, isOwner }) {
-    const odd = items.length % 2 === 1;
-
+function ItemList({ items, isOwner }) {
     return (
-        <section className="mt-7">
-            <div className="mb-2.5 flex items-center gap-2.5 px-1">
-                <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-black/60">
-                    Buy from me
-                </span>
-                <span
-                    className="h-[3px] flex-1 rounded-full"
-                    style={{ backgroundColor: "#FF007F" }}
-                />
-            </div>
+        <section className="mt-8 px-4">
+            <Eyebrow label="Buy from me" accent="#FF007F" />
 
-            <div className="overflow-hidden rounded-box border-[3px] border-[#000] bg-[#A2E4B8]">
-                <div className="grid grid-cols-2 gap-px">
-                    {items.map((item, index) => (
-                        <ItemCard
-                            key={item.uuid}
-                            item={item}
-                            isOwner={isOwner}
-                            wide={odd && index === items.length - 1}
-                        />
-                    ))}
-                </div>
+            {/*
+                🚨 ONE SURFACE, ROWS ABUTTING, hairline INSIDE it. The block used
+                to be an outlined frame over a coloured ground with the ground
+                showing through as the divider. On black there is nothing to show
+                through, so the divider is a real hairline (`white/8`) and the
+                surface is a fill — fewer parts, and no outline anywhere.
+            */}
+            <div className="overflow-hidden rounded-box border border-[#000] bg-white">
+                {items.map((item, index) => (
+                    <ItemRow
+                        key={item.uuid}
+                        item={item}
+                        isOwner={isOwner}
+                        first={index === 0}
+                    />
+                ))}
             </div>
         </section>
     );
@@ -359,32 +562,33 @@ function ItemGrid({ items, isOwner }) {
  * would be an unattributed sale and an unrecorded click, neither of which can be
  * recovered afterwards.
  *
- * ⚠️ It is a plain `<a>`, not an Inertia `<Link>`. The destination is a 302 to a
- * page outside this one's component tree — several of them leave Inertia
- * entirely for a Stripe-hosted checkout — and an Inertia visit cannot follow a
- * redirect that ends somewhere it does not control.
+ * ⚠️ It is a plain `<a>`, not an Inertia `<Link>` — the destination is a 302 to
+ * a page outside this component tree, several of them Stripe-hosted.
  *
- * ⚠️ "Sign in to buy" is a WARNING, not the gate. Bills, Memberships, Paid Tasks
- * and Shop orders need an account so they can be tracked, delivered, renewed and
- * cancelled, and each buy path refuses a guest itself. Saying so on the card only
- * stops the supporter meeting a login screen with no explanation.
+ * ⚠️ THE PRICE IS THE CREATOR'S LISTED PRICE, FORMATTED — never calculated.
+ *
+ * ⚠️ "Sign in to buy" is a WARNING, not the gate. Each buy path refuses a guest
+ * itself; saying so here only stops the supporter meeting a login screen with no
+ * explanation.
  */
-function ItemCard({ item, isOwner, wide }) {
+function ItemRow({ item, isOwner, first }) {
     const hidden = isOwner && !item.is_active;
+    const priced = item.price !== null && item.price !== undefined;
+    const hasProgress = item.percent !== null && item.percent !== undefined;
 
     return (
         <a
             href={item.url}
             className={[
-                "group flex flex-col p-3",
+                "group flex items-center gap-3.5 p-3",
+                first ? "" : "border-t border-[#000]",
                 "transition-[background-color] duration-200",
-                wide ? "col-span-2" : "",
                 hidden
-                    ? "bg-white/55 text-black/45"
-                    : "bg-white text-black hover:bg-[#FFF3F8] active:bg-[#FFE7F2]",
+                    ? "text-black/35"
+                    : "text-black hover:bg-[#FFF3F8] active:bg-[#FFE7F2]",
             ].join(" ")}
         >
-            <div className="mb-2.5 h-[126px] w-full overflow-hidden rounded-box-sm border-2 border-[#000] bg-[#A2E4B8]">
+            <div className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-box-sm border border-[#000] bg-[#FFF6EC]">
                 {item.image ? (
                     <img
                         src={item.image}
@@ -393,26 +597,26 @@ function ItemCard({ item, isOwner, wide }) {
                         className="h-full w-full object-cover transition-[filter] duration-500 group-hover:brightness-[1.08]"
                     />
                 ) : (
-                    <span className="flex h-full w-full items-center justify-center font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/35">
+                    <span className="flex h-full w-full items-center justify-center px-1 text-center font-gulfs text-[8px] uppercase leading-[1.3] tracking-[0.14em] text-black/30">
                         {item.type_label}
                     </span>
                 )}
             </div>
 
-            <span className="inline-block w-fit rounded-box-xs bg-black/[0.08] px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-black/60">
-                {item.type_label}
-            </span>
+            <div className="flex min-w-0 flex-1 flex-col">
+                <span className="font-gulfs text-[9px] uppercase tracking-[0.18em] text-black/35">
+                    {item.type_label}
+                </span>
 
-            <p className="mt-1.5 line-clamp-2 font-gulfs text-[13px] uppercase leading-[1.2] tracking-tight">
-                {item.title}
-            </p>
+                <p className="mt-1 line-clamp-2 font-poppins text-[14.5px] font-semibold leading-[1.3]">
+                    {item.title}
+                </p>
 
-            <div className="mt-auto pt-2.5">
-                {item.price !== null && item.price !== undefined ? (
-                    <p className="font-poppins text-[13px] font-semibold leading-[1.3] text-black">
+                {priced ? (
+                    <p className="mt-0.5 font-poppins text-[14px] font-bold leading-[1.3] tabular-nums text-black">
                         {money(item.price, item.currency)}
                         {item.price_note ? (
-                            <span className="font-normal text-black/55">
+                            <span className="font-normal text-black/45">
                                 {" "}
                                 {item.price_note}
                             </span>
@@ -423,132 +627,330 @@ function ItemCard({ item, isOwner, wide }) {
                 {/*
                     ⚠️ A pot has no price — any amount within the platform limits
                     buys it — so it shows progress instead. `percent` is null when
-                    the creator set no target, and a null bar is omitted rather
-                    than drawn at 0: "no goal" and "nobody has bought" are
-                    different things and a 0% bar states the second.
+                    no target is set, and a null bar is omitted rather than drawn
+                    at 0: "no goal" and "nobody has bought" are different things.
                 */}
-                {item.percent !== null && item.percent !== undefined ? (
-                    <div className="h-2.5 w-full overflow-hidden rounded-box-xs border-2 border-[#000] bg-white">
+                {hasProgress ? (
+                    <div className="mt-2 h-2.5 w-full overflow-hidden rounded-box-xs border border-[#000] bg-white">
                         <div
-                            className="h-full bg-[#FF007F]"
+                            className="h-full bg-[#A2E4B8]"
                             style={{ width: `${item.percent}%` }}
                         />
                     </div>
                 ) : null}
 
-                <span
-                    className={[
-                        "mt-2 flex min-h-[38px] items-center justify-center rounded-box-sm px-2",
-                        "font-gulfs text-[11px] uppercase tracking-[0.14em] text-black",
-                        hidden ? "bg-black/[0.06]" : "bg-[#FF007F]",
-                    ].join(" ")}
-                >
-                    {hidden ? "Hidden" : item.cta}
-                </span>
-
                 {item.requires_account ? (
-                    <span className="mt-1.5 block font-poppins text-[10.5px] leading-[1.4] text-black/45">
+                    <span className="mt-1 font-poppins text-[10.5px] leading-[1.4] text-black/35">
                         Sign in to buy
                     </span>
                 ) : null}
             </div>
+
+            {/*
+                ⚠️ A SPAN inside the row's own anchor — the whole row is the tap
+                target, and a nested button here would be invalid markup and a
+                second, smaller thing to hit. Black on pink, never white.
+            */}
+            <span
+                className={[
+                    "flex shrink-0 items-center self-center rounded-box-sm px-3.5 py-2.5",
+                    "font-gulfs text-[10.5px] uppercase tracking-[0.14em]",
+                    hidden
+                        ? "border border-black/25 bg-black/[0.04] text-black/40"
+                        : "border border-[#000] bg-[#FF007F] text-black",
+                ].join(" ")}
+            >
+                {hidden ? "Hidden" : item.cta}
+            </span>
         </a>
     );
 }
 
 /**
- * 🚨 ONE FRAME, ROWS ABUTTING. See the page docblock — this is the platform's
- * own grouping device and it is what stops the page reading as a link list.
+ * The on-platform destinations — TWO COLUMNS OF TILES, not seven full-width
+ * rows.
  *
- * ⚠️ The hairline is `gap-px` over the green parent. Do NOT give each row its
- * own border: adjacent borders double up and need a per-position reset at every
- * breakpoint, which is the mistake this device exists to avoid.
+ * 🚨 NAVIGATION IS NOT MERCHANDISE. These are free destinations, and at full
+ * width one under another, seven of them took more of the page than everything
+ * for sale on it — the exact inversion this page exists to correct. As a 2-up
+ * grid the same seven read in four lines, and the product rows above are then
+ * the only full-width things on the page, which is what makes them read as the
+ * important ones.
+ *
+ * ⚠️ AN ODD COUNT SPANS THE LAST TILE, or the grid ends on a hole.
  */
 function LinkGroup({ eyebrow, accent, links, isOwner }) {
-    return (
-        <section className="mt-7">
-            <div className="mb-2.5 flex items-center gap-2.5 px-1">
-                <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-black/60">
-                    {eyebrow}
-                </span>
-                <span
-                    className="h-[3px] flex-1 rounded-full"
-                    style={{ backgroundColor: accent || "rgba(0,0,0,0.18)" }}
-                />
-            </div>
+    const odd = links.length % 2 === 1;
 
-            <div className="overflow-hidden rounded-box border-[3px] border-[#000] bg-[#A2E4B8]">
-                <div className="flex flex-col gap-px">
-                    {links.map((link) => (
-                        <LinkRow
-                            key={link.uuid || `${link.kind}-${link.target_type}`}
-                            link={link}
-                            accent={accent}
-                            isOwner={isOwner}
-                        />
-                    ))}
-                </div>
+    /*
+        🚨 THE SPANNING TILE IS THE LONGEST LABEL, NOT WHATEVER SORTED LAST. An
+        odd count spans one tile across both columns, and that slot is the only
+        one where a long label fits on one line — so "Subscriptions" belongs in
+        it, not "Shop". Ordering otherwise stays exactly as the server sent it:
+        this moves ONE tile, and only when the count is odd.
+    */
+    const ordered = [...links];
+
+    if (odd && ordered.length > 1) {
+        // ⚠️ SUBSCRIPTIONS TAKES THE WIDE SLOT WHEN IT IS ON THE PAGE (client
+        // direction). It is the longest label of the eight and the only one that
+        // wrapped in a half tile. Any other page falls back to "whichever label
+        // is longest", so the rule still holds for a creator who has no
+        // subscriptions at all.
+        const wide =
+            ordered.find((link) => link.target_type === "bills") ||
+            ordered.reduce(
+                (best, link) =>
+                    (link.label || "").length > (best.label || "").length
+                        ? link
+                        : best,
+                ordered[0],
+            );
+
+        ordered.splice(ordered.indexOf(wide), 1);
+        ordered.push(wide);
+    }
+
+    return (
+        <section className="mt-8 px-4">
+            <Eyebrow label={eyebrow} accent={accent} />
+
+            <div className="grid grid-cols-2 gap-2">
+                {ordered.map((link, index) => (
+                    <LinkRow
+                        key={link.uuid || `${link.kind}-${link.target_type}`}
+                        link={link}
+                        isOwner={isOwner}
+                        wide={odd && index === ordered.length - 1}
+                    />
+                ))}
             </div>
         </section>
     );
 }
 
 /**
- * ⚠️ An INTERNAL link is a plain Inertia visit — same site, no redirect hop.
- * An EXTERNAL one goes through `/bio/go/{uuid}`, which counts the click and then
+ * ⚠️ EVERY TILE CARRIES THE MARK OF WHAT IT OPENS. `target_type` is the server's
+ * own key for the module, so the glyph cannot drift from the destination — and
+ * these seven are seven DIFFERENT products, which seven identical lines of text
+ * made read as near-synonyms.
+ *
+ * ⚠️ An unknown key falls back to the arrow, never to nothing: an empty chip
+ * beside neighbours that have a mark reads as a broken image.
+ */
+const LINK_MARKS = {
+    wishes: Gift,
+    shop: ShoppingBag,
+    "piggy-pots": PiggyBank,
+    memberships: Crown,
+    bills: RefreshCw,
+    tasks: ClipboardList,
+    "piggy-bank": Sparkles,
+    feed: Newspaper,
+};
+
+/**
+ * 🚨 ONE COLOUR PER MODULE, AND IT IS THE SAME COLOUR EVERY TIME (20 Aug 2026,
+ * client direction). The tiles were seven identical white rectangles, which is
+ * the flattest thing on a page whose whole job is to be scanned in a second.
+ * Keyed on the server's own `target_type`, so a creator who reorders their page
+ * keeps the colour they learned — a palette that shuffles with position teaches
+ * nothing and just looks busy.
+ *
+ * ⚠️ ALL FIVE ARE THE BRAND'S OWN, and all five take BLACK type and a black
+ * edge: mint, yellow and violet are the app's pastels, pink is the money colour
+ * (black on pink, never white — 5.56:1), cream is the page's own ground.
+ * Nothing here is a new hue invented for this page.
+ */
+const LINK_TINTS = {
+    "piggy-bank": "#FFD3E8",
+    wishes: "#A2E4B8",
+    "piggy-pots": "#FFD3E8",
+    shop: "#E6EA7B",
+    memberships: "#C9B6FF",
+    tasks: "#A2E4B8",
+    feed: "#E6EA7B",
+    bills: "#C9B6FF",
+};
+
+/**
+ * ⚠️ An INTERNAL link is a plain Inertia visit — same site, no redirect hop. An
+ * EXTERNAL one goes through `/bio/go/{uuid}`, which counts the click and then
  * rebuilds the destination from the stored platform and handle. The href is
  * never the destination itself.
- *
- * ⚠️ The mark on the right encodes something true rather than decorating: `↗`
- * means this leaves Spenny Piggy, `→` means it stays. A visitor about to be
- * taken off the page should be told before they tap, not after.
  */
-function LinkRow({ link, accent, isOwner }) {
+function LinkRow({ link, isOwner, wide }) {
     const external = link.kind === "external";
     const hidden = isOwner && !link.is_active;
+    const Mark = LINK_MARKS[link.target_type] || ChevronRight;
+
+    const tint = LINK_TINTS[link.target_type] || "#FFFFFF";
 
     const className = [
-        "group flex min-h-[58px] items-center gap-3 px-4 py-3.5",
-        "transition-[background-color,opacity] duration-200",
-        hidden
-            ? "bg-white/55 text-black/45"
-            : "bg-white text-black hover:bg-[#FFF3F8] active:bg-[#FFE7F2]",
+        // ⚠️ A ONE-WORD LABEL CANNOT WRAP, SO THE TILE HAS TO GIVE IT ROOM.
+        // "Memberships" and "Subscriptions" ran off the edge on a 360px screen:
+        // `line-clamp` only breaks between words, and there is no space in
+        // either. Narrow gutters, a smaller mark and a smaller type size on the
+        // small breakpoint — plus `break-words`, which is what actually lets a
+        // long single word split rather than overflow.
+        "flex min-h-[60px] items-center gap-2 rounded-box-sm border border-[#000] px-2.5 py-2.5",
+        "sm:min-h-[62px] sm:gap-3 sm:px-3.5 sm:py-3",
+        "transition-[filter] duration-200",
+        wide ? "col-span-2" : "",
+        hidden ? "text-black/40" : "text-black hover:brightness-[1.06] active:brightness-95",
     ].join(" ");
 
     const body = (
         <>
-            <span className="min-w-0 flex-1 truncate font-gulfs text-[15px] uppercase leading-[1.2] tracking-tight">
-                {link.label}
-            </span>
-
-            {hidden ? (
-                <span className="shrink-0 font-poppins text-[11px] leading-[1.4] text-black/45">
-                    Hidden
-                </span>
-            ) : null}
-
             <span
                 aria-hidden="true"
-                className="shrink-0 font-poppins text-[17px] leading-none"
-                style={{ color: accent || "rgba(0,0,0,0.35)" }}
+                className={[
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-box-xs border border-[#000] sm:h-8 sm:w-8",
+                    hidden ? "bg-white text-black/30" : "bg-white text-black",
+                ].join(" ")}
             >
-                {external ? "↗" : "→"}
+                <Mark className="h-[15px] w-[15px] sm:h-[16px] sm:w-[16px]" strokeWidth={2.25} />
             </span>
+
+            {/*
+                ⚠️ TWO LINES, NOT AN ELLIPSIS. At tile width "Subscriptions" and
+                "Memberships" both truncated to a stem — a label that cannot say
+                its own name is worse than a taller tile.
+            */}
+            <span className="line-clamp-2 min-w-0 flex-1 break-words font-poppins text-[12px] font-semibold leading-[1.25] sm:text-[13px]">
+                {hidden ? `${link.label} · hidden` : link.label}
+            </span>
+
+            {/*
+                ⚠️ THE MARK IS ONLY DRAWN WHEN IT SAYS SOMETHING. `↗` means this
+                leaves Spenny Piggy and a visitor should be told before they tap;
+                `→` on an internal tile said "this is a link", which the tile
+                already said, and it cost the label the width it needed.
+            */}
+            {external ? (
+                <span
+                    aria-hidden="true"
+                    className="shrink-0 font-poppins text-[15px] leading-none text-black/30"
+                >
+                    ↗
+                </span>
+            ) : null}
         </>
     );
 
     if (external) {
         return (
-            <a href={link.url} target="_blank" rel="noopener noreferrer" className={className}>
+            <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+                style={{ backgroundColor: hidden ? "#FFFFFF" : tint }}
+            >
                 {body}
             </a>
         );
     }
 
     return (
-        <Link href={link.url} className={className}>
+        <Link
+            href={link.url}
+            className={className}
+            style={{ backgroundColor: hidden ? "#FFFFFF" : tint }}
+        >
             {body}
         </Link>
+    );
+}
+
+/**
+ * The section rule. One shape for every heading on the page, so a group reads as
+ * a group before a word of it is read.
+ *
+ * ⚠️ 2px, like every other line here — see the page docblock.
+ */
+function Eyebrow({ label, accent }) {
+    return (
+        <div className="mb-3 flex items-center gap-3">
+            <span className="font-gulfs text-[11px] uppercase tracking-[0.22em] text-black/45">
+                {label}
+            </span>
+            <span
+                className="h-px flex-1"
+                style={{ backgroundColor: accent || "rgba(0,0,0,0.15)" }}
+            />
+        </div>
+    );
+}
+
+/**
+ * ⚠️ The mark, never a wordmark image. `react-icons/fa6` is already in the
+ * bundle (Header, Footer, ProfileTabs), so this costs nothing extra and no
+ * platform logo is copied into the repo. An unknown or withdrawn platform falls
+ * back to a chain link rather than rendering nothing — a tile with no mark on it
+ * reads as a broken image.
+ */
+const SOCIAL_MARKS = {
+    instagram: { icon: FaInstagram, label: "Instagram" },
+    tiktok: { icon: FaTiktok, label: "TikTok" },
+    twitter: { icon: FaXTwitter, label: "X" },
+    youtube: { icon: FaYoutube, label: "YouTube" },
+    twitch: { icon: FaTwitch, label: "Twitch" },
+    discord: { icon: FaDiscord, label: "Discord" },
+    spotify: { icon: FaSpotify, label: "Spotify" },
+};
+
+/**
+ * The off-platform links — A ROW OF MARKS INSIDE THE HERO, not a section.
+ *
+ * 🚨 THEY BELONG TO THE PERSON, NOT TO THE PAGE. Every reference the client
+ * sent puts the social icons directly under the name, in one compact row, and
+ * none of them gives those links a heading or a frame of their own: a supporter
+ * decides whether to follow while they are still reading who this is. Ours sat
+ * at the very bottom under a section rule, below a nine-row navigation list and
+ * a nine-hundred-pixel announcement, which is where a footer goes.
+ *
+ * 🚨 SIZE IS THE HIERARCHY. These are 40px chips; every paid thing on this page
+ * is a full-width row or a card. That difference is the whole argument for
+ * putting them this high — high does not have to mean loud, and a free follow
+ * must never outweigh a purchase.
+ *
+ * ⚠️ NO WORDS AND NO BRAND COLOUR. The mark IS the name — "TikTok" printed
+ * under its own logo says less than the logo did — and seven brand hues under
+ * the one pink accent would leave nothing for the money to be loud with. The
+ * label survives as the accessible name, and only a link with no mark of ours
+ * falls back to the chain glyph.
+ *
+ * ⚠️ THE HREF IS STILL `/bio/go/{uuid}`, the counting redirect.
+ */
+function SocialChips({ links, isOwner }) {
+    return (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {links.map((link) => {
+                const Mark = SOCIAL_MARKS[link.platform]?.icon || FaLink;
+                const hidden = isOwner && !link.is_active;
+
+                return (
+                    <a
+                        key={link.uuid || link.platform}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={hidden ? `${link.label} (hidden)` : link.label}
+                        title={link.label}
+                        className={[
+                            "flex h-10 w-10 items-center justify-center rounded-full",
+                            "transition-[background-color] duration-200",
+                            hidden
+                                ? "border border-dashed border-black/40 text-black/30"
+                                : "border border-[#000] bg-white text-black hover:bg-[#FF007F] active:brightness-95",
+                        ].join(" ")}
+                    >
+                        <Mark aria-hidden="true" className="h-[17px] w-[17px]" />
+                    </a>
+                );
+            })}
+        </div>
     );
 }
 
@@ -577,50 +979,54 @@ function Stablecoin({ tip }) {
     // Plan §F), so the constant can never be what enables a payment.
     const live = STABLECOIN_TIPS_LIVE && !!tip?.live;
 
+    /*
+        🚨 WHILE IT IS ANNOUNCED, IT IS ONE LINE — NOT A DISABLED CHECKOUT.
+        Measured at 390px before this change: the greyed block ran ~900px, more
+        than the pot, every item card and every link put together, on the one
+        page a creator shares everywhere. A supporter scrolled past six preset
+        amounts, an amount field, a dead button and three fee notes, none of
+        which they could use, to reach the things they could buy. An announcement
+        earns a line; only a working payment earns a form.
+
+        ⚠️ The amount picker below is kept, wired and tested — it renders the
+        moment BOTH switches say live. Deleting it would mean rebuilding it, and
+        the disabled state is still the thing that is legally load-bearing when
+        the rail turns on.
+    */
+    if (!live) {
+        return (
+            <section className="mx-4 mt-8 flex items-center gap-3 rounded-box-sm border border-dashed border-black/40 px-4 py-3.5">
+                <span className="min-w-0 flex-1 font-poppins text-[12.5px] leading-[1.45] text-black/45">
+                    <span className="font-semibold text-black/70">
+                        {STABLECOIN_COPY.card.title}
+                    </span>{" "}
+                    — {STABLECOIN_COPY.railNote}
+                </span>
+
+                <span className="shrink-0 rounded-box-xs bg-black/[0.07] px-2 py-1 font-gulfs text-[9px] uppercase tracking-[0.16em] text-black/50">
+                    {STABLECOIN_COPY.card.detail}
+                </span>
+            </section>
+        );
+    }
+
     return (
-        <section
-            className={[
-                "mt-7 rounded-box px-4 py-4",
-                live
-                    ? "border-[3px] border-[#000] bg-[#8C52FF]"
-                    : "border-2 border-dashed border-black/35 bg-white/35",
-            ].join(" ")}
-        >
+        <section className="mx-4 mt-8 rounded-box border border-[#000] bg-[#8C52FF] px-4 py-4">
             <div className="flex items-center justify-between gap-3">
-                <span
-                    className={[
-                        "min-w-0 flex-1 truncate font-gulfs text-[14px] uppercase leading-[1.2] tracking-tight",
-                        live ? "text-black" : "text-black/55",
-                    ].join(" ")}
-                >
+                <span className="min-w-0 flex-1 truncate font-gulfs text-[14px] uppercase leading-[1.2] tracking-tight text-black">
                     {STABLECOIN_COPY.card.title}
                 </span>
 
-                <span
-                    className={[
-                        "shrink-0 rounded-box-xs px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.16em]",
-                        live ? "bg-black text-white" : "bg-black/10 text-black/50",
-                    ].join(" ")}
-                >
+                <span className="shrink-0 rounded-box-xs bg-black px-2 py-1 font-gulfs text-[10px] uppercase tracking-[0.16em] text-white">
                     {STABLECOIN_COPY.card.detail}
                 </span>
             </div>
 
-            <p
-                className={[
-                    "mt-2 font-poppins text-[12.5px] leading-[1.55]",
-                    live ? "text-black/80" : "text-black/50",
-                ].join(" ")}
-            >
+            <p className="mt-2 font-poppins text-[12.5px] leading-[1.55] text-black/80">
                 {STABLECOIN_COPY.card.line}
             </p>
 
-            <p
-                className={[
-                    "mt-1 font-poppins text-[11.5px] leading-[1.55]",
-                    live ? "text-black/65" : "text-black/40",
-                ].join(" ")}
-            >
+            <p className="mt-1 font-poppins text-[11.5px] leading-[1.55] text-black/65">
                 {STABLECOIN_COPY.railNote}
             </p>
 
@@ -801,7 +1207,7 @@ function TipAmounts({ tip, live }) {
                 <button
                     type="button"
                     className={[
-                        "mt-2.5 min-h-[46px] w-full rounded-box-sm border-[3px] px-3",
+                        "mt-2.5 min-h-[46px] w-full rounded-box-sm border-2 px-3",
                         "font-gulfs text-[12px] uppercase tracking-[0.14em]",
                         "transition-[filter] duration-200",
                         // ⚠️ ONE text-colour utility per branch. Two on the same
@@ -895,7 +1301,7 @@ function TipAmounts({ tip, live }) {
 
 function Tools({ bioUrl, showQr, setShowQr, copied, copyLink, share }) {
     return (
-        <section className="mt-7">
+        <section className="mt-8 px-4">
             <div className="grid grid-cols-3 gap-2">
                 <ToolButton onClick={share} primary>
                     Share
@@ -907,9 +1313,21 @@ function Tools({ bioUrl, showQr, setShowQr, copied, copyLink, share }) {
             </div>
 
             {showQr ? (
-                <div className="mt-3 rounded-box border-[3px] border-[#000] bg-white p-5 text-center">
+                <div className="mt-3 rounded-box border border-[#000] bg-white p-5 text-center">
                     {/* White ground and a quiet zone: a scanner needs both to read it at all. */}
-                    <QRCodeSVG value={bioUrl} size={168} level="M" includeMargin />
+                    {/*
+                        ⚠️ `mx-auto block`, not the parent's `text-center`. The
+                        component renders an <svg>, which the browser lays out as
+                        a replaced inline-block of its own width — so it sat hard
+                        left inside a centred panel.
+                    */}
+                    <QRCodeSVG
+                        value={bioUrl}
+                        size={168}
+                        level="M"
+                        includeMargin
+                        className="mx-auto block"
+                    />
                     <p className="mt-2 break-all font-poppins text-[12px] leading-[1.5] text-black/55">
                         {bioUrl}
                     </p>
@@ -926,10 +1344,14 @@ function ToolButton({ onClick, primary, children }) {
             type="button"
             onClick={onClick}
             className={[
-                "min-h-[46px] rounded-box-sm border-[3px] border-[#000] px-2",
-                "font-gulfs text-[11px] uppercase tracking-[0.14em] text-black",
+                "min-h-[46px] rounded-box-sm px-2",
+                "font-gulfs text-[11px] uppercase tracking-[0.14em]",
                 "transition-[filter,background-color] duration-200 hover:brightness-110 active:brightness-95",
-                primary ? "bg-[#FF007F]" : "bg-white",
+                // ⚠️ Black on pink, never white — 5.56:1 against white's 3.78:1.
+                "border border-[#000]",
+                primary
+                    ? "bg-[#FF007F] text-black"
+                    : "bg-white text-black hover:bg-[#FFF3F8]",
             ].join(" ")}
         >
             {children}
@@ -941,9 +1363,9 @@ function ToolButton({ onClick, primary, children }) {
  * ⚠️ Owner only. A visitor has no business reading a creator's reach, and the
  * server sends `stats` as null for anyone else — this never guards it alone.
  */
-function OwnerBar({ stats }) {
+function OwnerBar({ stats, featuredClicks }) {
     return (
-        <section className="mt-7 rounded-box border-[3px] border-[#000] bg-[#E6EA7B] px-4 py-3.5">
+        <section className="mx-4 mt-8 rounded-box border border-[#000] bg-[#E6EA7B] px-4 py-3.5">
             <p className="font-poppins text-[13px] leading-[1.55] text-black/75">
                 Only you can see this.
                 {stats ? (
@@ -953,6 +1375,21 @@ function OwnerBar({ stats }) {
                             {stats.views} {stats.views === 1 ? "view" : "views"}
                         </span>{" "}
                         so far.
+                    </>
+                ) : null}
+                {/*
+                    ⚠️ Only when there IS a pinned tile and it has been tapped —
+                    a creator with no pot should not read "0 taps" on something
+                    their page does not show.
+                */}
+                {featuredClicks ? (
+                    <>
+                        {" "}
+                        <span className="font-semibold text-black">
+                            {featuredClicks}{" "}
+                            {featuredClicks === 1 ? "tap" : "taps"}
+                        </span>{" "}
+                        on your pinned tile.
                     </>
                 ) : null}
             </p>
@@ -966,18 +1403,30 @@ function OwnerBar({ stats }) {
     );
 }
 
-/** An empty screen is an invitation to act, not a dead end. */
-function Empty({ creator }) {
+/**
+ * An empty screen is an invitation to act, not a dead end — and the act is a
+ * different one for each reader. A visitor is offered the profile, because the
+ * creator may well be posting there; the owner is offered the editor, because
+ * they are two taps from having something to sell and nobody else can fix it.
+ */
+function Empty({ creator, isOwner }) {
     return (
-        <section className="mt-7 rounded-box border-2 border-dashed border-black/35 px-5 py-9 text-center">
-            <p className="font-gulfs text-[15px] uppercase leading-[1.2] text-black/60">
-                Nothing on sale yet
+        <section className="mx-4 mt-8 rounded-box border border-dashed border-black/40 px-5 py-9 text-center">
+            <p className="font-gulfs text-[15px] uppercase leading-[1.2] text-black/55">
+                {isOwner ? "Nothing to buy here yet" : "Nothing on sale yet"}
             </p>
+
+            <p className="mx-auto mt-2 max-w-[34ch] font-poppins text-[13px] leading-[1.55] text-black/55">
+                {isOwner
+                    ? "Add a wish, a pot or a shop item and it shows up here as a card people can buy from."
+                    : "Check back soon — or see what they are posting."}
+            </p>
+
             <Link
-                href={creator.profile_url}
-                className="mt-3 inline-block font-gulfs text-[12px] uppercase tracking-[0.14em] text-black underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                href={isOwner ? route("bio.edit") : creator.profile_url}
+                className="mt-3 inline-block font-gulfs text-[12px] uppercase tracking-[0.14em] text-[#FF007F] underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
             >
-                See their profile
+                {isOwner ? "Choose what to sell" : "See their profile"}
             </Link>
         </section>
     );
@@ -985,7 +1434,7 @@ function Empty({ creator }) {
 
 function Footer({ creator }) {
     return (
-        <footer className="mt-9 text-center">
+        <footer className="mt-10 px-4 text-center">
             {/*
                 ⚠️ 44px comes from PADDING, not from the type size — a text link
                 small enough to look quiet and small enough to miss is worse than
@@ -993,11 +1442,11 @@ function Footer({ creator }) {
             */}
             <Link
                 href={creator.profile_url}
-                className="inline-flex min-h-[44px] items-center px-4 font-gulfs text-[12px] uppercase tracking-[0.16em] text-black/70 underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                className="inline-flex min-h-[44px] items-center px-4 font-gulfs text-[12px] uppercase tracking-[0.16em] text-black/60 underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
             >
                 Full profile
             </Link>
-            <p className="mt-3.5 font-gulfs text-[10px] uppercase tracking-[0.24em] text-black/35">
+            <p className="mt-3.5 font-gulfs text-[10px] uppercase tracking-[0.24em] text-black/30">
                 Spenny Piggy
             </p>
         </footer>

@@ -6,8 +6,10 @@ use App\Models\AbandonedCheckout;
 use App\Models\EmailPreferenceLog;
 use App\Models\User;
 use App\Services\AbandonedCheckoutService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 class EmailPreferenceController extends Controller
@@ -22,11 +24,96 @@ class EmailPreferenceController extends Controller
     public const CATEGORIES = [
         'product_updates_enabled',
         'creator_updates_enabled',
+        'birthday_emails_enabled',
         'reactivation_emails_enabled',
         'abandoned_checkout_emails_enabled',
         'restock_emails_enabled',
         'push_notifications_enabled',
     ];
+
+    /**
+     * How long an emailed preference link stays alive.
+     *
+     * 🚨 30 DAYS, NOT 24 HOURS, AND THAT IS THE POINT OF THIS FEATURE.
+     *
+     * The old 24-hour window meant a person who opened the email on Wednesday a
+     * link sent on Monday got "Invalid or expired unsubscribe link" and was
+     * bounced to the homepage — and if they cannot sign in (a suspended creator
+     * is force-logged-out by `CheckSuspendedUser` on every web request, and
+     * `/email-preferences` is behind `auth`) that was the END of the road. They
+     * had NO WAY to stop the mail. `generateCheckoutReminderOptOut` already used
+     * 30 days for exactly this reason: a dead unsubscribe link is worse than no
+     * link at all.
+     */
+    public const LINK_TTL_DAYS = 30;
+
+    /**
+     * The preference centre, in plain language, defined ONCE.
+     *
+     * The point of the descriptions is that a person can turn off one thing
+     * instead of everything — which they can only do if they know what each
+     * switch actually sends. Read by both the signed-in page and the signed
+     * no-login page, so the two can never describe the same switch differently.
+     *
+     * 🚨 SECURITY, LEGAL AND TRANSACTIONAL MAIL IS DELIBERATELY ABSENT FROM THIS
+     * LIST AND FROM `CATEGORIES`. It has no column, no switch and no row here.
+     * Never add one, and never route it through a consent-checking helper.
+     *
+     * @return array<int, array{key: string, title: string, description: string, group: string}>
+     */
+    public static function catalogue(): array
+    {
+        return [
+            [
+                'key' => 'marketing_emails_enabled',
+                'title' => 'Promotions & offers',
+                'description' => 'Campaigns, seasonal promotions and other marketing email from Spenny Piggy. Turning this off does not affect anything else on this page.',
+                'group' => 'marketing',
+            ],
+            [
+                'key' => 'product_updates_enabled',
+                'title' => 'Product updates',
+                'description' => 'New features, changes to how the platform works, and announcements about your account type.',
+                'group' => 'platform',
+            ],
+            [
+                'key' => 'creator_updates_enabled',
+                'title' => 'Creator updates',
+                'description' => 'News about creators you already support — new content, announcements and changes to what they offer.',
+                'group' => 'creators',
+            ],
+            [
+                'key' => 'birthday_emails_enabled',
+                'title' => 'Birthdays',
+                'description' => 'The Monday round-up of creator birthdays that week, and the reminders before the birthday of a creator you support.',
+                'group' => 'creators',
+            ],
+            [
+                'key' => 'reactivation_emails_enabled',
+                'title' => 'Reminders & milestones',
+                'description' => 'Occasional nudges about content waiting for you, and milestone messages about your own account.',
+                'group' => 'platform',
+            ],
+            [
+                'key' => 'abandoned_checkout_emails_enabled',
+                'title' => 'Unfinished purchases',
+                'description' => 'A reminder when you start a purchase and do not finish it, with a link back to your checkout.',
+                'group' => 'purchases',
+            ],
+            [
+                'key' => 'restock_emails_enabled',
+                'title' => 'Back in stock',
+                'description' => 'A one-off notice when an item you asked about becomes available again.',
+                'group' => 'purchases',
+            ],
+            [
+                'key' => 'push_notifications_enabled',
+                'title' => 'Push & in-app notifications',
+                'description' => 'Alerts on your device and in the notification bell. This one is not email — turning it off changes nothing about what arrives in your inbox.',
+                'group' => 'platform',
+            ],
+        ];
+    }
 
     /**
      * Show the email preferences page for authenticated user
@@ -39,11 +126,58 @@ class EmailPreferenceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to manage your email preferences.');
         }
 
-        return inertia('EmailPreference/Index', [
-            'user' => $user,
-            'canManageMarketing' => true,
+        return inertia('EmailPreference/Index', self::pagePayload($user, signed: false));
+    }
+
+    /**
+     * The props both preference pages render from.
+     *
+     * ⚠️ The signed page is reachable WITHOUT LOGGING IN, so it gets a
+     * whitelisted, masked account shape — never the User model. The signed-in
+     * page used to be handed the whole model; there is no reason for either of
+     * them to carry more than the name of the account and the address the mail
+     * goes to.
+     *
+     * @return array<string, mixed>
+     */
+    private static function pagePayload(User $user, bool $signed): array
+    {
+        return [
+            'account' => [
+                'name' => $user->name,
+                'email' => $signed ? self::maskEmail($user->email) : $user->email,
+            ],
+            'categories' => self::catalogue(),
             'preferences' => self::preferencesFor($user),
-        ]);
+            // The signed page has no session user, so its form must post back to
+            // a signed URL of its own. Null on the authenticated page, which
+            // posts to the ordinary named route.
+            'updateUrl' => $signed ? self::generateManageUpdateToken($user) : null,
+            'signed' => $signed,
+        ];
+    }
+
+    /**
+     * `naveen@gmail.com` -> `na***@gmail.com`.
+     *
+     * Whoever holds the link was sent it at this address, so this is a
+     * reminder of which account they are editing rather than a secret. It is
+     * masked anyway because a signed URL can be forwarded, and the page is
+     * served with `Referrer-Policy: no-referrer` for the same reason.
+     */
+    private static function maskEmail(?string $email): string
+    {
+        $email = (string) $email;
+        $at = strpos($email, '@');
+
+        if ($at === false || $at < 1) {
+            return '';
+        }
+
+        $local = substr($email, 0, $at);
+        $keep = substr($local, 0, min(2, strlen($local)));
+
+        return $keep.str_repeat('*', max(1, strlen($local) - strlen($keep))).substr($email, $at);
     }
 
     /** Current state of every switchable category, defaulting to on. */
@@ -66,13 +200,7 @@ class EmailPreferenceController extends Controller
      */
     public function updatePreferences(Request $request)
     {
-        $rules = ['marketing_emails_enabled' => 'sometimes|boolean'];
-
-        foreach (self::CATEGORIES as $column) {
-            $rules[$column] = 'sometimes|boolean';
-        }
-
-        $request->validate($rules);
+        $request->validate(self::validationRules());
 
         $user = $request->user();
 
@@ -80,13 +208,52 @@ class EmailPreferenceController extends Controller
             return redirect()->route('login')->with('error', 'Please log in to update your email preferences.');
         }
 
+        self::applyPreferences($user, $request, 'settings_page');
+
+        return redirect()->back()->with('success', 'Your communication preferences have been updated.');
+    }
+
+    /**
+     * ⚠️ EVERY FIELD IS `sometimes`, ON PURPOSE.
+     *
+     * The page can submit a single toggle without clobbering the others, and a
+     * client that sends a partial payload never silently switches something off
+     * that the person did not touch.
+     *
+     * @return array<string, string>
+     */
+    private static function validationRules(): array
+    {
+        $rules = ['marketing_emails_enabled' => 'sometimes|boolean'];
+
+        foreach (self::CATEGORIES as $column) {
+            $rules[$column] = 'sometimes|boolean';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * The ONE write path for a preference change made on a preference page.
+     *
+     * Shared by the signed-in page and the signed no-login page so the two can
+     * never disagree about what gets written, what gets audited, or which
+     * columns exist. Only what was actually submitted is written.
+     *
+     * 🚨 It can only ever write `marketing_emails_enabled` and the columns in
+     * `CATEGORIES`. There is no column for security, legal or transactional
+     * mail, so there is nothing here that could switch one off.
+     */
+    private static function applyPreferences(User $user, Request $request, string $source): void
+    {
         $updates = [];
 
         if ($request->has('marketing_emails_enabled')) {
             $newValue = $request->boolean('marketing_emails_enabled');
 
-            if ((bool) $user->marketing_emails_enabled !== $newValue) {
-                self::logPreferenceChange($user->id, $user->marketing_emails_enabled, $newValue, 'settings_page');
+            // `?? true` — a row predating the column reads as opted IN.
+            if ((bool) ($user->marketing_emails_enabled ?? true) !== $newValue) {
+                self::logPreferenceChange($user->id, $user->marketing_emails_enabled, $newValue, $source);
             }
 
             $updates['marketing_emails_enabled'] = $newValue;
@@ -98,7 +265,7 @@ class EmailPreferenceController extends Controller
                 $newValue = $request->boolean($column);
 
                 if ((bool) ($user->{$column} ?? true) !== $newValue) {
-                    self::logPreferenceChange($user->id, $user->{$column}, $newValue, 'settings_page:'.$column);
+                    self::logPreferenceChange($user->id, $user->{$column}, $newValue, $source.':'.$column);
                 }
 
                 $updates[$column] = $newValue;
@@ -108,8 +275,100 @@ class EmailPreferenceController extends Controller
         if (! empty($updates)) {
             $user->update($updates);
         }
+    }
 
-        return redirect()->back()->with('success', 'Your communication preferences have been updated.');
+    /**
+     * The preference centre for somebody who is NOT signed in.
+     *
+     * 🚨 THIS IS WHAT LETS A NON-ACTIVE CREATOR UNSUBSCRIBE. `/email-preferences`
+     * sits inside the `auth` group, and `CheckSuspendedUser` (in the `web`
+     * middleware group) force-logs-out and bounces any account with
+     * `suspended_account = 1` on EVERY web request — so a suspended creator can
+     * neither reach that page nor ever sign in to reach it. Before this, their
+     * only control was a single-category unsubscribe link that died after 24
+     * hours, after which they had no way to stop the mail at all.
+     *
+     * Signed URL, no login, and the signature is checked here rather than by the
+     * `signed` middleware so a stale link gets an explanation instead of a bare
+     * 403.
+     */
+    public function manage(Request $request, $userId)
+    {
+        $user = self::userFromSignedLink($request, $userId, 'manage');
+
+        if (! $user instanceof User) {
+            return $user;
+        }
+
+        // ⚠️ `->toResponse()` first: `inertia()` returns an `Inertia\Response`,
+        // which is not an HTTP response and carries no `headers` bag — setting a
+        // header on it throws.
+        return $this->noReferrer(
+            inertia('EmailPreference/Index', self::pagePayload($user, signed: true))->toResponse($request)
+        );
+    }
+
+    /** Write a change made on the signed, no-login preference centre. */
+    public function updateManaged(Request $request, $userId)
+    {
+        $user = self::userFromSignedLink($request, $userId, 'manage.update');
+
+        if (! $user instanceof User) {
+            return $user;
+        }
+
+        $request->validate(self::validationRules());
+
+        self::applyPreferences($user, $request, 'preference_centre_link');
+
+        return $this->noReferrer(
+            redirect()->to(self::generateManageToken($user) ?? '/')
+                ->with('success', 'Your communication preferences have been updated.')
+        );
+    }
+
+    /**
+     * Resolve the account a signed preference link belongs to.
+     *
+     * Returns a redirect (not a User) when the link is unusable, so both signed
+     * endpoints handle a stale link identically.
+     *
+     * @return User|RedirectResponse
+     */
+    private static function userFromSignedLink(Request $request, $userId, string $context)
+    {
+        if (! $request->hasValidSignature()) {
+            Log::warning('EmailPreferenceController@'.$context.': Invalid signature', [
+                'user_id' => $userId,
+            ]);
+
+            return redirect('/')->with('error', 'That preferences link has expired. Sign in and open Communication Preferences, or contact support and we will unsubscribe you.');
+        }
+
+        $user = User::find($userId);
+
+        if (! $user) {
+            return redirect('/')->with('error', 'Invalid preferences link.');
+        }
+
+        return $user;
+    }
+
+    /**
+     * A signed preferences page can be forwarded, and a referrer header would
+     * hand the link to whatever the page links out to. Same precaution
+     * `GuestPurchaseController` takes with its signed lookup.
+     *
+     * ⚠️ `SecurityHeaders` runs first in the `web` group, so its "after" work
+     * runs LAST — it only sets `Referrer-Policy` when one is not already
+     * present, which is what keeps this from being overwritten. Do not relax
+     * that guard.
+     */
+    private function noReferrer($response)
+    {
+        $response->headers->set('Referrer-Policy', 'no-referrer');
+
+        return $response;
     }
 
     public function updatePreferencesFromThankyou(Request $request)
@@ -186,7 +445,12 @@ class EmailPreferenceController extends Controller
         $label = self::categoryLabel($category);
 
         if (! ($user->{$category} ?? true)) {
-            return redirect('/')->with('info', "You are already unsubscribed from {$label}.");
+            // Still land them on the centre — "already off" is the moment
+            // somebody most wants to check what ELSE is still on.
+            return $this->noReferrer(
+                redirect()->to(self::generateManageToken($user) ?? '/')
+                    ->with('info', "You are already unsubscribed from {$label}.")
+            );
         }
 
         // Keep the plain source for the marketing opt-out — the existing audit
@@ -206,7 +470,19 @@ class EmailPreferenceController extends Controller
 
         $user->update($updates);
 
-        return redirect('/')->with('success', "You have been unsubscribed from {$label}.");
+        /*
+         * 🚨 ONE CLICK STILL UNSUBSCRIBES — the opt-out above has already been
+         * written before this line. The redirect then lands them on the signed
+         * preference centre rather than the homepage, so somebody who wanted to
+         * stop ONE thing can see the rest and does not have to choose between
+         * silence and everything. Previously this dropped them on `/` with a
+         * flash and no further control, which for an account that cannot sign
+         * in was the end of the road.
+         */
+        return $this->noReferrer(
+            redirect()->to(self::generateManageToken($user) ?? '/')
+                ->with('success', "You have been unsubscribed from {$label}.")
+        );
     }
 
     /** Human-readable name for a preference column, used in unsubscribe messages. */
@@ -215,6 +491,7 @@ class EmailPreferenceController extends Controller
         return match ($column) {
             'product_updates_enabled' => 'product updates',
             'creator_updates_enabled' => 'creator updates',
+            'birthday_emails_enabled' => 'birthday emails',
             'reactivation_emails_enabled' => 'reminder emails',
             'abandoned_checkout_emails_enabled' => 'unfinished purchase reminders',
             'restock_emails_enabled' => 'back-in-stock notices',
@@ -285,8 +562,50 @@ class EmailPreferenceController extends Controller
 
         return URL::temporarySignedRoute(
             'email.unsubscribe',
-            now()->addHours(24),
+            now()->addDays(self::LINK_TTL_DAYS),
             $params
+        );
+    }
+
+    /**
+     * A no-login link to the full preference centre, for an email footer.
+     *
+     * Every marketing/category email should carry BOTH: the one-click category
+     * unsubscribe above, and this — "turn this one off" and "choose what you
+     * do want" are different intentions and a footer that only offers the first
+     * makes people opt out of everything.
+     */
+    public static function generateManageToken(User $user): ?string
+    {
+        return self::signedPreferenceUrl('email.preferences.manage', $user);
+    }
+
+    /** The signed POST target the no-login centre submits to. */
+    private static function generateManageUpdateToken(User $user): ?string
+    {
+        return self::signedPreferenceUrl('email.preferences.manage.update', $user);
+    }
+
+    /**
+     * ⚠️ NULL WHEN THE ROUTE IS NOT REGISTERED, DELIBERATELY.
+     *
+     * `URL::temporarySignedRoute()` THROWS on an unknown route name, and these
+     * generators are called from inside `Mailable::content()` — so a missing
+     * route line would not produce a missing footer link, it would throw while
+     * rendering and take the whole e-mail down. Every caller and every Blade
+     * footer already guards on null, so an unregistered route costs the extra
+     * link and nothing else.
+     */
+    private static function signedPreferenceUrl(string $routeName, User $user): ?string
+    {
+        if (! Route::has($routeName)) {
+            return null;
+        }
+
+        return URL::temporarySignedRoute(
+            $routeName,
+            now()->addDays(self::LINK_TTL_DAYS),
+            ['user' => $user->id]
         );
     }
 
@@ -295,6 +614,19 @@ class EmailPreferenceController extends Controller
      */
     public function __construct() {}
 
+    /**
+     * The checkout opt-in — an EXPLICIT action by the person, ticked by them.
+     *
+     * 🚨 NOTE FOR THE NEXT PERSON: automatic resubscribe triggers (re-enabling a
+     * category because somebody came back, bought something, or a set period
+     * elapsed) are flagged in the client's Developer Master Plan (19 Aug 2026,
+     * §E) as needing LEGAL REVIEW BEFORE IMPLEMENTATION, and none is
+     * implemented. This method is the place one would be added, and it is
+     * deliberately NOT one: it requires a `marketing_opt_in` the person
+     * submitted. Do not add an automatic path here without that sign-off — under
+     * UK PECR/GDPR an opt-out is withdrawn consent, and inferring a new consent
+     * from a purchase is exactly the thing that needs a lawyer, not a commit.
+     */
     public static function handleMarketingOptIn($userId): void
     {
         if (! request()->has('marketing_opt_in') || ! request()->input('marketing_opt_in')) {

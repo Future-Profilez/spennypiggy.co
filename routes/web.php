@@ -562,6 +562,34 @@ Route::middleware('auth')->group(function () {
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
 
+/*
+ * The preference centre, reachable from an e-mail WITHOUT logging in.
+ *
+ * 🚨 OUTSIDE THE `auth` GROUP, AND THAT IS THE WHOLE POINT. Two things used to
+ * make it impossible for a non-active creator to stop the mail — which the
+ * client brief calls out by name:
+ *
+ *   1. `/email-preferences` sits behind `auth`, and `CheckSuspendedUser` runs in
+ *      the `web` group and force-logs-out `suspended_account = 1` on EVERY web
+ *      request. A suspended creator could neither reach the page nor sign in to
+ *      reach it.
+ *   2. The e-mailed link expired after 24 hours, so opening Monday's e-mail on
+ *      Wednesday ended at "invalid or expired link".
+ *
+ * Together: mail you cannot turn off. The link is signed and now lives 30 days
+ * (matching `generateCheckoutReminderOptOut`, which already used 30 for this
+ * reason), and the controller validates the signature itself.
+ *
+ * ⚠️ Run `php artisan ziggy:generate` after adding these — `generateManageToken()`
+ * returns null for an unregistered route rather than throwing, because it is
+ * called from inside `Mailable::content()` and a missing route would otherwise
+ * take the whole birthday e-mail down instead of dropping one footer link.
+ */
+Route::get('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'manage'])
+    ->name('email.preferences.manage');
+Route::post('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'updateManaged'])
+    ->name('email.preferences.manage.update');
+
 // Dismiss membership offer via signed link in email
 Route::get('/membership-offer/dismiss-link', [ThankYouController::class, 'dismissMembershipOfferViaLink'])
     ->name('membership-offer.dismiss-link');

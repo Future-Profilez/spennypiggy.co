@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Cake, Repeat } from 'lucide-react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
-import { ACCENT, Eyebrow, SectionHead } from './components/Ledger';
+import { ACCENT, Eyebrow, GRID, SectionHead, SectionHeadSplit } from './components/Ledger';
 import DiscoveryStatsPanel from '@/Components/discovery/DiscoveryStatsPanel';
 import {
     DISCOVERY_AD_BIRTHDAY,
@@ -51,7 +51,18 @@ import {
 
 const MINT = ACCENT.earn;
 const PINK = ACCENT.safe;
+/*
+ * 🚨 TWO VIOLETS, AND THE DARK ONE IS NEVER TEXT. Measured on this page's ink
+ * ground (#0B0B0C): `#8C52FF` is **4.47:1** — under AA (4.5) — and these labels
+ * are 11px, so they are normal text, not large. `#C4A5FF` measures **9.53:1**.
+ *
+ * This is the same finding `home/StablecoinTipsAnnouncement.jsx` records for the
+ * same pair, and it was walked into again the moment violet started carrying
+ * meaning rather than decorating a heading. The dark violet is a FILL and a
+ * border; the light one is the ink.
+ */
 const VIOLET = ACCENT.bonus;
+const VIOLET_INK = '#C4A5FF';
 
 export default function Discovery({ discovery }) {
     const labels = discovery?.labels ?? {};
@@ -68,7 +79,7 @@ export default function Discovery({ discovery }) {
                 <meta name="description" content={description} />
                 <meta property="og:title" content={title} />
                 <meta property="og:description" content={description} />
-                <meta property="og:image" content="/siteicon.png" />
+                <meta property="og:image" content="https://spennypiggy.co/og-discovery.png" />
                 <meta
                     property="og:url"
                     content="https://spennypiggy.co/creators/discovery"
@@ -77,7 +88,7 @@ export default function Discovery({ discovery }) {
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:title" content={title} />
                 <meta name="twitter:description" content={description} />
-                <meta name="twitter:image" content="/siteicon.png" />
+                <meta name="twitter:image" content="https://spennypiggy.co/og-discovery.png" />
             </Head>
 
             <Guest>
@@ -116,30 +127,30 @@ export default function Discovery({ discovery }) {
                     </div>
 
                     {/* ── 2 · Most platforms stop at the link ────────────── */}
-                    <Section className="mt-24 md:mt-32">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="The difference"
-                            accent={VIOLET}
+                            accent={MINT}
                             lead={DISCOVERY_AD_STOP_AT_LINK.body}
                         >
                             Most platforms{' '}
                             <span className="text-gradient-wishlist">
                                 stop at the link
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         {/* KEEP_INTACT[0]. It is the landing page's headline and
                             has no section of its own here, so it is placed as
                             the line this section lands on. */}
-                        <p className="mt-10 border-l-4 pl-6 font-gulfs text-2xl uppercase leading-[1.05] tracking-tight text-white md:text-4xl"
+                        <p className="mt-10 border-l-4 pl-6 font-gulfs text-2xl uppercase leading-[1.05] tracking-tight text-white md:text-4xl lg:w-[calc((100%-11*1.5rem)/12*9+8*1.5rem)]"
                            style={{ borderColor: MINT }}>
                             {DISCOVERY_AD_KEEP_INTACT[0]}
                         </p>
                     </Section>
 
                     {/* ── 3 · Public Discovery ──────────────────────────── */}
-                    <Section className="mt-20 md:mt-28">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="On the platform"
                             accent={MINT}
                             lead={DISCOVERY_AD_PUBLIC.body}
@@ -148,19 +159,21 @@ export default function Discovery({ discovery }) {
                                 Public
                             </span>{' '}
                             Discovery
-                        </SectionHead>
+                        </SectionHeadSplit>
 
-                        <div className="mt-10 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
-                            <DiscoverFrame compact />
-
-                            {/* The SAME list as Block 1 on the landing page —
-                                read from the shared constant, so the two pages
-                                cannot list different capabilities. */}
-                            <CapabilityLists
-                                items={DISCOVERY_BLOCKS[0].items}
-                                labels={labels}
-                            />
-                        </div>
+                        {/* ⚠️ THE SECOND DISCOVER FRAME IS GONE. Section 1 already
+                            shows that mock a screen earlier, and repeating a
+                            near-identical grey rectangle taught the reader
+                            nothing while costing ~380px. Chanel's rule: take one
+                            accessory off. The capability list now runs the full
+                            width in two columns, which is shorter than the frame
+                            it sat beside. */}
+                        <CapabilityLists
+                            className="mt-10"
+                            items={DISCOVERY_BLOCKS[0].items}
+                            labels={labels}
+                            columns
+                        />
 
                         <Link
                             href="/discover"
@@ -173,17 +186,17 @@ export default function Discovery({ discovery }) {
                     </Section>
 
                     {/* ── 4 · Discovery everywhere ──────────────────────── */}
-                    <Section className="mt-20 md:mt-28">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="On every profile"
-                            accent={VIOLET}
+                            accent={VIOLET_INK}
                             lead={DISCOVERY_AD_EVERYWHERE.body}
                         >
                             Discovery{' '}
                             <span className="text-gradient-wishlist">
                                 everywhere
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         <div className="mt-8">
                             <StateChip state={labels.more_creators} />
@@ -223,17 +236,17 @@ export default function Discovery({ discovery }) {
                     </Section>
 
                     {/* ── 5 · Birthday promotion (highly visual, per brief) ─ */}
-                    <Section className="mt-20 md:mt-28">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="Your moment"
-                            accent={PINK}
+                            accent={VIOLET_INK}
                             lead={DISCOVERY_AD_BIRTHDAY.body}
                         >
                             Birthday{' '}
                             <span className="text-gradient-wishlist">
                                 promotion
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         <div className="mt-8">
                             <StateChip state={labels.birthday} />
@@ -317,46 +330,73 @@ export default function Discovery({ discovery }) {
 
                     {/* ── 6 · What Discovery is worth ────────────────────
                         🚨 THE MOST PROMINENT SECTION ON THE PAGE (client
-                        instruction). It gets the largest display type, the
-                        widest measure and the accent frame; nothing above or
-                        below competes with it. */}
-                    <Section className="mt-24 md:mt-36">
-                        <Eyebrow accent={MINT}>The proof</Eyebrow>
+                        instruction) — AND IT STAYS ON THE PAGE'S LEFT SPINE.
 
-                        <h2 className="mt-5 max-w-4xl font-gulfs text-4xl uppercase leading-[0.88] tracking-tight text-white sm:text-5xl md:text-[56px]">
-                            We show you what{' '}
-                            <span className="text-gradient-wishlist">
-                                Discovery is worth
-                            </span>
-                        </h2>
+                        An earlier pass made it prominent by putting it in a mint
+                        box and centring it. Measured, that broke the one thing
+                        holding the page together: every other section starts its
+                        eyebrow, heading and content at x=133, and inside a
+                        centred inset frame this section started them at 183, 272
+                        and 384 — three different positions, none of them the
+                        spine. The client's own reaction was "the sections are not
+                        aligned", and they were right.
 
-                        {/* KEEP_INTACT[3] — the phrase this section exists for. */}
-                        <p className="mt-7 max-w-2xl text-lg leading-[1.5] text-white md:text-2xl">
-                            {DISCOVERY_AD_WORTH.lead}
-                        </p>
+                        Prominence is carried by SCALE, COLOUR and SPACE instead,
+                        none of which move anything off the spine:
+                          · the largest heading on the page after the hero
+                          · the tally at 104px — the page's one loud moment
+                          · a mint rule across the full measure, marking the
+                            section without enclosing and indenting it
+                          · the longest interval on the page above it
+                        A box was never what made this important; the numbers
+                        inside it were. */}
+                    <Section className="mt-20 md:mt-24">
+                        <div className="border-t-2 pt-10 md:pt-14" style={{ borderColor: MINT }}>
+                            <Eyebrow accent={MINT}>The proof</Eyebrow>
 
-                        <DiscoveryStatsPanel
-                            className="mt-10"
-                            live={analyticsLive}
-                            stats={mockStats}
-                            lines={DISCOVERY_AD_WORTH.lines}
-                        />
+                            <h2 className="mt-5 font-gulfs text-4xl uppercase leading-[0.88] tracking-tight text-white sm:text-5xl md:text-[64px] lg:w-[calc((100%-11*1.5rem)/12*9+8*1.5rem)]">
+                                We show you what{' '}
+                                <span className="text-gradient-wishlist">
+                                    Discovery is worth
+                                </span>
+                            </h2>
 
-                        <p className="mt-6 text-base leading-[1.55] text-gray-300 md:text-xl">
-                            {DISCOVERY_AD_WORTH.note}
-                        </p>
+                            {/* KEEP_INTACT[3] — the phrase this section exists for. */}
+                            <p className="mt-7 text-lg leading-[1.5] text-white md:text-2xl lg:w-[calc((100%-11*1.5rem)/12*6+5*1.5rem)]">
+                                {DISCOVERY_AD_WORTH.lead}
+                            </p>
+
+                            {/* 🚨 THE TALLY IS THE PRODUCT, so it is set at the
+                                page's largest scale. Discovery's entire promise
+                                is that exposure can be COUNTED; at 56px these
+                                read as a stat widget among widgets, on the one
+                                section the client's brief calls "the most
+                                prominent on the page". This is where the page
+                                spends its boldness, and it spends it once. */}
+                            <DiscoveryStatsPanel
+                                className="mt-12"
+                                live={analyticsLive}
+                                scale="hero"
+                                stats={mockStats}
+                                lines={DISCOVERY_AD_WORTH.lines}
+                            />
+
+                            <p className="mt-6 text-base leading-[1.55] text-gray-300 md:text-xl lg:w-[calc((100%-11*1.5rem)/12*6+5*1.5rem)]">
+                                {DISCOVERY_AD_WORTH.note}
+                            </p>
+                        </div>
                     </Section>
 
                     {/* ── 7 · Bring them back ───────────────────────────── */}
-                    <Section className="mt-24 md:mt-32">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="The loop"
-                            accent={VIOLET}
+                            accent={MINT}
                             lead={DISCOVERY_AD_BRING_BACK.body}
                         >
                             Bring them{' '}
                             <span className="text-gradient-wishlist">back</span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         {/* The loop, drawn. It closes — the last step returns to
                             the first, which is the whole point of the section. */}
@@ -395,28 +435,35 @@ export default function Discovery({ discovery }) {
                     </Section>
 
                     {/* ── 8 · Not just the biggest creators ─────────────── */}
-                    <Section className="mt-20 md:mt-28">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="Rotation, not repetition"
-                            accent={MINT}
+                            accent={VIOLET_INK}
                             lead={DISCOVERY_AD_NOT_JUST_BIGGEST.body}
                         >
                             Discovery isn't just for{' '}
                             <span className="text-gradient-wishlist">
                                 the biggest creators
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         <div className="mt-8">
                             <StateChip state="coming_soon" />
                         </div>
 
-                        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {/* One frame, four abutting cells — the section's point
+                            is that these are one rotation, not four features. */}
+                        <ul className="mt-6 overflow-hidden rounded-box border-2 border-white/15 divide-y-2 divide-white/15 sm:grid sm:grid-cols-2 sm:divide-y-0 sm:[&>li:nth-child(n+3)]:border-t-2 sm:[&>li:nth-child(even)]:border-l-2 lg:grid-cols-4 lg:[&>li:nth-child(n+3)]:border-t-0 lg:[&>li:not(:first-child)]:border-l-2 [&>li]:border-white/15">
                             {DISCOVERY_AD_NOT_JUST_BIGGEST.collections.map(
                                 (collection) => (
                                     <li
                                         key={collection}
-                                        className="rounded-box-sm border-2 border-white/15 bg-white/[0.04] px-5 py-4 text-base text-white md:text-lg"
+                                        /* ⚠️ The SAME padding as every other cell
+                                           on the page (24/28). It was `px-5 py-4`
+                                           — 20/16 — so two abutting-cell frames a
+                                           screen apart inset their contents by
+                                           different amounts. One scale. */
+                                        className="p-6 text-base text-white md:p-7 md:text-lg"
                                     >
                                         {collection}
                                     </li>
@@ -426,17 +473,17 @@ export default function Discovery({ discovery }) {
                     </Section>
 
                     {/* ── 9 · Creator community ─────────────────────────── */}
-                    <Section className="mt-20 md:mt-28">
-                        <SectionHead
+                    <Section className="mt-14 md:mt-16">
+                        <SectionHeadSplit
                             eyebrow="Not just a page"
-                            accent={VIOLET}
+                            accent={MINT}
                             lead={DISCOVERY_AD_COMMUNITY.body}
                         >
                             Creator{' '}
                             <span className="text-gradient-wishlist">
                                 community
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         <p className="mt-8 font-gulfs text-2xl uppercase leading-[1.05] tracking-tight text-white md:text-4xl">
                             {DISCOVERY_AD_COMMUNITY.close}
@@ -444,15 +491,24 @@ export default function Discovery({ discovery }) {
                     </Section>
 
                     {/* ── 10 · Final conversion ─────────────────────────── */}
-                    <Section className="mt-24 text-center md:mt-32">
-                        <h2 className="mx-auto max-w-4xl font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl">
+                    {/* ⚠️ LEFT, LIKE EVERYTHING ELSE. This was centred as a
+                        finale device, which is legitimate on a page that centres
+                        somewhere else — this one does not, so it read as the
+                        second section off the spine rather than as an ending. */}
+                    <Section className="mt-16 md:mt-20">
+                        {/* The closing rule is PINK — the page's action colour,
+                            and the only place it appears as a line. Every other
+                            section opens on a neutral hairline; the last one
+                            opens on the colour of the button it ends with. */}
+                        <div className="border-t-2 pt-8 md:pt-10" style={{ borderColor: PINK }}>
+                        <h2 className="font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl lg:w-[calc((100%-11*1.5rem)/12*9+8*1.5rem)]">
                             Bring your audience.{' '}
                             <span className="text-gradient-wishlist">
                                 Let Spenny Piggy help you grow it.
                             </span>
                         </h2>
 
-                        <p className="mx-auto mt-7 max-w-2xl text-base leading-[1.6] text-gray-300 md:text-lg">
+                        <p className="mt-7 text-base leading-[1.6] text-gray-300 md:text-lg lg:w-[calc((100%-11*1.5rem)/12*6+5*1.5rem)]">
                             {DISCOVERY_AD_CLOSE.body}
                         </p>
 
@@ -460,13 +516,12 @@ export default function Discovery({ discovery }) {
                             miss ("Let Spenny Piggy help you grow it"), so the
                             exact required phrase is carried here rather than
                             assumed covered. */}
-                        <p className="mx-auto mt-7 max-w-2xl font-gulfs text-lg uppercase leading-[1.15] tracking-tight text-white md:text-2xl">
+                        <p className="mt-7 font-gulfs text-lg uppercase leading-[1.15] tracking-tight text-white md:text-2xl lg:w-[calc((100%-11*1.5rem)/12*6+5*1.5rem)]">
                             {DISCOVERY_AD_KEEP_INTACT[1]}
                         </p>
 
-                        <Cta className="mt-9 justify-center">
-                            {DISCOVERY_AD_CLOSE.cta}
-                        </Cta>
+                        <Cta className="mt-9">{DISCOVERY_AD_CLOSE.cta}</Cta>
+                        </div>
                     </Section>
                 </AdPage>
             </Guest>
@@ -501,15 +556,36 @@ function Cta({ children, className = '' }) {
 function StateChip({ state }) {
     const isLive = state === 'live';
 
+    /*
+     * 🚨 THE COLOUR IS THE STATE. `Components/UI/tokens.js` already assigns each
+     * accent a meaning — mint is "earned, live, settled: anything that has
+     * already gone right", violet is "scheduled, pending, in flight: nothing to
+     * do" — and this page is ABOUT that exact distinction. An earlier pass used
+     * the accents as per-section decoration (violet on "The difference", mint on
+     * "Your moment"), which spent the palette on variety and left the one thing
+     * it could have encoded unencoded.
+     *
+     * The practical effect: 21 of the 29 capabilities on the landing page are
+     * still coming soon, and in grey they read as a wall of absence. In violet
+     * they read as a roadmap — in flight, nothing for you to do — which is both
+     * truer and what the client is trying to sell.
+     */
     return isLive ? (
         <span
-            className="inline-flex items-center rounded-box-xs px-3 py-1.5 font-gulfs text-[11px] uppercase tracking-[0.16em] text-black"
+            /* ⚠️ A TRANSPARENT 2px BORDER, so the filled chip and the
+               outlined one below are the SAME box. Measured: without it the mint
+               chip was 29px tall and the violet one 33px — two labels doing the
+               same job at two different sizes in the same row. */
+            className="inline-flex items-center rounded-box-xs border-2 border-transparent px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-black"
             style={{ backgroundColor: MINT }}
         >
             {DISCOVERY_LABEL_TEXT.live}
         </span>
     ) : (
-        <span className="inline-flex items-center rounded-box-xs border-2 border-white/25 px-3 py-1.5 font-gulfs text-[11px] uppercase tracking-[0.16em] text-gray-400">
+        <span
+            className="inline-flex items-center rounded-box-xs border-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em]"
+            style={{ borderColor: `${VIOLET}80`, color: VIOLET_INK }}
+        >
             {DISCOVERY_LABEL_TEXT.coming_soon}
         </span>
     );
@@ -522,18 +598,41 @@ function StateChip({ state }) {
  * separated by more than colour, because once this stacks on a phone the lists
  * sit directly on top of each other.
  */
-function CapabilityLists({ items, labels, columns = false }) {
+function CapabilityLists({ items, labels, columns = false, className = '' }) {
     const live = items.filter((item) => labels[item.key] === 'live');
     const soon = items.filter((item) => labels[item.key] !== 'live');
 
+    /*
+     * 🚨 ONE FRAME, A HAIRLINE BETWEEN THE TWO STATES. These were two bare dot
+     * lists floating in the dark with a chip over each, and on a page where
+     * everything else is a framed object they read as leftover text rather than
+     * as the exhibit the section is about.
+     *
+     * The frame is also the honest shape for the content: LIVE NOW and COMING
+     * SOON are two columns of ONE ledger, not two unrelated lists — which
+     * matters here more than anywhere, because on the landing page 21 of the 29
+     * capabilities are still coming soon. Framed as one system, that reads as a
+     * roadmap; loose, it reads as a wall of absences.
+     */
     return (
-        <div className={`grid gap-8 ${columns ? 'md:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-1'}`}>
+        <div
+            className={`overflow-hidden rounded-box border-2 border-white/15 divide-y-2 divide-white/15 ${
+                columns
+                    ? 'md:grid md:grid-cols-2 md:divide-x-2 md:divide-y-0'
+                    : 'sm:grid sm:grid-cols-2 sm:divide-x-2 sm:divide-y-0 lg:block lg:divide-x-0 lg:divide-y-2'
+            } ${className}`}
+        >
             {[
                 { state: 'live', list: live },
                 { state: 'coming_soon', list: soon },
             ].map(({ state, list }) =>
                 list.length === 0 ? null : (
-                    <div key={state}>
+                    /* ⚠️ THE PADDING LIVES HERE, ON THE CELL — the frame above is
+                       a bare border so its two halves can share a hairline, so a
+                       cell with no padding puts its chip flush against the top
+                       border. It shipped exactly that way: the chip sat 2px off
+                       the frame edge and read as a label stuck to the line. */
+                    <div key={state} className="p-6 md:p-7">
                         <StateChip state={state} />
 
                         <ul className="mt-4 space-y-2.5">
@@ -543,7 +642,7 @@ function CapabilityLists({ items, labels, columns = false }) {
                                     className={`flex items-start gap-2.5 text-sm leading-[1.45] md:text-[15px] ${
                                         state === 'live'
                                             ? 'text-white'
-                                            : 'text-gray-400'
+                                            : 'text-gray-300/80'
                                     }`}
                                 >
                                     <span

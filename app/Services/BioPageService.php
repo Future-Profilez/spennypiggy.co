@@ -429,6 +429,11 @@ class BioPageService
             // different things and a 0% bar states the second.
             $card['price'] = null;
             $card['price_note'] = null;
+            // ⚠️ Used ONLY to drop this card when the same pot is already the
+            // featured tile — see BioPageController::show(). It is the pot's
+            // public uuid, which the featured tile and every pot deep link
+            // already carry, so it discloses nothing new.
+            $card['listing_uuid'] = (string) $listing->uuid;
             $card['percent'] = $target > 0 ? min(100, (int) round(($raised / $target) * 100)) : null;
 
             return $card;
@@ -546,12 +551,12 @@ class BioPageService
      * content product and its deliverable is what is being bought. Same rule the
      * profile follows.
      */
-    public function featured(User $user): ?array
+    public function featured(User $user, bool $isOwner = false): ?array
     {
         $pot = PiggyPot::query()
             ->where('user_id', $user->id)
             ->withSum(['contributions as total_raised' => fn ($q) => $q->where('status', 'paid')], 'amount')
-            ->select(['id', 'uuid', 'user_id', 'title', 'cover_media', 'target_amount', 'currency', 'is_pinned', 'status', 'deadline', 'publish_at'])
+            ->select(['id', 'uuid', 'user_id', 'title', 'cover_media', 'target_amount', 'currency', 'is_pinned', 'status', 'deadline', 'publish_at', 'bio_click_count'])
             ->tap(fn ($q) => PiggyPotStatusService::scopePubliclyVisible($q))
             // Pinned wins; otherwise the newest open pot, so a creator who has
             // not pinned anything still gets a tile rather than a bare list.
@@ -576,7 +581,22 @@ class BioPageService
             // NULL, never 0, when there is no target — "no goal set" and "nobody
             // has bought yet" are different things and a 0% bar states the second.
             'percent' => $target > 0 ? min(100, (int) round(($raised / $target) * 100)) : null,
-            'url' => route('user.show', ['username' => $user->username, 'page' => 'piggy-pots']),
+            /*
+             * 🚨 THE COUNTING REDIRECT, NEVER THE DESTINATION — same rule as an
+             * item card. `/bio/pot/{uuid}` counts the tap, stamps the visitor as
+             * `bio-link` and rebuilds the destination server-side, so the page's
+             * largest tile is no longer the only one whose taps nobody records
+             * and whose sale can arrive unattributed from a CDN-cached view.
+             *
+             * ⚠️ The destination it rebuilds carries `?pot=`, which is what opens
+             * THIS pot's widget on arrival (`PiggyPotsGrid` reads it). Without it
+             * the hero landed on the pot GRID and left the visitor to find the
+             * pot they had just tapped a picture of — the extra hop this whole
+             * page exists to remove.
+             */
+            'url' => route('bio.pot', ['pot' => $pot->uuid]),
+            // Owner only, like every other number on this page.
+            'clicks' => $isOwner ? (int) ($pot->bio_click_count ?? 0) : null,
         ];
     }
 
@@ -662,6 +682,22 @@ class BioPageService
         }
     }
 
+    /** Count a tap on the featured tile. Same rule: never the reason it fails. */
+    public function recordFeaturedClick(PiggyPot $pot): void
+    {
+        try {
+            PiggyPot::whereKey($pot->id)->update([
+                'bio_click_count' => DB::raw('bio_click_count + 1'),
+                'bio_last_clicked_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Bio featured click counter failed', [
+                'pot_id' => $pot->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /** Count a click. Same rule: never the reason a redirect fails. */
     public function recordClick(CreatorBioLink $link): void
     {
@@ -680,14 +716,34 @@ class BioPageService
 
     public function forgetCaches(User $user): void
     {
-        Cache::forget("bio_avail_{$user->id}");
+        self::forgetCachesForUserId((int) $user->id);
+    }
+
+    /**
+     * 🚨 CALLED WHEN A LISTING CHANGES, NOT ONLY WHEN THE BIO EDITOR DOES.
+     * The cards are drawn from the live listing but the ASSEMBLED payload is
+     * cached for a minute, so a creator who corrected a price in Shop kept
+     * advertising the old one — on the page they share everywhere — for up to
+     * 60 seconds, with no way to tell why. Wired to the six sellable models in
+     * `AppServiceProvider`.
+     *
+     * ⚠️ Static and id-based: a model event hands us `user_id`, not a `User`,
+     * and loading one to clear a cache key would be a query per save.
+     *
+     * ⚠️ The ADMIN app writes these same tables and has its own cache store, so
+     * an admin-side edit still waits out the TTL. Bounded at 60s, deliberately
+     * not solved with a shared cache tag.
+     */
+    public static function forgetCachesForUserId(int $userId): void
+    {
+        Cache::forget("bio_avail_{$userId}");
 
         // ⚠️ BOTH VARIANTS. `items()` keys on the owner/public distinction
         // because the two payloads differ; forgetting only the bare key — as
         // this did when the suffix was added — would leave a stale public card
         // list serving every visitor until the TTL expired, which is precisely
         // the moment a creator has just changed what their page sells.
-        Cache::forget("bio_items_{$user->id}_public");
-        Cache::forget("bio_items_{$user->id}_owner");
+        Cache::forget("bio_items_{$userId}_public");
+        Cache::forget("bio_items_{$userId}_owner");
     }
 }

@@ -43,15 +43,26 @@ class SendBirthdayReminders extends Command
     protected $description = 'Email a creator\'s supporters 7 days before, 1 day before and on their birthday (Discovery Phase 4).';
 
     /**
-     * 🚨 THE CATEGORY COLUMN.
+     * 🚨 THE CATEGORY COLUMNS — BOTH ARE REQUIRED.
      *
-     * `creator_updates_enabled` — this e-mail is news about a creator the
-     * recipient ALREADY SUPPORTS, which is precisely what that preference
-     * means. It is routed through `EmailService::sendCategoryEmail()`, never
-     * `Mail::to()`: that bypasses consent and exists for receipts, password
-     * resets and other transactional mail only.
+     * `birthday_emails_enabled` is the dedicated switch, so somebody who wants
+     * the birthday mail to stop can stop exactly that and keep hearing about
+     * the creators they support. `creator_updates_enabled` is the column this
+     * e-mail has ridden since Phase 4: it stays in the list because a person who
+     * already turned creator updates off must NOT start receiving birthday mail
+     * on the day a new, defaulted-on column arrives. `sendCategoryEmail` sends
+     * only when every named column is on.
+     *
+     * Routed through `EmailService::sendCategoryEmail()`, never `Mail::to()`:
+     * that bypasses consent and exists for receipts, password resets and other
+     * transactional mail only.
+     *
+     * @var array<int, string>
      */
-    private const CATEGORY = 'creator_updates_enabled';
+    public const CATEGORY = [
+        'birthday_emails_enabled',
+        'creator_updates_enabled',
+    ];
 
     public function handle(BirthdayDiscoveryService $birthdays): int
     {
@@ -124,6 +135,18 @@ class SendBirthdayReminders extends Command
                         continue;
                     }
 
+                    /*
+                     * 🚨 A SUSPENDED ACCOUNT IS NOT MAILED, and this path can
+                     * genuinely reach one: a supporter is selected out of
+                     * `financial_transactions`, so somebody who paid before
+                     * being suspended is still in the creator's supporter list
+                     * for ever. Checked here rather than in the SQL because the
+                     * ledger query returns ids only.
+                     */
+                    if ((int) ($supporter->suspended_account ?? 0) === 1) {
+                        continue;
+                    }
+
                     // A creator never gets a reminder about their own birthday.
                     if ((int) $supporter->id === (int) $creatorId) {
                         continue;
@@ -153,8 +176,8 @@ class SendBirthdayReminders extends Command
                         /*
                          * 🚨 Consent-checked. `sendCategoryEmail` returns
                          * without sending when the supporter has turned off
-                         * creator updates — that is the opt-out the e-mail's own
-                         * footer link writes.
+                         * EITHER birthday email (what the e-mail's own footer
+                         * link writes) or creator updates.
                          */
                         EmailService::sendCategoryEmail(
                             $supporter,

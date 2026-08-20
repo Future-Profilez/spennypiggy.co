@@ -68,7 +68,19 @@ class EmailPreferenceTest extends TestCase
 
         $response = $this->get($url);
 
-        $response->assertRedirect('/');
+        /*
+         * ⚠️ THE OPT-OUT IS WRITTEN BEFORE THE REDIRECT EITHER WAY — that is
+         * what is asserted below. The destination depends on whether the signed
+         * preference-centre route is registered: `/` while it is not, and the
+         * centre itself once it is, so somebody who wanted to stop ONE thing can
+         * see what else is still on instead of being dropped on the homepage.
+         */
+        $response->assertRedirect();
+        $target = (string) $response->headers->get('Location');
+        $this->assertTrue(
+            $target === url('/') || str_contains($target, '/email-preferences/manage/'),
+            'Unsubscribe must land on the homepage or the signed preference centre, got: '.$target
+        );
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('users', [
@@ -85,7 +97,13 @@ class EmailPreferenceTest extends TestCase
         ]);
     }
 
-    public function test_unsubscribe_link_expires_after_24_hours()
+    /**
+     * ⚠️ Renamed: links now live for `EmailPreferenceController::LINK_TTL_DAYS`
+     * (30 days), not 24 hours. What this pins is the thing that still matters —
+     * an EXPIRED link is refused, whatever the window is. The URL below is
+     * hand-built with an expiry in the past for exactly that reason.
+     */
+    public function test_an_expired_unsubscribe_link_is_rejected()
     {
         $user = User::factory()->create([
             'marketing_emails_enabled' => true,

@@ -41,6 +41,33 @@ class BioLinkPlatforms
      * `pattern` bounds the handle to what the network itself accepts, so a
      * handle can never carry a path, a query string or a second host.
      */
+    /**
+     * The brand tokens a link to THIS platform is legitimately allowed to say.
+     *
+     * ⚠️ Five of the seven social platforms — Instagram, TikTok, YouTube,
+     * Twitch and Spotify — are on `NoExpenseOrBrandName`'s blocked-brand list,
+     * because a LISTING may not be sold as somebody else's service. A link
+     * BUTTON is the opposite case: naming the destination is the whole point,
+     * and without this the obvious button text was refused on five of seven.
+     *
+     * Returns the platform's own key and label only, so the allowance can never
+     * widen past the row it was granted for. An internal page link (`shop`,
+     * `wishes`, …) is not in `PLATFORMS` and gets nothing.
+     */
+    public static function ownBrandTokens(?string $platform): array
+    {
+        $meta = self::PLATFORMS[$platform] ?? null;
+
+        if ($meta === null) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter([
+            strtolower((string) $platform),
+            strtolower((string) ($meta['label'] ?? '')),
+        ])));
+    }
+
     public const PLATFORMS = [
         'instagram' => [
             'label' => 'Instagram',
@@ -112,15 +139,26 @@ class BioLinkPlatforms
     ];
 
     /** The order a page renders in before the creator has reordered anything. */
+    /*
+     * ⚠️ THE ORDER IS ALSO A LAYOUT DECISION. The bio page renders these as a
+     * 2-up tile grid and spans the LAST tile across both columns when the count
+     * is odd, so whatever sits last gets the full width. `bills` is last because
+     * its label ("Subscriptions") is the longest of the eight and wrapped to two
+     * lines in a half-width tile.
+     *
+     * ⚠️ It is only the DEFAULT. A creator who has opened the bio editor has
+     * `creator_bio_links` rows with their own `sort_order`, and those win — this
+     * changes nothing for them, by design.
+     */
     public const DEFAULT_ORDER = [
         'piggy-bank',
         'wishes',
         'piggy-pots',
         'shop',
         'memberships',
-        'bills',
         'tasks',
         'feed',
+        'bills',
     ];
 
     public const KIND_INTERNAL = 'internal';
@@ -229,6 +267,11 @@ class BioLinkPlatforms
                 'key' => $key,
                 'label' => $meta['label'],
                 'placeholder' => $meta['placeholder'],
+                // The editor shows the creator where the button will actually
+                // point as they type. Public information — the finished URL is
+                // on the public bio page — and it removes the guess between
+                // typing a handle and finding out whether it was the right one.
+                'url' => $meta['url'],
             ],
             array_keys(self::PLATFORMS),
             self::PLATFORMS

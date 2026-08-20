@@ -74,6 +74,10 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'reactivation_emails_enabled',
         'abandoned_checkout_emails_enabled',
         'restock_emails_enabled',
+        // The birthday category (Discovery Phase 4). An ADDITIONAL gate on top of
+        // the parent category each birthday email already rode, never a
+        // replacement for it — see EmailPreferenceController::CATEGORIES.
+        'birthday_emails_enabled',
         'product_updates_enabled',
         'creator_updates_enabled',
         'date_of_birth',
@@ -138,6 +142,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'reactivation_emails_enabled' => 'boolean',
         'abandoned_checkout_emails_enabled' => 'boolean',
         'restock_emails_enabled' => 'boolean',
+        'birthday_emails_enabled' => 'boolean',
         'product_updates_enabled' => 'boolean',
         'creator_updates_enabled' => 'boolean',
         'date_of_birth' => 'date',

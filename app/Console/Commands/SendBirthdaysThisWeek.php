@@ -53,6 +53,16 @@ use Illuminate\Support\Facades\Log;
  */
 class SendBirthdaysThisWeek extends Command
 {
+    /**
+     * 🚨 The EXTRA consent column, on top of `marketing_emails_enabled`.
+     *
+     * The dedicated birthday switch, so somebody can stop this campaign without
+     * silencing every promotion Spenny Piggy sends. Passed to
+     * `EmailService::sendMarketingEmail` as an additional gate — never as a
+     * replacement for marketing consent.
+     */
+    public const CATEGORY = 'birthday_emails_enabled';
+
     protected $signature = 'birthday:weekly
         {--dry-run : Report what would be sent and send nothing}
         {--week= : ISO date inside the target week (defaults to today)}';
@@ -142,11 +152,22 @@ class SendBirthdaysThisWeek extends Command
          * ⚠️ Consent is NOT filtered in SQL. `EmailService::sendMarketingEmail`
          * is the ONE place that decides, and a null column means opted IN — a
          * `where(marketing_emails_enabled, 1)` here would wrongly exclude every
-         * row that predates the column.
+         * row that predates the column. The same is true of the birthday
+         * column passed to it below.
          */
         User::query()
             ->whereNotNull('email')
             ->where('email', '!=', '')
+            /*
+             * 🚨 A SUSPENDED ACCOUNT IS NOT MAILED. This is the largest fan-out
+             * on the platform — every account with an address — and without this
+             * clause a suspended account received a promotional round-up.
+             * `AnnounceSubscriptionPolicy`, the only comparable platform-wide
+             * send, excludes them in both its send query and its
+             * remaining-count query; nothing errors when this one does not, so
+             * it is asserted by `BirthdayDiscoveryTest` rather than remembered.
+             */
+            ->where('suspended_account', 0)
             ->orderBy('id')
             ->chunkById(200, function ($users) use (
                 &$sent, &$wouldSend, &$scanned, $creators, $weekLabel, $dedupKey, $dryRun, $sendingEnabled, $batch
@@ -171,14 +192,19 @@ class SendBirthdaysThisWeek extends Command
 
                     try {
                         /*
-                         * 🚨 Marketing-class: a promotional round-up of creators
-                         * the recipient may never have met. `sendMarketingEmail`
-                         * honours `marketing_emails_enabled`, which is exactly
-                         * what this e-mail's own unsubscribe link turns off.
+                         * 🚨 Marketing-class AND birthday-class: a promotional
+                         * round-up of creators the recipient may never have met,
+                         * so it needs `marketing_emails_enabled` — plus
+                         * `birthday_emails_enabled`, which is what this e-mail's
+                         * own unsubscribe link turns off. Both must be on. The
+                         * birthday column is passed as the extra gate rather
+                         * than replacing marketing consent: a new, defaulted-on
+                         * column must never overturn an opt-out already made.
                          */
                         EmailService::sendMarketingEmail(
                             $user,
-                            new BirthdaysThisWeek($user->id, array_values($creators), $weekLabel)
+                            new BirthdaysThisWeek($user->id, array_values($creators), $weekLabel),
+                            self::CATEGORY
                         );
 
                         $sent++;

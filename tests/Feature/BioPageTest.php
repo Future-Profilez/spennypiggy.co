@@ -477,6 +477,67 @@ class BioPageTest extends TestCase
         $this->assertDatabaseCount('creator_bio_links', 0);
     }
 
+    /**
+     * 🚨 THE OBVIOUS BUTTON TEXT WAS REFUSED ON FIVE OF THE SEVEN PLATFORMS.
+     *
+     * `NoExpenseOrBrandName` blocks `instagram`, `tiktok`, `youtube`, `twitch`
+     * and `spotify` — correctly, for a LISTING, which may not be sold as
+     * somebody else's service. A social link button is the opposite case: the
+     * creator picks the platform from a list and the button exists to name it.
+     * Typing "TikTok" into a field labelled "Button text (optional)" answered
+     * *"Listings must describe your own content"*, on a field that is not a
+     * listing and about a platform the creator had just chosen from our own menu.
+     */
+    public function test_a_link_button_may_name_the_platform_it_points_at(): void
+    {
+        $creator = $this->creator();
+
+        foreach (['instagram', 'tiktok', 'youtube', 'twitch'] as $platform) {
+            $label = BioLinkPlatforms::PLATFORMS[$platform]['label'];
+
+            $this->actingAs($creator)
+                ->post(route('bio.links.store'), [
+                    'platform' => $platform,
+                    'handle' => 'mychannel',
+                    'label' => $label,
+                ])
+                ->assertSessionHasNoErrors();
+
+            $this->assertDatabaseHas('creator_bio_links', [
+                'user_id' => $creator->id,
+                'platform' => $platform,
+                'label' => $label,
+            ]);
+        }
+    }
+
+    /**
+     * ⚠️ The allowance is for the row's OWN platform and nothing else — it is
+     * not a way to switch the brand list off on this screen.
+     */
+    public function test_a_link_button_may_not_name_a_different_brand(): void
+    {
+        $creator = $this->creator();
+
+        $this->actingAs($creator)
+            ->post(route('bio.links.store'), [
+                'platform' => 'tiktok',
+                'handle' => 'mychannel',
+                'label' => 'Netflix',
+            ])
+            ->assertSessionHasErrors('label');
+
+        $this->actingAs($creator)
+            ->post(route('bio.links.store'), [
+                'platform' => 'tiktok',
+                'handle' => 'mychannel',
+                'label' => 'Pay my rent',
+            ])
+            ->assertSessionHasErrors('label');
+
+        $this->assertDatabaseCount('creator_bio_links', 0);
+    }
+
     public function test_reach_is_owner_only(): void
     {
         $creator = $this->creator();

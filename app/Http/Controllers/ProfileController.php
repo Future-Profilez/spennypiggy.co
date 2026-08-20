@@ -56,6 +56,7 @@ use App\StripeControl;
 use App\Support\Badges;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
+use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -2013,14 +2014,20 @@ class ProfileController extends Controller
 
             // Normalized item + reward contract for the history UI.
             // Every paid item exposes the same shape so the frontend renders one card.
+            // Every URL this builds is a PAID deliverable being handed to the
+            // buyer on their own history feed, so it is signed. SecureMedia is
+            // a no-op while media.secure.enabled is off, and returns anything
+            // that is not an Uploadcare file untouched.
             $cdn = function ($v) {
                 if (empty($v)) {
                     return null;
                 }
 
-                return Str::startsWith($v, ['http://', 'https://'])
+                $url = Str::startsWith($v, ['http://', 'https://'])
                     ? $v
                     : 'https://ucarecdn.com/'.$v.'/';
+
+                return SecureMedia::sign($url);
             };
 
             $src = $tx->source;

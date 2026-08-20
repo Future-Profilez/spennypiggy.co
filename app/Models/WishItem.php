@@ -6,6 +6,7 @@ use App\Models\Concerns\HasCreatorWatermark;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
 use App\Support\MediaUrl;
+use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -86,7 +87,28 @@ class WishItem extends Model
         static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
     }
 
+    /*
+     * 🚨 THE PAID FILE'S URL IS NOT PUBLIC DATA, and it was being serialised
+     * on every card. The raw column is hidden here while the ACCESSOR BUILT
+     * FROM IT was appended — hiding the column and publishing its URL, which
+     * is the wrong way round. `Shop` already had the correct shape; these
+     * three did not.
+     *
+     * ⚠️ Signing the URL (SecureMedia, Aug 2026) does not close this: a
+     * signed URL handed to somebody who never bought is still a working
+     * download for the life of the token. Signing is delivery, not
+     * entitlement.
+     *
+     * ⚠️ `$hidden` ONLY affects toArray()/toJson(). Every entitled surface in
+     * this app reads the accessor as a PROPERTY and builds its own payload
+     * (see `GifterHubController`, which does `$t->tipGoal?->reward_url`), so
+     * nothing that is meant to deliver the file is affected. If a surface
+     * ever does need it in a serialised payload, `->makeVisible()` on that
+     * query is the deliberate way to say so.
+     */
     protected $hidden = [
+        'reward_url',
+        'content_file_url',
         // 'thumbnail',
         // 'is_pin',
         // The paid deliverable when the reward is a message or a link —
@@ -129,6 +151,14 @@ class WishItem extends Model
         return MediaUrl::watermark($url, $this->creatorWatermarkUuid());
     }
 
+    /**
+     * The PAID reward file. Signed.
+     *
+     * 🚨 The operation chain is UNCHANGED and must stay that way — a paid
+     * reward file is never width-capped (see MediaUrl), because it is the thing
+     * the buyer paid for. The token is a query string appended after the whole
+     * operation path, so it adds authorisation without touching the bytes.
+     */
     public function getRewardUrlAttribute()
     {
         $url = false;
@@ -136,9 +166,14 @@ class WishItem extends Model
             $url = 'https://ucarecdn.com/'.$this->reward.'/-/format/jpeg/';
         }
 
-        return $url;
+        return SecureMedia::sign($url);
     }
 
+    /**
+     * The PAID content deliverable (Field B of the two-field goal/deliverable
+     * model). Signed; `perma_link` above is the public card thumbnail and is
+     * deliberately not.
+     */
     public function getContentFileUrlAttribute()
     {
         $url = null;
@@ -152,7 +187,7 @@ class WishItem extends Model
             }
         }
 
-        return $url;
+        return SecureMedia::sign($url);
     }
 
     public function categories()

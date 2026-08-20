@@ -23,10 +23,13 @@ use Illuminate\Queue\SerializesModels;
  * view. Nothing here can compute one.
  *
  * 🚨 CATEGORY-CLASS, NOT TRANSACTIONAL. It is sent through
- * `EmailService::sendCategoryEmail($user, $mailable, 'creator_updates_enabled')`
- * — news about a creator this person already supports, which is exactly what
- * that column means. It must NEVER go through `Mail::to()`, which bypasses
- * consent and is for receipts and password resets only.
+ * `EmailService::sendCategoryEmail($user, $mailable, SendBirthdayReminders::CATEGORY)`
+ * — BOTH `birthday_emails_enabled` (the dedicated switch, so a person can stop
+ * birthday mail without losing every creator update) and
+ * `creator_updates_enabled` (the column it has always ridden, so the new switch
+ * never overturns an opt-out somebody already made). It must NEVER go through
+ * `Mail::to()`, which bypasses consent and is for receipts and password resets
+ * only.
  *
  * ⚠️ This mailable does not send itself. It is constructed and handed to
  * `EmailService` by `birthday:remind`; a mailable that sends from its own
@@ -86,10 +89,13 @@ class BirthdayReminder extends Mailable
      * looks perfect; every visit it produces is invisible for ever, and there is
      * no backfill.
      *
-     * Caught by rendering the mailable and grepping the HTML for `sp_d`. ⚠️
-     * `App\Mail\ReactivationReminder` has the SAME public-property shape and is
-     * very probably losing its `personalised` tags the same way — reported, not
-     * changed here.
+     * Caught by rendering the mailable and grepping the HTML for `sp_d`, and
+     * pinned by `BirthdayDiscoveryTest` against the RENDERED HTML rather than
+     * the payload — the payload is only half the path. ⚠️ CORRECTED: the note
+     * that once stood here said `App\Mail\ReactivationReminder` was "very
+     * probably losing its `personalised` tags the same way". It is not — that
+     * one was found and fixed on 20 Aug 2026 and its `$creators` is already
+     * `protected`. Verified 21 Aug 2026; do not go chasing it.
      *
      * ⚠️ `protected` still serializes for the queue (`SerializesModels` reflects
      * over all properties, not just public ones), so nothing else changes.
@@ -130,13 +136,23 @@ class BirthdayReminder extends Mailable
                 'creator' => $this->taggedCreator(),
                 'collectionUrl' => url('/discover/birthdays'),
                 /*
-                 * 🚨 UNSUBSCRIBE WORKS ON DAY ONE. The full Email Preferences
-                 * Centre is a later item, but this link is a signed, working,
-                 * CATEGORY-SPECIFIC opt-out today — clicking it turns off
-                 * creator updates and nothing else.
+                 * 🚨 THE NARROWEST OPT-OUT THIS EMAIL CAN OFFER. One click turns
+                 * off `birthday_emails_enabled` and nothing else — it does NOT
+                 * silence the other news about the creators this person
+                 * supports, which is what the old `creator_updates_enabled`
+                 * link did. Signed, and live for 30 days rather than 24 hours.
                  */
                 'unsubscribeUrl' => $user
-                    ? EmailPreferenceController::generateUnsubscribeToken($user, 'creator_updates_enabled')
+                    ? EmailPreferenceController::generateUnsubscribeToken($user, 'birthday_emails_enabled')
+                    : null,
+                /*
+                 * …and the full preference centre, reachable WITHOUT LOGGING IN.
+                 * "Stop this one" and "choose what I do want" are different
+                 * intentions; a footer offering only the first is what makes
+                 * people opt out of everything.
+                 */
+                'preferencesUrl' => $user
+                    ? EmailPreferenceController::generateManageToken($user)
                     : null,
             ]
         );

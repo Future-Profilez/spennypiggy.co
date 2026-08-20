@@ -60,6 +60,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
+use App\Support\PayoutDestinationAudit;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -396,6 +397,11 @@ class StripeController extends Controller
             $user->account_id = $newAccount->id;
             $user->stripe_details_submitted = 0; // They'll need to complete onboarding again
             $user->save();
+
+            // 🚨 Security Checklist §3 — a bare model save used to move a
+            // creator's payout destination with no audit row and no alert.
+            // Detection only: nothing is blocked and no auth flow changes.
+            PayoutDestinationAudit::recordAccountChange($user, $oldAccountId, $newAccount->id, 'StripeController: service-agreement migration');
 
             // Note: We don't delete the old account automatically to avoid data loss
             // It can be cleaned up manually later if needed
@@ -946,6 +952,14 @@ class StripeController extends Controller
                         return $account->id;
                     });
 
+                    if ($winner === $account->id) {
+                        // Security Checklist §3. The claim above is the FIRST
+                        // connection (it only writes when account_id was empty),
+                        // so this records a baseline rather than raising an
+                        // alert — see PayoutDestinationAudit.
+                        PayoutDestinationAudit::recordAccountChange($user, null, $account->id, 'StripeController: first Connect onboarding');
+                    }
+
                     if ($winner !== $account->id) {
                         Log::warning('Concurrent Stripe account creation — discarding duplicate', [
                             'user_id' => $user->id,
@@ -1297,9 +1311,13 @@ class StripeController extends Controller
             }
 
             // Persist the new ID only after creation succeeds
+            $previousAccountId = $user->getOriginal('account_id');
             $user->account_id = $newAccount->id;
             $user->save();
             $this->userProfileService->clearUserCaches($user->username, $user->id);
+
+            // 🚨 Security Checklist §3 — see the note on the migration branch.
+            PayoutDestinationAudit::recordAccountChange($user, $previousAccountId, $newAccount->id, 'StripeController: Connect account recreated');
 
             // ── 3. Generate onboarding link ──────────────────────────────
             try {
@@ -1412,6 +1430,10 @@ class StripeController extends Controller
                         $user->account_id = $newAccount->id;
                         $user->stripe_details_submitted = 0; // Reset submitted status
                         $user->save();
+
+                        // 🚨 Security Checklist §3 — see the note on the other
+                        // migration branch.
+                        PayoutDestinationAudit::recordAccountChange($user, $oldAccountId, $newAccount->id, 'StripeController: full-agreement migration');
 
                         Log::info('User migrated to new Stripe account', [
                             'user_id' => $user->id,

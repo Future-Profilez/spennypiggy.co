@@ -299,3 +299,18 @@ h2.wishtitle{font-size:24px;font-weight:900;}
   .discount-tag{position:absolute;opacity:0.5;z-index:1;right:2px;top:20px;}
   .special-discount{position:relative;padding:20px !important;}
 }
+
+/*
+ * 🚨 `.scrollbar-hide` LIVED IN A STYLESHEET NOTHING IMPORTS. It was defined
+ * only in `resources/css/tabbed-dashboard.css`, and no entry point (`app.jsx`,
+ * `app.css`) pulls that file in — so every `scrollbar-hide` in `resources/js`
+ * was an inert class name and each of those strips still drew a scrollbar under
+ * its own content. Defined here because THIS file is imported by `app.jsx`.
+ *
+ * ⚠️ Three declarations, not one: `scrollbar-width` is the standard (Firefox,
+ * Chrome 121+), `-ms-overflow-style` covers legacy Edge, and the `::-webkit-`
+ * pseudo-element is what older Chrome/Safari and the iOS in-app browsers read.
+ * Dropping any one of them leaves the bar visible on some real device.
+ */
+.scrollbar-hide{scrollbar-width:none;-ms-overflow-style:none;}
+.scrollbar-hide::-webkit-scrollbar{display:none;width:0;height:0;}

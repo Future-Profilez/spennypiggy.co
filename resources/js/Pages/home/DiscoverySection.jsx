@@ -38,6 +38,22 @@ import {
 
 const MINT = '#05EFB8';
 
+/*
+ * 🚨 THE COLOUR IS THE STATE, not decoration. `Components/UI/tokens.js` gives
+ * each accent a meaning — mint is "earned, live, settled: anything that has
+ * already gone right", violet is "scheduled, pending, in flight: nothing to do"
+ * — and this section is ABOUT that distinction: 21 of its 29 capabilities are
+ * still to come. In grey they read as a wall of absence; in violet they read as
+ * a roadmap, which is both truer and what the section is selling.
+ *
+ * ⚠️ TWO VIOLETS. Measured on this ground, `#8C52FF` is 4.47:1 — under AA — and
+ * these labels are small, so the dark violet is only ever a border and
+ * `#C4A5FF` (9.53:1) is the ink. Same pair, same rule as
+ * `home/StablecoinTipsAnnouncement.jsx`.
+ */
+const VIOLET = '#8C52FF';
+const VIOLET_INK = '#C4A5FF';
+
 /**
  * The headline, split once at module load so the accent falls on its tail
  * without a second copy of the words existing anywhere. If the accent is ever
@@ -58,7 +74,7 @@ export default function DiscoverySection({ discovery }) {
         <section
             id="act-discover"
             aria-labelledby="discovery-headline"
-            className="containerbox mx-auto px-4 py-20 md:py-28"
+            className="containerbox mx-auto px-4 py-16 md:py-24"
         >
             <FadeIn y={18}>
                 <h2
@@ -71,12 +87,25 @@ export default function DiscoverySection({ discovery }) {
                     </span>
                 </h2>
 
-                <p className="mt-6 max-w-3xl text-base leading-[1.6] text-gray-300 md:text-xl">
+                <p className="mt-6 max-w-xl text-base leading-[1.6] text-gray-300 md:text-lg">
                     {DISCOVERY_LEAD}
                 </p>
             </FadeIn>
 
-            <div className="mt-12 grid gap-5 md:mt-16 lg:grid-cols-3">
+            {/* 🚨 ONE FRAME, THREE COLUMNS SHARING HAIRLINES — the platform's own
+                device (`StatStrip`, `WaysToGetPaid`, the bio page's link block),
+                whose docblocks give the reason: many sources, one income. Here:
+                three ways to be found, one system.
+
+                It was three separately-bordered cards with a 20px gutter, which
+                is both taller (three border sets, three sets of padding) and off
+                the house language — a row of unrelated cards says these are
+                three products, when the section's whole argument is that they
+                are one. ⚠️ The children stay TRANSPARENT and the rules are
+                `divide-*`, not a `gap-px` over a coloured parent: this page is
+                one dark PageCanvas field and a child with its own background
+                cuts it (see the note at the top of `Welcome.jsx`). */}
+            <div className="mt-10 overflow-hidden rounded-box border-2 border-white/15 divide-y-2 divide-white/15 md:mt-14 lg:grid lg:grid-cols-3 lg:divide-x-2 lg:divide-y-0">
                 {DISCOVERY_BLOCKS.map((block, index) => (
                     <FadeIn key={block.id} y={22} delay={0.05 * (index + 1)}>
                         <Block block={block} labels={labels} />
@@ -131,26 +160,29 @@ function Block({ block, labels }) {
     const comingSoon = block.items.filter((item) => labels[item.key] !== 'live');
 
     return (
-        <div className="flex h-full flex-col rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-7">
-            <h3 className="font-gulfs text-2xl uppercase leading-[0.95] tracking-tight text-white md:text-[26px]">
+        <div className="flex h-full flex-col p-6 md:p-7">
+            <h3 className="font-gulfs text-xl uppercase leading-[0.95] tracking-tight text-white md:text-2xl">
                 {block.title}
             </h3>
 
-            <p className="mt-4 text-sm leading-[1.6] text-gray-300 md:text-base">
+            <p className="mt-3 text-sm leading-[1.55] text-gray-300">
                 {block.body}
             </p>
 
-            {/* `grow` — the LISTS absorb the leftover height, not the footer's
-                margin, so the three footers sit on the same line across the row
-                even though the blocks carry 12, 9 and 8 items. `mt-auto` on the
-                footer would do the same job but collapse its top margin, putting
-                the rule hard against the last list item in the tallest card. */}
-            <div className="mt-7 grow grid gap-7 sm:grid-cols-2 lg:grid-cols-1">
+            {/* ⚠️ THE SPACER IS ON THE FOOTER, NOT THE LISTS. `grow` here made the
+                two groups inside a SHORT column spread apart to fill the height,
+                so "We'll Promote You" rendered its one LIVE NOW item, then ~100px
+                of nothing, then COMING SOON — a hole in the middle of a column
+                that reads as a missing item. The footers still align, because
+                `mt-auto` on the footer absorbs the same leftover space at the
+                bottom where it belongs, and `pt-5` keeps the rule off the last
+                list item. */}
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
                 <LabelGroup state="live" items={live} />
                 <LabelGroup state="coming_soon" items={comingSoon} />
             </div>
 
-            <p className="mt-8 pt-6 border-t-2 border-white/10 text-sm font-medium leading-[1.5] text-white md:text-base">
+            <p className="mt-auto pt-6 border-t-2 border-white/10 text-sm font-medium leading-[1.5] text-white">
                 {block.footer}
             </p>
         </div>
@@ -175,31 +207,39 @@ function LabelGroup({ state, items }) {
         <div>
             {isLive ? (
                 <span
-                    className="inline-flex items-center rounded-box-xs px-2.5 py-1 font-gulfs text-[11px] uppercase tracking-[0.16em] text-black"
+                    /* ⚠️ Transparent 2px border so this matches the outlined
+                       COMING SOON chip's box exactly — see the note in
+                       `Pages/creators/Discovery.jsx`. */
+                    className="inline-flex items-center rounded-box-xs border-2 border-transparent px-2.5 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-black"
                     style={{ backgroundColor: MINT }}
                 >
                     {DISCOVERY_LABEL_TEXT.live}
                 </span>
             ) : (
-                <span className="inline-flex items-center rounded-box-xs border-2 border-white/25 px-2.5 py-1 font-gulfs text-[11px] uppercase tracking-[0.16em] text-gray-400">
+                <span
+                    className="inline-flex items-center rounded-box-xs border-2 px-2.5 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em]"
+                    style={{ borderColor: `${VIOLET}80`, color: VIOLET_INK }}
+                >
                     {DISCOVERY_LABEL_TEXT.coming_soon}
                 </span>
             )}
 
-            <ul className="mt-4 space-y-2.5">
+            <ul className="mt-3 space-y-2">
                 {items.map((item) => (
                     <li
                         key={`${item.key}-${item.label}`}
                         className={`flex items-start gap-2.5 text-sm leading-[1.45] md:text-[15px] ${
-                            isLive ? 'text-white' : 'text-gray-400'
+                            isLive ? 'text-white' : 'text-gray-300/80'
                         }`}
                     >
                         <span
                             aria-hidden="true"
-                            className={`mt-[6px] h-[7px] w-[7px] shrink-0 rounded-full ${
-                                isLive ? '' : 'border-2 border-gray-500'
-                            }`}
-                            style={isLive ? { backgroundColor: MINT } : undefined}
+                            className="mt-[6px] h-[7px] w-[7px] shrink-0 rounded-full border-2"
+                            style={
+                                isLive
+                                    ? { backgroundColor: MINT, borderColor: MINT }
+                                    : { borderColor: VIOLET_INK }
+                            }
                         />
                         {item.label}
                     </li>

@@ -309,6 +309,22 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:57')
             ->withoutOverlapping(30);
 
+        // Identity / KYC retention. The most sensitive rows on the platform were
+        // the only personal data with no prune at all — `user_documents` holds
+        // legacy references that the admin app renders as public ucarecdn.com
+        // URLs, and the identity payload columns on `users` were kept forever.
+        //
+        // 🚨 Reports and deletes NOTHING unless IDENTITY_RETENTION_ENABLED=true.
+        // There is no legal-hold marker in this schema, so arming it is a human
+        // decision, not a default. It never calls Stripe.
+        //
+        // ⚠️ 03:45 — deliberately off :00 and clear of the 03:40/03:50/03:52/
+        // 03:55/03:57 prunes, because on Vapor every command due in the same
+        // minute shares one cli-timeout budget.
+        $schedule->command('identity:prune')
+            ->dailyAt('03:45')
+            ->withoutOverlapping(30);
+
         // Delivery log: a row per email, push and bell entry the platform sends,
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise

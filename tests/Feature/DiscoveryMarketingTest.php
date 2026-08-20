@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Services\VisitTracker;
+use App\Support\BioSellableItems;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
@@ -46,6 +48,7 @@ class DiscoveryMarketingTest extends TestCase
         'supporter_reminders' => 'ShopOrderReminderMail, TaskGracePeriodReminderMail',
         'creator_push' => 'PushSubscriptionController, RemindStalePushSubscriptions',
         'bio_phone' => 'BioPageController + Pages/Bio/Show.jsx, renders no layout',
+        'bio_direct_sales' => 'bio.buy route + BioSellableItems::checkoutUrl + bio.items.* editor',
     ];
 
     /** @test */
@@ -175,22 +178,45 @@ class DiscoveryMarketingTest extends TestCase
     /**
      * @test
      *
-     * 🚨 THE BRIEF LABELS A3's SECTIONS 3 AND 6 "LIVE NOW" AND WE SHIP THEM AS
-     * COMING SOON, deliberately. `/{username}/bio` is live but sells nothing —
-     * its own docblock states it has "no checkout, no price and no payment
-     * method" — and direct selling from it is the B stream, due Fri 28 Aug,
-     * three days AFTER this page goes live on Tue 25. The plan lists "Mark
-     * anything LIVE NOW in marketing that is not live in the product" under
-     * Never, and a standing prohibition beats a section label.
+     * 🚨 A3's SECTIONS 3 AND 6 ARE LIVE NOW ONLY WHILE THE BIO PAGE CAN ACTUALLY
+     * TAKE A PAYMENT.
      *
-     * This test fails the day someone flips the key, which is the moment to
-     * confirm the bio page can actually take a payment.
+     * They shipped COMING SOON against the brief's own "LIVE NOW" label because
+     * `/{username}/bio` sold nothing — its rows linked out to profile pages —
+     * and direct selling was the B stream, due three days after this ad page
+     * went live. The key flipped on 20 Aug 2026 in the same release as that
+     * stream. The prohibition it was protecting has not gone away, so the test
+     * inverts rather than disappearing: the label may stay live only while the
+     * buying path behind it exists.
+     *
+     * ⚠️ Asserted against the ROUTER and the support class, not against a page
+     * render. A marketing label is a claim about the product, and the thing that
+     * makes it true is that a supporter tapping a card reaches a checkout.
      */
-    public function the_bio_page_is_not_advertised_as_selling_until_it_can(): void
+    public function the_bio_page_may_only_advertise_selling_while_it_can_sell(): void
     {
-        $this->assertSame('coming_soon', config('discovery.labels.bio_direct_sales'),
-            'bio_direct_sales is marked live. Confirm /{username}/bio now carries a real '
-            .'checkout — as of 20 Aug 2026 it had no checkout, no price and no payment method.'
+        if (config('discovery.labels.bio_direct_sales') !== 'live') {
+            $this->markTestSkipped('bio_direct_sales is back to coming_soon; nothing is claimed.');
+        }
+
+        $this->assertTrue(Route::has('bio.buy'),
+            'A3 advertises selling from the bio page, but the bio.buy route is gone — '
+            .'every card on the page is a dead link and the LIVE NOW label is a false claim.'
+        );
+
+        $this->assertTrue(Route::has('bio.items.store'),
+            'A3 section 6 advertises choosing which items appear, but the item editor '
+            .'endpoint is gone.'
+        );
+
+        $this->assertTrue(Route::has('bio.items.reorder'),
+            'A3 section 6 advertises choosing the order, but the reorder endpoint is gone.'
+        );
+
+        $this->assertTrue(
+            method_exists(BioSellableItems::class, 'checkoutUrl'),
+            'BioSellableItems::checkoutUrl is what turns a card into a checkout. '
+            .'Without it the page lists items it cannot sell.'
         );
     }
 

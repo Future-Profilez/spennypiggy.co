@@ -581,6 +581,20 @@ class BillsController extends Controller
         // Stripe compliance: content memberships require an account (tracked, renewed, cancelled).
         // Guest checkout is only allowed for Piggy Pot and Wishes.
         if (! Auth::check()) {
+            /*
+             * 🚨 REMEMBER WHERE THEY WERE GOING. The gate itself is correct —
+             * Stripe compliance requires an account for this purchase — but the
+             * redirect threw the destination away, so a supporter who signed in
+             * landed on their own page with the thing they had just tapped
+             * nowhere in sight. From the bio page's "Join" button that reads as
+             * a button that does nothing.
+             *
+             * `url.intended` is the key `AuthenticatedSessionController` already
+             * pulls after a successful login (and `GoogleController` already
+             * writes), so nothing new has to be taught to the login flow.
+             */
+            session()->put('url.intended', url()->full());
+
             return redirect()->route('login')->with('error', 'Please log in or create an account to subscribe — memberships need an account so they can be tracked, renewed and cancelled.');
         }
 

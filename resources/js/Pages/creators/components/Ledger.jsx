@@ -140,10 +140,18 @@ export function LedgerTotal({ label, figure, note }) {
  * what `Hero` and `PricingSection` both use. The previous version was a mono
  * label beside a coloured rule, which was a device this site does not have.
  */
+/**
+ * ⚠️ MONO, NOT THE DISPLAY FACE. An eyebrow names a section the way a system
+ * names a field — it is a label, not a claim — and the house convention (see the
+ * slip in `Pages/Bio/Show.jsx`) is that anything the system produced is set in
+ * mono. Giving every eyebrow the same `font-gulfs` as the headline beneath it
+ * meant the page spoke in ONE voice at two sizes; the mono gives the labels
+ * their own register so the display face is reserved for the argument.
+ */
 export function Eyebrow({ children, accent, className = '' }) {
     return (
         <span
-            className={`block font-gulfs text-[13px] uppercase tracking-[0.22em] md:text-sm ${className}`}
+            className={`block font-mono text-[11px] uppercase tracking-[0.14em] md:text-[12px] ${className}`}
             style={{ color: accent }}
         >
             {children}
@@ -227,6 +235,111 @@ export function StartSelling({ promise, align = 'left', className = '' }) {
  * argument turns on. Applying it to the whole line is how a page ends up with
  * six gradient headings and no emphasis anywhere.
  */
+/**
+ * 🚨 THE PAGE'S GRID. Twelve columns, one gutter, and every block on
+ * `/creators/*` places itself on it.
+ *
+ * Before this there was no grid — only per-element measures (`max-w-2xl`,
+ * `max-w-4xl`, a `1.1fr/1fr` split here, a bare paragraph there). Measured on
+ * `/creators/discovery` at 1440, that produced EIGHT vertical lines with no
+ * relationship to each other: headings ended at 723 in seven sections and 1029
+ * in two, leads started at 771 in seven and 133 in two and ended at 1308 or 805.
+ * Every left edge sat on 133, which is why a left-edge check said the page was
+ * aligned and the eye still said it was not. Alignment is where things END as
+ * much as where they start.
+ *
+ * ⚠️ Use `col-span-*` on the children rather than a new `max-w-*`. A max-width
+ * is a measure invented for one element; a column span is a position shared with
+ * every other element on the page. That difference is the whole point.
+ */
+export const GRID = 'lg:grid lg:grid-cols-12 lg:gap-x-6';
+
+/**
+ * The same head, split across two columns on desktop.
+ *
+ * 🚨 THIS EXISTS FOR RHYTHM, NOT VARIETY FOR ITS OWN SAKE. `/creators/discovery`
+ * ran NINE sections whose openings were structurally identical — eyebrow, then a
+ * headline at the same size and the same x, then a grey lead beneath it — down
+ * 7,700px of page. Measured: the gaps between sections on the sibling page were
+ * 112px, six times, to the pixel. A reader has nothing to lock onto, and the one
+ * section the client asked to be "the most prominent on the page" looked exactly
+ * like the five around it.
+ *
+ * Setting the lead BESIDE the headline rather than under it does two things at
+ * once: it removes a stacked block of height from every section that uses it,
+ * and it gives the page a second shape to alternate against. The loud sections
+ * (the hero, the proof, the close) keep the full-width stacked `SectionHead`, so
+ * the change reads as emphasis rather than as two components.
+ *
+ * ⚠️ A NEW EXPORT, not a prop on `SectionHead`. Six other `/creators/*` pages
+ * render that component and none of them asked for this.
+ */
+export function SectionHeadSplit({ eyebrow, accent, children, lead, className = '' }) {
+    return (
+        /* ⚠️ `items-start`, NOT `items-end`. Bottom-aligning the two columns
+           meant a five-line lead began ~90px ABOVE the eyebrow beside it, so the
+           heading and its own lead read as two unrelated blocks that happened to
+           share a row. Aligning their tops makes the pair read as one head — and
+           it is the same top line every other section uses. */
+        /*
+         * 🚨 EVERY SECTION OPENS ON A HAIRLINE. Without one the page was a single
+         * column of text with nothing but vertical space between its parts, and
+         * once the sections were all put on one left spine that uniformity made
+         * them run together — the client's word for it was "mixed". Space alone
+         * cannot say where one argument ends and the next begins; a line can.
+         *
+         * ⚠️ A RULE, NOT A BOX. The house direction (root CLAUDE.md, 14 Aug 2026)
+         * is that nothing casts a shadow and "a frame is a LINE" — depth comes
+         * from border weight, border colour and space. A rule also spans the full
+         * twelve columns, so it separates WITHOUT indenting anything: enclosing
+         * these sections in boxes is what pushed their contents off the spine
+         * last time.
+         *
+         * 🚨 THE LEAD ALIGNS WITH THE HEADING, NOT WITH THE EYEBROW.
+         *
+         * Both columns used to start at the top of the whole head, which put the
+         * description level with the little mono eyebrow and left the two things
+         * a reader actually looks at — the headline and its paragraph — on
+         * different lines. Measured across all seven sections: the lead's first
+         * line sat exactly 16px ABOVE the heading's first line, every time.
+         *
+         * The eyebrow now owns row 1 and the heading and lead share row 2, so
+         * the pairing survives an eyebrow of any height.
+         *
+         * ⚠️ ROW ALIGNMENT ALONE IS NOT ENOUGH, because these two faces sit
+         * differently in their own line boxes. Measured: the display face at
+         * `leading-[0.95]` OVERFLOWS its box and its glyphs start 9px ABOVE the
+         * box top, while 18px body at `leading-[1.6]` carries ~5px of half-
+         * leading and starts 5px BELOW it — a 14px optical gap left over after
+         * the boxes are flush. The heading sits at `mt-4` (16px) inside the row,
+         * so the lead sits at 16 - 14 = `mt-[2px]`.
+         *
+         * ⚠️ ONE margin-top, not `mt-4` plus a negative override: two utilities
+         * setting the same property under the same variant is decided by
+         * stylesheet order, not source order, and `npm run check`'s conflicting-
+         * class scanner exists for exactly that. The 2px is derived from the two
+         * line-heights — change either and re-measure the first line boxes.
+         */
+        <div className={`${GRID} border-t-2 border-white/15 pt-8 md:pt-10 ${className}`}>
+            {eyebrow && (
+                <div className="lg:col-span-6 lg:row-start-1">
+                    <Eyebrow accent={accent}>{eyebrow}</Eyebrow>
+                </div>
+            )}
+
+            <h2 className="mt-4 font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-[42px] lg:col-span-6 lg:row-start-2 lg:mt-4">
+                {children}
+            </h2>
+
+            {lead && (
+                <p className="mt-5 text-base leading-[1.6] text-gray-300 md:text-lg lg:col-span-5 lg:col-start-8 lg:row-start-2 lg:mt-[2px]">
+                    {lead}
+                </p>
+            )}
+        </div>
+    );
+}
+
 export function SectionHead({ eyebrow, accent, children, lead, className = '' }) {
     return (
         <div className={className}>

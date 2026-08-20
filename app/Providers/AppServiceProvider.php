@@ -31,6 +31,7 @@ use App\Models\WishItemSubscription;
 use App\Observers\ActivityObserver;
 use App\Observers\CreatorContentObserver;
 use App\Observers\DeliverableObserver;
+use App\Services\BioPageService;
 use App\Services\ResourcePreloadService;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -221,6 +222,58 @@ class AppServiceProvider extends ServiceProvider
         // Ensure storage directories exist in Lambda environment
         if (app()->environment('production')) {
             $this->ensureLambdaStorageDirectories();
+        }
+
+        $this->registerBioCacheBusting();
+    }
+
+    /**
+     * Drop the `/{username}/bio` payload cache when one of the six sellable
+     * models changes.
+     *
+     * 🚨 A CARD IS DRAWN FROM THE LIVE LISTING, BUT THE ASSEMBLED PAYLOAD IS
+     * CACHED for 60s, and only the bio editor cleared it. So a creator who
+     * corrected a price in Shop, closed a pot or unpublished a membership kept
+     * advertising the old state on the page they share everywhere, with nothing
+     * on screen to say why. The listing's own save is the moment that is known.
+     *
+     * ⚠️ `saved` and `deleted`, not `updated`: a new listing changes the
+     * AVAILABILITY map (which internal buttons the page draws) as much as an
+     * edit changes a card.
+     *
+     * ⚠️ Task owns its creator through `creator_id`, not `user_id` — the same
+     * trap `CheckMediaModeration` documents.
+     */
+    private function registerBioCacheBusting(): void
+    {
+        $owned = [
+            Shop::class => 'user_id',
+            WishItem::class => 'user_id',
+            Bills::class => 'user_id',
+            Membership::class => 'user_id',
+            PiggyPot::class => 'user_id',
+            Task::class => 'creator_id',
+        ];
+
+        foreach ($owned as $model => $column) {
+            if (! class_exists($model)) {
+                continue;
+            }
+
+            $forget = function ($row) use ($column) {
+                // A vanity-adjacent cache key must never be why a listing fails
+                // to save — same rule as the click counters on this feature.
+                rescue(function () use ($row, $column) {
+                    $ownerId = (int) ($row->{$column} ?? 0);
+
+                    if ($ownerId > 0) {
+                        BioPageService::forgetCachesForUserId($ownerId);
+                    }
+                }, report: false);
+            };
+
+            $model::saved($forget);
+            $model::deleted($forget);
         }
     }
 

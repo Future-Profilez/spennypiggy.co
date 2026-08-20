@@ -25,11 +25,13 @@ use Illuminate\Queue\SerializesModels;
  * `BirthdayDiscoveryService::card()`, which carries `birthday_label` (day and
  * month) and no year at all.
  *
- * 🚨 MARKETING-CLASS. Sent through `EmailService::sendMarketingEmail()`, which
- * honours `users.marketing_emails_enabled`. It is a promotional round-up of
- * creators the recipient may never have met — unlike the per-creator birthday
- * reminder, which is news about somebody they already support and rides on
- * `creator_updates_enabled`. It must NEVER go through `Mail::to()`.
+ * 🚨 MARKETING-CLASS, PLUS THE BIRTHDAY SWITCH. Sent through
+ * `EmailService::sendMarketingEmail($user, $mailable, 'birthday_emails_enabled')`,
+ * so it needs BOTH `users.marketing_emails_enabled` (it is a promotional
+ * round-up of creators the recipient may never have met) AND the dedicated
+ * birthday category, which is what lets somebody stop this campaign without
+ * silencing every promotion Spenny Piggy sends. It must NEVER go through
+ * `Mail::to()`.
  *
  * ⚠️ This mailable does not send itself.
  */
@@ -53,10 +55,13 @@ class BirthdaysThisWeek extends Mailable
      * looks perfect; every visit it produces is invisible for ever, and there is
      * no backfill.
      *
-     * Caught by rendering the mailable and grepping the HTML for `sp_d`. ⚠️
-     * `App\Mail\ReactivationReminder` has the SAME public-property shape and is
-     * very probably losing its `personalised` tags the same way — reported, not
-     * changed here.
+     * Caught by rendering the mailable and grepping the HTML for `sp_d`, and
+     * pinned by `BirthdayDiscoveryTest` against the RENDERED HTML rather than
+     * the payload — the payload is only half the path. ⚠️ CORRECTED: the note
+     * that once stood here said `App\Mail\ReactivationReminder` was "very
+     * probably losing its `personalised` tags the same way". It is not — that
+     * one was found and fixed on 20 Aug 2026 and its `$creators` is already
+     * `protected`. Verified 21 Aug 2026; do not go chasing it.
      *
      * ⚠️ `protected` still serializes for the queue (`SerializesModels` reflects
      * over all properties, not just public ones), so nothing else changes.
@@ -101,11 +106,18 @@ class BirthdaysThisWeek extends Mailable
                  */
                 'collectionUrl' => url('/discover/birthdays'),
                 /*
-                 * 🚨 UNSUBSCRIBE WORKS ON DAY ONE — a signed marketing opt-out,
-                 * live before the Email Preferences Centre lands.
+                 * 🚨 THE NARROWEST OPT-OUT THIS EMAIL CAN OFFER — one click turns
+                 * off `birthday_emails_enabled`, which stops this campaign and
+                 * the per-creator reminders, and leaves every other promotion
+                 * alone. It used to be the blanket marketing opt-out, so the
+                 * only way to stop a birthday round-up was to stop everything.
                  */
                 'unsubscribeUrl' => $user
-                    ? EmailPreferenceController::generateUnsubscribeToken($user)
+                    ? EmailPreferenceController::generateUnsubscribeToken($user, 'birthday_emails_enabled')
+                    : null,
+                // The full centre, no login required — see BirthdayReminder.
+                'preferencesUrl' => $user
+                    ? EmailPreferenceController::generateManageToken($user)
                     : null,
             ]
         );

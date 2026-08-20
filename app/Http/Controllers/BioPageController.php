@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\CreatorBioItem;
 use App\Models\CreatorBioLink;
+use App\Models\PiggyPot;
 use App\Models\User;
 use App\SeoMeta;
 use App\Services\Bio\BioTipService;
 use App\Services\BioPageService;
 use App\Services\Discovery\AttributionService;
+use App\Services\PiggyPotStatusService;
 use App\Services\UserProfileService;
+use App\Support\BioSellableItems;
 use App\Support\DiscoverySources;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -99,6 +102,27 @@ class BioPageController extends Controller
 
         $this->setSeo($user);
 
+        /*
+         * 🚨 THE FEATURED POT IS NEVER ALSO A CARD. `featured()` picks the pinned
+         * (or newest open) pot on its own, and a creator who ALSO selected that
+         * pot as an item had it twice on one screen — once as the hero tile with
+         * its progress bar, once as a small card lower down. Two tiles for one
+         * product reads as two products, and the visitor who buys the second one
+         * cannot tell why the first is still there.
+         *
+         * The HERO survives and the card is dropped: it is bigger, it carries the
+         * progress number, and it is the tile the page is built around.
+         */
+        $featured = $this->bioService->featured($user, $isOwner);
+        $items = $this->bioService->items($user, $isOwner);
+
+        if ($featured !== null) {
+            $items = array_values(array_filter(
+                $items,
+                fn (array $card) => ($card['listing_uuid'] ?? null) !== $featured['uuid'],
+            ));
+        }
+
         $response = Inertia::render('Bio/Show', [
             'creator' => [
                 'uuid' => $user->uuid,
@@ -107,6 +131,11 @@ class BioPageController extends Controller
                 // Accessors already apply the approval gate — an unreviewed
                 // upload is visible to its owner and to nobody else.
                 'avatar_url' => $user->avatar_url,
+                // ⚠️ Same approval gate as the avatar — the accessor returns null
+                // for an unreviewed upload to everyone except its owner. The bio
+                // page draws it as the hero band, so an unmoderated image would
+                // otherwise be the first thing every visitor sees.
+                'cover_url' => $user->cover_url,
                 'bio' => $user->bio_approved == 1 || $isOwner ? $user->bio : null,
                 'verified_badge' => $user->verified_badge,
                 'is_founder' => (bool) $user->is_founder,
@@ -120,8 +149,8 @@ class BioPageController extends Controller
             'links' => $this->bioService->linksFor($user, $isOwner),
             // The listings the creator chose to sell from here. Rendered from the
             // live listing every time — never from a stored price.
-            'items' => $this->bioService->items($user, $isOwner),
-            'featured' => $this->bioService->featured($user),
+            'items' => $items,
+            'featured' => $featured,
             // 🚨 Amounts, limits and the on/off switch come from the server, so the
             // flag is a config change with no deploy (Master Plan §F) and the numbers
             // cannot drift from the ones the endpoint enforces.
@@ -194,6 +223,50 @@ class BioPageController extends Controller
         }
 
         $this->bioService->recordItemClick($row);
+        $this->rememberSource($request, $row->user, true);
+
+        return redirect()->to($url);
+    }
+
+    /**
+     * The featured tile's counting redirect — `/bio/pot/{pot}`.
+     *
+     * 🚨 SAME CONTRACT AS `buy()`: the request carries a pot uuid and nothing
+     * else, and the destination is rebuilt server-side by `BioSellableItems`, so
+     * there is no URL in it for a caller to point anywhere.
+     *
+     * 🚨 IT EXISTS FOR THE ATTRIBUTION, not for the counter. The page above it
+     * may be served from a CDN with its Set-Cookie stripped; a redirect never
+     * is. Without this hop, the biggest tile on the page could send a supporter
+     * into a checkout with no `bio-link` stamp on them, and there is no backfill
+     * for a sale nobody attributed.
+     *
+     * ⚠️ The pot is re-checked as publicly visible HERE, not just when the page
+     * was rendered — a pot can close, expire or be pulled for moderation between
+     * the render and the tap, and the page may have been cached for five minutes
+     * before either happened.
+     */
+    public function pot(Request $request, string $pot)
+    {
+        $row = PiggyPot::query()
+            ->with('user:id,username,role,suspended_account')
+            ->where('uuid', $pot)
+            ->tap(fn ($q) => PiggyPotStatusService::scopePubliclyVisible($q))
+            ->first();
+
+        if (! $row || ! $row->user || $row->user->suspended_account == 1) {
+            return redirect()->route('home');
+        }
+
+        $url = BioSellableItems::checkoutUrl('piggy_pot', $row, $row->user);
+
+        if ($url === null) {
+            return redirect()
+                ->route('bio.show', ['username' => $row->user->username])
+                ->with('error', 'That item is not available right now.');
+        }
+
+        $this->bioService->recordFeaturedClick($row);
         $this->rememberSource($request, $row->user, true);
 
         return redirect()->to($url);

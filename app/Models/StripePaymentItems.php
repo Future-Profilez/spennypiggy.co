@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SecureMedia;
 use App\Uploadcare;
 use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -107,6 +108,11 @@ class StripePaymentItems extends Model
             $url = 'https://ucarecdn.com/'.$this->message_media.'/';
         }
 
-        return $url;
+        // Private media attached to one payment between one supporter and one
+        // creator — never a public marketing surface, so it is signed. This is
+        // one of the two dead call sites the old signer left commented out
+        // above; SecureMedia replaces it (App\Uploadcare::getUrl would have
+        // thrown, the API secret is not a valid HMAC key).
+        return SecureMedia::sign($url);
     }
 }

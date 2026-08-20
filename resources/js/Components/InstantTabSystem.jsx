@@ -14,6 +14,44 @@ import {
 } from "lucide-react";
 
 /**
+ * One scroll step for the tab strip.
+ *
+ * ⚠️ BOTH ARROWS ARE ONE CONTROL AND ARE ONE SIZE — 44px, matching the refresh
+ * button beside them and the minimum tap target. An earlier pair was 32px on the
+ * left and 44px on the right, which read as a clipped fragment rather than a
+ * button.
+ *
+ * ⚠️ `disabled`, never unmounted: see the note on `scrollByPage`. It also gives
+ * a keyboard user something honest to land on rather than a control that
+ * appears and disappears under them.
+ */
+function ScrollArrow({ direction, disabled, onClick }) {
+    const isLeft = direction < 0;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            aria-label={isLeft ? "Scroll tabs left" : "Scroll tabs right"}
+            className={`
+                hidden sm:flex h-11 w-11 shrink-0 items-center justify-center
+                rounded-box-sm border-2 border-[#000] bg-white text-black
+                transition-colors duration-200 hover:bg-yellow-100
+                disabled:opacity-35 disabled:pointer-events-none
+            `}
+        >
+            {isLeft ? (
+                <ChevronLeft size={18} strokeWidth={3} />
+            ) : (
+                <ChevronRight size={18} strokeWidth={3} />
+            )}
+        </button>
+    );
+}
+
+
+/**
  * Ultra-responsive tab system with instant visual feedback
  * Eliminates multiple clicks and provides 0ms response time
  */
@@ -35,11 +73,6 @@ function InstantTabSystem({
     const clickCount = useRef(new Map());
     
     // Performance tracking
-    const performanceRef = useRef({
-        clickTime: 0,
-        feedbackTime: 0,
-        navigationTime: 0
-    });
 
     // Overflow affordance. Seven tabs do not fit the profile column, and the
     // strip used to just clip the last one — which reads as a broken layout, not
@@ -50,6 +83,39 @@ function InstantTabSystem({
     const scrollRef = useRef(null);
     const [overflow, setOverflow] = useState({ left: false, right: false });
 
+    /*
+     * 🚨 THE ARROWS ARE LAID OUT BESIDE THE STRIP, NEVER OVER IT, AND THEY ARE
+     * ALWAYS RENDERED. Two earlier attempts both failed for the same reason: an
+     * arrow that only appears WHEN the strip overflows is caught in a loop —
+     * showing it narrows the strip, which can stop the overflow, which hides it,
+     * which widens the strip, which overflows again. Positioning them absolutely
+     * escaped the loop but put the left button on top of the first tab, so
+     * "WISHES" rendered as "ES".
+     *
+     * Reserving their space unconditionally breaks the loop outright: the strip
+     * width no longer depends on whether it overflows. When there is nothing to
+     * scroll the button is `disabled` and dimmed — a control that is visibly
+     * unavailable, not a layout that moves.
+     *
+     * ⚠️ `hidden sm:flex`: a phone has no need for them (swipe) and 2×44px is
+     * real width on a 360px screen. This is a desktop-mouse affordance, which is
+     * the one input the strip could not otherwise serve.
+     */
+    const scrollByPage = useCallback((direction) => {
+        const el = scrollRef.current;
+        if (!el) return;
+
+        // ~80% of a screenful, so the tab you were reading stays on screen and
+        // becomes the anchor for where you are now.
+        el.scrollBy({
+            left: direction * Math.max(160, el.clientWidth * 0.8),
+            behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
+                .matches
+                ? "auto"
+                : "smooth",
+        });
+    }, []);
+
     const measureOverflow = useCallback(() => {
         const el = scrollRef.current;
         if (!el) return;
@@ -57,16 +123,6 @@ function InstantTabSystem({
         setOverflow({
             left: el.scrollLeft > 1,
             right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
-        });
-    }, []);
-
-    const scrollByPage = useCallback((direction) => {
-        const el = scrollRef.current;
-        if (!el) return;
-        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        el.scrollBy({
-            left: direction * Math.max(160, el.clientWidth * 0.7),
-            behavior: reduced ? 'auto' : 'smooth',
         });
     }, []);
 
@@ -125,9 +181,6 @@ function InstantTabSystem({
 
     // Instant visual feedback on click
     const handleTabClick = useCallback((tabId, e) => {
-        const clickTime = performance.now();
-        performanceRef.current.clickTime = clickTime;
-        
         // Prevent default to control navigation
         e.preventDefault();
         
@@ -141,13 +194,11 @@ function InstantTabSystem({
         
         // If same tab clicked multiple times quickly, ignore
         if (tabId === effectiveActiveTab && timeSinceLastClick < 300) {
-            console.info('🚫 Duplicate click ignored:', tabId);
             return;
         }
         
         // If different tab clicked too quickly, ignore
         if (tabId !== effectiveActiveTab && timeSinceLastClick < 100) {
-            console.info('🚫 Too rapid click ignored:', tabId, timeSinceLastClick + 'ms');
             return;
         }
         
@@ -155,15 +206,11 @@ function InstantTabSystem({
         
         // INSTANT visual feedback (within 1 frame)
         requestAnimationFrame(() => {
-            const feedbackTime = performance.now();
-            performanceRef.current.feedbackTime = feedbackTime - clickTime;
-            
             // Set visual states immediately
             setPendingTab(tabId);
             setClickedTab(tabId);
             setIsTransitioning(true);
 
-            console.info(`⚡ Instant feedback: ${Math.round(performanceRef.current.feedbackTime)}ms`);
         });
         
         // Haptic feedback on supported devices
@@ -188,7 +235,6 @@ function InstantTabSystem({
         
         // Navigate with slight delay for smooth UX
         navigationTimeout.current = setTimeout(() => {
-            const navigationStartTime = performance.now();
             
             // Use Inertia navigation with optimization flags
             router.visit(route('user.show', {
@@ -199,12 +245,7 @@ function InstantTabSystem({
                 preserveScroll: true,
                 preserveState: true,
                 replace: true,
-                onStart: () => {
-                    console.info(`🚀 Navigation started for: ${tabId}`);
-                },
                 onSuccess: () => {
-                    performanceRef.current.navigationTime = performance.now() - navigationStartTime;
-                    console.info(`✅ Navigation completed: ${Math.round(performanceRef.current.navigationTime)}ms`);
                     
                     // Reset states
                     setPendingTab(null);
@@ -254,7 +295,6 @@ function InstantTabSystem({
     // Hover preloading (for Phase 2)
     const handleTabHover = useCallback((tabId) => {
         // Will implement preloading logic in Phase 2
-        console.debug(`👀 Hover detected: ${tabId}`);
     }, []);
 
     // Cleanup timeouts on unmount
@@ -370,7 +410,7 @@ function InstantTabSystem({
                     select-none touch-manipulation tracking-wider border-2 border-black rounded-box-sm
                     ${isEffectivelyActive
                         ? 'text-black bg-yellow-300'
-                        : 'text-black bg-white hover:bg-yellow-100'
+                        : 'text-black bg-white hover:bg-black/[0.04]'
                     }
                     ${shouldShowLoading ? 'opacity-90 animate-pulse' : ''}
                     disabled:pointer-events-none
@@ -390,12 +430,18 @@ function InstantTabSystem({
     return (
         <div className='relative pb-2 mt-4'>
             <div className="w-full flex items-center gap-3 py-2 relative">
+                <ScrollArrow
+                    direction={-1}
+                    disabled={!overflow.left}
+                    onClick={() => scrollByPage(-1)}
+                />
+
                 {/* min-w-0 + flex-1: without it the flex item refuses to shrink and the last
                     tabs get clipped off-screen instead of scrolling. */}
                 <div className="relative min-w-0 flex-1">
                     <div
                         ref={scrollRef}
-                        className="flex overflow-x-auto scrollbar-hide gap-2 pb-2 pt-1 px-0"
+                        className="flex overflow-x-auto scrollbar-hide gap-2.5 px-0 py-1"
                     >
                         {tabs.map((tab) => (
                             <TabButton
@@ -416,44 +462,40 @@ function InstantTabSystem({
                     {overflow.left && (
                         <div
                             aria-hidden="true"
-                            className="pointer-events-none absolute inset-y-0 left-0 w-14 bg-gradient-to-r from-[#A2E4B8] to-transparent"
+                            className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#A2E4B8] to-transparent"
                         />
                     )}
                     {overflow.right && (
                         <div
                             aria-hidden="true"
-                            className="pointer-events-none absolute inset-y-0 right-0 w-14 bg-gradient-to-l from-[#A2E4B8] to-transparent"
+                            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#A2E4B8] to-transparent"
                         />
                     )}
 
-                    {/* Arrows wear the tab's own language, and are overlaid
-                        rather than laid out — see the note on the state above. */}
-                    {overflow.left && (
-                        <button
-                            type="button"
-                            onClick={() => scrollByPage(-1)}
-                            aria-label="Scroll tabs left"
-                            className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-box-xs border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
-                        >
-                            <ChevronLeft size={16} strokeWidth={3} />
-                        </button>
-                    )}
-                    {overflow.right && (
-                        <button
-                            type="button"
-                            onClick={() => scrollByPage(1)}
-                            aria-label="Scroll tabs right"
-                            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-box-sm border-2 border-black bg-white text-black transition-colors hover:bg-yellow-100"
-                        >
-                            <ChevronRight size={16} strokeWidth={3} />
-                        </button>
-                    )}
                 </div>
+
+                <ScrollArrow
+                    direction={1}
+                    disabled={!overflow.right}
+                    onClick={() => scrollByPage(1)}
+                />
                 {/* {isTransitioning && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-white opacity-70 animate-pulse pointer-events-none"></div>
                 )} */}
                 {IsloggedIn && (
-                    <div className="pb-2 flex shrink-0 items-center gap-2 border-l-2 border-black/10 pl-3">
+                    /* ⚠️ SPACE, NOT A RULE. This carried `border-l-2
+                       border-black/10` — a 2px line at 10% opacity, which is
+                       neither a line you can see nor an absence. The house order
+                       for expressing depth is border weight, then border colour,
+                       then space; a separator this quiet is doing the third job
+                       with the first tool.
+
+                       🚨 PLAIN `/* *\/`, NEVER `{/* *\/}` HERE. Inside a
+                       parenthesised `&&`/ternary branch, braces are an OBJECT
+                       LITERAL, not a JSX comment — it fails the whole Vite build
+                       with `Expected ")" but found "className"`, and none of the
+                       `npm run check` scanners catch it. */
+                    <div className="pb-2 flex shrink-0 items-center gap-2 pl-2">
                         <button
                             type="button"
                             onClick={handleRefresh}
@@ -462,7 +504,7 @@ function InstantTabSystem({
                             className={`
                                 flex h-11 w-11 items-center justify-center
                                 border-2 border-black rounded-box-sm
-                                text-black bg-white hover:bg-yellow-100
+                                text-black bg-white hover:bg-black/[0.04]
                                 disabled:opacity-70 disabled:pointer-events-none
                             `}
                         >

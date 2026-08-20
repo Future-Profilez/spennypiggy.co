@@ -78,7 +78,13 @@ class BioLinkController extends Controller
         $validated = $request->validate([
             'platform' => ['required', 'string', Rule::in(array_keys(BioLinkPlatforms::PLATFORMS))],
             'handle' => ['required', 'string', 'max:191'],
-            'label' => ['nullable', 'string', 'max:40', new NoExpenseOrBrandName],
+            'label' => [
+                'nullable', 'string', 'max:40',
+                // The button may name the platform it points at, and nothing else.
+                new NoExpenseOrBrandName(
+                    BioLinkPlatforms::ownBrandTokens($request->input('platform'))
+                ),
+            ],
         ]);
 
         if ($this->externalCount($user->id) >= BioLinkPlatforms::MAX_EXTERNAL_LINKS) {
@@ -142,7 +148,11 @@ class BioLinkController extends Controller
         $row = $this->ownedLink($user->id, $link);
 
         $validated = $request->validate([
-            'label' => ['sometimes', 'nullable', 'string', 'max:40', new NoExpenseOrBrandName],
+            'label' => [
+                'sometimes', 'nullable', 'string', 'max:40',
+                // The platform comes from the stored row — an edit cannot change it.
+                new NoExpenseOrBrandName(BioLinkPlatforms::ownBrandTokens($row->platform)),
+            ],
             'handle' => ['sometimes', 'required', 'string', 'max:191'],
             'is_active' => ['sometimes', 'boolean'],
         ]);

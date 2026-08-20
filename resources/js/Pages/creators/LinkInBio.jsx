@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
-import { ACCENT, Eyebrow, SectionHead } from './components/Ledger';
+import { ACCENT, Eyebrow, GRID, SectionHead, SectionHeadSplit } from './components/Ledger';
 import DiscoveryStatsPanel from '@/Components/discovery/DiscoveryStatsPanel';
 import {
     BIO_AD_CLOSE,
@@ -44,7 +44,18 @@ import { STABLECOIN_COPY } from '@/constants/stablecoinTips';
  */
 
 const MINT = ACCENT.earn;
+/*
+ * 🚨 TWO VIOLETS, AND THE DARK ONE IS NEVER TEXT. Measured on this page's ink
+ * ground (#0B0B0C): `#8C52FF` is **4.47:1** — under AA (4.5) — and these labels
+ * are 11px, so they are normal text, not large. `#C4A5FF` measures **9.53:1**.
+ *
+ * This is the same finding `home/StablecoinTipsAnnouncement.jsx` records for the
+ * same pair, and it was walked into again the moment violet started carrying
+ * meaning rather than decorating a heading. The dark violet is a FILL and a
+ * border; the light one is the ink.
+ */
 const VIOLET = ACCENT.bonus;
+const VIOLET_INK = '#C4A5FF';
 
 /** The public bio page's own ground, so the phone mock reads as that page. */
 const BIO_GROUND = '#A2E4B8';
@@ -64,7 +75,7 @@ export default function LinkInBio({ discovery }) {
                 <meta name="description" content={description} />
                 <meta property="og:title" content={title} />
                 <meta property="og:description" content={description} />
-                <meta property="og:image" content="/siteicon.png" />
+                <meta property="og:image" content="https://spennypiggy.co/og-link-in-bio.png" />
                 <meta
                     property="og:url"
                     content="https://spennypiggy.co/creators/link-in-bio"
@@ -73,14 +84,14 @@ export default function LinkInBio({ discovery }) {
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:title" content={title} />
                 <meta name="twitter:description" content={description} />
-                <meta name="twitter:image" content="/siteicon.png" />
+                <meta name="twitter:image" content="https://spennypiggy.co/og-link-in-bio.png" />
             </Head>
 
             <Guest>
                 <AdPage>
                     {/* ── 1 · Hero ───────────────────────────────────────── */}
-                    <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-16">
-                        <div>
+                    <div className="lg:grid lg:grid-cols-12 lg:gap-x-6 lg:items-center gap-y-10">
+                        <div className="lg:col-span-6">
                             <Eyebrow accent={MINT}>{BIO_AD_HERO.eyebrow}</Eyebrow>
 
                             <h1 className="mt-5 font-gulfs text-5xl uppercase leading-[0.85] tracking-tight text-white sm:text-6xl md:text-[64px]">
@@ -104,39 +115,50 @@ export default function LinkInBio({ discovery }) {
                             <Cta className="mt-9">{BIO_AD_HERO.cta}</Cta>
                         </div>
 
-                        <PhoneMock labels={labels} />
+                        <div className="lg:col-span-5 lg:col-start-8">
+                            <PhoneMock labels={labels} alignRight />
+                        </div>
                     </div>
 
                     {/* ── 2 · The problem with most bio links ───────────── */}
-                    <section className="mt-24 md:mt-32">
-                        <SectionHead
+                    <section className="mt-16 md:mt-24">
+                        <SectionHeadSplit
                             eyebrow="Every tap costs you"
-                            accent={VIOLET}
+                            accent={VIOLET_INK}
                             lead={BIO_AD_PROBLEM.body}
                         >
                             The problem with{' '}
                             <span className="text-gradient-wishlist">
                                 most bio links
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         {/* The before/after the brief asks for. The row LENGTHS
                             are the argument — four boxes against one — so they
                             sit in the same grid rather than in two cards of
                             equal width, which would flatten the difference. */}
-                        <div className="mt-10 grid gap-3 lg:grid-cols-2">
-                            <TapPath
-                                path={BIO_AD_PROBLEM.before}
-                                tone="cold"
-                            />
-                            <TapPath path={BIO_AD_PROBLEM.after} tone="warm" />
+                        <div className="mt-10 lg:grid lg:grid-cols-12 lg:gap-x-6 gap-y-4">
+                            <div className="lg:col-span-6">
+                                <TapPath
+                                    path={BIO_AD_PROBLEM.before}
+                                    tone="cold"
+                                />
+                            </div>
+                            <div className="lg:col-span-6">
+                                <TapPath path={BIO_AD_PROBLEM.after} tone="warm" />
+                            </div>
                         </div>
                     </section>
 
                     {/* ── 3 · Everything you sell, on one page ──────────── */}
-                    <section className="mt-20 md:mt-28">
-                        <SectionHead
-                            eyebrow="One page"
+                    <section className="mt-12 md:mt-20">
+                        <SectionHeadSplit
+                            eyebrow={
+                                <span className="inline-flex items-center gap-3">
+                                    <span>One page</span>
+                                    <StateChip state={labels[BIO_AD_EVERYTHING.key]} />
+                                </span>
+                            }
                             accent={MINT}
                             lead={BIO_AD_EVERYTHING.body}
                         >
@@ -144,32 +166,43 @@ export default function LinkInBio({ discovery }) {
                             <span className="text-gradient-wishlist">
                                 on one page
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
-                        <div className="mt-8">
-                            <StateChip state={labels[BIO_AD_EVERYTHING.key]} />
-                        </div>
+                        <div className="mt-6 lg:grid lg:grid-cols-12 lg:gap-x-6 lg:items-center gap-y-6">
+                            <div className="lg:col-span-5">
+                                <PhoneMock labels={labels} withCards />
+                            </div>
 
-                        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-center">
-                            <PhoneMock labels={labels} withCards />
-
-                            <ul className="grid gap-3 sm:grid-cols-2">
-                                {BIO_AD_EVERYTHING.cards.map((card) => (
-                                    <li
-                                        key={card}
-                                        className="rounded-box-sm border-2 border-white/15 bg-white/[0.04] px-5 py-4 text-base text-white md:text-lg"
-                                    >
-                                        {card}
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="lg:col-span-7 lg:col-start-6">
+                                <ul className="grid gap-3 sm:grid-cols-2">
+                                    {BIO_AD_EVERYTHING.cards.map((card) => (
+                                        <li
+                                            key={card}
+                                            className="flex items-center gap-3.5 rounded-box-sm border-2 border-white/15 bg-white/[0.04] px-5 py-4 text-base text-white md:text-lg"
+                                        >
+                                            <span
+                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-black"
+                                                style={{ backgroundColor: MINT }}
+                                            >
+                                                <Check size={13} strokeWidth={4} />
+                                            </span>
+                                            <span>{card}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
                     </section>
 
-                    {/* ── 4 · Built for the phone ───────────────────────── */}
-                    <section className="mt-20 md:mt-28">
-                        <SectionHead
-                            eyebrow="Where they actually are"
+                    {/* ── 4 · Built for the phone ─────────────────────────── */}
+                    <section className="mt-12 md:mt-20">
+                        <SectionHeadSplit
+                            eyebrow={
+                                <span className="inline-flex items-center gap-3">
+                                    <span>Where they actually are</span>
+                                    <StateChip state={labels[BIO_AD_PHONE.key]} />
+                                </span>
+                            }
                             accent={MINT}
                             lead={BIO_AD_PHONE.body}
                         >
@@ -177,44 +210,52 @@ export default function LinkInBio({ discovery }) {
                             <span className="text-gradient-wishlist">
                                 the phone
                             </span>
-                        </SectionHead>
-
-                        <div className="mt-8">
-                            <StateChip state={labels[BIO_AD_PHONE.key]} />
-                        </div>
+                        </SectionHeadSplit>
                     </section>
 
                     {/* ── 5 · Tips, coming soon ─────────────────────────── */}
-                    <section className="mt-20 md:mt-28">
-                        <SectionHead
-                            eyebrow="Nothing exchanged"
-                            accent={VIOLET}
+                    <section className="mt-12 md:mt-20">
+                        <SectionHeadSplit
+                            eyebrow={
+                                <span className="inline-flex items-center gap-3">
+                                    <span>Nothing exchanged</span>
+                                    <StateChip state={labels[BIO_AD_TIPS.key]} />
+                                </span>
+                            }
+                            accent={VIOLET_INK}
                             lead={BIO_AD_TIPS.body}
                         >
                             Tips,{' '}
                             <span className="text-gradient-wishlist">
                                 coming soon
                             </span>
-                        </SectionHead>
-
-                        <div className="mt-8">
-                            <StateChip state={labels[BIO_AD_TIPS.key]} />
-                        </div>
+                        </SectionHeadSplit>
 
                         {/* The button as the product draws it, on the bio page's
                             own ground so it is recognisably that page. */}
-                        <div
-                            className="mt-6 max-w-md rounded-box p-5"
-                            style={{ backgroundColor: BIO_GROUND }}
-                        >
-                            <TipBlock />
+                        <div className="mt-6 lg:grid lg:grid-cols-12 lg:gap-x-6">
+                            <div className="lg:col-span-5">
+                                <div
+                                    className="rounded-box p-5"
+                                    style={{ backgroundColor: BIO_GROUND }}
+                                >
+                                    <TipBlock />
+                                </div>
+                            </div>
                         </div>
                     </section>
 
-                    {/* ── 6 · You control the page ─────────────────────── */}
-                    <section className="mt-20 md:mt-28">
-                        <SectionHead
-                            eyebrow="No code, no designer"
+
+
+                    {/* ── 6 · You control the page ───────────────────────── */}
+                    <section className="mt-12 md:mt-20">
+                        <SectionHeadSplit
+                            eyebrow={
+                                <span className="inline-flex items-center gap-3">
+                                    <span>No code, no designer</span>
+                                    <StateChip state={labels[BIO_AD_CONTROL.key]} />
+                                </span>
+                            }
                             accent={MINT}
                             lead={BIO_AD_CONTROL.body}
                         >
@@ -222,25 +263,28 @@ export default function LinkInBio({ discovery }) {
                             <span className="text-gradient-wishlist">
                                 control the page
                             </span>
-                        </SectionHead>
-
-                        <div className="mt-8">
-                            <StateChip state={labels[BIO_AD_CONTROL.key]} />
-                        </div>
+                        </SectionHeadSplit>
                     </section>
 
                     {/* ── 7 · Your traffic — and we count it ────────────── */}
-                    <section className="mt-20 md:mt-28">
-                        <SectionHead
+                    {/* ⚠️ NO violet rule here. An earlier pass gave this section a
+                        violet top border, which (a) doubled the rule
+                        `SectionHeadSplit` already draws and (b) contradicted the
+                        page's own colour rule: violet MEANS "coming soon", and
+                        attribution is not. Section rules are neutral; the only
+                        coloured ones are mint on the proof and pink on the
+                        close. */}
+                    <section className="mt-16 md:mt-24">
+                        <SectionHeadSplit
                             eyebrow="Attribution"
-                            accent={VIOLET}
+                            accent={VIOLET_INK}
                             lead={BIO_AD_TRAFFIC.body}
                         >
                             Your bio link, your traffic —{' '}
                             <span className="text-gradient-wishlist">
                                 and we count it
                             </span>
-                        </SectionHead>
+                        </SectionHeadSplit>
 
                         {/* The same panel as the other two surfaces, with the ad
                             page's wording. */}
@@ -262,21 +306,28 @@ export default function LinkInBio({ discovery }) {
                     </section>
 
                     {/* ── 8 · Final conversion ─────────────────────────── */}
-                    <section className="mt-24 text-center md:mt-32">
-                        <h2 className="mx-auto max-w-4xl font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl">
+                    {/* ⚠️ LEFT, LIKE EVERY OTHER SECTION. Centring this read as a
+                        finale on a page that centres nowhere else, so it landed
+                        as a section off the spine rather than as an ending. */}
+                    {/* ⚠️ PINK RULE — the action colour, used as a line only here. Every
+                        other section opens on a neutral hairline; the last one opens
+                        on the colour of the button it ends with. */}
+                    <section
+                        className="mt-16 border-t-2 pt-8 md:mt-20 md:pt-10"
+                        style={{ borderColor: ACCENT.safe }}
+                    >
+                        <h2 className="font-gulfs text-3xl uppercase leading-[0.95] tracking-tight text-white md:text-5xl lg:w-[calc((100%-11*1.5rem)/12*9+8*1.5rem)]">
                             Swap your bio link.{' '}
                             <span className="text-gradient-wishlist">
                                 Keep 100% of your listed price.
                             </span>
                         </h2>
 
-                        <p className="mx-auto mt-7 max-w-2xl text-base leading-[1.6] text-gray-300 md:text-lg">
+                        <p className="mt-7 text-base leading-[1.6] text-gray-300 md:text-lg lg:w-[calc((100%-11*1.5rem)/12*6+5*1.5rem)]">
                             {BIO_AD_CLOSE.body}
                         </p>
 
-                        <Cta className="mt-9 justify-center">
-                            {BIO_AD_CLOSE.cta}
-                        </Cta>
+                        <Cta className="mt-9">{BIO_AD_CLOSE.cta}</Cta>
                     </section>
                 </AdPage>
             </Guest>
@@ -284,15 +335,20 @@ export default function LinkInBio({ discovery }) {
     );
 }
 
+
 /** The one pink call to action. Black type, brightness on hover, never a scale. */
 function Cta({ children, className = '' }) {
     return (
         <div className={`flex ${className}`}>
             <Link
                 href="/register"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-box-sm bg-[#FF007F] px-9 font-gulfs text-[13px] uppercase tracking-[0.16em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-box-sm bg-[#FF007F] px-9 font-gulfs text-[13px] uppercase tracking-[0.16em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
             >
-                {children}
+                <span>{children}</span>
+                <ArrowRight
+                    size={14}
+                    className="transition-transform group-hover:translate-x-0.5"
+                />
             </Link>
         </div>
     );
@@ -304,13 +360,20 @@ function StateChip({ state }) {
 
     return isLive ? (
         <span
-            className="inline-flex items-center rounded-box-xs px-3 py-1.5 font-gulfs text-[11px] uppercase tracking-[0.16em] text-black"
+            /* ⚠️ A TRANSPARENT 2px BORDER, so the filled chip and the
+               outlined one below are the SAME box. Measured: without it the mint
+               chip was 29px tall and the violet one 33px — two labels doing the
+               same job at two different sizes in the same row. */
+            className="inline-flex items-center rounded-box-xs border-2 border-transparent px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-black"
             style={{ backgroundColor: MINT }}
         >
             {DISCOVERY_LABEL_TEXT.live}
         </span>
     ) : (
-        <span className="inline-flex items-center rounded-box-xs border-2 border-white/25 px-3 py-1.5 font-gulfs text-[11px] uppercase tracking-[0.16em] text-gray-400">
+        <span
+            className="inline-flex items-center rounded-box-xs border-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em]"
+            style={{ borderColor: `${VIOLET}80`, color: VIOLET_INK }}
+        >
             {DISCOVERY_LABEL_TEXT.coming_soon}
         </span>
     );
@@ -410,11 +473,15 @@ function TipBlock() {
  * name and face into a paid advert. `withCards` shows the sellable-item cards
  * that the B stream adds; without it, the link rows the page carries today.
  */
-function PhoneMock({ labels, withCards = false }) {
+function PhoneMock({ labels, withCards = false, alignRight = false }) {
+    /* ⚠️ `alignRight` only in the hero, where this IS the right-hand column.
+       In section 3 the mock sits in the LEFT column, and `ml-auto` there pushed
+       it 190px off the page's spine — the frame drifting away from the heading
+       above it. */
     const soon = labels?.bio_direct_sales !== 'live';
 
     return (
-        <div className="mx-auto w-full max-w-[300px]">
+        <div className={`w-full max-w-[300px] ${alignRight ? "lg:ml-auto" : ""}`}>
             <div className="rounded-box border-2 border-white/20 bg-black p-3">
                 <div
                     className="rounded-box-sm p-4"

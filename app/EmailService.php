@@ -718,20 +718,33 @@ class EmailService
     /**
      * Send marketing email - respects user's marketing email preferences
      *
+     * 🚨 `$alsoRequire` is an ADDITIONAL gate, never a replacement. A campaign
+     * that has its own narrower category (birthday email, say) passes that
+     * column here: the mail then needs BOTH `marketing_emails_enabled` and the
+     * narrower switch to be on. Adding a new column must never quietly overturn
+     * an opt-out somebody already made against the broader one.
+     *
      * @param  User  $user  The user to send email to
      * @param  Mailable  $mailable  The email to send
+     * @param  string|array<int, string>  $alsoRequire  extra CATEGORIES columns that must also be on
      * @return void
      */
-    public static function sendMarketingEmail(User $user, Mailable $mailable)
+    public static function sendMarketingEmail(User $user, Mailable $mailable, string|array $alsoRequire = [])
     {
         try {
-            // Check if user has marketing emails enabled
-            if (! $user->marketing_emails_enabled) {
+            // ⚠️ `?? true` — a row that predates the column has it NULL, and a
+            // strict check reads NULL as opted-out and silently stops the mail.
+            // A missing preference always means opted IN.
+            if (! ($user->marketing_emails_enabled ?? true)) {
                 Log::info('EmailService::sendMarketingEmail - Skipping marketing email for user '.$user->id.' (marketing emails disabled)', [
                     'user_id' => $user->id,
                     'email' => $user->email,
                 ]);
 
+                return;
+            }
+
+            if (! self::categoriesAllow($user, $alsoRequire, 'sendMarketingEmail')) {
                 return;
             }
 
@@ -773,27 +786,27 @@ class EmailService
      * transactional mail must never route through here: it has no opt-out and
      * should use Mail::to() directly.
      *
-     * @param  string  $category  a column from EmailPreferenceController::CATEGORIES
+     * 🚨 SEVERAL CATEGORIES MAY BE PASSED, AND THEY ARE ALL REQUIRED. A mail with
+     * its own narrow switch (birthday reminders) passes that column AND the
+     * broader one it has always ridden — so a person who turned off creator
+     * updates last month does not start receiving birthday mail on the day a
+     * new, defaulted-on column appears. Every named column must be on.
+     *
+     * @param  string|array<int, string>  $category  column(s) from EmailPreferenceController::CATEGORIES
      */
-    public static function sendCategoryEmail(User $user, Mailable $mailable, string $category)
+    public static function sendCategoryEmail(User $user, Mailable $mailable, string|array $category)
     {
-        if (! in_array($category, EmailPreferenceController::CATEGORIES, true)) {
-            Log::warning('EmailService::sendCategoryEmail - unknown category, refusing to send', [
+        $categories = (array) $category;
+
+        if ($categories === []) {
+            Log::warning('EmailService::sendCategoryEmail - no category given, refusing to send', [
                 'user_id' => $user->id ?? null,
-                'category' => $category,
             ]);
 
             return;
         }
 
-        // Absent column (pre-migration row) is treated as opted in, matching the
-        // column default.
-        if (! ($user->{$category} ?? true)) {
-            Log::info('EmailService::sendCategoryEmail - skipped, user opted out', [
-                'user_id' => $user->id,
-                'category' => $category,
-            ]);
-
+        if (! self::categoriesAllow($user, $categories, 'sendCategoryEmail')) {
             return;
         }
 
@@ -806,15 +819,57 @@ class EmailService
 
             Log::info('EmailService::sendCategoryEmail - sent', [
                 'user_id' => $user->id,
-                'category' => $category,
+                'category' => $categories,
             ]);
         } catch (\Exception $e) {
             Log::error('EmailService::sendCategoryEmail - failed', [
                 'user_id' => $user->id ?? null,
-                'category' => $category,
+                'category' => $categories,
                 'error' => $e->getMessage(),
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Is every named preference column switched on for this user?
+     *
+     * 🚨 THE ONE PLACE CONSENT IS DECIDED. Never filter consent in SQL in a
+     * command: `where('x_enabled', 1)` excludes every row that predates the
+     * column, because a NULL there means opted IN, not opted out.
+     *
+     * 🚨 An unknown column is REFUSED rather than ignored. A mistyped category
+     * that fell through would send consent-free mail that looks exactly like a
+     * consent-checked one, and `CATEGORIES` deliberately contains no column for
+     * security, legal or transactional mail — so nothing routed through here can
+     * ever be one.
+     *
+     * @param  string|array<int, string>  $categories
+     */
+    private static function categoriesAllow(User $user, string|array $categories, string $caller): bool
+    {
+        foreach ((array) $categories as $column) {
+            if (! in_array($column, EmailPreferenceController::CATEGORIES, true)) {
+                Log::warning('EmailService::'.$caller.' - unknown category, refusing to send', [
+                    'user_id' => $user->id ?? null,
+                    'category' => $column,
+                ]);
+
+                return false;
+            }
+
+            // Absent column (pre-migration row) is treated as opted in, matching
+            // the column default.
+            if (! ($user->{$column} ?? true)) {
+                Log::info('EmailService::'.$caller.' - skipped, user opted out', [
+                    'user_id' => $user->id,
+                    'category' => $column,
+                ]);
+
+                return false;
+            }
+        }
+
+        return true;
     }
 }

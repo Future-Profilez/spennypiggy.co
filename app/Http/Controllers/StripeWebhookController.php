@@ -81,6 +81,7 @@ use App\StripeControl;
 use App\StripeControl as AppStripeControl;
 use App\Support\IdentityFailureReason;
 use App\Support\NotificationContext;
+use App\Support\PayoutDestinationAudit;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -5511,6 +5512,49 @@ class StripeWebhookController extends Controller
         }
     }
 
+    /**
+     * Record the bank account currently attached to a connected account, and
+     * alert if it is not the one we last saw.
+     *
+     * 🚨 NEVER THROWS AND NEVER RETURNS EARLY ON ERROR IN A WAY THAT MATTERS.
+     * A Stripe webhook that raises is a webhook Stripe retries; an alert is not
+     * worth putting a payout event into a retry loop.
+     *
+     * 🚨 Only the bank name, last four and country are read. Stripe does not
+     * expose a full account number and this platform must never hold one. The
+     * `fingerprint` is deliberately not used either — it is stable across
+     * accounts, which makes it a correlatable identifier rather than a label.
+     */
+    private function observePayoutDestination($account): void
+    {
+        try {
+            $accountId = $account->id ?? null;
+
+            if (! $accountId) {
+                return;
+            }
+
+            $external = $account->external_accounts->data[0] ?? null;
+
+            if (! $external) {
+                // Express accounts mid-onboarding have none yet. Nothing to
+                // compare, and recording an empty one would later read as a
+                // change when the creator finally adds their bank.
+                return;
+            }
+
+            $creator = User::where('account_id', $accountId)->first();
+
+            PayoutDestinationAudit::recordExternalAccountChange($creator, (string) $accountId, [
+                'last4' => $external->last4 ?? null,
+                'bank' => $external->bank_name ?? ($external->brand ?? null),
+                'country' => $external->country ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('observePayoutDestination failed', ['error' => $e->getMessage()]);
+        }
+    }
+
     private function handleAccountUpdated($account)
     {
         try {
@@ -5521,6 +5565,14 @@ class StripeWebhookController extends Controller
             // of the TTL — and the restriction notice below would point at an
             // action-required panel still showing nothing wrong.
             StripeAccountState::forget($account->id ?? null);
+
+            // 🚨 Security Checklist §3 — "payout-detail changes". This handler
+            // had no external_account branch at all, so a creator's BANK
+            // ACCOUNT could be swapped without the connected account id ever
+            // moving: `PayoutDestinationAudit::recordAccountChange` watches
+            // `users.account_id` and is structurally blind to this. Detection
+            // only — nothing is blocked, and no auth flow is touched.
+            $this->observePayoutDestination($account);
 
             if (($account->charges_enabled ?? false) === true) {
                 $creator = User::where('account_id', $account->id)->first();

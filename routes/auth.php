@@ -1382,6 +1382,15 @@ Route::get('/bio/go/{link}', [BioPageController::class, 'go'])
     ->name('bio.go');
 
 /*
+ * The featured tile's counting redirect. Three segments, same contract as
+ * `/bio/go` above: it takes a pot uuid and nothing else, and the destination is
+ * rebuilt server-side by `BioSellableItems`.
+ */
+Route::get('/bio/pot/{pot}', [BioPageController::class, 'pot'])
+    ->middleware(['check.block', 'throttle:120,1'])
+    ->name('bio.pot');
+
+/*
  * B stream — the supporter side of the bio page.
  *
  * `bio.buy` counts the tap, stamps `bio-link` attribution (CREATOR-generated,

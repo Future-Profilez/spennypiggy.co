@@ -67,14 +67,16 @@ export default function DiscoveryStatsPanel({
     live = false,
     lines = DISCOVERY_PROOF_LINES,
     tone = 'dark',
+    scale = 'panel',
     title = null,
     currencySymbol = '£',
     className = '',
 }) {
     const isLight = tone === 'light';
+    const heroScale = scale === 'hero';
     const skin = isLight
         ? {
-              panel: 'rounded-box border-black bg-white p-6 md:p-9',
+              panel: 'rounded-box border-black bg-white p-6 md:p-6',
               badge: 'rounded-box-xs border-black bg-[#E6EA7B] px-3 py-1.5 text-black',
               dot: 'bg-black',
               title: 'text-black/60',
@@ -83,7 +85,17 @@ export default function DiscoveryStatsPanel({
               empty: 'border-black/15 text-gray-600',
           }
         : {
-              panel: 'rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-9',
+              /*
+               * ⚠️ FRAMELESS AT HERO SCALE. `/creators/discovery` wraps this
+               * section in its own mint frame; a second border inside it reads
+               * as a box in a box and visually shrinks the figures the hero
+               * scale exists to enlarge. Done here rather than with `border-0
+               * !p-0` at the call site, which is a genuine conflicting-utility
+               * pair the class scanner does not flag.
+               */
+              panel: heroScale
+                  ? ''
+                  : 'rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-9',
               badge: 'rounded-box-xs border-2 border-[#E6EA7B]/60 px-3 py-1.5 text-[#E6EA7B]',
               dot: 'bg-[#E6EA7B]',
               title: 'text-white/60',
@@ -107,11 +119,26 @@ export default function DiscoveryStatsPanel({
         { value: `${currencySymbol}${formatMoney(earnings)}`, line: lines[2] },
     ];
 
+    /*
+     * 🚨 `scale='hero'` IS THE ONE LOUD MOMENT ON THE AD PAGE, AND IT HAS TO BE
+     * LOUD. Discovery is a counting system — its entire promise is "we can prove
+     * what exposure is worth" — so the tally IS the product, not an illustration
+     * of it. At 56px it read as a stat widget among other stat widgets, on a page
+     * whose client brief calls this "the most prominent section".
+     *
+     * ⚠️ The caption goes to MONO at this scale, deliberately. The house
+     * convention (see the slip in `Pages/Bio/Show.jsx`) is that anything the
+     * SYSTEM produced is set in mono — a receipt, a confirmation, a count. It
+     * gives the page a second voice, and it makes these read as measurements
+     * rather than as more marketing copy.
+     */
+    const isHero = scale === 'hero';
+
     return (
         <div className={`${skin.panel} ${className}`}>
             {!live && (
                 <span
-                    className={`mb-6 inline-flex items-center gap-2 font-gulfs text-[11px] uppercase tracking-[0.16em] md:text-[12px] ${skin.badge}`}
+                    className={`mb-6 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] ${skin.badge}`}
                 >
                     {/* A dot, not an icon — the chip has to read at a glance
                         beside three 56px numbers without becoming decoration. */}
@@ -131,16 +158,26 @@ export default function DiscoveryStatsPanel({
                 </p>
             )}
 
-            <div className="grid gap-8 md:grid-cols-3 md:gap-6">
+            <div
+                className={`grid ${isHero ? 'gap-10 md:grid-cols-3 md:gap-8' : 'gap-8 md:grid-cols-3 md:gap-6'}`}
+            >
                 {figures.map((figure) => (
                     <div key={figure.line}>
                         <div
-                            className={`font-gulfs text-5xl leading-[0.9] tracking-tight md:text-[56px] ${skin.figure}`}
+                            className={`font-gulfs leading-[0.82] tracking-tight ${skin.figure} ${
+                                isHero
+                                    ? 'text-[68px] sm:text-[88px] md:text-[104px]'
+                                    : 'text-5xl leading-[0.9] md:text-[56px]'
+                            }`}
                         >
                             {figure.value}
                         </div>
                         <p
-                            className={`mt-3 max-w-[30ch] text-sm leading-[1.5] md:text-base ${skin.line}`}
+                            className={
+                                isHero
+                                    ? `mt-4 max-w-[26ch] font-mono text-[12px] uppercase leading-[1.6] tracking-[0.06em] md:text-[13px] ${skin.line}`
+                                    : `mt-3 max-w-[30ch] text-sm leading-[1.5] md:text-base ${skin.line}`
+                            }
                         >
                             {figure.line}
                         </p>

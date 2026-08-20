@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Deliverable;
+use App\Support\ContentDownloadMonitor;
+use App\Support\SecureMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -91,7 +94,32 @@ class DeliveriesController extends Controller
             return redirect()->route('home')->with('error', 'Content URL not found.');
         }
 
-        return redirect($deliverable->deliverable_url);
+        // 🚨 Security Checklist §3 — "bulk content downloads". This is the
+        // generic handover: a shop, wish, pot or bill deliverable leaves the
+        // platform through THIS redirect, not through the task-only endpoint
+        // the monitor was first wired into. Recorded only once there is
+        // actually a file to hand over — a missing URL delivered nothing and
+        // must not count towards a download burst.
+        //
+        // Observation only: nothing here is gated on it, and the row names the
+        // deliverable's own uuid, never `deliverable_url` (see
+        // ContentDownloadMonitor).
+        ContentDownloadMonitor::record(
+            Auth::id(),
+            $deliverable->product_type ?: 'deliverable',
+            $deliverable->uuid,
+            'paid deliverable access link'
+        );
+
+        // 🚨 THIS is where a paid CDN link should be minted, and it is why the
+        // stored `deliverable_url` is deliberately left UNSIGNED in the
+        // database: a token written at purchase time expires and then serves a
+        // permanently broken link, and a leaked row would carry a live grant.
+        // Signed here, per click, the handover lasts one page load — and the
+        // receipt e-mails already point at this route rather than at the CDN
+        // (`route('deliverable.access', $deliverable->uuid)`), so the whole
+        // e-mail path inherits it.
+        return redirect(SecureMedia::sign($deliverable->deliverable_url));
     }
 
     /**

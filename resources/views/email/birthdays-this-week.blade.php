@@ -152,7 +152,13 @@
                     @if ($unsubscribeUrl)
                     <br>
                     <a href="{{ $unsubscribeUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
-                        Unsubscribe from these emails
+                        Turn off birthday emails
+                    </a>
+                    @endif
+                    @if (! empty($preferencesUrl))
+                    <br>
+                    <a href="{{ $preferencesUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
+                        Choose what you hear from us
                     </a>
                     @endif
                 </td>

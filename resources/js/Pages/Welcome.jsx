@@ -94,13 +94,13 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             <meta name="description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
             <meta property="og:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
             <meta property="og:description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
-            <meta property="og:image" content="/siteicon.png" />
+            <meta property="og:image" content="https://spennypiggy.co/og-image.png" />
             <meta property="og:url" content="https://spennypiggy.co/" />
             <meta property="og:type" content="website" />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
             <meta name="twitter:description" content="Keep 100% of what you earn. Sell content, memberships, paid tasks and your wishlist with fast payouts and Stripe-aligned safety." />
-            <meta name="twitter:image" content="/siteicon.png" />
+            <meta name="twitter:image" content="https://spennypiggy.co/og-image.png" />
         </Head>
 
         <Guest auth={auth.user} user={auth.user}>

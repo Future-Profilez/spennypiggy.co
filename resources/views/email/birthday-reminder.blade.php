@@ -148,8 +148,9 @@
             </tr>
 
             {{-- Footnote: says plainly why this arrived and how to stop it.
-                 🚨 The unsubscribe is CATEGORY-SPECIFIC and works today — it
-                 turns off creator updates and nothing else. --}}
+                 🚨 The unsubscribe is CATEGORY-SPECIFIC — it turns off BIRTHDAY
+                 email and nothing else. The second link opens the full
+                 preference centre, which needs no login. --}}
             <tr>
                 <td align="center"
                     style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#9A9A9A;
@@ -158,7 +159,13 @@
                     @if ($unsubscribeUrl)
                     <br>
                     <a href="{{ $unsubscribeUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
-                        Turn off creator updates
+                        Turn off birthday emails
+                    </a>
+                    @endif
+                    @if (! empty($preferencesUrl))
+                    <br>
+                    <a href="{{ $preferencesUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
+                        Choose what you hear from us
                     </a>
                     @endif
                 </td>

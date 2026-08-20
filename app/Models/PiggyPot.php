@@ -42,6 +42,10 @@ class PiggyPot extends Model
         'reward_description',
         'deadline',
         'is_pinned',
+        // Taps on the featured tile of `/{username}/bio` — see the bio page's
+        // counting redirect. Shared column: keep both apps' models in step.
+        'bio_click_count',
+        'bio_last_clicked_at',
         'enable_leaderboard',
         'allow_anonymous',
         'status',
@@ -52,6 +56,7 @@ class PiggyPot extends Model
         'schedule_released_at' => 'datetime',
         'deadline' => 'datetime',
         'is_pinned' => 'boolean',
+        'bio_last_clicked_at' => 'datetime',
         'enable_leaderboard' => 'boolean',
         'allow_anonymous' => 'boolean',
     ];

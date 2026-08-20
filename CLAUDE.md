@@ -29,14 +29,47 @@ Users can opt in/out of marketing emails, with a one-click unsubscribe link and 
 - `resources/js/Pages/EmailPreference/Index.jsx` (manage preferences).
 - Checkout opt-in checkbox is rendered by the live checkout page/controller (the old orphaned `Pages/checkout/GlobalCheckout.jsx` was removed in the unused-file cleanup).
 
-### Preference categories (July 2026)
-Users control each category separately, so turning off promotions does not silence product announcements. `EmailPreferenceController::CATEGORIES` is the list: `product_updates_enabled`, `creator_updates_enabled`, `reactivation_emails_enabled`, `push_notifications_enabled` (migrations `2026_07_20_000000` / `2026_07_20_000002`, all default true). `marketing_emails_enabled` stays separate because it also stamps `marketing_unsubscribed_at`.
+### Preference categories (July 2026, extended 23 Aug 2026)
+Users control each category separately, so turning off promotions does not silence product announcements. `EmailPreferenceController::CATEGORIES` is the list: `product_updates_enabled`, `creator_updates_enabled`, `birthday_emails_enabled`, `reactivation_emails_enabled`, `abandoned_checkout_emails_enabled`, `restock_emails_enabled`, `push_notifications_enabled` (migrations `2026_07_20_000000` / `2026_07_20_000002` / `2026_07_30_000001` / `2026_07_30_100001` / `2026_08_23_300000`, all default true). `marketing_emails_enabled` stays separate because it also stamps `marketing_unsubscribed_at`.
 
 - **Security, legal and transactional mail has no switch by design** — it must always send. Never add one, and never route it through a consent-checking helper.
 - **A missing/null preference always means opted IN.** Every read path uses `?? true`; DB defaults aren't applied to a just-created in-memory model, so a strict check would wrongly read as opted-out.
 - `updatePreferences` validates every field as `sometimes`, so the page can submit one toggle without clobbering the others.
 - **Category-aware unsubscribe:** `generateUnsubscribeToken($user, $category)` signs the category into the link, so an email footer can turn off just that category. Omit the category and it behaves as before. The audit `source` stays exactly `unsubscribe_link` for the marketing opt-out (the admin view/CSV export filters on that literal); category links use `unsubscribe_link:<column>`.
 - UI: `resources/js/Pages/EmailPreference/Index.jsx` renders one switch per category plus an always-on explainer card.
+
+### 🚨 Email Preferences & Contact Management Centre (23 Aug 2026)
+
+Developer Master Plan, 19 Aug 2026, §E. Extends the existing system — nothing was rebuilt.
+
+- 🚨 **`EmailPreferenceController::catalogue()` IS THE ONE DEFINITION OF THE CENTRE** — key, title, plain-language description and section, read by both preference pages so the same switch can never be described two ways. A switch that is not in `CATEGORIES` cannot appear in it, and **security/legal/transactional mail has no column, so it can never appear at all**. `Pages/EmailPreference/Index.jsx` renders whatever the server sends; it holds no category list of its own.
+- 🚨 **A NON-ACTIVE CREATOR COULD NOT UNSUBSCRIBE, AND TWO SEPARATE THINGS CAUSED IT.** `/email-preferences` sits inside the `auth` group, and `CheckSuspendedUser` (in the **`web` middleware group**, so it runs on every web request) force-logs-out and bounces any account with `suspended_account = 1` — so a suspended creator can neither reach that page nor ever sign in to reach it. Their only control was the emailed link, and that link **expired after 24 hours**: an email opened two days later answered *"Invalid or expired unsubscribe link"* and dropped them on the homepage with no way to stop the mail at all, for ever. Both are fixed:
+  - **`LINK_TTL_DAYS = 30`** for every emailed preference link. `generateCheckoutReminderOptOut` already used 30 days for exactly this reason — *a dead unsubscribe link is worse than no link at all*.
+  - **A signed, no-login preference centre**: `manage()` / `updateManaged()` render and write the FULL list without a session. Same page component, `signed: true` → `GuestLayout`, posts to a signed URL the server supplies.
+  - **The one-click unsubscribe now lands on that centre** instead of `/`. The opt-out is still written *before* the redirect — one click still unsubscribes — but the person then sees what else is on, rather than choosing between one category and silence.
+- ⚠️ **`generateManageToken()` / `generateManageUpdateToken()` return NULL when the route is not registered**, deliberately. `URL::temporarySignedRoute()` **throws** on an unknown route name and these are called from inside `Mailable::content()` — a missing route line would not produce a missing footer link, it would take the whole email down. Every caller and both Blade footers guard on null, and the unsubscribe redirect falls back to `/`.
+- ⚠️ **The signed page gets a whitelisted, MASKED account shape (`na***@example.com`), never the `User` model**, and both signed responses set **`Referrer-Policy: no-referrer`** (a signed URL can be forwarded; same precaution `GuestPurchaseController` takes). `SecurityHeaders` only sets that header when one is not already present — do not relax that guard.
+- **`applyPreferences()` is the ONE write path** shared by both pages: `sometimes` rules, `?? true` comparisons, an audit row per changed column. Audit sources: `settings_page` / `settings_page:<column>` (signed-in), **`preference_centre_link`** (no-login page), `unsubscribe_link` / `unsubscribe_link:<column>` (email links — the bare literal is what the admin view and CSV export filter on, unchanged).
+- 🚨 **NO AUTOMATIC RESUBSCRIBE EXISTS AND NONE MAY BE ADDED WITHOUT LEGAL SIGN-OFF.** The brief flags automatic resubscribe triggers as needing legal review *before* implementation. `handleMarketingOptIn` is the place one would go and is deliberately not one — it requires a `marketing_opt_in` the person submitted. Under UK PECR/GDPR an opt-out is withdrawn consent; inferring a new one from a purchase or a return visit is a lawyer's decision, not a commit.
+- **Routes needed in `routes/web.php`** (outside the `auth` group, beside `email.unsubscribe`; signature checked in the controller, not by the `signed` middleware, so a stale link explains itself instead of 403ing):
+  ```php
+  Route::get('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'manage'])
+      ->name('email.preferences.manage');
+  Route::post('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'updateManaged'])
+      ->name('email.preferences.manage.update');
+  ```
+  ⚠️ Both are single-segment-prefixed but sit under `/email-preferences/`, so the `/{username}/{page?}` catch-all is not a hazard here — still declare them **above** `require __DIR__.'/auth.php'`. Run `php artisan ziggy:generate` after adding them. Until they exist the feature is inert by design (null links, `/` fallback) and `EmailPreferenceCentreTest::setUp` registers them at runtime — delete that `setUp`, not the tests, when the real lines land.
+
+### 🚨 Birthday email has its own switch — and it is an ADDITIONAL gate (23 Aug 2026)
+
+`birthday_emails_enabled` (migration `2026_08_23_300000`, default true). Discovery Phase 4 shipped with the weekly campaign on `marketing_emails_enabled` and the per-creator reminder on `creator_updates_enabled`; neither column MEANS "birthday emails", so stopping the birthday round-up cost you every promotion, or every piece of news about every creator you support.
+
+- 🚨 **THE NEW COLUMN NEVER REPLACES THE ONE THE MAIL ALREADY RODE.** `birthday:remind` passes `SendBirthdayReminders::CATEGORY = ['birthday_emails_enabled', 'creator_updates_enabled']` and `birthday:weekly` passes `sendMarketingEmail($user, $mailable, 'birthday_emails_enabled')` — **every named column must be on**. A new, defaulted-on column must never quietly overturn an opt-out somebody already made; without this a supporter who turned off creator updates last month would have started receiving birthday mail the day the column landed.
+- **`EmailService::sendCategoryEmail()` now takes `string|array`** and `sendMarketingEmail()` takes an optional third `$alsoRequire`. Both route through the private `categoriesAllow()` — the ONE place consent is decided. An unknown column is **refused**, not ignored: a mistyped category that fell through would send consent-free mail that looks exactly like consent-checked mail.
+- 🚨 **Fixed while here: `sendMarketingEmail` read `! $user->marketing_emails_enabled` with no `?? true`**, so a row predating the column (NULL) read as opted-OUT and was silently skipped — the exact fault this file's own rule warns about, in the platform's largest fan-out.
+- **Both birthday footers now carry TWO links**: the narrowest possible opt-out (`category=birthday_emails_enabled` — stops both birthday sends, nothing else) and "Choose what you hear from us" → the no-login centre. *Stop this one* and *choose what I do want* are different intentions, and a footer offering only the first is what makes people opt out of everything.
+- ⚠️ **Admin app needs nothing.** It reads preference columns as raw attributes with `?? true` (`SupporterOutreachController`), casts none of them except `birthday_discovery_opt_in`, and never reads this one. Migration in this app only. ⚠️ Do not confuse `birthday_emails_enabled` (the RECIPIENT's consent to receive birthday mail) with `birthday_discovery_opt_in` (the CREATOR's consent to be shown on Birthday Discovery) — different people, different decisions.
+- Tests: `tests/Feature/EmailPreferenceCentreTest.php` (15), alongside `EmailPreferenceTest` (4) and `CommunicationPreferenceCategoriesTest` (14). `BirthdayDiscoveryTest`'s footer assertion was updated to the narrower category.
 
 ### Sending email
 ```php
@@ -45,6 +78,13 @@ EmailService::sendMarketingEmail($user, new MarketingMail($data));
 
 // Product/creator/reminder categories — respects that category's column
 EmailService::sendCategoryEmail($user, new ProductUpdateMail($data), 'product_updates_enabled');
+
+// Several categories — ALL must be on. Use this when a mail gains a narrower
+// switch but must keep honouring the broader one it already rode.
+EmailService::sendCategoryEmail($user, new BirthdayReminder(...), ['birthday_emails_enabled', 'creator_updates_enabled']);
+
+// Marketing with an extra gate on top of marketing_emails_enabled
+EmailService::sendMarketingEmail($user, new BirthdaysThisWeek(...), 'birthday_emails_enabled');
 
 // Security, legal, receipts — no opt-out exists
 Mail::to($user->email)->send(new PasswordReset($data));
@@ -466,15 +506,26 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
   public profile is not the same permission as appearing in our advertising. The frame
   shows the real page's layout with anonymous placeholders and links out to the live page.
   Swap it for a screenshot once Jack confirms the creators have agreed.
-- 🚨 **A3 SHIPS SECTIONS 3 AND 6 AS "COMING SOON" WHERE THE BRIEF SAYS "LIVE NOW"** — the
-  one deliberate departure on these pages, flagged rather than decided quietly.
+- ✅ **A3's SECTIONS 3 AND 6 WENT LIVE ON 20 AUG 2026** — they shipped as "COMING SOON"
+  against the brief's own "LIVE NOW" label, the one deliberate departure on these pages,
+  and `bio_direct_sales` flipped in the same release that carries the B stream.
+  🚨 **The flip must travel with the code it claims** — the label lives in `config/discovery.php`,
+  so it deploys with the app; flipping it on a branch that ships before B would put a LIVE NOW
+  claim on a capability no creator has. Verified before flipping: `bio.buy` routed, the
+  `creator_bio_items` migration ran, the editor's four `bio.items.*` endpoints exist, and
+  `BioDirectSalesTest` passes (19). `DiscoveryMarketingTest` **inverted** its gate rather than
+  deleting it — while the label is live, the buying path must exist or the build fails.
+  🚩 **One clause of section 6 is still ahead of the product and is a copy question for Jack:**
+  *"Choose which items appear, in what order, and what it looks like."* The first two are live
+  and the editor carries hide/show and custom button text, but there is **no theme, colour or
+  appearance control** in `Pages/Bio/Edit.jsx`. The historical reasoning for the departure:
   **`/{username}/bio` already existed** (`BioPageController`, `BioLinkController`,
   `Pages/Bio/Show.jsx`, editor at `/bio-links`) but its own docblock states it has **"no
   checkout, no price and no payment method"**: its rows link out to profile pages. Selling
   from the bio page is the B stream, due Fri 28 Aug — three days AFTER the plan puts the ad
   page live on Tue 25. The plan lists *"Mark anything LIVE NOW in marketing that is not
   live in the product"* under **Never**, and a standing prohibition beats a section label.
-  The `bio_direct_sales` key flips both sections the day B lands, no deploy.
+  That key has since flipped — see the ✅ note above; this paragraph is the history.
   ⚠️ `bio_phone` (section 4) IS live and is labelled so — that page genuinely renders no
   layout and opens in one scroll.
 - ⚠️ **The brief bans "instant" / "immediate" / "seconds" from A3 outright** (no settlement
@@ -674,6 +725,62 @@ Lambda), so nothing shipped. Both apps now send `X-Content-Type-Options`, `X-Fra
   network-dependent, and it failed a password that met our own policy (`Password123!` is 12
   characters but is in the breach corpus). The verifier is offline in `testing` only.
 
+## 🚨 Discovery Phase 4 — Birthday Discovery (21 Aug 2026, spennypiggy.co)
+
+`App\Services\Discovery\BirthdayDiscoveryService` answers "whose birthday is it, who may
+be shown, and what may be shown about them" for all three surfaces: `birthday:remind`
+(daily 09:30, three stages — 7d / 1d / on the day), `birthday:weekly` (daily 09:45, the
+Monday "Birthdays This Week" campaign) and `/discover/birthdays`.
+
+- 🚨 **THE BIRTH YEAR IS NEVER DISPLAYED ANYWHERE.** `users.date_of_birth` is **not** in
+  `User::$hidden` on either app, so nothing but discipline keeps a year off a public card
+  or out of an e-mail sent to strangers. Three structural guards: no query in the service
+  selects `date_of_birth`; `card()` whitelists **nine** keys by name (never a spread); and
+  `birthdayLabel()` builds "12 March" from a fixed month table with **no date object to
+  format**. New columns `birthday_day` / `birthday_month` / `birthday_discovery_opt_in`
+  (migration `2026_08_21_200000`) exist so the year never has to be in scope.
+- **Opt-in is the creator's own, default FALSE.** A birthday already on file is not consent
+  — the migration backfills day/month but never the switch. `birthday_discovery_opt_in` is
+  `$fillable` (the creator sets it on their own profile); `birthday_day` / `birthday_month`
+  are **cast-only and derived** by `ProfileController` from `date_of_birth`.
+- 🚨 **ONE COPY PER PERSON for the Monday campaign.** It claims a row in
+  `engagement_notifications` keyed `type = birthdays_this_week` + `dedup_key = <ISO week>`
+  — **the week only, no creator id** — so supporting eight of that week's creators still
+  produces one e-mail. The per-creator REMINDER is deliberately the opposite: one per
+  creator, keyed `{creatorId}|{stage}|{year}`.
+- 🚨 **Eligibility is DUPLICATED from `CreatorRecommendationService::eligibleCreators()`
+  clause for clause** (role 1, not suspended, `profile_status_lock = 2`, approved avatar,
+  name + username, `exclude_from_discovery` off) plus opt-in and ≥1 live item. The
+  duplication is deliberate — Phase 3's service is owned elsewhere — so a data-provider
+  test asserts BOTH services agree on every clause. Change one, change the other.
+- **Sending ships OFF.** `DISCOVERY_BIRTHDAY_REMINDERS` / `DISCOVERY_BIRTHDAYS_THIS_WEEK`,
+  both default false; a flag-off run reports and claims nothing (so the first real send is
+  never suppressed). The collection page is **not** flag-gated — it answers to the DATA
+  (`collection_min_creators`, default 3) and renders a coming-soon state below it, and the
+  campaign waits for the same number so an e-mail CTA never lands on a greyed page.
+- 🚨 **A SUSPENDED ACCOUNT IS NOT MAILED — found by the tests, 21 Aug 2026.** `birthday:weekly`
+  is the platform's largest fan-out (every account with an address) and had **no
+  `suspended_account` filter**, so a suspended account received a promotional round-up;
+  `birthday:remind` had the same hole and it is reachable in ordinary data, because a
+  supporter is selected out of `financial_transactions` and somebody who paid before being
+  suspended stays in that list for ever. Both now filter. `AnnounceSubscriptionPolicy` is
+  the precedent — it excludes them in its send AND its remaining-count query.
+- **Attribution:** reserved keys `birthday-reminder` and `birthdays-this-week`, both
+  SP-generated, tagged **server-side** via `DiscoverySources::profileUrl()` — never
+  hand-built in Blade. ⚠️ Both mailables' `$creator`/`$creators` are **`protected`, not
+  public**: `Mailable::buildViewData()` merges public properties OVER `Content(with: …)`,
+  which silently replaces the tagged array with the raw one (see the section below on that
+  trap). Asserted against rendered HTML, not the payload.
+- **Unsubscribe works on day one** on every birthday e-mail — the reminder is
+  category-class (`creator_updates_enabled`, via `EmailService::sendCategoryEmail`), the
+  weekly campaign is marketing-class (`sendMarketingEmail`). Neither may use `Mail::to()`.
+- **Admin app:** the three columns are mirrored as **casts only** in its own `User` —
+  deliberately none of them `$fillable`, because the two derived columns must keep agreeing
+  with `date_of_birth` and the opt-in is the creator's own campaign consent. A back-office
+  opt-out, if ever needed, is a validated endpoint writing `forceFill()` + an audit note,
+  exactly like `exclude_from_discovery`.
+- Tests: `tests/Feature/BirthdayDiscoveryTest.php` (36).
+
 ## 🚨 The bio page sells now — Link in Bio, B stream (21 Aug 2026, spennypiggy.co)
 
 `/{username}/bio` carries item cards that lead, in one tap, straight into the checkout
@@ -752,8 +859,8 @@ method" — is SUPERSEDED and has been rewritten in place.** Anything still quot
     records Coinflow (spec 6 Aug 2026); the 19 Aug plan says Bridge and supersedes older
     references. Everything built here is provider-agnostic and neither name is
     user-facing — but the two documents disagree and only the client can settle it.
-- ⚠️ **`config/discovery.php`'s `bio_direct_sales` key must flip to `live` the day this
-  ships** — that is what turns A3's sections 3 and 6 from COMING SOON to LIVE NOW.
+- ✅ **`config/discovery.php`'s `bio_direct_sales` key flipped to `live` on 20 Aug 2026**,
+  in this release — that is what turned A3's sections 3 and 6 from COMING SOON to LIVE NOW.
 - ⚠️ The Tip amount UI is appended INSIDE `Show.jsx`'s existing `Stablecoin` component
   rather than replacing it, so A3's copy of that card (which the brief requires to look
   "exactly as it appears in the product") is still a truthful subset.
@@ -887,6 +994,220 @@ artisan command, an SSR render — and then it serves the wrong payload in silen
 `forgetCaches()` forgetting the bare key, so a creator editing what their bio page sells
 would have gone on serving the stale public list until the TTL expired — exactly when it
 is most wrong. Both variants are now forgotten.
+
+## The bio page redesign + its three product gaps (20 Aug 2026, spennypiggy.co)
+
+`/{username}/bio` was reworked against client-supplied link-in-bio references, over four
+passes — mint-with-frames was rejected three times before the dark direction below.
+
+**Design rules this page now follows (`Pages/Bio/Show.jsx`) — settled after six passes;
+mint-with-2px-frames, then a full dark theme, were both rejected:**
+- **Ground is `#FFF6EC`** — the app's own warm cream (Dashboard uses it), not a colour
+  invented for this page. Surfaces are white; **every drawn line is 1px black**
+  (`border border-[#000]`). ⚠️ Never `border-black`: that class is a `border:2px` SHORTHAND
+  in `resources/css/index.css` and silently resets the width.
+- **The link tiles are colour-blocked, one fixed tint per module** (`LINK_TINTS`, keyed on
+  the server's `target_type` so a reorder never re-colours a tile the creator learned). All
+  brand pastels, all with black type and a black edge.
+- **The hero is RESPONSIVE IN KIND, not just in size:** on a phone the cover is full-bleed
+  and fades out of its own bottom edge; at `md` it is a framed card. ⚠️ The fade is a
+  **mask** (`mask-image` + `-webkit-mask-image`, both, switched off at `md`) — a wash in the
+  page colour turned a dark cover grey. 🚨 `mask-image` CREATES A STACKING CONTEXT, so the
+  content block needs `relative z-10` or the masked cover paints over the avatar and its
+  fade dims it.
+- 🚨 **Top spacing belongs to the shell (`md:pt-5`), never as `mt` on the hero.** A margin on
+  the first child collapses through the container, and `html`/`body` are BLACK in this app —
+  that gap rendered as a black band across the top of the desktop page.
+- **`gulfs` is spent on the creator's name (24px) and the small section rules, nowhere
+  else**; everything a person reads is Poppins with real weights. Creator-authored text is
+  never display caps — it mangles long titles and cannot render accents. The verified tick is
+  sized through the component's own `SIZES` map (`size="lg"`) and centred with
+  `items-center`, never with a Tailwind text class.
+- **Item cards are full-width product ROWS; internal links are a 2-up TILE grid.** Navigation
+  is not merchandise — seven full-width nav rows outweighed everything for sale. ⚠️ Tile
+  labels are `line-clamp-2` **and `break-words`**, with smaller type/padding below `sm`:
+  "Memberships" is one word, so clamping alone let it overflow a 320px tile. ⚠️ The odd tile
+  spans both columns and `bills` claims that slot (longest label), falling back to whichever
+  label is longest.
+- **Three radii only** — `rounded-box` for things that contain things, `rounded-box-sm` for
+  what sits inside one (incl. the announced-tip strip, an alert ROW not a panel),
+  `rounded-box-xs` for badges and progress bars. Verified live: 24/16/10 at 390px and
+  30/20/12 at 1440px, no other radius on the page but the circular social chips.
+- **One accent, and it belongs to the money.** Pink is buy buttons and the "Buy from me"
+  rule; **mint is progress**. Black on pink, never white.
+- **An announced-but-unbuilt feature gets a line, not a form.** The stablecoin block ran
+  ~900px of disabled checkout — bigger than everything buyable — and is now one dashed strip;
+  the wired `TipAmounts` picker renders only when BOTH switches say live.
+
+**Three product gaps found and fixed:**
+- 🚨 **New route `GET /bio/pot/{pot}` (`bio.pot`)** — the featured tile was the only element
+  counting nothing and the only one that could reach a checkout without a click-time
+  `bio-link` stamp (the page itself may be CDN-cached with its Set-Cookie stripped). Same
+  contract as `/bio/buy`: uuid in, destination rebuilt server-side, pot re-checked as
+  publicly visible at tap time. It also fixes the destination — the old link dropped the
+  visitor on the pot GRID because it carried no `?pot=`.
+- 🚨 **Migration `2026_08_20_000100`: `piggy_pots.bio_click_count` + `bio_last_clicked_at`.**
+  Shared DB — `PiggyPot` in BOTH apps carries them in `$fillable`. Surfaced to the owner in
+  the bio page's owner bar; the featured pot usually has no `creator_bio_items` row to count
+  on.
+- 🚨 **The featured pot is never also a card** — a creator who had selected their pinned pot
+  as an item got it twice on one screen. `card()` returns `listing_uuid` for a pot and
+  `BioPageController::show()` drops the duplicate; the hero survives.
+- ⚠️ **Bio payload caches are now busted by the LISTING, not only by the bio editor.**
+  `AppServiceProvider::registerBioCacheBusting()` hooks `saved`/`deleted` on Shop, WishItem,
+  Bills, Membership, PiggyPot and Task (`creator_id`, not `user_id`) →
+  `BioPageService::forgetCachesForUserId()`. A price corrected in Shop kept being advertised
+  for up to 60s on the page the creator shares everywhere. The admin app has its own cache
+  store, so an admin-side edit still waits out the TTL — bounded, deliberate.
+- ⚠️ **The empty state keys on SELLABLE things** (`items.length === 0 && !featured`), not on
+  links too: internal buttons are derived, so a creator with one post has seven of them and
+  the one creator with nothing buyable used to get no prompt at all. Owner copy points at
+  the editor, visitor copy at the profile.
+
+## 🚨 Identity / KYC data now has a retention job — `identity:prune` (23 Aug 2026, spennypiggy.co)
+
+Identity data was the only class of personal data on the platform with **no prune at all**,
+while `item-views:prune`, `help:prune`, `signup-leads:prune`, `notification-logs:prune` and the
+activity-feed sweep all bound their tables. The one deletion anyone ever wrote for it is still
+**commented out** at `ProfileController::deleteAccount` (`// UserDocuments::where(...)->delete();`).
+
+**What is actually held locally.** Verification is Stripe-hosted end to end —
+`StripeController::createVerificationSession()` mints the session, the document never touches
+this server, and on a pass `StripeWebhookController` calls
+`identity->verificationSessions->redact()`. Two residues survive that:
+
+- **`user_documents`** — legacy SumSub-era rows. ⚠️ **Every `front`/`back` value on the dev
+  database is a bare 36-char UUID**, and admin.spennypiggy.co's `UserDocuments` model appends
+  `front_url`/`back_url` = `https://ucarecdn.com/{value}/`, rendered as an `<img>` in
+  `Admin/Users/details/Documents.jsx` — an unsigned, non-expiring public CDN URL for a photo ID.
+  ⚠️ **Nothing writes new rows.** The only writer is `Auth\TestController::reviewWebhook()`,
+  which instantiates `App\SumSubClient` — **a class that does not exist in this codebase**, so
+  the path fatals before it inserts. The table has been frozen since 2024-12-19.
+  🚨 **CONFIRMED LIVE, 23 Aug 2026 — these are not hypothetical.** A `HEAD` of all 8
+  references on the dev database (4 rows × front + back) returned **HTTP 200 `image/jpeg`,
+  7KB–1.5MB each**: three ID cards and a residence permit, readable by anyone holding the
+  URL, with no authentication and no expiry. Do the same check against production and delete
+  what you find — `identity:prune` only reaches rows past the retention window.
+- **payload columns on `users`** — `identity_verification_details`, `identity_verification_error`,
+  `identity_admin_notes`, `kyc_error`.
+
+🚨 **The command clears evidence, never the attestation.** `identity_status`,
+`identity_verified_at`, `identity_admin_status`, `identity_admin_reviewed_at` and
+`kyc_verification_status` are the **outcome** of a check and are **never touched** — nulling them
+would silently un-verify a live creator and destroy the platform's own proof a check ran. Never
+add them to `PruneIdentityData::PAYLOAD_COLUMNS`.
+
+🚨 **It is REPORT-ONLY until armed.** `IDENTITY_RETENTION_ENABLED` defaults to **false**, and the
+reason is structural, not timidity: **this schema has no legal-hold marker of any kind** — no
+`legal_hold` column, flag, model or table in either app. Every other exclusion is derived from a
+marker that provably exists; "under legal/regulatory hold" cannot be expressed, so a human arming
+the flag stands in for it. Deleting identity evidence during a live dispute is worse than keeping
+it too long.
+
+**Exclusions — a user matching ANY of these keeps their identity data regardless of age:**
+
+| Hold | Marker (all verified against the live schema) |
+|---|---|
+| Suspended account | `users.suspended_account != 0` |
+| Open dispute | `disputes.creator_id` (= **`users.uuid`**, per `Dispute::creator`) with `resolved_at IS NULL` **or** status outside `won`/`lost`/`warning_closed` |
+| Open early fraud warning | `early_fraud_warnings.closed_at IS NULL`, owner resolved **through `payments`** — ⚠️ the model's `creator()` relation points at a `creator_id` the table does not have |
+| Payment still moving | `payments.status` in `initiated`/`step_up`/`review_hold`/`processing`/`disputed`/`blocked`/`failed`, or `platform_holds_funds = 1` |
+| Payout not settled | `payout_records.status` outside `paid`/`zero_payout` — ⚠️ **`failed` is NOT settled**: `requeueFailedRunPayout()` retries it, so the money is still owed |
+| Earnings unpaid / reserve held | `financial_transactions.payout_run_id IS NULL` **or** `reserve_status = 'held'` |
+
+- An **orphan** `user_documents` row (a `user_id` with no `users` row) is releasable — every
+  exclusion is a property of a user who no longer exists.
+- Config `config/identity_retention.php`. Env: **`IDENTITY_RETENTION_ENABLED`** (default `false`,
+  arms deletion), **`IDENTITY_RETENTION_DAYS`** (default `1825` = five years, deliberately the UK
+  MLR 2017 statutory maximum, so out of the box it finds almost nothing — the window is a
+  compliance decision), **`IDENTITY_RETENTION_CHUNK`** (default `500`).
+🚨 **THE ROW IS NOT THE DOCUMENT.** Deleting only the `user_documents` row leaves the photo
+ID on a permanent public CDN URL with **nothing left pointing at it** — unfindable, and
+impossible to clean up afterwards. That is strictly worse than keeping the row, so the
+command deletes the **Uploadcare object first** (`Uploadcare::getApiObj()->file()->deleteFile()`,
+bare-uuid values only — a Stripe/SumSub id is not ours to delete) and **keeps any row whose
+CDN delete failed**, so the next run retries it. "Already gone" counts as success.
+`IDENTITY_RETENTION_DELETE_CDN` (default true) and `--keep-files` disable it; both print a
+warning, and it is forced **off in `testing`** via phpunit.xml so the suite never calls
+Uploadcare.
+
+- `identity:prune {--days=} {--dry-run} {--details} {--keep-files}`, scheduled **daily 03:45** (clear of the
+  03:40/03:50/03:52/03:55/03:57 prunes — on Vapor every command due in the same minute shares one
+  cli-timeout budget). It never calls Stripe.
+- ⚠️ **`user_documents` was in NO migration in this repo** — it existed only on live databases, so
+  nothing touching it could be tested. `2026_08_23_200000_create_user_documents_table.php` adds a
+  **guarded** create (no-op where the table exists) mirroring the admin app's
+  `2026_04_28_000006_create_testing_core_tables`. Its `down()` is a deliberate **no-op**: it would
+  otherwise drop a production table it never created.
+
+## 🚨 Paid content is signed; public media is NOT (23 Aug 2026, spennypiggy.co)
+
+`App\Support\SecureMedia` is the ONE place a PAID deliverable's CDN URL is signed.
+Everything a supporter buys used to resolve to a bare, permanent
+`https://ucarecdn.com/{uuid}/…` — no expiry, no revocation. The access control around it
+is real but only ever **HIDES** the URL (`UserProfileService::stripLockedMedia()`,
+`Shop::withDeliverable()`, `Membership::$hidden`), so anyone who ever paid kept a
+shareable link **after a refund, a cancelled membership, a chargeback, or the listing
+being deleted**.
+
+- 🚨 **SHIPS OFF (`MEDIA_SECURE_ENABLED`, default false) AND MUST STAY OFF UNTIL A HUMAN
+  ENABLES SECURE DELIVERY IN THE UPLOADCARE DASHBOARD** (Project → Delivery) and pastes
+  the hex CDN secret it issues into `UPLOADCARE_SECURE_KEY`. With the account setting off
+  a token is an ignored query parameter (harmless, but buys nothing); with the setting on
+  and the flag off, **every paid download 403s**. Verify with **`php artisan
+  media:secure-check`** before flipping anything — it reports signed vs unsigned status
+  codes separately, because the key being wrong and the setting being off are different
+  failures that look identical.
+- ⚠️ **`UPLOADCARE_SECURE_KEY` is not necessarily `UPLOADCARE_SECRET_KEY`.** `SecureMedia`
+  falls back to the API secret (which on this project is a valid 20-char hex string, so the
+  fallback works) — but if the project's CDN secret differs, that fallback signs with the
+  wrong key and 403s everything while looking exactly like a misconfigured account.
+- 🚨 **SIGNING THE WRONG THINGS IS WORSE THAN SIGNING NONE.** A token breaks edge caching
+  and OG/link previews and puts an expiry on something meant to be permanent. `SecureMedia`
+  does not decide what is paid — **the call site does**.
+  - **SIGNED:** `WishItem::reward_url` · `WishItem::content_file_url` ·
+    `Bills::content_file_url` · `Membership::content_file_url` · `Shop::reward_file_url` ·
+    `StripePaymentItems::message_url` · `RewardService::media()` (the ONE builder for the
+    unified `reward_file` column, so it covers task and Piggy Pot, which have no accessor
+    of their own) · `Post::image_url` **only when `isGatedContent()`** ·
+    `DeliveriesController`'s redirect · `Api\DeliverableController`'s `content_url` ·
+    the `$cdn()` closure on the buyer's own Support History feed.
+  - **DELIBERATELY UNSIGNED:** every `perma_link` card thumbnail (Wish/Bill/Membership/
+    Shop/Pot/Task) · `User::avatar_url` / `cover_url` / `social_image_url` ·
+    `Post::image_url` on a `public` post · `SeoTemplateService` / `ItemShareService` /
+    `CatalogueService` OG images · `PresetCovers` · `UploadcareThankYouImageService` ·
+    a creator's own non-Uploadcare link (a Dropbox URL is returned untouched).
+- ⚠️ **The operation chain is preserved byte-for-byte and the token goes AFTER it.** A paid
+  reward file is never width-capped (see the `MediaUrl` section) and signing must not
+  become a second place that re-processes it. The ACL is `/{uuid}/*`, not `/{uuid}/` —
+  our paid URLs carry ops, and the bare ACL would authorise only the untransformed original.
+- **Token lifetime is 3600s (`MEDIA_SECURE_TTL`), not the 300s the old dead signer used.**
+  300s can expire mid-download of a large video, and a 4GB download that dies at 40% is a
+  support ticket. `MEDIA_SECURE_DELIVERY_TTL` (30 days) exists for links that leave the
+  site in an e-mail; it is clamped at both ends (60s floor, 30-day ceiling).
+- 🚨 **THE STORED `deliverables.deliverable_url` COLUMN IS DELIBERATELY LEFT UNSIGNED.**
+  A token written at purchase time expires and then serves a permanently broken link, and a
+  leaked row would carry a live grant. Signing happens at **read** time in
+  `DeliveriesController` (per click) and `Api\DeliverableController`. Receipt e-mails
+  already point at `route('deliverable.access', $uuid)` rather than at the CDN, so the whole
+  e-mail path inherits the per-click mint. Same reasoning keeps `RewardService::media()`'s
+  `uuid` key bare — callers re-derive from it, and forms round-trip it.
+- ⚠️ **STILL UNSIGNED, KNOWN GAP: a members-only post's MULTI-IMAGE `media[]` array.**
+  `Post::$casts` sends it raw and `PostMediaCarousel.jsx` builds each URL client-side from
+  the bare uuid. Rewriting those server-side is the `piggy_pots.cover_media` trap —
+  `PostsController::update` does `$post->media = $this->dedupeMedia($request->media)`, so an
+  edit would persist an **expired signed URL** into the column for ever. The fix is a
+  separate `signed_url` key plus a `mediaSrc()` preference, done only after the edit form's
+  round-trip is confirmed to drop it.
+- ⚠️ **Signing is not authorisation.** `content_file_url` is in `$appends` on Bills,
+  Membership and WishItem and is **not** in `$hidden` the way `reward_body` is — so a public
+  listing card can still serialise it. A signed URL handed to a non-buyer is a valid
+  one-hour download. That is a separate finding and signing does not close it.
+- ⚠️ **`App\Uploadcare::getUrl()` is superseded.** Its two call sites
+  (`StripePaymentItems.php`, `WishItem.php`) were commented out; both are now served by
+  `SecureMedia`. Its `AkamaiToken` path also calls `getExpired()` twice — once for the URL
+  and once inside the HMAC — so it can sign a different timestamp than it prints.
+- Tests: `tests/Unit/SecureMediaTest.php` (21).
 
 ## Detailed topic index — load the skill, do not inline this content
 

@@ -388,10 +388,11 @@ class BirthdayDiscoveryService
     /**
      * 🚨 AN EXPLICIT WHITELIST, NEVER A SPREAD.
      *
-     * Seven keys by name. A column added to the select above — or an accessor
+     * Nine keys by name. A column added to the select above — or an accessor
      * appended to the model — cannot reach an e-mail or a public page by being
      * added somewhere else, which is the only reliable way to keep a promise
-     * this specific about one field.
+     * this specific about one field. ⚠️ The exact key list is asserted by
+     * `BirthdayDiscoveryTest`, so adding one is a deliberate act.
      *
      * The five things the brief names for a card are all here: image, display
      * name, @username, short line, View profile (the tagged `url`). Plus the
