@@ -103,7 +103,15 @@ function whenTitleSettles(cb) {
     const timer = setTimeout(finish, 600);
 }
 
-/** A GA4 page_view for an Inertia navigation, with the page group attached. */
+/**
+ * A GA4 page_view for an Inertia navigation, with the page group attached.
+ *
+ * 🚨 This is the ONLY sender. The GA4 config in `app.blade.php` carries
+ * `send_page_view: false` for exactly this reason — Inertia fires `navigate`
+ * for the first page too, so leaving the config to send its own counted every
+ * full page load TWICE (verified in a browser), and its copy carried neither
+ * the settled title nor `page_group`. Do not re-enable it.
+ */
 export function trackPageView() {
     whenTitleSettles(() => {
         try {

@@ -572,7 +572,18 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-EQCXDEV7QV');
+        // 🚨 `send_page_view: false` on the GA4 config, and ONLY on it.
+        //
+        // This is an SPA, so page views are sent by resources/js/lib/analytics.js on
+        // Inertia's `navigate` — including for the first page, which Inertia also fires.
+        // Leaving the config to send its own meant every full page load was counted
+        // TWICE (verified in a browser: one `en=page_view` from here, one from us), and
+        // the config's copy carried neither the settled page title nor `page_group`.
+        // One sender, every page, same parameters.
+        //
+        // ⚠️ The Ads config keeps its page view — remarketing tags are not funnel
+        // analytics and nothing in the app re-sends that one.
+        gtag('config', 'G-EQCXDEV7QV', { send_page_view: false });
         gtag('config', 'AW-11395921981');
     </script>
 

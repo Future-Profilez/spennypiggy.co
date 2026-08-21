@@ -1759,7 +1759,25 @@ drops it. Adding a milestone is one `AnalyticsEvent::push()` line in the control
   path could be a profile, so every real route must be recognised first or `/login` buckets as
   a creator. **Register `page_group` in GA4 Admin → Custom definitions** or the parameter is
   collected and never reportable.
-- Tests: `tests/Feature/AnalyticsEventTest.php` (7).
+- 🚨 **Two GA4 faults were found by driving a real browser, not by reading code**, and both
+  were corrupting the numbers already on the dashboard:
+  1. **Every full page load was counted TWICE.** `gtag('config', …)` sends its own page view
+     and Inertia fires `navigate` for that same first page, so both fired. The GA4 config in
+     `app.blade.php` now carries **`send_page_view: false`** — `trackPageView()` is the ONLY
+     sender, for every page, with the same parameters. ⚠️ **The Ads config keeps its page
+     view** (`AW-11395921981`): remarketing is not funnel analytics and nothing re-sends it.
+  2. **`page_title` reported the page the visitor just LEFT.** Reading `document.title` on
+     `navigate` is too early — Inertia's `<Head>` writes the title from an effect that lands
+     after paint, and **two `requestAnimationFrame`s were not enough either**. Measured live:
+     navigating to a creator profile sent `page_title: "Leaderboard …"`. `whenTitleSettles()`
+     watches `<head>` and fires on the first mutation that moves the title, with a **600ms
+     cap** so two identically-titled pages still report. This is what was filling GA4's "Views
+     by Page title" card with the wrong page, and nothing about it looked broken.
+- Tests: `tests/Feature/AnalyticsEventTest.php` (7), `tests/Feature/AnalyticsFunnelEventsTest.php`
+  (5, end-to-end through the redirect — a push with no delivery is the whole failure mode),
+  `tests/javascript/analytics.test.js` (24). Verified in a browser against the local app:
+  one `page_view` per navigation with the settled title and the right `page_group`, and
+  `email_verified` arriving in `dataLayer` after the emailed link's redirect.
 
 ### Same page, one card design · testimonials without a slider (22 Aug 2026)
 

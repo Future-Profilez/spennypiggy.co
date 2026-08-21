@@ -1,4 +1,4 @@
-import { pageGroup, sendQueued } from "@/lib/analytics";
+import { pageGroup, sendQueued, trackPageView } from "@/lib/analytics";
 
 describe("pageGroup", () => {
     /**
@@ -72,5 +72,64 @@ describe("sendQueued", () => {
         expect(() =>
             sendQueued({ analytics: [{ id: "no-tag", name: "sign_up" }] })
         ).not.toThrow();
+    });
+});
+
+describe("trackPageView", () => {
+    beforeEach(() => {
+        window.gtag = jest.fn();
+        window.history.replaceState({}, "", "/leaderboard");
+    });
+
+    /**
+     * 🚨 Reading document.title on Inertia's `navigate` reports the title of the
+     * page the visitor just LEFT — verified in a browser, and two
+     * requestAnimationFrames were not enough. The send waits for the title.
+     */
+    it("waits for the title to catch up before sending", () => {
+        jest.useFakeTimers();
+        document.title = "Old page";
+
+        trackPageView();
+
+        expect(window.gtag).not.toHaveBeenCalled();
+
+        // No <Head> update arrives; the timeout is what stops a page view being lost.
+        jest.advanceTimersByTime(600);
+
+        expect(window.gtag).toHaveBeenCalledWith(
+            "event",
+            "page_view",
+            expect.objectContaining({ page_group: "leaderboard", page_title: "Old page" })
+        );
+
+        jest.useRealTimers();
+    });
+
+    it("sends the title the page actually settled on", async () => {
+        document.title = "Old page";
+
+        trackPageView();
+        document.title = "Leaderboard";
+
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(window.gtag).toHaveBeenCalledWith(
+            "event",
+            "page_view",
+            expect.objectContaining({ page_title: "Leaderboard" })
+        );
+    });
+
+    it("does not throw when the tag never loaded", () => {
+        jest.useFakeTimers();
+        delete window.gtag;
+
+        expect(() => {
+            trackPageView();
+            jest.advanceTimersByTime(600);
+        }).not.toThrow();
+
+        jest.useRealTimers();
     });
 });
