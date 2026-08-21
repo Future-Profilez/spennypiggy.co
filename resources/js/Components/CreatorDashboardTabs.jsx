@@ -61,7 +61,7 @@ export default function CreatorDashboardTabs() {
                             className={`group rounded-box px-4 py-3 min-h-[44px] flex-1 min-w-[190px] transition-all duration-200 ${
                                 active
  ? "bg-[#FF007F] "
- : "bg-white ring-1 ring-gray-200/80 hover:ring-gray-300 hover:-translate-y-0.5 "
+ : "bg-white ring-1 ring-gray-200/80 hover:ring-gray-300 "
                             }`}
                         >
                             <div className="flex items-center gap-3">

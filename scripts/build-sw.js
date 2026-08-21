@@ -40,7 +40,7 @@ const PUSH_SRC = 'resources/proxy/sw-push.js';
 // response is not a precacheable one.
 const PRECACHE = [
   // `offline.html` route, added alongside the service-worker route.
-  { url: '/offline.html', file: 'public/offline.html' },
+  { url: '/offline.html', file: 'resources/proxy/offline.html' },
   // `192.image.file`
   { url: '/android-chrome-192x192.png', file: 'resources/proxy/android-chrome-192x192.png' },
   // `512.image.file`

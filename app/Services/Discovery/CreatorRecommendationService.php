@@ -7,6 +7,7 @@ use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Models\UserCategory;
 use App\Support\CatalogueRegistry;
+use App\Support\DiscoveryEligibility;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -458,6 +459,12 @@ class CreatorRecommendationService
     /**
      * Good standing, publicly visible, and not switched off by an admin.
      *
+     * 🚨 THE CLAUSES NOW LIVE IN `App\Support\DiscoveryEligibility`. They were
+     * written here first and copied into `BirthdayDiscoveryService`, which is
+     * why `BirthdayDiscoveryTest` carries a test whose whole job is to catch the
+     * two drifting apart. Phase 5's collections would have made a third copy, so
+     * the rule was extracted instead. Change it there, once.
+     *
      * ⚠️ `exclude_from_discovery` is read through `Schema::hasColumn` — the same
      * defensive pattern `DiscoveryService` already uses. Both apps share one
      * database and this column arrived with Phase 3; a missing column here would
@@ -466,36 +473,10 @@ class CreatorRecommendationService
      */
     private function eligibleCreators()
     {
-        $query = User::query()
-            ->where('role', 1)
-            ->where('suspended_account', 0)
-            // 2 = profile reviewed and public. A locked or pending profile is not
-            // something to send a supporter to.
-            ->where('profile_status_lock', 2)
-            // Profile complete, part one: a real photo that has passed review.
-            ->where('avatar_approved', 1)
-            ->whereNotNull('avatar')
-            ->whereNotNull('username')
-            ->where('username', '!=', '')
-            ->whereNotNull('name')
-            ->where('name', '!=', '');
-
-        if (Schema::hasColumn('users', 'exclude_from_discovery')) {
-            $query->where(function ($q) {
-                $q->where('exclude_from_discovery', 0)->orWhereNull('exclude_from_discovery');
-            });
-        }
-
-        return $query->orderByDesc('id')
+        return DiscoveryEligibility::scope(User::query())
+            ->orderByDesc('id')
             ->limit(self::POOL_LIMIT)
-            ->get([
-                'id', 'name', 'username', 'role', 'created_at',
-                'avatar', 'avatar_approved', 'avatar_cdn_modifier',
-                'cover', 'cover_approved', 'cover_cdn_modifier',
-                'bio', 'bio_approved', 'profile_status_lock',
-                'identity_status', 'identity_admin_status', 'suspended_account',
-                'content_posting_paused_at',
-            ]);
+            ->get(DiscoveryEligibility::CARD_COLUMNS);
     }
 
     /**

@@ -252,7 +252,7 @@ export default function Wishlistbox(props) {
                                                 <button
                                                     type="button"
                                                     onClick={openEdit}
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-black`}
                                                 >
                                                     Edit Wish
                                                 </button>
@@ -261,7 +261,7 @@ export default function Wishlistbox(props) {
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <div
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-black`}
                                                 >
                                                     <RemoveWish
                                                         uuid={itm.uuid}
@@ -456,14 +456,14 @@ export default function Wishlistbox(props) {
                                     this one is the creator's own share action on
                                     their own card, where a miss costs nothing and
                                     the row's height is the thing being managed. */}
-                                <button className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-1 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[130px] sm:px-4 sm:py-2 sm:text-[12px]">
+                                <button className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-1 text-[11px] font-black uppercase text-black transition-colors hover:bg-yellow-400 sm:max-w-[130px] sm:px-4 sm:py-2 sm:text-[12px]">
                                     Share Link
                                 </button>
                             </ShareProfile>
                         ) : (
                             <button
                                 onClick={openAddtocart}
-                                className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-2 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[170px] sm:px-6 sm:py-2.5 sm:text-xs"
+                                className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-2 text-[11px] font-black uppercase text-black transition-colors hover:bg-yellow-400 sm:max-w-[170px] sm:px-6 sm:py-2.5 sm:text-xs"
                             >
                                 Unlock
                             </button>

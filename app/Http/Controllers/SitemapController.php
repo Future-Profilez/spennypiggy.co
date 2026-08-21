@@ -41,6 +41,12 @@ class SitemapController extends Controller
         ['url' => '/creators/features', 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['url' => '/creators/disputes', 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['url' => '/creators/founder-bonus', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        // ⚠️ The two newest ad pages were absent while the other six were listed.
+        // Both are paid-ads landing pages, and link-in-bio now holds a top-level
+        // header nav slot — a page we advertise and link from every screen, that
+        // search engines were never told about.
+        ['url' => '/creators/discovery', 'priority' => '0.8', 'changefreq' => 'monthly'],
+        ['url' => '/creators/link-in-bio', 'priority' => '0.8', 'changefreq' => 'monthly'],
         ['url' => '/how-spenny-piggy-works', 'priority' => '0.7', 'changefreq' => 'monthly'],
         ['url' => '/founder-program', 'priority' => '0.7', 'changefreq' => 'monthly'],
         ['url' => '/pricing', 'priority' => '0.7', 'changefreq' => 'monthly'],

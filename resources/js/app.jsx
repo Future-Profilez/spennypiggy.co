@@ -22,6 +22,7 @@ import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 
 import { createInertiaApp } from "@inertiajs/react";
+import { sendQueued, trackPageView } from "./lib/analytics";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { router } from "@inertiajs/react";
 
@@ -290,6 +291,47 @@ createInertiaApp({
     title: (title) =>
         `${title || "Spenny Piggy"} - The Everything Wishlist - Content, Memberships & Custom Requests.`,
     resolve: (name) => {
+        /*
+         * 🚨 A MISSING COMPONENT NAME MUST NOT BE CONCATENATED INTO A PATH.
+         *
+         * Inertia hands `resolve` whatever `page.component` was, and a response
+         * that is not an Inertia payload (a bare `response()->json()`, an error
+         * page, a truncated body) leaves it undefined — which produced
+         * `Error: Page not found: ./Pages/undefined.jsx` in production, a blank
+         * screen with a message naming a file nobody wrote. The page is stale or
+         * the response was not Inertia's; either way a reload is the recovery,
+         * and the same cooldown as `vite:preloadError` keeps it from looping.
+         */
+        if (!name) {
+            const err = new Error(
+                "Inertia resolved a page with no component name"
+            );
+
+            try {
+                Sentry.captureException(err);
+            } catch (e) {
+            }
+
+            try {
+                const last =
+                    Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY)) || 0;
+
+                if (Date.now() - last >= PRELOAD_RELOAD_COOLDOWN_MS) {
+                    sessionStorage.setItem(
+                        PRELOAD_RELOAD_KEY,
+                        String(Date.now())
+                    );
+                    window.location.reload();
+
+                    // Never settle — the page is going away.
+                    return new Promise(() => {});
+                }
+            } catch (e) {
+            }
+
+            throw err;
+        }
+
         return resolvePageComponent(
             `./Pages/${name}.jsx`,
             // Use eager: false for better code splitting
@@ -297,6 +339,10 @@ createInertiaApp({
         );
     },
     setup({ el, App, props }) {
+        // The first render never fires router `success`, so a milestone that lands on a full
+        // document load (every Stripe return, every e-mailed verification link) would be lost.
+        sendQueued(props?.initialPage?.props);
+
         const root = createRoot(el);
         root.render(
             <>
@@ -420,13 +466,20 @@ router.on('before', (event) => {
 // gtag('config', …) in the <head> fires exactly once, on the initial document load. This is an
 // SPA, so without this every page after the first is invisible to GA4 and the property reports
 // one page view per session. No-op if the tag has not loaded (blocked, offline, dev).
+//
+// `trackPageView` also attaches `page_group`, which is what makes profile traffic countable at
+// all — see resources/js/lib/analytics.js.
 router.on('navigate', () => {
-    if (typeof window.gtag !== 'function') return;
-    window.gtag('event', 'page_view', {
-        page_location: window.location.href,
-        page_path: window.location.pathname + window.location.search,
-        page_title: document.title,
-    });
+    trackPageView();
+});
+
+// Server-emitted funnel events (signup, email verified, Stripe connected, published, purchase).
+//
+// ⚠️ On `success`, not `navigate`: the props for the page being landed on are only present on
+// the success event, and `props.analytics` is where the server put them. A redirect is exactly
+// the shape of every funnel milestone here, which is why they cannot be fired from a component.
+router.on('success', (event) => {
+    sendQueued(event?.detail?.page?.props);
 });
 
 // Global UTM Tracking - Save UTM parameters to localStorage

@@ -49,6 +49,8 @@ class DiscoveryMarketingTest extends TestCase
         'creator_push' => 'PushSubscriptionController, RemindStalePushSubscriptions',
         'bio_phone' => 'BioPageController + Pages/Bio/Show.jsx, renders no layout',
         'bio_direct_sales' => 'bio.buy route + BioSellableItems::checkoutUrl + bio.items.* editor',
+        'hidden_gems' => 'CollectionService::hiddenGems + homepage CreatorShowcase (Phase 6)',
+        'almost_funded' => 'CollectionService::almostFunded + homepage CreatorShowcase (Phase 6)',
     ];
 
     /** @test */

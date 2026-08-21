@@ -51,6 +51,30 @@ const CLASS_TOKEN =
     /(^|[\s"'`{])(!?(?:[a-z-]+:)*shadow-[a-z0-9[\]#_.%()-]+(?:\/[0-9.]+)?)(?=[\s"'`}]|$)/g;
 const CSS_DECL = /(^|[\s;{])box-shadow\s*:/g;
 
+/*
+ * 🚨 A JS STYLE OBJECT WAS A BLIND SPOT, AND 36 SHADOWS LIVED IN IT.
+ *
+ * `style={{ boxShadow: … }}` is neither a class token nor a CSS declaration, and
+ * the CSS check above only ever ran on `.css`, `.blade.php` and `.html` — so
+ * every inline shadow in a component passed this check while the header of this
+ * very file said nothing casts one. Found 21 Aug 2026: glows on the Purchase
+ * Hub, a diffuse shadow on Profile/Edit, a hard offset on the register review
+ * step. This is the fourth place a style hides, and the root CLAUDE.md already
+ * warned that a className sweep only reaches the first.
+ *
+ * ⚠️ A RING IS ALLOWED, exactly as `ring-*` is: `0 0 0 1px` and
+ * `inset 0 0 0 1px` have no offset and no blur, so they RENDER AS A LINE, which
+ * is what the direction asks for. Anything with an offset or a blur is a shadow.
+ *
+ * ⚠️ Single-line values only. A `boxShadow` broken across lines is not matched
+ * here; the check is deliberately simple and its blind spot is a smaller one
+ * than the hole it closes.
+ */
+const JS_SHADOW = /boxShadow\s*:\s*(`[^`]*`|'[^']*'|"[^"]*"|[^,}\n]+)/g;
+
+/** `0 0 0 1px …` / `inset 0 0 0 1px …` draw a line, not a shadow. */
+const RING_ONLY = /^\s*(?:inset\s+)?0\s+0\s+0\s+[\d.]+(?:px|rem|em)?\b/;
+
 function walk(path, out = []) {
     let s;
     try {
@@ -95,6 +119,22 @@ for (const target of SCAN) {
             if (/\.css$/.test(file) || /\.(blade\.php|html)$/.test(file)) {
                 for (const _ of bare.matchAll(CSS_DECL)) {
                     findings.push(`${rel}:${i + 1}  box-shadow declaration`);
+                }
+            }
+
+            if (/\.jsx?$/.test(file)) {
+                for (const m of bare.matchAll(JS_SHADOW)) {
+                    const value = m[1].replace(/^[`'"]|[`'"]$/g, '').trim();
+
+                    // An explicit "none" is a removal, not a shadow.
+                    if (/^none$/i.test(value)) continue;
+
+                    // A ring renders as a line — same allowance as `ring-*`.
+                    if (RING_ONLY.test(value)) continue;
+
+                    findings.push(
+                        `${rel}:${i + 1}  inline boxShadow: ${value.slice(0, 46)}`
+                    );
                 }
             }
         });

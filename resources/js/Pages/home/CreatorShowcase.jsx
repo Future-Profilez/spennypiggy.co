@@ -1,99 +1,50 @@
-import Avatar from "@/includes/Avatar";
 import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
-import { Link } from "@inertiajs/react";
 import { useState } from "react";
+import CollectionRow from '@/Components/discovery/CollectionRow';
+import ShowcaseCreatorCard from '@/Components/discovery/ShowcaseCreatorCard';
 
 /* Chapter 03 — the proof. The creator's own cover carries the card; the badge says
    why they are in this list, and the name says who they are. Nothing else. */
 
 function ShowcaseCard({ c, cat }) {
   return (
-    <Link
+    <ShowcaseCreatorCard
       /* Discovery-tagged: this card is Spenny Piggy choosing to show this
          creator, so the visit it produces is SP-generated. An untagged link
          here is a placement that never appears in the creator's numbers. */
       href={discoveryLink(c.username, cat.source)}
-      /* ⚠️ No hover lift, no hover scale (client rule, site-wide). A card surface
-         signals hover with its own background, which costs no reflow and works
-         identically under `prefers-reduced-motion`. */
-      className="group relative flex h-full flex-col overflow-hidden rounded-box border-2 bg-[#0d0a16] transition-colors duration-200 hover:bg-[#17102a] motion-reduce:transition-none"
-      style={{ borderColor: cat.accent }}
-    >
-      {/* Cover — the creator's own banner, and now the whole card's image. */}
-      <div className="relative h-[132px] w-full overflow-hidden">
-        {c.cover_url ? (
-          <img
-            src={c.cover_url}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-[filter,opacity] duration-500 ease-out group-hover:brightness-[1.08] motion-reduce:transition-none"
-          />
-        ) : (
-          <div
-            className="h-full w-full"
-            style={{ background: `linear-gradient(135deg, ${cat.accent}2e 0%, #0d0a16 100%)` }}
-          />
-        )}
-        {/* A short fade at the foot only, so the cover meets the card body without
-            a hard cut. The artwork itself is left alone. */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-[#0d0a16]" />
-
-        <span
-          className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border-2 border-black px-3 py-1 font-poppins text-[12px] font-semibold uppercase tracking-[0.14em] text-black"
-          style={{ background: cat.accent }}
-        >
-          {cat.badge(c)}
-        </span>
-      </div>
-
-      <div className="relative flex flex-1 flex-col px-5 pb-5 pt-4">
-        {/* Who it belongs to. */}
-        <div className="flex items-center gap-3">
-          {/* Avatar pins itself to 60px via an injected stylesheet and nests two
-              height-less wrappers inside this box, so a percentage height resolves
-              against `auto` and collapses the image to nothing. Size it in px. */}
-          <div className="shrink-0 overflow-hidden rounded-box-sm bg-[#1a162b]">
-            <Avatar
-              src={c.avatar_url}
-              role={c.role}
-              profile_status_lock={c.profile_status_lock}
-              nolink={true}
-              imgclass="!w-[46px] !h-[46px] !min-w-[46px] !min-h-[46px] !max-w-[46px] !max-h-[46px] !border-0 !rounded-none"
-            />
-          </div>
-          <div className="min-w-0">
-            {/* `truncate` must keep the value recoverable — a creator name cut at
-                the card edge with no `title` is simply lost. */}
-            <h3 title={c.name} className="truncate font-gulfs text-[17px] uppercase leading-tight tracking-wide text-white">
-              {c.name}
-            </h3>
-            <p title={`@${c.username}`} className="truncate font-poppins text-xs text-white/60">@{c.username}</p>
-          </div>
-          <span
-            aria-hidden
-            className="ml-auto shrink-0 font-gulfs text-lg transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none"
-            style={{ color: cat.accent }}
-          >
-            →
-          </span>
-        </div>
-      </div>
-    </Link>
+      name={c.name}
+      username={c.username}
+      avatarUrl={c.avatar_url}
+      coverUrl={c.cover_url}
+      badge={cat.badge(c)}
+      accent={cat.accent}
+      role={c.role}
+      profileStatusLock={c.profile_status_lock}
+    />
   );
 }
 
-function SectionHeader({ groups, activeTab, setActiveTab }) {
+/* ⚠️ The card itself lives in `Components/discovery/ShowcaseCreatorCard.jsx` —
+   `CollectionRow` renders the SAME component on dark grounds, so the collections
+   below this section can no longer drift into a second creator-card design. */
+
+function SectionHeader({ groups, activeTab, setActiveTab, compact = false }) {
   return (
-    <div className="mb-10 text-center">
-      <span className="font-poppins text-xs uppercase tracking-[0.3em] text-[#FF007F]">
-        The proof
-      </span>
-      <h2 className="mt-4 font-gulfs text-3xl uppercase leading-[0.9] tracking-tight text-white md:text-5xl">
-        Creators already winning
-      </h2>
-      <p className="mx-auto mt-4 max-w-xl font-poppins text-sm leading-relaxed text-white/70">
-        Real people, real momentum. Pick a category to see who is moving right now.
-      </p>
+    <div className={compact ? "mb-7 text-center" : "mb-10 text-center"}>
+      {!compact && (
+        <>
+          <span className="font-poppins text-xs uppercase tracking-[0.3em] text-[#FF007F]">
+            The proof
+          </span>
+          <h2 className="mt-4 font-gulfs text-3xl uppercase leading-[0.9] tracking-tight text-white md:text-5xl">
+            Creators already winning
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl font-poppins text-sm leading-relaxed text-white/70">
+            Real people, real momentum. Pick a category to see who is moving right now.
+          </p>
+        </>
+      )}
 
       {groups.length > 1 && (
         <div className="mt-7 flex flex-wrap justify-center gap-2.5">
@@ -135,7 +86,7 @@ const EARNER_SCOPE = {
   "All Time": "all time",
 };
 
-export default function CreatorShowcase({ trending, newVerified, topEarners, topEarnersLabel }) {
+export default function CreatorShowcase({ trending, newVerified, topEarners, topEarnersLabel, collections = [], compact = false }) {
   // Every hook runs before any early return — `groups` can legitimately be empty on
   // one render and filled on the next, and bailing out above a hook throws
   // "Rendered more hooks than during the previous render" when that happens.
@@ -183,22 +134,49 @@ export default function CreatorShowcase({ trending, newVerified, topEarners, top
   return (
     <section
       id="act-proof"
-      className="relative z-10 bg-transparent px-4 py-12 md:px-8 md:py-20"
+      className={`relative z-10 bg-transparent px-4 md:px-8 ${
+        compact ? "pb-12 pt-0 md:pb-20 md:pt-0" : "py-12 md:py-20"
+      }`}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute left-1/4 top-1/3 h-96 w-96 rounded-full bg-[#FF007F] opacity-[0.07] blur-[200px]" />
-        <div className="absolute bottom-1/3 right-1/4 h-96 w-96 rounded-full bg-[#05EFB8] opacity-[0.07] blur-[200px]" />
+        {/* ⚠️ Ambient orbs: 0.15–0.20 opacity and `mix-blend-screen` on a dark
+            section (see the homepage seam rules). These were `opacity-[0.07]` with
+            a 200px blur — a 384px element paying a full blur composite to be
+            almost invisible, so this section's seams stepped against neighbours
+            that do glow. `multiply` would render pure black here and is only ever
+            correct on the coloured bands. */}
+        <div className="absolute left-1/4 top-1/3 h-96 w-96 rounded-full bg-[#FF007F] opacity-[0.16] blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-1/3 right-1/4 h-96 w-96 rounded-full bg-[#05EFB8] opacity-[0.16] blur-[120px] mix-blend-screen" />
       </div>
 
       {/* max-width moved off the section so its seam gradient can run full-bleed. */}
       <div className="relative z-10 mx-auto max-w-7xl">
-        <SectionHeader groups={groups} activeTab={activeGroup.key} setActiveTab={setActiveTab} />
+        <SectionHeader groups={groups} activeTab={activeGroup.key} setActiveTab={setActiveTab} compact={compact} />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {activeGroup.data.slice(0, MAX_PER_CATEGORY).map((c) => (
             <ShowcaseCard key={`${activeGroup.key}-${c.id}`} c={c} cat={activeGroup} />
           ))}
         </div>
+
+        {/* Discovery Phase 6 — homepage collections.
+
+            ⚠️ BELOW the tabbed grid, not inside it. The tabs are three views of
+            ONE question ("who is doing well right now"); these are different
+            questions, and folding them in as a fourth and fifth tab would hide
+            them behind a click on the surface with the most visitors.
+
+            ⚠️ `tone="dark"`: this section sits on the homepage's dark field, so
+            a black heading would simply not be there. The cards stay white on
+            every surface — they are the product. */}
+        {collections.map((collection) => (
+          <CollectionRow
+            key={collection.key}
+            collection={collection}
+            tone="dark"
+            className="mt-12"
+          />
+        ))}
       </div>
     </section>
   );

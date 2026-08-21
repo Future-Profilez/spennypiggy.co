@@ -1,8 +1,10 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import axios from "axios";
 import {
+    AlertCircle,
+    Check,
     ChevronRight,
     ClipboardList,
     Crown,
@@ -12,6 +14,7 @@ import {
     RefreshCw,
     ShoppingBag,
     Sparkles,
+    X,
 } from "lucide-react";
 import {
     FaDiscord,
@@ -128,6 +131,25 @@ export default function BioShow({
     const [showQr, setShowQr] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    /*
+        🚨 THIS PAGE HAD NO WAY TO SHOW A REFUSAL, AND EVERY BUY PATH ANSWERS
+        WITH ONE. `buyLevel`, `buyBill`, `TaskController::purchase` and the shop
+        checkout all end their guard clauses in `redirect()->back()->with('error',
+        …)` — "You can't buy your own membership", "this tier is awaiting review",
+        "the creator has paused payments", the login gate. Every one of those
+        lands back HERE, and this page deliberately mounts no layout, so it
+        mounted no toaster either: the supporter tapped a button, the page
+        reloaded unchanged, and the reason was thrown away. That is the whole of
+        "the button does nothing".
+
+        ⚠️ Read from `usePage()`, not from a page prop — `flash` is a SHARED prop
+        (`HandleInertiaRequests`) pulled from the session, so it arrives once, on
+        the response that follows the redirect, and only then.
+    */
+    const flash = usePage().props?.flash || {};
+    const notice = flash.error || flash.warning || flash.success || null;
+    const noticeIsError = Boolean(flash.error || flash.warning);
+
     const internal = links.filter((l) => l.kind !== "external");
     const external = links.filter((l) => l.kind === "external");
 
@@ -197,11 +219,20 @@ export default function BioShow({
             */}
             <div className="min-h-dvh bg-[#FFF6EC] pb-16 md:pt-5">
                 <main className="mx-auto w-full max-w-[520px]">
+                    <Notice message={notice} isError={noticeIsError} />
+
                     <Header
                         creator={creator}
                         social={external}
                         isOwner={isOwner}
                     />
+
+                    {isOwner ? (
+                        <OwnerBar
+                            stats={stats}
+                            featuredClicks={featured?.clicks || 0}
+                        />
+                    ) : null}
 
                     {featured ? <Featured item={featured} /> : null}
 
@@ -239,17 +270,92 @@ export default function BioShow({
                         share={share}
                     />
 
-                    {isOwner ? (
-                        <OwnerBar
-                            stats={stats}
-                            featuredClicks={featured?.clicks || 0}
-                        />
-                    ) : null}
-
                     <Footer creator={creator} />
                 </main>
             </div>
         </>
+    );
+}
+
+/**
+ * The refusal, and the confirmation — the only thing on this page that speaks
+ * back to a tap.
+ *
+ * 🚨 IT FLOATS OVER THE PAGE, IT IS NOT A BAR ABOVE IT. Rendered in the flow it
+ * pushed the whole hero down and sat above a full-bleed cover as a strip bolted
+ * to the top of the design — the page's first impression became an error box.
+ * Fixed and centred, the layout underneath never moves, so a supporter who
+ * reads it and dismisses it is looking at exactly the page they were on.
+ *
+ * ⚠️ IT DISMISSES ITSELF, AND IT CAN BE DISMISSED. `flash` arrives once per
+ * response, so a notice that never left would still be on screen while the
+ * person scrolled a page it no longer describes. Eight seconds is long enough
+ * to read two lines; the close button is for everyone who read it in two.
+ *
+ * ⚠️ `role="status"`, not `alert`: this is the result of something the person
+ * just did, and `alert` interrupts a screen reader mid-sentence. The timer
+ * respects `prefers-reduced-motion` only in the FADE, never in the timing — a
+ * message that vanishes without warning is worse than one that fades.
+ */
+function Notice({ message, isError }) {
+    const [shown, setShown] = useState(false);
+
+    useEffect(() => {
+        if (!message) return undefined;
+
+        // A frame before the class flips, or the entry transition never runs.
+        const raf = requestAnimationFrame(() => setShown(true));
+        const hide = setTimeout(() => setShown(false), 8000);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            clearTimeout(hide);
+        };
+    }, [message]);
+
+    if (!message) return null;
+
+    return (
+        <div
+            role="status"
+            className={[
+                "pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-4",
+                "transition-opacity duration-300 motion-reduce:transition-none",
+                shown ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+        >
+            <div
+                className={[
+                    "pointer-events-auto flex w-full max-w-[420px] items-start gap-3",
+                    "rounded-box-sm border border-[#000] px-4 py-3",
+                    isError ? "bg-[#FFD3E8]" : "bg-[#A2E4B8]",
+                ].join(" ")}
+            >
+                <span
+                    aria-hidden="true"
+                    className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#000] bg-white"
+                >
+                    {isError ? (
+                        <AlertCircle size={13} strokeWidth={2.5} />
+                    ) : (
+                        <Check size={13} strokeWidth={3} />
+                    )}
+                </span>
+
+                <p className="min-w-0 flex-1 font-poppins text-[13px] leading-[1.45] text-black">
+                    {message}
+                </p>
+
+                <button
+                    type="button"
+                    onClick={() => setShown(false)}
+                    aria-label="Dismiss"
+                    className="-mr-1 -mt-1 shrink-0 p-1 text-black/50 transition-opacity duration-200 hover:opacity-60"
+                >
+                    <X size={16} strokeWidth={2.5} />
+                </button>
+            </div>
+        </div>
     );
 }
 
@@ -500,6 +606,37 @@ function Featured({ item }) {
  * gross-up. What the supporter pays is produced once, at the checkout, by
  * `Helpers::calculateStripeDirectChargeFlow`.
  */
+/**
+ * The cover a listing draws when it has none of its own — the module's mark on
+ * the same tint its link tile carries, so a card with no photo still belongs to
+ * this page instead of looking broken.
+ */
+const ITEM_MARKS = {
+    membership: Crown,
+    task: ClipboardList,
+    bill: RefreshCw,
+    shop: ShoppingBag,
+    wish: Gift,
+    piggy_pot: PiggyBank,
+};
+
+const ITEM_TINTS = {
+    membership: "#C9B6FF",
+    task: "#A2E4B8",
+    bill: "#C9B6FF",
+    shop: "#E6EA7B",
+    wish: "#A2E4B8",
+    piggy_pot: "#FFD3E8",
+};
+
+function ItemMark({ type }) {
+    const Mark = ITEM_MARKS[type] || Sparkles;
+
+    return (
+        <Mark aria-hidden="true" className="h-[26px] w-[26px] text-black/70" strokeWidth={2} />
+    );
+}
+
 const money = (value, currency) =>
     new Intl.NumberFormat("en-GB", {
         style: "currency",
@@ -597,8 +734,24 @@ function ItemRow({ item, isOwner, first }) {
                         className="h-full w-full object-cover transition-[filter] duration-500 group-hover:brightness-[1.08]"
                     />
                 ) : (
-                    <span className="flex h-full w-full items-center justify-center px-1 text-center font-gulfs text-[8px] uppercase leading-[1.3] tracking-[0.14em] text-black/30">
-                        {item.type_label}
+                    /*
+                        🚨 MOST MEMBERSHIPS AND PAID TASKS HAVE NO PICTURE —
+                        `memberships.thumbnail` and `tasks.media_url` are both
+                        nullable and both commonly empty. The type name set small
+                        and grey inside an empty box read as an image that failed
+                        to load; the module's own mark on its own tint reads as a
+                        deliberate cover, and it is the SAME mark the link tiles
+                        use for that module, so the two blocks teach each other.
+
+                        ⚠️ A placeholder, never a claim: no creator photo is
+                        substituted in. A face on a card the creator never
+                        illustrated is us advertising on their behalf.
+                    */
+                    <span
+                        className="flex h-full w-full items-center justify-center"
+                        style={{ backgroundColor: ITEM_TINTS[item.type] || "#FFF6EC" }}
+                    >
+                        <ItemMark type={item.type} />
                     </span>
                 )}
             </div>
@@ -608,7 +761,15 @@ function ItemRow({ item, isOwner, first }) {
                     {item.type_label}
                 </span>
 
-                <p className="mt-1 line-clamp-2 font-poppins text-[14.5px] font-semibold leading-[1.3]">
+                {/*
+                    ⚠️ `first-letter:uppercase`, NOT `capitalize`. A membership
+                    title is the tier name as the creator typed it ("bronze"),
+                    which reads as a typo on a card — but `capitalize` would also
+                    rewrite every other word of a creator's own sentence ("Create
+                    A Reel For You"), and that copy is theirs, not ours. Only the
+                    opening letter is ours to fix.
+                */}
+                <p className="mt-1 line-clamp-2 font-poppins text-[14.5px] font-semibold leading-[1.3] first-letter:uppercase">
                     {item.title}
                 </p>
 
@@ -1360,44 +1521,60 @@ function ToolButton({ onClick, primary, children }) {
 }
 
 /**
+ * The owner's own bar — first thing under the hero, on the owner's view only.
+ *
+ * 🚨 IT USED TO SIT AT THE FOOT OF THE PAGE, under the tip strip and the share
+ * buttons. A creator opening their own bio page had to scroll past everything
+ * they had built to find out they could change any of it — so "edit" was the
+ * one action on this page that nobody discovered. It is now the first thing
+ * after the hero, which is where the person who can act on it is looking.
+ *
+ * ⚠️ EDIT IS A BUTTON, NOT AN UNDERLINED WORD. It was a text link inside a
+ * sentence, which reads as a footnote to the stats; as a filled control beside
+ * them it reads as the thing to press. 44px minimum, per the house tap target.
+ *
  * ⚠️ Owner only. A visitor has no business reading a creator's reach, and the
  * server sends `stats` as null for anyone else — this never guards it alone.
  */
 function OwnerBar({ stats, featuredClicks }) {
     return (
-        <section className="mx-4 mt-8 rounded-box border border-[#000] bg-[#E6EA7B] px-4 py-3.5">
-            <p className="font-poppins text-[13px] leading-[1.55] text-black/75">
-                Only you can see this.
-                {stats ? (
-                    <>
-                        {" "}
-                        <span className="font-semibold text-black">
-                            {stats.views} {stats.views === 1 ? "view" : "views"}
-                        </span>{" "}
-                        so far.
-                    </>
-                ) : null}
-                {/*
-                    ⚠️ Only when there IS a pinned tile and it has been tapped —
-                    a creator with no pot should not read "0 taps" on something
-                    their page does not show.
-                */}
-                {featuredClicks ? (
-                    <>
-                        {" "}
-                        <span className="font-semibold text-black">
-                            {featuredClicks}{" "}
-                            {featuredClicks === 1 ? "tap" : "taps"}
-                        </span>{" "}
-                        on your pinned tile.
-                    </>
-                ) : null}
-            </p>
+        <section className="mx-4 mt-4 flex flex-wrap items-center gap-3 rounded-box-sm border border-[#000] bg-[#E6EA7B] px-4 py-3">
+            <div className="min-w-0 flex-1">
+                <p className="font-gulfs text-[10px] uppercase tracking-[0.18em] text-black/55">
+                    Only you can see this
+                </p>
+
+                <p className="mt-1 font-poppins text-[13px] leading-[1.45] text-black/75">
+                    {stats ? (
+                        <>
+                            <span className="font-semibold text-black">
+                                {stats.views} {stats.views === 1 ? "view" : "views"}
+                            </span>{" "}
+                            so far
+                        </>
+                    ) : null}
+                    {/*
+                        ⚠️ Only when there IS a pinned tile and it has been
+                        tapped — a creator with no pot should not read "0 taps"
+                        about something their page does not show.
+                    */}
+                    {featuredClicks ? (
+                        <>
+                            {stats ? " · " : null}
+                            <span className="font-semibold text-black">
+                                {featuredClicks} {featuredClicks === 1 ? "tap" : "taps"}
+                            </span>{" "}
+                            on your pinned tile
+                        </>
+                    ) : null}
+                </p>
+            </div>
+
             <Link
                 href={route("bio.edit")}
-                className="mt-2 inline-block font-gulfs text-[12px] uppercase tracking-[0.14em] text-black underline decoration-2 underline-offset-4 transition-opacity duration-200 hover:opacity-70"
+                className="flex min-h-[44px] shrink-0 items-center rounded-box-sm border border-[#000] bg-white px-4 font-gulfs text-[11px] uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:bg-[#FFF3F8] active:brightness-95"
             >
-                Edit this page
+                Edit page
             </Link>
         </section>
     );

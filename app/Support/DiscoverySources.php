@@ -55,9 +55,73 @@ class DiscoverySources
         'search-recs' => self::CLASS_SP,
         'personalised' => self::CLASS_SP,
 
+        /*
+         * Discovery Phase 5 collections (Developer Master Plan, 19 Aug 2026 —
+         * "reusable components across Discover, homepage, profiles, emails,
+         * landing pages"). All three are SP-generated: the platform chose to put
+         * that creator in front of that visitor.
+         *
+         * ⚠️ ADDING A KEY MEANS ADDING IT TO `resources/js/lib/discoveryLink.js`
+         * TOO — a test asserts the two lists match, because a key the helper
+         * offers but the server refuses is dropped silently and looks exactly
+         * like a tagged link that works.
+         */
+        'spotlight' => self::CLASS_SP,
+        'popular' => self::CLASS_SP,
+        'memberships' => self::CLASS_SP,
+
         // Creator-generated — the creator's own audience, arriving their own way.
         'bio-link' => self::CLASS_CREATOR,
     ];
+
+    /**
+     * What to call each source WHEN A CREATOR IS READING IT.
+     *
+     * 🚨 A CREATOR MUST NEVER BE SHOWN A RAW KEY. `hidden-gems` and
+     * `birthdays-this-week` are internal names for placements; a creator asking
+     * "where did these people come from?" needs the answer in the words they
+     * would use, and a key on a dashboard reads as a leak rather than an answer.
+     *
+     * ⚠️ THE PHRASING SAYS WHO DID THE WORK. An SP source is written from the
+     * platform's side ("We showed you in…"); `bio-link` is the creator's OWN
+     * traffic and says so. That distinction is the entire promise of the
+     * Discovery feature — "what we brought you, on top of what you brought
+     * yourself" — and a list that blurred the two would make the number
+     * meaningless.
+     *
+     * ⚠️ An unlisted key falls back to a tidied form of the key rather than
+     * being hidden: a placement nobody labelled is still traffic a creator
+     * earned, and dropping it would quietly understate their own numbers.
+     */
+    public const LABELS = [
+        'more-creators' => 'More creators to support',
+        'birthday-reminder' => 'Birthday reminder we sent',
+        'birthdays-this-week' => 'Birthdays This Week email',
+        'new-creators' => 'New to Spenny Piggy',
+        'hidden-gems' => 'Hidden Gems',
+        'trending' => 'Trending',
+        'almost-funded' => 'Almost Funded',
+        'new-wishes' => 'New Wishes',
+        'payment-success' => 'After someone checked out',
+        'search-recs' => 'Search and recommendations',
+        'personalised' => 'Recommended for you',
+        'spotlight' => 'Creator Spotlight',
+        'popular' => 'Popular Right Now',
+        'memberships' => 'Memberships to Discover',
+        'bio-link' => 'Your own link in bio',
+    ];
+
+    /** The creator-facing name for a source key. */
+    public static function label(?string $key): string
+    {
+        $key = self::normalise($key);
+
+        if ($key === null) {
+            return 'Somewhere else';
+        }
+
+        return self::LABELS[$key] ?? ucfirst(str_replace('-', ' ', $key));
+    }
 
     /**
      * Surfaces that exist TODAY and are tagged as SP-generated.
@@ -188,5 +252,22 @@ class DiscoverySources
     public static function isSpGenerated(?string $key): bool
     {
         return self::classFor($key) === self::CLASS_SP;
+    }
+
+    /**
+     * Did the CREATOR bring this visitor, as a matter of record?
+     *
+     * ⚠️ Deliberately NOT `! isSpGenerated()`. `classFor()` answers
+     * CLASS_CREATOR for an unknown or absent key, because the published figure
+     * is "how many people SP brought you" and under-claiming is the safe
+     * direction there. A caller deciding whether to SHOW something needs the
+     * opposite guarantee: direct and organic traffic carries no source, and must
+     * not be read as the creator's own audience.
+     */
+    public static function isCreatorGeneratedVisit(?string $key): bool
+    {
+        $key = self::normalise($key);
+
+        return $key !== null && self::classFor($key) === self::CLASS_CREATOR;
     }
 }

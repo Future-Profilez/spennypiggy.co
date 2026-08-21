@@ -79,7 +79,12 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                 <p className="mb-3 text-black/60">Successful creators complete these steps, although not all required.</p>
                 <CustomProgressBar now={profile.total} max={TOTAL_STEPS} />
 
-                {profile.intro !== 1 && (
+                {/* Creator-only step: intro videos are a creator surface, so a
+                    non-creator must not be offered the upload (21 Aug 2026). This
+                    checklist already only mounts for a Stripe-connected account,
+                    which is a creator in practice — the role check is explicit so
+                    the rule does not depend on that second-hand. */}
+                {Number(user?.role) === 1 && profile.intro !== 1 && (
                     <StepRow
                         done={profile.intro == 1}
                         title="Add Intro Video"

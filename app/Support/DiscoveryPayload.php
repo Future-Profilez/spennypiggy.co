@@ -2,9 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\DiscoveryLabelOverride;
 use App\Services\Discovery\DiscoveryReportService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * The Discovery config, in the shape the frontend reads it.
@@ -30,7 +32,7 @@ class DiscoveryPayload
         return [
             'analyticsLive' => (bool) config('discovery.analytics_live'),
             'mockStats' => config('discovery.mock_stats'),
-            'labels' => config('discovery.labels'),
+            'labels' => self::labels(),
         ];
     }
 
@@ -60,6 +62,47 @@ class DiscoveryPayload
      *
      * @return array{introduced: int, new_supporters: int, attributed_earnings: float}
      */
+    /**
+     * The label map, with any admin kill switch applied.
+     *
+     * 🚨 AN OVERRIDE CAN ONLY FORCE A LABEL TO COMING SOON. See the migration:
+     * marking something LIVE NOW is a public claim, and the test that requires
+     * recorded evidence for every live key reads the CONFIG — a database switch
+     * able to set `live` would walk past it. Off is the safe direction and the
+     * urgent one; on has never been urgent.
+     *
+     * ⚠️ A MISSING ROW MEANS "USE THE CONFIG", so an empty table behaves exactly
+     * as the file always has.
+     *
+     * ⚠️ Cached for a minute, and NOT for the panel's five. An admin hiding a
+     * label is usually doing it because it is claiming something it should not,
+     * and waiting five minutes for that is not a control.
+     *
+     * ⚠️ Guarded on the table: the admin app's test database has no copy, and a
+     * missing table must fail to the CONFIG rather than to an error — a
+     * marketing page must not go down because a migration has not run.
+     */
+    public static function labels(): array
+    {
+        $labels = config('discovery.labels', []);
+
+        $forced = Cache::remember('discovery_label_overrides_v1', 60, function () {
+            if (! Schema::hasTable('discovery_label_overrides')) {
+                return [];
+            }
+
+            return DiscoveryLabelOverride::query()->pluck('label_key')->all();
+        });
+
+        foreach ($forced as $key) {
+            if (array_key_exists($key, $labels)) {
+                $labels[$key] = 'coming_soon';
+            }
+        }
+
+        return $labels;
+    }
+
     public static function dashboardStatsFor(int $creatorId): array
     {
         $month = Carbon::now();
@@ -67,7 +110,8 @@ class DiscoveryPayload
         return Cache::remember(
             'discovery_panel_stats_'.$creatorId.'_'.$month->format('Y_m').'_v1',
             300,
-            fn () => app(DiscoveryReportService::class)->panelStatsFor($creatorId, $month),
+            fn () => app(DiscoveryReportService::class)->panelStatsFor($creatorId, $month)
+                + ['by_source' => app(DiscoveryReportService::class)->breakdownFor($creatorId, $month)],
         );
     }
 }

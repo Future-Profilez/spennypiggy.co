@@ -166,7 +166,7 @@ export default function Popup(props) {
                     <button
                     onClick={closeModal}
                     aria-label="Close"
-                    className='absolute right-4 top-3 z-10 inline-flex min-h-[44px] min-w-[44px] items-center justify-center bg-white border-2 border-black rounded-full hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all'
+                    className='absolute right-4 top-3 z-10 inline-flex min-h-[44px] min-w-[44px] items-center justify-center bg-white border-2 border-black rounded-full transition-colors duration-200 hover:bg-black/[0.04]'
                       // A panel that reaches the screen edge sits under the status bar
                       // in an installed PWA. That is now true of EVERY popup on a
                       // phone, not just `fullscreen` ones — so the inset is applied

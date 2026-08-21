@@ -155,7 +155,33 @@ class SecurityHeaders
         $intercom = 'https://widget.intercom.io https://js.intercomcdn.com https://api-iam.intercom.io https://intercom.help https://*.intercom.io https://*.intercomcdn.com https://*.intercomassets.com';
         $magicbell = 'https://api.magicbell.com https://*.magicbell.com https://*.magicbell.io';
         $sentry = 'https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io';
-        $google = 'https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com';
+        $google = 'https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com';
+
+        /*
+         * 🚨 Google Ads is a SECOND host family, and report-only mode named every
+         * one of them on the first day the CSP shipped: 448 reports for
+         * www.google.com alone, plus pagead2.googlesyndication.com,
+         * ad.doubleclick.net, stats.g.doubleclick.net, www.googleadservices.com
+         * and www.google.co.uk.
+         *
+         * `gtag('config', 'AW-11395921981')` in app.blade.php is what reaches
+         * them — a conversion ping fires to `www.google.<CCTLD>`, chosen from the
+         * VISITOR's locale, so the list can never be a fixed set of countries.
+         * `https://www.google.com` is listed explicitly because a wildcard does
+         * not match a bare host, and the ccTLD tail is covered by pattern.
+         *
+         * ⚠️ `analytics.google.com` above has the same trap: `*.analytics.google.com`
+         * does NOT match the bare host, and the bare host is the one GA4 posts to.
+         */
+        $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie';
+
+        /*
+         * ⚠️ Termly's consent API is on its OWN regional subdomain
+         * (`us.consent.api.termly.io`), not on `app.termly.io` where the embed
+         * script lives. Listing only the script host meant the banner loaded and
+         * then could not record a consent decision.
+         */
+        $termly = 'https://app.termly.io https://*.termly.io';
 
         $directives = [
             "default-src 'self'",
@@ -177,7 +203,7 @@ class SecurityHeaders
              * un-nonced inline blocks still in app.blade.php are what report-only
              * mode is here to surface.
              */
-            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} https://app.termly.io https://challenges.cloudflare.com https://cdn.jsdelivr.net",
+            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} {$googleAds} {$termly} https://challenges.cloudflare.com https://cdn.jsdelivr.net",
 
             // 'unsafe-inline' is required and not removable today — see the class
             // docblock.
@@ -196,9 +222,9 @@ class SecurityHeaders
 
             "media-src 'self' data: blob: {$asset} {$uploadcare} https://player.vimeo.com",
 
-            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} https://app.termly.io https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
+            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} {$googleAds} {$termly} https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
 
-            "frame-src 'self' {$stripe} {$uploadcare} {$intercom} https://challenges.cloudflare.com https://player.vimeo.com https://app.termly.io",
+            "frame-src 'self' {$stripe} {$uploadcare} {$intercom} {$googleAds} {$termly} https://challenges.cloudflare.com https://player.vimeo.com",
 
             // The PWA service worker, and Uploadcare's upload workers.
             "worker-src 'self' blob: {$asset}",

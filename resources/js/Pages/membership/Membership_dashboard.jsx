@@ -96,7 +96,7 @@ export default function Membership_dashboard(props) {
                                 border: "1px solid rgba(0,0,0,0.06)",
                                 borderRadius: "16px",
                                 color: "#111",
-                                boxShadow: "0 12px 34px -14px rgba(0,0,0,0.25)",
+                                
                             }}
                             formatter={(value) => [
                                 `${currency}${Number(value).toLocaleString()}`,

@@ -45,8 +45,8 @@
     style="width:100%;max-width:600px;border-collapse:collapse;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
 
     <tr>
-        <td bgcolor="#ea297a"
-            style="background-color:#ea297a;padding:16px 22px;border-radius:16px 16px 0 0;">
+        <td bgcolor="#FF007F"
+            style="background-color:#FF007F;padding:16px 22px;border-radius:16px 16px 0 0;">
             <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
                 <tr>
                     <td align="left" valign="middle">
@@ -157,32 +157,32 @@
                 <tr>
                     <td style="padding:0 4px;">
                         <a href="https://x.com/spennypiggy" target="_blank">
-                            <img src="https://img.icons8.com/ios-filled/100/CC88BB/twitterx--v1.png" width="24" height="24" alt="X" style="display:block;border:0;">
+                            <img src="https://img.icons8.com/ios-filled/100/8B4E76/twitterx--v1.png" width="24" height="24" alt="X" style="display:block;border:0;">
                         </a>
                     </td>
                     <td style="padding:0 4px;">
                         <a href="https://www.instagram.com/spennypiggy" target="_blank">
-                            <img src="https://img.icons8.com/ios-filled/100/CC88BB/instagram-new.png" width="24" height="24" alt="Instagram" style="display:block;border:0;">
+                            <img src="https://img.icons8.com/ios-filled/100/8B4E76/instagram-new.png" width="24" height="24" alt="Instagram" style="display:block;border:0;">
                         </a>
                     </td>
                     <td style="padding:0 4px;">
                         <a href="https://m.youtube.com/channel/UCC1GASMLYEjW46dHuKZZMZQ" target="_blank">
-                            <img src="https://img.icons8.com/ios-filled/100/CC88BB/youtube-play.png" width="24" height="24" alt="YouTube" style="display:block;border:0;">
+                            <img src="https://img.icons8.com/ios-filled/100/8B4E76/youtube-play.png" width="24" height="24" alt="YouTube" style="display:block;border:0;">
                         </a>
                     </td>
                     <td style="padding:0 4px;">
                         <a href="https://www.tiktok.com/@spennypiggy" target="_blank">
-                            <img src="https://img.icons8.com/ios-filled/100/CC88BB/tiktok--v1.png" width="24" height="24" alt="TikTok" style="display:block;border:0;">
+                            <img src="https://img.icons8.com/ios-filled/100/8B4E76/tiktok--v1.png" width="24" height="24" alt="TikTok" style="display:block;border:0;">
                         </a>
                     </td>
                 </tr>
             </table>
-            <p style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#CC88BB;margin:0 0 6px;line-height:1.8;">
+            <p style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#8B4E76;margin:0 0 6px;line-height:1.8;">
                 <a href="{{ config('app.url') }}/email-preferences" style="color:#FF007F;text-decoration:none;font-weight:700;">Manage preferences</a>
-                <span style="color:#CC88BB;">&nbsp;·&nbsp;</span>
-                <a href="mailto:support@spennypiggy.co" style="color:#CC88BB;text-decoration:none;">Get Help</a>
+                <span style="color:#8B4E76;">&nbsp;·&nbsp;</span>
+                <a href="mailto:support@spennypiggy.co" style="color:#8B4E76;text-decoration:none;">Get Help</a>
             </p>
-            <p style="font-family:'Outfit',Arial,sans-serif;font-size:11px;color:#CC88BB;margin:0;line-height:1.7;">
+            <p style="font-family:'Outfit',Arial,sans-serif;font-size:11px;color:#8B4E76;margin:0;line-height:1.7;">
                 You're receiving this email because you're a valued member of the Spenny Piggy community.<br>
                 © {{ date('Y') }} SpennyPiggy. All rights reserved.
             </p>

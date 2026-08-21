@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers;
 use App\Models\CreatorBioItem;
 use App\Models\CreatorBioLink;
 use App\Models\PiggyPot;
 use App\Models\User;
+use App\Models\WishItem;
 use App\SeoMeta;
 use App\Services\Bio\BioTipService;
 use App\Services\BioPageService;
@@ -225,7 +227,62 @@ class BioPageController extends Controller
         $this->bioService->recordItemClick($row);
         $this->rememberSource($request, $row->user, true);
 
+        /*
+         * 🚨 A WISH GOES TO THE BASKET, NOT TO ITS CHECKOUT PAGE.
+         *
+         * On a profile, tapping a wish opens a popup that collects what the
+         * checkout needs. From a bio card there is no popup — the card is a
+         * link — so it landed on `wish.subscribe.checkout`, and EVERY refusal
+         * in that method answers with `redirect()->back()`. A visitor arriving
+         * from `/bio/buy/…` has no meaningful "back", so they were dropped on
+         * the HOMEPAGE carrying a flash message the homepage does not render.
+         * From the supporter's side: they tapped Unlock and nothing happened.
+         *
+         * The basket is the honest destination: it is the same path the profile
+         * popup ends at, it survives a guest having no account, and it shows the
+         * item so the tap visibly did something.
+         *
+         * ⚠️ THE GUEST GATE IS ASKED HERE, BEFORE THE REDIRECT — with the item's
+         * real price and its own currency. Letting a guest reach the basket and
+         * be refused at the till is the same dead end one step later. Guest
+         * access is not a setting of its own: it follows the PLATFORM RISK STATE
+         * (`THROTTLE` and `FREEZE` refuse guests), plus the value threshold.
+         */
+        if ($row->item_type === 'wish') {
+            return $this->wishToBasket($request, $row, $url);
+        }
+
         return redirect()->to($url);
+    }
+
+    /**
+     * ⚠️ `?add=` RATHER THAN ADDING IT HERE. A guest's basket row is keyed on a
+     * device id the BROWSER derives (user agent, platform, screen) — the server
+     * cannot compute it, so a server-side write would create a row no guest can
+     * ever see. The basket page holds that id already; it adds the item on
+     * arrival and cleans the parameter out of the URL.
+     */
+    private function wishToBasket(Request $request, CreatorBioItem $row, string $url)
+    {
+        $wish = WishItem::find($row->item_id);
+
+        if (! $wish) {
+            return redirect()->to($url);
+        }
+
+        $restriction = Helpers::guestCheckoutRestriction(
+            $wish->currency ?: 'GBP',
+            (float) ($wish->price ?? 0)
+        );
+
+        if (! $request->user() && $restriction) {
+            return redirect()->route('login', [
+                'redirect' => $url,
+                'message' => $restriction['message'],
+            ]);
+        }
+
+        return redirect()->to(route('cart').'?add='.$wish->uuid);
     }
 
     /**

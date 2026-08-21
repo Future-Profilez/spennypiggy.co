@@ -105,15 +105,17 @@ export default function ShopDetailItem(props) {
             <Guest auth={auth.user} user={user}>
                 <div className="bg-gray-200 min-h-dvh">
                     <div className="container mx-auto px-4 m-auto">
-                        <div className="py-6 md:py-14 max-w-[900px] m-auto pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-14">
+                        {/* On a phone the buy control is a fixed bar at the foot of the
+                            screen, so the column reserves its height (bar + the bottom
+                            nav bar, which only exists for a signed-in account). */}
+                        <div className={`pt-4 md:py-14 max-w-[900px] m-auto md:pb-14 ${IsloggedIn ? "pb-[calc(96px+env(safe-area-inset-bottom))]" : "pb-[calc(150px+env(safe-area-inset-bottom))]"}`}>
                             <Head title={shop.name || "Spenny Piggy Shop"} />
-                            <div className="product-details max-w-[700px] px-2 mx-auto">
+                            <div className="product-details max-w-[700px] mx-auto">
                                 <button
-                                    className="flex md:hidden items-center text-xl mb-4 "
+                                    aria-label="Go back"
+                                    className="flex md:hidden items-center gap-1 -ml-3 px-3 min-h-[44px] text-lg font-bold rounded-box-sm mb-3 transition-colors hover:bg-black/[0.05] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                     onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = `/${shop?.user?.username || ''}`))} >
-                                    <span className="mt-1">
-                                        <ChevronLeftIcon size={24} />
-                                    </span>{" "}
+                                    <ChevronLeftIcon size={22} />
                                     Back
                                 </button>
                                 <nav
@@ -124,7 +126,7 @@ export default function ShopDetailItem(props) {
                                         <li className="inline-flex items-center">
                                             <Link
                                                 href={`/${shop.user && shop.user.username}`}
-                                                className="inline-flex items-center text-base font-medium text-gray-700  "
+                                                className="inline-flex items-center text-base font-bold text-black/80 hover:text-black"
                                             >
                                                 {shop.user && shop.user.name}
                                             </Link>
@@ -146,7 +148,7 @@ export default function ShopDetailItem(props) {
                                                         d="m1 9 4-4-4-4"
                                                     />
                                                 </svg>
-                                                <p className="ml-1 text-base font-medium text-gray-700 md:ml-2">
+                                                <p className="ml-1 text-base font-medium text-black/60 md:ml-2">
                                                     Shop
                                                 </p>
                                             </div>
@@ -168,7 +170,7 @@ export default function ShopDetailItem(props) {
                                                         d="m1 9 4-4-4-4"
                                                     />
                                                 </svg>
-                                                <span className="ml-1 text-base font-medium text-gray-500 md:ml-2">
+                                                <span className="ml-1 text-base font-medium text-black/60 md:ml-2">
                                                     {shop.name}
                                                 </span>
                                             </div>
@@ -177,16 +179,16 @@ export default function ShopDetailItem(props) {
                                 </nav>
 
                                 {props.my_purchases && props.my_purchases.length > 0 && (
-                                    <div className="my-4 border-t border-gray-200 pt-4">
-                                        <h3 className="text-md font-semibold text-gray-800 mb-3">Your Purchases</h3>
-                                        <div className="space-y-3">
+                                    <div className="mb-4">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-black/60 mb-2">Your Purchases</h3>
+                                        <div className="space-y-2">
                                             {props.my_purchases.map(purchase => (
-                                                <div key={purchase.id} className="bg-gray-50 !rounded-box p-4 px-6 flex justify-between items-center text-sm">
-                                                    <div>
-                                                        <p className="font-medium text-lg text-gray-700">Order #{(purchase.uuid || purchase.id || '').toString().substring(0, 8) || 'â€”'}</p>
-                                                        <p className="text-normal text-gray-500 capitalize">Status: {purchase.status}</p>
+                                                <div key={purchase.id} className="bg-white border-2 border-black rounded-box-sm p-3 sm:px-5 sm:py-4 flex flex-wrap gap-2 justify-between items-center text-sm">
+                                                    <div className="min-w-0">
+                                                        <p className="font-black text-base truncate">Order #{(purchase.uuid || purchase.id || '').toString().substring(0, 8) || '—'}</p>
+                                                        <p className="text-[13px] text-black/60 capitalize">Status: {purchase.status}</p>
                                                     </div>
-                                                    <div className="flex flex-col items-end">
+                                                    <div className="flex flex-col items-end shrink-0">
                                                         <div className="font-black text-xl mb-1">
                                                             {purchase.total_paid || purchase.gross_amount || purchase.amount ? formatMultiPrice(
                                                                 purchase.total_paid ||
@@ -200,7 +202,7 @@ export default function ShopDetailItem(props) {
                                                                 purchase.currency || 'GBP'
                                                             ) : "FREE"}
                                                         </div>
-                                                        <Link href={`/shop?type=purchases`} className="text-[#FF007F] font-medium hover:underline text-normal">
+                                                        <Link href={`/shop?type=purchases`} className="text-[#FF007F] font-bold hover:underline text-[13px]">
                                                             View Details
                                                         </Link>
                                                     </div>
@@ -226,52 +228,60 @@ export default function ShopDetailItem(props) {
                                     </div>
                                 )}
 
-                                <div className="w-full relative">
+                                {/* One white panel, framed like the ShopCard this page is
+                                    opened from. The detail page used to be loose text on the
+                                    grey ground, which on a phone read as an unfinished page. */}
+                                <div className="md:bg-white md:border-[3px] md:border-black md:rounded-box md:p-6">
+                                {/* Aspect-locked, so the column does not jump when the image
+                                    lands — the img had no height until it loaded. Same 4:3
+                                    frame the listing card uses. */}
+                                <div className="w-full relative aspect-[4/3] bg-gray-50 border-2 border-black rounded-box-sm overflow-hidden">
                                     <img
-                                        className="w-full max-h-[400px] object-cover rounded-box"
+                                        className="absolute inset-0 w-full h-full object-cover"
                                         alt={shop.name || "Product image"}
                                         src={shop.perma_link}
+                                        decoding="async"
                                     />
                                     {shop.ai_generated == 1 ? (
-                                        <div className="absolute bottom-2 left-2 z-10 bg-black rounded-box-sm px-2 py-1 text-[12px] text-white">
-                                            MADE WITH AI{" "}
+                                        <div className="absolute top-2 right-2 z-10 bg-[#FF007F] text-black border-2 border-black rounded-box-sm px-2 py-1 text-[11px] font-black uppercase">
+                                            Made with AI
                                         </div>
                                     ) : (
                                         ""
                                     )}
                                 </div>
 
-                                <div className="flex items-center gap-3 pt-4 pb-3">
+                                <div className="flex flex-wrap items-start gap-2 pt-4 pb-2">
                                     {/* h1, not h2: this is the page's subject. The whole page
                                         had no h1 at all, which weakens it in search even with
                                         correct OpenGraph — the task page already gets this
-                                        right. Styling is unchanged. */}
-                                    <h1 className="font-GillSans uppercase text-3xl">
+                                        right. */}
+                                    <h1 className="font-GillSans uppercase text-[26px] leading-[1.05] md:text-3xl break-words min-w-0 flex-1">
                                         {shop.name}
                                     </h1>
-                                    <span className={`px-3 py-1 rounded-box-sm border-2 border-black text-xs font-black uppercase ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
+                                    <span className={`shrink-0 mt-1 px-2.5 py-1 rounded-box-sm border-2 border-black text-[11px] font-black uppercase ${shop.type === 'physical' ? 'bg-blue-300' : 'bg-green-300'}`}>
                                         {shop.type === 'physical' ? 'Physical' : 'Digital'}
                                     </span>
                                 </div>
-                                <p className=" text-lg lg:leading-tight leading-normal text-gray-600">
+                                <p className="text-base md:text-lg leading-[1.55] text-black/80">
                                     {shop.description}
                                 </p>
 
                                 {shop.type === 'physical' && shop.shipping_information && (
-                                    <div className="mt-4 p-5 bg-blue-50 border-[1px] border-gray-300 rounded-box animate-in fade-in slide-in-from-top-2 duration-500">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-xl">🚚</span>
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-blue-800">Shipping Information</h3>
+                                    <div className="mt-4 p-4 bg-[#FAFAFA] border-2 border-black rounded-box-sm">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-lg" aria-hidden="true">🚚</span>
+                                            <h2 className="text-[11px] font-black uppercase tracking-widest text-black/60">Shipping</h2>
                                         </div>
-                                        <p className="text-sm font-bold text-blue-900 leading-relaxed italic">
-                                            "{shop.shipping_information}"
+                                        <p className="text-sm font-bold leading-[1.5]">
+                                            {shop.shipping_information}
                                         </p>
                                     </div>
                                 )}
 
-                                <p className=" text-base lg:leading-tight leading-normal text-black mt-3 mb-2">
-                                    Category : {" "}
-                                    <span className="capitalize">
+                                <p className="text-sm leading-[1.5] text-black/60 mt-4">
+                                    <span className="font-black uppercase tracking-widest text-[11px]">Category</span>{" "}
+                                    <span className="capitalize text-black/80">
                                         {shop?.category
                                             ?.map((c) => c?.category?.category)
                                             .filter(Boolean)
@@ -282,13 +292,13 @@ export default function ShopDetailItem(props) {
                                 {shop &&
                                 shop.is_member == 0 &&
                                 shop.special_member_price ? (
-                                    <div className="special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-box p-3 ">
-                                        <div className="discount-tag w-[50px] h-[50px] mr-2 flex items-center justify-center">
-                                            <Percent size={32} className="text-[#FF007F]" />
+                                    <div className="special-discount flex items-start gap-3 bg-[#FAFAFA] border-2 border-black my-4 rounded-box-sm p-3 sm:p-4">
+                                        <div className="discount-tag w-8 h-8 shrink-0 flex items-center justify-center">
+                                            <Percent size={28} className="text-[#FF007F]" />
                                         </div>
-                                        <div className="w-full pr-4 discount-text sm:flex items-center justify-between">
-                                            <div className="pr-3">
-                                                <h2 className="font-bold text-base">
+                                        <div className="w-full min-w-0 discount-text sm:flex sm:items-center sm:justify-between sm:gap-3">
+                                            <div className="sm:pr-3">
+                                                <h2 className="font-black text-base">
                                                     Only{" "}
                                                     {formatMultiPrice(
                                                         calculateTotalSupporterPays(
@@ -301,16 +311,16 @@ export default function ShopDetailItem(props) {
                                                     )}{" "}
                                                     for members
                                                 </h2>
-                                                <p className="mb-1 font-normal text-[13px]">
+                                                <p className="font-normal text-[13px] leading-[1.5] text-black/60">
                                                     Become a member to get a
                                                     discount and other exclusive
                                                     benefits.
                                                 </p>
                                             </div>
-                                            <div className="py-2 ">
+                                            <div className="mt-3 sm:mt-0 shrink-0">
                                                 <Link
                                                     href={`/${shop.user && shop.user.username}/memberships`}
-                                                    className="button sm Join whitespace-nowrap"
+                                                    className="flex w-full sm:w-auto items-center justify-center whitespace-nowrap min-h-[44px] px-5 rounded-box-sm border-2 border-black bg-yellow-300 font-black uppercase text-sm transition-colors hover:brightness-110 active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                                                 >
                                                     Join Membership
                                                 </Link>
@@ -326,100 +336,116 @@ export default function ShopDetailItem(props) {
                                         sharing actually happens, and it covers apps
                                         (Instagram, Messages, Signal) that have no
                                         web share URL at all. */}
-                                    <ShareButton share={shop?.share} className="mb-4 mt-4" />
+                                    <ShareButton share={shop?.share} className="mt-4" />
                                 </div>
-
-
 
                                 {/* `slot_limitation` is REMAINING stock — the server decrements it on each sale. */}
                                 {shop.slot_limitation != null && Number(shop.slot_limitation) > 0 ? (
-                                    <div className="my-2">
-                                        <span className=" text-pink text-lg font-light ">
-                                            Only {Number(shop.slot_limitation)} Left
+                                    <div className="mt-4">
+                                        <span className="inline-flex items-center bg-[#FF007F] text-black border-2 border-black rounded-box-sm px-2.5 py-1 text-[11px] font-black uppercase tracking-wide">
+                                            Only {Number(shop.slot_limitation)} left
                                         </span>
                                     </div>
                                 ) : (
                                     ""
                                 )}
-                                
+
                                 {shippingUnknown && shop.type === 'physical' && (
-                                    <p className="text-sm font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-box-sm px-3 py-2 my-2">
+                                    <p className="text-sm font-bold text-amber-800 bg-amber-50 border-2 border-amber-500 rounded-box-sm px-3 py-2 mt-4">
                                         Shipping couldn't be calculated right now — it will be confirmed at checkout.
                                     </p>
                                 )}
 
 
-                                <div className="!py-4 sm:flex items-center justify-between">
-                                    <div className=" mb-3">
-                                        <h3 className="text-3xl font-bold flex flex-col ">
-                                            <div className="flex">
-                                                <div className="flex">
-
-                                                    
-                                                    {shop &&
-                                                    shop.is_member == 1 &&
-                                                    shop.special_member_price ? (
-                                                        <>
-                                                            {isOwner ? (
-                                                                <div className="flex flex-col">
-                                                                    <div className="flex items-baseline">
-                                                                        <span>{formatMultiPrice(shop?.special_member_price, itemCurrency)}</span>
-                                                                        <span className="line-through text-black/60 text-xl ml-2">
-                                                                            {formatMultiPrice(price, itemCurrency)}
-                                                                        </span>
-                                                                    </div>
-                                                                    {parseFloat(shippingPrice) > 0 && (
-                                                                        <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col">
-                                                                        <div className="flex items-baseline">
-                                                                            <span>{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}</span>
-                                                                            <span className="line-through text-black/60 text-xl ml-2">
-                                                                                {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}
-                                                                            </span>
-                                                                        </div>
-                                                                        <span className="text-sm font-bold text-green-600 mt-1 uppercase tracking-wide flex items-center gap-1">
-                                                                            <Percent size={18} className="text-lg" /> Member Discount Applied
-                                                                        </span>
-                                                                        <span className="!text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                            *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
-                                                                        </span>
-                                                                    </div>
-                                                            )}
-                                                        </>
-                                                    ) : price > 0 ? ( isOwner ? (
-                                                            <div className="flex flex-col">
-                                                                <span>{formatMultiPrice(price, itemCurrency)}</span>
-                                                                {parseFloat(shippingPrice) > 0 && (
-                                                                    <span className="text-sm text-gray-500 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex flex-col">
-                                                                {console.log("supporterPays", itemCurrency)}
-                                                                <div className="flex items-baseline">
-                                                                    <span className="text-4xl font-bold">
-                                                                        {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency)}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[14px] text-gray-500 font-normal mt-1 leading-tight">
-                                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
-                                                                </span>
-                                                            </div>
-                                                        )
-                                                    ) : (
-                                                        "Free"
-                                                    )}
-                                                    
+                                {/* Price. Flattened out of five nested flex wrappers, and the
+                                    small print moved onto the ink ramp — `text-gray-500` is
+                                    3.97:1 on this page and is banned on a payment surface. */}
+                                <div className="mt-5 pt-4 border-t-2 border-black/10 text-3xl font-black">
+                                    {shop &&
+                                    shop.is_member == 1 &&
+                                    shop.special_member_price ? (
+                                        isOwner ? (
+                                            <div className="flex flex-col">
+                                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                                    <span className="tabular-nums">{formatMultiPrice(shop?.special_member_price, itemCurrency)}</span>
+                                                    <span className="line-through text-black/60 text-xl tabular-nums">
+                                                        {formatMultiPrice(price, itemCurrency)}
+                                                    </span>
                                                 </div>
+                                                {parseFloat(shippingPrice) > 0 && (
+                                                    <span className="text-sm text-black/60 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
+                                                )}
                                             </div>
-                                        </h3>
-                                    </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                                    <span className="text-[34px] leading-none md:text-4xl tabular-nums">{formatMultiPrice(calculateTotalSupporterPays(baseSpecialPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}</span>
+                                                    <span className="line-through text-black/60 text-xl tabular-nums">
+                                                        {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp, itemCurrency, 0, creatorIdOf(shop)).total_supporter_pays, itemCurrency)}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[13px] font-black text-green-700 mt-2 uppercase tracking-wide flex items-center gap-1">
+                                                    <Percent size={16} /> Member discount applied
+                                                </span>
+                                                <span className="text-[13px] text-black/60 font-normal mt-1 leading-[1.45]">
+                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
+                                                </span>
+                                            </div>
+                                        )
+                                    ) : price > 0 ? ( isOwner ? (
+                                            <div className="flex flex-col">
+                                                <span className="tabular-nums">{formatMultiPrice(price, itemCurrency)}</span>
+                                                {parseFloat(shippingPrice) > 0 && (
+                                                    <span className="text-sm text-black/60 font-normal mt-1">+ {formatMultiPrice(shippingPrice, itemCurrency)} shipping</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <span className="text-[34px] leading-none md:text-4xl tabular-nums">
+                                                    {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency)}
+                                                </span>
+                                                <span className="text-[13px] text-black/60 font-normal mt-1 leading-[1.45]">
+                                                    *Includes platform and payment processing fees{shop?.type === 'physical' ? (parseFloat(shippingPrice) > 0 ? " and shipping" : ". Free shipping") : ""}. You will be charged in {itemCurrency}.
+                                                </span>
+                                            </div>
+                                        )
+                                    ) : (
+                                        "Free"
+                                    )}
                                 </div>
-                                
-                                <div>
+                                </div>
+
+                                {/* 🚨 On a phone this is a fixed bar at the foot of the screen:
+                                    the buy control used to sit below the image, the description,
+                                    the shipping note and the price, so on a 390px screen the one
+                                    thing the page exists for was two scrolls down. It clears the
+                                    bottom nav bar when that bar is present (signed-in only). */}
+                                <div className={IsloggedIn
+                                    ? "mt-6"
+                                    : "fixed inset-x-0 bottom-0 z-40 border-t-2 border-black bg-white px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] [body:has(.retro-bottom-bar)_&]:bottom-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset))] [body:has(.retro-bottom-bar)_&]:pb-3 md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:mt-6"}>
+                                    {/* The price scrolls out of view long before the bar does,
+                                        so the bar carries it. Phone only — on desktop the price
+                                        block above is always on screen beside the button. */}
+                                    {!IsloggedIn && price > 0 && (
+                                        <div className="flex items-baseline justify-between gap-3 mb-2 md:hidden">
+                                            <span className="text-[11px] font-black uppercase tracking-widest text-black/60">
+                                                {shop?.type === 'physical' && parseFloat(shippingPrice) > 0 ? 'Total incl. shipping' : 'Total'}
+                                            </span>
+                                            <span className="text-xl font-black tabular-nums">
+                                                {formatMultiPrice(
+                                                    calculateTotalSupporterPays(
+                                                        shop.is_member == 1 && shop.special_member_price
+                                                            ? baseSpecialPriceToGrossUp
+                                                            : baseRegularPriceToGrossUp,
+                                                        itemCurrency,
+                                                        0,
+                                                        creatorIdOf(shop)
+                                                    ).total_supporter_pays,
+                                                    itemCurrency
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
                                     {IsloggedIn ? (
                                         // The owner used to get a dead end here — no edit, no way back to their shop.
                                         <div className="flex flex-col sm:flex-row gap-3">
@@ -446,7 +472,7 @@ export default function ShopDetailItem(props) {
                                                     shopUuid={shop.uuid}
                                                     initialWaiting={shop.is_waiting}
                                                     isGuest={!auth?.user}
-                                                    className="w-full sm:w-auto sm:min-w-[220px]"
+                                                    className="w-full md:w-auto md:min-w-[220px]"
                                                 />
                                             ) : (
                                                 <>
@@ -469,7 +495,7 @@ export default function ShopDetailItem(props) {
                                                         open={open}
                                                         s={shop}
                                                         text={"Buy This Item"}
-                                                        classes="w-full sm:w-auto btn-pink !text-[16px] md !px-6 py-3 mb-3"
+                                                        classes="w-full md:w-auto btn-pink !text-[16px] !px-6 py-3"
                                                     />
                                                 </>
                                             )}

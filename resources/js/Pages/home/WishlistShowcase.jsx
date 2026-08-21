@@ -13,6 +13,11 @@ import useIsMobile from "@/Components/animations/useIsMobile";
  */
 
 const PURPLE = "#924DFF";
+// ⚠️ A FILL colour and an INK colour are not the same value. `#924DFF` as text on
+// this mock's dark card measures 4.18:1 and fails AA at the 18px the price
+// renders at; pink happens to clear it at 4.92. Lightening only the ink keeps the
+// fills (button, heart badge) exactly as designed.
+const PURPLE_INK = "#A97BFF";
 const PINK = "#FF007F";
 
 // z = depth (px, + = toward viewer), ry = yaw toward centre, blur/dim = depth-of-field
@@ -122,11 +127,16 @@ function Shell({ children, className = "", accent = PINK }) {
  * Glossy highlight + uppercase label with a trailing glyph. Do not turn it back
  * into a button to "fix" the styling.
  */
+// ⚠️ BLACK, NOT WHITE. `accent` is brand pink or brand violet, and the house rule
+// is unconditional — a filled brand block takes black type on every surface in
+// both apps. Measured: white was 3.78:1 on `#FF007F` and 4.44:1 on `#924DFF`;
+// black is 5.56 and 4.77. `aria-hidden` makes it decorative to a screen reader,
+// not to the sighted reader who still has to read it.
 function GlossButton({ children, glyph, accent }) {
     return (
         <span
             aria-hidden="true"
-            className="relative mt-auto w-full min-h-[44px] text-white text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
+            className="relative mt-auto w-full min-h-[44px] text-black text-[12px] font-black uppercase tracking-wide py-2.5 rounded-[10px] overflow-hidden flex items-center justify-center gap-1.5"
             style={{ background: accent }}
         >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
@@ -141,7 +151,7 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
         <Shell accent={accent}>
             {/* wishlist heart */}
             <span
-                className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-white text-[13px] rotate-12 z-10 ring-2 ring-[#14141f]"
+                className="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-black text-[13px] rotate-12 z-10 ring-2 ring-[#14141f]"
                 style={{ background: accent }}
                 aria-hidden
             >♥</span>
@@ -164,7 +174,7 @@ function ProductCard({ emoji, tag, title, price, cta, accent }) {
                 illustration; they are not document structure and should not be
                 headings at all. Styling is unchanged. */}
             <p className="font-gulfs uppercase text-[14px] leading-tight text-white mt-1">{title}</p>
-            <p className="font-black text-[18px] mt-1 mb-2.5" style={{ color: accent }}>{price}</p>
+            <p className="font-black text-[18px] mt-1 mb-2.5" style={{ color: accent === PURPLE ? PURPLE_INK : accent }}>{price}</p>
             <GlossButton glyph="→" accent={accent}>{cta}</GlossButton>
         </Shell>
     );
@@ -179,7 +189,7 @@ function ShareCard({ handle }) {
             </div>
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-[10px] px-2.5 py-1.5">
                 <span className="text-[12px] font-bold text-white/70 truncate">{handle}</span>
-                <span className="ml-auto text-[12px] font-black uppercase text-white rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
+                <span className="ml-auto text-[12px] font-black uppercase text-black rounded-[6px] px-2 py-1" style={{ background: PURPLE }}>Copy</span>
             </div>
         </Shell>
     );
@@ -189,7 +199,7 @@ function ThankYouCard() {
     return (
         <Shell accent={PURPLE}>
             <div className="flex items-start gap-2 mb-2.5">
-                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-white text-[12px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
+                <span className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-black text-[12px] font-black bg-gradient-to-br from-[#924DFF] to-[#FF007F]">JJ</span>
                 <p className="text-[12px] text-white/75 leading-snug bg-white/5 border border-white/10 rounded-[10px] rounded-tl-[3px] px-2.5 py-1.5">
                     <span className="font-black text-white">@legitjustjack</span> just supported your content! 🙌
                 </p>
@@ -209,7 +219,7 @@ function SupportCard({ handle, amount }) {
                     <span className="absolute inset-0 rounded-full animate-ping" style={{ background: `${PINK}40` }}></span>
                     <span className="relative w-8 h-8 rounded-full flex items-center justify-center text-sm ring-2 ring-[#14141f]" style={{ background: `${PINK}33` }} aria-hidden>💖</span>
                 </span>
-                <span className="text-[12px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white" style={{ background: PINK }}>New supporter</span>
+                <span className="text-[12px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-black" style={{ background: PINK }}>New supporter</span>
             </div>
             <p className="text-[12px] text-white/70 leading-snug">
                 <span className="font-black text-white">{handle}</span> supported you

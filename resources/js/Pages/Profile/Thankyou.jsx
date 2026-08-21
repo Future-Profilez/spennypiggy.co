@@ -9,11 +9,12 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import RewardBlock from '@/Components/Reward/RewardBlock';
 import MembershipOffer from '@/Components/MembershipOffer';
 import axios from 'axios';
+import CollectionRow from '@/Components/discovery/CollectionRow';
 import { useAlerts } from '@/Components/Alerts';
 
 export default function Thankyou(props) {
 
-  const {owner, type, item_name, amount, currency, item_id, item_slug, is_instant, ask_question, payment_id, source, source_id, reward, reward_locked, awaiting_settlement, membership_offer} = props;
+  const {owner, type, item_name, amount, currency, item_id, item_slug, is_instant, ask_question, payment_id, source, source_id, reward, reward_locked, awaiting_settlement, membership_offer, discover_more} = props;
   const { global_currency, auth, user } = usePage().props;
   const { errorAlert, successAlert } = useAlerts();
 
@@ -454,6 +455,23 @@ export default function Thankyou(props) {
                     must first see that their purchase landed. An upsell above the thing they
                     just paid for reads as the platform caring more about the next sale. */}
                 <MembershipOffer offer={membership_offer} creatorName={owner?.name} creatorUsername={owner?.username} />
+
+                {/* Discovery Phase 6 — the brief's "payment success: Discover
+                    someone else".
+
+                    🚨 BELOW THE MEMBERSHIP OFFER, DELIBERATELY. Somebody who has
+                    just paid this creator is the likeliest person to pay THIS
+                    creator again; offering a different one first spends the best
+                    moment the platform gets on the smaller outcome. Deepen, then
+                    widen.
+
+                    ⚠️ Renders nothing when the row is empty — the component
+                    guards it. A "no recommendations" placeholder on a checkout
+                    confirmation is a dead end wearing a heading. */}
+                <CollectionRow
+                    collection={discover_more}
+                    className="mt-8 w-full max-w-[550px]"
+                />
 
                 {type !== 'monthly_subscription' && (
                     <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 text-center w-full max-w-[550px]">

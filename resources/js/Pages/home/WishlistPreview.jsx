@@ -23,19 +23,24 @@
  * The frame itself, which is at real container scale, does use `rounded-box`.
  */
 const PINK = "#FF007F";
+// ⚠️ Ink pink, not fill pink. `#FF007F` as TEXT on this mock's white/near-white
+// card measures 3.78:1 (3.62 on `#F9FAFB`) and fails AA at the 11px these price
+// labels render at. `#C4006A` is the house chip ink — the same darkened pink the
+// profile's CategoryTags already uses for exactly this reason — at 5.91:1.
+const PINK_INK = "#C4006A";
 const MINT = "#05EFB8";
 const YELLOW = "#E6EA7B";
 
 function Frame({ children }) {
     return (
-        <div className="relative md:w-[318px] md:-rotate-[4deg] bg-white border-[3px] border-black rounded-box p-4">
+        <div className="relative md:w-[318px] md:-rotate-[4deg] bg-white border-black rounded-box p-4">
             {children}
         </div>
     );
 }
 
 function Avatar({ size = "w-9 h-9" }) {
-    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-white text-[11px] font-black bg-gradient-to-br from-[#05EFB8] to-[#FF007F]`}>JJ</span>;
+    return <span className={`${size} shrink-0 rounded-full border-2 border-black flex items-center justify-center text-black text-[11px] font-black bg-gradient-to-br from-[#05EFB8] to-[#FF007F]`}>JJ</span>;
 }
 
 /**
@@ -53,7 +58,7 @@ function Avatar({ size = "w-9 h-9" }) {
  */
 function CTA({ children, glyph }) {
     return (
-        <span aria-hidden="true" className="relative w-full mt-3.5 bg-[#FF007F] text-black text-[12px] font-black uppercase tracking-wide py-2.5 rounded-box-sm border-[3px] border-black overflow-hidden flex items-center justify-center gap-1.5">
+        <span aria-hidden="true" className="relative w-full mt-3.5 bg-[#FF007F] text-black text-[12px] font-black uppercase tracking-wide py-2.5 rounded-box-sm border-black overflow-hidden flex items-center justify-center gap-1.5">
             <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent"></span>
             <span className="relative">{children}</span>{glyph && <span className="relative">{glyph}</span>}
         </span>
@@ -97,7 +102,7 @@ function WishlistMock() {
                     <div key={i} className={`flex items-center gap-2.5 border-2 border-black rounded-[12px] p-2 ${it.done ? "bg-gray-50" : "bg-white"}`}>
                         <span className="w-8 h-8 shrink-0 rounded-[8px] border-2 border-black flex items-center justify-center text-base" style={{ background: `${it.tint}33` }}>{it.e}</span>
                         <span className="text-[11.5px] font-black uppercase text-black flex-1 min-w-0 truncate">{it.n}</span>
-                        <span className="font-black text-[11px] text-[#FF007F]">{it.p}</span>
+                        <span className="font-black text-[11px] text-[#C4006A]">{it.p}</span>
                         <span className={`w-5 h-5 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[11px] ${it.done ? "text-black" : "text-black/30"}`} style={it.done ? { background: MINT } : undefined} title={it.done ? "Sold" : "Not sold yet"}>{it.done ? "✓" : ""}</span>
                     </div>
                 ))}
@@ -126,17 +131,23 @@ function ActivityMock() {
                 </span>
             </div>
             {/* weekly total */}
-            <div className="rounded-[14px] border-[3px] border-black p-3 mb-3" style={{ background: `linear-gradient(135deg, ${PINK}, #c4006a)` }}>
-                <p className="text-[11px] font-black uppercase tracking-wide text-white/80">This week from fans</p>
+            {/* ⚠️ The gradient starts at `#C4006A`, not at brand pink, and the ink
+                carries no alpha. White on `#FF007F` is 3.78:1 and white/80 on it
+                is 4.09 — so the light end of this card failed AA while the dark
+                end passed, which is the worst kind of failure: it looks fine in a
+                screenshot of the right half. Black is not the answer either
+                (3.56:1 on `#C4006A`), so the ground moves instead of the ink. */}
+            <div className="rounded-[14px] border-black p-3 mb-3" style={{ background: `linear-gradient(135deg, ${PINK_INK}, #8A004B)` }}>
+                <p className="text-[11px] font-black uppercase tracking-wide text-white">This week from fans</p>
                 <p className="font-gulfs text-[26px] leading-none text-white mt-0.5">£1,548</p>
-                <p className="text-[11px] font-bold uppercase text-white/85 mt-1">🎉 12 unlocks this week</p>
+                <p className="text-[11px] font-bold uppercase text-white mt-1">🎉 12 unlocks this week</p>
             </div>
             <div className="space-y-1.5">
                 {feed.map((f, i) => (
                     <div key={i} className="flex items-center gap-2 bg-gray-50 border-2 border-black rounded-[10px] px-2 py-1.5" style={{ transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)` }}>
                         <span className="w-7 h-7 shrink-0 rounded-full border-2 border-black bg-white flex items-center justify-center text-sm">{f.e}</span>
                         <p className="text-[10.5px] uppercase leading-tight flex-1 min-w-0 truncate"><span className="font-black text-black">{f.who}</span> <span className="text-black/60">{f.what}</span></p>
-                        <span className="font-black text-[11px] text-[#FF007F]">{f.p}</span>
+                        <span className="font-black text-[11px] text-[#C4006A]">{f.p}</span>
                     </div>
                 ))}
             </div>
@@ -166,7 +177,7 @@ function ShopMock() {
                         <div className="p-1.5">
                             <p className="text-[11px] font-black uppercase text-black truncate">{pr.n}</p>
                             <div className="flex items-center justify-between mt-0.5">
-                                <span className="font-black text-[11px] text-[#FF007F]">{pr.p}</span>
+                                <span className="font-black text-[11px] text-[#C4006A]">{pr.p}</span>
                                 <span className="text-[8px] font-black uppercase text-white bg-black rounded-[5px] px-1.5 py-0.5">Buy</span>
                             </div>
                         </div>

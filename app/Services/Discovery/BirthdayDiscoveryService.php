@@ -5,6 +5,7 @@ namespace App\Services\Discovery;
 use App\Models\FinancialTransaction;
 use App\Models\User;
 use App\Support\CatalogueRegistry;
+use App\Support\DiscoveryEligibility;
 use App\Support\DiscoverySources;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -344,8 +345,15 @@ class BirthdayDiscoveryService
             return collect();
         }
 
-        $query = User::query()
-            ->where('role', 1)
+        /*
+         * 🚨 THE SHARED CLAUSES COME FROM `DiscoveryEligibility`. They used to be
+         * retyped here from `CreatorRecommendationService`, which is why the test
+         * below this file's own docblock exists — its whole job was catching the
+         * two copies drifting. Phase 5's collections would have been a third.
+         * What stays local is what is genuinely this feature's own: the opt-in,
+         * and today's day/month.
+         */
+        $query = DiscoveryEligibility::scope(User::query())
             ->where('birthday_discovery_opt_in', 1)
             ->whereNotNull('birthday_day')
             ->whereNotNull('birthday_month')
@@ -355,23 +363,7 @@ class BirthdayDiscoveryService
                         $inner->where('birthday_month', $month)->where('birthday_day', $day);
                     });
                 }
-            })
-            ->where('suspended_account', 0)
-            // 2 = profile reviewed and public. A locked or pending profile is
-            // not something to send a supporter to.
-            ->where('profile_status_lock', 2)
-            ->where('avatar_approved', 1)
-            ->whereNotNull('avatar')
-            ->whereNotNull('username')
-            ->where('username', '!=', '')
-            ->whereNotNull('name')
-            ->where('name', '!=', '');
-
-        if (Schema::hasColumn('users', 'exclude_from_discovery')) {
-            $query->where(function ($q) {
-                $q->where('exclude_from_discovery', 0)->orWhereNull('exclude_from_discovery');
             });
-        }
 
         return $query->orderBy('id')
             ->limit(self::QUERY_LIMIT)

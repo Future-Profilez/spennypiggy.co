@@ -29,7 +29,7 @@ function MembershipsLists(props) {
     return (
         <div className='min-height'>
             {hasNoMemberships ? (
-                suppressEmptyState ? null : <Nocontent text="Nothing to see" />
+                suppressEmptyState ? null : <Nocontent text="Nothing here yet" subheading="This creator has no membership tiers on sale." />
             ) : 
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 !gap-2 sm:!gap-3 md:!gap-5'>
                     {memoizedMemberships}

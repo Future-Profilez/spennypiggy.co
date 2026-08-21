@@ -32,6 +32,10 @@ export const DISCOVERY_SOURCE = {
     PAYMENT_SUCCESS: 'payment-success',
     SEARCH_RECS: 'search-recs',
     PERSONALISED: 'personalised',
+    // Phase 5 collections — see the note in DiscoverySources::KEYS.
+    SPOTLIGHT: 'spotlight',
+    POPULAR: 'popular',
+    MEMBERSHIPS: 'memberships',
     BIO_LINK: 'bio-link',
 };
 

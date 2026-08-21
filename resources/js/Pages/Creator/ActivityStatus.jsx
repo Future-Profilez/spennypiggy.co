@@ -653,7 +653,7 @@ const ActivityStatus = ({
 
                             {user?.username && (
                                 <Link
-                                    href={`/${user.username}?page=feed`}
+                                    href={`/${user.username}/feed`}
                                     className="mt-4 inline-flex items-center justify-center min-h-[44px] px-5 bg-[#FF007F] text-black font-black uppercase text-sm tracking-wide border-[3px] border-black rounded-box-sm active:translate-x-[2px] active:translate-y-[2px] transition-all"
                                 >
                                     Write a member post

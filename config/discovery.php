@@ -164,9 +164,16 @@ return [
         'similar_creators' => 'coming_soon',
         'more_creators' => 'coming_soon',
         'new_creator_collections' => 'coming_soon',
-        'hidden_gems' => 'coming_soon',
+        /*
+         * ✅ LIVE 21 AUG 2026 — Discovery Phase 5 built the collection and
+         * Phase 6 put it on the homepage, inside `CreatorShowcase`. Flipped in
+         * the SAME release as that code, for the same reason `bio_direct_sales`
+         * was: the label deploys with the app, so flipping it on a branch that
+         * ships first would claim a capability nobody has.
+         */
+        'hidden_gems' => 'live',
         'trending' => 'coming_soon',
-        'almost_funded' => 'coming_soon',
+        'almost_funded' => 'live',   // As hidden_gems — same collection service, same surface.
         'new_wishes' => 'coming_soon',
         'personalised' => 'coming_soon',
 

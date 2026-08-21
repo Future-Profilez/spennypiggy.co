@@ -237,7 +237,22 @@ class RiskMessages
         'GUEST_ACCOUNT_REQUIRED_VALUE' => [
             'audience_class' => 'supporter',
             'title' => "You'll need an account for this one 🔐",
-            'body' => "For a payment this size we'll need you signed in. It means your purchase is tied to you — you can find it again, and we can help if anything goes wrong.\n\nCreating an account takes about a minute and means you can see everything you've bought in one place. There's a one-off £1 card verification when you sign up — here's why.",
+            /*
+             * ⚠️ THE ACTION FIRST, THE REASSURANCE AFTER — and still no number.
+             *
+             * The previous wording opened with "For a payment this size we'll
+             * need you signed in" and buried "create an account" in the third
+             * line, so somebody who had just been stopped mid-purchase read four
+             * lines before finding out what to do. Reported from the live login
+             * screen, 21 Aug 2026.
+             *
+             * 🚨 It STILL does not state the threshold, and it must never
+             * start. That is rule 1 of this file: the old copy read "Larger
+             * payments more than £50 need to login", which tells anyone testing
+             * stolen cards exactly what to stay under — the one thing that turns
+             * a limit into a target.
+             */
+            'body' => "This purchase needs an account — it takes about a minute to make one.\n\nHaving one means the purchase is tied to you: you can find it again, and we can help if anything goes wrong. There's a one-off £1 card verification when you sign up — here's why.",
             'next_step' => 'Create an account — it takes about a minute.',
             'cta' => ['label' => 'Create an account', 'route' => 'register'],
             'cta_secondary' => ['label' => 'Log in', 'route' => 'login'],

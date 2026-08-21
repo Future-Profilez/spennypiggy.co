@@ -45,8 +45,8 @@ export default function ProfileTaskLists({
             ) : (
                 <div className="py-10">
                     <Nocontent
-                        showdiscover={true}
-                        text="No tasks available yet."
+                        text="Nothing here yet"
+                        subheading="This creator has no paid tasks open."
                     />
                     {IsloggedIn && (
                         <div className="text-center mt-4">

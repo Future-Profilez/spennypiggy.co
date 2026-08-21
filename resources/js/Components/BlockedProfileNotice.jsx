@@ -140,8 +140,6 @@ export default function BlockedProfileNotice({
                             border-[3px]
                             border-black
  
-                            hover:translate-x-[2px]
-                            hover:translate-y-[2px]
  
                             transition-all
                             duration-200
@@ -185,7 +183,7 @@ export default function BlockedProfileNotice({
                                     setShowModal(false);
                                 }
                             }}
-                            className="px-8 py-3 rounded-box-sm border-[3px] border-black bg-white font-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                            className="px-8 py-3 rounded-box-sm border-[3px] border-black bg-white font-black transition-colors duration-200 hover:bg-black/[0.04]"
                         >
                             Cancel
                         </button>
@@ -193,7 +191,7 @@ export default function BlockedProfileNotice({
                         <button
                             disabled={isUnblocking}
                             onClick={confirmUnblock}
-                            className="min-w-[190px] flex justify-center items-center gap-2 px-8 py-3 rounded-box-sm bg-[#10B981] hover:bg-[#059669] border-[3px] border-black text-white font-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-70"
+                            className="min-w-[190px] flex justify-center items-center gap-2 px-8 py-3 rounded-box-sm bg-[#0B7A5A] border-black text-white font-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-70"
                         >
                             {isUnblocking ? (
                                 <>

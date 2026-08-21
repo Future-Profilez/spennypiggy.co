@@ -22,8 +22,8 @@ use App\Http\Controllers\BrandAssetController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
+use App\Http\Controllers\CreatorPushController;
 use App\Http\Controllers\CreatorSubscriptionController;
-use App\Http\Controllers\Debug\SupportImageTestController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -34,6 +34,7 @@ use App\Http\Controllers\Debug\SupportImageTestController;
 */
 
 // Health check endpoint for Vapor
+use App\Http\Controllers\Debug\SupportImageTestController;
 use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
@@ -63,6 +64,7 @@ use App\Models\FeatureSuggestion;
 use App\Models\FounderBonus;
 use App\Models\User;
 use App\Models\UserCart;
+use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
 use App\Support\DiscoveryPayload;
@@ -270,6 +272,24 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         // creator dashboard need it, and the shared payload rides on every
         // request in the app.
         'discovery' => DiscoveryPayload::forInertia(),
+
+        /*
+         * Discovery Phase 6 — homepage collections (Developer Master Plan,
+         * 19 Aug 2026, §C).
+         *
+         * ⚠️ ONLY THE TWO THE HOMEPAGE DOES NOT ALREADY HAVE. Trending and
+         * "new" are already on this page as `trendingCreators` /
+         * `newVerifiedCreators`, drawn by `CreatorShowcase`'s own tabs — adding
+         * the collection versions beside them would show the same creators
+         * twice under two headings.
+         *
+         * ⚠️ `many()` DROPS AN EMPTY COLLECTION rather than drawing a titled
+         * row with nothing in it, so a quiet week costs a row, not a dead end.
+         */
+        'collections' => app(CollectionService::class)->many(
+            ['hidden_gems', 'almost_funded'],
+            8
+        ),
     ]);
 })->name('home');
 
@@ -401,7 +421,8 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 Route::get('/giftstore', function () {
     if (! config('services.rye.enabled')) {
         return Inertia::render('ComingSoon', [
-            // "Oink Store" is what the header calls it — keep the two in step.
+            // "Oink Store" is what the FOOTER calls it (it moved out of the
+            // header nav on 20 Aug 2026) — keep the two in step.
             'title' => 'Oink Store',
             'message' => "The Oink Store isn't open yet. Soon you'll be able to buy real products from creators and have them shipped straight to your door.",
             'highlights' => [
@@ -788,8 +809,24 @@ Route::get('/service-worker.js', function () {
 // push dead with it. It answered 404 in production until 2026-08-15, which also
 // meant `setCatchHandler` had nothing to serve and the branded offline screen had
 // never been seen by anyone.
+// 🚨 THE SOURCE FILE LIVES IN `resources/proxy/`, NOT IN `public/`.
+//
+// Vapor uploads everything under `public/` to S3/CloudFront and STRIPS IT FROM
+// THE LAMBDA PACKAGE, so `file_get_contents(public_path('offline.html'))` threw
+// `Failed to open stream: No such file or directory` in production while working
+// perfectly on every developer's machine. That 500 also broke service-worker
+// INSTALL — `precacheAndRoute` fetches this URL during install and one failure
+// rejects the whole worker, taking push and offline caching with it.
+//
+// `resources/proxy/` is the existing house location for exactly this: the PWA
+// icons are served the same way, for the same reason. `scripts/build-sw.js`
+// hashes the file from there too — the two must name the same path.
 Route::get('/offline.html', function () {
-    return response(file_get_contents(public_path('offline.html')), 200, [
+    $path = resource_path('proxy/offline.html');
+
+    abort_unless(is_file($path), 404);
+
+    return response(file_get_contents($path), 200, [
         'Content-Type' => 'text/html; charset=UTF-8',
         'X-Robots-Tag' => 'noindex, nofollow',
     ]);
@@ -1340,6 +1377,28 @@ Route::get('/.well-known/security.txt', function () {
         'X-Robots-Tag' => 'noindex',
     ]);
 })->name('security.txt');
+
+/*
+ * Creator-controlled push — Developer Master Plan, 19 Aug 2026, §E.
+ *
+ * 🚨 THROTTLED ON TOP OF THE SERVICE'S OWN LIMIT. The service allows one send a
+ * day and records every attempt; this stops somebody hammering the endpoint to
+ * discover what the moderation rules are, which is reconnaissance rather than
+ * use. Two different jobs, both needed.
+ *
+ * ⚠️ Declared ABOVE `auth.php`, whose `/{username}/{page?}` catch-all would
+ * otherwise read `creator-push` as a username and answer with the profile 404 —
+ * `route:list` shows the route either way, which is what makes that hard to see.
+ */
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/creator-push/status', [CreatorPushController::class, 'status'])
+        ->name('creator.push.status')
+        ->middleware('throttle:30,1');
+
+    Route::post('/creator-push', [CreatorPushController::class, 'send'])
+        ->name('creator.push.send')
+        ->middleware('throttle:10,60');
+});
 
 require __DIR__.'/auth.php';
 

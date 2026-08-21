@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CreatorBioItem;
 use App\Models\PiggyPot;
 use App\Models\User;
+use App\Models\WishItem;
 use App\Services\Bio\BioTipService;
 use App\Services\BioPageService;
 use App\Support\BioSellableItems;
@@ -63,6 +64,26 @@ class BioDirectSalesTest extends TestCase
             'target_amount' => 500,
             'currency' => 'gbp',
             'status' => 'active',
+        ], $attributes));
+    }
+
+    /**
+     * ⚠️ Built directly — `WishItem` has no factory, and the guest gate reads
+     * only its `price` and `currency`. `is_approved`/`is_suspended` are what
+     * `BioPageService` filters on.
+     */
+    private function wish(User $creator, array $attributes = []): WishItem
+    {
+        return WishItem::create(array_merge([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $creator->id,
+            'wishname' => 'Exclusive summer set',
+            'price' => 20,
+            'currency' => 'GBP',
+            'is_approved' => 1,
+            'is_suspended' => 0,
+            // ⚠️ NOT NULL with no default on the real table.
+            'subscription' => 'onetime',
         ], $attributes));
     }
 
@@ -352,6 +373,83 @@ class BioDirectSalesTest extends TestCase
         $this->assertSame(
             DiscoverySources::CLASS_CREATOR,
             DiscoverySources::classFor('bio-link')
+        );
+    }
+
+    /**
+     * 🚨 A WISH CARD GOES TO THE BASKET, NOT TO THE WISH CHECKOUT PAGE.
+     *
+     * On a profile, tapping a wish opens a popup that collects what the checkout
+     * needs. A bio card is a link, so it landed on `wish.subscribe.checkout` —
+     * whose every refusal answers with `redirect()->back()`. A visitor arriving
+     * from `/bio/buy/…` has no meaningful "back", so they were dropped on the
+     * HOMEPAGE carrying a flash the homepage never renders: they tapped Unlock
+     * and nothing happened. Reported from production, 21 Aug 2026.
+     */
+    public function test_a_wish_card_sends_the_supporter_to_the_basket(): void
+    {
+        $creator = $this->creator();
+        $wish = $this->wish($creator, ['price' => 20]);
+        $row = $this->select($creator, 'wish', $wish->id);
+
+        $this->get('/bio/buy/'.$row->uuid)
+            ->assertRedirectContains('/cart')
+            ->assertRedirectContains('add='.$wish->uuid);
+    }
+
+    /**
+     * 🚨 THE GUEST GATE IS ASKED BEFORE THE BASKET, WITH THE ITEM'S REAL PRICE.
+     *
+     * `wishItemSubscribe` asked it with a hardcoded `('GBP', 0)`, so the
+     * high-value half of the gate — a guest may not spend above the threshold
+     * without an account — could never fire on that path. A £450 wish opened for
+     * a guest exactly as a £5 one did.
+     *
+     * ⚠️ The threshold is NEVER named here, in the test or in the message. See
+     * `RiskMessages` rule 1: printing it tells anyone testing stolen cards what
+     * to stay under.
+     */
+    public function test_a_high_value_wish_sends_a_guest_to_sign_in_with_a_reason(): void
+    {
+        $creator = $this->creator();
+        $wish = $this->wish($creator, ['price' => 5000]);
+        $row = $this->select($creator, 'wish', $wish->id);
+
+        $response = $this->get('/bio/buy/'.$row->uuid);
+
+        $response->assertRedirectContains('/login');
+        $response->assertRedirectContains('message=');
+    }
+
+    /** A signed-in supporter is never asked to sign in again. */
+    public function test_a_signed_in_supporter_reaches_the_basket_whatever_the_price(): void
+    {
+        $creator = $this->creator();
+        $wish = $this->wish($creator, ['price' => 5000]);
+        $row = $this->select($creator, 'wish', $wish->id);
+
+        $this->actingAs(User::factory()->create(['role' => 0]))
+            ->get('/bio/buy/'.$row->uuid)
+            ->assertRedirectContains('/cart');
+    }
+
+    /**
+     * 🚨 THE LOGIN PAGE MUST RENDER THE FLASH, NOT ONLY `?message=`.
+     *
+     * `flash` was destructured on that page and never used, so every controller
+     * sending a guest there with `->with('error', …)` — Bills and Memberships,
+     * both of which require an account — dropped them on a login screen with no
+     * explanation at all. The message was written, stored and thrown away.
+     */
+    public function test_the_login_page_renders_a_flashed_reason(): void
+    {
+        $page = (string) file_get_contents(resource_path('js/Pages/Auth/Login.jsx'));
+
+        $this->assertStringContainsString(
+            'redirectmessage || flash?.error',
+            $page,
+            'The login page shows only the query message again, so every flashed '
+            .'reason is written and thrown away.'
         );
     }
 }

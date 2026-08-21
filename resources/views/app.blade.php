@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <script data-cfasync="false">
+    <script data-cfasync="false" nonce="{{ $cspNonce ?? '' }}">
         /**
          * EMERGENCY REACT PATCH: This script MUST run before ANY other JavaScript.
          * It fixes the "Cannot set properties of undefined (setting 'Children')" error
@@ -449,7 +449,7 @@
     </script>
 
     @if(request()->is('/'))
-    <script type="application/ld+json"> 
+    <script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">
     { 
       "@context": "https://schema.org", 
       "@type": "Organization", 
@@ -495,7 +495,7 @@
         "https://uk.spennypiggy.co/register"]
         }
     </script>
-    <script async type="application/ld+json">
+    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
         {
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -567,8 +567,8 @@
          tag; a second gtag.js <script> would re-register dataLayer and double-count, so do
          not add one anywhere else. Loaded async and placed last in <head> so it never
          blocks first paint. --}}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQCXDEV7QV"></script>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}" async src="https://www.googletagmanager.com/gtag/js?id=G-EQCXDEV7QV"></script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());

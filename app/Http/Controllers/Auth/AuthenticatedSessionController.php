@@ -20,12 +20,14 @@ use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\Discovery\AttributionService;
 use App\Services\Discovery\CreatorRecommendationService;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
 use App\Support\Badges;
 use App\Support\DiscoveryPayload;
+use App\Support\DiscoverySources;
 use App\Support\OpportunityPanelPayload;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
@@ -323,7 +325,11 @@ class AuthenticatedSessionController extends Controller
             // path the Discover intros rail takes, which returns the stored poster
             // instantly and warms a missing one on the queue (frontend already
             // falls back to the creator's avatar while it is null).
-            $userIntro = $user->intro;
+            // ⚠️ Creator-only surface (21 Aug 2026). `/update/intro/video` carried no
+            // role check, so gifter (role 0) rows exist in `user_intros`; they are
+            // hidden here rather than deleted, so a gifter who later becomes a
+            // creator keeps their upload.
+            $userIntro = (int) $user->role === 1 ? $user->intro : null;
             if ($userIntro) {
                 // Serialised to an array deliberately: putting the value back on the
                 // model would land it in $attributes, where Laravel re-applies the
@@ -489,7 +495,26 @@ class AuthenticatedSessionController extends Controller
                 // ⚠️ Cached inside the service — platform-wide pool + per-profile
                 // selection, both 15 minutes — so this costs no queries on a warm
                 // cache. Never move the selection into this method.
+                // 🚨 NOT SHOWN TO A VISITOR THE CREATOR BROUGHT (21 Aug 2026).
+                // This section closes every profile, and a supporter who arrived
+                // from the creator's OWN link — their bio link, their share, their
+                // referral — is that creator's audience. Ending their money page
+                // with four other creators monetises that audience against them.
+                // A visitor Spenny Piggy sent (Discover, search, a recommendation)
+                // is ours to route onward, so they still see it.
+                //
+                // ⚠️ `sourceForCreator` reads the last-touch `sp_disc` cookie for
+                // THIS creator, the same value the payment row will record — so
+                // what the page decides and what attribution reports cannot drift.
+                // ⚠️ Only a KNOWN creator-generated source hides it. Direct and
+                // organic traffic carries no source at all, and treating "we
+                // don't know" as "the creator sent them" would remove the
+                // section from almost every profile view — a bigger change than
+                // the one being made.
                 'more_creators' => $user->role == 1
+                    && ! DiscoverySources::isCreatorGeneratedVisit(
+                        AttributionService::sourceForCreator($user->id)
+                    )
                     ? app(CreatorRecommendationService::class)->forProfile($user)
                     : [],
                 'pending_profile_changes' => Auth::id() === $user->id

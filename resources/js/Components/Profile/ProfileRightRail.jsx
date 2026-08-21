@@ -10,16 +10,12 @@ import {
     ClipboardList,
     Coins,
     Share2,
-    Flag,
-    Gift,
+    Lock,
     BadgeCheck,
     Zap,
 } from "lucide-react";
 
 const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
-const ReportContentModal = lazy(
-    () => import("@/Components/ReportContentModal"),
-);
 
 // 🚨 This used to hardcode `currency: "GBP"` while the figure it formats is in
 // the CREATOR's default_currency — a USD creator's $80 rendered as £80. Use the
@@ -155,7 +151,7 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     ) : null}
                     {hasPremium && (
                         <HighlightRow
-                            icon={<Gift size={16} className="text-[#FF007F]" />}
+                            icon={<Lock size={16} className="text-[#FF007F]" />}
                             iconBg="bg-[#FF007F]/10"
                             title="Premium content"
                             subtitle="Exclusive wishes & shop"
@@ -163,8 +159,8 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     )}
                     {hasListings && (
                         <HighlightRow
-                            icon={<Zap size={16} className="text-[#7C3AED]" />}
-                            iconBg="bg-[#7C3AED]/10"
+                            icon={<Zap size={16} className="text-[#C4006A]" />}
+                            iconBg="bg-[#FF007F]/10"
                             title="Active creator"
                             subtitle="Live content to unlock"
                         />
@@ -244,12 +240,21 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                     {/* One neutral tile system — the icon carries the colour, the tile
                         stays quiet. Support Me is the primary above; these are
                         secondary shortcuts, so none competes with it. */}
-                    <div className={`grid grid-cols-2 gap-2 ${compact ? "" : "sm:grid-cols-4"}`}>
+                    {/* 🚨 REPORT IS NOT A QUICK ACTION (21 Aug 2026). It sat here
+                        at tile parity with "Send a wish" — the control for
+                        reporting the seller drawn at the same weight as the
+                        control for buying from them, on a page whose job is to
+                        sell — and it was the visitor's FOURTH option in a set of
+                        four, next to a Share tile that also repeats the button
+                        directly above this card. It survives as the small pill
+                        under the action stack in `wishlist/Userprofile.jsx`,
+                        which is the one place it belongs. */}
+                    <div className={`grid grid-cols-2 gap-2 ${compact ? "" : "sm:grid-cols-3"}`}>
                         <Link
                             href={`/${user?.username}/wishes`}
                             className={tileClasses}
                         >
-                            <Gift size={18} className="text-[#FF007F]" />
+                            <Sparkles size={18} className="text-[#FF007F]" />
                             Send a wish
                         </Link>
                         <Link
@@ -268,18 +273,6 @@ export default function ProfileRightRail({ IsloggedIn, sections, compact }) {
                                 <Share2 size={18} className="text-black" />
                                 Share
                             </ShareProfile>
-                        </Suspense>
-                        <Suspense fallback={null}>
-                            <ReportContentModal
-                                reportedUser={user}
-                                classes={`${tileClasses} !text-gray-500 hover:!text-red-600 hover:!border-red-600`}
-                                text={
-                                    <>
-                                        <Flag size={18} />
-                                        Report
-                                    </>
-                                }
-                            />
                         </Suspense>
                     </div>
                 </div>

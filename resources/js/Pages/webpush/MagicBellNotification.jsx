@@ -1,3 +1,4 @@
+import { clearAllNotificationState } from "@/utils/appBadge";
 import MagicBell, { NotificationInbox, useMagicBellContext } from '@magicbell/magicbell-react';
 import { usePage } from '@inertiajs/react';
 import messagereciev from '../../../assets/audio/bell.mp3';
@@ -82,12 +83,36 @@ const formatTimeShort = (dateString) => {
 const CustomHeader = ({ unreadCount, onMarkAllAsRead }) => {
   const magicbell = useMagicBellContext();
 
+  /*
+   * 🚨 MAGICBELL'S READ STATE IS NOT OURS. Pressing this used to clear only
+   * MagicBell, while the app-icon badge counts unread rows in our own
+   * `notifications` table — so the number came straight back on the next
+   * foreground and no action available to the user could ever clear it
+   * ("all have been cleared, the icon still says 3").
+   *
+   * `clearAllNotificationState()` writes all three stores that "read" has to
+   * mean: our table, the OS notification tray, and the icon.
+   * ⚠️ In `finally`, so a MagicBell failure still clears our side — the two are
+   * independent services and one being down must not strand the badge.
+   */
+  const handleMarkAllAsRead = async () => {
+    try {
+      await onMarkAllAsRead?.();
+    } finally {
+      await clearAllNotificationState();
+    }
+  };
+
   const onDeleteAll = async () => {
     if (confirm("Are you sure you want to delete all notifications?")) {
       try {
         await magicbell.notifications.archiveAll();
       } catch (error) {
         console.error('Failed to delete all notifications:', error);
+      } finally {
+        // Deleting is a stronger "I have dealt with these" than marking read,
+        // so it must clear at least as much.
+        await clearAllNotificationState();
       }
     }
   };
@@ -97,7 +122,7 @@ const CustomHeader = ({ unreadCount, onMarkAllAsRead }) => {
       <h3 className="text-[17px] font-bold tracking-wide font-poppins">Notifications</h3>
       <div className="flex items-center gap-3">
         <button
-          onClick={onMarkAllAsRead}
+          onClick={handleMarkAllAsRead}
  className="hover:bg-black/20 p-1.5 rounded-full transition-colors"
           title="Mark all as read"
         >

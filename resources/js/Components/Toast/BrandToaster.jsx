@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
+import { usePage } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
+
+import { useAlerts } from '@/Components/Alerts';
 import BrandToast from './BrandToast';
 
 /*
@@ -38,6 +41,50 @@ const useIsDesktop = () => {
 };
 
 /**
+ * 🚨 THE ONE PLACE A SESSION FLASH BECOMES VISIBLE.
+ *
+ * Controllers redirect with `->with('error', …)` all over this app, and NO
+ * LAYOUT EVER READ IT. Only fifteen individual pages looked at `flash` at all,
+ * and just five of those turned it into a toast — so a message a controller
+ * carefully wrote was thrown away unless the visitor happened to land on one of
+ * those five. Found 21 Aug 2026 chasing "I tap Unlock and nothing happens": a
+ * guest sent to the login page to buy a Bill or a Membership arrived with a
+ * written explanation that the login page never rendered.
+ *
+ * This is the right mount for it: `BrandToaster` is already the ONE toaster,
+ * rendered by both `AuthenticatedLayout` and `GuestLayout`, so every page in the
+ * app is covered by one bridge rather than fifteen copies.
+ *
+ * ⚠️ THE FIVE PAGES THAT DID THIS THEMSELVES HAVE HAD THEIR COPIES REMOVED, or
+ * every one of their messages would now appear twice — and two identical toasts
+ * dismissing independently reads as a rendering bug, not as duplicate config.
+ *
+ * ⚠️ Keyed on the message text, so an Inertia visit that re-renders with the
+ * same flash does not fire it again, while a genuinely new message always does.
+ */
+function useFlashToasts() {
+    const { flash } = usePage().props;
+    const { errorAlert, successAlert } = useAlerts();
+    const lastRef = useRef('');
+
+    useEffect(() => {
+        const error = flash?.error;
+        const success = flash?.success;
+
+        if (!error && !success) return;
+
+        const signature = `${error ?? ''}|${success ?? ''}`;
+
+        if (signature === lastRef.current) return;
+
+        lastRef.current = signature;
+
+        if (error) errorAlert(error);
+        if (success) successAlert(success);
+    }, [flash?.error, flash?.success, errorAlert, successAlert]);
+}
+
+/**
  * The ONE toast mount for the whole website app.
  *
  * 🚨 Mount this exactly once per layout and never render a second `<Toaster>`
@@ -61,6 +108,8 @@ const useIsDesktop = () => {
  */
 export default function BrandToaster() {
     const isDesktop = useIsDesktop();
+
+    useFlashToasts();
 
     return (
         <Toaster

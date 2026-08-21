@@ -17,7 +17,6 @@ export default function Edit({ auth, mustVerifyEmail, status }) {
                     padding: '20px', 
                     borderRadius: '8px',
                     marginTop: '20px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}>
                     <h2 style={{ color: '#333' }}>User Information</h2>
                     <p style={{ color: '#666' }}>User: {auth?.user?.name || 'Unknown'}</p>

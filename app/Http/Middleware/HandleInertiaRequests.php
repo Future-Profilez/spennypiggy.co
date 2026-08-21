@@ -12,7 +12,9 @@ use App\Models\UserVerificationStatus;
 use App\Services\CreatorJourneyService;
 use App\Services\IntercomService;
 use App\Services\Pricing\CreatorFeeResolver;
+use App\Services\PromoBannerService;
 use App\Services\SubscriptionActivationService;
+use App\Support\AnalyticsEvent;
 use App\Support\GifterVerificationCharge;
 use App\Support\MaintenanceMode;
 use App\Support\SubscriptionPlan;
@@ -235,6 +237,24 @@ class HandleInertiaRequests extends Middleware
             ],
             'follow_status' => $follow_status,
             'cart_count' => $cart_count,
+            /*
+             * The promo deck — one slider replaces the five always-on banners that
+             * used to stack on the profile page.
+             *
+             * ⚠️ Deferred behind a closure, so it is only built when a page
+             * actually renders it, not on every partial reload.
+             *
+             * ⚠️ `has_ever_sold` and `free_until_first_sale` are PASSED IN rather
+             * than looked up again. Both are already resolved above for the lean
+             * user payload, and `hasEverMadeSale` is a ledger query — resolving it
+             * twice per request to decide whether to show a card would cost more
+             * than the card is worth.
+             */
+            'promos' => fn () => app(PromoBannerService::class)->for($user, [
+                'is_creator' => $user && (int) $user->role === 1,
+                'has_ever_sold' => (bool) ($leanUser['has_ever_sold'] ?? false),
+                'free_until_first_sale' => (bool) SubscriptionPlan::freeUntilFirstSale(),
+            ]),
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
@@ -250,6 +270,19 @@ class HandleInertiaRequests extends Middleware
                     'step_up_context' => $request->session()->pull('step_up_context'),
                 ];
             },
+            /*
+             * Server-emitted GA4 events, delivered exactly once.
+             *
+             * Every funnel milestone on this site ends in a redirect, so the
+             * controller is the only place that knows one happened. See
+             * App\Support\AnalyticsEvent — pulled here, forwarded by
+             * resources/js/lib/analytics.js, then gone.
+             *
+             * ⚠️ A plain closure, deliberately, exactly like `flash` above:
+             * Inertia evaluates these on every render, so the events cannot be
+             * stranded in the session waiting for a page that asked for them.
+             */
+            'analytics' => fn () => AnalyticsEvent::pull(),
             'symbols' => Cache::remember('currency_symbols', 86400, fn () => Currency::symbols()),
             'rates' => Cache::remember('currency_rates', 86400, fn () => Currency::rates()),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn () => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),

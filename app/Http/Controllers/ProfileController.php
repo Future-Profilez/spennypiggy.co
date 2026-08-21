@@ -615,11 +615,41 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-        $connectedAccount = $bills->bill->user->account_id;
-        if (! empty($bills)) {
-            foreach ($bills as $bill) {
+        /*
+         * 🚨 The connected account is PER BILL, not per collection.
+         *
+         * This read `$bills->bill->user->account_id` on the Collection itself,
+         * which throws `Property [bill] does not exist on this collection
+         * instance` — so deleting an account with any paid bill 500'd before a
+         * single subscription was cancelled, leaving the creator's Stripe subs
+         * live on an account the user believes is gone.
+         *
+         * Each bill belongs to a different creator, so each cancel must go to
+         * that creator's own connected account; one shared id would have
+         * cancelled against the wrong account even once the crash was gone.
+         */
+        $bills = BillPayment::with('bill.user')
+            ->where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->get();
+
+        foreach ($bills as $bill) {
+            if (empty($bill->stripe_id)) {
+                continue;
+            }
+
+            $connectedAccount = $bill->bill?->user?->account_id;
+
+            try {
                 StripeControl::cancelSubscription($bill->stripe_id, $connectedAccount);
+            } catch (\Throwable $e) {
+                // One un-cancellable subscription must not abort the deletion of
+                // the account — the remaining subs still need cancelling.
+                Log::warning('Bill subscription cancel failed during account deletion', [
+                    'user_id' => $user->id,
+                    'bill_payment_id' => $bill->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -851,6 +881,17 @@ class ProfileController extends Controller
      */
     public function saveIntroVideo(Request $request)
     {
+        // Intro videos are a CREATOR surface only: they feed the creator profile
+        // card and the /discover intros rail, both of which are about who a
+        // creator is. A gifter (role 0) uploaded one because nothing on this
+        // route or the frontend ever checked (21 Aug 2026).
+        if ((int) Auth::user()->role !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Intro videos are available to creator accounts only.',
+            ], 403);
+        }
+
         $request->validate([
             'media' => [
                 'required',
@@ -2401,7 +2442,7 @@ class ProfileController extends Controller
         // forgetting them a creator turns the toggle off and the figure stays
         // public for up to ten minutes.
         Cache::forget('user_earnings_v2_'.$user->id);
-        Cache::forget('profile_overview_v1_'.$user->id);
+        Cache::forget('profile_overview_v2_'.$user->id);
 
         return response()->json([
             'status' => true,

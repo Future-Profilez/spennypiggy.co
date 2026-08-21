@@ -39,6 +39,17 @@ export const FAST_START = {
 export const REFERRAL = {
     amount: 50,
     currency: 'GBP',
+    /**
+     * The referred creator's lifetime GMV at which the reward is released.
+     *
+     * ⚠️ THIS ONE HAS NO CONFIG KEY. `config/referral.php` carries only
+     * `reward_amount` and `currency`; the threshold is a literal `1000` in FOUR
+     * PHP places — `PromoBannerService::REFERRAL_QUALIFYING_GMV`,
+     * `Helpers.php:337`, `Helpers.php:357` and `CreatorReferral.php:79`. It is
+     * mirrored here so the marketing pages stop retyping it as well; if it ever
+     * moves, it has to move in five places until someone gives it a config key.
+     */
+    qualifyingGmv: 1000,
 };
 
 export const CURRENCY_SYMBOL = '£';

@@ -66,7 +66,7 @@ export default function ReportContentModal({ reportedUser, classes, text }) {
             modalclass="pinkmodal max-w-2xl"
             size="xl"
             space="6"
-            classes={classes || "bg-yellow-500 border-[3px] border-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-box-sm text-black group"}
+            classes={classes || "bg-yellow-500 border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 p-3 rounded-box-sm text-black group"}
             text={text || <Flag size={20} strokeWidth={2.5} />}
             action={isOpen}
             onHide={() => setIsOpen(false)}

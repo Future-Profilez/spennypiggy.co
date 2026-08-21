@@ -41,7 +41,7 @@ function Billslist({ IsloggedIn, suppressEmptyState = false }) {
                         />
                     )}
                 </div>
-                : suppressEmptyState ? null : <Nocontent text='nothing to see' /> 
+                : suppressEmptyState ? null : <Nocontent text="Nothing here yet" subheading="This creator has no recurring content on sale." /> 
             }
         </>
     );

@@ -272,7 +272,7 @@ export default function WaysToGetPaid() {
                             <p className="font-gulfs uppercase text-black text-lg md:text-2xl leading-[1.15] tracking-tight flex-1">
                                 All of it lands in one payout, every Friday
                             </p>
-                            <p className="font-poppins text-black/70 text-[13px] leading-[1.5] sm:text-right sm:max-w-[210px] shrink-0">
+                            <p className="font-poppins text-black text-[13px] leading-[1.5] sm:text-right sm:max-w-[210px] shrink-0">
                                 You keep 100% of your listed price on every one of them.
                             </p>
                         </div>

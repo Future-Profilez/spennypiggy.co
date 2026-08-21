@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Jobs\LinkUserToCrmCreator;
 use App\Models\User;
+use App\Support\AnalyticsEvent;
 use Carbon\Carbon;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -27,6 +28,9 @@ class VerifyEmailController extends Controller
             event(new Verified($request->user()));
             // Email is now confirmed — retry CRM prospect linking (email match is gated on verification).
             LinkUserToCrmCreator::dispatch($request->user()->id);
+            // GA4 funnel — stage 2. Only on the transition, never on a revisit
+            // to an already-verified link, or the stage out-counts signup.
+            AnalyticsEvent::push('email_verified', ['source' => 'in_app']);
         }
 
         return redirect()->intended(route('user.show', ['username' => $request->user()->username]).'?verified=1');
@@ -76,6 +80,11 @@ class VerifyEmailController extends Controller
 
             // Email is now confirmed — retry CRM prospect linking (email match is gated on verification).
             LinkUserToCrmCreator::dispatch($user->id);
+
+            // GA4 funnel — stage 2, reached from the emailed link rather than
+            // in-app. Both paths emit the same event name so the funnel stage
+            // is one number; `source` keeps them separable.
+            AnalyticsEvent::push('email_verified', ['source' => 'email_link']);
 
             return redirect()->route('user.show', [$user->username])
                 ->with('success', 'Email verified successfully');

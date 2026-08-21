@@ -83,8 +83,20 @@ export default function PiggyPotsGrid({
             // directly inside a `return (` is an object literal and breaks the
             // build — and writing that trap out inside a /* block */ closes the
             // comment early on its own terminator, which broke it a second way.
+            // ⚠️ A ONE- OR TWO-ITEM GRID IS CAPPED, NOT STRETCHED. At `md:grid-cols-3`
+            // a single pot rendered as a ~240px card alone in an ~800px column with
+            // 560px of empty ground beside it — the only thing this creator has for
+            // sale, drawn narrower than the card next to it. Fewer items keep the
+            // same card size and the row simply stops being three wide.
+            const gridCols =
+                piggyPots.length === 1
+                    ? "grid-cols-1 max-w-[320px]"
+                    : piggyPots.length === 2
+                      ? "grid-cols-2 max-w-[660px]"
+                      : "grid-cols-2 md:grid-cols-3";
+
             return (
-                <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
+                <div className={`w-full grid ${gridCols} gap-2.5 sm:gap-4`}>
                     {piggyPots.map((pot) => {
                         const target = Number(pot?.target_amount) || 0;
                         const raised = Number(pot?.total_raised) || 0;
@@ -226,9 +238,8 @@ export default function PiggyPotsGrid({
         if (IsloggedIn) {
             return (
                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
-                    <div className="text-4xl mb-3">🐷</div>
                     <h3 className="font-gulfs text-2xl uppercase mb-2">
-                        No Active Piggy Pots
+                        No active Piggy Pots
                     </h3>
                     <p className="text-gray-600 font-bold mb-6">
                         Create a content goal to sell exclusive content toward a
@@ -238,7 +249,7 @@ export default function PiggyPotsGrid({
                         onClick={() =>
                             window.dispatchEvent(new Event("toggleAddOptions"))
                         }
-                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                     >
                         Create Piggy Pot
                     </button>
@@ -246,7 +257,12 @@ export default function PiggyPotsGrid({
             );
         }
 
-        return <Nocontent showdiscover={true} text="No active Piggy Pots." />;
+        return (
+            <Nocontent
+                text="Nothing here yet"
+                subheading="This creator has no content goals running."
+            />
+        );
     }, [IsloggedIn, piggyPots]);
 
     return (

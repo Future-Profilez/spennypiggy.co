@@ -14,7 +14,7 @@ import { FREE_UNTIL_FIRST_SALE, SUBSCRIPTION_COPY } from '@/constants/creatorSub
 /* The three things this page promises and never charges for. Factored so the
    word "No" is said once in the visual and three times to a screen reader —
    see the sr-only line beside it. */
-const NO_LIST = ['commission', 'hidden fees', 'nudes 🐷'];
+const NO_LIST = ['commission', 'hidden fees'];
 
 export default function JoinUs() {
     return (
@@ -68,13 +68,21 @@ export default function JoinUs() {
                     project's already-documented rule for this exact violet (see the
                     filled step in StablecoinTipsAnnouncement), and this card is the
                     page's final CTA, so it is the worst place to be marginal. */}
+                {/* 🚨 NO ALPHA ON THE INK HERE. `#924DFF` is mid-luminance, so
+                    full black caps at ~4.8:1 and there is no headroom to spend on
+                    an opacity: `text-black/60` measured 3.01:1 on the eyebrow and
+                    `text-black/80` measured 4.04:1 on the last paragraph before the
+                    page's closing CTA — the worst-placed AA failure on the site.
+                    Hierarchy here comes from size, weight and tracking, which cost
+                    no contrast. Same rule as the toast palette and the promo card
+                    grounds. */}
                 <div className="w-full bg-[#924DFF] rounded-box p-6 sm:p-10 md:p-12">
                     <div className="md:grid md:grid-cols-12 md:gap-10 md:items-start">
                         <div className="md:col-span-7">
                             {/* Names the chapter this section closes (Welcome.jsx
                                 calls it "Finale · Your turn") — structure, not
                                 decoration. */}
-                            <p className="font-CeraGRBold uppercase text-black/60 text-xs tracking-[0.22em] mb-4">
+                            <p className="font-CeraGRBold uppercase text-black text-xs tracking-[0.22em] mb-4">
                                 Your turn
                             </p>
                             <h2 className="font-gulfs uppercase text-black text-3xl sm:text-5xl md:text-[54px] leading-[0.95] stroke-none mb-5">
@@ -85,7 +93,7 @@ export default function JoinUs() {
                                 content, and this is the loudest one on the site. The
                                 free-period line is a config switch, not a fact — see
                                 `constants/creatorSubscription`. */}
-                            <p className="text-black/80 text-base font-poppins leading-[1.6] max-w-xl">
+                            <p className="text-black text-base font-poppins leading-[1.6] max-w-xl">
                                 Build your Wishlist, share it with your fans, and get paid properly
                                 for what you make.{FREE_UNTIL_FIRST_SALE ? ` ${SUBSCRIPTION_COPY.promise}.` : ''}
                             </p>
@@ -112,7 +120,7 @@ export default function JoinUs() {
                                         ))}
                                     </ul>
                                 </div>
-                                <p className="sr-only">No commission. No hidden fees. No nudes.</p>
+                                <p className="sr-only">No commission. No hidden fees.</p>
                             </div>
                         </div>
                     </div>

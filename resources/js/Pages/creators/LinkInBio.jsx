@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, Check } from 'lucide-react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
@@ -336,12 +336,45 @@ export default function LinkInBio({ discovery }) {
 }
 
 
-/** The one pink call to action. Black type, brightness on hover, never a scale. */
+/**
+ * The one pink call to action. Black type, brightness on hover, never a scale.
+ *
+ * 🚨 THE DESTINATION DEPENDS ON WHO IS READING. This is an ad page, so it was
+ * hard-wired to `/register` — which sent a creator who is already signed in to a
+ * registration form for an account they have. "Create your link" then read as a
+ * dead end to the one person who could act on it.
+ *
+ *   guest      → `/register`, the page it always went to.
+ *   creator    → their OWN bio page. It exists the moment the account does, so
+ *                "create" is really "go and see it" — and from there the owner
+ *                bar is the way into the editor.
+ *   supporter  → their profile. `BioPageController::show()` redirects a role-0
+ *                account there anyway (a supporter has nothing to list), so
+ *                sending them to the bio URL would be a hop through a redirect
+ *                to arrive at the same place.
+ *
+ * ⚠️ Built from `auth.user`, which is a SHARED Inertia prop — the page's own
+ * props carry no user. ⚠️ Literal paths, not `route()`: a named route is
+ * invisible to the frontend until `ziggy:generate` runs and `route()` THROWS for
+ * a name it does not carry, which on an ad page would surface as a broken CTA
+ * rather than as the missing route it is.
+ */
 function Cta({ children, className = '' }) {
+    const user = usePage().props?.auth?.user;
+
+    let href = '/register';
+
+    if (user?.username) {
+        href =
+            Number(user.role) === 1
+                ? `/${user.username}/bio`
+                : `/${user.username}`;
+    }
+
     return (
         <div className={`flex ${className}`}>
             <Link
-                href="/register"
+                href={href}
                 className="group inline-flex min-h-[52px] items-center justify-center gap-2 rounded-box-sm bg-[#FF007F] px-9 font-gulfs text-[13px] uppercase tracking-[0.16em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
             >
                 <span>{children}</span>

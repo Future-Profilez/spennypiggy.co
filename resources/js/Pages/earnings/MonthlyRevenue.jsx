@@ -178,7 +178,7 @@ export default function MonthlyRevenue() {
                                     contentStyle={{ 
                                         borderRadius: '16px', 
                                         border: 'none', 
-                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                        
                                         padding: '12px'
                                     }}
                                     itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, memo } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { IoMdRefresh } from "react-icons/io";
 import {
     ChevronLeft,
@@ -62,6 +62,8 @@ function InstantTabSystem({
     IsloggedIn,
     onTabChange = null 
 }) {
+    const pageProps = usePage().props;
+
     // Client-side state for instant feedback
     const [pendingTab, setPendingTab] = useState(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -126,16 +128,51 @@ function InstantTabSystem({
         });
     }, []);
 
-    const tabs = [
-        { id: 'about', label: 'About', Icon: CircleUserRound },
+    /*
+     * 🚨 A VISITOR ONLY SEES A TAB THE CREATOR ACTUALLY SELLS IN (21 Aug 2026).
+     * The strip was a static seven-item array while `profile_overview` — which
+     * already carries the live count per module and is already read by
+     * ProfileRightRail — was never consulted. A typical creator sells in one of
+     * seven, so a stranger with sixty seconds had to open six dead ends to find
+     * the one with content, and each of those ends in an empty state.
+     *
+     * ⚠️ THE OWNER KEEPS ALL SEVEN. Hiding an empty tab from the creator would
+     * remove the only route to the screen where they would add the first item —
+     * the emptiness is the reason they need to get there.
+     *
+     * ⚠️ `about` is never filtered (it is the profile itself), and the tab the
+     * viewer is currently ON is never filtered out, or a shared link to an
+     * emptied tab would leave the strip with no active item.
+     */
+    const overview = pageProps?.profile_overview || {};
+    const isOwner =
+        Boolean(pageProps?.auth?.user?.id) &&
+        String(pageProps.auth.user.id) === String(user?.id);
+
+    const allTabs = [
+        { id: 'about', label: 'About', Icon: CircleUserRound, countKey: null },
         // { id: 'feed', label: 'Feed' },
-        { id: 'wishes', label: 'Wishes', Icon: Sparkles },
-        { id: 'shop', label: 'Shop', Icon: ShoppingBag },
-        { id: 'tasks', label: 'Tasks', Icon: ClipboardList },
-        { id: 'piggy-pots', label: 'Piggy Pots', Icon: PiggyBank },
-        { id: 'memberships', label: 'Memberships', Icon: Crown },
-        { id: 'bills', label: 'Bills', Icon: Repeat },
+        { id: 'wishes', label: 'Wishes', Icon: Sparkles, countKey: 'wishes' },
+        { id: 'shop', label: 'Shop', Icon: ShoppingBag, countKey: 'shops' },
+        { id: 'tasks', label: 'Tasks', Icon: ClipboardList, countKey: 'tasks' },
+        { id: 'piggy-pots', label: 'Piggy Pots', Icon: PiggyBank, countKey: 'piggy_pots' },
+        { id: 'memberships', label: 'Memberships', Icon: Crown, countKey: 'memberships' },
+        { id: 'bills', label: 'Bills', Icon: Repeat, countKey: 'bills' },
     ];
+
+    const tabs = allTabs
+        .map((tab) => ({
+            ...tab,
+            count: tab.countKey ? Number(overview[tab.countKey] || 0) : null,
+        }))
+        .filter(
+            (tab) =>
+                isOwner ||
+                tab.countKey === null ||
+                tab.count > 0 ||
+                tab.id === activeTab ||
+                tab.id === pendingTab,
+        );
 
     // Get effective active tab (including pending state)
     const effectiveActiveTab = pendingTab || activeTab;
@@ -181,6 +218,13 @@ function InstantTabSystem({
 
     // Instant visual feedback on click
     const handleTabClick = useCallback((tabId, e) => {
+        // ⚠️ A modified click belongs to the browser: cmd/ctrl/shift-click and
+        // the middle button must open a new tab/window, which is the whole point
+        // of these carrying a real href.
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) {
+            return;
+        }
+
         // Prevent default to control navigation
         e.preventDefault();
         
@@ -196,11 +240,11 @@ function InstantTabSystem({
         if (tabId === effectiveActiveTab && timeSinceLastClick < 300) {
             return;
         }
-        
-        // If different tab clicked too quickly, ignore
-        if (tabId !== effectiveActiveTab && timeSinceLastClick < 100) {
-            return;
-        }
+
+        // ⚠️ The 100ms cross-tab swallow was REMOVED (21 Aug 2026). It dropped a
+        // click on a DIFFERENT tab that landed inside 100ms of the previous one
+        // and gave no feedback at all, so a fast tapper got nothing and had no
+        // way to know why. The in-flight visit is replaced, not queued.
         
         lastClickTime.current = now;
         
@@ -397,13 +441,23 @@ function InstantTabSystem({
             handleTabHover(tab.id);
         };
         
+        /*
+         * 🚨 AN ANCHOR, NOT A BARE BUTTON. These change the URL, so they are
+         * navigation: a <button> gave no href to hover, no cmd/middle-click, no
+         * "open in new tab", and nothing for assistive tech to read as a link.
+         * The left-click still takes the instant-feedback + partial-reload path
+         * below; `handleTabClick` returns early on a modified click so the
+         * browser's own behaviour survives.
+         */
+        const href = route('user.show', { username: user.username, page: tab.id });
+
         return (
-            <button
+            <a
                 ref={buttonRef}
+                href={href}
                 onClick={handleClick}
                 onMouseEnter={handleMouseEnter}
                 style={buttonStyles}
-                disabled={isTransitioning && isPending}
                 className={`
                     relative inline-flex items-center min-h-[44px] px-3.5 py-2 text-xs md:text-sm font-black uppercase
                     transition-colors duration-300 min-w-max whitespace-nowrap
@@ -413,29 +467,54 @@ function InstantTabSystem({
                         : 'text-black bg-white hover:bg-black/[0.04]'
                     }
                     ${shouldShowLoading ? 'opacity-90 animate-pulse' : ''}
-                    disabled:pointer-events-none
                 `}
                 aria-pressed={isEffectivelyActive}
-                aria-label={`Switch to ${tab.label} tab`}
+                aria-current={isEffectivelyActive ? 'page' : undefined}
+                aria-label={
+                    tab.count === null
+                        ? `Switch to ${tab.label} tab`
+                        : `Switch to ${tab.label} tab, ${tab.count} item${tab.count === 1 ? '' : 's'}`
+                }
             >
                 {/* Tab content */}
                 <span className="flex items-center gap-1.5">
                     {tab.Icon ? <tab.Icon size={15} strokeWidth={2.5} className="shrink-0" /> : null}
                     <span>{tab.label}</span>
+                    {/* The count is what makes an unopened tab decidable. It is
+                        `aria-hidden` because the label above already says it in
+                        words. */}
+                    {tab.count > 0 ? (
+                        <span
+                            aria-hidden="true"
+                            className={`ml-0.5 inline-flex min-w-[18px] items-center justify-center rounded-box-xs px-1 text-[11px] font-black tabular-nums ${
+                                isEffectivelyActive
+                                    ? 'bg-black/[0.12] text-black'
+                                    : 'bg-black/[0.06] text-black/70'
+                            }`}
+                        >
+                            {tab.count > 99 ? '99+' : tab.count}
+                        </span>
+                    ) : null}
                 </span>
-            </button>
+            </a>
         );
     });
 
     return (
         <div className='relative pb-2 mt-4'>
-            <div className="w-full flex items-center gap-3 py-2 relative">
-                <ScrollArrow
-                    direction={-1}
-                    disabled={!overflow.left}
-                    onClick={() => scrollByPage(-1)}
-                />
+            {/* 🚨 BOTH ARROWS SIT AFTER THE STRIP, AS A PAIR (21 Aug 2026).
+                The left arrow used to be laid out BEFORE the strip, so on
+                desktop the first tab began 56px (44px button + 12px gap) to the
+                right of the panel it controls — a control and its content out of
+                line by more than a whole gutter, and the most visible alignment
+                break on the page.
 
+                ⚠️ This keeps the anti-loop reasoning below intact: the arrows'
+                space is still reserved unconditionally, so the strip's width
+                still does not depend on whether it overflows. Only which SIDE
+                the reserved space is on has changed, and grouping a pair of
+                scroll controls at one end is the ordinary carousel idiom. */}
+            <div className="w-full flex items-center gap-3 py-2 relative">
                 {/* min-w-0 + flex-1: without it the flex item refuses to shrink and the last
                     tabs get clipped off-screen instead of scrolling. */}
                 <div className="relative min-w-0 flex-1">
@@ -474,11 +553,18 @@ function InstantTabSystem({
 
                 </div>
 
-                <ScrollArrow
-                    direction={1}
-                    disabled={!overflow.right}
-                    onClick={() => scrollByPage(1)}
-                />
+                <div className="hidden sm:flex shrink-0 items-center gap-2">
+                    <ScrollArrow
+                        direction={-1}
+                        disabled={!overflow.left}
+                        onClick={() => scrollByPage(-1)}
+                    />
+                    <ScrollArrow
+                        direction={1}
+                        disabled={!overflow.right}
+                        onClick={() => scrollByPage(1)}
+                    />
+                </div>
                 {/* {isTransitioning && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-white opacity-70 animate-pulse pointer-events-none"></div>
                 )} */}

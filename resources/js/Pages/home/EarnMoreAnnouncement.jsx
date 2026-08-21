@@ -4,6 +4,12 @@ import FadeIn from '@/Components/animations/FadeIn';
 import StaggerItem from '@/Components/animations/StaggerItem';
 import TiltCard from '@/Components/animations/TiltCard';
 import Magnetic from '@/Components/animations/Magnetic';
+// 🚨 EIGHT FIGURES ON THIS PAGE WERE TYPED INTO JSX (21 Aug 2026) while this file
+// existed and was already imported by three lower-traffic ad pages. Its own
+// docblock says it: "A number that is wrong here is a number in an advert." The
+// homepage is the biggest advert on the site and was the one page not reading it.
+// One of the eight was materially wrong — see the Founder card below.
+import { FOUNDER, FAST_START, REFERRAL, money, percent } from '@/constants/creatorBonuses';
 
 export default function EarnMoreAnnouncement({ founderBonus }) {
     const spotsRemaining = founderBonus?.founderSpotsRemaining;
@@ -46,13 +52,13 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:gap-y-10 px-2 md:px-4">
                     <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
-                    <div className="bg-[#E6EA7B] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
-                        <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-6">
+                    <div className="bg-[#E6EA7B] border-black rounded-box p-6 md:p-8 relative group h-full">
+                        <div className="absolute -top-4 -right-3 md:-top-6 md:-right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform rotate-6">
                             <FaBolt />
                         </div>
                         <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Fast Start Bonus</h3>
                         <p className="text-black/70 text-lg mb-5 leading-snug">
-                            Earn an extra 5% on everything you make during your first 30 days.
+                            Earn an extra {percent(FAST_START.rate)} on everything you make during your first {FAST_START.windowDays} days.
                         </p>
                         <ul className="space-y-2 text-black/75 font-semibold">
                             <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> No minimum earnings</li>
@@ -65,13 +71,15 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
 
                     <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
-                    <div className="bg-[#05EFB8] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
-                        <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform -rotate-6">
+                    <div className="bg-[#05EFB8] border-black rounded-box p-6 md:p-8 relative group h-full">
+                        <div className="absolute -top-4 -right-3 md:-top-6 md:-right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform -rotate-6">
                             <FaCrown />
                         </div>
                         <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Founder&#39;s Bonus</h3>
                         <p className="text-black/70 text-lg mb-5 leading-snug">
-                            First 150 creators only. Earn £2,500 in your first 30 days and unlock an extra 10% on your earnings every month for 12 months.
+                            First {FOUNDER.seats} creators only. Earn {money(FOUNDER.qualifyingNet)} in your first {FOUNDER.windowDays} days
+                            and unlock an extra {percent(FOUNDER.monthlyRate)} on your earnings every month for 12 months,
+                            up to {money(FOUNDER.monthlyCap)} a month.
                         </p>
                         <ul className="space-y-2 text-black/75 font-semibold">
                             <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Limited founder spots</li>
@@ -89,8 +97,8 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
 
                     <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
                     <TiltCard max={8} className="rounded-box h-full">
-                    <div className="bg-[#FF007F] border-[3px] border-black rounded-box p-6 md:p-8 relative group h-full">
-                        <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-12">
+                    <div className="bg-[#FF007F] border-black rounded-box p-6 md:p-8 relative group h-full">
+                        <div className="absolute -top-4 -right-3 md:-top-6 md:-right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform rotate-12">
                             <FaUserFriends />
                         </div>
                         {/* ⚠️ INK ON A PINK FILL IS BLACK. White on #FF007F is 3.78:1
@@ -99,7 +107,7 @@ export default function EarnMoreAnnouncement({ founderBonus }) {
                             also the only card in the row reading in a different ink. */}
                         <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">Creator Referral Bonus</h3>
                         <p className="text-black/80 text-lg mb-5 leading-snug">
-                            Refer creators and earn £50 when they reach £1,000 in earnings.
+                            Refer creators and earn {money(REFERRAL.amount)} when they reach {money(REFERRAL.qualifyingGmv)} in earnings.
                         </p>
                         <ul className="space-y-2 text-black font-semibold">
                             <li className="flex items-center gap-2"><FaCheck className="text-black shrink-0" /> Unlimited referrals</li>

@@ -48,6 +48,19 @@ const SLOTS = {
     pick: { label: "Discovery pick", className: "bg-black text-white" },
 };
 
+/*
+ * 🚨 THE HOVER IS AN OPAQUE COLOUR, NEVER `hover:bg-black/[0.04]`.
+ *
+ * That class does not TINT a white card — it REPLACES the background with a 96%
+ * transparent black, so whatever is behind the card shows through. On a white
+ * page that reads as a faint darkening and looks correct; on the homepage's dark
+ * field the card went BLACK on hover. Reported 21 Aug 2026 against exactly this
+ * component.
+ *
+ * A reusable row is drawn on cream, white and dark grounds, so its hover cannot
+ * depend on what is behind it. An opaque near-white darkens the same amount
+ * everywhere.
+ */
 function CreatorCard({ creator }) {
     const slot = SLOTS[creator.slot] || SLOTS.pick;
 
@@ -60,7 +73,7 @@ function CreatorCard({ creator }) {
             )}
             aria-label={`View ${creator.name}'s profile`}
             /* Hover is a background change only — no lift, no scale. */
-            className="group flex h-full w-full min-h-[240px] flex-col overflow-hidden rounded-box-sm border border-[#000] bg-white transition-colors duration-200 hover:bg-black/[0.04] motion-reduce:transition-none"
+            className="group flex h-full w-full min-h-[240px] flex-col overflow-hidden rounded-box-sm border border-[#000] bg-white transition-colors duration-200 hover:bg-[#F4F4F5] motion-reduce:transition-none"
         >
             <div className="relative h-[112px] w-full shrink-0 overflow-hidden border-b border-[#000] bg-[#A2E4B8]">
                 {creator.cover_url ? (

@@ -1302,6 +1302,26 @@ lr-config {
     .sp-nav-pulse {
         animation: none !important;
     }
+
+    /* 🚨 EIGHT INFINITE ANIMATIONS SURVIVED `reduce` (measured 21 Aug 2026), and
+       the two that mattered most were THE MARQUEES — 5s continuous horizontal
+       scroll, which is the exact thing this preference exists to stop. The
+       `fading-effect` entrances (25 elements) were already gated at line 75 and
+       stop correctly; these were not covered by any of the six existing blocks.
+
+       ⚠️ The marquee STOPS rather than hides: the text is real content ("Keep
+       100% of what you Earn"), so it has to stay readable — it simply stops
+       moving and shows its first frame. `PaymentSlider` already honours the
+       preference in JS; this is the CSS-driven half it could not reach. */
+    .scrolling-container {
+        animation: none !important;
+    }
+
+    .animate-float,
+    .animate-float-delayed,
+    .animate-pulse {
+        animation: none !important;
+    }
 }
 
 /*

@@ -1209,6 +1209,588 @@ being deleted**.
   and once inside the HMAC — so it can sign a different timestamp than it prints.
 - Tests: `tests/Unit/SecureMediaTest.php` (21).
 
+## Intro videos are a CREATOR surface (21 Aug 2026, spennypiggy.co)
+
+A gifter (role 0) uploaded an intro video, because **nothing on the path checked
+the role** — not `POST /update/intro/video`, not the component, not the discovery
+query. Intro videos feed the profile identity rail and the `/discover` intros
+rail, both of which answer "who is this creator".
+
+- **`ProfileController::saveIntroVideo` answers 403** to any account with
+  `(int) role !== 1`. This is the real guard; everything below is display.
+- **`AuthenticatedSessionController::getUserProfile`** builds the `intro` PAGE
+  PROP (⚠️ *not* `OptimizedProfileController`, which also declares one — the
+  `/{username}/{page?}` catch-all routes to the former). Both now send `null` for
+  a non-creator, which blanks the card for owner and visitor alike.
+- **`WishitemController::discover_all_creators`** gained `where('role', 1)` on
+  both the eager-load closure and the `whereHas` — the intros rail had no role
+  filter at all. ⚠️ It is cached 600s per `{order}_{gender}_{page}`.
+- **`DiscoveryService::getSearchCreators`** gates the intro **per row**
+  (`$u->intro && (int) $u->role === 1`): search is the one discovery query that
+  deliberately returns fans as well as creators, so its own role filter cannot do it.
+- **`AddIntro.jsx`** returns null when the role is known and not 1 — owner reads
+  `auth.user.role`, visitor reads `user.role`. An **unknown** role still renders:
+  `ProfileSteps` mounts it without a `user` prop, so guessing "gifter" would blank
+  the card for creators. ⚠️ The check sits AFTER every hook.
+- 🚨 **A gifter is never OFFERED the upload either** — the empty AddIntro card *is*
+  the "add" affordance for the owner, so hiding the video alone would still show a
+  gifter an upload box. Both call sites carry their own creator gate:
+  `Dashboard.jsx` (`isCreatorProfile`, the profile OWNER's role — also keeps the
+  lazy chunk off a gifter's page) and `ProfileSteps.jsx`'s "Add Intro Video" row.
+  The checklist only mounts for a Stripe-connected account, but the role check is
+  explicit rather than second-hand.
+- **Existing gifter rows are hidden, NOT deleted** (client decision) — a gifter who
+  later becomes a creator keeps their upload.
+- Tests: `tests/Feature/ProfileIntroPropTest.php` (11). ⚠️ `UserIntro`'s poster
+  accessor indexes straight into `result.result[0]` with no guard, so an
+  `Http::fake` returning a bare 200 fails with *"Undefined array key"* and reads
+  like a role-gate failure — fake the `generateThumb` shape.
+
+## 🚨 Production Sentry sweep (21 Aug 2026, spennypiggy.co)
+
+Seven live faults off the Sentry project `spenny-piggy/javascript-react`. Every one of
+them is a class that repeats, so the rule matters more than the fix.
+
+- 🚨 **`ShopPayment`, `BillPayment` and `MembershipPayment` all `use SoftDeletes` against
+  tables that had no `deleted_at`.** `2024_01_03_000001` wraps each CREATE in
+  `if (! Schema::hasTable(...))`, and all three tables already existed from an earlier
+  schema — so the `softDeletes()` inside never ran, while the trait appends
+  `where deleted_at is null` to EVERY query those models make. Live symptom:
+  `Unknown column 'shop_payments.deleted_at'` on `/shop/orders-list`. Migration
+  `2026_08_21_100000` backfills all three, guarded **per column** (a fresh database
+  already has them). ⚠️ **A guarded create is invisible until a model reaches for what
+  it skipped** — the same trap as `shops`, `wish_items` and `users.role`.
+  ⚠️ **Cross-app check done: the admin app carries the SAME guarded create AND the same
+  three `use SoftDeletes` models**, so it was hitting the identical crash on the shared
+  database. The migration is added in THIS app only (never double-run a shared-DB
+  migration) and the admin app needs no code change — `deleted_at` is not `$fillable`
+  on either side.
+- 🚨 **`ProfileController::destroy` read `$bills->bill->user->account_id` on the
+  COLLECTION**, so deleting an account with any paid bill threw
+  `Property [bill] does not exist on this collection instance` **before a single
+  subscription was cancelled** — the user believed the account was gone while their
+  Stripe subs stayed live. The connected account is **per bill** (each belongs to a
+  different creator), so one shared id would have cancelled against the wrong account
+  even once the crash was gone. Each cancel is now individually try/caught: one
+  un-cancellable subscription must not abort the rest.
+- 🚨 **PHP closures capture NOTHING by default, and the failure is invisible until the
+  branch runs.** Both guest-cart `$supporterPays` closures in `WishitemController`
+  (`addToCart`, `updateCartQuantity`) read a creator variable that was not in their
+  `use` list — a 500 on `/add-to-cart` for logged-out supporters only. Sentry reported
+  the first; the second was found beside it and had never fired.
+- 🚨 **`public/` DOES NOT EXIST ON THE LAMBDA.** Vapor uploads it to S3/CloudFront and
+  strips it from the deployment package, so `file_get_contents(public_path('offline.html'))`
+  worked on every machine and threw `Failed to open stream` in production. That 500 also
+  broke **service-worker install** — `precacheAndRoute` fetches `/offline.html` during
+  install and one failure rejects the whole worker, taking push and offline caching with
+  it. The file now lives at **`resources/proxy/offline.html`**, the existing house
+  location for route-served assets (the PWA icons are there for the same reason);
+  `routes/web.php` and `scripts/build-sw.js` must name the same path.
+- **CSP report-only earned its keep on day one.** `connect-src`/`script-src` were short
+  of the whole **Google Ads** host family (`www.google.<ccTLD>`, `*.doubleclick.net`,
+  `pagead2.googlesyndication.com`, `www.googleadservices.com`) and of Termly's regional
+  consent host (`us.consent.api.termly.io` — the embed is on `app.termly.io`, the API is
+  not). ⚠️ **A wildcard does not match a bare host**: `*.analytics.google.com` was listed
+  while `analytics.google.com`, the host GA4 actually posts to, was not. The remaining
+  un-nonced inline blocks in `app.blade.php` (the pre-boot React patch, two JSON-LD
+  blocks, the `gtag` config) now carry `$cspNonce`, so `SECURITY_CSP_ENFORCE` is no
+  longer blocked on them.
+- **Stale-chunk recovery now covers the case where the import RESOLVES to nothing.**
+  `resources/js/utils/lazyRetry.js` is a drop-in `React.lazy` that reloads once (sharing
+  `app.jsx`'s cooldown key, so the two cannot loop each other) when a chunk resolves
+  without a default export — `undefined is not an object (evaluating 'y._result.default')`.
+  There is no error to catch: the promise resolves. Applied to `includes/Footer.jsx`
+  first because it renders on every page. ⚠️ The other ~18 `lazy()` sites are unchanged
+  and still carry the fault.
+- **`Inertia::render(...)->withHeaders(...)` throws** — `Inertia\Response` is
+  `Responsable`, not a `Response`. Already fixed in `OptimizedProfileController`; listed
+  here because the error message (`Method Inertia\Response::withHeaders does not exist`)
+  names the class and not the missing `->toResponse($request)`.
+
+**Two Sentry entries that are NOT code faults**, recorded so nobody re-triages them:
+`AwsS3V3Adapter $bucket must be of type string, null given` is an **empty `AWS_BUCKET`
+on that environment**, and the `"payout" namespace` / `Command "update-help-centre" is
+not defined` errors are mistyped `php artisan` invocations (`update-help-centre` is a
+skill, not a command).
+
+## 🚨 ONE promo surface — the profile slider (21 Aug 2026, spennypiggy.co)
+
+`Components/Promo/PromoSlider.jsx` on the profile's About tab is **the only place a
+promo may appear**. Three always-on banners used to stack there above "About me" —
+`OfferAnnouncement`, `ReferralBanner` and `FeatureSuggestionBanner`, plus the right-rail
+membership block — so the page a creator visits most read as a noticeboard. Adding a
+fourth was a JSX edit, which is why there was nothing stopping a fifth.
+
+- 🚨 **A NEW PROMO IS A `config/promos.php` ENTRY, NEVER A NEW BANNER.** The config is
+  the only definition; the slider renders exactly one card at a time whatever is in it.
+  `banners` are evergreen features, `announcements` are time-boxed news (`starts_at` /
+  `ends_at`, priority above every feature card because a time-boxed card that does not
+  lead the deck while it is live never will).
+- 🚨 **`priority` IS A WEIGHT, NOT A SORT ORDER.** The deck opens on a weighted-random
+  pick, so a priority-10 card is the most *likely* first card, not the guaranteed one —
+  a straight sort means the bottom half of the deck is seen only by people who swipe,
+  and most do not. The deck is then reordered so no two cards share a ground colour
+  back to back: the whole design rests on the colour changing, and two mint cards in a
+  row makes a swipe look like it did nothing.
+- 🚨 **ELIGIBILITY OUTRANKS PRIORITY, and it lives in `PromoBannerService`, not the
+  config** (config must stay cacheable; eligibility needs the DB). A creator who has
+  already sold is never shown "free until your first sale" however high it sits — a card
+  describing a state the viewer has left is the slider telling them something untrue
+  about their own account. A key with no rule in `isEligible()` is always shown.
+- ⚠️ **A logged-out visitor sees the WHOLE deck.** Eligibility answers "have you already
+  done this", which has no meaning without an account, and these cards are advertising
+  the features *to* them.
+- 🚨 **NOTHING ON THIS PATH MAY THROW.** The deck is built in
+  `HandleInertiaRequests::share()`, so it runs on every Inertia response — a failure
+  would take down every page on the site to hide a marketing card. Same house pattern as
+  `VisitTracker`: catch `\Throwable`, log a warning, return an empty deck. Pinned by
+  `test_a_broken_deck_never_throws`. A promo naming an unknown route is dropped with a
+  warning rather than being allowed to `route()`-throw.
+- ⚠️ **The deck is cached per viewer for `promos.cache_ttl` (300s), and the cache key
+  carries `has_ever_sold` and `is_creator`** — without them, a creator who has just made
+  their first sale keeps being shown the first-sale card for the rest of the TTL, off a
+  key that says nothing changed. `has_ever_sold` and `free_until_first_sale` are **passed
+  in** from the shared payload, never re-resolved: `hasEverMadeSale` is a ledger query.
+- ⚠️ **NOTHING IS DISMISSIBLE, deliberately.** The two banners this replaced hid
+  themselves for 14 and 20 days via localStorage, and there is **no nav entry anywhere in
+  the app** for `/refer-and-earn` or the founder page — so closing one removed the only
+  route to that feature for a fortnight. A permanent slot costing one swipe is the trade.
+  The old localStorage keys are simply ignored.
+- ⚠️ **`exclude` is a PAGE decision, not an eligibility rule.** `Dashboard.jsx` passes
+  `founder_bonus` while the creator's own `FounderProgressTracker` is on screen — that
+  card carries their real figures, so it wins, and showing both told one creator the same
+  thing twice in two tones four inches apart.
+- 🚨 **`border-[#000]` DOES NOT COMPILE IN THIS PROJECT, and it fails SILENTLY.**
+  Verified against the built stylesheet: `.border-\[#000\]` appears **zero** times while
+  every other arbitrary class on the same component (`h-[250px]`, `w-[250px]`,
+  `leading-[0.86]`) is present. An element built on it renders with a **transparent
+  border and no frame at all** — which is how the first pass of these cards shipped, and
+  it is invisible in review because the markup says `border-2 border-[#000]`. Tailwind is
+  3.4.19, so this is not a version limitation; do not "fix" it by adding the class back.
+  **Use `border-black` alone, with NO width class** — `resources/css/index.css` defines it
+  as the full `border: 2px solid var(--black)` shorthand, which is exactly the house
+  frame. Where only one side needs a rule, set it **inline** (`borderLeft: "2px solid
+  #000"`); an inline border cannot be dropped by the compiler.
+- 🚨 **In a fixed-height flex column, every child needs `shrink-0`.** The card's body copy
+  is `line-clamp-2`, and without `shrink-0` the flex parent compressed it below its own
+  two lines — `line-clamp` hides the overflow, so nothing looked broken, the sentence just
+  ended mid-word. Only visible at desktop widths, where the copy is shortest.
+- 🚨 **EVERY PROMO IS ITS OWN COMPONENT FILE — THERE IS NO SHARED CARD BODY.**
+  `resources/js/Components/Promo/cards/` holds one file per promo (`FounderCard`,
+  `FastStartCard`, `ReceiptCard`, `VerifiedCard`, `ReferralCard`, `LeaderboardCard`,
+  `BioLinkCard`, `InstallAppCard`, `SuggestCard`, `StatementCard`); `PromoCard.jsx` is a
+  registry that picks one by the config's `layout` key and gets out of the way. **Four**
+  earlier passes drew every promo from one template and recoloured it, and each was
+  rejected — however good the palette got, the deck read as one card shown ten times,
+  because the eye reads layout before colour. If a new promo looks like it could reuse an
+  existing card's body, that is a reason to design it differently, not to extract a
+  component.
+- **What they share lives in `promoKit.jsx` and must stay small**: `CARD_FRAME` (fixed
+  height + `border-black` + `rounded-box`), `GROUNDS`/`ACCENTS`, `display()`, `Chip` and
+  `Cta`. That is the deck's vocabulary; anything that varies per promo belongs in that
+  promo's own file. Each card composes around the one thing its promo is about — a figure
+  and a meter, a receipt with a torn foot and a stamp, a solid badge at size, a split
+  ground with two figures and an arrow, a three-row ranking, browser chrome with link
+  rows, an app tile dropping into a dock, ruled paper with an empty field.
+- 🚨 **A FIGURE ON A CARD COMES FROM `promo.facts`, NEVER FROM THE JSX.** An earlier pass
+  typed **"£6.99"** into the receipt card while the real default is **£8.99**, so the one
+  card whose entire subject is billing quoted a price the platform does not charge.
+  `PromoBannerService::facts()` reads every number from the thing that enforces it:
+
+  | Card | Figures | Source of truth |
+  |---|---|---|
+  | Founder | £2,500 · 30 days · 150 seats · **10% bonus, min £250** | `config/founder_bonus.php` — what `CheckFounderQualifications` qualifies AND pays on |
+  | Fast Start | **5%** · 30-day window · paid 7 days after | `config/fast_start_bonus.php` |
+  | Free until first sale | **£8.99/mo** | `SubscriptionPlan` |
+  | Refer & earn | **£50** per creator · **£1,000** threshold | `config/referral.php` + `PromoBannerService::REFERRAL_QUALIFYING_GMV` |
+
+  ⚠️ **Fast Start's rate is OMITTED when `enable_tiered` is on** — there is no single rate
+  then (3/5/7% by bracket) and the card drops the figure rather than quoting one bracket.
+  🚨 **The referral reward is never shown without its threshold.** `ReferAndEarnController`
+  only counts a referral once the referred creator passes £1,000 lifetime GMV, so "£50" on
+  its own sets a creator up to share their link, watch someone sign up, and get nothing.
+  ⚠️ **`REFERRAL_QUALIFYING_GMV` mirrors a hardcoded `lifetime_gmv >= 1000` in that
+  controller** — not config-backed. Move both in the same commit.
+  🚨 **The founder card must state the BONUS, not only the threshold.** The first
+  informative pass showed £2,500 and never said what the creator receives, so it read as a
+  target with no prize. Pinned by four tests in `PromoDeckTest`.
+- 🚨 **`link_in_bio` resolves its destination AND its label per viewer**
+  (`hrefFor()` / `ctaFor()`): a signed-in creator goes to their own `bio.show` page
+  ("See my page"), a visitor to `creators.link-in-bio` ("How it works"). Both used to go
+  to the editor, which put a visitor at a login wall and a creator two clicks from their
+  own link. ⚠️ One label across two destinations is how a button starts lying — they are
+  decided in the same place so they cannot drift.
+- 🚨 **`npm run build` DOES NOT CATCH AN UNDEFINED IDENTIFIER — ONLY THE BROWSER DOES.**
+  esbuild transforms per file and never resolves free variables, so a component missing
+  `import { useState } from "react"` builds clean, passes all four `npm run check`
+  scanners, and then throws `ReferenceError: useState is not defined` the moment it
+  renders. `InstallAppCard` shipped exactly that: a string replace that was supposed to
+  add the import silently no-opped because the anchor text did not match, and nothing
+  downstream noticed. **After any scripted edit to an import line, grep the file for the
+  identifiers it now uses.** The `check-unbound-identifiers` scanner is scoped to pricing
+  helpers and will not see this.
+- **`resources/js/lib/pwaInstall.js` is the ONE definition of "can this browser install
+  us, and if not, what does the reader tap"** — `isInstalled()`, `detectPlatform()`,
+  `STEPS`, `PLATFORM_LABEL`. Extracted from `PwaInstallPrompt.jsx` (which now imports it)
+  when the promo deck grew an install card; a second copy of those strings would drift the
+  day a browser renames a menu item, and a step that mis-describes the button it points at
+  is worse than no step.
+  🚨 **The install promo is REMOVED INSIDE THE INSTALLED APP** — `PromoSlider` filters any
+  card with `action === "pwa_install"` when `isInstalled()`. Offering to install the app to
+  someone reading this FROM that app is untrue about their own device, and there is no
+  prompt left to fire. ⚠️ Decided **client-side after mount**: standalone is a display-mode
+  media query the server cannot see, so `PromoBannerService` has no way to filter it.
+  🚨 **Chrome/Edge install in one tap via `beforeinstallprompt`; iOS Safari cannot and
+  never will** — there is no API, only a menu. So the card shows a working "Install the
+  app" button only when it has captured the event, and otherwise switches to "How to
+  install" and expands the platform's real steps. A button that does nothing on an iPhone
+  is worse than no button.
+- - ⚠️ **`InstallAppCard` draws an iPhone LOCK SCREEN, not an app icon.** Two earlier
+  versions showed an "SP" tile beside empty dock squares, which says the app exists and
+  nothing about why anyone would want it. What installing buys a creator is being told
+  the second they sell, so the card draws that: dynamic island, status bar, clock, and a
+  **stack of two notifications** — a dimmed one behind, the live one filled in the accent.
+  One notification alone reads as a screenshot; two read as a phone that keeps telling you
+  things. The highlight is fill plus the black frame, never a shadow or a scale.
+  ⚠️ **The device carries its OWN radii (`rounded-t-[28px]` etc.), not the house tokens** —
+  a 30px corner on a 150px drawing of a phone is not a phone. Same deliberate exception the
+  landing page's product mocks take. Do not "fix" these to `rounded-box`.
+  ⚠️ **The screen is `#0B0B10`, not black**, precisely so the dynamic island reads as a
+  cutout; on a pure-black screen it is invisible and the phone looks like a rectangle.
+  ⚠️ Everything above the stack must stay on the card — only the empty screen below it is
+  allowed to bleed off the bottom edge. On a phone the device narrows and the bullet list
+  is dropped: the reader is already holding a phone, and at 390px the drawing was what the
+  button lost to.
+- ⚠️ **No invented figure in a MOCK either.** That notification reads "You made a sale"
+  with **no amount** — a number made up for a screenshot is still a number on a promo card.
+- ⚠️ **The card height was raised to 292/310/344 (from 250/268/300) on 21 Aug 2026** to fit
+  an explainer on every card. The first informative pass had room for a headline and a
+  control and nothing else, so a creator could not tell from the card what the offer was.
+- - 🚨 **`StatementCard` is the fallback and the ONLY card that reads `headline`/`body` from
+  config** — which is what every timed announcement uses. Every other card writes its own
+  copy, because its composition is built around specific words: a receipt says "£0.00",
+  not a sentence. **Editing a bespoke promo's config copy therefore changes nothing on
+  screen.**
+- ⚠️ **`display()` sets `leading-[0.85]`, which is right for a two-line headline and wrong
+  for a single huge figure.** gulfs' ascenders overflow a line box shorter than the
+  glyphs, so the receipt card's `£0.00` climbed into the dashed rule above it at 250px.
+  A one-line display figure wants `leading-[1]`.
+- 🚨 **THE LEADERBOARD CARD SHOWS RANK AND NOTHING ELSE — no amounts, no names.** The real
+  supporter wall ranks by purchase COUNT and never by money (Stripe content-first rule),
+  so a mock carrying a figure would advertise a screen that does not exist.
+- ⚠️ **Verified in a browser against the COMPILED stylesheet** (`public/build/css/app-*.css`
+  served with `public/` as web root — a harness with its own CSS lies). At a true 390px
+  viewport: card 362×250, radius 24px, border 2px solid black, **0 shadows**, no horizontal
+  overflow. ⚠️ **Headless Chrome clamps its viewport to a 500px minimum on macOS**, so a
+  `--window-size=390` run silently measures 500 and every mobile number it reports is
+  wrong; render the page inside a 390px `<iframe>` instead — media queries inside an iframe
+  key off the iframe's width.
+- ⚠️ **`leading-[0.92]` as a RATIO on the headline.** A numeric `leading-N` is a PIXEL
+  value in this project's Tailwind config, so `leading-5` on 38px display type renders
+  the lines on top of each other.
+- ⚠️ **Autoplay is off entirely under `prefers-reduced-motion`**, and the timeline's fill
+  animation with it. `pauseOnMouseEnter` + `disableOnInteraction: false` means the deck
+  stops while someone reads and resumes after a swipe, rather than freezing for the rest
+  of the session. The timeline uses `slideToLoop`, not `slideTo` — with loop on, Swiper's
+  indexes are offset by its duplicated slides.
+- **No routes and no migration.** Every card points at a route that already existed.
+  ⚠️ The Fast Start route is **`financial.fast-start-bonus`**, not `fast-start-bonus`
+  (that name belongs to the terms page).
+- Tests: `tests/Feature/PromoDeckTest.php` (8).
+
+## 🚨 Public creator profile — polish pass (21 Aug 2026, spennypiggy.co)
+
+`/{username}/{page?}` → `AuthenticatedSessionController::getUserProfile` → `Pages/Dashboard.jsx`.
+Design review scored it **20/40** on Nielsen and **11/20** on the technical audit; the findings
+below are the ones that changed behaviour or set a rule. Everything else was contrast, spacing
+and copy.
+
+- 🚨 **`?page=x` IS NOT THE PROFILE'S PAGE PARAMETER, AND IT FAILS SILENTLY.** The route is
+  `/{username}/{page?}` — a PATH segment — so `/{username}?page=memberships` renders **About**,
+  200, no error. Verified live. Every locked post's unlock CTA carried that form, so the
+  highest-intent tap on the page (a supporter looking at content they want) landed on the wrong
+  screen. Fixed in `feed/Post.jsx`, `feed/PostDetail.jsx` ×3 and `Creator/ActivityStatus.jsx`.
+  ⚠️ `/account?page=autotweet` is a DIFFERENT route (single segment) where the query IS read —
+  do not "fix" that one.
+- 🚨 **A VISITOR ONLY SEES A TAB THE CREATOR SELLS IN.** `InstantTabSystem` filtered its
+  seven-item array against `profile_overview`'s live counts, which were already computed and
+  already read by `ProfileRightRail`. **The owner still sees all seven** — hiding an empty tab
+  from the creator removes the only route to the screen where they would add the first item.
+  `about` and the currently-active tab are never filtered out. Each tab renders its count.
+- 🚨 **Tabs are `<a href>`, not bare `<button>`.** They change the URL, so they are navigation:
+  cmd/middle-click, "open in new tab" and AT link semantics now work. `handleTabClick` returns
+  early on a modified click so the browser's own behaviour survives; the plain left-click still
+  takes the partial-reload path. The 100ms cross-tab click-swallow was removed — it dropped a
+  click on a different tab with no feedback at all.
+- ⚠️ **The tab strip's scroll arrows sit AFTER the strip, as a pair.** Laid out before it, the
+  first tab began 56px right of the panel it controls. The anti-loop reasoning in that file is
+  unchanged — the arrows' space is still reserved unconditionally, only the side changed.
+- **`UserProfileService::getProfileOverview()` gained `bills`, and its cache key is now
+  `profile_overview_v2_`.** A cached v1 array has no `bills` key, which the tab filter would read
+  as zero and hide a tab the creator does sell. `ProfileController` forgets the v2 key.
+- 🚨 **`TOTAL EARNED` IS SUPPRESSED BELOW A FLOOR FOR THE PUBLIC** —
+  `EarningsMilestone.PUBLIC_EARNED_FLOOR` (50, in the goal's own currency). `£0.00` at 38px was
+  the first content a cold supporter met on most profiles. ⚠️ It is a SEPARATE flag from the
+  creator's own `goal.hidden`: that one also switches `pct` onto the server's `goal.percent`,
+  which is only populated for a genuinely hidden goal, so reusing it would flatten the bar to 0%.
+  ⚠️ The owner always sees their own figure, gated on a real owner check — `IsloggedIn` means
+  "somebody is signed in", not "this is your profile". The derived `"{remaining} to {target}"`
+  line is suppressed with it, or the same number is published by subtraction.
+- 🚨 **"MORE CREATORS TO SUPPORT" IS NOT SHOWN TO A VISITOR THE CREATOR BROUGHT.** It closes
+  every profile, and a supporter who arrived from the creator's own bio link is that creator's
+  audience — ending their money page with four competitors monetises it against them. New
+  `DiscoverySources::isCreatorGeneratedVisit()`; ⚠️ deliberately **not** `! isSpGenerated()`,
+  because `classFor()` answers CLASS_CREATOR for an unknown key (right for under-claiming a
+  published figure, wrong for deciding whether to draw something) — direct and organic traffic
+  carries no source and still sees the row.
+- **An empty tab names what the creator DOES sell** (`Dashboard.jsx`'s `emptyTabProps`) instead of
+  linking away to Discover. Discover survives only for a creator with nothing listed anywhere.
+  `Nocontent` gained an `action` slot; its hardcoded `" !!"` suffix and an `!text-xl` that killed
+  its own `size` prop are gone.
+- ⚠️ **`Report` is not a Quick Action.** It sat at tile parity with "Send a wish" — the control
+  for reporting the seller drawn as heavily as the one for buying from them. It survives as the
+  small pill under the action stack, which is the one place it belongs.
+- 🚨 **More black-on-pink violations, all on money controls:** `TipJar/SendTip.jsx`'s
+  **`Support Me`** (the primary monetisation control on every profile), `PiggyPotWidget`'s
+  `primaryOn`, `CreatorActivityWidget`'s CTA, and the `+` add button — all were `text-white` on
+  `#FF007F` at **3.78:1**. Header nav was `#E6EA7B` on pink at **2.95:1** (the active link had
+  been fixed for this reason; these three had not).
+- 🚨 **A MID-LUMINANCE GROUND HAS NO HEADROOM FOR AN ALPHA.** `Promo/PromoCard.jsx`'s `GROUNDS`
+  set `body` to `rgba(0,0,0,.74)` on pink and `.76` on violet for the usual quieter-body effect;
+  black CAPS at 5.56:1 on `#FF007F` and 4.78:1 on `#8C52FF`, so those measured **4.43** and
+  **3.87** — under AA. Both are full `#000000` now, and hierarchy comes from size and weight.
+  The light grounds keep their alpha. Same rule as the `Chip` one: raw accent on its own tint,
+  and alpha ink on a saturated ground, must both be measured rather than assumed.
+- ⚠️ **A disabled primary CTA must say why, and must stay focusable.** The Piggy Pot button
+  shipped greyed reading "Unlock Content" before the visitor had done anything, and being
+  `disabled` it was not in the tab order — a keyboard user never met the buy button. It now reads
+  "Choose an amount first" with `aria-disabled`; `validateAmount()` already guarded the click.
+- ⚠️ **An empty component wrapper still eats a flex gap.** `<div><SupporterWall /></div>` renders
+  nothing for a creator with no supporters but remains a flex item, taking 16px on each side and
+  producing the one 32px seam in a uniform 16px stack. `empty:hidden` — the same fix already used
+  on the `ReturningSupporter` wrapper four children above.
+- **Banned vocabulary found live on this path** and rewritten: "Add Surprise Gift" / "1000's of
+  Gifts in the Oink Gift Zone" (the surface is **Oink Store**, never "Gift Store"), "No Active
+  Gifts", "Create physical gifts for your fans to buy for you", "won't be able to receive gifts",
+  "Gifts, thank-yous and milestones", plus 🎁 emoji and gift-box glyphs on two monetisation
+  controls. ⚠️ **An icon carries the same meaning as the word on a payment-adjacent surface.**
+- ⚠️ **~45 bare `hover:translate-*` were removed across the profile's chrome.** The house rule
+  says a lift survives only when paired with a hard offset-shadow change — and since the shadow
+  sweep there are none, so every one of them was the banned pattern. `active:translate-y-[2px]`
+  paired with `brightness` stays; the Piggy Pot amount tiles' 4px DIAGONAL press was normalised
+  to it.
+
+## 🚨 The app-icon badge could not be cleared by anything (16 Aug 2026, spennypiggy.co)
+
+Reported from a phone: bell emptied, installed-app icon still reading **3**. Nothing
+was intermittent about it — no action available to a user could ever clear that number.
+
+**THREE stores mean "read" and only one was ever written:**
+
+| Store | Written by | Read by |
+|---|---|---|
+| `notifications` table (`is_read`) | `NotificationDispatcher`, always `0` | **the badge** |
+| MagicBell | the bell the user actually presses | the bell only |
+| OS notification tray | delivered pushes | iOS, for its own icon mark |
+
+`utils/appBadge.js` counts unread rows in **our** table via `get-notification`, and that
+count IS the number on the icon. The bell is **MagicBell**, whose read state lives at
+MagicBell and never touches our column. So "Mark all as read" cleared MagicBell, left
+`is_read = 0`, and the badge re-read the same number on every foreground.
+
+- 🚨 **`mark-as-read` and `delete-all-notifications` had NO caller anywhere in
+  `resources/js`** — dead routes for precisely the job nothing was doing. `appBadge.js`
+  was also the ONLY consumer of `get-notification` in the entire frontend.
+- **`clearAllNotificationState()` is now the one call that means "read"** — our table,
+  then the OS tray, then the icon. Wired into MagicBell's *Mark all as read* AND its
+  *Delete all*.
+  - ⚠️ It runs in `finally`: MagicBell and our API are independent services, and one
+    being down must not strand the badge.
+  - ⚠️ **Order is load-bearing.** The server write goes first, or a foreground
+    `syncAppBadge()` racing it re-reads the old unread count and puts the number
+    straight back.
+- ⚠️ **`closeDeliveredNotifications()` is needed IN ADDITION to `clearAppBadge()`.** On
+  iOS a web-push notification left sitting in Notification Centre marks the icon on its
+  own, outside the Badging API, so clearing the count alone leaves the dot behind.
+- ⚠️ **`syncAppBadge()` only runs on load and on foreground** (`visibilitychange`), so
+  anything that clears notifications must clear the badge itself rather than waiting for
+  a sync that may be minutes away.
+- ⚠️ **Still open:** `get-notification` paginates at 30, so the badge can only count
+  unread inside the first page. It undercounts rather than overcounts, which is why it
+  was never noticed — but it needs an unread-count endpoint rather than a list.
+- ⚠️ Not live until the app is deployed; a phone still showing the old badge is the
+  deployed build, not this code.
+
+## Landing + profile pass (22 Aug 2026, spennypiggy.co)
+
+**About me moved into the identity rail** (`Pages/Dashboard.jsx` → `wishlist/Userprofile.jsx`).
+The bio, its approval notices and the category tags are built in Dashboard as `aboutMeCard`
+and passed to `<Userprofile aboutBlock>` — built in ONE place, rendered in the rail, so the
+approval gates are not duplicated. `profileSummaryBand` is now the earnings card alone and
+renders only when `UserStripeConnected == 1` (it used to draw an empty white box otherwise).
+The bio is drawn as a SPEECH BUBBLE with its tail pointing up at the avatar, which sits
+directly above it at every breakpoint; that replaced the "ABOUT ME" eyebrow. The one label
+kept is **"Makes"** on the tag row, and it renders only when the creator actually has tags.
+⚠️ An empty bio no longer prints "Hy, I am a creator on SpennyPiggy" — that put words in the
+creator's mouth on their own page. Owner sees a prompt to write one; a visitor sees a fact.
+
+**The logged-out mobile bottom bar is data-driven** (`Pages/home/Hero.jsx`). Stops are
+`NAV_STOPS` = Home · Bonuses (`#act-earn`) · Features (`#act-setup`) · FAQ's (`#faq`), and the
+same array feeds the scroll-spy. Three faults it fixed:
+- 🚨 The spy watched `features`, **an id that exists nowhere in the app**, and never watched
+  `reviews` at all — so no tab but Home ever lit up.
+- 🚨 `scrollIntoView` landed in the wrong place. Every chapter below the fold is a lazy
+  `<Suspense>` whose placeholder is only ROUGHLY its content's height, so chunks resolving
+  mid-scroll move the target underneath it. It now measures, scrolls with an 88px header
+  allowance, then re-measures after 500ms and corrects only on a drift over 24px.
+- ⚠️ The stops do not tile the page (`LiveBarSection`/`PaymentSlider` sit between them), so
+  an "is the scroll inside this section" test blanked the bar in every gap. It takes the last
+  stop passed, measured with `getBoundingClientRect` — **not `offsetTop`**, which is measured
+  from the nearest positioned ancestor rather than the document.
+
+**`AppShowcase` — the PWA sold as a notification** (`Pages/home/AppShowcase.jsx`, mounted in
+`Welcome.jsx` as `#act-app`, after the bonus chapter and before the setup chapter). A drawn
+iPhone (HTML/CSS, no image asset) showing a lock screen mid-alert, beside the three beats:
+add it → someone buys → your phone tells you.
+- 🚨 **No amounts in the mock notifications.** A figure invented for a mock is still a figure
+  on a marketing surface. The alerts name the CONTENT that sold (`New purchase — Studio
+  Setup`, `New member joined`), which is also the content-first line the platform must hold.
+- ⚠️ It renders **nothing** inside the installed app (`isInstalled()` guard) — the standalone
+  PWA must not advertise itself.
+- ⚠️ Two phone drawings now exist and that is deliberate: `Promo/cards/InstallAppCard.jsx` is
+  a lock-screen crop at ~⅓ life size inside a 150px card; this is a whole device at ~290px.
+  Both carry their own radii, NOT the `rounded-box` tokens — the documented mock-up exception.
+- The copy states that alerts need notification permission; installing alone does not start them.
+
+**`usePwaInstall()` (`lib/pwaInstall.js`) — the install event, held for whoever asks.**
+🚨 `beforeinstallprompt` fires ONCE, EARLY, and is never replayed, so a component mounting
+below the fold can add a listener and wait forever. The capture now lives at MODULE scope and
+runs on import (`GuestLayout` → `PwaInstallPrompt` imports it eagerly); late mounters read the
+stored event. ⚠️ `PwaInstallPrompt` keeps its own listener — both receive the same event, and
+whichever surface prompts first wins while the other's `prompt()` rejects into its existing
+"show the steps" fallback. Do not delete either listener without re-testing that the bar still
+installs.
+
+## 🚨 The homepage is SEVEN chapters, and the order is the argument (22 Aug 2026, spennypiggy.co)
+
+`Pages/Welcome.jsx` ran to fifteen sections. It named the products **four separate times** and
+put bonus percentages in front of a visitor who had not yet been told what the platform is.
+The chapters now answer a stranger's questions in the order they ask them, and each has a real
+id: `act-discover` → `act-sell` → `act-setup` → `act-paid` → `act-earn` → `act-app` →
+`act-join`. `CHAPTERS` (the right-edge `ChapterNav` rail) and `Hero`'s `NAV_STOPS` (the
+logged-out mobile bar) are both derived from that order — **a bar whose tabs run in a different
+order than the page highlights them out of sequence while scrolling.**
+
+What merged. Do not re-split these without reading why:
+- 🚨 **`FeatureShowcase` IS NO LONGER ON THIS PAGE.** Its own docblock already said it restated
+  `WaysToGetPaid` and that its only unique asset was the three mock-ups. `WaysToGetPaid` keeps
+  the range (8 tiles grouped by when the money arrives); `LiveBarSection` keeps the page's ONE
+  picture of a creator page. The file and its route-free component are untouched — it is simply
+  not imported by `Welcome.jsx` any more.
+- **`CreatorShowcase` renders with `compact`** under the Discovery headline, which drops its
+  own eyebrow/headline/lead and keeps the category tabs. Two browse surfaces with two headlines
+  back to back asked the same question twice before the page had made any argument. ⚠️ Leave
+  `compact` OFF anywhere the section stands alone. It also zeroes its own top padding in that
+  mode — it is a continuation of the block above, not a fresh section.
+- **`CustomPricingNote` moved off the top of the page** to directly under `PricingSection`. It
+  sold bespoke rates to high earners before the standard price had been named.
+- **`PaymentSlider`** (the card marks) now sits with `PayByBankAnnouncement` — one chapter about
+  how money arrives — instead of drifting mid-page.
+- **`PaidTasksAnnouncement`** sits inside `act-earn` with the bonuses.
+- **`act-love` survives as an id only.** The testimonials open the closing chapter now, so proof
+  reads as the reason to sign up rather than as a section of its own. Old deep links still land.
+- 🚨 **The closing marquee no longer says "Keep 100%".** The marquee at the TOP of the page
+  repeats that sentence fourteen times, and it is also in `SetupSteps`, `WaysToGetPaid`, the
+  testimonials and the FAQ. Said seven ways in one scroll it stops being a promise and becomes
+  wallpaper. The closing marquee carries the ask ("Your page takes **minutes** to build").
+
+⚠️ **`act-proof` and `act-discover` are declared INSIDE their components** (`CreatorShowcase`,
+`DiscoverySection`), not in `Welcome.jsx`. Grep both places before assuming an anchor is dead —
+and note this page has form: the mobile bar spent months pointing at `#features`, an id that
+exists nowhere in the app.
+
+## GA4 funnel events — the server emits them, not the components (22 Aug 2026)
+
+GA4 was recording **page views only**, so "44 active users" could be seen and *where they
+stop* could not. The two funnels in the admin app already answer that from our own database
+(`site_visit_stats` + `FunnelAnalyticsService`, route `admin.funnels.index`) — this adds the
+same five milestones to GA4 so the session-level reports, Google Ads conversions and the
+audience tools can use them too. **The admin funnel stays the source of truth for money
+questions; GA4 is for traffic and ad questions.**
+
+**Why the server emits them.** Every milestone on this site finishes with a *redirect* —
+signup, the emailed verification link, the Stripe `return_url`, every checkout `success_url`.
+There is no moment in a page component at which a `gtag()` call could honestly say "this just
+happened". `App\Support\AnalyticsEvent::push()` flashes the event,
+`HandleInertiaRequests::share` pulls it into `props.analytics` on the next render (a plain
+closure, exactly like `flash`), and `resources/js/lib/analytics.js` forwards it to gtag and
+drops it. Adding a milestone is one `AnalyticsEvent::push()` line in the controller.
+
+| Event | Emitted from | Fired |
+|---|---|---|
+| `sign_up` | `RegisteredUserController::store` | once, with `method` (google/email) + `role` |
+| `email_verified` | `VerifyEmailController` (both paths) | **inside the transition only**, with `source` |
+| `stripe_connected` | `Auth\StripeController::connectReturn` | inside the `! $user->stripe_connected_at` guard |
+| `content_published` | `CreatorContentObserver::notify` | same definition of "live" as the follower alert |
+| `purchase` | `DeliverableObserver::created` | value + currency + `product_type` + `guest` |
+
+- 🚨 **`purchase` hangs off `Deliverable::created`, which is the ONE choke point covering all
+  eight paid modules** (every paid feature creates exactly one Deliverable per payment). Do
+  not add per-module gtag calls beside it — eight call sites would drift.
+- ⚠️ **Redirect-vs-webhook: whichever wins the race creates the Deliverable.** A
+  webhook-first purchase has no browser, so `AnalyticsEvent` drops it. That is
+  **under-counting, never double-counting** — the right way round for a funnel denominator,
+  and the reason GA4 revenue will read low against the ledger. Use the admin funnel for money.
+- 🚨 **`AnalyticsEvent::scrub()` is load-bearing privacy, not tidiness.** Event parameters go
+  to Google. A key whose NAME contains `email`/`name`/`user_id`/`token`/`card`/… is dropped
+  whole, and non-scalars are dropped too (a nested payload is how a whole model gets
+  serialised into an analytics call by accident). Never send a creator's item title.
+- ⚠️ **The "no browser" guard is `hasSession()`, NOT `runningInConsole()`** — the latter is
+  also true under PHPUnit, which would make every test of this class pass by doing nothing.
+  Requests matching `webhook*` / `api*` are skipped explicitly.
+- ⚠️ **Nothing on this path may throw** — same house rule as `VisitTracker`: every entry point
+  sits inside a signup, a verification or a purchase. Catch `\Throwable`, log, carry on.
+- **`page_group` fixes the other GA4 blindness.** `/{username}` means every creator profile is
+  its own URL, so GA4 reported thousands of one-view pages and could not answer "how many
+  people looked at a profile". `resources/js/lib/analytics.js` buckets each path (`home`,
+  `ad_landing`, `auth`, `app`, `money`, `checkout`, `listing`, `content`, `leaderboard`,
+  `creator_profile`) and sends it on every `page_view` and every event. 🚨 **The bucket list is
+  ORDERED and `creator_profile` is LAST** — the catch-all route means almost any single-segment
+  path could be a profile, so every real route must be recognised first or `/login` buckets as
+  a creator. **Register `page_group` in GA4 Admin → Custom definitions** or the parameter is
+  collected and never reportable.
+- Tests: `tests/Feature/AnalyticsEventTest.php` (7).
+
+### Same page, one card design · testimonials without a slider (22 Aug 2026)
+
+🚨 **`DiscoverySection` WAS RENDERED TWICE** after the chapter rebuild — once under the hero
+(the original placement) and once inside the new `act-discover` block — so "More than somewhere
+to earn." appeared twice on one scroll. `Welcome.jsx` now renders it once. **`grep -c` the
+component before trusting a re-order.**
+
+🚨 **`CollectionRow`'s cards take the `tone` now, not just its heading.** That file used to
+state the cards stay white on every surface; on the homepage the row sat directly under
+`CreatorShowcase`'s dark, accent-framed creator cards as small white ones — two ideas of a
+creator card, one under the other, in a single screenshot. The old rule's REASON still holds
+(one component, one place to change), so the fix is the existing `TONE` map extended to cover
+surface, frame, hover and every ink colour — never a per-caller className. `dark` reuses
+`CreatorShowcase`'s own values (`#0d0a16`, `border-white/10`, hover `#17102a`); `light` is
+unchanged, and cream/white surfaces (profiles, checkout) still get exactly what they had.
+
+**`HappyCreators` is a grid, not a Swiper.** Three quotes behind a slider showed two on desktop
+and one on a phone — the page's whole body of social proof, a third visible at a time — and
+pulled Swiper's JS plus two stylesheets onto the heaviest page on the site to lay out three
+cards. The section now costs **no JavaScript**.
+- 🚨 **The outcome label is OURS; the quote is THEIRS.** Each card is titled with what the money
+  did ("Bought new decks"), set as a small caps label above a short accent rule, **never inside
+  the quotation marks**. A testimonial is a quotation — the same rule that got the fourth quote
+  removed rather than rewritten (that note is still in the file).
+- ⚠️ The decorative hand image went with the slider: it lived in a wrapper carrying
+  `lg:!mb-[-140px]`, and now that this section OPENS the closing chapter rather than standing
+  alone, that negative margin pulled the FAQ up into it.
+- ⚠️ `FadeIn` needs `className="h-full"` inside a grid cell, or the wrapper it renders breaks
+  the equal-height chain and the cards stop matching.
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

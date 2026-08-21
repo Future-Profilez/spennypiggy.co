@@ -12,6 +12,7 @@ import { Link, usePage, router } from "@inertiajs/react";
 import userphoto from "../../../assets/siteicon.png";
 import RemovePost from "./RemovePost";
 import PostMediaCarousel, { mediaSrc } from "@/Components/PostMediaCarousel";
+import { Lock } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
@@ -457,12 +458,20 @@ export default function Post({ item, isProfileView = false }) {
                     ) : null}
                 </div>
 
+                {/* 🚨 THE UNLOCK PATH IS A PATH SEGMENT, NOT A QUERY STRING
+                    (21 Aug 2026). This linked `/{username}?page=memberships`,
+                    but the profile route is `/{username}/{page?}` — `page` is a
+                    ROUTE parameter, so the query string was ignored and every
+                    locked post in the feed dropped the visitor on the About tab
+                    instead of the tiers that unlock it. The highest-intent tap
+                    on the page went to the wrong screen and nothing errored. */}
                 {isLocked && lock && creatorUsername ? (
                     <Link
-                        href={`/${creatorUsername}?page=${lock.page}`}
-                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-black font-black uppercase tracking-wide text-sm border-[3px] border-black rounded-box-sm px-4 py-3 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                        href={`/${creatorUsername}/${lock.page}`}
+                        className="mt-4 flex items-center justify-center gap-2 w-full min-h-[44px] bg-[#FF007F] text-black font-black uppercase tracking-wide text-sm border-black rounded-box-sm px-4 py-3 transition-[filter,transform] duration-200 hover:brightness-110 active:brightness-95 active:translate-x-[2px] active:translate-y-[2px]"
                     >
-                        🔒 {lock.cta}
+                        <Lock size={15} strokeWidth={3} className="shrink-0" />
+                        {lock.cta}
                     </Link>
                 ) : null}
 

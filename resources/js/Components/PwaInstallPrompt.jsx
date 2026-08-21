@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { STEPS, detectPlatform, isInstalled } from "@/lib/pwaInstall";
 
 /**
  * The install offer, as a BANNER at the top of the page — never a modal.
@@ -52,56 +53,12 @@ function recordShown() {
     }
 }
 
-function isInstalled() {
-    return (
-        window.matchMedia("(display-mode: standalone)").matches ||
-        window.navigator.standalone === true
-    );
-}
-
-/** Which set of steps to show when the browser cannot install on its own. */
-function detectPlatform() {
-    const ua = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(ua)) return "ios";
-    if (ua.includes("edg")) return "edge";
-    if (ua.includes("chrome")) return "chrome";
-    if (ua.includes("safari")) return "safari";
-    return "other";
-}
-
 /*
- * ⚠️ NO MENU GLYPHS. `⋮` and `…` are not in the body face and rendered as a
- * fallback that read as "(:)" on the live banner — a step that mis-describes
- * the button it is pointing at is worse than no step. The menus are named in
- * words and by POSITION instead, which also survives a browser changing its
- * icon.
- * ⚠️ Each step is one action. "Confirm to finish" was a third step on three of
- * these platforms and is the browser's own dialog, so it is folded into the
- * step that opens it.
+ * ⚠️ `isInstalled`, `detectPlatform` and `STEPS` moved to `@/lib/pwaInstall` when the
+ * profile promo deck grew an install card. Two copies of these strings would drift the
+ * day a browser renames a menu item, and a step that mis-describes the button it points
+ * at is worse than no step at all.
  */
-const STEPS = {
-    ios: [
-        "Tap the share button in Safari's toolbar.",
-        'Scroll down and choose "Add to Home Screen".',
-        'Tap "Add".',
-    ],
-    safari: [
-        "Open Safari's share menu.",
-        'Choose "Add to Dock", then confirm.',
-    ],
-    chrome: [
-        "Open Chrome's menu — the three dots, top right.",
-        'Choose "Install Spenny Piggy", then press Install.',
-    ],
-    edge: [
-        "Open Edge's menu — the three dots, top right.",
-        'Choose "Apps", then "Install this site as an app".',
-    ],
-    other: [
-        "Open your browser's menu.",
-        'Look for "Install" or "Add to Home Screen".',
-    ],
-};
 
 export default function PwaInstallPrompt() {
     const platform = useRef(null);

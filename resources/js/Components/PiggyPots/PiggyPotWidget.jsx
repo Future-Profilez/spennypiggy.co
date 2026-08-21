@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useForm, usePage, Link } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
+import { Target } from "lucide-react";
 import axios from "axios";
 import CheckoutLegalTerms from "@/Components/CheckoutLegalTerms";
 import PaymentMethodSelector from "@/Components/PaymentMethodSelector";
@@ -348,8 +349,11 @@ export default function PiggyPotWidget({
 
     const primaryBtn =
         "w-full min-h-[52px] py-3 rounded-box-sm border-[3px] border-black font-black text-base uppercase transition-all";
+    // ⚠️ BLACK on brand pink. White measures 3.78:1 and fails AA; black is 5.56:1.
+    // The lift is paired with brightness, the house press idiom — a bare
+    // translate with no partner is the banned scale-effect by another name.
     const primaryOn =
- "bg-[#FF007F] text-white hover:-translate-y-1 active:translate-y-1 active:translate-x-1 ";
+ "bg-[#FF007F] text-black transition-[filter,transform] duration-200 hover:brightness-110 active:brightness-95 active:translate-y-[2px] ";
     const primaryOff = "bg-pink-200 text-pink-900 cursor-not-allowed";
 
     const fieldBase = fieldClass;
@@ -366,8 +370,17 @@ export default function PiggyPotWidget({
             </p>
         ) : null;
 
+    // ⚠️ NO BOTTOM MARGIN ON THE ROOT. The card stack that renders this
+    // component spaces its children with `gap-4`, so a margin here is added on
+    // top of the gap and showed up as the one 32px seam in an otherwise uniform
+    // 16px stack.
+    //
+    // 🚨 A PLAIN LINE COMMENT, never `{/* */}` — braces directly inside a
+    // `return (` are an OBJECT LITERAL, not a JSX comment, and fail the whole
+    // Vite build with `Expected ")" but found "className"`. None of the
+    // `npm run check` scanners catch it; only the esbuild transform does.
     return (
-        <div className="w-full flex mb-2 relative z-10">
+        <div className="w-full flex relative z-10">
             <div
                 className={`w-full ${inPopup ? "" : "bg-white rounded-box border-[3px] border-black p-4 md:p-6 lg:p-7"}`}
             >
@@ -377,7 +390,8 @@ export default function PiggyPotWidget({
                     {/* Cover rail — self-start so a tall form never stretches the cover */}
                     <div className="relative md:self-start">
                         <div className="absolute -top-3 -left-3 bg-[#A2E4B8] text-black px-4 py-1.5 rounded-full border-[3px] border-black font-black text-sm z-10 flex items-center gap-1 uppercase tracking-wide">
-                            🎯 CONTENT GOAL
+                            <Target size={14} strokeWidth={3} className="shrink-0" />
+                            CONTENT GOAL
                         </div>
                         <div
  className={`w-full h-48 sm:h-56 ${row ? "md:h-[20rem]" : "md:h-64"} bg-[#16161C] rounded-box-sm border-[3px] border-black overflow-hidden relative `}
@@ -442,7 +456,7 @@ export default function PiggyPotWidget({
                                         className={
                                             isComplete
                                                 ? "text-[#0f8f52]"
-                                                : "text-[#FF007F]"
+                                                : "text-[#C4006A]"
                                         }
                                     >
                                         {fmt(raisedAmount)}
@@ -499,7 +513,10 @@ export default function PiggyPotWidget({
 
                         {step === 1 && !noticeBelow && (
                                 <div className="animate-fade-in">
-                                    <div className="grid grid-cols-4 gap-2 md:gap-3 mb-4">
+                                    {/* ⚠️ 2-up on a phone. Four tiles across a 350px card left each
+                                        cell ~70px, so "£100.00" clipped inside its own
+                                        border while the page reported no overflow. */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 mb-4">
                                         {presetAmounts.map((val) => {
                                             const disabled = val > maxAllowed;
                                             return (
@@ -513,7 +530,7 @@ export default function PiggyPotWidget({
                                                     aria-pressed={
                                                         selectegTag === val
                                                     }
- className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-1 active:translate-x-1 " : "bg-white hover:bg-gray-50 active:translate-y-1 active:translate-x-1 "}`}
+ className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-[2px]" : "bg-white hover:bg-black/[0.04] active:translate-y-[2px]"}`}
                                                 >
                                                     {fmt(val)}
                                                 </button>
@@ -529,7 +546,7 @@ export default function PiggyPotWidget({
                                             aria-pressed={
                                                 selectegTag === "custom"
                                             }
- className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm active:translate-y-1 active:translate-x-1 transition-all ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-gray-50"}`}
+ className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm transition-colors duration-200 active:translate-y-[2px] ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-black/[0.04]"}`}
                                         >
                                             CUSTOM
                                         </button>
@@ -568,13 +585,23 @@ export default function PiggyPotWidget({
 
                                     <FieldError name="amount" />
 
+                                    {/* 🚨 A DISABLED PRIMARY CTA MUST SAY WHY.
+                                        This shipped greyed and reading "Unlock
+                                        Content" before the visitor had done
+                                        anything wrong, so the page's one buy
+                                        button looked unavailable on arrival —
+                                        and, being `disabled`, it is not
+                                        focusable, so a keyboard user never met
+                                        it at all. The label now states the
+                                        missing step; `aria-disabled` keeps it in
+                                        the tab order so it can be read. */}
                                     <button
                                         type="button"
                                         onClick={handleNextStep}
-                                        disabled={!amount}
+                                        aria-disabled={!amount}
                                         className={`${primaryBtn} mt-2 ${!amount ? primaryOff : primaryOn}`}
                                     >
-                                        Unlock Content
+                                        {amount ? "Unlock Content" : "Choose an amount first"}
                                     </button>
                                 </div>
                             )}

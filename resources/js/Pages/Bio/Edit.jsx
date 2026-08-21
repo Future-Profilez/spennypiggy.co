@@ -374,7 +374,7 @@ function AddItem({ available, atLimit, maxItems }) {
                                     type="button"
                                     onClick={() => add(row)}
                                     disabled={adding}
-                                    className="flex w-full min-h-[56px] items-center gap-3 rounded-box-sm border-2 border-[#000] bg-white p-2 text-left transition-colors duration-200 hover:bg-black/[0.04] disabled:opacity-50"
+                                    className="flex w-full min-h-[56px] items-center gap-3 rounded-box-sm border-2 border-[#000] bg-white p-2 text-left transition-colors duration-200 hover:bg-[#F4F4F5] disabled:opacity-50"
                                 >
                                     {row.thumbnail ? (
                                         <img
@@ -668,7 +668,7 @@ function AddLink({ platforms, atLimit }) {
                                         className={`min-h-[44px] rounded-box-sm border-2 px-4 font-gulfs text-[12px] uppercase tracking-[0.14em] transition-[filter,background-color] duration-200 ${
                                             on
                                                 ? "border-[#000] bg-[#FF007F] text-black hover:brightness-110 active:brightness-95"
-                                                : "border-[#000] bg-white text-black/70 hover:bg-black/[0.04]"
+                                                : "border-[#000] bg-white text-black/70 hover:bg-[#F4F4F5]"
                                         }`}
                                     >
                                         {p.label}
