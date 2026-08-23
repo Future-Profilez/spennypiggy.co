@@ -1773,6 +1773,74 @@ drops it. Adding a milestone is one `AnalyticsEvent::push()` line in the control
      watches `<head>` and fires on the first mutation that moves the title, with a **600ms
      cap** so two identically-titled pages still report. This is what was filling GA4's "Views
      by Page title" card with the wrong page, and nothing about it looked broken.
+
+### The drop-off pack — server-sent events, Ads conversions, wizard steps (22 Aug 2026)
+
+Four gaps that made the funnel unreadable even after the events above. Config for all of it
+is `config/analytics.php`.
+
+- 🚨 **`begin_checkout` and `stripe_connect_started` CANNOT be reported by the browser.** Both
+  redirect OUT of the app via `Inertia::location`, so there is no next render for a flashed
+  event — and the visitor who ABANDONS never comes back at all. Abandonment is the number
+  being measured, so the browser path could not answer it even in principle. Both go through
+  **`App\Services\Analytics\MeasurementProtocol`** → queued `SendMeasurementProtocolEvent`
+  → GA4's Measurement Protocol.
+  - ⚠️ **The client id comes from the `_ga` cookie** (`GA1.1.<id>.<ts>` → the last two
+    segments), read **raw off the request, never through Laravel's cookie helper** — Google's
+    JavaScript writes it, so it is unencrypted and `EncryptCookies` hands back null.
+    **No cookie ⇒ no send**: GA4 would happily accept an invented id and file the checkout as
+    a session with no page view, which is worse than the gap.
+  - ⚠️ **Queued, because it runs on the checkout path.** A slow Google must never add latency
+    to a payment — and like every queued feature here it does nothing without `queue:work`.
+  - ⚠️ Needs **`GA4_API_SECRET`** (GA4 Admin → Data Streams → Measurement Protocol API
+    secrets). Unset ⇒ disabled, one log line, never an exception. `GA4_MP_DEBUG=true` swaps in
+    Google's `/debug/mp/collect`, which is the only way to learn a payload was rejected — the
+    live endpoint answers 204 to anything.
+- **`begin_checkout` hangs off `AbandonedCheckoutService::record()`**, which all nine checkout
+  paths already call right after creating their Stripe session. `purchase` alone gave a funnel
+  reading "visited → bought" with nothing between, hiding the largest drop in the business.
+  The amount and currency are resolved into `$minor`/`$iso` **once**, so the recovery row and
+  the event can never disagree about what the checkout was worth.
+- **`stripe_connect_started` fires at all three `account_onboarding` redirects** in
+  `Auth\StripeController` (`flow` = resume/recreate/onboard). `stripe_connected` counts the
+  creators who FINISHED; the ones who open Stripe's form and never return were the drop-off,
+  and were invisible.
+- 🚨 **Google Ads was receiving NO conversions.** The `AW-` tag loads on every page and nothing
+  had ever sent it one, so the campaigns behind the six `/creators` pages were bidding with no
+  idea which click produced anything. Confirmed in the account (22 Aug 2026): **every**
+  conversion action reads 0.00, and the website-sourced `Sign-up` action had been marked
+  **Inactive** for want of a single conversion.
+  - **Driven by a MAP keyed on the GA4 event name** — `config('analytics.ads.labels')`,
+    published to the page by `app.blade.php` as `window.__spAdsConversions`. Adding a
+    conversion is a label in config and no code; an event with no entry can never be reported
+    by accident. Wired today: `sign_up` (`GOOGLE_ADS_SIGNUP_LABEL`) and `purchase`
+    (`GOOGLE_ADS_PURCHASE_LABEL`).
+  - ⚠️ **`sign_up` matters more than `purchase` for these campaigns** — the ads point at the six
+    `/creators` landing pages, whose entire purpose is a creator signup.
+  - ⚠️ **Only a revenue event carries `value`.** Sending `value: 0` on a signup teaches smart
+    bidding that a signup is worth nothing.
+  - 🚨 **A GA4-IMPORTED conversion action has no label and cannot be used here.** Only actions
+    whose source reads "Website" carry one. The account's two GA4-imported actions
+    (`ads_conversion_signu…`, `close_convert_lead`) are that slower, lossier path and are not
+    what this tags.
+  - ⚠️ **An unset label sends nothing for that event, deliberately** — a wrong label files the
+    conversion against the wrong action, which is worse than filing none and is invisible once
+    it starts.
+- **`sign_up_step` covers the registration wizard** (`Pages/Auth/Register.jsx`). It is
+  one-question-per-screen in React state, so a visitor can abandon at step three having made a
+  single request — the server cannot see any of it. Fired from `setStepKey` plus a mount
+  effect for the entry screen (which never passes through `setStepKey`, so without it the step
+  every visitor sees would be the one step with no data). `direction` marks a back-step so it
+  is not counted as progress.
+- **`App\Support\AnalyticsParams::scrub()`** is now the single privacy filter, shared by the
+  browser path and the Measurement Protocol path. Two copies of a privacy rule is one copy
+  that gets a rule added and one that does not.
+- Tests: `tests/Feature/AnalyticsServerSideEventsTest.php` (8),
+  `tests/Feature/AnalyticsAdsConversionTest.php` (3, on the published map),
+  `tests/javascript/analytics.test.js` (28). Verified in a browser: `sign_up_step` fires
+  `role` on arrival and `identity` on advance, and the Ads map is correctly absent while no
+  label is set.
+
 - Tests: `tests/Feature/AnalyticsEventTest.php` (7), `tests/Feature/AnalyticsFunnelEventsTest.php`
   (5, end-to-end through the redirect — a push with no delivery is the whole failure mode),
   `tests/javascript/analytics.test.js` (24). Verified in a browser against the local app:
@@ -1808,6 +1876,256 @@ cards. The section now costs **no JavaScript**.
   alone, that negative margin pulled the FAQ up into it.
 - ⚠️ `FadeIn` needs `className="h-full"` inside a grid cell, or the wrapper it renders breaks
   the equal-height chain and the cards stop matching.
+
+## 🚨 Discovery Phase 5 + 6 — the collections (21 Aug 2026, spennypiggy.co)
+
+`App\Services\Discovery\CollectionService` is the ONE definition of the ten
+collections the brief names (§C): New to Spenny Piggy · Hidden Gems · Trending ·
+Almost Funded · New Wishes · Creator Spotlight · Popular Right Now · Memberships
+to Discover · Similar Creators · Recommended for You. A surface asks for a
+collection by key and gets cards; **a page that writes its own selection is a
+page where "Trending" means something different from every other page**.
+
+- 🚨 **NO COLLECTION IS RANKED BY MONEY AND NO CARD CARRIES AN EARNING.**
+  "Popular"/"Trending" are COUNTS OF DISTINCT SUPPORTERS; "Hidden Gems" ranks on
+  how little a creator has been SHOWN (`discovery_events`), never on how little
+  they have made — that would publish a poverty list and put the creators least
+  able to convert in front of the most people. `card()` whitelists six keys.
+  ⚠️ A wish card's `price` is the creator's LISTED price, which is public on
+  every item card; what may never appear is what they EARNED.
+- 🚨 **`supporter_id`, NEVER `source_id`.** `source` is a nullable MORPH to the
+  payment row, so counting distinct `source_id` counts PAYMENTS and collides ids
+  across the seven payment tables. Written wrong first; "Popular" ranked by
+  transaction volume while claiming to rank by people.
+- 🚨 **`App\Support\DiscoveryEligibility` IS THE ONE ELIGIBILITY RULE.** Phase 3
+  and Phase 4 each held a copy and `BirthdayDiscoveryTest` carried a test whose
+  only job was catching them drift; these ten would have been a third. Both
+  services now call it. ⚠️ It deliberately does NOT decide "has something to
+  sell" — that is per surface, and folding it in would impose one surface's
+  product rule on all of them.
+- **`CollectionRow.jsx` is the reusable component** (Discover, homepage,
+  profiles, emails, landing pages). ⚠️ It takes a `tone` — the homepage is a
+  DARK field and a black heading is simply not there — but the CARDS stay white
+  everywhere: they are the product, and a card that restyles per page is how two
+  surfaces end up disagreeing about what a creator looks like.
+- 🚨 **THE ATTRIBUTION SOURCE BELONGS TO THE SURFACE, NOT THE COLLECTION.** The
+  same "Similar Creators" row runs beside search, on a profile and after a
+  checkout. `get(..., $source)` overrides the collection's default, passed
+  through `DiscoverySources::normalise()` so a surface cannot invent a key.
+  Without this, every checkout sale would have reported as coming from search —
+  and attribution has no backfill, so it would be wrong for ever.
+- **`firstNonEmpty([...])`** — a chain, not one collection. "Similar Creators"
+  needs categories and only about half the creators have any (measured: 62
+  creators, 30 accounts with one), so a single-collection row would have shown
+  NOTHING on roughly half of all checkouts.
+- **Three new reserved keys** — `spotlight`, `popular`, `memberships` — added to
+  BOTH `DiscoverySources::KEYS` and `resources/js/lib/discoveryLink.js`; a test
+  asserts the two lists match.
+- **Phase 6 surfaces so far:** payment-success "Discover someone else"
+  (`ThankYouController`) and two homepage collections inside `CreatorShowcase`.
+  ⚠️ The homepage takes ONLY `hidden_gems` and `almost_funded` — Trending and New
+  are already its own tabs, and adding the collection versions would draw the
+  same creators twice under two headings. 🚨 The discovery row sits BELOW the
+  membership upsell: somebody who just paid this creator is likeliest to pay
+  THIS creator again, so deepen before widening.
+- **Creators can see WHERE their supporters came from.** `breakdownFor()` +
+  `DiscoverySources::label()`. The per-source figures had been computed since
+  Phase 1 and nothing rendered them. ⚠️ A creator is never shown a raw key, and
+  their own `bio-link` traffic is listed BESIDE ours and marked as theirs —
+  folding it in would be the platform taking credit for their audience.
+  ⚠️ The panel guards `Array.isArray(stats?.by_source)`: marketing hands it
+  `config('discovery.mock_stats')`, which has no such key, and a bare `.map`
+  would take the landing page down.
+
+## 🚨 Creator-controlled push (21 Aug 2026, spennypiggy.co)
+
+`App\Services\CreatorPushService` — §E, "creator-controlled push with rate
+limits, settings, unsubscribe, moderation, admin controls".
+
+🚨 **THIS IS THE ONLY FEATURE WHERE ONE USER'S TEXT LANDS ON ANOTHER USER'S LOCK
+SCREEN.** The guards are the feature; the reach is the easy part.
+
+- **1/day, 4/month**, computed from `creator_push_messages`, **never from a
+  cache** — a cache flush must not hand every creator a fresh allowance. The
+  limit protects the CHANNEL: somebody who turns notifications off is lost to
+  every creator they support, not just the one who annoyed them.
+- 🚨 **NO LINKS, @HANDLES, EMAIL ADDRESSES OR PHONE NUMBERS.** A push is trusted
+  because it carries a creator's name on a lock screen; a link in one moves a
+  paying audience somewhere with no refunds, no chargeback protection and no
+  moderation, and is how a creator gets impersonated. ⚠️ E-mail is checked
+  BEFORE the URL rule, or `jane@example.com` is refused as "a link" and the
+  creator looks for the wrong thing.
+- **The record is written BEFORE dispatch**, refusals included with their reason
+  — "this creator keeps trying to send a phone number" is the signal a moderator
+  needs. ⚠️ A refusal does NOT spend the creator's daily slot.
+- 🚨 **THE FAN-OUT IS QUEUED (`NotificationDispatcher::queue`), NEVER `send()` IN
+  A LOOP.** `send()` makes a synchronous HTTP call per recipient and its own
+  docblock says not to; production is Lambda with a **60-second request
+  timeout** and the fan-out is capped at 5,000, so inline sending timed out
+  part-way with the row already marked `sent`. **Needs `queue:work`.**
+- ⚠️ **Channels are referenced as CONSTANTS.** `send()` matches with `in_array`
+  and returns void, so a literal that stopped matching would mean every push
+  reached nobody, with no error anywhere.
+- **A supporter is somebody who PAID this creator**, not a follower, and a
+  suspended account is never messaged.
+- Admin moderation lives in admin.spennypiggy.co (`/creator-push`).
+
+## 🚨 The Discovery switches are in the DATABASE — and one is one-way (21 Aug 2026)
+
+§F asks that flipping a "Coming soon" label be **a config change with no
+deploy**. On Vapor a config edit IS a deploy and so is an env change, so that
+rule was never actually satisfied — only made cheaper. Two tables close it
+(both owned here, mirrored as guarded declarations in the admin app):
+
+- **`discovery_collection_settings`** — a collection on/off, platform-wide.
+- **`discovery_label_overrides`** — forces a marketing label to COMING SOON.
+
+🚨 **A MISSING ROW MEANS ENABLED / "use the config".** Both tables ship EMPTY and
+everything works; switching something off is what writes a row. Seeding "enabled"
+rows would switch a feature off on any database a seeder never reached — and
+**Vapor runs migrations on deploy but never seeders**.
+
+🚨 **THE LABEL SWITCH CAN ONLY TURN A LABEL OFF, AND THAT IS THE DESIGN.**
+Marking something LIVE NOW is a public claim on three marketing pages, and
+`DiscoveryMarketingTest` requires recorded evidence for every live key **by
+reading the config** — a database switch able to write `live` would walk straight
+past the one guard between a marketing page and a false claim. The table has no
+`state` column and must never gain one; a test asserts that. Off can only
+under-claim, and it is the urgent direction ("this is showing something it should
+not") — on has never been urgent.
+
+⚠️ **Disabling requires a written reason.** A collection switched off with no
+note is one nobody dares switch back on six months later.
+
+## 🚨 A session flash is now a toast, once, for the whole app (21 Aug 2026)
+
+`BrandToaster` bridges `flash.error` / `flash.success` to a toast. **No layout
+had ever read `flash`**: only fifteen pages looked at it and five turned it into
+a toast, so every `->with('error', …)` a controller wrote outside those five was
+**stored and thrown away**. Found chasing "I tap Unlock and nothing happens" — a
+guest sent to sign in to buy a Bill or a Membership arrived with a written
+explanation the login page never rendered.
+
+- ⚠️ **The five pages that did it themselves have had their copies removed**, or
+  every message would appear twice — and two identical toasts dismissing
+  independently reads as a rendering bug.
+- ⚠️ Keyed on the message text, so an Inertia re-render does not re-fire it.
+- ⚠️ The login page renders **both** `?message=` and the flash: a redirect can
+  carry either, and preferring one silently loses the other.
+
+### The bio page's buy path
+
+- 🚨 **A WISH CARD GOES TO THE BASKET** (`/cart?add={uuid}`), not to the wish
+  checkout page. Every refusal in `wishItemSubscribe` answers with
+  `redirect()->back()`, and a visitor arriving from `/bio/buy/…` has no
+  meaningful "back" — they landed on the HOMEPAGE. Three of those refusals now
+  have real destinations (a suspended item sends them to the CREATOR, whose
+  other items are still on sale).
+- ⚠️ **The add happens in the BROWSER.** A guest's basket row is keyed on a
+  device id derived from user agent, platform and screen — the server cannot
+  compute it, so a server-side write creates a row no guest can ever see.
+  `?add=` is stripped with `replaceState` once used, or a refresh adds it again.
+- 🚨 **The guest gate is asked BEFORE the redirect, with the item's real price
+  and its own currency.** `wishItemSubscribe` asked it with a hardcoded
+  `('GBP', 0)`, so the high-value half could never fire there — a £450 wish
+  opened for a guest exactly as a £5 one did.
+- ⚠️ **Guest checkout has no toggle of its own** — it follows the PLATFORM RISK
+  STATE (`THROTTLE` and `FREEZE` refuse guests), plus the value threshold.
+  ⚠️ The threshold is NEVER named to a supporter (`RiskMessages` rule 1).
+
+## 🚨 The test suite does not call Stripe (22 Aug 2026)
+
+Measured on one full run: **over 2,000 live Stripe requests**, logged as "Failed
+to ensure manual payout schedule: The provided key 'sk_test_…'". It made the
+suite non-deterministic — `StripeOnboardingFlowTest` returned 500 in a full run
+and passed in isolation, 9s against 3s — and **a suite that fails at random makes
+the "green regression" §F gates every release on meaningless**.
+
+`App\Support\Testing\OfflineStripeHttpClient` is bound in `testing` via
+`ApiRequestor::setHttpClient` (the same seam the local IPv4 fix uses).
+
+- 🚨 **It answers with a real Stripe ERROR, not a fake success.** Every caller
+  already handles a Stripe failure — that is what those 2,000 log lines were. A
+  fake success would send code down paths it never takes in a test and quietly
+  change what the suite proves.
+- ⚠️ **The `testing` check comes BEFORE the `local` one** — a developer machine's
+  test environment is also `local`, and the curl client would otherwise win and
+  put the network back.
+- ⚠️ **The signature must match the INSTALLED SDK's `ClientInterface`** (it
+  carries `$apiMode` on this version). PHP raises a FATAL on a mismatch, which
+  takes the whole suite down rather than one test. Re-check after an SDK bump.
+- **Escape hatch `STRIPE_ALLOW_LIVE_CALLS_IN_TESTS=true`**, never in CI.
+- Same remedy this repository already applied to HaveIBeenPwned, for the same
+  reason.
+
+## ⚠️ The no-shadow scanner could not see a JS style object (22 Aug 2026)
+
+`npm run check` reported "no element casts a shadow" while **33 inline
+`boxShadow` declarations were live** across nine files — the Purchase Hub alone
+carried twenty. The CSS check only ever ran on `.css`, `.blade.php` and `.html`,
+so `style={{ boxShadow: … }}` was neither a class token nor a CSS declaration and
+passed every sweep. This is the fourth place a style hides, which the root
+`CLAUDE.md` already warns a className sweep cannot reach.
+
+`check-no-shadows.mjs` now scans JS style objects. ⚠️ **A ring is allowed** —
+`0 0 0 1px` and `inset 0 0 0 1px` have no offset and no blur, so they render as a
+line, exactly as `ring-*` does.
+
+## 🚨 CSP round two — the two faults a nonce does NOT fix (22 Aug 2026, spennypiggy.co)
+
+The first sweep added the missing hosts and nonced the inline blocks in `app.blade.php`.
+The reports that survived were the interesting ones, because **neither is fixable by adding
+a nonce** and both looked completely normal in a browser (the policy is report-only, so
+nothing was actually blocked yet).
+
+- 🚨 **AN INLINE `on*=` ATTRIBUTE CAN NEVER CARRY A NONCE — an attribute has nowhere to put
+  one.** It is governed by `script-src-attr`, which falls back to `script-src`, and that
+  directive deliberately has no `'unsafe-inline'` (a nonce makes a browser ignore
+  `'unsafe-inline'` anyway, so adding both is theatre). The classic async-CSS swap
+  `<link rel=preload as=style onload="this.rel='stylesheet'">` in `app.blade.php` was
+  therefore refused — **405 violations across 144 users, the largest report on the
+  platform**, and enforcing would have dropped the whole site to system fonts. ⚠️ The
+  `<noscript>` fallback beside it does NOT cover this: that only runs with JavaScript
+  *disabled*, and here JavaScript is enabled and merely blocked.
+  **The attribute-free replacement is `media="print"` plus a nonced script that swaps it to
+  `all`.** ⚠️ The swap must check `link.sheet` as well as listening for `load` — the
+  stylesheet can finish loading before the script runs, and a bare listener then waits for
+  an event that has already fired, leaving the site permanently on `media="print"`.
+  `CriticalCssService::defer()` (the `@deferCss` Blade directive, currently unused) carried
+  the identical pattern and was fixed with it.
+- 🚨 **`script-src` GOVERNS JSON-LD.** The browser does not treat `application/ld+json` as
+  exempt, so `SeoMeta::addJsonLd()`'s output was refused on every page carrying a
+  BreadcrumbList. The nonce is stamped in **`SeoMeta::render()`**, not in `addJsonLd()` —
+  so it covers every script tag anything ever adds, and so the value is read at RENDER time
+  (SecurityHeaders shares a fresh nonce per request; one captured earlier can belong to a
+  different one). ⚠️ `SeoMeta::cspNonce()` returns `''` rather than throwing when there is
+  no view container — the class is reachable from console commands and the sitemap.
+- ⚠️ **A `javascript:` URL is script too.** `resources/proxy/offline.html`'s "Go back"
+  button was `href="javascript:history.back()"` — dead under the CSP, on the one screen a
+  user reaches when everything else has already failed. It is a `<button>` with a listener
+  now.
+- ⚠️ **`resources/proxy/offline.html` is plain HTML with no Blade, so it takes the nonce
+  through a `__CSP_NONCE__` placeholder** substituted by the `offline.page` route. The
+  service worker caches the RESPONSE, so a cached copy keeps the nonce it was served with.
+  `resources/views/maintenance.blade.php`'s countdown was un-nonced for the same reason
+  (both files sit outside the app shell) and now uses `$cspNonce`.
+- 🚨 **`tests/Feature/CspInlineScriptTest.php` (6) is the enforcement.** `npm run check`'s
+  scanners read `resources/js`, never Blade, and a report-only violation fails no build —
+  so without a test this returns one screen at a time. It asserts, against **rendered**
+  markup, that no served page carries an `on*=` handler and that every inline `<script>`
+  has a nonce. ⚠️ Write comments carefully around these assertions: the first version
+  failed because a comment in `offline.html` quoted the literal string the test forbids.
+
+**Two Sentry entries deliberately not "fixed":**
+- `Unable to preload CSS for …/swiper-react-*.css` — the file was **verified present on
+  CloudFront (HTTP 200)**, so these are transient network failures, and `app.jsx`'s
+  `vite:preloadError` handler already reloads once for exactly this.
+- `NotFoundError: Failed to execute 'removeChild' on 'Node'` — the other half of the
+  `insertBefore` error already on `app.jsx`'s `ignoreErrors` list: React holding a
+  reference to a node Google Translate / Safari Reader / an extension has re-parented.
+  Nothing in this codebase can prevent it and the page recovers on the next render.
+  **Ignoring only `insertBefore` meant half of one known issue was filtered and half was
+  still paging us** — both the string list and the `beforeSend` regex now cover both.
 
 ## Detailed topic index — load the skill, do not inline this content
 

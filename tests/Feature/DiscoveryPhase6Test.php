@@ -7,6 +7,7 @@ use App\Services\Discovery\CollectionService;
 use App\Support\DiscoverySources;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
@@ -180,6 +181,53 @@ class DiscoveryPhase6Test extends TestCase
 
         // ⚠️ And the SURFACE still owns the key, whichever collection filled it.
         $this->assertSame('payment-success', $row['source']);
+    }
+
+    /**
+     * 🚨 A SEARCH THAT FINDS NOTHING IS THE WORST DEAD END ON THE PLATFORM.
+     *
+     * That visitor is not browsing — they came looking for something specific
+     * and were answered with "No matches found. Try adjusting your search",
+     * which is an instruction to work harder with no idea what would work.
+     * Discovery Phase 6 names this surface twice ("search recs", "empty
+     * states").
+     */
+    public function test_a_search_carries_collections_so_it_is_never_a_dead_end(): void
+    {
+        User::factory()->create([
+            'role' => 1,
+            'suspended_account' => 0,
+            'profile_status_lock' => 2,
+            'avatar' => 'a.jpg',
+            'avatar_approved' => 1,
+            'name' => 'Findable',
+            'username' => 'findable',
+        ]);
+
+        $this->get('/discover?search=zzzznothingmatchesthis')
+            ->assertOk()
+            ->assertInertia(function (AssertableInertia $page) {
+                $collections = $page->toArray()['props']['collections'];
+
+                $this->assertNotEmpty(
+                    $collections,
+                    'A search with no results offered nothing to do next.'
+                );
+            });
+    }
+
+    /**
+     * ⚠️ And NOT while simply browsing. The rest of that page already has its
+     * own sections; adding more would be noise, and it would cost the query on
+     * every visit rather than only on the visits that need it.
+     */
+    public function test_browsing_discover_is_not_given_the_extra_rows(): void
+    {
+        $this->get('/discover')
+            ->assertOk()
+            ->assertInertia(
+                fn (AssertableInertia $page) => $page->where('collections', [])
+            );
     }
 
     /**

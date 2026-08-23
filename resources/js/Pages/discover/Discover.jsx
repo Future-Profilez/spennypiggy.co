@@ -17,10 +17,11 @@ import { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
 import TopSupporters from '../leaderboard/TopSupporters';
 import DiscoverHero from './components/DiscoverHero';
 import HowItWorks from './components/HowItWorks';
+import CollectionRow from '@/Components/discovery/CollectionRow';
 
 export default function Discover(props) {
     
-    const { auth, global_currency, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, featuredBills, featuredMemberships, featuredTasks, featuredShops, searchResults, intros, filters: initialFilters } = props;
+    const { auth, global_currency, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, featuredBills, featuredMemberships, featuredTasks, featuredShops, searchResults, intros, filters: initialFilters, collections = [] } = props;
     const [searchQuery, setSearchQuery] = useState(initialFilters?.search || '');
     const [filters, setFilters] = useState(initialFilters || {});
     
@@ -576,11 +577,32 @@ export default function Discover(props) {
                                     )}
 
                                     {(!searchResults.creators?.length && !searchResults.wishes?.length && !searchResults.bills?.length && !searchResults.memberships?.length && !displayedTasks?.length && !displayedShops?.length) && (
-                                        <div className="text-center py-20 px-10 bg-white rounded-box border border-dashed border-black/15">
-                                            <div className="text-black/60 text-5xl mb-4">🔍</div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No matches found</h3>
-                                            <p className="text-black/80">Try adjusting your search or filters to find what you're looking for.</p>
-                                        </div>
+                                        <>
+                                            <div className="text-center py-14 px-10 bg-white rounded-box border border-dashed border-black/15">
+                                                <div className="text-black/60 text-5xl mb-4">🔍</div>
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No matches found</h3>
+                                                <p className="text-black/80">Try a different word or fewer filters — or have a look at these.</p>
+                                            </div>
+
+                                            {/* 🚨 A SEARCH THAT FINDS NOTHING IS THE WORST DEAD END
+                                                ON THE PLATFORM. That visitor came looking for
+                                                something specific and was told to "try adjusting
+                                                your search" — an instruction to work harder with no
+                                                idea what would work. Discovery Phase 6 lists this
+                                                surface by name ("search recs", "empty states").
+
+                                                ⚠️ Rendered ONLY when the search returned nothing,
+                                                and each row drops itself when it is empty, so a
+                                                quiet week costs a row rather than adding a second
+                                                empty state under the first. */}
+                                            {collections.map((collection) => (
+                                                <CollectionRow
+                                                    key={collection.key}
+                                                    collection={collection}
+                                                    className="mt-8"
+                                                />
+                                            ))}
+                                        </>
                                     )}
                                 </div>
                             ) : null

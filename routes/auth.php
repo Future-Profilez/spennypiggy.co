@@ -55,6 +55,7 @@ use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\SubscriptionActivationService;
 use App\Support\SubscriptionPayload;
@@ -415,6 +416,25 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'featuredTasks' => $data['featuredTasks'],
         'filters' => $data['filters'],
         'searchResults' => $data['searchResults'],
+
+        /*
+         * Discovery Phase 6 — "search recs" and "empty states" (Developer Master
+         * Plan, 19 Aug 2026, §C).
+         *
+         * 🚨 THE WORST DEAD END ON THE PLATFORM IS A SEARCH THAT FINDS NOTHING.
+         * That visitor is not browsing — they came looking for something
+         * specific and were told "No matches found. Try adjusting your search",
+         * which is an instruction to work harder with no idea what would work.
+         *
+         * ⚠️ Only sent when a search is actually running; the rest of this page
+         * already has its own sections and does not need more.
+         */
+        'collections' => ! empty($data['filters']['search'])
+            || ! empty($data['filters']['type'])
+            || ! empty($data['filters']['contentType'])
+                ? app(CollectionService::class)
+                    ->many(['trending', 'hidden_gems', 'new_creators'], 8, $request->user())
+                : [],
     ]);
 })->name('discover');
 

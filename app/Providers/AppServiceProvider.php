@@ -33,6 +33,7 @@ use App\Observers\CreatorContentObserver;
 use App\Observers\DeliverableObserver;
 use App\Services\BioPageService;
 use App\Services\ResourcePreloadService;
+use App\Support\Testing\OfflineStripeHttpClient;
 use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Notification;
@@ -190,8 +191,21 @@ class AppServiceProvider extends ServiceProvider
             'data-cfasync' => 'false',
         ]);
 
-        // Fix Stripe connection timeout issues in local/dev environments by forcing IPv4
-        if (app()->environment('local')) {
+        /*
+         * 🚨 TESTS DO NOT CALL STRIPE. Measured 22 Aug 2026: one full suite run
+         * made over 2,000 live requests, which is most of its hour and the most
+         * likely cause of `StripeOnboardingFlowTest` failing in a full run while
+         * passing in isolation. See `OfflineStripeHttpClient` for why it answers
+         * with a Stripe ERROR rather than a fake success.
+         *
+         * ⚠️ Checked BEFORE the local branch: the test environment is also
+         * `local` on a developer machine, and the IPv4 curl client below would
+         * otherwise win and put the network back.
+         */
+        if (app()->environment('testing') && ! env('STRIPE_ALLOW_LIVE_CALLS_IN_TESTS', false)) {
+            ApiRequestor::setHttpClient(new OfflineStripeHttpClient);
+        } elseif (app()->environment('local')) {
+            // Fix Stripe connection timeout issues in local/dev environments by forcing IPv4
             $curl = new CurlClient([CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]);
             ApiRequestor::setHttpClient($curl);
         }
