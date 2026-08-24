@@ -154,12 +154,12 @@ export default function SubCheckout(props) {
     const [passkeyLoading, setPasskeyLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(false);
     useEffect(() => {
-        if(flash?.error){
-            errorAlert(flash.error);
-        }
-        if(flash?.success){
-            successAlert(flash.success);
-        }
+        /*
+         * ⚠️ REMOVED — `BrandToaster` now bridges every session flash to a toast
+         * once, for the whole app. Toasting it here as well drew each message
+         * twice, and two identical toasts dismissing independently reads as a
+         * rendering bug rather than as duplicate config.
+         */
         if(flash?.warning){
             warningAlert(flash.warning);
         }

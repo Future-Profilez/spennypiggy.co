@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\VerifyEmail;
+use App\Models\SecurityEvent;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Support\EmailDomainPolicy;
+use App\Support\SecurityAlert;
+use App\Support\SecurityEventLog;
+use App\Support\SecurityRedactor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -194,6 +198,37 @@ class EmailVerificationNotificationController extends Controller
         $user->email = $email;
         $user->email_verified_at = null;
         $user->save();
+
+        // 🚨 Security Checklist §3 — "any change to a payout destination or
+        // account email". Moving the address is how a takeover locks the real
+        // owner out of their own recovery, and it happened here with no record
+        // of any kind. Detection only: the change is NOT blocked and no
+        // re-authentication is added — that is a separate decision.
+        SecurityEventLog::record(SecurityEvent::ACCOUNT_EMAIL_CHANGE, [
+            'severity' => 'warning',
+            'user_id' => $user->id,
+            'email' => $email,
+            'ip_address' => $request->ip(),
+            'description' => 'Account email changed from '.SecurityRedactor::maskEmail($previous).' to '.SecurityRedactor::maskEmail($email).'.',
+            'context' => ['source' => 'changeEmail (unverified address)'],
+        ]);
+
+        if (config('security_alerts.account_email.enabled', true)) {
+            SecurityAlert::raise(
+                'Account email changed',
+                'A user replaced the email address on their account before verifying it. Nothing was blocked — this is a notification.',
+                [[
+                    'heading' => 'Account email',
+                    'rows' => [
+                        'User — #'.$user->id,
+                        'Was — '.SecurityRedactor::maskEmail($previous),
+                        'Now — '.SecurityRedactor::maskEmail($email),
+                        'Request IP — '.SecurityRedactor::ip($request->ip()),
+                    ],
+                ]],
+                ['emoji' => '✉️'],
+            );
+        }
 
         // A new address gets a link immediately — the cooldown belongs to the
         // old one.

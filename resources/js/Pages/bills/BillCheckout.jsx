@@ -383,12 +383,12 @@ export default function BillCheckout(props) {
     // only read props.flash inside onSuccess — a STALE closure that never saw the
     // fresh flash, so a refused checkout rendered with no message at all.
     useEffect(() => {
-        if (flash?.error) {
-            errorAlert(flash.error);
-        }
-        if (flash?.success) {
-            successAlert(flash.success);
-        }
+        /*
+         * ⚠️ REMOVED — `BrandToaster` now bridges every session flash to a toast
+         * once, for the whole app. Toasting it here as well drew each message
+         * twice, and two identical toasts dismissing independently reads as a
+         * rendering bug rather than as duplicate config.
+         */
         if (flash?.warning) {
             warningAlert(flash.warning);
         }

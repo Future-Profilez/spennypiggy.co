@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasRewardContract;
 use App\Models\Concerns\HasScheduledPublishing;
 use App\Support\MediaUrl;
+use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -67,13 +68,37 @@ class Membership extends Model
      * The paid deliverable when the reward is a message or a link — entitled
      * surfaces opt back in with revealReward().
      */
+    /*
+     * 🚨 THE PAID FILE'S URL IS NOT PUBLIC DATA, and it was being serialised
+     * on every card. The raw column is hidden here while the ACCESSOR BUILT
+     * FROM IT was appended — hiding the column and publishing its URL, which
+     * is the wrong way round. `Shop` already had the correct shape; these
+     * three did not.
+     *
+     * ⚠️ Signing the URL (SecureMedia, Aug 2026) does not close this: a
+     * signed URL handed to somebody who never bought is still a working
+     * download for the life of the token. Signing is delivery, not
+     * entitlement.
+     *
+     * ⚠️ `$hidden` ONLY affects toArray()/toJson(). Every entitled surface in
+     * this app reads the accessor as a PROPERTY and builds its own payload
+     * (see `GifterHubController`, which does `$t->tipGoal?->reward_url`), so
+     * nothing that is meant to deliver the file is affected. If a surface
+     * ever does need it in a serialised payload, `->makeVisible()` on that
+     * query is the deliberate way to say so.
+     */
     protected $hidden = [
+        'content_file_url',
         'reward_body',
     ];
 
     /**
      * Uploadcare UUIDs are stored bare; every display surface needs the CDN
      * URL. Mirrors Bills::getContentFileUrlAttribute().
+     *
+     * PAID deliverable, so it is SIGNED — a member who cancels or charges back
+     * must not keep a permanent link to the tier's content. `perma_link` (the
+     * tier art) is public and stays unsigned.
      */
     public function getContentFileUrlAttribute()
     {
@@ -81,11 +106,11 @@ class Membership extends Model
             return null;
         }
 
-        if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
-            return $this->content_file;
-        }
+        $url = strpos($this->content_file, 'https://ucarecdn.com/') === 0
+            ? $this->content_file
+            : 'https://ucarecdn.com/'.$this->content_file.'/';
 
-        return 'https://ucarecdn.com/'.$this->content_file.'/';
+        return SecureMedia::sign($url);
     }
 
     public static function boot()

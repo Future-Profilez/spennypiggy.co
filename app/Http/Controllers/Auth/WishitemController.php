@@ -41,6 +41,7 @@ use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\UserProfileService;
@@ -966,6 +967,7 @@ class WishitemController extends Controller
                 ->with(['user' => function ($q) use ($gender) {
                     $q->select(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'is_founder', 'role', 'gender', 'suspended_account'])
                         ->where('suspended_account', 0)
+                        ->where('role', 1)
                         ->whereNotNull('username')
                         ->where('username', '!=', '');
                     if ($gender != 'all') {
@@ -975,9 +977,13 @@ class WishitemController extends Controller
                 ->select('user_intros.*'); // make sure we select proper columns
 
             // Double-check to ensure we only get intros with valid users
+            // ⚠️ role=1 (creator) is a REQUIRED filter here, not a tidy-up. Intro
+            // uploads were ungated until 21 Aug 2026, so gifter rows exist in
+            // user_intros; they are hidden, not deleted (client decision).
             $query->whereHas('user', function ($q) use ($gender) {
                 $q->whereNull('deleted_at')
                     ->where('suspended_account', 0)
+                    ->where('role', 1)
                     ->where('username', '!=', '');
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
@@ -1149,7 +1155,12 @@ class WishitemController extends Controller
             $ownerCurrency = strtoupper($wishitem->user->default_currency ?: 'GBP');
             $vatPercent = (float) ($wishitem->user->vat_amount_percentage ?? 0);
 
-            $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
+            // 🚨 The creator MUST be in the `use` list — it is read on the line below.
+            // PHP does NOT capture by default, so leaving it out raises "Undefined
+            // variable" INSIDE the closure, which surfaces as a 500 on the guest
+            // checkout path and nowhere else. Both guest-cart closures in this file
+            // had it missing.
+            $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent, $wishitem): float {
                 $amountWithVat = $amount + (($amount * $vatPercent) / 100);
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $wishitem->user_id);
 
@@ -1849,6 +1860,9 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
+            // Discovery Phase 1 — syncRyeProducts() rebuilds this row's ledger entry
+            // in a worker with no cookie, so the source is persisted here.
+            $ryeProductPayment->discovery_source = AttributionService::sourceForCreator($orderDetails->creator->id ?? null);
             Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
             $ryeProductPayment->save();
 
@@ -3128,7 +3142,7 @@ class WishitemController extends Controller
                         $ownerCurrency = strtoupper($owner->default_currency ?: 'GBP');
                         $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
 
-                        $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
+                        $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent, $owner): float {
                             $amountWithVat = $amount + (($amount * $vatPercent) / 100);
                             $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency, 0, 'card', $owner->id);
 

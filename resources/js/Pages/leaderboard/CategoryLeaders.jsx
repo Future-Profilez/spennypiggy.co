@@ -6,6 +6,7 @@ import userphoto from "../../../assets/siteicon.png";
 import PriceFormat from '@/includes/PriceFormat';
 import { RiHeartLine, RiGiftLine, RiShoppingBagLine, RiBankCardLine, RiGroupLine, RiStarLine } from 'react-icons/ri';
 import { trackSearchClick } from "@/includes/Analytics";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 
 export default function CategoryLeaders() {
     const { formatMultiPrice } = PriceFormat();
@@ -53,7 +54,7 @@ export default function CategoryLeaders() {
                 </span>
 
                 <Link
-                    href={`/${creator.username}`}
+                    href={discoveryLink(creator.username, DISCOVERY_SOURCE.TRENDING)}
                     onClick={() => trackSearchClick(creator.id, creator.username)}
                     className="flex min-w-0 flex-1 items-center gap-2.5"
                 >

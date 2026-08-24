@@ -6,8 +6,20 @@ import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
 import TaskItem from '../../../Components/TaskItem';
 import ShopCard from '../../../Components/ShopCard';
+import { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 
-export default function FeaturedCarousel({ title, items, type = 'creator', icon, kicker, subtitle }) {
+/**
+ * A featured carousel is Spenny Piggy CHOOSING who a supporter sees, so every
+ * creator link inside it is SP-generated traffic and must carry a Discovery
+ * source. 🚨 A surface that is not tagged is invisible for ever — attribution
+ * is recorded at the moment of the visit and there is no backfill.
+ *
+ * @param {string} [discoverySource] one of the twelve reserved keys. Defaults
+ *   to `search-recs`, the key for Discover's own surfaces; the caller passes a
+ *   collection key (`trending`, `new-creators`, `new-wishes`) where one fits,
+ *   so the monthly report can tell the collections apart.
+ */
+export default function FeaturedCarousel({ title, items, type = 'creator', icon, kicker, subtitle, discoverySource = DISCOVERY_SOURCE.SEARCH_RECS }) {
     
     const {global_currency, auth, IsloggedIn} = usePage().props;
     
@@ -59,7 +71,7 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
                     <>
                     {items.map((item, index) => (
                         <div key={item.id || index} className={isTaskLayout ? 'col-span-full' : ''}>
-                            {type === 'creator' && <CreatorCard item={item} auth={auth} />}
+                            {type === 'creator' && <CreatorCard item={item} auth={auth} discoverySource={discoverySource} />}
                             {type === 'wish' && 
                                 <Wishlistbox
                                     key={`wish-item-${item.id}`}
@@ -70,12 +82,20 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
                                     auth={auth.user}
                                     itemid={item?.id}
                                     itm={item}
+                                    discoverySource={discoverySource}
                                 />
                             }
-                            {type === 'bill' && <Bill  classes="" itm={item}/>}
+                            {type === 'bill' && <Bill  classes="" itm={item} discoverySource={discoverySource} />}
+                            {/* MembershipItem and TaskItem carry no creator-profile
+                                link — their cards go to checkout and to /task/{uuid} —
+                                so there is nothing here to tag. */}
                             {type === 'membership' &&  <Membership  item={item} /> }
                             {type === 'task' && <TaskItem task={item} IsloggedIn={false} profileUser={item.user} />}
-                            {type === 'shop' && <ShopCard item={item} classes="" />}
+                            {/* No `showCreator` here, deliberately — this carousel's shop card
+                                renders no creator link, so there is nothing to tag.
+                                `discoverySource` is passed so it tags itself the day
+                                the handle is turned on. */}
+                            {type === 'shop' && <ShopCard item={item} classes="" discoverySource={discoverySource} />}
                         </div>
                     ))}
                     <div className='flex justify-center sm:hidden col-span-full !mt-2'>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Support\AnalyticsEvent;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
@@ -47,6 +48,7 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorJourneyService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Risk\MoneyNormalizer;
 use App\Services\Risk\ReservePolicy;
@@ -59,6 +61,7 @@ use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
+use App\Support\PayoutDestinationAudit;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -395,6 +398,11 @@ class StripeController extends Controller
             $user->account_id = $newAccount->id;
             $user->stripe_details_submitted = 0; // They'll need to complete onboarding again
             $user->save();
+
+            // 🚨 Security Checklist §3 — a bare model save used to move a
+            // creator's payout destination with no audit row and no alert.
+            // Detection only: nothing is blocked and no auth flow changes.
+            PayoutDestinationAudit::recordAccountChange($user, $oldAccountId, $newAccount->id, 'StripeController: service-agreement migration');
 
             // Note: We don't delete the old account automatically to avoid data loss
             // It can be cleaned up manually later if needed
@@ -945,6 +953,14 @@ class StripeController extends Controller
                         return $account->id;
                     });
 
+                    if ($winner === $account->id) {
+                        // Security Checklist §3. The claim above is the FIRST
+                        // connection (it only writes when account_id was empty),
+                        // so this records a baseline rather than raising an
+                        // alert — see PayoutDestinationAudit.
+                        PayoutDestinationAudit::recordAccountChange($user, null, $account->id, 'StripeController: first Connect onboarding');
+                    }
+
                     if ($winner !== $account->id) {
                         Log::warning('Concurrent Stripe account creation — discarding duplicate', [
                             'user_id' => $user->id,
@@ -1296,9 +1312,13 @@ class StripeController extends Controller
             }
 
             // Persist the new ID only after creation succeeds
+            $previousAccountId = $user->getOriginal('account_id');
             $user->account_id = $newAccount->id;
             $user->save();
             $this->userProfileService->clearUserCaches($user->username, $user->id);
+
+            // 🚨 Security Checklist §3 — see the note on the migration branch.
+            PayoutDestinationAudit::recordAccountChange($user, $previousAccountId, $newAccount->id, 'StripeController: Connect account recreated');
 
             // ── 3. Generate onboarding link ──────────────────────────────
             try {
@@ -1411,6 +1431,10 @@ class StripeController extends Controller
                         $user->account_id = $newAccount->id;
                         $user->stripe_details_submitted = 0; // Reset submitted status
                         $user->save();
+
+                        // 🚨 Security Checklist §3 — see the note on the other
+                        // migration branch.
+                        PayoutDestinationAudit::recordAccountChange($user, $oldAccountId, $newAccount->id, 'StripeController: full-agreement migration');
 
                         Log::info('User migrated to new Stripe account', [
                             'user_id' => $user->id,
@@ -1575,6 +1599,14 @@ class StripeController extends Controller
                 $user->save();
                 $this->applyContentDescriptorToAccount($user);
                 $this->userProfileService->clearUserCaches($user->username, $user->id);
+
+                // GA4 funnel — stage 3, and the single biggest drop-off on the
+                // creator side. Inside the transition guard on purpose: Stripe
+                // hits return_url on every visit to the hosted form, so firing
+                // outside it would count one creator many times.
+                AnalyticsEvent::push('stripe_connected', [
+                    'payouts_enabled' => (bool) ($account->payouts_enabled ?? false),
+                ]);
             }
 
             // charges_enabled can be true while payouts_enabled is still false
@@ -1864,6 +1896,9 @@ class StripeController extends Controller
                 'session_expires_at' => $sessionCreate->expires_at,
                 'created_at' => now(),
                 'updated_at' => now(),
+                // Discovery Phase 1 — syncWishes() reads the source through
+                // StripePaymentItems->payment, so it belongs on the detail row.
+                'discovery_source' => AttributionService::sourceForCreator($owner_id),
             ]);
 
             Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);
@@ -2178,6 +2213,8 @@ class StripeController extends Controller
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
+                    // Discovery Phase 1 — see the logged-in branch above.
+                    'discovery_source' => AttributionService::sourceForCreator($cart[0]->owner_id ?? null),
                 ]);
 
                 Helpers::applyDigitalWaiver($stripeid, (bool) request()->digital_waiver);
@@ -2284,17 +2321,73 @@ class StripeController extends Controller
 
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
+        /*
+         * 🚨 A REAL DESTINATION, NOT `back()`.
+         *
+         * `redirect()->back()` reads the Referer. A supporter arriving from a
+         * bio card, an e-mail, a shared link or a bookmark has none that means
+         * anything, so all three refusals below dropped them on the HOMEPAGE
+         * carrying a flash — and until 21 Aug 2026 no layout rendered a flash at
+         * all, so the message was written, stored and thrown away. From their
+         * side: they tapped Unlock and nothing happened. Reported from
+         * production.
+         *
+         * Home is now the explicit FALLBACK rather than the accident, and the
+         * message reaches them because `BrandToaster` bridges every flash.
+         */
         if (! $wish) {
-            return redirect()->back()->with('error', 'Wish item not found!');
+            return redirect()->route('home')
+                ->with('error', 'That item is no longer available.');
         }
         if ($wish->is_suspended) {
-            return redirect()->back()->with('error', 'This item is currently suspended and cannot accept payments.');
+            /*
+             * ⚠️ Back to the CREATOR, not to the homepage. The supporter came to
+             * buy from this person and this one item is unavailable — their
+             * other items are not, and the creator's page is the only place that
+             * is true.
+             */
+            /*
+             * ⚠️ The creator check is BELOW this one, so `$wish->user` can be
+             * null here. `?? ''` would build `/` + an empty username — a broken
+             * URL rather than a crash, which is the worse of the two because
+             * nothing reports it. Fall back to home when there is no creator to
+             * send them to.
+             */
+            $username = $wish->user->username ?? null;
+
+            return $username
+                ? redirect()->route('user.show', ['username' => $username])
+                    ->with('error', 'That item is not on sale at the moment.')
+                : redirect()->route('home')
+                    ->with('error', 'That item is not on sale at the moment.');
         }
         if (! $wish->user) {
-            return redirect()->back()->with('error', 'Creator not found!');
+            return redirect()->route('home')
+                ->with('error', 'That creator is no longer on Spenny Piggy.');
         }
 
-        $guestRestriction = Helpers::guestCheckoutRestriction('GBP', 0);
+        /*
+         * 🚨 THE ITEM'S REAL PRICE, NOT ZERO.
+         *
+         * This passed `('GBP', 0)`, which meant the HIGH-VALUE half of the guest
+         * gate could never fire here: `guestCheckoutRestriction` refuses a guest
+         * above £50, and it was being told every wish costs nothing. A £450 wish
+         * opened for a guest exactly as a £5 one did. The POST branch further
+         * down this same method passes the real subtotal, so money was never
+         * actually taken past the gate — but a check that enforces half of what
+         * it appears to is worse than an absent one, because nobody re-reads it.
+         *
+         * ⚠️ The item's OWN currency, not a hardcoded GBP.
+         * `guestCheckoutRestriction` converts to GBP itself before comparing, so
+         * handing it a EUR price labelled GBP mis-states the threshold in the
+         * safe-looking direction for weak currencies and the wrong one for
+         * strong ones.
+         */
+        $guestRestriction = Helpers::guestCheckoutRestriction(
+            $wish->currency ?: 'GBP',
+            (float) ($wish->price ?? 0)
+        );
+
         if (! Auth::check() && $guestRestriction) {
             return to_route('login', [
                 'redirect' => $request->fullUrl(),
@@ -2475,6 +2568,10 @@ class StripeController extends Controller
                 // On a RECURRING row this is also the grandfathering record: the
                 // supporter keeps this rate at renewal unless a LOWER one is agreed.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — and on a recurring row this is also the
+                // inheritance record: every renewal copies it forward, because the
+                // surface that introduced the supporter earned the whole stream.
+                'discovery_source' => AttributionService::sourceForCreator($wish->user_id),
             ]);
 
             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
@@ -3132,6 +3229,9 @@ class StripeController extends Controller
                 // Grandfathered: the rate the supporter subscribed at, never the
                 // creator's current agreement.
                 ...Helpers::copyFeeRateColumns($subscription),
+                // Discovery Phase 1 — inherited from the subscription, the same way
+                // the rates above are. This detail row is what syncWishes() reads.
+                'discovery_source' => $subscription->discovery_source,
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -3883,6 +3983,9 @@ class StripeController extends Controller
                 // The rates this charge was priced at. Read back by every recompute
                 // path so a later change to the creator's deal cannot re-price it.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — persisted here so finance:sync-transactions can
+                // attribute the ledger row it rebuilds later, with no cookie to read.
+                'discovery_source' => AttributionService::sourceForCreator($creator->id),
             ]);
 
             Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);

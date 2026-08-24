@@ -99,11 +99,34 @@ class NoExpenseOrBrandName implements ValidationRule
         'mortgage', 'rent', 'overdraft',
     ];
 
+    /**
+     * 🚨 `$allowedBrands` EXISTS FOR ONE CASE: a field whose JOB is to name a
+     * third-party platform. A social link button on the bio page is exactly
+     * that — the creator picks TikTok from a list and the button has to be
+     * able to say "TikTok", which is the platform's own intended labelling and
+     * neither impersonation nor selling somebody else's service.
+     *
+     * ⚠️ Pass ONLY the tokens the selected platform itself needs. It is an
+     * allowance for one row, never a way to switch the brand list off: a link
+     * whose platform is TikTok still may not be labelled "Netflix".
+     */
+    public function __construct(private array $allowedBrands = [])
+    {
+        $this->allowedBrands = array_map(
+            static fn ($brand) => strtolower(trim((string) $brand)),
+            $allowedBrands
+        );
+    }
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $haystack = strtolower((string) $value);
 
         foreach (self::BLOCKED_BRANDS as $brand) {
+            if (in_array($brand, $this->allowedBrands, true)) {
+                continue;
+            }
+
             if (preg_match('/\b'.preg_quote($brand, '/').'\b/i', $haystack)) {
                 $fail('Listings must describe your own content, not a brand or third-party service. Please remove "'.$brand.'".');
 

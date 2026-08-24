@@ -20,8 +20,18 @@ class TestController extends Controller
 
     public function __construct()
     {
-        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
-        $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
+        /*
+         * ⚠️ `config()`, NOT `env()`. Once `config:cache` has run — which every
+         * deploy does — `env()` returns NULL outside the config files, so this
+         * constructor would build an Uploadcare client with no credentials and
+         * fail in a way that looks like a revoked key rather than a caching
+         * mistake. Found 20 Aug 2026 while wiring signed media delivery.
+         */
+        $secret = config('services.uploadcare.secret');
+        $public = config('services.uploadcare.public');
+
+        $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken($secret, 300));
+        $config = Configuration::create($public, $secret)->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
     }
 

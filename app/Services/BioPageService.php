@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Bills;
+use App\Models\CreatorBioItem;
 use App\Models\CreatorBioLink;
 use App\Models\Membership;
 use App\Models\PiggyPot;
@@ -12,10 +13,15 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Support\BioLinkPlatforms;
+use App\Support\BioSellableItems;
+use App\Support\CatalogueRegistry;
+use App\Support\MediaUrl;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Builds the `/{username}/bio` page.
@@ -166,6 +172,369 @@ class BioPageService
     }
 
     /**
+     * The listings the creator has chosen to SELL from this page (B stream).
+     *
+     * 🚨 THE CARD IS RENDERED FROM THE LIVE LISTING, EVERY TIME. `creator_bio_items`
+     * stores a type and an id and nothing else, so a price the creator edits, a pot
+     * that closes, a listing an admin pulls for moderation and one that sells out all
+     * change this page with no editing and no cron. A card that advertised a stored
+     * price would eventually disagree with the checkout behind it, on the single page
+     * the creator shares everywhere.
+     *
+     * 🚨 THE LIVE FILTER IS THE SAME ONE THE PROFILE USES — approval columns clear,
+     * not suspended, pots publicly visible. This is what makes moderation apply here:
+     * an item held by `CheckMediaModeration`, or refused in review, is simply not
+     * selected by these queries, so it cannot be advertised from the creator's most
+     * shared link. A looser filter would advertise something the visitor then cannot
+     * buy, which is worse than not showing it.
+     *
+     * ⚠️ NOTHING HERE COMPUTES A SUPPORTER PRICE. The figure on a card is the LISTED
+     * price the creator set, exactly as their own module card shows it. The grossed-up
+     * amount a supporter actually pays is produced by
+     * `Helpers::calculateStripeDirectChargeFlow` at the checkout the card links to,
+     * per fee profile — and it must be produced there, once, or the page and the
+     * checkout can print different numbers.
+     *
+     * ⚠️ One query per SELECTED type, never one per row. Six models between them append
+     * `perma_link`, `total_sold`, `real_category` and `content_file_url`, several of
+     * which query per row — the documented 206-query trap, and this is a public page
+     * built to open instantly from an in-app browser. Models are never serialised out
+     * of here for the same reason.
+     *
+     * @param  bool  $isOwner  Owners also see what they have hidden, so the editor and
+     *                         the live page agree about what is on it.
+     * @return array<int,array<string,mixed>>
+     */
+    public function items(User $user, bool $isOwner = false): array
+    {
+        $compute = fn () => $this->buildItems($user, $isOwner);
+
+        // Same rule as availability(): a signed-in viewer skips the cache so an
+        // owner sees an edit immediately, and the owner payload differs anyway.
+        if (auth()->check()) {
+            return $compute();
+        }
+
+        /*
+         * 🚨 `$isOwner` IS PART OF THE KEY. The payload it produces is different
+         * — an owner sees their inactive selections, a visitor must not — and
+         * caching two shapes under one key means whichever call lands first wins
+         * for everyone until the TTL expires.
+         *
+         * The `auth()->check()` branch above hides this in the live flow (the
+         * owner is always signed in, so they never reach the cache), which is
+         * exactly what makes it dangerous: the fault only appears the day
+         * something calls this for an owner without a session — a queued job, an
+         * artisan command, an SSR render — and then it serves the wrong payload
+         * silently. Caught by `BioDirectSalesTest` on 20 Aug 2026.
+         */
+        return Cache::remember(
+            "bio_items_{$user->id}_".($isOwner ? 'owner' : 'public'),
+            self::AVAILABILITY_TTL,
+            $compute
+        );
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    private function buildItems(User $user, bool $isOwner): array
+    {
+        $selections = CreatorBioItem::where('user_id', $user->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($selections->isEmpty()) {
+            return [];
+        }
+
+        if (! $isOwner) {
+            $selections = $selections->where('is_active', true);
+        }
+
+        $cards = [];
+
+        foreach ($selections->groupBy('item_type') as $type => $rows) {
+            if (! BioSellableItems::supports($type)) {
+                // A type withdrawn from the registry leaves rows behind. They are
+                // kept — removing a creator's selection because we changed a list is
+                // not ours to do silently — but there is no card to draw.
+                continue;
+            }
+
+            $listings = $this->liveListings($user, (string) $type, $rows->pluck('item_id')->all());
+
+            foreach ($rows as $row) {
+                $listing = $listings[(int) $row->item_id] ?? null;
+
+                // Deleted, unapproved, suspended, closed or sold out: the card is
+                // simply absent. It is NOT deleted from the table — a pot held for
+                // review comes back on its own when an admin clears it.
+                if ($listing === null) {
+                    continue;
+                }
+
+                $card = $this->card($user, (string) $type, $row, $listing, $isOwner);
+
+                if ($card !== null) {
+                    $cards[] = $card;
+                }
+            }
+        }
+
+        usort($cards, fn ($a, $b) => $a['sort_order'] <=> $b['sort_order']);
+
+        return $cards;
+    }
+
+    /**
+     * The live listings of one type, keyed by id.
+     *
+     * ⚠️ Columns are named explicitly. `select(*)` on these six tables pulls
+     * `reward_body` and `content_file` — the PAID deliverable — onto a public page,
+     * which is the one thing a catalogue-shaped payload must never carry.
+     *
+     * @param  array<int>  $ids
+     * @return array<int,Model>
+     */
+    private function liveListings(User $user, string $type, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        try {
+            $query = match ($type) {
+                'wish' => WishItem::query()
+                    ->select(['id', 'uuid', 'user_id', 'wishname', 'thumbnail', 'price', 'currency', 'subscription', 'subscription_period'])
+                    ->where('user_id', $user->id)
+                    ->where('is_approved', 1)
+                    ->where('is_suspended', 0),
+
+                'shop' => Shop::query()
+                    ->select(array_merge(
+                        ['id', 'uuid', 'user_id', 'name', 'image', 'price', 'currency'],
+                        // `shops.status` is declared by no migration; several call
+                        // sites already guard on it for exactly this reason.
+                        Schema::hasColumn('shops', 'status') ? ['status'] : []
+                    ))
+                    ->where('user_id', $user->id)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0)
+                    // ⚠️ `buyShopItem` refuses anything without `status = 1`, so a
+                    // card for one would be a button that always fails.
+                    ->when(Schema::hasColumn('shops', 'status'), fn ($q) => $q->where('status', 1)),
+
+                'task' => Task::query()
+                    ->select(['id', 'uuid', 'creator_id', 'title', 'media_url', 'price', 'currency', 'status'])
+                    ->where('creator_id', $user->id)
+                    ->where('is_approved', 1)
+                    ->where('is_suspended', 0)
+                    ->whereNotIn('status', ['archived', 'draft']),
+
+                'piggy_pot' => PiggyPot::query()
+                    ->select(['id', 'uuid', 'user_id', 'title', 'cover_media', 'target_amount', 'currency', 'status', 'deadline', 'publish_at'])
+                    ->withSum(['contributions as total_raised' => fn ($q) => $q->where('status', 'paid')], 'amount')
+                    ->where('user_id', $user->id)
+                    ->tap(fn ($q) => PiggyPotStatusService::scopePubliclyVisible($q)),
+
+                'bill' => Bills::query()
+                    ->select(['id', 'uuid', 'user_id', 'name', 'thumbnail', 'price', 'currency', 'period', 'status'])
+                    ->where('user_id', $user->id)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0)
+                    // `buyBill` refuses a bill whose status is falsy.
+                    ->where('status', 1),
+
+                'membership' => Membership::query()
+                    ->select(['id', 'uuid', 'user_id', 'level', 'thumbnail', 'price', 'currency'])
+                    ->where('user_id', $user->id)
+                    ->where('approved', 1)
+                    ->where('is_suspended', 0),
+
+                default => null,
+            };
+
+            if ($query === null) {
+                return [];
+            }
+
+            return $query->whereIn('id', $ids)->get()->keyBy(fn ($row) => (int) $row->id)->all();
+        } catch (\Throwable $e) {
+            // ⚠️ One type must never take the bio page down. Several columns these
+            // tables carry are declared by no migration, so a database built from
+            // migrations alone is genuinely missing them — and the creator's other
+            // cards are still worth showing.
+            Log::warning('Bio page: could not read '.$type.' selections', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * One card.
+     *
+     * ⚠️ A plain array, explicitly built. Returning a model here would serialise
+     * whatever its `$appends` decide to add, which on these six models includes
+     * accessors that query per row and, on two of them, the paid reward file.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function card(User $user, string $type, CreatorBioItem $row, Model $listing, bool $isOwner = false): ?array
+    {
+        $url = BioSellableItems::checkoutUrl($type, $listing, $user);
+
+        if ($url === null) {
+            return null;
+        }
+
+        $config = CatalogueRegistry::config($type) ?? [];
+        $title = trim((string) ($listing->{$config['title'] ?? 'title'} ?? ''));
+
+        $card = [
+            'uuid' => $row->uuid,
+            'type' => $type,
+            'type_label' => CatalogueRegistry::label($type),
+            'title' => $title !== '' ? $title : 'Untitled',
+            'image' => $this->cardImage($listing, $config),
+            'currency' => strtoupper((string) ($listing->currency ?: $user->default_currency ?: 'GBP')),
+            'cta' => BioSellableItems::cta($type),
+            // A LABEL, never the gate. Each buy path refuses a guest itself; this
+            // only stops a supporter tapping into a login screen unprepared.
+            'requires_account' => BioSellableItems::requiresAccount($type),
+            // 🚨 The counting redirect, never the checkout URL itself — it is what
+            // records the click and stamps `bio-link` on the visitor before the
+            // checkout reads it. See BioPageController::buy().
+            'url' => route('bio.buy', ['item' => $row->uuid]),
+            'sort_order' => (int) $row->sort_order,
+            'is_active' => (bool) $row->is_active,
+            // ⚠️ OWNER ONLY. The editor needs to know which catalogue entries are
+            // already on the page, and that key carries the listing's internal id.
+            // A public payload has no use for it, so it is not sent to one.
+            'catalogue_key' => $isOwner ? $row->catalogueKey() : null,
+            'clicks' => $isOwner ? (int) $row->click_count : null,
+        ];
+
+        if ($type === 'piggy_pot') {
+            $target = (float) ($listing->target_amount ?: 0);
+            $raised = (float) ($listing->total_raised ?: 0);
+
+            // ⚠️ A pot has no price — any amount within the platform limits buys it,
+            // and the target is progress CONTEXT, never a fundraising goal. NULL, not
+            // 0, when no target is set: "no goal" and "nobody has bought yet" are
+            // different things and a 0% bar states the second.
+            $card['price'] = null;
+            $card['price_note'] = null;
+            // ⚠️ Used ONLY to drop this card when the same pot is already the
+            // featured tile — see BioPageController::show(). It is the pot's
+            // public uuid, which the featured tile and every pot deep link
+            // already carry, so it discloses nothing new.
+            $card['listing_uuid'] = (string) $listing->uuid;
+            $card['percent'] = $target > 0 ? min(100, (int) round(($raised / $target) * 100)) : null;
+
+            return $card;
+        }
+
+        $card['price'] = $listing->price !== null ? (float) $listing->price : null;
+        $card['percent'] = null;
+        $card['price_note'] = match ($type) {
+            'bill' => $this->periodNote((string) ($listing->period ?? '')),
+            'membership' => 'a month',
+            'wish' => (bool) ($listing->subscription ?? false) && filled($listing->subscription_period ?? null)
+                ? $this->periodNote((string) $listing->subscription_period)
+                : null,
+            default => null,
+        };
+
+        return $card;
+    }
+
+    private function periodNote(string $period): ?string
+    {
+        return match (strtolower($period)) {
+            'daily' => 'a day',
+            'weekly' => 'a week',
+            'monthly' => 'a month',
+            'yearly', 'annually' => 'a year',
+            default => null,
+        };
+    }
+
+    /**
+     * ⚠️ The uuid is extracted whatever the column holds. Task and Piggy Pot store a
+     * full CDN url and the other four store a bare uuid — which can itself already
+     * carry operations, so concatenating produced a chained crop and a dead image.
+     * Same rule `ItemShareService` and `CatalogueService` both document.
+     *
+     * ⚠️ Capped through `MediaUrl`. A browser holds a decoded bitmap, not the file,
+     * and this page draws a grid of them on a phone.
+     *
+     * @param  array<string,mixed>  $config
+     */
+    private function cardImage(Model $listing, array $config): ?string
+    {
+        $raw = trim((string) ($listing->{$config['image'] ?? 'image'} ?? ''));
+
+        if ($raw !== '' && preg_match('/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i', $raw, $match)) {
+            return MediaUrl::thumb($match[1], 640);
+        }
+
+        // A non-Uploadcare absolute url is used as-is; anything else is unusable and
+        // the card draws its own placeholder rather than a broken image.
+        if ($raw !== '' && ($config['image_is_url'] ?? false) && str_starts_with($raw, 'http')) {
+            return $raw;
+        }
+
+        return null;
+    }
+
+    /**
+     * The listing a bio-page card points at, re-checked at click time.
+     *
+     * 🚨 THE DESTINATION IS REBUILT FROM THE ROW, NEVER TAKEN FROM THE REQUEST —
+     * the same rule `/bio/go/{uuid}` follows. The only input is a uuid; the checkout
+     * URL comes from `BioSellableItems`, which knows only about routes that already
+     * exist.
+     *
+     * ⚠️ It re-runs the LIVE filter rather than trusting the render. A card is drawn
+     * from a payload that may be up to a minute stale, so a pot that closed or an
+     * item pulled for moderation in that window must not still be sellable through
+     * the redirect.
+     */
+    public function checkoutUrlFor(CreatorBioItem $row, User $creator): ?string
+    {
+        if (! BioSellableItems::supports($row->item_type)) {
+            return null;
+        }
+
+        $listing = $this->liveListings($creator, (string) $row->item_type, [(int) $row->item_id])[(int) $row->item_id] ?? null;
+
+        return $listing === null
+            ? null
+            : BioSellableItems::checkoutUrl((string) $row->item_type, $listing, $creator);
+    }
+
+    /** Count a card click. Same rule as a link: never the reason a redirect fails. */
+    public function recordItemClick(CreatorBioItem $row): void
+    {
+        try {
+            CreatorBioItem::whereKey($row->id)->update([
+                'click_count' => DB::raw('click_count + 1'),
+                'last_clicked_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Bio item click counter failed', [
+                'item_id' => $row->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * The one item pinned to the top of the page, with its live progress.
      *
      * A plain link converts worse than a thing with a picture and a number
@@ -182,12 +551,12 @@ class BioPageService
      * content product and its deliverable is what is being bought. Same rule the
      * profile follows.
      */
-    public function featured(User $user): ?array
+    public function featured(User $user, bool $isOwner = false): ?array
     {
         $pot = PiggyPot::query()
             ->where('user_id', $user->id)
             ->withSum(['contributions as total_raised' => fn ($q) => $q->where('status', 'paid')], 'amount')
-            ->select(['id', 'uuid', 'user_id', 'title', 'cover_media', 'target_amount', 'currency', 'is_pinned', 'status', 'deadline', 'publish_at'])
+            ->select(['id', 'uuid', 'user_id', 'title', 'cover_media', 'target_amount', 'currency', 'is_pinned', 'status', 'deadline', 'publish_at', 'bio_click_count'])
             ->tap(fn ($q) => PiggyPotStatusService::scopePubliclyVisible($q))
             // Pinned wins; otherwise the newest open pot, so a creator who has
             // not pinned anything still gets a tile rather than a bare list.
@@ -212,7 +581,22 @@ class BioPageService
             // NULL, never 0, when there is no target — "no goal set" and "nobody
             // has bought yet" are different things and a 0% bar states the second.
             'percent' => $target > 0 ? min(100, (int) round(($raised / $target) * 100)) : null,
-            'url' => route('user.show', ['username' => $user->username, 'page' => 'piggy-pots']),
+            /*
+             * 🚨 THE COUNTING REDIRECT, NEVER THE DESTINATION — same rule as an
+             * item card. `/bio/pot/{uuid}` counts the tap, stamps the visitor as
+             * `bio-link` and rebuilds the destination server-side, so the page's
+             * largest tile is no longer the only one whose taps nobody records
+             * and whose sale can arrive unattributed from a CDN-cached view.
+             *
+             * ⚠️ The destination it rebuilds carries `?pot=`, which is what opens
+             * THIS pot's widget on arrival (`PiggyPotsGrid` reads it). Without it
+             * the hero landed on the pot GRID and left the visitor to find the
+             * pot they had just tapped a picture of — the extra hop this whole
+             * page exists to remove.
+             */
+            'url' => route('bio.pot', ['pot' => $pot->uuid]),
+            // Owner only, like every other number on this page.
+            'clicks' => $isOwner ? (int) ($pot->bio_click_count ?? 0) : null,
         ];
     }
 
@@ -298,6 +682,22 @@ class BioPageService
         }
     }
 
+    /** Count a tap on the featured tile. Same rule: never the reason it fails. */
+    public function recordFeaturedClick(PiggyPot $pot): void
+    {
+        try {
+            PiggyPot::whereKey($pot->id)->update([
+                'bio_click_count' => DB::raw('bio_click_count + 1'),
+                'bio_last_clicked_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Bio featured click counter failed', [
+                'pot_id' => $pot->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     /** Count a click. Same rule: never the reason a redirect fails. */
     public function recordClick(CreatorBioLink $link): void
     {
@@ -316,6 +716,34 @@ class BioPageService
 
     public function forgetCaches(User $user): void
     {
-        Cache::forget("bio_avail_{$user->id}");
+        self::forgetCachesForUserId((int) $user->id);
+    }
+
+    /**
+     * 🚨 CALLED WHEN A LISTING CHANGES, NOT ONLY WHEN THE BIO EDITOR DOES.
+     * The cards are drawn from the live listing but the ASSEMBLED payload is
+     * cached for a minute, so a creator who corrected a price in Shop kept
+     * advertising the old one — on the page they share everywhere — for up to
+     * 60 seconds, with no way to tell why. Wired to the six sellable models in
+     * `AppServiceProvider`.
+     *
+     * ⚠️ Static and id-based: a model event hands us `user_id`, not a `User`,
+     * and loading one to clear a cache key would be a query per save.
+     *
+     * ⚠️ The ADMIN app writes these same tables and has its own cache store, so
+     * an admin-side edit still waits out the TTL. Bounded at 60s, deliberately
+     * not solved with a shared cache tag.
+     */
+    public static function forgetCachesForUserId(int $userId): void
+    {
+        Cache::forget("bio_avail_{$userId}");
+
+        // ⚠️ BOTH VARIANTS. `items()` keys on the owner/public distinction
+        // because the two payloads differ; forgetting only the bare key — as
+        // this did when the suffix was added — would leave a stale public card
+        // list serving every visitor until the TTL expired, which is precisely
+        // the moment a creator has just changed what their page sells.
+        Cache::forget("bio_items_{$userId}_public");
+        Cache::forget("bio_items_{$userId}_owner");
     }
 }

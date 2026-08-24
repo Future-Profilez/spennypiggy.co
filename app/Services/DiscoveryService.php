@@ -201,7 +201,11 @@ class DiscoveryService
                     'is_founder' => $u->is_founder,
                     'role' => $u->role,
                     'top_wishes' => $u->wishes->map(fn ($w) => $w->thumbnail),
-                    'intro' => $u->intro ? [
+                    // ⚠️ Search is the ONE discovery query that returns fans (role 0)
+                    // as well as creators, so the intro has to be gated per row here
+                    // rather than by the query's own role filter. Intro uploads were
+                    // ungated until 21 Aug 2026 and those gifter rows still exist.
+                    'intro' => ($u->intro && (int) $u->role === 1) ? [
                         'poster_url' => $u->intro->posterUrlNonBlocking(),
                         'perma_link' => $u->intro->perma_link,
                         'approved' => (int) $u->intro->approved,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Support\AnalyticsEvent;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\IpTracker;
@@ -562,6 +563,14 @@ class RegisteredUserController extends Controller
         // The verified profile has been spent. Leaving it in the session would let a second POST
         // to /register create another account carrying the same Google-verified email flag.
         $request->session()->forget([GoogleController::SESSION_KEY, 'google_signup_utm']);
+
+        // GA4 funnel — stage 1 of the creator funnel and of the supporter funnel.
+        // `method` separates Google signups from the form, which is the only
+        // acquisition split GA4 cannot infer from the referrer.
+        AnalyticsEvent::push('sign_up', [
+            'method' => ! empty($google) ? 'google' : 'email',
+            'role' => (int) $user->role === 1 ? 'creator' : 'supporter',
+        ]);
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {

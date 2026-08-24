@@ -22,10 +22,30 @@ import { ACCENT } from './tokens';
  *   as       element or component to render — defaults to a div
  */
 
+/*
+ * 🚨 A FRAME IS 1px. Client direction, 20 Aug 2026.
+ *
+ * ⚠️ AND THE SCALE WAS NOT DOING WHAT IT SAID. `normal` read `border-[3px]`,
+ * but the frame below is `border-black` — and in THIS project that is not
+ * Tailwind's colour-only utility, it is a full shorthand
+ * (`resources/css/index.css:90` → `border:2px solid var(--black)`), which
+ * overwrites the width. So a black panel rendered at 2px while an ACCENT panel,
+ * whose colour class is a plain arbitrary value that resets nothing, rendered
+ * at the full 3px. Two panels side by side, one pink and one black, were
+ * genuinely different weights — which is exactly what the client pointed at.
+ * The frame below is now `border-[#000]` so the width class is the only thing
+ * setting width, and the two agree.
+ *
+ * ⚠️ `quiet` and `normal` are the same weight now. The name is kept so the
+ * existing call sites need no edit, and the distinction they wanted is carried
+ * by COLOUR — black for structure, an accent for the one block that matters.
+ * `strong` is the single step up, for a panel that has to win against its
+ * neighbours.
+ */
 const EMPHASIS = {
     quiet: 'border',
-    normal: 'border-[3px]',
-    strong: 'border-4',
+    normal: 'border',
+    strong: 'border-2',
 };
 
 const PAD = {
@@ -59,7 +79,12 @@ export default function Panel({
      * — an accent border on an accent fill is invisible, and the black is what
      * ties it back to every other card on the page.
      */
-    const frame = tone === 'accent' || !a ? 'border-black' : a.border;
+    /*
+     * ⚠️ `border-[#000]`, NEVER `border-black`. The latter is a border shorthand
+     * in this project and silently resets the width set above — see the note on
+     * EMPHASIS. An arbitrary colour value sets colour and nothing else.
+     */
+    const frame = tone === 'accent' || !a ? 'border-[#000]' : a.border;
 
     return (
         <Tag

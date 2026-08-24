@@ -20,10 +20,15 @@ use App\Models\UserCategory;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\Discovery\AttributionService;
+use App\Services\Discovery\CreatorRecommendationService;
 use App\Services\SeoTemplateService;
 use App\Services\Stripe\StripeAccountState;
 use App\Services\UserProfileService;
 use App\Support\Badges;
+use App\Support\DiscoveryPayload;
+use App\Support\DiscoverySources;
+use App\Support\OpportunityPanelPayload;
 use App\Support\SubscriptionPayload;
 use App\TwitterAuthService;
 use Carbon\Carbon;
@@ -320,7 +325,11 @@ class AuthenticatedSessionController extends Controller
             // path the Discover intros rail takes, which returns the stored poster
             // instantly and warms a missing one on the queue (frontend already
             // falls back to the creator's avatar while it is null).
-            $userIntro = $user->intro;
+            // ⚠️ Creator-only surface (21 Aug 2026). `/update/intro/video` carried no
+            // role check, so gifter (role 0) rows exist in `user_intros`; they are
+            // hidden here rather than deleted, so a gifter who later becomes a
+            // creator keeps their upload.
+            $userIntro = (int) $user->role === 1 ? $user->intro : null;
             if ($userIntro) {
                 // Serialised to an array deliberately: putting the value back on the
                 // model would land it in $attributes, where Laravel re-applies the
@@ -421,6 +430,93 @@ class AuthenticatedSessionController extends Controller
                 // Deliberately NOT an accessor: `avatar_url` is in `User::$appends`
                 // and is serialised on every rail, feed and queue row, so a query
                 // there would run for every card on the site.
+                // Discovery Phase 2 — the three month-to-date figures behind the
+                // panel at the top of the creator's own dashboard.
+                //
+                // 🚨 OWNER ONLY, AND CREATORS ONLY. This page is also the public
+                // profile, so "how many people Spenny Piggy introduced to you"
+                // must never be readable by a visitor, and a supporter (role 0)
+                // has no Discovery figures to show. Null on every other view is
+                // what keeps the panel off a fan's dashboard.
+                //
+                // ⚠️ NULL HERE MEANS "NOT YOUR DASHBOARD", NEVER "NO DATA". A
+                // creator with nothing yet gets a real array of zeros and sees
+                // the panel at 0 with its explanatory line — the plan is explicit
+                // that it stays visible at 0, because at 0 it is the pitch.
+                'discovery_panel' => $user->role == 1 && $isOwner
+                    ? DiscoveryPayload::dashboardStatsFor($user->id)
+                    : null,
+                // Enhanced Creator Earnings + Revenue Opportunity Centre — the
+                // compact module that renders directly BENEATH the Discovery
+                // panel above (Developer Master Plan, 19 Aug 2026, §C row 9:
+                // "sits alongside the SP Discovery panel so the dashboard tells
+                // one story: what SP brought you, what it's worth, what to do
+                // next").
+                //
+                // 🚨 OWNER ONLY, AND CREATORS ONLY — the same gate as the
+                // Discovery panel and for a stronger reason: this payload names
+                // the creator's own supporters and what each of them has spent.
+                // On a page that is ALSO the public profile, a missing gate here
+                // would publish a creator's customer list to anyone who opened
+                // their page. Null is "not your dashboard", never "no data".
+                //
+                // ⚠️ Cached inside the payload class (300s, same TTL as the
+                // Discovery panel above it — two panels side by side that refresh
+                // on different clocks read as one of them being broken), and it
+                // swallows its own failures: an analytics roll-up must never be
+                // able to 500 a public profile.
+                'opportunity_panel' => $user->role == 1 && $isOwner
+                    ? OpportunityPanelPayload::forDashboard(
+                        $user,
+                        strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'))
+                    )
+                    : null,
+                // Discovery Phase 3 — the "More creators to support" row at the
+                // foot of every public creator profile.
+                //
+                // 🚨 EARNINGS ARE NEVER IN HERE. The service returns image,
+                // display name, @username and one short line per card and
+                // nothing else; see CreatorRecommendationService::card(), which
+                // whitelists the five fields rather than spreading its
+                // candidate array.
+                //
+                // ⚠️ SHOWN TO THE OWNER TOO, deliberately. This one page is both
+                // the public profile and the creator's own dashboard, and every
+                // other Phase 2/3 payload here is gated on `$isOwner` — this one
+                // is the exception because the row points AWAY from this profile
+                // to four other creators. Hiding it from the owner would mean
+                // the creator can never see the surface they are being told
+                // brings them traffic, and a creator clicking it is a genuine
+                // supporter visit for somebody else, correctly attributed to us.
+                //
+                // ⚠️ Creator profiles only (`role == 1`). A supporter profile
+                // renders the Gifter page, which the brief does not cover.
+                //
+                // ⚠️ Cached inside the service — platform-wide pool + per-profile
+                // selection, both 15 minutes — so this costs no queries on a warm
+                // cache. Never move the selection into this method.
+                // 🚨 NOT SHOWN TO A VISITOR THE CREATOR BROUGHT (21 Aug 2026).
+                // This section closes every profile, and a supporter who arrived
+                // from the creator's OWN link — their bio link, their share, their
+                // referral — is that creator's audience. Ending their money page
+                // with four other creators monetises that audience against them.
+                // A visitor Spenny Piggy sent (Discover, search, a recommendation)
+                // is ours to route onward, so they still see it.
+                //
+                // ⚠️ `sourceForCreator` reads the last-touch `sp_disc` cookie for
+                // THIS creator, the same value the payment row will record — so
+                // what the page decides and what attribution reports cannot drift.
+                // ⚠️ Only a KNOWN creator-generated source hides it. Direct and
+                // organic traffic carries no source at all, and treating "we
+                // don't know" as "the creator sent them" would remove the
+                // section from almost every profile view — a bigger change than
+                // the one being made.
+                'more_creators' => $user->role == 1
+                    && ! DiscoverySources::isCreatorGeneratedVisit(
+                        AttributionService::sourceForCreator($user->id)
+                    )
+                    ? app(CreatorRecommendationService::class)->forProfile($user)
+                    : [],
                 'pending_profile_changes' => Auth::id() === $user->id
                     ? ProfileChangeRequest::query()
                         ->where('user_id', $user->id)

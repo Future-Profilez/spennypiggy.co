@@ -586,12 +586,24 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                         </p>
                     )}
 
-                    {redirectmessage && (
+                    {/* 🚨 THE FLASH IS RENDERED TOO, NOT JUST `?message=`.
+                        `flash` was destructured on this page and never used, so
+                        every controller that sends a guest here with
+                        `->with('error', …)` — buying a Bill or a Membership,
+                        which both require an account — dropped them on a login
+                        screen with NO explanation at all. The message was
+                        written, stored and thrown away. The wish path uses a
+                        query parameter and was the only one that ever showed.
+
+                        ⚠️ Both are rendered, never one or the other: a redirect
+                        can carry either, and preferring one silently loses the
+                        other. */}
+                    {(redirectmessage || flash?.error) && (
                         <p
                             role="alert"
                             className="mb-4 rounded-box-sm border-2 border-[#FF3B30]/50 bg-[#FF3B30]/10 px-4 py-3 text-sm font-medium text-[#FF8A80]"
                         >
-                            {redirectmessage}
+                            {redirectmessage || flash.error}
                         </p>
                     )}
 

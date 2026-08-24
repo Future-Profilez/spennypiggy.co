@@ -15,6 +15,18 @@ import CategoryLeaders from "./CategoryLeaders";
 import VipSupporters from "./VipSupporters";
 import GrowthTrends from "./GrowthTrends";
 import PlatformAnalytics from "./PlatformAnalytics";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
+/*
+ * 🚨 The board is Spenny Piggy CHOOSING which creators a supporter sees, so
+ * every profile link on it is SP-generated traffic and carries a Discovery
+ * source — a surface that is not tagged is invisible for ever.
+ *
+ * `trending` is the key. No reserved key says "leaderboard", and of the twelve
+ * it is the closest: both name the creators doing best right now, picked by us.
+ * Approximating beats inventing, because the server silently drops anything off
+ * the reserved list — which looks exactly like a working tagged link.
+ */
+
 
 const PERIOD_LABELS = {
     all: "All time",
@@ -189,7 +201,7 @@ export default function Board(props) {
         <Authenticated auth={auth && auth.user}>
             <Head title="Leaderboard" />
 
-            <div className="min-h-dvh bg-white pt-4">
+            <div className="min-h-dvh bg-white pt-6">
                 <div className="containerbox pb-32 pt-2 sm:pb-12">
                     <div className="flex flex-wrap items-start -mx-4">
                         <div className="w-full px-4 xl:w-2/3">
@@ -279,7 +291,7 @@ export default function Board(props) {
                                         {climbers.map((c) => (
                                             <li key={c.id}>
                                                 <a
-                                                    href={`/${c.username}`}
+                                                    href={discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING)}
                                                     className="flex min-h-[44px] items-center gap-2.5 rounded-full py-1.5 pl-3 pr-2.5 text-13 ring-1 ring-inset ring-black/[0.08] transition-colors hover:ring-black/25"
                                                 >
  <span className="font-gulfs text-15 text-black/60">{c.rank}</span>

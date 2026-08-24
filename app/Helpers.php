@@ -13,6 +13,7 @@ use App\Models\RiskIdentity;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\UserPayment;
+use App\Services\Discovery\AttributionService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\RewardService;
 use App\Services\Risk\EffectiveLimitsService;
@@ -1793,6 +1794,9 @@ class Helpers
         // reward sits between them so an explicit $extra can still override it.
         $metadata = array_merge($baseMetadata, self::rewardMetadataFor($paymentModel), $extra);
 
+        // Discovery Phase 1 — the source rides along with the payment.
+        $metadata = self::withDiscoverySource($metadata);
+
         // Convert all values to strings and sanitize
         foreach ($metadata as $key => $value) {
             if (is_bool($value)) {
@@ -1813,6 +1817,63 @@ class Helpers
                     'original_length' => strlen((string) $value),
                 ]);
             }
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Discovery Phase 1 — carry the source that earned this sale INTO Stripe.
+     *
+     * 🚨 CHECKOUT IS THE LAST MOMENT A BROWSER IS PRESENT. A bank payment
+     * (SEPA/ACH) settles days later through a webhook with no cookie attached,
+     * and the ledger row it writes is unattributable unless the source travelled
+     * with the payment. Stripe hands metadata back on every later event, so this
+     * one key is what makes an asynchronous purchase countable at all.
+     *
+     * ⚠️ Creator resolution differs per payment type, so it is read from the
+     * `creator_id` the switch above already resolved rather than re-derived from
+     * the model. Anything not a positive integer — `platform`, an empty string,
+     * a type that has no creator — omits the key rather than guessing: an
+     * unattributed row is a gap, a wrongly attributed one is a false number in
+     * front of a creator.
+     *
+     * ⚠️ Never stores a key `DiscoverySources::normalise()` refuses — the cookie
+     * is visitor-controlled input, and `cookieSourceFor()` normalises it.
+     *
+     * @param  array<string,mixed>  $metadata
+     * @return array<string,mixed>
+     */
+    private static function withDiscoverySource(array $metadata): array
+    {
+        try {
+            // An explicit caller-supplied value wins; do not second-guess it.
+            if (array_key_exists(AttributionService::METADATA_KEY, $metadata)) {
+                return $metadata;
+            }
+
+            $creatorId = filter_var($metadata['creator_id'] ?? null, FILTER_VALIDATE_INT);
+
+            if ($creatorId === false || $creatorId <= 0) {
+                return $metadata;
+            }
+
+            // 🚨 ONE RESOLUTION. The same call writes `payments.discovery_source`
+            // at every payment-row creation site, so the key Stripe carries and
+            // the key the row stores can never disagree — which is what would
+            // make the webhook and `finance:sync-transactions` attribute the same
+            // sale two different ways.
+            $source = AttributionService::sourceForCreator($creatorId);
+
+            if ($source !== null) {
+                $metadata[AttributionService::METADATA_KEY] = $source;
+            }
+        } catch (\Throwable $e) {
+            // Metadata is descriptive, never load-bearing — attribution must
+            // never be the reason a payment cannot be created.
+            Log::warning('Discovery: source could not be added to Stripe metadata', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $metadata;

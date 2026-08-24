@@ -43,8 +43,8 @@ export default function ReferEarnAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-3 md:gap-y-10 px-2 md:px-4">
                         
                         <StaggerItem index={0} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#E6EA7B] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
-                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-12">
+                        <div className="fading bg-[#E6EA7B] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
+                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform rotate-12">
                                 <FaShareAlt />
                             </div>
                             <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">1. Share</h3>
@@ -55,8 +55,8 @@ export default function ReferEarnAnnouncement() {
                         </StaggerItem>
 
                         <StaggerItem index={1} x={80} y={0} rotate={-1} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#05EFB8] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
-                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform -rotate-12">
+                        <div className="fading bg-[#05EFB8] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
+                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform -rotate-12">
                                 <FaUserPlus />
                             </div>
                             <h3 className="text-2xl font-gulfs text-black mb-2 uppercase">2. They Join</h3>
@@ -67,8 +67,8 @@ export default function ReferEarnAnnouncement() {
                         </StaggerItem>
 
                         <StaggerItem index={2} x={80} y={0} rotate={2} stagger={0.15} duration={0.6}>
-                        <div className="fading bg-[#FF007F] border-[3px] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
-                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-[3px] border-black transform rotate-6">
+                        <div className="fading bg-[#FF007F] border-black mb-2 md:mb-0 rounded-box p-6 relative group h-full transition-[filter] duration-200 hover:brightness-[1.04]">
+                            <div className="absolute -top-6 -right-6 bg-black text-white w-12 h-12 flex items-center justify-center rounded-full text-xl wiggle border-black transform rotate-6">
                                 <FaPoundSign />
                             </div>
                             {/* Black ink on the pink fill — white is 3.78:1 and fails

@@ -166,14 +166,12 @@ export default function UserCarts(props) {
     }, [flash]);
 
     useEffect(() => {
-        if (flash?.error && flash.error !== lastFlashRef.current.error) {
-            lastFlashRef.current.error = flash.error;
-            toast.error(flash.error, { id: "cart-error" });
-        }
-        if (flash?.success && flash.success !== lastFlashRef.current.success) {
-            lastFlashRef.current.success = flash.success;
-            toast.success(flash.success, { id: "cart-success" });
-        }
+        /*
+         * ⚠️ REMOVED — `BrandToaster` now bridges every session flash to a toast
+         * once, for the whole app. Toasting it here as well drew each message
+         * twice, and two identical toasts dismissing independently reads as a
+         * rendering bug rather than as duplicate config.
+         */
         if (flash?.warning && flash.warning !== lastFlashRef.current.warning) {
             lastFlashRef.current.warning = flash.warning;
             toast(flash.warning, { id: "cart-warning" });

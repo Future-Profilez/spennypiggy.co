@@ -422,7 +422,7 @@ export default function PurchasesHub({
  ? "text-white "
                                         : "text-zinc-500 hover:text-zinc-800 hover:bg-zinc-50/80"
                                 }`}
-                                style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 20px -4px ${ACCENT}55` } : {}}
+                                style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)` } : {}}
                             >
                                 <Icon size={15} strokeWidth={2.2} />
                                 <span className={active ? "" : "hidden xs:inline sm:inline"}>{t.label}</span>
@@ -553,7 +553,7 @@ function ViewSwitch({ tab, view, setView, counts }) {
  ? "text-white border-transparent "
                                 : "bg-white/70 backdrop-blur-sm text-zinc-600 border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
                         }`}
-                        style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 4px 16px -4px ${ACCENT}44` } : {}}>
+                        style={active ? { background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)` } : {}}>
                         {o.label}
  <span className={`text-[12px] ${MONO} ${active ? "text-white/70" : "text-black/60"}`}>{counts[o.k] ?? 0}</span>
                     </button>
@@ -647,7 +647,7 @@ function FilterChip({ active, onClick, label, color = "#71717A", Icon }) {
             className={`inline-flex items-center gap-1.5 min-h-[34px] px-3 rounded-full text-xs font-semibold border transition-all duration-200 ${
  active ? "text-white border-transparent " : "text-zinc-600 bg-white/70 backdrop-blur-sm border-zinc-200/60 hover:border-zinc-300 hover:bg-white"
             }`}
-            style={active ? { backgroundColor: color, boxShadow: `0 2px 10px -2px ${color}66` } : undefined}>
+            style={active ? { backgroundColor: color } : undefined}>
             {Icon && <Icon size={12} strokeWidth={2.4} />} {label}
         </button>
     );
@@ -898,7 +898,7 @@ function IconTile({ type, size = 44, rounded = "rounded-box-sm" }) {
 function NewDot() {
     return (
  <span className="relative inline-flex items-center gap-1 text-[12px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 text-white"
-            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 2px 8px ${ACCENT}55` }}>
+            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-white animate-ping opacity-60" />
             New
         </span>
@@ -950,7 +950,7 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
     return (
  <div className="overflow-hidden rounded-box relative" style={{
             background: `linear-gradient(135deg, #1a0533 0%, #280a50 30%, #3b0764 60%, #1e0a4a 100%)`,
-            boxShadow: `0 20px 60px -12px rgba(124,58,237,0.4), 0 4px 20px -4px rgba(255,0,127,0.3)`,
+            
         }}>
             {/* Background decorative blobs */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1038,7 +1038,7 @@ function SupporterStatus({ status, reduce }) {
                 <div className="flex items-center justify-between mb-3">
                     <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
  <span className="w-8 h-8 rounded-full flex items-center justify-center "
-                            style={{ background: `linear-gradient(135deg, ${color}cc, ${color})`, boxShadow: `0 4px 12px ${color}55` }}>
+                            style={{ background: `linear-gradient(135deg, ${color}cc, ${color})` }}>
                             <Trophy size={15} strokeWidth={2.2} className="text-white" />
                         </span>
                         {status.level} supporter
@@ -1046,7 +1046,7 @@ function SupporterStatus({ status, reduce }) {
  <span className={`text-xs text-white/60 ${MONO}`}>{Math.round(status.score)} pts</span>
                 </div>
                 <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)`, boxShadow: `0 0 8px ${color}77` }}
+                    <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)` }}
                         initial={reduce ? false : { width: 0 }}
                         animate={{ width: `${Math.round((status.progress || 0) * 100)}%` }}
                         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
@@ -1118,7 +1118,7 @@ function Mosaic({ tiles, extra, reduce }) {
                     return (
                         <motion.div key={t.id} variants={rise(reduce)}
  className="aspect-square rounded-box-sm bg-white overflow-hidden border border-white/80"
-                            style={{ transform: `rotate(${rot[i]})`, boxShadow: shadows[i] }}>
+                            style={{ transform: `rotate(${rot[i]})`}}>
                             {isImg ? (
                                 <img src={t.media_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                             ) : (
@@ -1181,7 +1181,7 @@ function MediaCard({ item, onOpen, isNew }) {
     const poster = useVideoPoster(media_kind === "video" ? media_url : null, owner?.avatar);
 
     return (
-        <div className="overflow-hidden flex flex-col group rounded-box-sm border border-white/70 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.07)" }}>
+        <div className="overflow-hidden flex flex-col group rounded-box-sm border border-white/70 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1" >
             <button
                 type="button"
                 onClick={openable ? onOpen : undefined}
@@ -1193,7 +1193,7 @@ function MediaCard({ item, onOpen, isNew }) {
                     <>
                         {poster && <img src={poster} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
                         <span className="absolute inset-0 flex items-center justify-center">
-                            <span className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white transition-[filter] duration-300 group-hover:brightness-125" style={{ background: "rgba(0,0,0,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}>
+                            <span className="w-12 h-12 rounded-full backdrop-blur-md flex items-center justify-center text-white transition-[filter] duration-300 group-hover:brightness-125" style={{ background: "rgba(0,0,0,0.5)" }}>
                                 <Play size={20} className="ml-0.5" />
                             </span>
                         </span>
@@ -1244,7 +1244,7 @@ function NonVisual({ kind, color }) {
 /* ---------------- Renewing banner ---------------- */
 function RenewingBanner({ items, money, onCancel, busy, onView }) {
     return (
-        <div className="mt-5 rounded-box-sm p-5 border" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", borderColor: "#fde68a", boxShadow: "0 4px 20px -4px rgba(245,158,11,0.2)" }}>
+        <div className="mt-5 rounded-box-sm p-5 border" style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", borderColor: "#fde68a" }}>
             <div className="flex items-center gap-2.5 mb-3">
  <span className="w-8 h-8 rounded-box-xs flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
                     <BellRing size={16} strokeWidth={2} className="text-amber-500" />
@@ -1483,7 +1483,7 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                         {!embedded && (
                             <a href="/my-purchases-export"
  className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-box-sm text-xs font-semibold text-white transition-all hover:opacity-90"
-                                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}33` }}>
+                                style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                                 <Download size={13} strokeWidth={2.4} /> Export CSV
                             </a>
                         )}
@@ -1506,7 +1506,7 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
  mouse can uncover does not exist on a phone. */}
  <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 z-10">
  <div className={`text-[12px] font-semibold text-white px-2 py-1 rounded-box-sm whitespace-nowrap ${MONO}`}
-                                                    style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 12px ${ACCENT}55` }}>
+                                                    style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                                                     {money(m.total)}
                                                 </div>
                                             </div>
@@ -1517,7 +1517,6 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                                         ? (isLast ? `linear-gradient(180deg, ${ACCENT} 0%, ${ACCENT2} 100%)` : `linear-gradient(180deg, ${ACCENT}cc 0%, ${ACCENT}88 100%)`)
                                                         : "#E4E4E7",
                                                     minHeight: 4,
-                                                    boxShadow: m.total > 0 ? `0 -2px 8px ${ACCENT}33` : "none",
                                                 }}
                                                 initial={reduce ? false : { height: 0 }}
                                                 animate={{ height: `${h}px` }}
@@ -1582,7 +1581,7 @@ function MoneyView({ summary, creators, money, reduce, filtered, onCreator, embe
                                         </div>
                                         <div className="h-2.5 bg-zinc-100 rounded-full overflow-hidden">
                                             <motion.div className="h-full rounded-full"
-                                                style={{ background: `linear-gradient(90deg, ${c.color}cc, ${c.color})`, boxShadow: `0 0 6px ${c.color}44` }}
+                                                style={{ background: `linear-gradient(90deg, ${c.color}cc, ${c.color})` }}
                                                 initial={reduce ? false : { width: 0 }}
                                                 animate={{ width: `${pct}%` }}
                                                 transition={{ duration: 0.7, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }} />
@@ -1756,7 +1755,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                     {item.reward_url && (
                         <a href={item.reward_url} target="_blank" rel="noreferrer"
  className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90"
-                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                             <RewardIcon size={13} strokeWidth={2.5} />{rewardLabel}
                         </a>
                     )}
@@ -1915,7 +1914,7 @@ function ReceiptCard({ r, money }) {
                     {r.reward_url && (
                         <a href={r.reward_url} target="_blank" rel="noreferrer"
  className="flex items-center justify-center gap-2 min-h-[40px] w-full rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 "
-                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`, boxShadow: `0 4px 14px ${ACCENT}44` }}>
+                            style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                             <RewardIcon size={13} strokeWidth={2.5} />
                             {rewardLabel}
                         </a>
@@ -1938,8 +1937,8 @@ function ReceiptCard({ r, money }) {
 /* ---------------- Shared ---------------- */
 function Empty({ title, sub, Icon, cta }) {
     return (
-        <div className="py-14 sm:py-18 text-center px-6 rounded-box-sm border border-white/70 bg-white/60 backdrop-blur-sm" style={{ boxShadow: "0 2px 12px rgba(16,24,40,0.06)" }}>
-            <span className="inline-flex w-16 h-16 rounded-box-sm items-center justify-center mb-5 text-black/60" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%)", boxShadow: "0 4px 16px rgba(16,24,40,0.08)" }}>
+        <div className="py-14 sm:py-18 text-center px-6 rounded-box-sm border border-white/70 bg-white/60 backdrop-blur-sm">
+            <span className="inline-flex w-16 h-16 rounded-box-sm items-center justify-center mb-5 text-black/60" style={{ background: "linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%)" }}>
                 <Icon size={26} strokeWidth={1.7} />
             </span>
             <div className="text-base font-bold text-zinc-900">{title}</div>
@@ -1949,7 +1948,7 @@ function Empty({ title, sub, Icon, cta }) {
             {cta && (
                 <a href="/creators"
  className="mt-6 inline-flex items-center gap-2 min-h-[44px] px-6 rounded-box-sm text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 "
-                    style={{ background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)`, boxShadow: `0 6px 20px -4px ${ACCENT}55` }}>
+                    style={{ background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT2} 100%)` }}>
                     <Compass size={15} strokeWidth={2.2} /> Find creators
                 </a>
             )}

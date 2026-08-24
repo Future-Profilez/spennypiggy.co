@@ -34,7 +34,7 @@ const CARD =
     "rounded-box border-[3px] border-black bg-white p-5 md:p-6 mt-6 lg:mt-0";
 
 const BTN_PRIMARY =
- "inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-white transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+ "inline-flex min-h-[48px] items-center justify-center rounded-box-sm border-2 border-black bg-[#FF007F] px-6 text-xs font-black uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 motion-reduce:transition-none";
 
 const BTN_QUIET =
     "inline-flex min-h-[48px] items-center text-xs font-black uppercase tracking-[0.14em] text-black/60 underline decoration-black/25 underline-offset-4 hover:text-black";

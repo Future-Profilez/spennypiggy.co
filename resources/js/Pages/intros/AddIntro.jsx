@@ -153,6 +153,18 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
 
   const [posterLoaded, setPosterLoaded] = useState(false);
 
+  // Intro videos are a CREATOR surface only (21 Aug 2026). A gifter uploaded one
+  // because neither this component nor /update/intro/video ever checked the role.
+  // Owner view reads the signed-in account's role; a visitor reads the profile
+  // owner's. An UNKNOWN role deliberately renders — ProfileSteps mounts this
+  // without a `user` prop, and the 403 on the save route is the real guard, so
+  // guessing "gifter" here would blank the card for creators instead.
+  // ⚠️ Placed AFTER every hook: an early return above them changes hook order.
+  const introRole = IsloggedIn ? auth?.user?.role : user?.role;
+  if (introRole !== undefined && introRole !== null && Number(introRole) !== 1) {
+    return null;
+  }
+
   return (
     <div className={`${videoLoading ? 'hidden' : '' } `}>
       {/* 🚨 HOISTED ABOVE THE TERNARY. These keyframes and hover rules used to
@@ -208,7 +220,7 @@ export default function AddIntro({IsloggedIn, user, text, classes, setIntroStatu
                 if (e.target.src !== fallback) e.target.src = fallback;
                 setPosterLoaded(true);
               }}
-              className="intro-poster block max-h-[340px] w-full object-cover !min-h-[220px] transition-transform duration-[600ms] ease-out md:!min-h-[280px] lg:!min-h-[320px]"
+              className="intro-poster block max-h-[300px] w-full object-cover !min-h-[180px] transition-transform duration-[600ms] ease-out md:!min-h-[280px] lg:!min-h-[320px]"
             />
 
             {/* Cinematic scrim so the label + name read against any frame */}

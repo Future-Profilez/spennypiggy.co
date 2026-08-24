@@ -1,3 +1,4 @@
+import { FaSearchPlus } from "react-icons/fa";
 import spennys from "../../../assets/img/spennys.png";
 import Lightbox from '../../includes/Lightbox'
 import WishlistShowcase from './WishlistShowcase';
@@ -52,7 +53,7 @@ export default function LiveBarSection() {
 
            <div className="max-w-3xl mx-auto px-4">
            <Reveal3D rotate={18} y={60}>
-           <TiltCard max={4} scale={1.01} className="rounded-box">
+           <TiltCard max={4} className="rounded-box">
            <div className="relative rounded-box border-2 border-black bg-[#0c0c14] overflow-hidden">
               {/* browser chrome */}
               <div className="flex items-center gap-2 px-4 py-3 bg-black/50 border-b-2 border-white/10">
@@ -74,16 +75,29 @@ export default function LiveBarSection() {
                     <span className="absolute top-10 right-10 text-3xl opacity-70 rotate-12 select-none" aria-hidden>🎬</span>
                     <span className="absolute bottom-10 left-12 text-3xl opacity-60 rotate-6 select-none" aria-hidden>🔓</span>
                     <span className="absolute bottom-8 right-14 text-2xl opacity-60 -rotate-6 select-none" aria-hidden>💸</span>
+                    {/* 🚨 THE PLAY BUTTON AND THE "0:60" BADGE ARE GONE (21 Aug 2026).
+                        There is no video. This drew browser chrome, a pulsing
+                        `animate-ping` ring, a pink play triangle, the label "Watch
+                        the 60-second tour" and a duration badge — and opened a
+                        Lightbox containing ONE STILL IMAGE.
+
+                        A play button is the most-clicked element on any landing
+                        page, and this one sits in the middle of the page's longest
+                        stretch without a signup CTA — so the highest-intent tap
+                        available to a visitor spent their attention on a broken
+                        promise. Trust does not recover from that inside one
+                        session.
+
+                        The frame still opens the screenshot full size, which is a
+                        real and useful thing; it now says so. Restore the play
+                        affordance and the badge together WITH the video, never
+                        before it. */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                        <span className="relative flex items-center justify-center w-20 h-20">
-                            <span className="absolute inset-0 rounded-full bg-[#FF007F]/40 animate-ping"></span>
-                            <span className="relative w-20 h-20 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center transition-[filter] duration-300 group-hover:brightness-110">
-                                <span className="w-0 h-0 border-y-[11px] border-y-transparent border-l-[18px] border-l-white ml-1.5"></span>
-                            </span>
+                        <span className="relative w-16 h-16 rounded-full bg-[#FF007F] border-2 border-black flex items-center justify-center transition-[filter] duration-300 group-hover:brightness-110">
+                            <FaSearchPlus className="text-black text-2xl" />
                         </span>
-                        <span className="text-white font-gulfs uppercase text-sm md:text-base tracking-wide">Watch the 60-second tour</span>
+                        <span className="text-white font-gulfs uppercase text-sm md:text-base tracking-wide">See a creator page up close</span>
                     </div>
-                    <span className="absolute bottom-4 right-4 text-[12px] font-black text-white bg-black/70 border border-white/20 rounded-full px-3 py-1">0:60</span>
                 </div>
               </>} />
            </div>

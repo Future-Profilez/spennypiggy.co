@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Deliverable;
+use App\Support\ContentDownloadMonitor;
+use App\Support\SecureMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +27,12 @@ class DeliverableController extends Controller
                 ], 401);
             }
 
-            // Get all deliverables for the authenticated user
+            // ⚠️ Deliberately NOT wired to ContentDownloadMonitor (Security
+            // Checklist §3). This is the buyer's own library listing: one call
+            // returns every purchase at once, so recording a download per row
+            // would push anyone with 20 purchases over the burst threshold for
+            // opening their own page — and none of those files was fetched.
+            // `show()` below is the per-item read, and that is where it counts.
             $deliverables = Deliverable::where('gifter_id', $user->id)
                 ->where('status', 'delivered')
                 ->with(['creator', 'wishItem'])
@@ -41,7 +48,9 @@ class DeliverableController extends Controller
                         'product_type' => $deliverable->product_type,
                         'status' => $deliverable->status,
                         'delivered_at' => $deliverable->delivered_at,
-                        'content_url' => $deliverable->deliverable_url,
+                        // Signed at read time, never at write time — see
+                        // DeliveriesController for why the stored column stays bare.
+                        'content_url' => SecureMedia::sign($deliverable->deliverable_url),
                         'certificate_url' => $deliverable->certificate_url,
                         'has_certificate' => ! empty($deliverable->certificate_url),
                         'transaction_amount' => $deliverable->transaction_amount,
@@ -119,6 +128,24 @@ class DeliverableController extends Controller
 
             $metadata = $deliverable->metadata ?? [];
 
+            // 🚨 Security Checklist §3 — "bulk content downloads". This
+            // endpoint hands the buyer `content_url`, the paid file itself, one
+            // deliverable per call — so a script walking uuids through it is
+            // exactly the shape the monitor exists to see, and it left no trace
+            // before this line. Recorded only when there IS content: a
+            // certificate-only row delivered nothing to download.
+            //
+            // Observation only — nothing below changes, and the row carries the
+            // deliverable uuid, never the URL.
+            if (! empty($deliverable->deliverable_url)) {
+                ContentDownloadMonitor::record(
+                    $user->id,
+                    $deliverable->product_type ?: 'deliverable',
+                    $deliverable->uuid,
+                    'paid deliverable content url'
+                );
+            }
+
             return response()->json([
                 'status' => true,
                 'data' => [
@@ -128,7 +155,9 @@ class DeliverableController extends Controller
                     'product_type' => $deliverable->product_type,
                     'status' => $deliverable->status,
                     'delivered_at' => $deliverable->delivered_at,
-                    'content_url' => $deliverable->deliverable_url,
+                    // Signed at read time, never at write time — see
+                    // DeliveriesController for why the stored column stays bare.
+                    'content_url' => SecureMedia::sign($deliverable->deliverable_url),
                     'certificate_url' => $deliverable->certificate_url,
                     'has_certificate' => ! empty($deliverable->certificate_url),
                     'has_content' => ! empty($deliverable->deliverable_url),

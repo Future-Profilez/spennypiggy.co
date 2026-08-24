@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Services\Discovery\CollectionService;
 use App\Services\MembershipUpsellService;
 use App\Services\RewardService;
 use Illuminate\Database\Eloquent\Model;
@@ -138,6 +139,44 @@ class ThankYouController extends Controller
             'membership_offer' => $item instanceof Membership
                 ? null
                 : app(MembershipUpsellService::class)->for($owner, $request->user()),
+
+            /*
+             * Discovery Phase 6 — the brief's "payment success: Discover someone
+             * else" (Developer Master Plan, 19 Aug 2026, §C).
+             *
+             * 🚨 THIS IS THE ONE SURFACE THE RESERVED `payment-success` KEY WAS
+             * ALWAYS FOR, and until now it tagged nothing — the prompt did not
+             * exist, so the key sat in `DiscoverySources::KEYS` recording zero.
+             *
+             * 🚨 IT SITS BELOW THE MEMBERSHIP OFFER, DELIBERATELY. Somebody who
+             * has just paid a creator is the likeliest person to pay THAT
+             * creator again; sending them to a different one first spends the
+             * best moment this platform gets on the smaller outcome. Deepen
+             * first, widen second.
+             *
+             * ⚠️ Similar to the creator they just backed — NOT to what the
+             * viewer has bought before. At a checkout the useful question is
+             * "who else is like the person I just supported", and a guest has no
+             * history to read anyway. `CollectionService` falls back to nothing
+             * rather than filling the row with unrelated creators.
+             */
+            /*
+             * ⚠️ A CHAIN, NOT ONE COLLECTION. "Similar Creators" needs the
+             * creator to have categories and only about half of them do, so a
+             * single-collection row would have shown NOTHING on roughly half of
+             * all checkouts — the one moment on this platform where a supporter
+             * has just proved they will pay. Most relevant first, most likely to
+             * exist last.
+             */
+            'discover_more' => $owner
+                ? app(CollectionService::class)->firstNonEmpty(
+                    ['similar_creators', 'hidden_gems', 'new_creators'],
+                    4,
+                    $request->user(),
+                    $owner,
+                    'payment-success'
+                )
+                : null,
             // Distinguishes "your bank is still confirming" from "we could not
             // confirm this is your purchase" — different copy, different fix.
             'awaiting_settlement' => $reward ? ($entitled && ! $settled) : false,

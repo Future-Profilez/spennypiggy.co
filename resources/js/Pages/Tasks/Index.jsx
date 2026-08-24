@@ -469,7 +469,8 @@ export default function Index({
                                 <Nocontent
                                     mode="clean"
                                     classes={"bg-white"}
-                                    text="Nothing to see"
+                                    text="Nothing here yet"
+                                    subheading="This creator has no paid tasks open."
                                 />
                             )}
                         </>

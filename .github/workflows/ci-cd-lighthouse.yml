@@ -1,10 +1,36 @@
-name: CI/CD with Lighthouse Performance Testing
+name: Lighthouse Audit (manual)
+
+# 🚨 THIS FILE USED TO BE A SECOND, COMPETING DEPLOY PIPELINE.
+#
+# It carried the same `build-and-test` + `lighthouse-ci` jobs as
+# `ci-cd-pipeline.yml` AND the same push/pull_request triggers on `main` and
+# `develop` — so every push ran both workflows, and a push to `main` had two
+# jobs racing to deploy production from the same commit.
+#
+# Its deploy jobs were removed rather than repaired, because every part of them
+# pointed at something that does not exist:
+#   * `vapor deploy staging` — `vapor.yml` defines `development` and
+#     `production`. There is no `staging` environment.
+#   * `https://staging.spennypiggy.co` — not a domain in `vapor.yml` (the two
+#     domains are `dev.spennypiggy.co` and `spennypiggy.co`).
+#   * `npm install -g laravel-vapor-cli` then `vapor login --token` — the CLI
+#     this project actually uses is the composer one (`laravel/vapor-cli`,
+#     v1.70.2 in `vendor/`), and ITS `login` command accepts NO options at all,
+#     so `--token` is not a flag of the CLI in this repo. The npm package is
+#     UNVERIFIED — nothing in this repository depends on it.
+#   * `deploy-production: needs: deploy-staging` — the same dead chain fixed in
+#     `ci-cd-pipeline.yml`: staging is develop-only, production is main-only.
+#
+# Deploys now live in ONE place: `.github/workflows/ci-cd-pipeline.yml`.
+#
+# TODO(human): this file is now entirely duplicated by `ci-cd-pipeline.yml`
+# (same build-and-test, same lighthouse-ci) and probably wants deleting outright.
+# It is kept, manual-trigger-only, so nobody loses the production audit config
+# below without deciding to.
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  # Manual only. Automatic triggers are what made this race the real pipeline.
+  workflow_dispatch:
 
 jobs:
   # Build and Test Job
@@ -163,127 +189,11 @@ jobs:
         name: lighthouse-results
         path: .lighthouseci/
         
-  # Staging Deployment
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [build-and-test, lighthouse-ci]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install Vapor CLI
-      run: npm install -g laravel-vapor-cli
-      
-    - name: Configure Vapor
-      run: |
-        echo "${{ secrets.VAPOR_API_TOKEN }}" | vapor login --token
-        
-    - name: Deploy to Staging
-      run: vapor deploy staging
-      env:
-        VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
-        
-    - name: Run staging health checks
-      run: |
-        sleep 30  # Wait for deployment
-        curl -f https://staging.spennypiggy.co/health || exit 1
-        
-    - name: Run post-deployment Lighthouse audit
-      run: |
-        npx @lhci/cli@0.12.x autorun \
-          --upload.target=temporary-public-storage \
-          --collect.url=https://staging.spennypiggy.co \
-          --collect.numberOfRuns=3
-          
-    - name: Notify deployment success
-      uses: 8398a7/action-slack@v3
-      if: success()
-      with:
-        status: success
-        text: '🚀 Staging deployment successful!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        
-  # Production Deployment
-  deploy-production:
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install Vapor CLI
-      run: npm install -g laravel-vapor-cli
-      
-    - name: Configure Vapor
-      run: |
-        echo "${{ secrets.VAPOR_API_TOKEN }}" | vapor login --token
-        
-    - name: Deploy to Production
-      run: vapor deploy production
-      env:
-        VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
-        
-    - name: Run production health checks
-      run: |
-        sleep 60  # Wait for deployment
-        curl -f https://spennypiggy.co/health || exit 1
-        
-    - name: Run production performance audit
-      run: |
-        npx @lhci/cli@0.12.x autorun \
-          --upload.target=temporary-public-storage \
-          --collect.url=https://spennypiggy.co \
-          --collect.numberOfRuns=5 \
-          --collect.settings.throttling.rttMs=40 \
-          --collect.settings.throttling.throughputKbps=10240 \
-          --collect.settings.throttling.cpuSlowdownMultiplier=1
-          
-    - name: Monitor Web Vitals
-      run: |
-        curl -X POST https://spennypiggy.co/api/analytics/web-vitals/monitor \
-          -H "Content-Type: application/json" \
-          -d '{"deployment": true, "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)'"}' || echo "Monitoring API not available"
-          
-    - name: Notify deployment success
-      uses: 8398a7/action-slack@v3
-      if: success()
-      with:
-        status: success
-        text: '✅ Production deployment successful! 🎉'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        
-    - name: Notify deployment failure
-      uses: 8398a7/action-slack@v3
-      if: failure()
-      with:
-        status: failure
-        text: '❌ Production deployment failed!'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  # Performance Monitoring Job
+  # A deep Lighthouse audit of the LIVE production site. It does not deploy and
+  # never did anything but measure; it only ever hung off `deploy-production`
+  # for ordering. Run it by hand after a production deploy.
   performance-monitoring:
     runs-on: ubuntu-latest
-    needs: deploy-production
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
     - name: Wait for deployment to stabilize

@@ -27,3 +27,8 @@ yarn-error.log
 .env.sentry-build-plugin
 
 .octogent
+
+# Build product written by `npm run release:stamp` immediately before a deploy.
+# It carries the commit into the Vapor artifact so /health can say what is
+# actually live. Never commit it — a committed stamp is stale on arrival.
+.release

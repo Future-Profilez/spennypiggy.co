@@ -11,6 +11,17 @@ import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
 import ProfileProduct from '../../shop/ProfileProduct';
 import TaskItem from '@/Components/TaskItem';
+import { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
+
+/**
+ * 🚨 Every card in this grid is a Discovery result, so every creator link in it
+ * is SP-generated traffic and carries `search-recs` — the reserved key for a
+ * creator surfaced by Discover's search and result grid. A surface that is not
+ * tagged is invisible for ever; there is no backfill.
+ *
+ * ⚠️ Membership and Task cards render no creator-profile link (they go to
+ * checkout and to /task/{uuid}), so there is nothing on them to tag.
+ */
 
 export default function ResultsGrid({auth, global_currency, results, mode, activeFilters, removeFilter }) {
     const renderedItems = useMemo(() => {
@@ -19,7 +30,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
             let card;
             switch(mode) {
                 case 'creator':
-                    card = <CreatorCard  item={item} auth={auth} />;
+                    card = <CreatorCard  item={item} auth={auth} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'wish':
                     card =  <Wishlistbox
@@ -33,16 +44,17 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
                                 // setuped={AuthUserStripeConnected ==1? true: false}
                                 itm={item}
                                 trackClick={true}
+                                discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                             />;
                     break;
                 case 'bill':
-                    card = <Bill classes=" " itm={item} />;
+                    card = <Bill classes=" " itm={item} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'membership':
                     card = <Membership  item={item} />;
                     break;
                 case 'shop':
-                    card = <ProfileProduct item={item} />;
+                    card = <ProfileProduct item={item} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'task':
                     card = <TaskItem task={item} IsloggedIn={false} profileUser={item.user} />;
@@ -59,6 +71,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, activ
                             // setuped={AuthUserStripeConnected ==1? true: false}
                             itm={item}
                             trackClick={true}
+                            discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
                         />;
             }
 

@@ -31,7 +31,12 @@ const ReportContentModal = lazy(
     () => import("@/Components/ReportContentModal"),
 );
 
-export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
+export default function Userprofile({
+    blockedByI,
+    IsloggedIn,
+    payoutAction,
+    aboutBlock,
+}) {
     const copyIconRef = useRef(null);
     const unblockIconRef = useRef(null);
     const blockIconRef = useRef(null);
@@ -129,7 +134,7 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
     const paymentStrip =
         user?.role == 1 && user?.stripe_details_submitted == 1 ? (
             <div className="flex w-full flex-col items-center gap-1.5 pt-1">
-                <span className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                <span className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-black/70">
                     <Lock size={11} strokeWidth={2.5} />
                     Secure checkout
                 </span>
@@ -209,6 +214,15 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                             </div>
                         </div>
 
+                        {/* About me — supplied by the page so the approval gates and pending
+                            notices stay defined in one place (see Dashboard.jsx). It leads the
+                            card because "who is this" is what this column answers. */}
+                        {aboutBlock ? (
+                            <div className="w-full border-b border-black/10 pb-4">
+                                {aboutBlock}
+                            </div>
+                        ) : null}
+
                         {/* Stat tiles */}
                         {user && user?.role == 1 ? (
                             <div className="grid w-full grid-cols-3 gap-2">
@@ -216,16 +230,16 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                     <span className="block text-lg font-black leading-none tabular-nums text-black">
                                         {user?.followers_count ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-black/70">
                                         <Users size={10} strokeWidth={2.5} />
                                         Followers
                                     </span>
                                 </div>
-                                <div className="rounded-box-sm border border-black/5 bg-[#A2E4B8]/25 px-2 py-3 text-center">
+                                <div className="rounded-box-sm border border-black/5 bg-[#A2E4B8]/25 px-2 py-2.5 text-center">
                                     <span className="block text-lg font-black leading-none tabular-nums text-black">
                                         {user?.following_count ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-gray-500">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-black/70">
                                         <UserCheck
                                             size={10}
                                             strokeWidth={2.5}
@@ -234,12 +248,12 @@ export default function Userprofile({ blockedByI, IsloggedIn, payoutAction }) {
                                     </span>
                                 </div>
                                 <div className="rounded-box-sm border border-[#FF007F]/15 bg-[#FF007F]/5 px-2 py-2.5 text-center">
-                                    <span className="block text-lg font-black leading-none tabular-nums text-[#FF007F]">
+                                    <span className="block text-lg font-black leading-none tabular-nums text-[#C4006A]">
                                         {supporters ?? 0}
                                     </span>
-                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#FF007F]">
+                                    <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#C4006A]">
                                         <PiggyBank
-                                            size={11}
+                                            size={10}
                                             strokeWidth={2.5}
                                         />
                                         Supporters

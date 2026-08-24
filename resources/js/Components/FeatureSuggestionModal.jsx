@@ -1,20 +1,24 @@
 import { useForm } from '@inertiajs/react';
 import Modal from './Modal';
-import PrimaryButton from './PrimaryButton';
-import SecondaryButton from './SecondaryButton';
-import TextInput from './TextInput';
-import InputLabel from './InputLabel';
 import InputError from './InputError';
 import { toast } from 'react-hot-toast';
 import { route } from 'ziggy-js';
 import GlobalUploader from '../uploadcare/Uploader';
 import { useState, useRef } from 'react';
-import { FaLightbulb, FaTimes, FaImage, FaPaperPlane } from 'react-icons/fa';
+import { FaLightbulb, FaTimes, FaPaperPlane } from 'react-icons/fa';
+
+const MAX_CHARS = 2000;
+
+// Shared field chrome: a field is a black-framed slip on paper, never a glass panel.
+const FIELD =
+    'block w-full bg-white border-black rounded-box-sm text-black font-poppins placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-[#FF007F] transition-shadow duration-200';
+
+const LABEL = 'block font-gulfs uppercase text-[11px] tracking-[0.18em] text-black/70 mb-2';
 
 export default function FeatureSuggestionModal({ show, onClose, auth }) {
     const uploaderRef = useRef();
     const [isUploading, setIsUploading] = useState(false);
-    
+
     const { data, setData, post, processing, reset, errors } = useForm({
         suggestion: '',
         email: auth?.user?.email || '',
@@ -49,162 +53,161 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
         });
     };
 
+    const used = data.suggestion.length;
+    const filled = Math.min(100, (used / MAX_CHARS) * 100);
+
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
-            <div className="relative overflow-hidden bg-[#0d0d0d] border border-white/10 ">
-                {/* Background Glows */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-600/10 rounded-full filter blur-[80px]"></div>
-                    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-yellow-500/5 rounded-full filter blur-[80px]"></div>
+        <Modal show={show} onClose={onClose} maxWidth="xl">
+            <form onSubmit={submit} className="bg-white text-black">
+                {/* Header band — the one loud element on the page. Black on pink, never white. */}
+                <div className="relative bg-[#FF007F] border-b-2 border-b-black px-6 md:px-8 pt-7 pb-10">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="absolute top-5 right-5 w-11 h-11 flex items-center justify-center rounded-full bg-black/[0.10] border border-black/25 text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    >
+                        <FaTimes className="text-base" />
+                    </button>
+
+                    <p className="font-gulfs uppercase text-[11px] tracking-[0.22em] text-black/65">
+                        Feature request
+                    </p>
+                    <h2 className="mt-2 font-gulfs uppercase text-black text-[28px] md:text-4xl leading-[0.95] tracking-tight max-w-[16ch]">
+                        Tell us what to build next
+                    </h2>
                 </div>
 
-                {/* Header Decoration */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#EFEA7B] via-[#FF007F] to-[#924DFF] z-10"></div>
-                
-                <form onSubmit={submit} className="p-8 md:p-10 relative z-10 max-h-[70dvh] overflow-auto custom-scrollbar">
-                    <div className="flex items-center justify-between mb-10">
-                        <div className="flex items-center gap-6">
-                            <div className="relative group">
-                                <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full"></div>
-                                <div className="relative w-14 h-14 bg-white/5 border border-white/10 rounded-box  flex items-center justify-center backdrop-blur-md">
-                                    <FaLightbulb className="text-[#EFEA7B] text-2xl drop-shadow-[0_0_8px_rgba(239,234,123,0.5)]" />
-                                </div>
+                {/* Bulb tile straddles the seam — the piece that makes this modal ours. */}
+                <div className="px-6 md:px-8">
+                    <div className="-mt-8 mb-7 w-16 h-16 border-black bg-[#E6EA7B] rounded-box-sm flex items-center justify-center">
+                        <FaLightbulb className="text-black text-2xl" />
+                    </div>
+                </div>
+
+                <div className="px-6 md:px-8 pb-8 space-y-7">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <label htmlFor="name" className={LABEL}>Your name</label>
+                            <input
+                                id="name"
+                                type="text"
+                                name="name"
+                                value={data.name}
+                                className={`${FIELD} h-14 px-5`}
+                                onChange={(e) => setData('name', e.target.value)}
+                                placeholder="Naveen"
+                            />
+                            <InputError message={errors.name} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <label htmlFor="email" className={LABEL}>Your email</label>
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value={data.email}
+                                className={`${FIELD} h-14 px-5`}
+                                onChange={(e) => setData('email', e.target.value)}
+                                placeholder="you@email.com"
+                            />
+                            <InputError message={errors.email} className="mt-2" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="suggestion" className={LABEL}>The idea</label>
+                        <textarea
+                            id="suggestion"
+                            name="suggestion"
+                            value={data.suggestion}
+                            maxLength={MAX_CHARS}
+                            className={`${FIELD} h-36 resize-none p-5 leading-[1.55]`}
+                            onChange={(e) => setData('suggestion', e.target.value)}
+                            required
+                            placeholder="I'd love to see a way to…"
+                        />
+
+                        {/* Counter reads as a rail, not a number floating in space. */}
+                        <div className="mt-3 flex items-center gap-4">
+                            <div className="h-2 flex-1 rounded-full bg-black/10 overflow-hidden">
+                                <div
+                                    className="h-full bg-[#FF007F] transition-[width] duration-200"
+                                    style={{ width: `${filled}%` }}
+                                />
                             </div>
-                            <div>
-                                <h2 className="text-2xl md:text-3xl font-gulfs text-white uppercase tracking-tight">
-                                    Share Your Idea
-                                </h2>
-                                <p className="text-white/60 font-poppins text-xs md:text-sm">
-                                    Shape the future of <span className="text-white font-medium">Spenny Piggy</span>
+                            <span className="font-gulfs uppercase text-[11px] tracking-[0.16em] text-black/55 tabular-nums shrink-0">
+                                {used} / {MAX_CHARS}
+                            </span>
+                        </div>
+                        <InputError message={errors.suggestion} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <label className={LABEL}>Reference image <span className="text-black/40">— optional</span></label>
+
+                        {!data.image_url ? (
+                            <div className="border-2 border-dashed border-black/25 rounded-box-sm p-2 transition-colors duration-200 hover:border-black/50">
+                                <GlobalUploader
+                                    ref={uploaderRef}
+                                    type="minimal"
+                                    ctxName="feature_suggestion"
+                                    imgonly={true}
+                                    accept="image/*"
+                                    sendFile={handleFileUpload}
+                                    isUploading={setIsUploading}
+                                    view={true}
+                                />
+                                <p className="px-4 pb-3 text-center font-poppins text-[11px] uppercase tracking-[0.14em] text-black/45">
+                                    JPG, PNG or WEBP · 5MB max
                                 </p>
                             </div>
-                        </div>
-                        <button 
-                            type="button" 
-                            onClick={onClose}
-                            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300"
-                        >
-                            <FaTimes className="text-lg" />
-                        </button>
-                    </div>
-
-                    <div className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <InputLabel htmlFor="name" value="Your Name" className="!text-white/60 text-[12px] md:text-xs uppercase tracking-widest ml-1" />
-                                <TextInput
-                                    id="name"
-                                    type="text"
-                                    name="name"
-                                    value={data.name}
-                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-box-sm  text-white focus:border-white/40 focus:ring-[#FF007F]/25 placeholder:text-white/60 h-14 px-6 transition-all"
-                                    onChange={(e) => setData('name', e.target.value)}
-                                    placeholder="Naveen..."
+                        ) : (
+                            <div className="relative border-black rounded-box-sm overflow-hidden aspect-video max-h-[220px] group/img">
+                                <img
+                                    src={data.image_url}
+                                    alt="Reference preview"
+                                    className="w-full h-full object-cover transition-[filter] duration-500 group-hover/img:brightness-[1.08]"
                                 />
-                                <InputError message={errors.name} className="mt-2" />
+                                {/* Remove control stays visible on touch — never hover-only. */}
+                                <button
+                                    type="button"
+                                    onClick={() => setData({ ...data, image_url: '', image_uuid: '' })}
+                                    aria-label="Remove image"
+                                    className="absolute top-3 right-3 min-h-[44px] min-w-[44px] rounded-full bg-white border-black text-black flex items-center justify-center transition-colors duration-200 hover:bg-black hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                >
+                                    <FaTimes className="text-base" />
+                                </button>
                             </div>
-
-                            <div className="space-y-2">
-                                <InputLabel htmlFor="email" value="Your Email" className="!text-white/60 text-[12px] md:text-xs uppercase tracking-widest ml-1" />
-                                <TextInput
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    value={data.email}
-                                    className="mt-1 block w-full bg-white/5 border-white/5 !rounded-box-sm  text-white focus:border-white/40 focus:ring-[#FF007F]/25 placeholder:text-white/60 h-14 px-6 transition-all"
-                                    onChange={(e) => setData('email', e.target.value)}
-                                    placeholder="your@email.com"
-                                />
-                                <InputError message={errors.email} className="mt-2" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <InputLabel htmlFor="suggestion" value="Describe your feature" className="!text-white/60 text-[12px] md:text-xs uppercase tracking-widest ml-1" />
-                            <textarea
-                                id="suggestion"
-                                name="suggestion"
-                                value={data.suggestion}
-                                className="mt-1 block w-full bg-white/5 border-white/5 rounded-box-sm text-white focus:border-white/40 focus:ring-[#FF007F]/25 h-32 resize-none p-6 font-poppins placeholder:text-white/60 transition-all"
-                                onChange={(e) => setData('suggestion', e.target.value)}
-                                required
-                                placeholder="I'd love to see a way to..."
-                            />
-                            <div className="flex justify-end pr-2">
-                                <span className="text-[12px] text-white/60 font-poppins uppercase tracking-tighter">
-                                    {data.suggestion.length} characters
-                                </span>
-                            </div>
-                            <InputError message={errors.suggestion} className="mt-2" />
-                        </div>
-
-                        <div className="pt-2 space-y-3">
-                            <InputLabel value="Add a reference image" className="!text-white/60 text-[12px] md:text-xs uppercase tracking-widest ml-1" />
-                            <div className="bg-white/[0.02] border border-dashed border-white/10 rounded-box-sm p-2 transition-all hover:border-white/20 group/upload overflow-hidden">
-                                <div className="flex items-center justify-center w-full">
-                                    {!data.image_url ? (
-                                        <div className='w-full'>
-                                            <GlobalUploader 
-                                                ref={uploaderRef}
-                                                type="minimal"
-                                                ctxName="feature_suggestion"
-                                                imgonly={true}
-                                                accept="image/*"
-                                                sendFile={handleFileUpload}
-                                                isUploading={setIsUploading}
-                                                view={true}
-                                            />
-                                            <p className="px-4 pb-4 text-[12px] text-white/60 text-center font-poppins uppercase tracking-wide">
-                                                JPG, PNG or WEBP (Max 5MB)
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="relative w-full aspect-video rounded-box  overflow-hidden group/img max-h-[200px]">
-                                            <img src={data.image_url} alt="Preview" className="w-full h-full object-cover transition-[filter,opacity] duration-500 group-hover/img:brightness-[1.08]" />
-                                            {/* Always visible on touch — the remove control cannot be hover-only. */}
-                                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-100 md:opacity-0 md:group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setData({ ...data, image_url: '', image_uuid: '' })}
-                                                    className="bg-white text-black min-h-[44px] min-w-[44px] w-12 h-12 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors duration-300 "
-                                                >
-                                                    <FaTimes className="text-lg" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
+                </div>
 
-                    <div className="mt-12 flex items-center justify-end gap-6">
-                        <button 
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-3 font-gulfs uppercase text-sm text-white/60 hover:text-white tracking-widest transition-colors"
-                        >
-                            Cancel
-                        </button>
+                {/* Action bar sticks to the bottom of the scrolling panel. */}
+                <div className="sticky bottom-0 bg-white border-t-2 border-t-black px-6 md:px-8 py-5 flex items-center justify-between gap-4">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="font-gulfs uppercase text-[13px] tracking-[0.16em] text-black/55 hover:text-black transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    >
+                        Cancel
+                    </button>
 
-                        <button 
-                            type="submit"
-                            disabled={processing || isUploading}
-                            className="relative group min-h-[44px] px-10 py-4 bg-white text-black rounded-full font-gulfs uppercase text-sm tracking-widest transition-colors duration-200 hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-4 overflow-hidden "
-                        >
-                            <span className="relative z-10 flex items-center gap-3">
-                                {processing ? 'Sending...' : isUploading ? 'Uploading...' : (
-                                    <>
-                                        Send Idea
-                                        <FaPaperPlane className="text-sm" />
-                                    </>
-                                )}
-                            </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                    <button
+                        type="submit"
+                        disabled={processing || isUploading || used === 0}
+                        className="min-h-[48px] px-8 rounded-full bg-[#FF007F] border-black text-black font-gulfs uppercase text-[13px] tracking-[0.16em] flex items-center gap-3 transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                    >
+                        {processing ? 'Sending…' : isUploading ? 'Uploading…' : (
+                            <>
+                                Send idea
+                                <FaPaperPlane className="text-sm" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
         </Modal>
     );
 }

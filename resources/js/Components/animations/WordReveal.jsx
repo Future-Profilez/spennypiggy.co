@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 /**
@@ -39,10 +40,18 @@ export default function WordReveal({
             transition={{ staggerChildren: stagger, delayChildren: delay }}
             style={{ transformPerspective: 800 }}
         >
+            {/* 🚨 A REAL SPACE BETWEEN THE WORDS, not a margin (21 Aug 2026).
+                The words were separated visually by `mr-[0.25em]` and by nothing
+                at all in the text content, so the accessible name of every
+                WordReveal ran its words together — the homepage's one `<h1>`
+                announced as "THEEVERYTHING WISHLIST". The space is a sibling text
+                node OUTSIDE the `overflow-hidden` word span, so it is never
+                clipped by the flip-up and never animates; a normal inline word
+                space is the same 0.25em the margin was faking. */}
             {words.map((word, i) => (
+                <Fragment key={i}>
                 <span
-                    key={i}
-                    className={`inline-block overflow-hidden align-bottom pb-[0.12em] -mb-[0.12em] ${i < words.length - 1 ? "mr-[0.25em]" : ""}`}
+                    className="inline-block overflow-hidden align-bottom pb-[0.12em] -mb-[0.12em]"
                 >
                     <motion.span
                         className={`inline-block ${wordClassName}`}
@@ -60,6 +69,8 @@ export default function WordReveal({
                         {word}
                     </motion.span>
                 </span>
+                {i < words.length - 1 ? " " : ""}
+                </Fragment>
             ))}
         </motion.span>
     );

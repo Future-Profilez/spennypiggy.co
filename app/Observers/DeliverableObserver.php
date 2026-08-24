@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Deliverable;
 use App\Services\StripeMetadataService;
+use App\Support\AnalyticsEvent;
 use Illuminate\Support\Facades\Log;
 
 class DeliverableObserver
@@ -102,6 +103,26 @@ class DeliverableObserver
      */
     public function created(Deliverable $deliverable): void
     {
+        // GA4 `purchase`, for every paid module at once.
+        //
+        // Every paid feature creates exactly one Deliverable per payment
+        // (`firstOrCreate` on product_type + item_id), which makes this the one
+        // choke point that covers Wishes, Bills, Memberships, Shop, Paid Tasks,
+        // Piggy Pot and the Piggy Bank without eight separate call sites that
+        // could each drift.
+        //
+        // ⚠️ It fires on whichever of the redirect handler and the webhook wins
+        // the race. `AnalyticsEvent` drops the event when there is no browser,
+        // so a webhook-first purchase is simply not counted rather than counted
+        // into a session nobody renders — under-counting, never double-counting,
+        // which is the right way round for a funnel denominator.
+        AnalyticsEvent::push('purchase', [
+            'value' => (float) ($deliverable->transaction_amount ?? 0),
+            'currency' => strtoupper($deliverable->payment_currency ?: 'GBP'),
+            'product_type' => (string) $deliverable->product_type,
+            'guest' => empty($deliverable->gifter_id),
+        ]);
+
         // Only update Stripe metadata if we have a payment intent ID
         if (! $deliverable->payment_intent_id) {
             return;

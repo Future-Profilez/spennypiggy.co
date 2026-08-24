@@ -39,6 +39,56 @@ export default function Cart(props) {
             });
     }, [deviceid]);
 
+    /*
+     * 🚨 `?add={uuid}` — THE BIO PAGE'S "UNLOCK" LANDS HERE.
+     *
+     * On a profile, tapping a wish opens a popup that collects what the checkout
+     * needs. A bio card is a link, so it used to land on the wish checkout page,
+     * whose every refusal answers with `redirect()->back()` — and a visitor
+     * arriving from `/bio/buy/…` has no meaningful "back", so they were dropped
+     * on the homepage with a flash the homepage never renders. They tapped
+     * Unlock and nothing happened.
+     *
+     * ⚠️ THE ADD HAPPENS HERE AND NOT ON THE SERVER because a guest's basket row
+     * is keyed on a device id the BROWSER derives (user agent, platform, screen).
+     * The server cannot compute it, so a server-side write would create a row
+     * the guest can never see.
+     *
+     * ⚠️ The parameter is stripped with `replaceState` once used. Left in place,
+     * a refresh or a shared URL adds the item again, and a basket that grows on
+     * reload is a support ticket.
+     */
+    const addHandled = useRef(false);
+
+    useEffect(() => {
+        if (addHandled.current || !deviceid) return;
+
+        const params = new URLSearchParams(window.location.search);
+        const uuid = params.get('add');
+
+        if (!uuid) return;
+
+        addHandled.current = true;
+
+        Axios.get(`/add-to-cart/${uuid}/${deviceid}/onetime`)
+            .then(() => {
+                isAuthenticated ? fetchAuthenticatedCartItems() : fetchCartItem();
+            })
+            .catch((_err) => {
+                console.error('Could not add the item to your basket:', _err);
+            })
+            .finally(() => {
+                params.delete('add');
+                const qs = params.toString();
+                window.history.replaceState(
+                    {},
+                    '',
+                    window.location.pathname + (qs ? `?${qs}` : ''),
+                );
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deviceid, isAuthenticated]);
+
     const fetchAuthenticatedCartItems = useCallback(() => {
         setLoading(true);
         // Include device_id for potential cart merging fallback + cache busting

@@ -29,9 +29,6 @@ const FeedList = lazy(() => import("./feed/FeedList"));
 const AddPost = lazy(() => import("./feed/AddPost"));
 const AddIntro = lazy(() => import("./intros/AddIntro"));
 const MyGoal = lazy(() => import("./TipJar/MyGoal"));
-const FeatureSuggestionBanner = lazy(
-    () => import("@/Components/FeatureSuggestionBanner"),
-);
 const FeatureSuggestionModal = lazy(
     () => import("@/Components/FeatureSuggestionModal"),
 );
@@ -63,9 +60,17 @@ import {
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
+import BioLinkCard from "@/Components/bio/BioLinkCard";
 import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
+import DiscoveryStatsPanel from "@/Components/discovery/DiscoveryStatsPanel";
+import OpportunityPanel from "@/Components/earnings/OpportunityPanel";
+import MoreCreators from "@/Components/discovery/MoreCreators";
+import {
+    DISCOVERY_DASHBOARD_LINES,
+    DISCOVERY_DASHBOARD_TITLE,
+} from "@/constants/discovery";
 import AddGift from "./feed/AddGift";
-import { CiGift } from "react-icons/ci";
+import { CiShoppingCart } from "react-icons/ci";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
 import { FaRegHeart } from "react-icons/fa";
 import InstantTabSystem from "@/Components/InstantTabSystem";
@@ -77,7 +82,6 @@ const ProfileProductLists = lazy(
 const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
 const AddItem = lazy(() => import("./shop/AddItem"));
 
-const ReferralBanner = lazy(() => import("@/Components/ReferralBanner"));
 const GiftListing = lazy(() => import("./rye/GiftListing"));
 const OldSubscribe = lazy(() => import("./webpush/OldSubscribe"));
 const AddSocial = lazy(() => import("./Auth/Social"));
@@ -88,9 +92,9 @@ const EnableCardCapabilities = lazy(
 );
 const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
 const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
-const OfferAnnouncement = lazy(() => import("@/Components/OfferAnnouncement"));
 const SubscriptionNewsPopup = lazy(() => import("@/Components/SubscriptionNewsPopup"));
 // Small, always rendered on the creator's own About tab — not worth a lazy chunk.
+const PromoSlider = lazy(() => import("@/Components/Promo/PromoSlider"));
 const FounderProgressTracker = lazy(
     () => import("@/Components/FounderProgressTracker"),
 );
@@ -151,7 +155,77 @@ export default function Dashboard(props) {
         monthly_charges,
         profile_overview,
         pending_profile_changes,
+        // Discovery Phase 2. An OBJECT of real month-to-date figures for the
+        // owner of a creator profile; null on every other view. Null is "not
+        // your dashboard", never "no data yet" — zeros are a real payload.
+        discovery_panel: discoveryPanel = null,
+        // Discovery Phase 3 — up to four cards for the row at the foot of this
+        // profile. An ARRAY, and a short one is a correct answer: the server
+        // renders fewer rather than padding a slot with an ineligible creator,
+        // and never with the creator whose profile this is. Empty = no row.
+        // Enhanced Creator Earnings + Revenue Opportunity Centre (brief §C).
+        // An OBJECT for the OWNER of a creator profile; null on every other
+        // view — it names their supporters and what each has spent, and this
+        // page is also the public profile. Null is "not your dashboard", never
+        // "no data yet": a creator with no sales gets a real payload of zeros.
+        opportunity_panel: opportunityPanel = null,
+        more_creators: moreCreators = [],
     } = props;
+
+    /*
+     * 🚨 AN EMPTY TAB POINTS AT WHAT THIS CREATOR DOES SELL (21 Aug 2026).
+     * It used to render `Nocontent` with `showdiscover`, whose only action is a
+     * link to OTHER creators — so a supporter who arrived with intent, on the
+     * creator's own money page, was handed an exit. `profile_overview` already
+     * carries the live count per module, so the page can name the tab that has
+     * something in it instead of guessing.
+     *
+     * ⚠️ Discover survives only for a creator with nothing listed anywhere:
+     * there is genuinely no onward step on this profile, and a dead end is worse
+     * than a redirect.
+     */
+    const emptyTabProps = useMemo(() => {
+        const ov = profile_overview || {};
+        const modules = [
+            { page: "wishes", label: "Wishes", count: Number(ov.wishes || 0) },
+            { page: "shop", label: "Shop", count: Number(ov.shops || 0) },
+            { page: "tasks", label: "Tasks", count: Number(ov.tasks || 0) },
+            {
+                page: "piggy-pots",
+                label: "Piggy Pots",
+                count: Number(ov.piggy_pots || 0),
+            },
+            {
+                page: "memberships",
+                label: "Memberships",
+                count: Number(ov.memberships || 0),
+            },
+            { page: "bills", label: "Bills", count: Number(ov.bills || 0) },
+        ]
+            .filter((m) => m.count > 0)
+            .sort((a, b) => b.count - a.count);
+
+        const who = user?.name || (user?.username ? `@${user.username}` : "This creator");
+
+        if (modules.length === 0) {
+            return {
+                text: "Nothing listed yet",
+                subheading: `${who} hasn't put anything up for sale yet.`,
+                showdiscover: true,
+            };
+        }
+
+        const names = modules.slice(0, 2).map((m) => m.label);
+        const list = names.length === 2 ? `${names[0]} and ${names[1]}` : names[0];
+
+        return {
+            text: "Nothing here yet",
+            subheading: `${who} is selling in ${list}.`,
+            actionHref: `/${user?.username}/${modules[0].page}`,
+            actionText: `See ${modules[0].label}`,
+            showdiscover: false,
+        };
+    }, [profile_overview, user?.name, user?.username]);
 
     const [showPotModal, setShowPotModal] = useState(false);
     const [showSuggestionModal, setShowSuggestionModal] = useState(false);
@@ -211,6 +285,8 @@ export default function Dashboard(props) {
     );
 
     const { is_blocked, intro: introProp } = usePage().props;
+    // The profile OWNER's role, not the viewer's — this page is the profile.
+    const isCreatorProfile = Number(user?.role) === 1;
     const isInteractionBlocked = !IsloggedIn && is_blocked?.blocked;
     const blockedByMe = is_blocked?.blocked_by_me;
 
@@ -237,26 +313,23 @@ export default function Dashboard(props) {
         );
     }, [stripe_requirements]);
 
-    const shouldShowFounderBannerClient = useMemo(() => {
-        // Only logged-in creators (role 1), never gifters
-        if (!IsloggedIn || auth?.user?.role !== 1) return false;
-        // Already a founder — no need to pitch them
-        if (auth?.user?.is_founder) return false;
-        // Hide if Stripe connected more than 45 days ago (window opportunity is over)
-        const stripeConnectedAt = auth?.user?.stripe_connected_at;
-        if (stripeConnectedAt) {
-            const daysSinceConnected =
-                (Date.now() - new Date(stripeConnectedAt).getTime()) / 86400000;
-            if (daysSinceConnected > 45) return false;
-        }
-        return !props.founderData?.isEligible;
-    }, [
-        IsloggedIn,
-        auth?.user?.role,
-        auth?.user?.is_founder,
-        auth?.user?.stripe_connected_at,
-        props.founderData?.isEligible,
-    ]);
+    /*
+     * The founder card exists in two forms and only one may render.
+     *
+     * This tracker carries the creator's OWN figures, so it wins wherever it
+     * applies; the promo deck's generic founder card is excluded while it does.
+     * Showing both told the same creator the same thing twice, in two tones, four
+     * inches apart — which is the fault this whole slider exists to fix.
+     */
+    const showFounderTracker = useMemo(
+        () =>
+            Boolean(
+                props.founderData?.isEligible &&
+                    IsloggedIn &&
+                    auth?.user?.role === 1,
+            ),
+        [props.founderData?.isEligible, IsloggedIn, auth?.user?.role],
+    );
 
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -511,12 +584,10 @@ export default function Dashboard(props) {
                             horizontally-scrolling tab strip, is the worse of the two. */}
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action hidden md:block cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-box-sm
- hover:translate-x-[2px] hover:translate-y-[2px] 
- transition-all z-50"
+                            className="addoption-action hidden md:block cursor-pointer p-2 py-[8px] bg-[#FF007F] border-4 border-black !rounded-box-sm transition-[filter] duration-200 hover:brightness-110 active:brightness-95 z-50"
                             // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
                         >
-                            <b className="text-2xl md:text-3xl px-3 text-white !leading-[8px] top-[4px] relative">
+                            <b className="text-2xl md:text-3xl px-3 text-black !leading-[8px] top-[4px] relative">
                                 +
                             </b>
                         </div>
@@ -613,31 +684,37 @@ export default function Dashboard(props) {
                                                               <div className="w-full font-bold disabled addop bg-white border-4 border-black rounded-box p-3 mb-4 text-center">
                                                                   <div className="flex items-center">
                                                                       <div className="p-1 rounded-box border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                          <CiGift
+                                                                          <CiShoppingCart
                                                                               color="#000"
                                                                               size="1.5rem"
                                                                           />
                                                                       </div>
                                                                       <div className="pl-3 text-left">
+                                                                          {/* ⚠️ Content-first: this card said "Add
+                                                                              Surprise Gift" / "1000's of Gifts in the
+                                                                              Oink Gift Zone". "Gift" is banned
+                                                                              vocabulary on every user-facing surface,
+                                                                              the surface is branded "Oink Store" and
+                                                                              never "Gift Store", and a gift-box icon
+                                                                              carries the same meaning as the word. */}
                                                                           <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
                                                                               Add
-                                                                              Surprise
-                                                                              Gift
+                                                                              Oink
+                                                                              Store
+                                                                              item
                                                                           </h2>
                                                                           <p className="text-sm font-bold text-gray-700">
                                                                               Lets
                                                                               supporters
                                                                               pick
                                                                               from
-                                                                              the
                                                                               1000’s
                                                                               of
-                                                                              Gifts
+                                                                              items
                                                                               in
                                                                               the
                                                                               Oink
-                                                                              Gift
-                                                                              Zone
+                                                                              Store
                                                                           </p>
                                                                       </div>
                                                                   </div>
@@ -671,7 +748,7 @@ export default function Dashboard(props) {
                                                                                   true,
                                                                               )
                                                                           }
-                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                       >
                                                                           <div className="flex items-center">
                                                                               <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
@@ -704,7 +781,7 @@ export default function Dashboard(props) {
                                                                           ?.role ===
                                                                           1 && (
                                                                           <Link
-                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full block font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                               href="/task/create"
                                                                           >
                                                                               <div className="flex items-center">
@@ -743,7 +820,7 @@ export default function Dashboard(props) {
                                                                                   );
                                                                                   openCreateModal();
                                                                               }}
-                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                              className="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           >
                                                                               <div className="flex items-center">
                                                                                   <div className="p-1 rounded-box-sm border-2 border-black bg-pink-100 flex items-center justify-center w-[44px] h-[44px] min-w-[44px] min-h-[44px] md:w-[52px] md:h-[52px] md:min-w-[52px] md:min-h-[52px] ml-2">
@@ -770,7 +847,7 @@ export default function Dashboard(props) {
                                                                       )}
 
                                                                       <AddItem
-                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
+                                                                          classes="w-full font-bold addop bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center cursor-pointer relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]"
                                                                           product_type="digital_products"
                                                                           addIntent={addIntent}
                                                                       />
@@ -785,7 +862,7 @@ export default function Dashboard(props) {
                                                                           hover instead of falling back to the shared cream. */}
                                                                       <AddPost
                                                                           highlight
-                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
+                                                                          classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-[#D9F9EE] hover:bg-[#C2F3E1] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#00B98C] after:transition-colors hover:after:text-[#05EFB8]"
                                                                       />
                                                                       {/* <AddGift
  text="Add Gift"
@@ -798,8 +875,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
-                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddMembership classes=" font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box !w-full relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
+                                                                      <AddBills classes="font-bold p-3 md:p-4 pr-10 md:pr-12 mb-4 text-center bg-white hover:bg-[#FFF0DF] border-[3px] border-black transition-colors rounded-box relative group after:content-['→'] after:absolute after:right-4 md:after:right-6 after:top-1/2 after:-translate-y-1/2 after:text-2xl md:after:text-3xl after:font-black after:text-[#FFB3D6] after:transition-colors hover:after:text-[#FF007F]" />
                                                                   </div>
                                                               </div>
                                                           </>
@@ -824,15 +901,13 @@ export default function Dashboard(props) {
  border-[3px]
  border-black
  rounded-box-sm
-                                                                
+
  font-black
  uppercase
  tracking-wider
  text-black
- hover:translate-x-[2px]
- hover:translate-y-[2px]
-                                                                
- transition-all
+ transition-colors
+ hover:bg-black/[0.04]
 "
                                                           >
                                                               Cancel
@@ -889,47 +964,87 @@ export default function Dashboard(props) {
         </div>
     );
 
-    // First look: bio, what this creator makes, and how their earnings are tracking.
-    // Full width under the cover so it lands before anything else on the page.
-    const profileSummaryBand =
+    // About me — bio + categories. Lives INSIDE the identity rail card (21 Aug 2026,
+    // client direction): it answers "who is this creator", which is what that column is
+    // for, and in the centre column it pushed the actual content down the page.
+    // Passed into <Userprofile> as a prop rather than duplicated there, so the pending
+    // notices and approval gates stay defined in one place.
+    //
+    // 🚨 THE BIO IS DRAWN AS A SPEECH BUBBLE, TAIL POINTING UP AT THE AVATAR. The bio is
+    // written in the creator's own voice ("Hey, I make…"), and the avatar sits directly
+    // above this block at every breakpoint — on the cover on desktop, in the card on
+    // phones. The tail ties the words to the face, which an "ABOUT ME" eyebrow over a
+    // paragraph never did. That eyebrow is gone: a bubble under a face needs no label,
+    // and the one label kept ("Makes") carries information the pills alone did not.
+    const creatorTags = (() => {
+        try {
+            const raw = user?.creator_category;
+            const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+            return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch (e) {
+            return [];
+        }
+    })();
+
+    // An empty bio is a prompt for the owner and a plain fact for a visitor — never the
+    // old placeholder sentence, which put words in the creator's mouth on their own page.
+    const bioText =
+        (user && user.bio) ||
+        (IsloggedIn
+            ? "Say what you make in a line or two. It shows up right here, above everything you sell."
+            : `${user?.name || "This creator"} has not written an intro yet.`);
+
+    const aboutMeCard =
         user && user.role == 1 ? (
-            <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between xl:gap-10">
-                    <div className="min-w-0 lg:flex-1">
-                        <h2 className="text-[12px] font-black uppercase tracking-[0.16em] text-black/60">
-                            About me
-                        </h2>
+            <div className="w-full text-left">
+                <div className="relative">
+                    {/* Tail: black outline triangle with the fill drawn 1px inside it,
+                        so the bubble reads as one continuous hairline. */}
+                    <span
+                        aria-hidden="true"
+                        className="absolute -top-[9px] left-7 h-0 w-0 border-x-[9px] border-b-[9px] border-x-transparent border-b-black"
+                    />
+                    <span
+                        aria-hidden="true"
+                        className="absolute -top-[7px] left-[29px] h-0 w-0 border-x-[8px] border-b-[8px] border-x-transparent"
+                        style={{ borderBottomColor: "#E8F8ED" }}
+                    />
 
-                        <p className="mt-2.5 text-[17px] font-semibold leading-relaxed text-black lg:max-w-[58ch]">
-                            {(user && user.bio) ||
-                                "Hy, I am a creator on SpennyPiggy."}
-                        </p>
-
-                        {IsloggedIn &&
-                            user?.bio_approved == 0 &&
-                            pendingNotice(
-                                "Your bio is waiting for admin approval. Currently only you can see this.",
-                            )}
-
-                        <CategoryTags
-                            value={user?.creator_category}
-                            className="mt-3.5"
-                        />
-
-                        {IsloggedIn &&
-                            slinks?.status === 0 &&
-                            pendingNotice(
-                                "Your social media links are waiting for admin approval. Currently only you can see them.",
-                            )}
-                    </div>
-
-                    {/* Earnings against the creator's live goal — the headline figure */}
-                    {UserStripeConnected == 1 ? (
-                        <div className="w-full shrink-0 border-t border-black/10 pt-4 xl:w-[300px] xl:self-stretch xl:border-t-0 xl:border-l xl:border-black/10 xl:pl-8 xl:pt-0">
-                            <EarningsMilestone IsloggedIn={IsloggedIn} />
-                        </div>
-                    ) : null}
+                    <p className="rounded-box-sm border border-[#000] bg-[#E8F8ED] px-3.5 py-3 text-[14px] font-semibold leading-relaxed text-black">
+                        {bioText}
+                    </p>
                 </div>
+
+                {IsloggedIn &&
+                    user?.bio_approved == 0 &&
+                    pendingNotice(
+                        "Your bio is waiting for admin approval. Currently only you can see this.",
+                    )}
+
+                {creatorTags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                        <span className="text-[11px] font-black uppercase tracking-[0.16em] text-black/45">
+                            Makes
+                        </span>
+                        <CategoryTags value={user?.creator_category} />
+                    </div>
+                )}
+
+                {IsloggedIn &&
+                    slinks?.status === 0 &&
+                    pendingNotice(
+                        "Your social media links are waiting for admin approval. Currently only you can see them.",
+                    )}
+            </div>
+        ) : null;
+
+    // Earnings against the creator's live goal — the headline figure. About me moved out
+    // of this band into the rail, so it is now the earnings card alone and renders only
+    // when there is an account behind the number.
+    const profileSummaryBand =
+        user && user.role == 1 && UserStripeConnected == 1 ? (
+            <div className="rounded-box border border-black/10 bg-white p-4 sm:p-5 md:border-2 md:border-black">
+                <EarningsMilestone IsloggedIn={IsloggedIn} />
             </div>
         ) : null;
 
@@ -1036,6 +1151,7 @@ export default function Dashboard(props) {
                                         blockedByI={blockedByMe}
                                         IsloggedIn={IsloggedIn}
                                         payoutAction={creatorPayoutAction}
+                                        aboutBlock={aboutMeCard}
                                     />
                                     {/* Their own introduction. Moved out of the About tab and
                                         into this rail (31 July 2026): it is part of who the
@@ -1050,7 +1166,12 @@ export default function Dashboard(props) {
                                         and an approved intro was invisible to every visitor. It is
                                         also the same prop AddIntro itself reads, so the gate and
                                         the card can no longer disagree about whether one exists. */}
-                                    {(IsloggedIn || introProp?.approved == 1) && (
+                                    {/* ⚠️ role 1 (creator) is part of the gate, not decoration.
+                                        Intro videos are a creator surface, and a gifter must not
+                                        even be OFFERED the upload — the empty AddIntro card IS
+                                        the "add" affordance for the owner (21 Aug 2026). Gating
+                                        here also keeps the lazy chunk off a gifter's page. */}
+                                    {isCreatorProfile && (IsloggedIn || introProp?.approved == 1) && (
                                         <Suspense
                                             fallback={
                                                 <div className="h-40 animate-pulse rounded-box border-[3px] border-black bg-gray-100"></div>
@@ -1105,6 +1226,31 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
+                                            {/* 🚨 THE FIRST THING A CREATOR SEES ON THEIR OWN
+                                                DASHBOARD, ON EVERY TAB.
+
+                                                It used to render inside the About tab, so the one
+                                                card that answers "what do I do next" was only
+                                                visible if the creator happened to be on that tab —
+                                                a creator who landed on Wishes or Shop saw no next
+                                                step at all. It now sits in the owner column
+                                                OUTSIDE the tab system, for the same reason the
+                                                Discovery and Opportunity panels do.
+
+                                                ⚠️ Gated on IsloggedIn (the viewer IS the profile
+                                                owner) ONLY — never on UserStripeConnected, which is
+                                                where it once sat. Three of the six journey steps
+                                                come BEFORE Stripe, so that gate hid the card from
+                                                every creator still on profile, identity or payouts
+                                                — the ones needing it most. The component self-gates
+                                                on auth.journey and disappears once the journey is
+                                                done, so a finished creator sees nothing here. */}
+                                            {IsloggedIn && (
+                                                <div className="mb-3">
+                                                    <CreatorJourneyCard />
+                                                </div>
+                                            )}
+
                                             {IsloggedIn && (
                                                 <PendingChangesNotice
                                                     assets={
@@ -1118,35 +1264,93 @@ export default function Dashboard(props) {
                                                 <CreatorRiskBanner />
                                             )}
 
-                                            {/* Owner-only shortcut into the Revenue Opportunity Centre —
- surfaced here so a creator discovers it while looking at their
- own profile. Neo-brutalist to match the surrounding profile UI. */}
+                                            {/* Discovery Phase 2 — what Spenny Piggy brought this
+                                                creator this month, above every other owner-only
+                                                card on their dashboard. The brief asks for it to be
+                                                prominent, and it sits outside the tab system on
+                                                purpose so it reads on every tab, not only About.
+
+                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE NUMBERS. The
+                                                plan is explicit that the panel "stays visible at 0
+                                                … It is the pitch" — a creator with no Discovery
+                                                data yet sees three zeros and the explanatory line,
+                                                which is exactly what tells them the feature exists.
+                                                The only gate is `discovery_panel != null`, which
+                                                the controller sets for the OWNER of a role-1
+                                                profile and nobody else: a visitor must not read
+                                                this creator's numbers, and a supporter's dashboard
+                                                has none to read.
+
+                                                ⚠️ tone="light" because this page is white; the same
+                                                component renders dark on the marketing surfaces.
+                                                live because these are real Phase 1 figures — it is
+                                                NOT read off `discovery.analytics_live`, which
+                                                governs the mock numbers in marketing and stays
+                                                false until the client flips it. */}
+                                            {discoveryPanel && (
+                                                <DiscoveryStatsPanel
+                                                    className="mt-3"
+                                                    stats={discoveryPanel}
+                                                    live={true}
+                                                    tone="light"
+                                                    title={
+                                                        DISCOVERY_DASHBOARD_TITLE
+                                                    }
+                                                    lines={
+                                                        DISCOVERY_DASHBOARD_LINES
+                                                    }
+                                                />
+                                            )}
+
+                                            {/* Enhanced Creator Earnings + Revenue Opportunity Centre.
+                                                Client brief: Developer Master Plan, 19 Aug 2026, §C row 9 —
+                                                "sits alongside the SP Discovery panel so the dashboard tells
+                                                one story: what SP brought you, what it's worth, what to do
+                                                next". Hence directly beneath the panel above, in the same
+                                                owner-only column, outside the tab system so it reads on
+                                                every tab.
+
+                                                🚨 THIS REPLACED A PLAIN "Grow your income" LINK, and that is
+                                                the whole point of the row. The link was a door to the
+                                                numbers; the brief asks for the numbers themselves to be on
+                                                the dashboard. The module carries its own link through to the
+                                                full Opportunity Centre at the foot, so the old route in is
+                                                not lost — it is just no longer the only thing here.
+
+                                                🚨 NEVER CONDITIONALLY UNMOUNTED ON THE FIGURES, for the same
+                                                reason as the Discovery panel: a creator with no sales sees
+                                                zeros and the empty-state lines, which is what tells them the
+                                                capability exists. The only gate is `opportunity_panel != null`,
+                                                which the controller sets for the OWNER of a role-1 profile and
+                                                nobody else — this payload names their supporters and what each
+                                                has spent, and this page is also the PUBLIC profile.
+
+                                                ⚠️ Each of the brief's nine rows draws whether or not it is
+                                                ready; `config/earnings_intelligence.php` decides which ones
+                                                grey to "Coming soon". A row is never simply absent. */}
+                                            {opportunityPanel && (
+                                                <OpportunityPanel
+                                                    className="mt-3"
+                                                    panel={opportunityPanel}
+                                                />
+                                            )}
+
+                                            {/* 🚨 THE ONLY DISCOVERABLE ROUTE TO THE BIO PAGE.
+                                                `/bio-links` was reachable from ONE place in the whole
+                                                app — a row inside Account Settings — while
+                                                `/creators/link-in-bio` now holds a top-level header
+                                                nav slot advertising the feature to creators who have
+                                                not signed up yet. The people who HAVE could not find
+                                                it. See the component's own note.
+
+                                                Beside "My listings" on purpose: the two answer the
+                                                same errand — everything I sell, and the one link
+                                                that sells it. */}
                                             {IsloggedIn && (
-                                                <Link
-                                                    href={route(
-                                                        "financial.opportunities",
-                                                    )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
-                                                >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] text-2xl">
-                                                        📈
-                                                    </span>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="text-[18px] md:text-[22px] font-black uppercase tracking-tigher text-[#FF007F]">
-                                                            Grow your income
-                                                        </div>
-                                                        
-                                                        <div className="text-[13px] md:text-[15px] font-semibold text-gray-600 mt-0.5">
-                                                            Who spends the most,
-                                                            who&apos;s gone
-                                                            quiet, and how to
-                                                            earn more.
-                                                        </div>
-                                                    </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#05EFB8] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
-                                                        ›
-                                                    </span>
-                                                </Link>
+                                                <BioLinkCard
+                                                    username={user?.username}
+                                                    className="mt-3"
+                                                />
                                             )}
 
                                             {/* Owner-only. The six module tabs below show one type
@@ -1157,9 +1361,9 @@ export default function Dashboard(props) {
                                                     href={route(
                                                         "catalogue.index",
                                                     )}
-                                                    className="group mt-3 flex items-center gap-4 rounded-box border-[3px] border-black bg-white px-4 py-4 transition-all duration-150 hover:bg-gray-200"
+                                                    className="group mt-3 flex items-center gap-4 rounded-box border border-[#000] bg-white px-4 py-4 transition-colors duration-150 hover:bg-black/[0.04]"
                                                 >
-                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#05EFB8] text-2xl">
+                                                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-box-sm border border-[#000] bg-[#05EFB8] text-2xl">
                                                         🗂️
                                                     </span>
                                                     <div className="min-w-0 flex-1">
@@ -1173,7 +1377,7 @@ export default function Dashboard(props) {
                                                             stuck.
                                                         </div>
                                                     </div>
-                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-[#FF007F] text-black text-lg font-black transition-transform group-hover:translate-x-0.5">
+                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#000] bg-[#FF007F] text-black text-lg font-black">
                                                         ›
                                                     </span>
                                                 </Link>
@@ -1221,59 +1425,50 @@ export default function Dashboard(props) {
                                                                         >
                                                                             {/* About tab: single-column flow — intro, status, highlights, posts */}
                                                                             <div className="flex flex-col gap-4 about-sec self-start w-full">
-                                                                                {/* ⚠️ First thing in the creator's own About tab, above the founder and
-                                                                                    referral promos. This is the single "what do I do next" instruction;
-                                                                                    below a promo it stops reading as an instruction.
-
-                                                                                    Gated on IsloggedIn (viewer IS the profile owner) ONLY — deliberately
-                                                                                    NOT on UserStripeConnected, which is where it used to sit. Three of the
-                                                                                    six journey steps come BEFORE Stripe, so that gate hid the card from
-                                                                                    every creator still on profile, identity or payouts — 26 of the 45 with
-                                                                                    a card to show, and the ones needing it most. The component self-gates
-                                                                                    on auth.journey and disappears once the journey is done. */}
-                                                                                {IsloggedIn && (
-                                                                                    <CreatorJourneyCard />
-                                                                                )}
-
-                                                                                {/* Owner-only promos: founder offer + referral, at the top of their own tab */}
-                                                                                {props.founderData
-                                                                                    ?.isEligible &&
-                                                                                    IsloggedIn &&
-                                                                                    auth?.user
-                                                                                        ?.role ===
-                                                                                        1 && (
-                                                                                        <Suspense
-                                                                                            fallback={
-                                                                                                null
-                                                                                            }
-                                                                                        >
-                                                                                            <FounderProgressTracker
-                                                                                                founderData={
-                                                                                                    props.founderData
-                                                                                                }
-                                                                                                variant="mini"
-                                                                                            />
-                                                                                        </Suspense>
-                                                                                    )}
-                                                                                {shouldShowFounderBannerClient && (
+                                                                                {/* The creator's OWN founder progress — real numbers, so it
+                                                                                    stays as an action card above the promo deck. The deck's
+                                                                                    founder card is excluded while this renders (see the
+                                                                                    `exclude` prop below); one surface per message. */}
+                                                                                {showFounderTracker && (
                                                                                     <Suspense
                                                                                         fallback={
                                                                                             null
                                                                                         }
                                                                                     >
-                                                                                        <OfferAnnouncement variant="default" />
+                                                                                        <FounderProgressTracker
+                                                                                            founderData={
+                                                                                                props.founderData
+                                                                                            }
+                                                                                            variant="mini"
+                                                                                        />
                                                                                     </Suspense>
                                                                                 )}
-                                                                                {/* ⚠️ empty:hidden. This column is `flex flex-col gap-4`, so a
-                                                                                    wrapper whose component renders null is still a flex item and
-                                                                                    still gets its 16px of gap — an empty band across the page with
-                                                                                    nothing in it. The ReturningSupporter wrapper below already
-                                                                                    carried the guard; this one did not. */}
-                                                                                {IsloggedIn && (
-                                                                                    <div className="empty:hidden">
-                                                                                        <ReferralBanner />
-                                                                                    </div>
-                                                                                )}
+
+                                                                                {/* 🚨 THE ONE PROMO SURFACE. Five always-on banners used to
+                                                                                    stack here — OfferAnnouncement, ReferralBanner and
+                                                                                    FeatureSuggestionBanner among them — which is what made
+                                                                                    this page read as a noticeboard rather than a profile.
+                                                                                    (The right rail's membership block stays: that is the
+                                                                                    creator's own offer to their fans, not marketing at the
+                                                                                    creator.) A new promo is a
+                                                                                    `config/promos.php` entry, NEVER a second banner beside
+                                                                                    this one. */}
+                                                                                <Suspense fallback={null}>
+                                                                                    <PromoSlider
+                                                                                        exclude={
+                                                                                            showFounderTracker
+                                                                                                ? [
+                                                                                                      "founder_bonus",
+                                                                                                  ]
+                                                                                                : []
+                                                                                        }
+                                                                                        onSuggestFeature={() =>
+                                                                                            setShowSuggestionModal(
+                                                                                                true,
+                                                                                            )
+                                                                                        }
+                                                                                    />
+                                                                                </Suspense>
 
                                                                                 {/* A returning buyer is greeted as one, before anything is sold to them */}
                                                                                 <div className="empty:hidden">
@@ -1350,8 +1545,13 @@ export default function Dashboard(props) {
                                                                                             </div>
                                                                                 )}
 
-                                                                                {/* Proof: who else buys here, and whether this creator delivers */}
-                                                                                <div>
+                                                                                {/* Proof: who else buys here, and whether this creator delivers.
+                                                                                    ⚠️ `empty:hidden` because SupporterWall renders NOTHING for a
+                                                                                    creator with no supporters — but this wrapper is still a flex
+                                                                                    item, so it ate a 16px gap on each side and produced the one
+                                                                                    32px seam in an otherwise uniform 16px card stack. Same fix
+                                                                                    already used on the ReturningSupporter wrapper above. */}
+                                                                                <div className="empty:hidden">
                                                                                     <SupporterWall />
                                                                                 </div>
 
@@ -1657,7 +1857,7 @@ export default function Dashboard(props) {
                                                                                                                         user?.username}
                                                                                                             </p>
                                                                                                             <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
-                                                                                                                Gifts,
+                                                                                                                Purchases,
                                                                                                                 thank‑yous
                                                                                                                 and
                                                                                                                 milestones
@@ -1671,7 +1871,7 @@ export default function Dashboard(props) {
                                                                                                         <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
                                                                                                             <Link
                                                                                                                 href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                                                className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200"
+                                                                                                                className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-box-sm text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                             >
                                                                                                                 View
                                                                                                                 Your
@@ -1781,23 +1981,6 @@ export default function Dashboard(props) {
                                                                                                 "membership",
                                                                                             ]}
                                                                                         />
-                                                                                        {IsloggedIn && (
-                                                                                            <div className="mt-4">
-                                                                                                <Suspense
-                                                                                                    fallback={
-                                                                                                        null
-                                                                                                    }
-                                                                                                >
-                                                                                                    <FeatureSuggestionBanner
-                                                                                                        onSuggestClick={() =>
-                                                                                                            setShowSuggestionModal(
-                                                                                                                true,
-                                                                                                            )
-                                                                                                        }
-                                                                                                    />
-                                                                                                </Suspense>
-                                                                                            </div>
-                                                                                        )}
                                                                                     </div>
                                                                                     <Suspense
                                                                                         fallback={
@@ -1838,7 +2021,7 @@ export default function Dashboard(props) {
                                                                                             {wish_categories &&
                                                                                             wish_categories.length ? (
                                                                                                 <>
-                                                                                                    <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
+                                                                                                    <div className="new-wish-cats flex items-center mb-3 md:mb-6 gap-2 flex-wrap p-2">
                                                                                                         <Link
                                                                                                             preserveScroll
                                                                                                             href={route(
@@ -2020,7 +2203,9 @@ export default function Dashboard(props) {
                                                                                                             <DragOverlay
                                                                                                                 dropAnimation={{
                                                                                                                     duration: 250,
-                                                                                                                    easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                                                                                                                    // Exponential ease-out. The old curve overshot to 1.22, the one
+                                                                                                                    // bounce in an interface that settles everywhere else.
+                                                                                                                    easing: "cubic-bezier(0.16, 1, 0.3, 1)",
                                                                                                                     sideEffects:
                                                                                                                         defaultDropAnimationSideEffects(
                                                                                                                             {
@@ -2080,28 +2265,24 @@ export default function Dashboard(props) {
                                                                                                     {IsloggedIn ? (
                                                                                                         <>
                                                                                                             <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
-                                                                                                                <div className="text-4xl mb-3">
-                                                                                                                    🎁
-                                                                                                                </div>
+                                                                                                                {/* ⚠️ Content-first: a 🎁 emoji and "let your
+                                                                                                                    fans buy them for you" framed this as a
+                                                                                                                    gift, which is the framing a wish is
+                                                                                                                    reframed AWAY from. A wish is a one-off
+                                                                                                                    CONTENT sale. */}
                                                                                                                 <h3 className="font-gulfs text-2xl uppercase mb-2">
                                                                                                                     No
-                                                                                                                    Wishes
-                                                                                                                    Yet
+                                                                                                                    wishes
+                                                                                                                    yet
                                                                                                                 </h3>
                                                                                                                 <p className="text-gray-600 font-bold mb-6">
-                                                                                                                    Add
-                                                                                                                    items
-                                                                                                                    to
+                                                                                                                    List
+                                                                                                                    exclusive
+                                                                                                                    content
                                                                                                                     your
-                                                                                                                    wishlist
-                                                                                                                    and
-                                                                                                                    let
-                                                                                                                    your
-                                                                                                                    fans
-                                                                                                                    buy
-                                                                                                                    them
-                                                                                                                    for
-                                                                                                                    you.
+                                                                                                                    supporters
+                                                                                                                    can
+                                                                                                                    unlock.
                                                                                                                 </p>
                                                                                                                 <button
                                                                                                                     onClick={() =>
@@ -2111,7 +2292,7 @@ export default function Dashboard(props) {
                                                                                                                             ),
                                                                                                                         )
                                                                                                                     }
-                                                                                                                    className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                                    className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                                 >
                                                                                                                     Add
                                                                                                                     Wish
@@ -2120,10 +2301,7 @@ export default function Dashboard(props) {
                                                                                                         </>
                                                                                                     ) : (
                                                                                                         <Nocontent
-                                                                                                            showdiscover={
-                                                                                                                true
-                                                                                                            }
-                                                                                                            text="Nothing to see."
+                                                                                                            {...emptyTabProps}
                                                                                                         />
                                                                                                     )}
                                                                                                 </div>
@@ -2215,7 +2393,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
                                                                                                         Create
                                                                                                         Task
@@ -2288,7 +2466,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
                                                                                                         Create
                                                                                                         Membership
@@ -2356,7 +2534,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
                                                                                                         Create
                                                                                                         Bill
@@ -2429,7 +2607,7 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
                                                                                                         Add
                                                                                                         Item
@@ -2533,25 +2711,26 @@ export default function Dashboard(props) {
                                                                                         <div className="w-full">
                                                                                             {IsloggedIn ? (
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
-                                                                                                    <div className="text-4xl mb-3">
-                                                                                                        🎁
-                                                                                                    </div>
+                                                                                                    {/* ⚠️ Content-first: this read "🎁 / No Active
+                                                                                                        Gifts / Create physical gifts for your fans to
+                                                                                                        buy for you". "Gift" is banned vocabulary on
+                                                                                                        every user-facing surface, and an emoji is not
+                                                                                                        an icon system. */}
                                                                                                     <h3 className="font-gulfs text-2xl uppercase mb-2">
                                                                                                         No
-                                                                                                        Active
-                                                                                                        Gifts
+                                                                                                        items
+                                                                                                        listed
+                                                                                                        yet
                                                                                                     </h3>
                                                                                                     <p className="text-gray-600 font-bold mb-6">
-                                                                                                        Create
+                                                                                                        List
+                                                                                                        a
                                                                                                         physical
-                                                                                                        gifts
-                                                                                                        for
+                                                                                                        item
                                                                                                         your
-                                                                                                        fans
-                                                                                                        to
-                                                                                                        buy
-                                                                                                        for
-                                                                                                        you.
+                                                                                                        supporters
+                                                                                                        can
+                                                                                                        buy.
                                                                                                     </p>
                                                                                                     <button
                                                                                                         onClick={() =>
@@ -2561,18 +2740,16 @@ export default function Dashboard(props) {
                                                                                                                 ),
                                                                                                             )
                                                                                                         }
-                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-[3px] border-black hover:-translate-y-1 active:translate-y-1 active:translate-x-1 transition-all"
+                                                                                                        className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
-                                                                                                        Add
-                                                                                                        Gift
+                                                                                                        List
+                                                                                                        an
+                                                                                                        item
                                                                                                     </button>
                                                                                                 </div>
                                                                                             ) : (
                                                                                                 <Nocontent
-                                                                                                    showdiscover={
-                                                                                                        true
-                                                                                                    }
-                                                                                                    text="Nothing to see."
+                                                                                                    {...emptyTabProps}
                                                                                                 />
                                                                                             )}
                                                                                         </div>
@@ -2585,7 +2762,7 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         <PaymentUnActivated
                                                                             heading={`WishList not activated yet.`}
-                                                                            subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
+                                                                            subheading={`Until this creator finishes setting up payments, they can't sell content here yet.`}
                                                                         />
                                                                     )}
                                                                 </>
@@ -2608,6 +2785,20 @@ export default function Dashboard(props) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Discovery Phase 3 — "More creators to support".
+
+                            Inside `.container` and BELOW the profile body, so it is the last
+                            thing a supporter reads on any tab rather than a competing block
+                            partway down someone else's page.
+
+                            ⚠️ Renders on the OWNER's view too — this one page is both the
+                            public profile and the creator's own dashboard, and the row points
+                            away from it at four other creators. See the controller note.
+
+                            ⚠️ Returns null on an empty list, so there is no heading with
+                            nothing under it and no gap on a fan profile. */}
+                        <MoreCreators creators={moreCreators} />
                     </div>
                 </div>
 

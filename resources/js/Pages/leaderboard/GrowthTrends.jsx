@@ -2,6 +2,7 @@ import useBundleSection from './useBundle';
 import { RiArrowUpLine, RiArrowDownLine, RiPulseLine } from 'react-icons/ri';
 import PriceFormat from '@/includes/PriceFormat';
 import Avatar from '@/includes/Avatar';
+import discoveryLink, { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
 
 export default function GrowthTrends() {
     const { formatMultiPrice } = PriceFormat();
@@ -56,6 +57,7 @@ export default function GrowthTrends() {
                         profile_status_lock={creator.profile_status_lock}
                         username={creator.username}
                         link={creator.username}
+                        url={discoveryLink(creator.username, DISCOVERY_SOURCE.TRENDING)}
                         size="md"
                     />
                     {/* The flame sits beside the block, not on top of it — an

@@ -16,6 +16,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import RemoveWish from "./RemoveWish";
 import { Link, usePage } from "@inertiajs/react";
+import discoveryLink from "@/lib/discoveryLink";
 import SaveButton from "@/Components/SaveButton";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
@@ -34,6 +35,12 @@ export default function Wishlistbox(props) {
         classes,
         showall,
         isOverlay,
+        /* Discovery attribution. Set ONLY by a surface Spenny Piggy chose to
+           put this creator on (Discover's grid and carousels). Left undefined
+           on the creator's own profile and anywhere the supporter already
+           picked them — tagging those would inflate the one number the
+           Discovery report exists to make credible. */
+        discoverySource,
     } = props;
 
     const effectiveAuth = auth || globalAuth;
@@ -245,7 +252,7 @@ export default function Wishlistbox(props) {
                                                 <button
                                                     type="button"
                                                     onClick={openEdit}
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-black`}
                                                 >
                                                     Edit Wish
                                                 </button>
@@ -254,7 +261,7 @@ export default function Wishlistbox(props) {
                                         <Menu.Item>
                                             {({ active }) => (
                                                 <div
-                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-gray-900`}
+                                                    className={`${active ? "bg-pink-100" : ""} group flex w-full items-center rounded-box-sm px-2 py-2 text-sm text-black`}
                                                 >
                                                     <RemoveWish
                                                         uuid={itm.uuid}
@@ -449,14 +456,14 @@ export default function Wishlistbox(props) {
                                     this one is the creator's own share action on
                                     their own card, where a miss costs nothing and
                                     the row's height is the thing being managed. */}
-                                <button className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-1 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[130px] sm:px-4 sm:py-2 sm:text-[12px]">
+                                <button className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-1 text-[11px] font-black uppercase text-black transition-colors hover:bg-yellow-400 sm:max-w-[130px] sm:px-4 sm:py-2 sm:text-[12px]">
                                     Share Link
                                 </button>
                             </ShareProfile>
                         ) : (
                             <button
                                 onClick={openAddtocart}
-                                className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-2 text-[11px] font-black uppercase text-black transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:bg-yellow-400 sm:max-w-[170px] sm:px-6 sm:py-2.5 sm:text-xs"
+                                className="w-full rounded-box-sm border-[3px] border-black bg-yellow-300 px-2 py-2 text-[11px] font-black uppercase text-black transition-colors hover:bg-yellow-400 sm:max-w-[170px] sm:px-6 sm:py-2.5 sm:text-xs"
                             >
                                 Unlock
                             </button>
@@ -470,9 +477,16 @@ export default function Wishlistbox(props) {
                                 By
                             </span>
                             <Link
-                                href={route("user.show", {
-                                    username: itm.user.username,
-                                })}
+                                href={
+                                    discoverySource
+                                        ? discoveryLink(
+                                              itm.user.username,
+                                              discoverySource
+                                          )
+                                        : route("user.show", {
+                                              username: itm.user.username,
+                                          })
+                                }
                                 className="min-w-0 truncate text-[10px] font-bold uppercase text-[#FF007F] transition-opacity hover:underline hover:opacity-80 sm:text-xs"
                             >
                                 @{itm.user.username}

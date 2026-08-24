@@ -23,8 +23,11 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\BioItemController;
 use App\Http\Controllers\BioLinkController;
 use App\Http\Controllers\BioPageController;
+use App\Http\Controllers\BioTipController;
+use App\Http\Controllers\BirthdayDiscoveryController;
 use App\Http\Controllers\CatalogueController;
 use App\Http\Controllers\CreatorExpenseController;
 use App\Http\Controllers\CreatorFinancialController;
@@ -221,6 +224,21 @@ Route::post('stripe/identity/verify', [StripeController::class, 'createVerificat
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
+
+/*
+ * Discovery Phase 4 — the "Birthdays This Week" collection.
+ *
+ * 🚨 MUST STAY ABOVE the `discover/{type?}/{category?}` catch-all below. Laravel
+ * matches in registration order, so declared after it this URL is read as
+ * `type=birthdays` and answers with the ordinary Discover page — and
+ * `route:list` shows the route either way, which is what makes that failure hard
+ * to see. Same trap as `/cover-banners` and `/{username}/bio`.
+ *
+ * Public and unauthenticated, matching `discover` itself. The page greys itself
+ * out until `discovery.birthday.collection_min_creators` opted-in creators have
+ * a birthday that week.
+ */
+Route::get('discover/birthdays', [BirthdayDiscoveryController::class, 'index'])->name('discover.birthdays');
 
 // Discover route
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
@@ -452,7 +470,31 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->middleware('identityBeforeListing')->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
-            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout.auth');
+            /*
+             * 🚨 THIS ROUTE IS SHADOWED AND NEVER MATCHES. The same URI and
+             * methods are registered again at the bottom of this file, outside
+             * the auth group, and Laravel's RouteCollection keys on method+URI
+             * so the LAST registration wins. Confirmed with `route:list -v`.
+             * The throttle below is therefore inert today; it is kept so the
+             * route is protected if the duplication is ever resolved in this
+             * direction. The live limit is the 60/min on the shadowing route.
+             *
+             * ⚠️ Throttled PER AUTHENTICATED USER, not per IP.
+             *
+             * This route sits inside the `auth` + `mustHaveToVerify` group, and
+             * Laravel's ThrottleRequests keys a signed-in request on the user id.
+             * So a school, an office or a mobile carrier NAT cannot exhaust one
+             * buyer's budget on behalf of another — the failure mode that makes
+             * IP throttling dangerous on a checkout.
+             *
+             * 30/min is roughly one request every two seconds sustained. A
+             * supporter double-clicking Pay, retrying a declined card, or bouncing
+             * between the item page and checkout cannot reach it; a script minting
+             * Stripe Checkout Sessions in a loop can. Each hit is a real Stripe API
+             * call, so the ceiling is about cost and Stripe's own rate limit as
+             * much as abuse.
+             */
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->middleware('throttle:30,1')->name('checkout.auth');
             Route::get('handle/{uuid}/{status?}', [BillsController::class, 'handlePayment'])->name('handle.auth');
         });
 
@@ -471,7 +513,31 @@ Route::middleware('auth')->group(function () {
             Route::get('api/all-payments', [MembershipController::class, 'getAllMembershipPayments'])->name('api.all-payments');
 
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
-            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout.auth');
+            /*
+             * 🚨 THIS ROUTE IS SHADOWED AND NEVER MATCHES. The same URI and
+             * methods are registered again at the bottom of this file, outside
+             * the auth group, and Laravel's RouteCollection keys on method+URI
+             * so the LAST registration wins. Confirmed with `route:list -v`.
+             * The throttle below is therefore inert today; it is kept so the
+             * route is protected if the duplication is ever resolved in this
+             * direction. The live limit is the 60/min on the shadowing route.
+             *
+             * ⚠️ Throttled PER AUTHENTICATED USER, not per IP.
+             *
+             * This route sits inside the `auth` + `mustHaveToVerify` group, and
+             * Laravel's ThrottleRequests keys a signed-in request on the user id.
+             * So a school, an office or a mobile carrier NAT cannot exhaust one
+             * buyer's budget on behalf of another — the failure mode that makes
+             * IP throttling dangerous on a checkout.
+             *
+             * 30/min is roughly one request every two seconds sustained. A
+             * supporter double-clicking Pay, retrying a declined card, or bouncing
+             * between the item page and checkout cannot reach it; a script minting
+             * Stripe Checkout Sessions in a loop can. Each hit is a real Stripe API
+             * call, so the ceiling is about cost and Stripe's own rate limit as
+             * much as abuse.
+             */
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->middleware('throttle:30,1')->name('checkout.auth');
             Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle.auth');
         });
 
@@ -749,12 +815,34 @@ Route::middleware('auth')->group(function () {
 
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
-            Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout.auth');
+            /*
+             * ⚠️ Throttled PER AUTHENTICATED USER, not per IP.
+             *
+             * This route sits inside the `auth` + `mustHaveToVerify` group, and
+             * Laravel's ThrottleRequests keys a signed-in request on the user id.
+             * So a school, an office or a mobile carrier NAT cannot exhaust one
+             * buyer's budget on behalf of another — the failure mode that makes
+             * IP throttling dangerous on a checkout.
+             *
+             * 30/min is roughly one request every two seconds sustained. A
+             * supporter double-clicking Pay, retrying a declined card, or bouncing
+             * between the item page and checkout cannot reach it; a script minting
+             * Stripe Checkout Sessions in a loop can. Each hit is a real Stripe API
+             * call, so the ceiling is about cost and Stripe's own rate limit as
+             * much as abuse.
+             */
+            Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->middleware('throttle:30,1')->name('wish.subscribe.checkout.auth');
 
             // POST, not GET: this records the creator's digital-content waiver, and a
             // consent that can be triggered by following a link is not consent. The
             // POST also carries a CSRF token, which a GET does not.
-            Route::post('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name('mandatory.checkout');
+            //
+            // ⚠️ Throttled per authenticated creator (this is inside the `auth`
+            // group, so the key is the user id, never a shared IP). 20/min: a
+            // creator subscribing to their own monthly charge does it once, and a
+            // retry after a card decline is a handful more — but every hit creates
+            // a Stripe subscription attempt, so the loop has to be capped.
+            Route::post('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->middleware('throttle:20,1')->name('mandatory.checkout');
 
             Route::post('/mandatory-cancel', [StripeController::class, 'cancelMandatorySubscription'])->name('mandatory.cancel');
 
@@ -925,6 +1013,36 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:30,1')
             ->name('bio.links.destroy');
 
+        /*
+         * B stream — which of the creator's EARNING ITEMS appear on their bio
+         * page, and in what order. A row here stores a type + an id, never a
+         * copy of the listing, so price, title and availability always come from
+         * the live listing at render time.
+         *
+         * 🚨 `items/reorder` MUST be declared before `items/{item}` — declared
+         * after it, the literal word "reorder" is read as an item uuid and the
+         * reorder endpoint silently becomes an update on a row that does not
+         * exist. Same trap the neighbouring `/bio-links/reorder` avoids.
+         *
+         * Every write is POST: these change what a public page advertises, and a
+         * GET carries no CSRF token.
+         */
+        Route::post('/bio-links/items', [BioItemController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('bio.items.store');
+
+        Route::post('/bio-links/items/reorder', [BioItemController::class, 'reorder'])
+            ->middleware('throttle:60,1')
+            ->name('bio.items.reorder');
+
+        Route::post('/bio-links/items/{item}', [BioItemController::class, 'update'])
+            ->middleware('throttle:60,1')
+            ->name('bio.items.update');
+
+        Route::post('/bio-links/items/{item}/remove', [BioItemController::class, 'destroy'])
+            ->middleware('throttle:30,1')
+            ->name('bio.items.destroy');
+
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
@@ -957,7 +1075,13 @@ Route::middleware('auth')->group(function () {
         Route::post('support/tickets', [SupportTicketController::class, 'store'])->name('support.tickets.store');
         Route::get('support/transaction-details', [SupportTicketController::class, 'transactionDetails'])->name('support.transaction-details');
         Route::get('support/tickets/{uuid}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
-        Route::post('support/tickets/{uuid}/message', [SupportTicketController::class, 'message'])->name('support.tickets.message');
+        /*
+         * ⚠️ Throttled per authenticated user (inside the `auth` group). 30/min is
+         * far above human typing — it exists because each message writes a row and
+         * can notify staff, so an automated loop is a mail/notification amplifier
+         * against the support inbox.
+         */
+        Route::post('support/tickets/{uuid}/message', [SupportTicketController::class, 'message'])->middleware('throttle:30,1')->name('support.tickets.message');
         Route::post('support/tickets/{uuid}/resolve', [SupportTicketController::class, 'resolve'])->name('support.tickets.resolve');
         Route::post('support/tickets/{uuid}/creator/approve-refund', [SupportTicketController::class, 'creatorApproveRefund'])->name('support.tickets.creator.approve-refund');
         Route::post('support/tickets/{uuid}/creator/reject-refund', [SupportTicketController::class, 'creatorRejectRefund'])->name('support.tickets.creator.reject-refund');
@@ -1147,6 +1271,8 @@ if (app()->environment('local')) {
 }
 
 Route::get('/test-intercom-diagnostic', function () {
+    abort_unless(app()->environment(['local', 'testing']), 404);
+
     return view('intercom-test');
 })->name('intercom.diagnostic');
 
@@ -1255,12 +1381,76 @@ Route::get('/bio/go/{link}', [BioPageController::class, 'go'])
     ->middleware(['check.block', 'throttle:120,1'])
     ->name('bio.go');
 
+/*
+ * The featured tile's counting redirect. Three segments, same contract as
+ * `/bio/go` above: it takes a pot uuid and nothing else, and the destination is
+ * rebuilt server-side by `BioSellableItems`.
+ */
+Route::get('/bio/pot/{pot}', [BioPageController::class, 'pot'])
+    ->middleware(['check.block', 'throttle:120,1'])
+    ->name('bio.pot');
+
+/*
+ * B stream — the supporter side of the bio page.
+ *
+ * `bio.buy` counts the tap, stamps `bio-link` attribution (CREATOR-generated,
+ * never SP) and rebuilds the destination server-side from the stored row, the
+ * same shape as `/bio/go` above: the request carries an item uuid and nothing
+ * else, so there is no URL in it for a caller to point anywhere. It lands on an
+ * EXISTING checkout — nothing here creates a Stripe session.
+ *
+ * 🚨 `bio/tip/quote` MUST precede `bio/tip/{username}`, or "quote" is read as a
+ * username. Both tip endpoints answer 503 while `discovery.labels.tips` is not
+ * `live` — the greyed control is a rendering decision and anyone can post past
+ * it, so the refusal lives on the server too.
+ *
+ * All three are three-segment, so the `/{username}/{page?}` catch-all below
+ * cannot shadow them whatever the order.
+ */
+Route::get('/bio/buy/{item}', [BioPageController::class, 'buy'])
+    ->middleware(['check.block', 'throttle:120,1'])
+    ->name('bio.buy');
+
+Route::post('/bio/tip/quote', [BioTipController::class, 'quote'])
+    ->middleware('throttle:60,1')
+    ->name('bio.tip.quote');
+
+Route::post('/bio/tip/{username}', [BioTipController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('bio.tip.store');
+
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     ->middleware('check.block')
     ->name('user.show');
 
+/*
+ * 🚨 THESE ARE THE LIVE CHECKOUT ROUTES, AND THEY SHADOW THE `*.checkout.auth`
+ * VERSIONS DECLARED EARLIER IN THIS FILE.
+ *
+ * `bill/checkout/{uuid}/{reccure?}` and `membership/checkout/{uuid}/{reccure?}`
+ * are each registered TWICE with the same URI and methods — once inside the
+ * `auth` + `mustHaveToVerify` group above (named `*.checkout.auth`) and again
+ * here. Laravel's RouteCollection keys on method+URI and the LAST registration
+ * wins, so these are what actually answer and the earlier pair is dead. Verified
+ * with `route:list -v`: the live route carries only `web` +
+ * `CheckGifterCardVerification` — not `Authenticate`, not `UserEmailVerify`.
+ *
+ * ⚠️ That means the login requirement for Bills and Memberships is enforced by
+ * the CONTROLLER (`buyBill` / `buyLevel` redirect a guest to login), not by route
+ * middleware, whatever the route file appears to say. Do not remove that
+ * controller check on the strength of the `auth` group above it.
+ *
+ * ⚠️ Throttle is 60/min, DOUBLE the authenticated pair's 30 — because these
+ * routes are reachable without a session, and Laravel's ThrottleRequests keys an
+ * unauthenticated request on its IP address. A per-IP limit is shared by everyone
+ * behind one office, campus or mobile-carrier NAT, so it has to sit far above what
+ * a crowd of real buyers could produce. 60/min is one request per second
+ * sustained: unreachable by people loading a checkout page, trivially hit by a
+ * script minting Stripe Checkout Sessions. Signed-in buyers key on their user id
+ * and are unaffected by anyone else's traffic.
+ */
 Route::prefix('wish')->name('wish.')->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('subscribe.checkout')->middleware('mustCompletedCardVerification');
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('subscribe.checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleSubscription'])->name('subscribe.handle');
 });
 
@@ -1277,12 +1467,14 @@ Route::post('membership-offer/dismiss', [ThankYouController::class, 'dismissMemb
     ->name('membership-offer.dismiss');
 
 Route::prefix('membership')->name('membership.')->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware('mustCompletedCardVerification');
+    // See the shadowing note above the `wish` group — same rule, same 60/min.
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [MembershipController::class, 'handlePayment'])->name('handle');
 });
 
 Route::prefix('bill')->name('bill.')->group(function () {
-    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout')->middleware('mustCompletedCardVerification');
+    // See the shadowing note above the `wish` group — same rule, same 60/min.
+    Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout')->middleware(['mustCompletedCardVerification', 'throttle:60,1']);
     Route::get('/handle/{uuid}/{status}', [BillsController::class, 'handlePayment'])->name('handle');
 });
 
@@ -1309,6 +1501,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/force-error/error/file', function () {
+    abort_unless(app()->environment(['local', 'testing']), 404);
+
     throw new Exception('Testing Handler.php');
 });
 

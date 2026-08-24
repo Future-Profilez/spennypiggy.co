@@ -24,6 +24,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\DiscoveryService;
 use App\Services\Pricing\CreatorFeeResolver;
 use App\Services\Risk\MoneyNormalizer;
@@ -510,6 +511,9 @@ class CheckoutController extends Controller
                 // this row describes the whole checkout, and reaching for whichever
                 // item happened to be priced last is how a wrong rate gets recorded.
                 ...CreatorFeeResolver::columnsFor($owner->id ?? null, $methodResolution['fee_profile']),
+                // Discovery Phase 1 — syncWishes() reads the source through
+                // StripePaymentItems->payment, so it belongs on the detail row.
+                'discovery_source' => AttributionService::sourceForCreator($owner->id ?? null),
             ]);
 
             Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);

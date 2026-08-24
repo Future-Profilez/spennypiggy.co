@@ -30,6 +30,7 @@ use App\Services\AbandonedCheckoutService;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemTextModeration;
 use App\Services\RewardService;
 use App\Services\Risk\MoneyNormalizer;
@@ -602,6 +603,20 @@ class MembershipController extends Controller
         // Stripe compliance: content memberships require an account (tracked, renewed, cancelled).
         // Guest checkout is only allowed for Piggy Pot and Wishes.
         if (! Auth::check()) {
+            /*
+             * 🚨 REMEMBER WHERE THEY WERE GOING. The gate itself is correct —
+             * Stripe compliance requires an account for this purchase — but the
+             * redirect threw the destination away, so a supporter who signed in
+             * landed on their own page with the thing they had just tapped
+             * nowhere in sight. From the bio page's "Join" button that reads as
+             * a button that does nothing.
+             *
+             * `url.intended` is the key `AuthenticatedSessionController` already
+             * pulls after a successful login (and `GoogleController` already
+             * writes), so nothing new has to be taught to the login flow.
+             */
+            session()->put('url.intended', url()->full());
+
             return redirect()->route('login')->with('error', 'Please log in or create an account to join — memberships need an account so they can be tracked, renewed and cancelled.');
         }
 
@@ -812,6 +827,10 @@ class MembershipController extends Controller
                 // On a RECURRING row this is also the grandfathering record: the
                 // supporter keeps this rate at renewal unless a LOWER one is agreed.
                 ...Helpers::feeRateColumns($breakdown),
+                // Discovery Phase 1 — see BillsController::billPayment. The ledger
+                // row is written later by finance:sync-transactions, and every
+                // renewal copies this key forward.
+                'discovery_source' => AttributionService::sourceForCreator($membership->user_id),
             ]);
 
             // Apply digital waiver confirmation
@@ -1658,6 +1677,9 @@ class MembershipController extends Controller
                 $subs->save();
 
                 $newSubs = new MembershipPayment;
+                // Discovery Phase 1 — a renewal inherits the source of the sale
+                // that created the subscription.
+                $newSubs->discovery_source = $subs->discovery_source;
                 $newSubs->stripe_id = $subs->stripe_id;
                 $newSubs->session_id = $subs->session_id;
                 $newSubs->membership_id = $subs->membership_id;

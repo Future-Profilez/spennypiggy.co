@@ -155,7 +155,7 @@ export default function AddCart(props) {
                     <>
                     <div className=" pb-2">
                         {card_capabilities === false ? (
-                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-box  ">
+                             <div className="mb-4 p-4 bg-red-50 border-2 border-red-500 rounded-box-sm">
                                 <div className="flex">
                                     <div className="flex-shrink-0">
                                         <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">

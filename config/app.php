@@ -28,6 +28,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deployed Release
+    |--------------------------------------------------------------------------
+    |
+    | What is actually live. `/health` reports this, and CI curls `/health` to
+    | validate a deploy — so a constant here makes that check unable to tell one
+    | release from another. It used to read `config('app.version', '1.0.0')`
+    | against a key that DID NOT EXIST, so every environment answered "1.0.0"
+    | forever.
+    |
+    | NULL is the correct value when nothing has stamped a release. `/health`
+    | reports `version: null` with a `version_source` of "unset" rather than
+    | inventing a number — an honest "unknown" is debuggable, a fake version is
+    | not. Resolution order lives in App\Support\Release.
+    |
+    */
+
+    'version' => env('APP_VERSION'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

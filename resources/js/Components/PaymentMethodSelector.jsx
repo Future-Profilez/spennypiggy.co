@@ -129,7 +129,7 @@ export default function PaymentMethodSelector({
                     className={`relative w-full text-left border-[3px] border-black rounded-box-sm px-4 py-3.5 transition-[transform,box-shadow,background-color] duration-150 motion-reduce:transition-none focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/40 ${
                         value === "bank"
  ? "bg-[#A2E4B8] translate-x-[2px] translate-y-[2px]"
- : "bg-white hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+ : "bg-white transition-colors duration-200 hover:bg-black/[0.04]"
                     }`}
                 >
                     {/* Signature: tilted save sticker */}
@@ -182,7 +182,7 @@ export default function PaymentMethodSelector({
  ? "bg-black/5 border-black/30 cursor-not-allowed"
                             : value === "card"
  ? "bg-[#A2E4B8] translate-x-[2px] translate-y-[2px]"
- : "bg-white hover:-translate-y-[1px] motion-reduce:hover:translate-y-0"
+ : "bg-white transition-colors duration-200 hover:bg-black/[0.04]"
                     }`}
                 >
                     <span className={`flex items-center gap-3 ${cardDisabled ? "opacity-50" : ""}`}>

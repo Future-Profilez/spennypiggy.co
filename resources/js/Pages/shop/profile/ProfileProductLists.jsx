@@ -47,7 +47,7 @@ export default function ProfileProductLists({ IsloggedIn, suppressEmptyState = f
                     )}
                 </div>
             ) : suppressEmptyState ? null : (
-                <Nocontent text="Nothing to see" />
+                <Nocontent text="Nothing here yet" subheading="This creator hasn't listed anything in the shop." />
             )} 
         </>
     );

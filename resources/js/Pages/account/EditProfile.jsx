@@ -45,6 +45,9 @@ export default function EditProfile({
         ...(auth?.user ?? {}),
         ...(user ?? {}),
         date_of_birth: user?.date_of_birth ?? auth?.user?.date_of_birth,
+        birthday_discovery_opt_in:
+            user?.birthday_discovery_opt_in ??
+            auth?.user?.birthday_discovery_opt_in,
         creator_category: user?.creator_category ?? auth?.user?.creator_category,
         pride_badges: user?.pride_badges ?? auth?.user?.pride_badges,
         country: user?.country ?? auth?.user?.country,
@@ -90,6 +93,9 @@ export default function EditProfile({
         cover: null,
         gender: profileUser?.gender || "he",
         date_of_birth: formatDate(profileUser?.date_of_birth),
+        // Discovery Phase 4 — Birthday Discovery opt-in. Defaults to OFF: a
+        // birthday already on file is not consent to feature it.
+        birthday_discovery_opt_in: !!profileUser?.birthday_discovery_opt_in,
         // readBadges() takes either shape the column has held and drops
         // anything not on the current list — a bare JSON.parse here threw on a
         // malformed value and took the whole page with it.
@@ -112,6 +118,10 @@ export default function EditProfile({
             "date_of_birth",
             formatDate(profileUser?.date_of_birth),
         );
+        setData(
+            "birthday_discovery_opt_in",
+            !!profileUser?.birthday_discovery_opt_in,
+        );
         setData("creator_category", readBadges(profileUser?.creator_category));
         setData(
             "pride_badges",
@@ -127,6 +137,7 @@ export default function EditProfile({
         profileUser.bio,
         profileUser.gender,
         profileUser.date_of_birth,
+        profileUser.birthday_discovery_opt_in,
         profileUser.creator_category,
         profileUser.pride_badges,
         profileUser.country,
@@ -841,6 +852,70 @@ export default function EditProfile({
                                         />
                                         {errors.date_of_birth && (
                                             <span className="text-xs text-red-500 mt-1 block">{errors.date_of_birth}</span>
+                                        )}
+
+                                        {/*
+                                            🚨 DISCOVERY PHASE 4 — BIRTHDAY DISCOVERY OPT-IN.
+                                            🚨 THE BIRTH YEAR IS NEVER SHOWN PUBLICLY. Say so
+                                            here, in the one place the creator hands us the
+                                            date — a promise made at the point of entry is the
+                                            only one they actually read. The server derives
+                                            `birthday_day` / `birthday_month` from this field
+                                            and every public surface reads only those; the year
+                                            is kept for Stripe Connect's dob prefill and is
+                                            published nowhere. See
+                                            App\Services\Discovery\BirthdayDiscoveryService.
+
+                                            ⚠️ Opting in needs a date first — the server
+                                            refuses the switch without one (there would be
+                                            nothing to feature), so the input is disabled
+                                            rather than silently ignored.
+                                        */}
+                                        <div className="mt-3 rounded-box-sm border-2 border-[#000] bg-white p-4">
+                                            <label className="flex items-start gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#FF007F]"
+                                                    checked={!!data.birthday_discovery_opt_in}
+                                                    disabled={!data.date_of_birth}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "birthday_discovery_opt_in",
+                                                            e.target.checked,
+                                                        )
+                                                    }
+                                                />
+                                                <span className="min-w-0">
+                                                    <span className="block font-poppins text-sm font-semibold text-black">
+                                                        Include me in Birthday Discovery
+                                                    </span>
+                                                    {/* leading-* is a RATIO here on purpose:
+                                                        numeric `leading-N` is PIXELS in this
+                                                        project and would stack the lines. */}
+                                                    <span className="mt-1 block font-poppins text-xs leading-[1.55] text-black/60">
+                                                        We will let your supporters know your
+                                                        birthday is coming up, and list you in
+                                                        the Birthdays This Week collection.{" "}
+                                                        <strong className="font-semibold text-black">
+                                                            Only the day and month are ever
+                                                            shown — your birth year is never
+                                                            displayed anywhere.
+                                                        </strong>
+                                                    </span>
+                                                    {!data.date_of_birth && (
+                                                        <span className="mt-2 block font-poppins text-xs leading-[1.55] text-black/50">
+                                                            Add your date of birth above to turn
+                                                            this on.
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        {errors.birthday_discovery_opt_in && (
+                                            <span className="text-xs text-red-500 mt-1 block">
+                                                {errors.birthday_discovery_opt_in}
+                                            </span>
                                         )}
                                     </li>
                                     <li className="mb-4">

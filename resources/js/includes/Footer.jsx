@@ -1,13 +1,16 @@
 import { Link } from "@inertiajs/react";
 import { route } from 'ziggy-js';
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import lazyRetry from "../utils/lazyRetry";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { FaInstagram, FaTiktok, FaTwitter, FaYoutube } from "react-icons/fa";
 import { Mail, MapPin, Phone } from "lucide-react";
 import spennypiggy from "../../assets/img/logo.png";
 import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
 
-const FeatureSuggestionModal = lazy(() => import("../Components/FeatureSuggestionModal"));
+// `lazyRetry`, not `lazy` — the Footer renders on every page, so this is the
+// chunk a mid-session deploy is most likely to strand. See utils/lazyRetry.js.
+const FeatureSuggestionModal = lazyRetry(() => import("../Components/FeatureSuggestionModal"));
 
 /**
  * Site footer.
@@ -53,6 +56,13 @@ const HELP = [
     { name: 'Blog', href: 'https://blog.spennypiggy.co', external: true },
     { name: 'Suggest a feature', action: 'suggest' },
     { name: 'Pride Campaign 🏳️‍🌈', route: 'pride.landing' },
+    // ⚠️ The Oink Store moved here from the header nav. `GET /giftstore` is
+    // deliberately exempt from `EnsureRyeEnabled` and answers with the
+    // coming-soon screen while `rye.enabled` is false, so this row is a live
+    // link to an honest page rather than a 404 — but it must SAY so, or a
+    // visitor clicks a store and finds it is not open. `path`, not `route()`:
+    // Ziggy is a generated snapshot and a missing name throws.
+    { name: 'Oink Store', path: '/giftstore', badge: 'Coming soon' },
 ];
 
 /** What you agreed to by using the platform. */
@@ -118,7 +128,7 @@ const SOCIALS = [
  */
 function ColumnLabel({ children }) {
     return (
-        <h3 className="font-gulfs uppercase text-[18px] md:text-[20px] tracking-[0.1em] leading-[1] text-[#05EFB8] pb-4 border-b border-white/[0.08]">
+        <h3 className="font-gulfs uppercase text-[18px] md:text-[20px] tracking-[0.1em] leading-[1] text-[#05EFB8] pb-3 md:pb-4 mb-1 md:mb-2 border-b border-white/[0.08]">
             {children}
         </h3>
     );
@@ -138,8 +148,15 @@ const FOCUS = 'rounded-[6px] focus-visible:outline-none focus-visible:ring-2 foc
 // ⚠️ Measured in a browser at 390px: `py-2` renders these at 40–41px, so the
 // docblock above and the code disagreed and the code was losing. `py-3` is what
 // the comment describes and what actually clears 44px.
-const ANCHOR = `group block py-3 ${FOCUS}`;
-const ANCHOR_INLINE = `group inline-block py-3 ${FOCUS}`;
+// ⚠️ THE TIGHTER ROW IS DESKTOP-ONLY, AND THAT IS THE POINT (22 Aug 2026). At
+// `py-3` everywhere the rows sat ~46px apart on a 1440px screen, which reads as
+// a list that has come apart; but that same padding IS the 44px touch target on
+// a phone, so shrinking it globally would fail the target on the surface where
+// it matters. `md:py-[7px]` gives ~36px rows for a mouse and leaves the phone
+// untouched — still clear of the 44px floor, and clear of WCAG 2.2's 24px
+// minimum spacing on desktop.
+const ANCHOR = `group block py-3 md:py-[7px] ${FOCUS}`;
+const ANCHOR_INLINE = `group inline-block py-3 md:py-[7px] ${FOCUS}`;
 const INK = 'font-poppins text-[16px] leading-[1.5] text-white/60 transition-colors duration-200 group-hover:text-white group-focus:text-white motion-reduce:transition-none bg-[linear-gradient(#05EFB8,#05EFB8)] bg-no-repeat [background-position:0_100%] [background-size:0_1px] transition-[background-size,color] group-hover:[background-size:100%_1px] motion-reduce:group-hover:[background-size:0_1px]';
 // ⚠️ Only the SIZE steps down. The old form also dropped the ink to
 // `text-white/60` — 3.3:1 on #0A0A0A, an AA failure, on the strip carrying the
@@ -150,7 +167,25 @@ const INK_SMALL = INK.replace('text-[16px]', 'text-[13.5px]');
 
 function FooterLink({ item, onSuggest, inline = false }) {
     const anchor = inline ? ANCHOR_INLINE : ANCHOR;
-    const ink = <span className={inline ? INK_SMALL : INK}>{item.name}</span>;
+    /*
+     * ⚠️ A BADGE IS A CONTRAST DECISION, NOT A DECORATION. This footer sits on
+     * #0A0A0A and the file's own note above records that `text-white/60` is
+     * 3.3:1 — an AA failure — with no size exemption for small print. So the
+     * chip is an OUTLINE with near-white type (about 20:1) rather than a tinted
+     * fill: brand violet would be the token for "pending", but as a fill on this
+     * ground it needs its own measurement before it can carry black type, and as
+     * TYPE it fails outright.
+     */
+    const ink = (
+        <span className={inline ? INK_SMALL : INK}>
+            {item.name}
+            {item.badge ? (
+                <span className="ml-2 inline-block whitespace-nowrap rounded-box-xs border border-white/40 px-1.5 py-0.5 align-middle font-gulfs text-[9px] uppercase leading-[1.4] tracking-[0.14em] text-white/95">
+                    {item.badge}
+                </span>
+            ) : null}
+        </span>
+    );
 
     if (item.action === 'suggest') {
         return (
@@ -268,7 +303,7 @@ export default function Footer(props) {
                     z-index on footer content is a chance for it to paint over that
                     bar mid-scroll. With z auto it always passes underneath. */}
                 <div className="containerbox mx-auto px-5 md:px-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-10 gap-y-16 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-10 gap-y-10 md:gap-y-12 items-start">
                         {/* ── Who this is ─────────────────────────────────── */}
                         <div className="lg:col-span-4 lg:pr-6">
                             <Link
@@ -340,7 +375,7 @@ export default function Footer(props) {
                              * shrinking the type to fix it is the opposite of what was
                              * asked. Full width fits every label on one line.
                              */
-                            className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-12"
+                            className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-8 md:gap-y-10"
                         >
                             {COLUMNS.map((column) => (
                                 <div key={column.label}>

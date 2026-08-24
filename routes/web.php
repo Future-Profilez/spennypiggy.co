@@ -22,8 +22,8 @@ use App\Http\Controllers\BrandAssetController;
 use App\Http\Controllers\Creator\DisputeController;
 use App\Http\Controllers\Creator\ReviewHoldController;
 use App\Http\Controllers\CreatorActivityController;
+use App\Http\Controllers\CreatorPushController;
 use App\Http\Controllers\CreatorSubscriptionController;
-use App\Http\Controllers\Debug\SupportImageTestController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -34,6 +34,7 @@ use App\Http\Controllers\Debug\SupportImageTestController;
 */
 
 // Health check endpoint for Vapor
+use App\Http\Controllers\Debug\SupportImageTestController;
 use App\Http\Controllers\DeliveriesController;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Http\Controllers\ErrorController;
@@ -63,8 +64,10 @@ use App\Models\FeatureSuggestion;
 use App\Models\FounderBonus;
 use App\Models\User;
 use App\Models\UserCart;
+use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\PendingApprovalService;
+use App\Support\DiscoveryPayload;
 use App\Support\PresetCovers;
 use App\Support\PwaSplash;
 use Carbon\Carbon;
@@ -264,6 +267,29 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         'newVerifiedCreators' => $newVerifiedCreators(),
         'topEarners' => $topEarnersData()['data'],
         'topEarnersLabel' => $topEarnersData()['label'],
+        // Discovery section (A1). Passed per-route rather than shared globally
+        // in HandleInertiaRequests — only the marketing surfaces and, later, the
+        // creator dashboard need it, and the shared payload rides on every
+        // request in the app.
+        'discovery' => DiscoveryPayload::forInertia(),
+
+        /*
+         * Discovery Phase 6 — homepage collections (Developer Master Plan,
+         * 19 Aug 2026, §C).
+         *
+         * ⚠️ ONLY THE TWO THE HOMEPAGE DOES NOT ALREADY HAVE. Trending and
+         * "new" are already on this page as `trendingCreators` /
+         * `newVerifiedCreators`, drawn by `CreatorShowcase`'s own tabs — adding
+         * the collection versions beside them would show the same creators
+         * twice under two headings.
+         *
+         * ⚠️ `many()` DROPS AN EMPTY COLLECTION rather than drawing a titled
+         * row with nothing in it, so a quiet week costs a row, not a dead end.
+         */
+        'collections' => app(CollectionService::class)->many(
+            ['hidden_gems', 'almost_funded'],
+            8
+        ),
     ]);
 })->name('home');
 
@@ -395,7 +421,8 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 Route::get('/giftstore', function () {
     if (! config('services.rye.enabled')) {
         return Inertia::render('ComingSoon', [
-            // "Oink Store" is what the header calls it — keep the two in step.
+            // "Oink Store" is what the FOOTER calls it (it moved out of the
+            // header nav on 20 Aug 2026) — keep the two in step.
             'title' => 'Oink Store',
             'message' => "The Oink Store isn't open yet. Soon you'll be able to buy real products from creators and have them shipped straight to your door.",
             'highlights' => [
@@ -432,6 +459,24 @@ Route::get('/creators/disputes', function () {
 Route::get('/creators/founder-bonus', function () {
     return Inertia::render('creators/FounderBonus');
 })->name('creators.founder-bonus');
+
+// A2 — the Discovery ad landing page. It reads the SAME label map as the
+// homepage Discovery section, so the two pages can never disagree about which
+// capabilities are live (see config/discovery.php).
+Route::get('/creators/discovery', function () {
+    return Inertia::render('creators/Discovery', [
+        'discovery' => DiscoveryPayload::forInertia(),
+    ]);
+})->name('creators.discovery');
+
+// A3 — the Link in Bio ad landing page. Reads the same label map, which is why
+// its sections 3 and 6 correctly show COMING SOON until the B stream ships the
+// direct-checkout bio page (see config/discovery.php, `bio_direct_sales`).
+Route::get('/creators/link-in-bio', function () {
+    return Inertia::render('creators/LinkInBio', [
+        'discovery' => DiscoveryPayload::forInertia(),
+    ]);
+})->name('creators.link-in-bio');
 
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
@@ -537,6 +582,34 @@ Route::middleware('auth')->group(function () {
 // bare 403 — friendlier for users clicking a stale link from an old email.
 Route::get('/unsubscribe/{user}', [EmailPreferenceController::class, 'unsubscribe'])
     ->name('email.unsubscribe');
+
+/*
+ * The preference centre, reachable from an e-mail WITHOUT logging in.
+ *
+ * 🚨 OUTSIDE THE `auth` GROUP, AND THAT IS THE WHOLE POINT. Two things used to
+ * make it impossible for a non-active creator to stop the mail — which the
+ * client brief calls out by name:
+ *
+ *   1. `/email-preferences` sits behind `auth`, and `CheckSuspendedUser` runs in
+ *      the `web` group and force-logs-out `suspended_account = 1` on EVERY web
+ *      request. A suspended creator could neither reach the page nor sign in to
+ *      reach it.
+ *   2. The e-mailed link expired after 24 hours, so opening Monday's e-mail on
+ *      Wednesday ended at "invalid or expired link".
+ *
+ * Together: mail you cannot turn off. The link is signed and now lives 30 days
+ * (matching `generateCheckoutReminderOptOut`, which already used 30 for this
+ * reason), and the controller validates the signature itself.
+ *
+ * ⚠️ Run `php artisan ziggy:generate` after adding these — `generateManageToken()`
+ * returns null for an unregistered route rather than throwing, because it is
+ * called from inside `Mailable::content()` and a missing route would otherwise
+ * take the whole birthday e-mail down instead of dropping one footer link.
+ */
+Route::get('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'manage'])
+    ->name('email.preferences.manage');
+Route::post('/email-preferences/manage/{user}', [EmailPreferenceController::class, 'updateManaged'])
+    ->name('email.preferences.manage.update');
 
 // Dismiss membership offer via signed link in email
 Route::get('/membership-offer/dismiss-link', [ThankYouController::class, 'dismissMembershipOfferViaLink'])
@@ -736,8 +809,24 @@ Route::get('/service-worker.js', function () {
 // push dead with it. It answered 404 in production until 2026-08-15, which also
 // meant `setCatchHandler` had nothing to serve and the branded offline screen had
 // never been seen by anyone.
+// 🚨 THE SOURCE FILE LIVES IN `resources/proxy/`, NOT IN `public/`.
+//
+// Vapor uploads everything under `public/` to S3/CloudFront and STRIPS IT FROM
+// THE LAMBDA PACKAGE, so `file_get_contents(public_path('offline.html'))` threw
+// `Failed to open stream: No such file or directory` in production while working
+// perfectly on every developer's machine. That 500 also broke service-worker
+// INSTALL — `precacheAndRoute` fetches this URL during install and one failure
+// rejects the whole worker, taking push and offline caching with it.
+//
+// `resources/proxy/` is the existing house location for exactly this: the PWA
+// icons are served the same way, for the same reason. `scripts/build-sw.js`
+// hashes the file from there too — the two must name the same path.
 Route::get('/offline.html', function () {
-    return response(file_get_contents(public_path('offline.html')), 200, [
+    $path = resource_path('proxy/offline.html');
+
+    abort_unless(is_file($path), 404);
+
+    return response(file_get_contents($path), 200, [
         'Content-Type' => 'text/html; charset=UTF-8',
         'X-Robots-Tag' => 'noindex, nofollow',
     ]);
@@ -947,6 +1036,8 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/features', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/discovery', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/link-in-bio', 'priority' => '0.7', 'changefreq' => 'weekly'],
         ];
 
         $content = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
@@ -1242,6 +1333,71 @@ Route::prefix('help')->name('help.')->group(function () {
 
     Route::get('/{category}', [HelpController::class, 'category'])->name('category');
     Route::get('/{category}/{article}', [HelpController::class, 'article'])->name('article');
+});
+
+/*
+|--------------------------------------------------------------------------
+| /.well-known/security.txt (RFC 9116)
+|--------------------------------------------------------------------------
+| Client Security Checklist §3 (Developer Master Plan, 19 Aug 2026).
+|
+| 🚨 MUST stay ABOVE `require auth.php`. That file ends with the
+| `/{username}/{page?}` profile catch-all, which matches TWO segments — so
+| `.well-known/security.txt` declared below it is read as a creator called
+| ".well-known" and answered with the profile 404. `route:list` shows the route
+| either way, which is exactly what makes this invisible.
+|
+| 🚨 SERVED FROM A ROUTE, not from `public/.well-known/security.txt`. Vapor runs
+| on Lambda and does not serve arbitrary files out of `public/` on the app domain
+| — the same reason this app parks `public/robots.txt.backup` and answers robots
+| from `SeoController::robotsTxt`. The static file is kept in the repo for plain
+| web servers and must be kept in step with the literals below.
+|
+| ⚠️ `security@spennypiggy.co` MUST BE CONFIRMED TO EXIST AND BE MONITORED before
+| this ships. An address in this file that bounces is worse than no file: it tells
+| a finder we invite reports and then swallows them. Whoever owns the Google
+| Workspace domain needs to create or alias it.
+|
+| ⚠️ `Expires` is a HARD DATE, deliberately not `now()->addYear()`. The field's
+| whole purpose is to prove somebody still maintains this; a date that rolls
+| forward on every request proves nothing. RFC 9116 requires under a year out —
+| renew it, and the static copy, before 19 Aug 2027.
+*/
+Route::get('/.well-known/security.txt', function () {
+    $content = implode("\n", [
+        'Contact: mailto:security@spennypiggy.co',
+        'Expires: 2027-08-19T23:59:59.000Z',
+        'Preferred-Languages: en',
+        'Canonical: https://spennypiggy.co/.well-known/security.txt',
+    ])."\n";
+
+    return response($content, 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'public, max-age=86400',
+        'X-Robots-Tag' => 'noindex',
+    ]);
+})->name('security.txt');
+
+/*
+ * Creator-controlled push — Developer Master Plan, 19 Aug 2026, §E.
+ *
+ * 🚨 THROTTLED ON TOP OF THE SERVICE'S OWN LIMIT. The service allows one send a
+ * day and records every attempt; this stops somebody hammering the endpoint to
+ * discover what the moderation rules are, which is reconnaissance rather than
+ * use. Two different jobs, both needed.
+ *
+ * ⚠️ Declared ABOVE `auth.php`, whose `/{username}/{page?}` catch-all would
+ * otherwise read `creator-push` as a username and answer with the profile 404 —
+ * `route:list` shows the route either way, which is what makes that hard to see.
+ */
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/creator-push/status', [CreatorPushController::class, 'status'])
+        ->name('creator.push.status')
+        ->middleware('throttle:30,1');
+
+    Route::post('/creator-push', [CreatorPushController::class, 'send'])
+        ->name('creator.push.send')
+        ->middleware('throttle:10,60');
 });
 
 require __DIR__.'/auth.php';

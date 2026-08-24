@@ -212,7 +212,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                 )}
                 {audience.page && (
                     <Link
-                        href={`/${creator.username}?page=${audience.page}`}
+                        href={`/${creator.username}/${audience.page}`}
                         className="mt-7 inline-flex min-h-[50px] items-center justify-center rounded-full px-8 text-sm font-black uppercase tracking-wider text-white transition-opacity hover:opacity-90"
                         style={{ background: audience.accent }}
                     >
@@ -256,7 +256,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
             <div className="min-h-dvh bg-[#faf8f5] px-3 pb-28 pt-4 sm:px-6 lg:pb-16 lg:pt-6">
                 <div className="mx-auto max-w-5xl">
                     <Link
-                        href={`/${creator.username}?page=feed`}
+                        href={`/${creator.username}/feed`}
                         className="inline-flex min-h-[44px] items-center gap-2 text-[12px] font-black uppercase tracking-wider text-black/60 transition-colors hover:text-[#FF007F]"
                     >
                         ← Back to {creator.name}
@@ -475,7 +475,7 @@ export default function PostDetail({ post, creator, isOwner, IsloggedIn }) {
                                 </Link>
                                 {isLocked && audience.page && (
                                     <Link
-                                        href={`/${creator.username}?page=${audience.page}`}
+                                        href={`/${creator.username}/${audience.page}`}
                                         className={`${ACTION} mt-2 w-full`}
                                         style={{
                                             background: audience.tint,

@@ -8,7 +8,7 @@
     <table align="center" cellspacing="0" cellpadding="0" border="0" role="presentation"
         style="width:100%;max-width:600px;border-collapse:collapse;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <tr>
-            <td bgcolor="#ea297a" style="background-color:#ea297a;padding:16px 22px;">
+            <td bgcolor="#FF007F" style="background-color:#FF007F;padding:16px 22px;">
                 <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation">
                     <tr>
                         <td align="left" valign="middle">
@@ -38,7 +38,7 @@
         </tr>
         <tr>
             <td style="padding:12px 28px 20px;background:#FFF1F7;border-top:1px solid #FFCCE0;text-align:center;">
-                <span style="font-family:'Outfit',Arial,sans-serif;font-size:11px;color:#CC88BB;">© {{ date('Y') }} SpennyPiggy — Internal Error Report</span>
+                <span style="font-family:'Outfit',Arial,sans-serif;font-size:11px;color:#8B4E76;">© {{ date('Y') }} SpennyPiggy — Internal Error Report</span>
             </td>
         </tr>
     </table>

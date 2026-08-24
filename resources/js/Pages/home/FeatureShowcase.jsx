@@ -64,7 +64,11 @@ function Mockup({ f }) {
                     horizontal scrollbar on the page. The section has no
                     `overflow-hidden`, so the glow has to constrain itself. Identical
                     from `sm:` up. */}
-                <div className="w-full max-w-[360px] h-[360px] md:max-w-[440px] md:h-[440px] rounded-full blur-[120px] opacity-25" style={{ background: f.accent }}></div>
+                {/* ⚠️ 0.18, inside the 0.15–0.20 ambient band, and `mix-blend-screen`
+                    because this sits on the dark page. At 0.25 it bloomed brighter
+                    than every neighbouring section and both its seams read as a
+                    step change — the same fault `WhyLove` had. */}
+                <div className="w-full max-w-[360px] h-[360px] md:max-w-[440px] md:h-[440px] rounded-full blur-[120px] opacity-[0.18] mix-blend-screen" style={{ background: f.accent }}></div>
             </div>
             {/* ⚠️ Was `md:w-autorelative` — two classes run together, so `md:w-auto`
                 never applied AND `relative` was lost, which silently made the

@@ -129,7 +129,9 @@ class OptimizedProfileController extends Controller
             'sociallinks' => $user->social_links,
             'slinks' => $user->social_links,
             'page' => $page,
-            'intro' => $user->intro,
+            // Creator-only surface (21 Aug 2026). Gifter rows exist in user_intros
+            // from before the upload route was gated; they are hidden, not deleted.
+            'intro' => (int) $user->role === 1 ? $user->intro : null,
             'supporters' => $profileData['supporters'],
             'wish_categories' => $this->getCategoriesWithItems($user),
             'selectedCategory' => request()->query('category') ?? false,

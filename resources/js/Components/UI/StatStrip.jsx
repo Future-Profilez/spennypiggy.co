@@ -17,7 +17,7 @@ import { ACCENT, TYPE } from './tokens';
  * the black border and the internal rules.
  *
  * Props:
- *   items  [{ label, value, sub, accent, Icon, href, key }]
+ *   items  [{ label, value, sub, accent, Icon, href, key, mono }]
  *   cols   tiles per row from md up (default 4); mobile is always 2
  *
  * ⚠️ AN ODD TILE COUNT MUST SPAN TWO COLUMNS on the last row, or the parent
@@ -79,6 +79,7 @@ export default function StatStrip({ items = [], cols = 4, className = '' }) {
 function Tile({
     label,
     value,
+    mono = false,
     sub,
     accent = null,
     Icon = null,
@@ -112,8 +113,19 @@ function Tile({
             </div>
 
             <div className="mt-3">
+                {/* ⚠️ `mono` IS FOR COUNTS, and it is legibility, not taste. A
+                    lone `0` set in the display face at 26px is a small filled
+                    oval and reads as a status dot, not a number — it shipped on
+                    the creator dashboard's "Supporters" tile looking broken.
+                    Money is unaffected because the currency symbol gives the
+                    figure its shape. Mono also matches the house convention that
+                    anything the system COUNTED is set in mono. */}
                 <p
-                    className={`${TYPE.figure} text-[26px] md:text-[32px]`}
+                    className={
+                        mono
+                            ? 'font-mono text-[24px] tabular-nums leading-none md:text-[30px]'
+                            : `${TYPE.figure} text-[26px] md:text-[32px]`
+                    }
                     style={a ? { color: a.hex } : undefined}
                 >
                     {value}

@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <script data-cfasync="false">
+    <script data-cfasync="false" nonce="{{ $cspNonce ?? '' }}">
         /**
          * EMERGENCY REACT PATCH: This script MUST run before ANY other JavaScript.
          * It fixes the "Cannot set properties of undefined (setting 'Children')" error
@@ -449,7 +449,7 @@
     </script>
 
     @if(request()->is('/'))
-    <script type="application/ld+json"> 
+    <script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">
     { 
       "@context": "https://schema.org", 
       "@type": "Organization", 
@@ -495,7 +495,7 @@
         "https://uk.spennypiggy.co/register"]
         }
     </script>
-    <script async type="application/ld+json">
+    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
         {
             "@context": "https://schema.org",
             "@type": "FAQPage",
@@ -567,12 +567,23 @@
          tag; a second gtag.js <script> would re-register dataLayer and double-count, so do
          not add one anywhere else. Loaded async and placed last in <head> so it never
          blocks first paint. --}}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EQCXDEV7QV"></script>
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}" async src="https://www.googletagmanager.com/gtag/js?id=G-EQCXDEV7QV"></script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-EQCXDEV7QV');
+        // 🚨 `send_page_view: false` on the GA4 config, and ONLY on it.
+        //
+        // This is an SPA, so page views are sent by resources/js/lib/analytics.js on
+        // Inertia's `navigate` — including for the first page, which Inertia also fires.
+        // Leaving the config to send its own meant every full page load was counted
+        // TWICE (verified in a browser: one `en=page_view` from here, one from us), and
+        // the config's copy carried neither the settled page title nor `page_group`.
+        // One sender, every page, same parameters.
+        //
+        // ⚠️ The Ads config keeps its page view — remarketing tags are not funnel
+        // analytics and nothing in the app re-sends that one.
+        gtag('config', 'G-EQCXDEV7QV', { send_page_view: false });
         gtag('config', 'AW-11395921981');
     </script>
 

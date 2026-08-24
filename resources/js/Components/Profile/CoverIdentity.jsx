@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef } from "react";
 import { usePage } from "@inertiajs/react";
-import { CopyIcon } from "@animateicons/react/lucide";
+import { ShareIcon } from "@animateicons/react/lucide";
 import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import {
     FaInstagram,
@@ -237,7 +237,11 @@ export default function CoverIdentity({ variant = "card", IsloggedIn }) {
                             custom={`${window.location.origin}/${user?.username}`}
                         >
                             @{user?.username}
-                            <CopyIcon
+                            {/* ⚠️ A SHARE glyph, not a copy one. This chip calls
+                                navigator.share(), so on a phone tapping it opens
+                                the OS share sheet — the icon promised the
+                                clipboard and delivered something else. */}
+                            <ShareIcon
                                 ref={copyIconRef}
                                 size={14}
                                 className={`ml-2 transition-colors ${onCover ? "text-white/70 group-hover:text-white" : "text-gray-500 group-hover:text-black"}`}

@@ -309,6 +309,22 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:57')
             ->withoutOverlapping(30);
 
+        // Identity / KYC retention. The most sensitive rows on the platform were
+        // the only personal data with no prune at all — `user_documents` holds
+        // legacy references that the admin app renders as public ucarecdn.com
+        // URLs, and the identity payload columns on `users` were kept forever.
+        //
+        // 🚨 Reports and deletes NOTHING unless IDENTITY_RETENTION_ENABLED=true.
+        // There is no legal-hold marker in this schema, so arming it is a human
+        // decision, not a default. It never calls Stripe.
+        //
+        // ⚠️ 03:45 — deliberately off :00 and clear of the 03:40/03:50/03:52/
+        // 03:55/03:57 prunes, because on Vapor every command due in the same
+        // minute shares one cli-timeout budget.
+        $schedule->command('identity:prune')
+            ->dailyAt('03:45')
+            ->withoutOverlapping(30);
+
         // Delivery log: a row per email, push and bell entry the platform sends,
         // so this table grows faster than any payment table. The same pass
         // settles rows the mail transport never confirmed, which would otherwise
@@ -410,6 +426,38 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('reserve:release')
             ->dailyAt('10:30')
+            ->withoutOverlapping();
+
+        /*
+        | Discovery Phase 4 — Birthday Discovery.
+        |
+        | 🚨 BOTH OF THESE ARE SCHEDULED BUT SEND NOTHING UNTIL A FLAG IS FLIPPED.
+        | `discovery.birthday.birthday_reminders` and
+        | `discovery.birthday.birthdays_this_week` both default to FALSE, per the
+        | Master Plan: everything is built and shipped, sending is switched off
+        | until Jack turns it on, and turning it on is a config change with no
+        | deploy. With the flags off each command runs, logs what it WOULD have
+        | sent, and returns success — so a scheduler that is doing nothing is
+        | still visibly alive.
+        |
+        | ⚠️ These only run where `schedule:work` (or the Vapor scheduler) is up.
+        | Sending is synchronous inside each command, so neither needs
+        | `queue:work` — but neither runs at all without a scheduler.
+        */
+        $schedule->command('birthday:remind')
+            ->dailyAt('09:30')
+            ->withoutOverlapping();
+
+        /*
+        | ⚠️ DAILY, not `->mondays()`, and that is deliberate — see the command's
+        | class note. One run is capped at `discovery.birthday.weekly_batch`
+        | recipients, and because the claim key is the ISO WEEK every later run
+        | in the same week continues the same send without ever mailing anybody
+        | twice. Monday's run is the campaign; the rest of the week is its
+        | continuation, plus anyone who signed up after it started.
+        */
+        $schedule->command('birthday:weekly')
+            ->dailyAt('09:45')
             ->withoutOverlapping();
 
         /*

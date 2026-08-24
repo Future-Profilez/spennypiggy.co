@@ -7,7 +7,9 @@ use App\Models\CreatorBioLink;
 use App\Models\User;
 use App\Rules\NoExpenseOrBrandName;
 use App\Services\BioPageService;
+use App\Services\CatalogueService;
 use App\Support\BioLinkPlatforms;
+use App\Support\BioSellableItems;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,7 +30,10 @@ use Inertia\Inertia;
  */
 class BioLinkController extends Controller
 {
-    public function __construct(private readonly BioPageService $bioService) {}
+    public function __construct(
+        private readonly BioPageService $bioService,
+        private readonly CatalogueService $catalogue,
+    ) {}
 
     public function index(Request $request)
     {
@@ -45,9 +50,20 @@ class BioLinkController extends Controller
 
         return Inertia::render('Bio/Edit', [
             'links' => $this->bioService->linksFor($user, true),
+            // The creator's own selections, live-filtered exactly as the public
+            // page renders them, so the editor and the page cannot disagree about
+            // what is on it. Owner view: hidden cards are included.
+            'items' => $this->bioService->items($user, true),
+            // 🚨 The picker reads `CatalogueService` — the SAME list the My
+            // Listings screen shows — rather than a seventh idea of what a creator
+            // sells. `status: live` because a card the supporter cannot buy is not
+            // a card; a scheduled or in-review listing is added from My Listings
+            // once it goes live.
+            'catalogue' => $this->catalogue->for($user, ['status' => 'live', 'sort' => 'newest'])['listings']['data'] ?? [],
             'platforms' => BioLinkPlatforms::pickerOptions(),
             'bioUrl' => route('bio.show', ['username' => $user->username]),
             'maxExternal' => BioLinkPlatforms::MAX_EXTERNAL_LINKS,
+            'maxItems' => BioSellableItems::MAX_ITEMS,
             'externalCount' => $this->externalCount($user->id),
             'stats' => [
                 'views' => (int) ($user->bio_page_views ?? 0),
@@ -62,7 +78,13 @@ class BioLinkController extends Controller
         $validated = $request->validate([
             'platform' => ['required', 'string', Rule::in(array_keys(BioLinkPlatforms::PLATFORMS))],
             'handle' => ['required', 'string', 'max:191'],
-            'label' => ['nullable', 'string', 'max:40', new NoExpenseOrBrandName],
+            'label' => [
+                'nullable', 'string', 'max:40',
+                // The button may name the platform it points at, and nothing else.
+                new NoExpenseOrBrandName(
+                    BioLinkPlatforms::ownBrandTokens($request->input('platform'))
+                ),
+            ],
         ]);
 
         if ($this->externalCount($user->id) >= BioLinkPlatforms::MAX_EXTERNAL_LINKS) {
@@ -126,7 +148,11 @@ class BioLinkController extends Controller
         $row = $this->ownedLink($user->id, $link);
 
         $validated = $request->validate([
-            'label' => ['sometimes', 'nullable', 'string', 'max:40', new NoExpenseOrBrandName],
+            'label' => [
+                'sometimes', 'nullable', 'string', 'max:40',
+                // The platform comes from the stored row — an edit cannot change it.
+                new NoExpenseOrBrandName(BioLinkPlatforms::ownBrandTokens($row->platform)),
+            ],
             'handle' => ['sometimes', 'required', 'string', 'max:191'],
             'is_active' => ['sometimes', 'boolean'],
         ]);

@@ -8,6 +8,7 @@ use App\Models\PiggyPot;
 use App\Models\Shop;
 use App\Models\WishItem;
 use App\Services\CreatorEventNotifier;
+use App\Support\AnalyticsEvent;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -91,6 +92,17 @@ class CreatorContentObserver
         }
 
         $title = (string) ($model->getAttribute('name') ?? $model->getAttribute('title') ?? '');
+
+        // GA4 funnel — stage 4, "Published something".
+        //
+        // Emitted from the same `notify` path as the follower alert, so the
+        // definition of "published" cannot drift between the two: it is
+        // whatever `isLive()` says, which already accounts for the moderation
+        // hold. ⚠️ The title is deliberately NOT a parameter — it is creator
+        // content, and a funnel stage needs a count, not a name.
+        AnalyticsEvent::push('content_published', [
+            'product_type' => $productType,
+        ]);
 
         app(CreatorEventNotifier::class)->notifyFollowers(
             $creatorId,

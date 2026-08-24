@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Listeners\AlertOnLockout;
+use App\Listeners\RecordFailedLogin;
 use App\Listeners\RecordUserLogin;
 use App\Models\Bills;
 use App\Models\Membership;
@@ -13,6 +15,8 @@ use App\Models\TipGoal;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Observers\ActivityObserver;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -35,6 +39,17 @@ class EventServiceProvider extends ServiceProvider
         // "inactive N months" segments read it as "nobody has ever signed in".
         Login::class => [
             RecordUserLogin::class,
+        ],
+        // 🚨 Security Checklist §3. `LoginRequest` has always fired Lockout, and
+        // until now NOTHING listened for it — the framework was announcing a
+        // brute-force into an empty room. Failed does the same job one step
+        // earlier: without it the website recorded no login failures at all, so
+        // a per-IP threshold had no data to be computed from.
+        Failed::class => [
+            RecordFailedLogin::class,
+        ],
+        Lockout::class => [
+            AlertOnLockout::class,
         ],
     ];
 

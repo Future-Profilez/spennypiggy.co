@@ -25,6 +25,7 @@ use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\Discovery\AttributionService;
 use App\Services\ItemFunnelService;
 use App\Services\ItemShareService;
 use App\Services\ItemTextModeration;
@@ -37,6 +38,7 @@ use App\Services\StripeMetadataService;
 use App\Services\UserProfileService;
 use App\StripeControl;
 use App\Support\BlockedPaymentAlert;
+use App\Support\ContentDownloadMonitor;
 use App\Support\NotificationContext;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -415,6 +417,11 @@ class TaskController extends Controller
         $userId = Auth::id();
 
         if ($task->creator_id === $userId) {
+            // The creator fetching their own file is recorded too — a takeover
+            // that reads the catalogue through the owner's account would
+            // otherwise be the one download nobody sees.
+            ContentDownloadMonitor::record($userId, 'task', $task->uuid, 'own task deliverable');
+
             if (Str::startsWith($task->deliverable_content, ['http', 'https'])) {
                 return redirect($task->deliverable_content);
             }
@@ -450,6 +457,13 @@ class TaskController extends Controller
             abort(403, 'Purchase required');
         }
 
+        // 🚨 Security Checklist §3 — "bulk content downloads". Until this line
+        // the endpoint checked the purchase and then streamed the file
+        // recording NOTHING, so one buyer walking the catalogue left no trace
+        // anybody here reads. This is an ACCESS LOG, not a gate: the download
+        // below happens either way.
+        ContentDownloadMonitor::record($userId, 'task', $task->uuid, 'paid task deliverable');
+
         if (Str::startsWith($task->deliverable_content, ['http', 'https'])) {
             return redirect($task->deliverable_content);
         }
@@ -462,6 +476,20 @@ class TaskController extends Controller
         // Stripe compliance: paid tasks require an account (order tracked until delivery).
         // Guest checkout is only allowed for Piggy Pot and Wishes.
         if (! Auth::check()) {
+            /*
+             * 🚨 REMEMBER WHERE THEY WERE GOING. The gate itself is correct —
+             * Stripe compliance requires an account for this purchase — but the
+             * redirect threw the destination away, so a supporter who signed in
+             * landed on their own page with the thing they had just tapped
+             * nowhere in sight. From the bio page's "Join" button that reads as
+             * a button that does nothing.
+             *
+             * `url.intended` is the key `AuthenticatedSessionController` already
+             * pulls after a successful login (and `GoogleController` already
+             * writes), so nothing new has to be taught to the login flow.
+             */
+            session()->put('url.intended', url()->full());
+
             return redirect()->route('login')->with('error', 'Please log in or create an account to purchase — your order needs an account so it can be tracked through to delivery.');
         }
 
@@ -980,6 +1008,11 @@ class TaskController extends Controller
                 'dispute_status' => 'none',
                 'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
                 'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
+                // Discovery Phase 1 — the ledger row for this purchase is written
+                // later by finance:sync-transactions, which has no cookie and no
+                // event metadata. Resolved from the cookie if a browser is here,
+                // else from the session metadata the checkout stamped.
+                'discovery_source' => AttributionService::sourceForCreator($creatorId, $metadata),
             ]);
         } catch (QueryException $e) {
             $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();

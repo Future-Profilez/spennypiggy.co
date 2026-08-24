@@ -236,7 +236,7 @@ export default function Header({ classMagicword }) {
  other control in the menu sat on the 20/30 tokens. The lift
  stays: it is paired with a hard offset shadow, which is the
  house press idiom rather than a hover-scale. */
- className={`${getNavLinkClass(href)} rounded-box-sm border-[3px] border-transparent hover:border-black ${activeColor} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+ className={`${getNavLinkClass(href)} rounded-box-sm border-[3px] border-transparent hover:border-black ${activeColor} transition-colors duration-200 px-2 py-3 mx-2 group`}
                     {...(isExternal
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
@@ -295,7 +295,7 @@ export default function Header({ classMagicword }) {
                 the old behaviour. Never type the banner's height here — it grows
                 when its steps expand. */}
             <div
-                className="headermain fixed left-0 w-full z-[100] py-[17px] bg-[#FF007F]"
+                className="headermain fixed left-0 w-full z-[100] py-[14px] bg-[#FF007F]"
                 style={{ top: 'var(--sp-topbanner-h, 0px)' }}
             >
                 <div className="container mx-auto px-4">
@@ -340,25 +340,22 @@ export default function Header({ classMagicword }) {
                             {[
                                 { label: "Discover", href: route("discover"), active: url.startsWith("/discover") },
                                 { label: "Leaderboard", href: "/leaderboard", active: url.startsWith("/leaderboard") },
-                                { label: "Oink Store", href: "/giftstore", active: url.startsWith("/giftstore") },
+                                // 🚨 Link in Bio takes the third nav slot, not the Oink
+                                // Store. The store is kill-switched behind `rye.enabled`
+                                // and its page answers with a coming-soon screen, so the
+                                // most valuable position in the header was pointing at
+                                // something nobody can buy from. Link in Bio has a
+                                // dedicated ad page and is the push. The store keeps a
+                                // footer row with a Coming soon badge.
+                                { label: "Link in Bio", href: "/creators/link-in-bio", active: url.startsWith("/creators/link-in-bio") },
                             ].map((item) => (
                                 <Link
                                     key={item.label}
                                     href={item.href}
- /*
- * 🚨 BLACK ON PINK — the bar is a solid #FF007F band, and
- * black clears AA on it at 5.56:1 where white sits at 3.78:1.
- * Every link is full-strength black (client direction,
- * 14 Aug 2026), so the active page is marked by an UNDERLINE
- * rather than by a contrast step — with all three at the same
- * weight there is no colour difference left to carry it.
- * ⚠️ The hover is brand yellow #E6EA7B, which measures 2.95:1
- * on this pink and is under AA. It is a transient state on a
- * link whose resting colour clears AA, and it is the client's
- * own direction — do not extend it to a resting state.
- */
-                                    className={`font-gulfs uppercase text-[18px] tracking-wider transition-colors text-black hover:text-[#E6EA7B] ${
-                                        item.active ? "underline underline-offset-8 decoration-2" : ""
+                                    className={`font-gulfs uppercase text-[18px] tracking-wider transition-colors hover:text-black ${
+                                        item.active
+                                            ? "text-black underline underline-offset-8 decoration-2"
+                                            : "text-black/80"
                                     }`}
                                 >
                                     {item.label}
@@ -434,7 +431,7 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
- className="uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black border border-black/30 hover:border-black/55 hover:bg-black/[0.08] transition-colors"
+ className="bg-white hover:bg-gray-200 uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black  transition-colors"
                                     >
                                         Login
                                     </Link>
@@ -468,7 +465,7 @@ export default function Header({ classMagicword }) {
                 ⚠️ And the install banner's height, for the same reason — the header
                 moved down by it, so everything below has to as well. */}
             <div
-                className="h-[67px] sm:h-[67px] md:h-[80px] lg:h-[80px] xl:h-[80px]"
+                className="h-[65px] sm:h-[66px] md:h-[80px] lg:h-[80px] xl:h-[80px]"
                 style={{
                     marginTop:
                         'calc(env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px))',
@@ -486,7 +483,21 @@ export default function Header({ classMagicword }) {
             ) : (
                 ""
             )}
+            {/* 🚨 `inert` WHILE CLOSED. The drawer is only moved off-screen with a
+                transform — it stays `visibility: visible` and `display: flex`, so
+                its 13 links kept their place in the tab order. A keyboard user
+                tabbing from the top of the page fell into thirteen destinations
+                whose focus ring was 350px off the left edge of the window, with no
+                way to tell where focus had gone. WCAG 2.2 2.4.11 (Focus Not
+                Obscured) and 2.4.3 (Focus Order).
+
+                ⚠️ `inert` also removes it from the accessibility tree, so the
+                `aria-hidden` beside it is belt-and-braces for older engines — the
+                two must always agree, or a screen reader and the tab order
+                disagree about whether the menu exists. */}
             <div
+                inert={!isActive ? "" : undefined}
+                aria-hidden={!isActive || undefined}
                 className={`fixed top-0 left-0 z-[1000002] h-full w-full md:w-[350px] rounded-r-xl
                     transform transition-transform duration-500 ease-in-out 
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
@@ -506,7 +517,7 @@ export default function Header({ classMagicword }) {
                            for the same inset; this panel is a separate fixed layer and
                            has to do it for itself. */
                         style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
-                        className="absolute h-[45px] min-w-[45px] right-4 md:right-4 bg-white border-[3px] border-black rounded-box-sm p-1 hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all z-20"
+                        className="absolute h-[45px] min-w-[45px] right-4 md:right-4 bg-white border-[3px] border-black rounded-box-sm p-1 transition-colors duration-200 hover:bg-black/[0.04] z-20"
                     >
                         <XIcon color="#000" size={32} />
                     </button>
@@ -776,10 +787,10 @@ export default function Header({ classMagicword }) {
                                     activeColor="hover:bg-[#ff6b6b]"
                                 />
                                 <NavLinkWithIcon
-                                    href="/giftstore"
+                                    href="/creators/link-in-bio"
                                     onClick={toggleClass}
                                     icon={HeartIcon}
-                                    label="Oink Store"
+                                    label="Link in Bio"
                                     activeColor="hover:bg-[#b892ff]"
                                 />
                                 {auth?.user?.role == 1 && (

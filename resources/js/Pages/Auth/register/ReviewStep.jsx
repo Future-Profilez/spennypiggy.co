@@ -82,7 +82,7 @@ export default function ReviewStep({
                 isCreator && plan?.free_until_first_sale ? (
                     <div
                         className="rounded-box border-[3px] border-black bg-[#E6EA7B] p-4"
-                        style={{ boxShadow: `5px 5px 0 0 ${accent.hex}` }}
+                        style={{  }}
                     >
                         <p className="font-gulfs text-base uppercase leading-tight text-black">
                             {plan.promise}

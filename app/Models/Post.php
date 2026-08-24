@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasCreatorWatermark;
 use App\Support\MediaUrl;
+use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -249,7 +250,25 @@ class Post extends Model
         // feature is on, the owner relation is loaded, and the URL is a plain
         // image path — a generated thank-you image (the branch above) is
         // refused by MediaUrl because it already carries text operations.
-        return MediaUrl::watermark($url, $this->creatorWatermarkUuid());
+        $url = MediaUrl::watermark($url, $this->creatorWatermarkUuid());
+
+        // A members-only post is paid content: the access check
+        // (UserProfileService::stripLockedMedia) only HIDES this URL from
+        // someone who has not paid, so without a token a lapsed member keeps a
+        // permanent link. A `public` post must stay unsigned — it is marketing,
+        // it is edge-cached and it feeds OG previews.
+        return $this->isGatedContent() ? SecureMedia::sign($url) : $url;
+    }
+
+    /**
+     * Post audiences that a supporter has to PAY to reach. Mirrors
+     * PostsController's own locked-post check and
+     * PostingCadenceService::GATED_MODULES (`support` is the Piggy Bank
+     * audience, which is also a purchase).
+     */
+    public function isGatedContent(): bool
+    {
+        return in_array($this->for_module, ['subscription', 'membership', 'support'], true);
     }
 
     /**

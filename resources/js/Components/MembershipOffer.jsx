@@ -59,7 +59,7 @@ export default function MembershipOffer({ offer, creatorName, creatorUsername })
                 <div className="flex flex-wrap items-center gap-3">
                     <a
                         href={offer.checkout_url}
-                        className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-5 py-2.5 text-sm font-black uppercase tracking-wider text-black transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0"
+                        className="inline-flex min-h-[44px] items-center rounded-box-sm border-[3px] border-black bg-[#FF007F] px-5 py-2.5 text-sm font-black uppercase tracking-wider text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]/50 motion-reduce:transition-none"
                     >
                         Join for {price}/mo
                     </a>

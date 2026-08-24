@@ -4,6 +4,7 @@ import axios from 'axios';
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
 import { trackSearchClick } from "@/includes/Analytics";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 import { RiPlayFill } from "react-icons/ri";
 import VerifiedBadge from "@/Components/VerifiedBadge";
 
@@ -171,7 +172,11 @@ function IntroCard({ w }) {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4">
                 {w?.user?.username ? (
                     <Link
-                        href={`/${w.user.username}`}
+                        /* The intros rail is a Discover collection we curate, so
+                           the visit is SP-generated. `search-recs` is the reserved
+                           key for Discover's own surfaces — the closest of the
+                           twelve; there is no "intros" key. */
+                        href={discoveryLink(w.user.username, DISCOVERY_SOURCE.SEARCH_RECS)}
                         onClick={() => trackSearchClick(w.user.id, w.user.username)}
                         className="pointer-events-auto block"
                     >

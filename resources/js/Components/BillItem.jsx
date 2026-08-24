@@ -13,6 +13,7 @@ import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
+import discoveryLink from "@/lib/discoveryLink";
 
 function BillItem(props) {
     useAlerts();
@@ -20,7 +21,10 @@ function BillItem(props) {
         usePage().props;
     const __pageProps = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-    const { itm, itemid, IsloggedIn, classes } = props;
+    /* `discoverySource` is set ONLY by a Spenny-Piggy-chosen surface (Discover's
+       grid and carousels). Undefined everywhere else — a creator's own profile
+       listing their bills is their traffic, not ours. */
+    const { itm, itemid, IsloggedIn, classes, discoverySource } = props;
 
     const isZeroDecimalCurrency = (curr) => {
         const zeroDecimalCurrencies = [
@@ -186,17 +190,19 @@ function BillItem(props) {
                     onClick={onCardClick}
                     className="cursor-pointer relative !overflow-hidden !bg-white p-2.5 !pb-0"
                 >
-                    <LazyLoadImage
-                        alt={itm?.name || ""}
-                        effect="blur"
-                        height={193}
-                        src={imageSrc}
-                        className="!rounded-box object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
-                        width={220}
-                    />
+                    <div className="relative">
+                        <LazyLoadImage
+                            alt={itm?.name || ""}
+                            effect="blur"
+                            // height={193}
+                            src={imageSrc}
+                            className="!rounded-box-sm object-cover border-2 border-black w-full h-[130px] sm:h-[150px] mx-auto"
+                            width={220}
+                        />
 
-                    <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
-                        {periodDisplay} Subscribable
+                        <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
+                            {periodDisplay} Subscribable
+                        </div>
                     </div>
 
                     {IsloggedIn && (
@@ -368,9 +374,16 @@ function BillItem(props) {
                             <Link
                                 as="button"
                                 method="get"
-                                href={route("user.show", {
-                                    username: itm.user.username,
-                                })}
+                                href={
+                                    discoverySource
+                                        ? discoveryLink(
+                                              itm.user.username,
+                                              discoverySource
+                                          )
+                                        : route("user.show", {
+                                              username: itm.user.username,
+                                          })
+                                }
                                 className="ml-1 text-xs font-black uppercase text-[#FF007F] underline hover:opacity-90"
                             >
                                 @{itm.user.username}

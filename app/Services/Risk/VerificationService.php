@@ -4,6 +4,7 @@ namespace App\Services\Risk;
 
 use App\Models\ConfirmationLog;
 use App\Models\RiskIdentity;
+use App\Support\OtpFailureMonitor;
 use App\Support\RiskMessages;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -91,6 +92,28 @@ class VerificationService
         if ((string) $cachedOtp !== (string) $otp) {
             // Increment failed-attempt counter, tied to the OTP's own lifetime.
             Cache::store($this->otpStore)->put($attemptsKey, $attempts + 1, 600);
+
+            // 🚨 Security Checklist §3. That counter above was the ONLY record
+            // of a failed step-up code — it expires in ten minutes and nobody
+            // reads it, so a sustained attack on this flow left no trace. The
+            // monitor writes a durable row and thresholds PLATFORM-WIDE, not
+            // per person: one supporter mistyping a code is a daily occurrence
+            // and alerting on it would drown the channel.
+            //
+            // ⚠️ The attempted code is NEVER passed on. A security alert that
+            // quotes an OTP is worse than no alert.
+            //
+            // ⚠️ NO user id and NO email, deliberately. `RiskIdentity` stores
+            // only hashes (`email_hash`, `ip_hash`) — it was built that way on
+            // purpose — so there is no address here to record and none should
+            // be reintroduced to make the alert prettier. The identity's own id
+            // is what an admin looks the case up by.
+            OtpFailureMonitor::recordPlatformFailure(
+                null,
+                null,
+                request()?->ip(),
+                (string) $identity->id,
+            );
 
             return ['ok' => false, 'error' => RiskMessages::get('STEP_UP_CODE_FAILED', RiskMessages::AUDIENCE_GUEST)['body'], 'key' => 'STEP_UP_CODE_FAILED'];
         }

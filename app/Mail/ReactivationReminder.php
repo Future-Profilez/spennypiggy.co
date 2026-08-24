@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Http\Controllers\EmailPreferenceController;
 use App\Models\User;
+use App\Support\DiscoverySources;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -61,7 +62,27 @@ class ReactivationReminder extends Mailable
     public function __construct(
         public int $userId,
         public int $days,
-        public array $creators = [],
+        /*
+         * 🚨 `protected`, NOT `public`, AND THAT IS LOAD-BEARING.
+         * `Mailable::buildViewData()` reflects over PUBLIC properties and merges
+         * them OVER the `Content(with: […])` array. `content()` passes
+         * `taggedCreators()` — the same list with `?sp_d=personalised` on each
+         * profile URL — under the key `creators`, and a public property of the
+         * same name silently replaced it with the raw, untagged input.
+         *
+         * The effect was invisible: the email rendered perfectly, with the right
+         * creators and working links, and simply carried no attribution. Every
+         * visit and purchase it produced was recorded as creator-generated, and
+         * Discovery attribution has NO BACKFILL. Measured before the fix:
+         * `taggedCreators()` returned a tagged URL and the rendered HTML
+         * contained zero `sp_d=`.
+         *
+         * ⚠️ Protected properties still serialize for the queue, so nothing about
+         * dispatching changes. Found 20 Aug 2026 while building Phase 4;
+         * `AbandonedCheckoutReminder` was checked and is NOT affected — its
+         * tagged URL uses a key no public property shares.
+         */
+        protected array $creators = [],
     ) {}
 
     public function envelope(): Envelope
@@ -90,7 +111,7 @@ class ReactivationReminder extends Mailable
                 'emoji' => $copy['emoji'],
                 'heading' => $copy['heading'],
                 'intro' => $copy['intro'],
-                'creators' => $this->creators,
+                'creators' => $this->taggedCreators(),
                 'browseUrl' => url('/'),
                 'purchasesUrl' => url('/my-purchases'),
                 'unsubscribeUrl' => $user
@@ -98,6 +119,35 @@ class ReactivationReminder extends Mailable
                     : null,
             ]
         );
+    }
+
+    /**
+     * Each named creator gets a Discovery-tagged profile URL.
+     *
+     * 🚨 This e-mail is Spenny Piggy putting a creator back in front of a
+     * supporter, so the visit it produces is SP-generated — and a surface that
+     * is not tagged is invisible for ever, because attribution is recorded at
+     * the moment of the visit and there is no backfill.
+     *
+     * `personalised` is the reserved key that fits: the creators listed are the
+     * ones THIS supporter has actually paid, chosen for them. There is no
+     * "supporter-email" key, and the server drops anything off the reserved
+     * list in silence, which looks exactly like a tagged link that works.
+     *
+     * ⚠️ Built here rather than in the Blade view so the view never hand-builds
+     * a query string, and so a creator with no username still renders.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function taggedCreators(): array
+    {
+        return array_map(function (array $creator): array {
+            $creator['url'] = ! empty($creator['username'])
+                ? DiscoverySources::profileUrl($creator['username'], 'personalised')
+                : null;
+
+            return $creator;
+        }, $this->creators);
     }
 
     /** Falls back to the 30-day copy for an unexpected stage rather than failing. */

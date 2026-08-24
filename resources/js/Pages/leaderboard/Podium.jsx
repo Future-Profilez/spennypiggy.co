@@ -4,6 +4,7 @@ import userphoto from "../../../assets/siteicon.png";
 import { trackSearchClick } from "@/includes/Analytics";
 import MovementChip from "./MovementChip";
 import { rankTier } from "./rankTier";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 
 /**
  * The top three, given the room they earn.
@@ -32,7 +33,7 @@ function PodiumCard({ row, place, dense = false, windowDays }) {
 
     return (
         <Link
-            href={`/${row.username}`}
+            href={discoveryLink(row.username, DISCOVERY_SOURCE.TRENDING)}
             onClick={() => trackSearchClick(row.id, row.username)}
             style={{ background: tint, boxShadow: `inset 0 0 0 1px ${ring}` }}
             className={`group relative flex flex-col items-center overflow-hidden rounded-box text-center transition-all duration-300 hover:-translate-y-1 ${

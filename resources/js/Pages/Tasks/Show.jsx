@@ -119,14 +119,12 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
     // checkout (resolver soft-refusal, validation, risk block) died silently and the
     // buyer just saw the button un-spin. Deduped by ref so a re-render can't re-toast.
     useEffect(() => {
-        if (flash?.error && flash.error !== lastFlashRef.current.error) {
-            lastFlashRef.current.error = flash.error;
-            toast.error(flash.error, { id: 'task-error' });
-        }
-        if (flash?.success && flash.success !== lastFlashRef.current.success) {
-            lastFlashRef.current.success = flash.success;
-            toast.success(flash.success, { id: 'task-success' });
-        }
+        /*
+         * ⚠️ REMOVED — `BrandToaster` now bridges every session flash to a toast
+         * once, for the whole app. Toasting it here as well drew each message
+         * twice, and two identical toasts dismissing independently reads as a
+         * rendering bug rather than as duplicate config.
+         */
     }, [flash?.error, flash?.success]);
 
     
@@ -360,11 +358,11 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
     return (
         <Guest auth={auth?.user} user={auth?.user}>
             <Head title={task.title} />
-            <div className="bg-white px-4 py-8 min-h-dvh">
+            <div className="bg-white px-4 py-4 md:py-8 min-h-dvh">
                 <div className="max-w-3xl mx-auto">
                     <div className="mb-6 flex items-center justify-between gap-3">
                         <Link href={route('task.dashboard')} className="inline-block text-black font-bold uppercase tracking-wide hover:text-[#FF007F] transition-colors">
-                            &larr; Back to Dashboard
+                            &larr; Back <span className="hidden md:visible"> to Dashboard</span>
                         </Link>
 
                         {/* Only once it is publicly viewable — sharing a link that
@@ -421,7 +419,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                         )}
 
                         {/* Main Content Box */}
-                        <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
+                        <div className="bg-white md:border border-gray-200 md:rounded-box md:p-8 mb-8">
                             {/* Header Section */}
                             <div className="flex flex-col md:flex-row md:justify-between md:items-start border-b-2 border-gray-100 pb-6 mb-6">
                                 <div className="flex-1 md:pr-6 mb-4 md:mb-0">
@@ -444,7 +442,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                                     </div>
                                 </div>
                                 <div className="text-left md:text-right shrink-0">
-                                    <div className="text-3xl md:text-4xl font-black text-[#FF007F] font-anton tracking-wider">
+                                    <div className="text-2xl md:text-4xl font-black text-[#FF007F] font-anton tracking-wider">
                                         {isCreator ? (
                                             formatMultiPrice(task.price, task.currency || 'USD')
                                         ) : (
@@ -504,7 +502,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
                         </div>
 
                         {/* Actions / Purchase Form */}
-                        <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
+                        <div className="bg-white md:border border-gray-200 md:rounded-box md:p-8 mb-8">
                             {isCreator ? (
                                 <div className="text-center py-4">
                                     <p className="mb-4 text-black/60 font-medium">You are the creator of this task.</p>
@@ -637,7 +635,7 @@ export default function Show({ auth, task, share, purchase, purchaseHistory, isC
 
                         {/* Purchase History */}
                         {purchaseHistory && purchaseHistory.length > 0 && (
-                            <div className="bg-white border border-gray-200 rounded-box p-6 md:p-8 mb-8">
+                            <div className="bg-white md:border border-gray-200 md:rounded-box md:p-8 mb-8">
                                 <h3 className="text-xl font-black font-anton uppercase mb-4 text-black">Purchase History</h3>
                                 <div className="space-y-4">
                                     {purchaseHistory.map((historyItem) => (

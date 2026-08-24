@@ -10,6 +10,7 @@ use App\Models\Task;
 use App\Models\TipGoal;
 use App\Models\WishItem;
 use App\Rules\NoExpenseOrBrandName;
+use App\Support\SecureMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -291,6 +292,16 @@ class RewardService
         $url = Str::startsWith($reference, ['http://', 'https://'])
             ? $reference
             : 'https://ucarecdn.com/'.trim($reference, '/').'/';
+
+        // 🚨 This is the ONE builder for the unified `reward_file` column, so
+        // it covers the paid deliverable of all seven modules at once —
+        // including task and Piggy Pot, which have no accessor of their own.
+        // The reward contract is only ever rendered to an entitled viewer;
+        // signing is what keeps that one reveal from being permanent.
+        // ⚠️ `uuid` below stays BARE on purpose — callers re-derive their own
+        // URLs from it, and a signed string there would be stored back by any
+        // form that round-trips the field.
+        $url = SecureMedia::sign($url);
 
         return [
             'url' => $url,

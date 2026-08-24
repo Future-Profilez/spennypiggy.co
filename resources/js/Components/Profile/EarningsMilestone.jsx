@@ -16,7 +16,7 @@ const prefersReducedMotion = () =>
  * state is what paints first — nothing here hides content behind an animation.
  */
 export default function EarningsMilestone({ IsloggedIn, compact = false }) {
-    const { user } = usePage().props;
+    const { user, auth } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
 
     const [goal, setGoal] = useState(null);
@@ -58,9 +58,27 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
     // The creator can hide the figures from visitors (account settings →
     // "Show earnings on profile"). The server then sends the percentage only, so
     // the milestone still reads as progress without publishing the amount.
-    const hidden = Boolean(goal?.hidden);
+    // 🚨 The public figure is suppressed below a floor (21 Aug 2026). `TOTAL EARNED
+    // £0.00` at 38px was the first content a cold supporter met on most profiles —
+    // the largest element on the page reporting that nobody has paid this creator.
+    // The `hidden` branch below already renders a figure-free milestone bar, so the
+    // better rendering existed and was opt-in; this makes it the default until the
+    // creator has momentum worth publishing. The floor is read in the GOAL'S OWN
+    // currency, so it is a display threshold, not a converted one.
+    const PUBLIC_EARNED_FLOOR = 50;
     const earned = Number(goal?.fullfilled) || 0;
     const target = Number(goal?.target) || 0;
+    const hidden = Boolean(goal?.hidden);
+    // The owner always sees their own number; only the public view is floored.
+    // ⚠️ `IsloggedIn` means "somebody is signed in", NOT "this is your profile" —
+    // reading it here would show the figure to every signed-in supporter.
+    // ⚠️ This is deliberately NOT folded into `hidden`: that flag also switches
+    // `pct` onto the server's `goal.percent`, which is only populated for a
+    // genuinely hidden goal, so reusing it would flatten the bar to 0%.
+    const isOwner =
+        Boolean(auth?.user?.id) && String(auth.user.id) === String(user?.id);
+    const figureSuppressed =
+        !hidden && !isOwner && earned < PUBLIC_EARNED_FLOOR;
 
     useEffect(() => {
         if (!live || prefersReducedMotion()) {
@@ -105,9 +123,11 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
             <div className="flex items-end justify-between gap-3">
                 <div className="min-w-0">
                     <span className="block text-[12px] font-bold uppercase tracking-[0.18em] text-gray-500">
-                        {hidden ? "Milestone progress" : "Total earned"}
+                        {hidden || figureSuppressed
+                            ? "Milestone progress"
+                            : "Total earned"}
                     </span>
-                    {!hidden && (
+                    {!hidden && !figureSuppressed && (
                         <span
                             className={`mt-1 block font-black leading-none tabular-nums text-black ${compact ? "text-2xl" : "text-3xl xl:text-[38px]"}`}
                         >
@@ -119,7 +139,7 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
                     className={`shrink-0 rounded-full border px-2.5 py-1 text-[12px] font-black tabular-nums ${
                         complete
                             ? "border-[#12A150]/30 bg-[#12A150]/10 text-[#12A150]"
-                            : "border-[#FF007F]/25 bg-[#FF007F]/10 text-[#FF007F]"
+                            : "border-[#FF007F]/25 bg-[#FF007F]/10 text-[#C4006A]"
                     }`}
                 >
                     {complete ? "Goal met" : `${Math.round(pct)}%`}
@@ -149,7 +169,11 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
                 <span
                     className="pointer-events-none absolute -top-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white text-xs transition-[left] duration-[1100ms] ease-out"
                     style={{
-                        left: `${Math.min(97, Math.max(3, fill))}%`,
+                        // The marker is 28px wide and centred on its own left
+                        // offset, so a bare percentage overhangs the track's
+                        // rounded cap at both ends. clamp() mixes px and % so it
+                        // pins to the cap at every track width.
+                        left: `clamp(14px, ${fill}%, calc(100% - 14px))`,
                         transform: "translateX(-50%)",
                         animation: live
                             ? "spgHop 2.4s ease-in-out 1.2s infinite"
@@ -163,7 +187,9 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
 
             <div className="mt-3 flex items-baseline justify-between gap-3 text-[12px] font-semibold">
                 <span className="text-gray-500">
-                    {hidden ? (
+                    {/* A suppressed figure must also suppress "£70.00 to £100.00",
+                        which publishes the same number by subtraction. */}
+                    {hidden || figureSuppressed ? (
                         complete ? (
                             <span className="font-black text-[#12A150]">
                                 Goal reached
@@ -181,8 +207,12 @@ export default function EarningsMilestone({ IsloggedIn, compact = false }) {
                             <span className="font-black tabular-nums text-black">
                                 {formatMultiPrice(remaining, goal?.currency)}
                             </span>
-                            {" "}
-                            to {formatMultiPrice(target, goal?.currency)}
+                            {/* At zero earned, `remaining` IS `target`, so the old
+                                "{remaining} to {target}" rendered "£100.00 to
+                                £100.00" — a string that means nothing. */}
+                            {remaining >= target
+                                ? " goal"
+                                : ` to ${formatMultiPrice(target, goal?.currency)}`}
                         </>
                     )}
                 </span>

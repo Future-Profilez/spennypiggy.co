@@ -52,7 +52,7 @@ export default function PayByBankAnnouncement() {
                 <FadeIn y={30} delay={0.15} duration={0.7}>
                     <div className="relative">
                         {/* mint glow */}
-                        <div className="pointer-events-none absolute -inset-3 bg-[#A2E4B8] opacity-15 blur-2xl rounded-box" aria-hidden="true"></div>
+                        <div className="pointer-events-none absolute -inset-3 bg-[#A2E4B8] opacity-[0.16] blur-2xl rounded-box mix-blend-screen" aria-hidden="true"></div>
 
                         <div className="max-w-[800px] m-auto relative grid md:grid-cols-[1fr_auto] bg-[#0d0a16] border-[3px] border-[#A2E4B8] rounded-box overflow-hidden">
                             {/* Main pass */}

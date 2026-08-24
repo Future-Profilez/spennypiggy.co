@@ -176,4 +176,64 @@ class ProfileIntroPropTest extends TestCase
 
         $this->assertIsArray($this->introProp($response));
     }
+
+    /**
+     * Intro videos are a CREATOR surface: the profile identity rail and the
+     * /discover intros rail both answer "who is this creator". `/update/intro/video`
+     * carried no role check at all, so a gifter (role 0) uploaded one and it was
+     * accepted (found 21 Aug 2026). Existing gifter rows are hidden, not deleted.
+     */
+    public function test_a_gifter_cannot_save_an_intro_video(): void
+    {
+        $gifter = User::factory()->create(['role' => 0, 'suspended_account' => 0]);
+
+        $response = $this->actingAs($gifter)->postJson('/update/intro/video', [
+            'media' => ['uuid' => 'a1b2c3d4-0000-0000-0000-000000000000'],
+        ]);
+
+        $response->assertStatus(403);
+
+        $this->assertDatabaseMissing('user_intros', ['user_id' => $gifter->id]);
+    }
+
+    public function test_a_creator_can_still_save_an_intro_video(): void
+    {
+        $creator = $this->creator();
+
+        // The save path calls the poster accessor, which asks Uploadcare to cut a
+        // thumbnail; setUp() prevents stray requests. The shape matters — the
+        // accessor indexes straight into result.result[0] with no guard, so a bare
+        // 200 fails on "Undefined array key" and reads as a role-gate failure.
+        Http::fake(['*' => Http::response([
+            'result' => [[
+                'thumbnails_group_uuid' => 'bbf25505-bfa2-31db-b1ea-df63391fb470',
+                'token' => 'tok_test',
+            ]],
+        ], 200)]);
+
+        $response = $this->actingAs($creator)->postJson('/update/intro/video', [
+            'media' => ['uuid' => 'a1b2c3d4-0000-0000-0000-000000000000'],
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('user_intros', ['user_id' => $creator->id]);
+    }
+
+    /**
+     * A gifter row that predates the gate must not reach the profile page either —
+     * the prop is what both the render gate and the card read.
+     */
+    public function test_a_gifters_existing_intro_is_not_sent_to_the_page(): void
+    {
+        $gifter = User::factory()->create(['role' => 0, 'suspended_account' => 0]);
+        UserIntro::factory()->create(['user_id' => $gifter->id, 'approved' => 1]);
+
+        $response = $this->actingAs($gifter)->get("/{$gifter->username}/feed");
+
+        $this->assertNull(
+            $this->introProp($response),
+            'A gifter profile must not carry an intro prop — the identity-rail card '.
+            'renders for the owner on any non-null prop.'
+        );
+    }
 }

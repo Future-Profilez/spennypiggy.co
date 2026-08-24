@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 import { Link } from '@inertiajs/react';
 import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.png";
 import Avatar from '../../../includes/Avatar';
@@ -10,13 +11,23 @@ import VerifiedBadge from '@/Components/VerifiedBadge';
  * CreatorCard — compact rectangular tile. Cover shows as a full landscape banner
  * (not cropped behind an overlay); creator info sits on a dark footer below.
  * Radius follows DESIGN.md: 30px card, 20px inner controls. Item cards unchanged.
+ *
+ * @param {string} [discoverySource] which SP surface put this creator here.
+ *   Defaults to `search-recs` — the reserved key for Discover's search and
+ *   result grid, which is where this card started life. A curated carousel
+ *   (Trending, New & Verified) passes its own key so the report can tell the
+ *   collections apart.
  */
-function CreatorCard({ auth, item }) {
+function CreatorCard({ auth, item, discoverySource = DISCOVERY_SOURCE.SEARCH_RECS }) {
     const cover = item.cover_url || wishlistbannerimg;
 
     return (
         <Link
-            href={route('user.show', item.username)}
+            /* Discovery-tagged: a creator card on Discover is Spenny Piggy
+               putting this creator in front of someone, so the visit is
+               SP-generated. The key names WHICH surface — the caller's, or
+               `search-recs` for the search and result grid. */
+            href={discoveryLink(item.username, discoverySource)}
             onClick={() => trackSearchClick(item.id, item.username)}
             className="group block overflow-hidden rounded-box border border-white/10 bg-[#16161C] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 "
         >

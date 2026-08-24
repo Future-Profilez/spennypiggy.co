@@ -52,7 +52,7 @@ export default function FounderProgressTracker({
                     </div>
                     <Link
                         href="/founder/bonus"
-                        className="border-2 border-black self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#FF007F] transition-transform hover:-translate-y-0.5"
+                        className="border-2 border-black self-start sm:self-center rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#C4006A] transition-colors duration-200 hover:bg-black/[0.04]"
                     >
                         View
                     </Link>
@@ -84,7 +84,7 @@ export default function FounderProgressTracker({
                         </div>
                         <Link
                             href="/founder/bonus"
-                            className="border-2 border-black rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#FF007F] transition-transform hover:-translate-y-0.5"
+                            className="border-2 border-black rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#C4006A] transition-colors duration-200 hover:bg-black/[0.04]"
                         >
                             View
                         </Link>
@@ -116,7 +116,7 @@ export default function FounderProgressTracker({
         return (
             <Link
                 href="/founder/bonus"
-                className="absolute top-4 left-4 z-10 block max-w-[250px] rounded-box border-4 border-black bg-[#FF007F] p-3 text-black transition-transform hover:-translate-y-0.5"
+                className="absolute top-4 left-4 z-10 block max-w-[250px] rounded-box border-4 border-black bg-[#FF007F] p-3 text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
             >
                 <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20">

@@ -64,6 +64,14 @@ return [
         'secret' => env('UPLOADCARE_SECRET_KEY'),
         'cdn' => env('UPLOADCARE_CDN', 'https://ucarecdn.com/'),
         'host' => env('UPLOADCARE_HOST', 'https://api.uploadcare.com/'),
+
+        // 🚨 The signing key for SECURE DELIVERY, and it is NOT the API secret
+        // above. Uploadcare issues a separate hex CDN secret in the project's
+        // Delivery settings; the API secret on this project is 22 non-hex
+        // characters and cannot be an HMAC key at all. Read by
+        // App\Support\SecureMedia, which fails open (serves unsigned) when
+        // this is missing or malformed. See config/media.php → secure.
+        'secure_key' => env('UPLOADCARE_SECURE_KEY'),
     ],
 
     'intercom' => [

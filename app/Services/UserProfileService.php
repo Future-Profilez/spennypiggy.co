@@ -1088,11 +1088,15 @@ class UserProfileService
      */
     public function getProfileOverview(int $userId): array
     {
-        return Cache::remember('profile_overview_v1_'.$userId, 600, function () use ($userId) {
+        // ⚠️ Key bumped to v2 when `bills` was added (21 Aug 2026). The tab strip
+        // now hides a tab whose count is 0, so a cached v1 array — which has no
+        // `bills` key — would read as zero and hide a tab the creator does sell.
+        return Cache::remember('profile_overview_v2_'.$userId, 600, function () use ($userId) {
             $earnings = $this->getUserEarnings($userId);
 
             return [
                 'wishes' => WishItem::where('user_id', $userId)->count(),
+                'bills' => Bills::where('user_id', $userId)->count(),
                 'piggy_pots' => PiggyPot::where('user_id', $userId)->where('status', 'active')->count(),
                 'memberships' => Membership::where('user_id', $userId)->count(),
                 'shops' => Shop::where('user_id', $userId)->where('approved', 1)->count(),

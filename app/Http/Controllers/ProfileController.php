@@ -56,6 +56,7 @@ use App\StripeControl;
 use App\Support\Badges;
 use App\Support\PresetCovers;
 use App\Support\ProfileAssetVisibility;
+use App\Support\SecureMedia;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -228,6 +229,13 @@ class ProfileController extends Controller
                     'gender' => ['nullable', 'string', 'max:50'],
                     'country' => ['nullable', 'string', 'max:100'],
                     'date_of_birth' => ['nullable', 'date', 'before:today'],
+                    // Discovery Phase 4 — the creator's own opt-in to Birthday
+                    // Discovery. `sometimes`, like every other partial-payload
+                    // field on this form: several callers post a subset, and
+                    // treating an absent field as "they switched it off" would
+                    // silently remove a creator from the campaign on an
+                    // unrelated save.
+                    'birthday_discovery_opt_in' => ['sometimes', 'boolean'],
                     // Both of these are written straight to the users table and
                     // then interpolated into an image URL by the accessors
                     // (`https://ucarecdn.com/{uuid}/{modifier}`), so the shape
@@ -250,6 +258,60 @@ class ProfileController extends Controller
                 $user->country = $request->country;
                 if ($request->has('date_of_birth')) {
                     $user->date_of_birth = $request->date_of_birth;
+
+                    /*
+                     * 🚨 DERIVE THE TWO PUBLISHABLE COMPONENTS, AND ONLY THOSE.
+                     *
+                     * `birthday_day` / `birthday_month` are what Birthday
+                     * Discovery reads — see
+                     * `App\Services\Discovery\BirthdayDiscoveryService`, whose
+                     * every query selects them and never `date_of_birth`. The
+                     * birth year stays on this row for Stripe Connect's dob
+                     * prefill and nothing else; it is never published anywhere,
+                     * which the plan states three times.
+                     *
+                     * ⚠️ Derived HERE rather than mass-assigned: the two columns
+                     * are deliberately not `$fillable`, so a request cannot post
+                     * a day the creator never entered.
+                     *
+                     * ⚠️ Clearing the birthday clears both, or a creator who
+                     * removed their date would stay in next week's campaign on
+                     * a stale day.
+                     */
+                    if (filled($request->date_of_birth)) {
+                        try {
+                            $dob = Carbon::parse($request->date_of_birth);
+                            $user->birthday_day = (int) $dob->day;
+                            $user->birthday_month = (int) $dob->month;
+                        } catch (\Throwable $e) {
+                            // Validation has already accepted it as a date; if it
+                            // is somehow unparseable, leave the components alone
+                            // rather than writing a wrong day.
+                            Log::warning('Skipping birthday component derive — unparseable date_of_birth', [
+                                'user_id' => $user->id,
+                            ]);
+                        }
+                    } else {
+                        $user->birthday_day = null;
+                        $user->birthday_month = null;
+                    }
+                }
+
+                /*
+                 * Discovery Phase 4 opt-in.
+                 *
+                 * ⚠️ Only written when the request CARRIED it — same rule as the
+                 * badge fields below.
+                 *
+                 * 🚨 A creator cannot opt IN without a birthday on file: there
+                 * would be nothing to feature them on, and they would sit in the
+                 * opted-in count that gates the collection page while never
+                 * appearing on it.
+                 */
+                if ($request->has('birthday_discovery_opt_in')) {
+                    $optIn = $request->boolean('birthday_discovery_opt_in');
+
+                    $user->birthday_discovery_opt_in = $optIn && $user->birthday_month !== null;
                 }
                 // Sanitised again on the way in, so an unknown slug is dropped
                 // rather than stored even if validation is ever loosened.
@@ -553,11 +615,41 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        $bills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-        $connectedAccount = $bills->bill->user->account_id;
-        if (! empty($bills)) {
-            foreach ($bills as $bill) {
+        /*
+         * 🚨 The connected account is PER BILL, not per collection.
+         *
+         * This read `$bills->bill->user->account_id` on the Collection itself,
+         * which throws `Property [bill] does not exist on this collection
+         * instance` — so deleting an account with any paid bill 500'd before a
+         * single subscription was cancelled, leaving the creator's Stripe subs
+         * live on an account the user believes is gone.
+         *
+         * Each bill belongs to a different creator, so each cancel must go to
+         * that creator's own connected account; one shared id would have
+         * cancelled against the wrong account even once the crash was gone.
+         */
+        $bills = BillPayment::with('bill.user')
+            ->where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->get();
+
+        foreach ($bills as $bill) {
+            if (empty($bill->stripe_id)) {
+                continue;
+            }
+
+            $connectedAccount = $bill->bill?->user?->account_id;
+
+            try {
                 StripeControl::cancelSubscription($bill->stripe_id, $connectedAccount);
+            } catch (\Throwable $e) {
+                // One un-cancellable subscription must not abort the deletion of
+                // the account — the remaining subs still need cancelling.
+                Log::warning('Bill subscription cancel failed during account deletion', [
+                    'user_id' => $user->id,
+                    'bill_payment_id' => $bill->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -789,6 +881,17 @@ class ProfileController extends Controller
      */
     public function saveIntroVideo(Request $request)
     {
+        // Intro videos are a CREATOR surface only: they feed the creator profile
+        // card and the /discover intros rail, both of which are about who a
+        // creator is. A gifter (role 0) uploaded one because nothing on this
+        // route or the frontend ever checked (21 Aug 2026).
+        if ((int) Auth::user()->role !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Intro videos are available to creator accounts only.',
+            ], 403);
+        }
+
         $request->validate([
             'media' => [
                 'required',
@@ -1952,14 +2055,20 @@ class ProfileController extends Controller
 
             // Normalized item + reward contract for the history UI.
             // Every paid item exposes the same shape so the frontend renders one card.
+            // Every URL this builds is a PAID deliverable being handed to the
+            // buyer on their own history feed, so it is signed. SecureMedia is
+            // a no-op while media.secure.enabled is off, and returns anything
+            // that is not an Uploadcare file untouched.
             $cdn = function ($v) {
                 if (empty($v)) {
                     return null;
                 }
 
-                return Str::startsWith($v, ['http://', 'https://'])
+                $url = Str::startsWith($v, ['http://', 'https://'])
                     ? $v
                     : 'https://ucarecdn.com/'.$v.'/';
+
+                return SecureMedia::sign($url);
             };
 
             $src = $tx->source;
@@ -2333,7 +2442,7 @@ class ProfileController extends Controller
         // forgetting them a creator turns the toggle off and the figure stays
         // public for up to ten minutes.
         Cache::forget('user_earnings_v2_'.$user->id);
-        Cache::forget('profile_overview_v1_'.$user->id);
+        Cache::forget('profile_overview_v2_'.$user->id);
 
         return response()->json([
             'status' => true,

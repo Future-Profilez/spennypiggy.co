@@ -283,7 +283,7 @@ export default function Billing_dashboard(props) {
                                 border: "1px solid rgba(0,0,0,0.06)",
                                 borderRadius: "20px",
                                 color: "#111",
-                                boxShadow: "0 12px 34px -14px rgba(0,0,0,0.25)",
+                                
                             }}
                             formatter={(value) => [
                                 `${currency}${Number(value).toLocaleString()}`,

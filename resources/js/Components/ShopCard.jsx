@@ -5,11 +5,16 @@ import RewardHint from "@/Pages/discover/components/RewardHint";
 import WaitlistButton from "@/Components/WaitlistButton";
 import { creatorIdOf } from "@/utils/pricing";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
+import discoveryLink from "@/lib/discoveryLink";
 
 export default function ShopCard({
     item,
     IsloggedIn = false,
     showCreator = false,
+    /* Discovery attribution. Set ONLY by a Spenny-Piggy-chosen surface
+       (Discover's grid and carousels); undefined on the creator's own shop,
+       where the visit is their own traffic. */
+    discoverySource,
 }) {
     const { auth, user } = usePage().props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
@@ -100,7 +105,7 @@ export default function ShopCard({
             onClick={() => router.visit(url)}
             className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 self-start max-w-sm w-full bg-white border-[3px] border-black rounded-box transition-colors duration-200 hover:bg-black/[0.03] overflow-hidden h-full flex flex-col"
         >
-            <div className="p-3 flex flex-col h-full">
+            <div className="p-2 sm:p-3 flex flex-col h-full">
                 {/* Status notices.
                     🚨 These are in NORMAL FLOW, above the image — never absolutely
                     positioned over it. Three of them can be live at once and each
@@ -168,7 +173,14 @@ export default function ShopCard({
                     {/* Creator (Only visible if passed) */}
                     {showCreator && item?.user?.username && (
                         <Link
-                            href={`/${item.user.username}`}
+                            href={
+                                discoverySource
+                                    ? discoveryLink(
+                                          item.user.username,
+                                          discoverySource
+                                      )
+                                    : `/${item.user.username}`
+                            }
                             onClick={(e) => e.stopPropagation()}
                             className="text-[10px] font-semibold text-gray-700 hover:text-black hover:underline w-fit mb-0.5 truncate max-w-full sm:text-xs sm:mb-1"
                         >
@@ -268,7 +280,7 @@ export default function ShopCard({
                                 e.stopPropagation();
                                 router.visit(url);
                             }}
-                            className="font-black border-2 border-black px-2 py-3 min-h-[44px] sm:px-4 rounded-box-sm text-black text-[11px] sm:text-base uppercase bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
+                            className="font-black border-2 border-black px-2 py-2 md:py-3 sm:px-4 rounded-[15px] text-black text-[11px] sm:text-base uppercase bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
                         >
                             Buy Now
                         </button>

@@ -4,6 +4,7 @@ import { Link } from '@inertiajs/react';
 import axios from 'axios';
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
+import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 
 export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
     const [query, setQuery] = useState(initialSearch || '');
@@ -81,7 +82,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
- <div className="sticky top-[68px] sm:top-[68px] md:top-[80px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
+ <div className="sticky top-[63px] sm:top-[68px] md:top-[80px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
  <div className="container max-w-7xl mx-auto px-4 pb-0 md:pb-3 pt-3">
                 {/* Search Bar */}
                 <div className="relative mb-2 md:mb-4">
@@ -139,7 +140,10 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                     <>
  <div className="text-xs font-semibold text-black/60 px-3 py-2 uppercase tracking-wider">Creators</div>
                                                         {suggestions.creators.map((item, i) => (
-                                                            <Link href={`/${item?.username}`} onClick={() => trackSearchClick(item.id, item.username)} className='w-full block px-3 py-2 hover:bg-gray-200'>
+                                                            /* A search suggestion is Spenny Piggy answering
+                                                               "who should I look at" — SP-generated traffic,
+                                                               tagged `search-recs`. */
+                                                            <Link href={discoveryLink(item?.username, DISCOVERY_SOURCE.SEARCH_RECS)} onClick={() => trackSearchClick(item.id, item.username)} className='w-full block px-3 py-2 hover:bg-gray-200'>
                                                                 <Avatar role={item.role}
                                                                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
                                                                     name={item.name} link={item.username || null} src={item.avatar_url}

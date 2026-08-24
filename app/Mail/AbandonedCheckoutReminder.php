@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Http\Controllers\EmailPreferenceController;
 use App\Models\User;
 use App\Services\AbandonedCheckoutService;
+use App\Support\DiscoverySources;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -76,7 +77,17 @@ class AbandonedCheckoutReminder extends Mailable
                 'amountLabel' => $this->amountLabel,
                 'checkoutUrl' => $this->checkoutUrl,
                 'isFinalReminder' => $this->isFinalReminder(),
-                'creatorUrl' => $this->creatorUsername ? url('/'.$this->creatorUsername) : url('/'),
+                // 🚨 Discovery-tagged. This is an automated e-mail WE send that
+                // puts a creator back in front of a supporter, so the visit it
+                // produces is SP-generated. `personalised` is the reserved key
+                // that fits — the creator named here is picked from this one
+                // supporter's own abandoned checkout; there is no
+                // "supporter-email" key and inventing one would be dropped in
+                // silence. The primary button goes to the Stripe session, not a
+                // profile, so it is not a visit and is not tagged.
+                'creatorUrl' => $this->creatorUsername
+                    ? DiscoverySources::profileUrl($this->creatorUsername, 'personalised')
+                    : url('/'),
                 // An account holder turns off the preference column; a guest has no
                 // account, so their link records the opt-out against the email address.
                 // Both must exist — "one email only" is not the same as "no way to stop
