@@ -14,8 +14,7 @@ import axios from "axios";
 
 export default function ShopDetailItem(props) {
     const { vat_percent, auth, user, shop, card_capabilities } = props;
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) ==
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == 
             (shop && shop.user && shop && shop.user.username),
     );
     // Prefer the server-built share link: it is canonical (no session_id or stray
@@ -55,7 +54,7 @@ export default function ShopDetailItem(props) {
             getShippingPrice("GB");
         }
     };
-
+    
     const [shippingPrice, setShippingPrice] = useState(() => {
         if (shop?.type === 'physical') {
             const shippingRates = shop.shop_shipping_info || [];
@@ -67,6 +66,7 @@ export default function ShopDetailItem(props) {
         }
         return 0;
     });
+    console.log("shippingPrice", shippingPrice);
     const [shippingUnknown, setShippingUnknown] = useState(false);
     const getShippingPrice = (c) => {
         if (!c) return;
@@ -398,7 +398,8 @@ export default function ShopDetailItem(props) {
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col">
-                                                                {console.log("supporterPays", itemCurrency)}
+                                                                {console.log("supporterPays", calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,1,creatorIdOf(shop)))}
+                                                                {console.log("supporterPays", formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency))}
                                                                 <div className="flex items-baseline">
                                                                     <span className="text-4xl font-bold">
                                                                         {formatMultiPrice(calculateTotalSupporterPays(baseRegularPriceToGrossUp,itemCurrency,0,creatorIdOf(shop)).total_supporter_pays,itemCurrency)}
