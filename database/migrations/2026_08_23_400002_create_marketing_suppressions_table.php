@@ -24,6 +24,19 @@ return new class extends Migration
 {
     public function up(): void
     {
+        /*
+         * ⚠️ GUARDED BECAUSE THE ADMIN APP CAN GET HERE FIRST. Both apps share
+         * one database, and `admin.spennypiggy.co`'s
+         * 2026_08_24_100000_declare_marketing_suppressions_table declares the
+         * same table so its own test database has one. Whichever app deploys
+         * first creates it; the second must not die on 1050. This migration is
+         * still the OWNER — its down() drops the table, the declaration's does
+         * not. Same pattern as security_events / creator_push_messages.
+         */
+        if (Schema::hasTable('marketing_suppressions')) {
+            return;
+        }
+
         Schema::create('marketing_suppressions', function (Blueprint $table) {
             $table->id();
             $table->string('email')->unique();

@@ -168,6 +168,7 @@ export function sendQueued(props) {
             });
 
             reportAdsConversion(event.name, event.params);
+            reportXConversion(event.name, event.params);
         }
 
         // The set is per page load and bounded by how many events one session
@@ -234,5 +235,36 @@ export function trackClientEvent(name, params = {}) {
         });
     } catch {
         /* analytics must never break the page that fired it */
+    }
+}
+
+/**
+ * Tell X (Twitter) Ads that a conversion happened.
+ *
+ * ⚠️ Driven by a map keyed on the event name, exactly like the Google Ads one,
+ * and published by `app.blade.php` from `config('analytics.x.events')`. Only
+ * the events the PIXEL owns are in it: `begin_checkout` and
+ * `stripe_connect_started` redirect away to Stripe and are reported from the
+ * server, and X deduplicates a pixel event against an API one only when both
+ * carry the same `conversion_id`. Keeping the two routes disjoint is the
+ * version that cannot be got wrong later.
+ */
+function reportXConversion(eventName, params = {}) {
+    try {
+        const eventId = window.__spXConversions?.[eventName];
+        if (!eventId || typeof window.twq !== "function") return;
+
+        const payload = {};
+
+        // Only a revenue event carries money — `value: 0` on a signup teaches
+        // the bidding that a signup is worth nothing.
+        if (params.value !== undefined) {
+            payload.value = params.value;
+            payload.currency = params.currency || "GBP";
+        }
+
+        window.twq("event", eventId, payload);
+    } catch {
+        /* analytics must never break a confirmation screen */
     }
 }

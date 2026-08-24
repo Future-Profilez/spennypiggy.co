@@ -271,3 +271,76 @@ describe("Google Ads conversion", () => {
         );
     });
 });
+
+describe("X (Twitter) Ads conversion", () => {
+    beforeEach(() => {
+        window.gtag = jest.fn();
+        window.twq = jest.fn();
+        window.history.replaceState({}, "", "/checkout");
+        delete window.__spXConversions;
+        delete window.__spAdsConversions;
+    });
+
+    it("reports a purchase to X with its value", () => {
+        window.__spXConversions = { purchase: "tw-ozu4h-purchase" };
+
+        sendQueued({
+            analytics: [
+                { id: "x1", name: "purchase", params: { value: 25, currency: "GBP" } },
+            ],
+        });
+
+        expect(window.twq).toHaveBeenCalledWith("event", "tw-ozu4h-purchase", {
+            value: 25,
+            currency: "GBP",
+        });
+    });
+
+    /** ⚠️ `value: 0` on a signup teaches the bidding that a signup is worthless. */
+    it("reports a signup with no value attached", () => {
+        window.__spXConversions = { sign_up: "tw-ozu4h-signup" };
+
+        sendQueued({
+            analytics: [{ id: "x2", name: "sign_up", params: { method: "email" } }],
+        });
+
+        expect(window.twq).toHaveBeenCalledWith("event", "tw-ozu4h-signup", {});
+    });
+
+    /**
+     * 🚨 ONE EVENT, ONE ROUTE. `begin_checkout` is reported from the server;
+     * publishing it to the pixel as well would count every checkout twice,
+     * because X deduplicates only on a matching conversion_id and the two
+     * routes do not share one.
+     */
+    it("does not report an event the server owns", () => {
+        window.__spXConversions = { purchase: "tw-ozu4h-purchase" };
+
+        sendQueued({
+            analytics: [
+                { id: "x3", name: "begin_checkout", params: { value: 25, currency: "GBP" } },
+            ],
+        });
+
+        expect(window.twq).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when the pixel never loaded", () => {
+        window.__spXConversions = { purchase: "tw-ozu4h-purchase" };
+        delete window.twq;
+
+        expect(() =>
+            sendQueued({
+                analytics: [{ id: "x4", name: "purchase", params: { value: 5 } }],
+            })
+        ).not.toThrow();
+    });
+
+    it("sends nothing when no map was published", () => {
+        sendQueued({
+            analytics: [{ id: "x5", name: "purchase", params: { value: 5 } }],
+        });
+
+        expect(window.twq).not.toHaveBeenCalled();
+    });
+});

@@ -163,4 +163,27 @@ class AnalyticsEventTest extends TestCase
 
         $this->assertSame(['value' => 5.0], AnalyticsEvent::pull()[0]['params']);
     }
+
+    /**
+     * 🚨 GA4 has no boolean parameter type — its docs list string and number
+     * only. The Measurement Protocol validator accepts `true` without
+     * complaint and the value then registers ambiguously, which is how a
+     * dimension ends up never appearing in the custom-definition list while
+     * nothing anywhere reports an error.
+     */
+    public function test_booleans_are_sent_as_readable_strings(): void
+    {
+        $this->fakeRequest();
+
+        AnalyticsEvent::push('purchase', [
+            'guest' => true,
+            'payouts_enabled' => false,
+            'value' => 25.0,
+        ]);
+
+        $this->assertSame(
+            ['guest' => 'true', 'payouts_enabled' => 'false', 'value' => 25.0],
+            AnalyticsEvent::pull()[0]['params']
+        );
+    }
 }

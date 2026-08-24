@@ -27,10 +27,18 @@ use Illuminate\Support\Facades\Schema;
  * THIS app — `marketing_spend` has the same fault and is owned by
  * admin.spennypiggy.co, so its drop ships as that app's own migration.
  *
- * ⚠️ Guarded by name. `dropIndexIfExists` reads SHOW INDEX rather than trusting the
+ * ⚠️ Guarded by name. `indexExists` reads SHOW INDEX rather than trusting the
  * migration history: a fresh database built by `migrate:fresh` may never have had
  * some of these, and an unguarded DROP INDEX on a missing name is a hard error that
  * takes a deploy down.
+ *
+ * 🚨 MySQL ONLY, and that guard is load-bearing. The test suite runs on SQLite
+ * in-memory (`phpunit.xml`: `DB_CONNECTION=sqlite`), where `SHOW INDEX` is a syntax
+ * error — an unguarded version of this migration failed 1451 tests at once, because
+ * every `RefreshDatabase` test runs the whole migration set. Index bloat is a
+ * production-MySQL concern and there is nothing to win on a throwaway in-memory
+ * database, so the whole migration no-ops off MySQL rather than growing a second
+ * SQLite code path that nothing would ever exercise.
  */
 return new class extends Migration
 {
@@ -75,6 +83,10 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (! $this->onMySql()) {
+            return;
+        }
+
         foreach ($this->indexes as $table => $names) {
             if (! Schema::hasTable($table)) {
                 continue;
@@ -90,6 +102,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! $this->onMySql()) {
+            return;
+        }
+
         foreach ($this->indexes as $table => $names) {
             if (! Schema::hasTable($table)) {
                 continue;
@@ -107,8 +123,25 @@ return new class extends Migration
         }
     }
 
+    private function onMySql(): bool
+    {
+        return DB::connection()->getDriverName() === 'mysql';
+    }
+
     private function indexExists(string $table, string $name): bool
     {
+        // 🚨 `SHOW INDEX` is MySQL-only, and the test suite runs on sqlite —
+        // where this threw `near "SHOW": syntax error` and took EVERY
+        // RefreshDatabase test in the app down with it, not just this
+        // migration's own.
+        //
+        // Answering `false` off MySQL is correct rather than merely quiet: the
+        // indexes listed here were created by MySQL-specific migrations, so on
+        // any other driver there is nothing to drop and nothing to report.
+        if (DB::connection()->getDriverName() !== 'mysql') {
+            return false;
+        }
+
         return DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$name]) !== [];
     }
 };

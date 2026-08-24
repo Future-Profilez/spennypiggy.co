@@ -180,7 +180,9 @@ class AnalyticsFunnelEventsTest extends TestCase
         $this->assertEquals(25.0, $params['value']);
         $this->assertSame('GBP', $params['currency']);
         $this->assertSame('wish', $params['product_type']);
-        $this->assertFalse($params['guest']);
+        // 🚨 The string "false", not a boolean. GA4 has no boolean parameter
+        // type — see AnalyticsParams::scrub.
+        $this->assertSame('false', $params['guest']);
 
         // 🚨 Nothing identifying may reach Google.
         $this->assertSame([], array_intersect(

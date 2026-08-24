@@ -54,7 +54,7 @@ class AnalyticsParams
 
     /**
      * @param  array<string, mixed>  $params
-     * @return array<string, string|int|float|bool>
+     * @return array<string, string|int|float>
      */
     public static function scrub(array $params): array
     {
@@ -72,7 +72,14 @@ class AnalyticsParams
                 continue;
             }
 
-            $clean[$key] = $value;
+            // 🚨 A boolean is not a GA4 parameter type. Google's own docs list
+            // string and number only; the Measurement Protocol validator
+            // accepts `true` without complaint and the value then registers
+            // ambiguously — which is how a dimension ends up never appearing in
+            // the custom-definition list while nothing anywhere reports an
+            // error. Sent as "true"/"false" so it registers as text and READS
+            // as text in a report, where `guest: true` beats `guest: 1`.
+            $clean[$key] = is_bool($value) ? ($value ? 'true' : 'false') : $value;
         }
 
         return $clean;

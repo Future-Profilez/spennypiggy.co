@@ -136,7 +136,7 @@ class AnalyticsServerSideEventsTest extends TestCase
                 && $params['value'] === 25.0
                 && $params['currency'] === 'GBP'
                 && $params['product_type'] === 'wish'
-                && $params['guest'] === true;
+                && $params['guest'] === 'true';
         });
     }
 

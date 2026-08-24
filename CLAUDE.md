@@ -3009,6 +3009,50 @@ creator had to open the page to learn they had climbed. Weekly, Monday **09:15**
   `LEADERBOARD_MOVEMENT_PERIOD` (weekly), `LEADERBOARD_MOVEMENT_MAX_PER_RUN`.
 - Tests: `tests/Feature/LeaderboardMovementNotificationTest.php` (9).
 
+### X (Twitter) Ads conversions (23 Aug 2026, spennypiggy.co)
+
+Same two-route shape as Google, deliberately — the constraint is identical, so the solution is.
+Config lives beside GA4's in `config/analytics.php` under `x`.
+
+| Route | Events | Why |
+|---|---|---|
+| **Pixel** (`twq`, id `ozu4h`) | `sign_up`, `purchase` | already reach the browser through `AnalyticsEvent` |
+| **Conversions API** (`XConversionsApi` → `SendXConversion`) | `begin_checkout`, `stripe_connect_started` | both redirect OUT to Stripe; the pixel can never fire |
+
+- 🚨 **ONE EVENT, ONE ROUTE.** X deduplicates a pixel event against an API event **only** when
+  both carry the same `conversion_id`. Rather than depend on that, the two sets are kept
+  **disjoint** — `app.blade.php` publishes `->only(['sign_up', 'purchase'])` to the pixel, so an
+  event the server owns cannot also be reported by the browser. A `conversion_id` is still sent
+  (`checkout-{session}`, `connect-{user}-{Ymd}`) so that changing the split later cannot silently
+  double-count.
+- 🚨 **`twclid` is the ONLY identifier sent.** X also accepts `hashed_email`,
+  `hashed_phone_number`, or an `ip_address`+`user_agent` pair — all of which are **personal data
+  going to a third party**, and hashing does not stop an email being personal data. That is a
+  decision for the client and their legal advice (and this site still has **no privacy policy**),
+  not a default. **No click id ⇒ no conversion**: it could not have been attributed to an advert
+  anyway.
+- **The click id is captured first-touch** by `TrackSiteVisit` into `VisitTracker::TWCLID_COOKIE`
+  (`sp_twclid`, 30 days = X's click-through window). ⚠️ **Never overwritten** — the last click
+  before a checkout is almost never the advert that started the journey. It is
+  **length-capped and character-checked**, because it is attacker-supplied text going into a
+  cookie and then into a request body sent to X.
+- ⚠️ **X answers HTTP 200 with per-conversion errors in the body**, so a status check alone
+  reports success on a rejected payload. `SendXConversion` checks `errors` too.
+- 🚨 **`X_ADS_API_TOKEN` is a credential** — anyone holding it can inject conversions into the ad
+  account and corrupt its bidding. It arrived from the client in plaintext, so **it should be
+  rotated** once live.
+- ⚠️ **CSP hosts were added BEFORE the pixel shipped** (`$xAds` in `SecurityHeaders`:
+  `static.ads-twitter.com`, `analytics.twitter.com`, `*.ads-twitter.com`, `t.co`). The policy is
+  report-only today, so a missing host costs nothing visible right up until
+  `SECURITY_CSP_ENFORCE=true`, at which point the pixel stops loading silently and the ad account
+  simply reports no conversions.
+- **Env:** `X_PIXEL_ID`, `X_ADS_API_TOKEN`, `X_ADS_API_VERSION` (pinned at 12), and one id per
+  event — `X_EVENT_SIGN_UP`, `X_EVENT_PURCHASE`, `X_EVENT_BEGIN_CHECKOUT`,
+  `X_EVENT_CONNECT_STARTED`, taken from X Ads → Events Manager. Unset ⇒ that event is never
+  reported.
+- Tests: `tests/Feature/AnalyticsXAdsTest.php` (10), plus the pixel fan-out cases in
+  `tests/javascript/analytics.test.js` (36 total).
+
 ## Detailed topic index — load the skill, do not inline this content
 
 The dated feature write-ups that used to sit in this file now live as **skills**: only the

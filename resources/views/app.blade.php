@@ -138,6 +138,31 @@
             @endphp
         @endif
     </script>
+
+    @if (config('analytics.enabled') && filled(config('analytics.x.pixel_id')))
+    {{-- X (Twitter) conversion tracking. Loader host is allowed in
+         SecurityHeaders' `$xAds` — the CSP is report-only today, so a missing
+         host there costs nothing visible right up until enforcement, at which
+         point the pixel stops loading silently. --}}
+    <script nonce="{{ $cspNonce ?? '' }}">
+        !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
+        },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
+        a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+        twq('config','{{ config('analytics.x.pixel_id') }}');
+
+        // Which of our events map to an X conversion event id, read by
+        // resources/js/lib/analytics.js.
+        //
+        // 🚨 Only the events the PIXEL owns are published. `begin_checkout` and
+        // `stripe_connect_started` redirect away to Stripe and are reported
+        // from the server instead — publishing them here as well would report
+        // each one twice, because X deduplicates only on a matching
+        // `conversion_id` and these two routes do not share one.
+        window.__spXConversions = @json(
+            collect(config('analytics.x.events'))->only(['sign_up', 'purchase'])
+        );
+    </script>
+    @endif
     <meta charset="utf-8">
     {{-- maximum-scale/user-scalable=no blocked pinch-zoom, which fails the Lighthouse
          accessibility audit (and the SEO score that reads it) and locks out anyone who

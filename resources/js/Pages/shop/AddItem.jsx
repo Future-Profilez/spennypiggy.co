@@ -2,6 +2,10 @@ import { useAlerts } from "@/Components/Alerts";
 import ShippingProfileField from "@/Components/shop/ShippingProfileField";
 import { usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import {
+    EXTERNAL_LINK_PROPS,
+    PRIVACY_POLICY_URL,
+} from "@/constants/legalLinks";
 import axios from "axios";
 import { useMemo } from "react";
 import { useRef } from "react";
@@ -1193,12 +1197,13 @@ export default function AddItem(props) {
                                                     Terms
                                                 </a>{" "}
                                                 &{" "}
+                                                {/* Hosted on Termly — there is no
+                                                    route for it, which is why this
+                                                    pointed at the Terms page beside
+                                                    it. See constants/legalLinks. */}
                                                 <a
-                                                    href={route(
-                                                        "terms-and-conditions",
-                                                    )}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                    href={PRIVACY_POLICY_URL}
+                                                    {...EXTERNAL_LINK_PROPS}
                                                     className="text-[#FF007F] underline"
                                                 >
                                                     Privacy Policy

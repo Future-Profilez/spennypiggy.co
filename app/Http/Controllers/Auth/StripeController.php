@@ -43,6 +43,7 @@ use App\Notifications\StripeAccountMigrationNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\AbandonedCheckoutService;
 use App\Services\Analytics\MeasurementProtocol;
+use App\Services\Analytics\XConversionsApi;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -1025,6 +1026,7 @@ class StripeController extends Controller
             // flashed for the next render is ever rendered. Server-sent for the
             // same reason `begin_checkout` is.
             MeasurementProtocol::send('stripe_connect_started', ['flow' => 'resume']);
+            XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
 
             return Inertia::location($link->url);
         } catch (Exception $e) {
@@ -1351,6 +1353,7 @@ class StripeController extends Controller
                 // flashed for the next render is ever rendered. Server-sent for the
                 // same reason `begin_checkout` is.
                 MeasurementProtocol::send('stripe_connect_started', ['flow' => 'recreate']);
+                XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
 
                 return Inertia::location($link->url);
             } catch (ApiErrorException $e) {
@@ -1535,6 +1538,7 @@ class StripeController extends Controller
             // flashed for the next render is ever rendered. Server-sent for the
             // same reason `begin_checkout` is.
             MeasurementProtocol::send('stripe_connect_started', ['flow' => 'onboard']);
+            XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
 
             // 3. Redirect to Stripe’s URL
             return Inertia::location($accountLink->url);

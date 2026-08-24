@@ -33,7 +33,8 @@ environments:
       - "public/build/**"
     build:
       - "composer install"
-      - "php artisan event:cache"
+      # Clean slate FIRST — `optimize:clear` clears the event cache too, so an
+      # `event:cache` above this line is built and then immediately deleted.
       - "php artisan optimize:clear"
       - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
@@ -44,6 +45,12 @@ environments:
       - "rm -rf node_modules || rm -rf node_modules"
       # - "rd /s /q node_modules"
       # - "rd /s /q package-lock.json"
+      - "php artisan event:cache"
+      # ⚠️ NO `route:cache` HERE, deliberately. `routes/debug-emails.php` is real on
+      # this environment (it is gated on `! app()->isProduction()`), and route:cache
+      # drops those three routes — its second app boot re-includes the file, whose
+      # `define()` re-declaration guard then skips the whole block. Production is
+      # unaffected because they never exist there. See the production build above.
 
     deploy:
       - "php artisan migrations:fix-state"
@@ -53,7 +60,14 @@ environments:
       - "php artisan stripe:request-bank-capabilities"
 
   production:
-    memory: 1024
+    # ⚠️ Lambda gives CPU IN PROPORTION TO MEMORY, so this is a speed dial and not
+    # just a headroom dial — 1024 MB is roughly half a vCPU, and Laravel's boot is
+    # CPU-bound. Billing is GB-millisecond, so a doubling that also halves the
+    # duration is close to cost-neutral; what does NOT get faster is time spent
+    # WAITING (MySQL, Stripe), and that half now bills at the higher rate. Watch
+    # the Lambda cost line for a week after changing this. Development has been on
+    # 2048 all along, which is part of why it has never felt as slow as production.
+    memory: 2048
     queue-memory: 512
     cli-memory: 1024
     nodejs: 18
@@ -63,7 +77,12 @@ environments:
     # 120,000 ms and never started.
     cli-timeout: 600
     cli-concurrency: 10
-    warm: 1
+    # One warm container means container #2 onwards pays a full Laravel cold start,
+    # which is the slowest thing a first-time visitor can hit here. Warming costs a
+    # real invocation every 5 minutes, so five containers is on the order of cents
+    # per month even at 2048 MB — raise it if CloudWatch still shows cold starts at
+    # peak, lower it if concurrent traffic is genuinely single-digit.
+    warm: 5
     gateway-version: 2
     timeout: 60
     cache: spenny-piggy-redis-caches
@@ -76,7 +95,9 @@ environments:
       - "public/build/**"
     build:
       - "composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader"
-      - "php artisan event:cache"
+      # Clean slate FIRST. This used to sit immediately AFTER `event:cache` and
+      # wiped it — `optimize:clear` clears the event cache too, so the build spent
+      # one step producing an artefact and the next step deleting it.
       - "php artisan optimize:clear"
       - "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
@@ -85,12 +106,33 @@ environments:
       - "npm run build:production"
       - "rm -rf node_modules/.DS_Store || true"
       - "rm -rf node_modules || rm -rf node_modules"
-      - "php artisan config:clear"
+      # ── Caches LAST, so nothing below rebuilds or clears them again ──
+      #
+      # All three write into `bootstrap/cache/`, which Vapor ships inside the Lambda
+      # artefact and reads at runtime. Verified to build with NO database and NO
+      # Redis reachable, which is this container's situation.
       - "php artisan config:cache"
-      - "php artisan route:clear"
-      - "php artisan view:clear"
-      - "php artisan event:clear"
-      - "php artisan cache:clear"
+      # 🚨 538 routes across ~4,000 lines were being re-registered on EVERY
+      # invocation, because the `route:clear` that used to sit here left production
+      # running uncached.
+      # ⚠️ `route:cache` DROPS the three `debug/emails/*` routes. They sit behind
+      # `! app()->isProduction()` in routes/debug-emails.php plus a `define()`
+      # re-declaration guard, so the command's second app boot never registers them.
+      # They do not exist in production either way — but they ARE real on the
+      # development environment, which is why route:cache is deliberately NOT added
+      # to that environment's build above.
+      - "php artisan route:cache"
+      - "php artisan event:cache"
+      #
+      # ⚠️ `view:cache` IS DELIBERATELY ABSENT AND MUST NOT BE ADDED. Vapor's runtime
+      # calls `useStoragePath('/tmp/storage')`
+      # (vendor/laravel/vapor-core/src/Runtime/StorageDirectories.php), so
+      # `config('view.compiled')` resolves under /tmp at runtime while a build-time
+      # `view:cache` writes into the artefact's own storage/ — compiled once, read
+      # never.
+      #
+      # ⚠️ `php artisan cache:clear` was REMOVED from the end of this list. See the
+      # note in the deploy section below before reinstating it anywhere.
 
     deploy:
       - "php artisan migrations:fix-state"
@@ -98,6 +140,18 @@ environments:
       # Queries the users table, so it can only run after deploy — the build
       # container has no database connection.
       - "php artisan stripe:request-bank-capabilities"
+      #
+      # ⚠️ NOT HERE EITHER: `php artisan cache:clear`. It used to sit at the end of
+      # the BUILD list, where the container has no VPC route to
+      # `spenny-piggy-redis-caches` — so whether it ever flushed anything is
+      # unverified from this repo. Do not "fix" that by moving it here without
+      # deciding the trade-off first: in a deploy hook it WOULD work, and every
+      # deploy would then dump the warm application cache and hand the next
+      # visitors the cold path (the homepage costs ~105 information_schema queries
+      # with an empty cache against ~5 with a warm one). The real protection
+      # against a cached payload whose SHAPE changed is the version suffix already
+      # in the key names (`home_trending_creators_v3_…`) — bump that when a cached
+      # structure changes, rather than flushing everything on every deploy.
 
 # - "php artisan app:notifications-pending-approval"
 # - "php artisan subscription:sync --all"

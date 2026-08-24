@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Services\Analytics\MeasurementProtocol;
+use App\Services\Analytics\XConversionsApi;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -180,6 +181,14 @@ class AbandonedCheckoutService
             // 🚨 Sent server-side, not flashed for the browser: the next thing
             // that happens is a redirect to Stripe, and the visitor who
             // abandons never comes back to render anything.
+            // X (Twitter) Ads, same reasoning and the same choke point. The
+            // conversion id is keyed to the Stripe session so it stays stable
+            // if this ever has to deduplicate against a pixel event.
+            XConversionsApi::send('begin_checkout', [
+                'value' => round($minor / 100, 2),
+                'currency' => strtoupper($iso),
+            ], 'checkout-'.$sessionId);
+
             MeasurementProtocol::send('begin_checkout', [
                 'currency' => strtoupper($iso),
                 'value' => round($minor / 100, 2),

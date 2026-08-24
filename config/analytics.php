@@ -103,4 +103,49 @@ return [
         ]),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | X (Twitter) Ads — conversion tracking
+    |--------------------------------------------------------------------------
+    |
+    | Same two-route shape as Google, for the same reason: `sign_up` and
+    | `purchase` reach the browser, while `begin_checkout` and
+    | `stripe_connect_started` redirect away to Stripe and can only be reported
+    | from the server.
+    |
+    | 🚨 `events` is keyed on OUR event name and holds X's own event id
+    | (`tw-ozu4h-xxxxx`, from X Ads → Events Manager → the conversion event).
+    | An event with no id here is never reported — same rule as the Google Ads
+    | labels, and for the same reason: a wrong id files the conversion against
+    | the wrong event, which is worse than filing none and is invisible once it
+    | starts.
+    |
+    | 🚨 ONE EVENT, ONE ROUTE. The pixel and the Conversions API can both report
+    | the same conversion, and X deduplicates them only when both carry the same
+    | `conversion_id`. The split above keeps them from overlapping at all, which
+    | is the version that cannot be got wrong later.
+    |
+    | ⚠️ `api_token` is a CREDENTIAL — anyone holding it can inject conversions
+    | into the ad account and corrupt its bidding. Never commit it, and rotate
+    | it if it has ever been sent in plaintext.
+    |
+    */
+
+    'x' => [
+        'pixel_id' => env('X_PIXEL_ID'),
+        'api_token' => env('X_ADS_API_TOKEN'),
+
+        // X's Ads API version. Pinned rather than floating: an API that changes
+        // shape under us should fail loudly on a version bump we chose, not
+        // quietly on one we did not.
+        'api_version' => env('X_ADS_API_VERSION', '12'),
+
+        'events' => array_filter([
+            'sign_up' => env('X_EVENT_SIGN_UP'),
+            'purchase' => env('X_EVENT_PURCHASE'),
+            'begin_checkout' => env('X_EVENT_BEGIN_CHECKOUT'),
+            'stripe_connect_started' => env('X_EVENT_CONNECT_STARTED'),
+        ]),
+    ],
+
 ];

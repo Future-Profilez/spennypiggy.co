@@ -184,6 +184,18 @@ class SecurityHeaders
          * ⚠️ `analytics.google.com` above has the same trap: `*.analytics.google.com`
          * does NOT match the bare host, and the bare host is the one GA4 posts to.
          */
+        /*
+         * X (Twitter) Ads. The pixel loader is on `static.ads-twitter.com` and
+         * posts to `analytics.twitter.com`; `t.co` appears on some redirect
+         * paths.
+         *
+         * 🚨 Listed BEFORE the pixel ships, not after. The CSP is report-only
+         * today, so a missing host here costs nothing visible — right up until
+         * SECURITY_CSP_ENFORCE=true, at which point the pixel stops loading
+         * silently and the ad account simply reports no conversions.
+         */
+        $xAds = 'https://static.ads-twitter.com https://analytics.twitter.com https://ads-twitter.com https://*.ads-twitter.com https://t.co';
+
         $googleAds = 'https://www.googleadservices.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://stats.g.doubleclick.net https://*.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://google.com https://www.google.co.uk https://www.google.ie';
 
         /*
@@ -214,7 +226,7 @@ class SecurityHeaders
              * un-nonced inline blocks still in app.blade.php are what report-only
              * mode is here to surface.
              */
-            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} {$googleAds} {$termly} https://challenges.cloudflare.com https://cdn.jsdelivr.net",
+            "script-src 'self' 'nonce-{$nonce}' {$asset} {$stripe} {$intercom} {$google} {$googleAds} {$xAds} {$termly} https://challenges.cloudflare.com https://cdn.jsdelivr.net",
 
             // 'unsafe-inline' is required and not removable today — see the class
             // docblock.
@@ -233,7 +245,7 @@ class SecurityHeaders
 
             "media-src 'self' data: blob: {$asset} {$uploadcare} https://player.vimeo.com",
 
-            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} {$googleAds} {$termly} https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
+            "connect-src 'self' {$asset} {$stripe} {$uploadcare} {$intercom} {$magicbell} {$sentry} {$google} {$googleAds} {$xAds} {$termly} https://ipapi.co https://api.ipify.org https://api64.ipify.org wss://*.intercom.io wss://*.magicbell.com wss://*.magicbell.io",
 
             "frame-src 'self' {$stripe} {$uploadcare} {$intercom} {$googleAds} {$termly} https://challenges.cloudflare.com https://player.vimeo.com",
 

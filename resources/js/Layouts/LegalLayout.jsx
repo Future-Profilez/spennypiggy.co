@@ -42,8 +42,8 @@ export default function LegalLayout({ children, activePage }) {
 
     return (
         <div className="min-h-dvh bg-[#FDFCFD] font-poppins">
-            <div className="border-b-2 border-black bg-white">
-                <div className="mx-auto w-full max-w-6xl px-5 pt-5 sm:px-8">
+            <div className="bg-white">
+                <div className="mx-auto w-full max-w-[110ch] px-5 py-5 sm:px-8">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <div className="border-2 border-black w-10 h-10 bg-pink-600 rounded-box-sm flex items-center justify-center">
@@ -67,10 +67,25 @@ export default function LegalLayout({ children, activePage }) {
                         </Link>
                     </div>
 
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <main className="bg-white md:bg-[#FDFCFD]">
+                <div className="min-h-[80dvh]">
+                    {children}
+                </div>
+            </main>
+
+            <div className="bg-gray-50/50">
+                <div className="mx-auto w-full max-w-[110ch] px-5 sm:px-8">
+                    <p className="pt-6 text-[12px] font-bold text-black/60 uppercase tracking-widest">
+                        All Documents
+                    </p>
                     <nav
                         ref={navRef}
                         data-lenis-prevent
-                        className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-4 sm:-mx-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-6 pt-3 sm:-mx-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             const isActive = activePage === item.component;
@@ -88,17 +103,7 @@ export default function LegalLayout({ children, activePage }) {
                         })}
                     </nav>
                 </div>
-            </div>
-
-            {/* Main Content */}
-            <main className="bg-white md:bg-[#FDFCFD]">
-                <div className="min-h-[80dvh]">
-                    {children}
-                </div>
-            </main>
-
-            <div className="border-t-2 border-black bg-gray-50/50">
-                <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 flex flex-wrap items-end justify-between gap-4">
+                <div className="mx-auto w-full max-w-[110ch] px-5 py-6 sm:px-8 flex flex-wrap items-end justify-between gap-4">
                     <div className="space-y-1">
                         <p className="text-[12px] font-bold text-black/60 uppercase tracking-wider">
                             Last Updated
