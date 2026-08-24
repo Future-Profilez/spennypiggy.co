@@ -1354,8 +1354,8 @@ export default function Dashboard(props) {
                                             )}
 
                                             {/* Owner-only. The six module tabs below show one type
- at a time; this is the only route to the whole catalogue,
- which is where a rejected or expired listing surfaces. */}
+                                                at a time; this is the only route to the whole catalogue,
+                                                which is where a rejected or expired listing surfaces. */}
                                             {IsloggedIn && (
                                                 <Link
                                                     href={route(
@@ -1673,10 +1673,7 @@ export default function Dashboard(props) {
                                                                                         )}
 
                                                                                         {IsloggedIn &&
-                                                                                        ((user?.profile_status_lock ==
-                                                                                            0 &&
-                                                                                            user?.profile_reject_reason) ||
-                                                                                            (user?.edit_bio_reason &&
+                                                                                        ((user?.profile_status_lock == 0 && user?.profile_reject_reason) || (user?.edit_bio_reason &&
                                                                                                 user?.bio_approved ==
                                                                                                     2) ||
                                                                                             slinks?.reason ||
@@ -1684,8 +1681,7 @@ export default function Dashboard(props) {
                                                                                                 2) ? (
                                                                                             <div className="bg-white border-1 border-black rounded-box mb-4 p-4">
                                                                                                 <h2 className="text-red-600 font-bold text-xl">
-                                                                                                    Action
-                                                                                                    Required
+                                                                                                    Action Required
                                                                                                     {
                                                                                                         ""
                                                                                                     }
@@ -1800,14 +1796,7 @@ export default function Dashboard(props) {
                                                                                             ""
                                                                                         )}
 
-                                                                                        {!IsloggedIn &&
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.username &&
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.username !==
-                                                                                            user?.username ? (
+                                                                                        {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                                             <div className="mb-6 !mt-6 relative group">
                                                                                                 {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#FF007F] to-[#05EFB8] rounded-box blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
                                                                                                 <div className="relative overflow-hidden p-5 md:p-6 rounded-box bg-[#fdfbf7] border-[3px] border-black min-h-[120px] md:min-h-[140px]">
@@ -2009,8 +1998,7 @@ export default function Dashboard(props) {
 
                                                                     {IsloggedIn || UserStripeConnected == 1 ? (
                                                                         <>
-                                                                            {page ===
-                                                                            "wishes" ? (
+                                                                            {page === "wishes" ? (
                                                                                 <ErrorBoundary>
                                                                                     <Suspense
                                                                                         fallback={
@@ -2018,8 +2006,7 @@ export default function Dashboard(props) {
                                                                                         }
                                                                                     >
                                                                                         <div className="wishes-items pb-6">
-                                                                                            {wish_categories &&
-                                                                                            wish_categories.length ? (
+                                                                                            {wish_categories && wish_categories.length ? (
                                                                                                 <>
                                                                                                     <div className="new-wish-cats flex items-center mb-3 md:mb-6 gap-2 flex-wrap p-2">
                                                                                                         <Link
@@ -2027,8 +2014,7 @@ export default function Dashboard(props) {
                                                                                                             href={route(
                                                                                                                 "user.show",
                                                                                                                 {
-                                                                                                                    username:
-                                                                                                                        user.username,
+                                                                                                                    username: user.username,
                                                                                                                     page: "wishes",
                                                                                                                 },
                                                                                                             )}
@@ -2077,11 +2063,7 @@ export default function Dashboard(props) {
                                                                                                         {IsloggedIn ? (
                                                                                                             <EditCategories
                                                                                                                 username={
-                                                                                                                    (auth &&
-                                                                                                                        auth
-                                                                                                                            ?.user
-                                                                                                                            ?.username) ||
-                                                                                                                    null
+                                                                                                                    (auth && auth?.user?.username) || null
                                                                                                                 }
                                                                                                             />
                                                                                                         ) : (
@@ -2093,15 +2075,9 @@ export default function Dashboard(props) {
                                                                                                 ""
                                                                                             )}
 
-                                                                                            {loading ||
-                                                                                            (isInitialLoad &&
-                                                                                                (!wishitems ||
-                                                                                                    wishitems.length ===
-                                                                                                        0)) ? (
+                                                                                            {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
                                                                                                 <LoadingScreen />
-                                                                                            ) : wishitems &&
-                                                                                              wishitems.length >
-                                                                                                  0 ? (
+                                                                                            ) : wishitems && wishitems.length > 0 ? (
                                                                                                 <>
                                                                                                     <DndContext
                                                                                                         sensors={
@@ -2418,10 +2394,7 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         username={
-                                                                                            user?.username ||
-                                                                                            auth
-                                                                                                ?.user
-                                                                                                ?.username
+                                                                                            user?.username || auth?.user?.username
                                                                                         }
                                                                                         suppressEmptyState={
                                                                                             IsloggedIn &&
@@ -2432,12 +2405,7 @@ export default function Dashboard(props) {
                                                                                                     0)
                                                                                         }
                                                                                     />
-                                                                                    {IsloggedIn &&
-                                                                                        (!props.memberships ||
-                                                                                            props
-                                                                                                .memberships
-                                                                                                ?.length ===
-                                                                                                0) && (
+                                                                                    {IsloggedIn && (!props.memberships || props.memberships?.length === 0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
@@ -2479,10 +2447,8 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            {page ===
-                                                                            "bills" ? (
-                                                                                <Suspense
-                                                                                    fallback={
+                                                                            {page === "bills" ? (
+                                                                                <Suspense fallback={
                                                                                         <LoadingScreen />
                                                                                     }
                                                                                 >
@@ -2491,40 +2457,20 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         suppressEmptyState={
-                                                                                            IsloggedIn &&
-                                                                                            (!props.bills ||
-                                                                                                props
-                                                                                                    .bills
-                                                                                                    ?.length ===
-                                                                                                    0)
+                                                                                            IsloggedIn && (!props.bills || props.bills?.length === 0)
                                                                                         }
                                                                                     />
-                                                                                    {IsloggedIn &&
-                                                                                        (!props.bills ||
-                                                                                            props
-                                                                                                .bills
-                                                                                                ?.length ===
-                                                                                                0) && (
+                                                                                    {IsloggedIn && (!props.bills || props.bills?.length === 0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🧾
                                                                                                     </div>
                                                                                                     <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                                        No
-                                                                                                        Active
-                                                                                                        Bills
+                                                                                                        No Active Bills
                                                                                                     </h3>
                                                                                                     <p className="text-gray-600 font-bold mb-6">
-                                                                                                        Offer
-                                                                                                        a
-                                                                                                        content
-                                                                                                        membership
-                                                                                                        your
-                                                                                                        fans
-                                                                                                        can
-                                                                                                        subscribe
-                                                                                                        to.
+                                                                                                        Offer a content membership your fans can subscribe to.
                                                                                                     </p>
                                                                                                     <button
                                                                                                         onClick={() =>
@@ -2547,8 +2493,7 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            {page ===
-                                                                            "shop" ? (
+                                                                            {page === "shop" ? (
                                                                                 <Suspense
                                                                                     fallback={
                                                                                         <LoadingScreen />
@@ -2562,42 +2507,22 @@ export default function Dashboard(props) {
                                                                                             IsloggedIn
                                                                                         }
                                                                                         suppressEmptyState={
-                                                                                            IsloggedIn &&
-                                                                                            (!props.shops ||
-                                                                                                props
-                                                                                                    .shops
-                                                                                                    .length ===
-                                                                                                    0)
+                                                                                            IsloggedIn && (!props.shops || props.shops.length === 0)
                                                                                         }
                                                                                     />
                                                                                     {IsloggedIn &&
-                                                                                        (!props.shops ||
-                                                                                            props
-                                                                                                .shops
-                                                                                                .length ===
-                                                                                                0) && (
+                                                                                        (!props.shops || props.shops.length === 0) && (
                                                                                             <>
                                                                                                 <div className="w-full bg-white border-[3px] border-black rounded-box p-8 text-center mt-4">
                                                                                                     <div className="text-4xl mb-3">
                                                                                                         🛍️
                                                                                                     </div>
                                                                                                     <h3 className="font-gulfs text-2xl uppercase mb-2">
-                                                                                                        No
-                                                                                                        Shop
-                                                                                                        Items
-                                                                                                        Yet
+                                                                                                        No Shop Items Yet
                                                                                                     </h3>
                                                                                                     <p className="text-gray-600 font-bold mb-6">
-                                                                                                        Create
-                                                                                                        physical
-                                                                                                        or
-                                                                                                        digital
-                                                                                                        products
-                                                                                                        for
-                                                                                                        your
-                                                                                                        fans
-                                                                                                        to
-                                                                                                        buy.
+                                                                                                        Create physical or digital products for
+                                                                                                        your fans to buy.
                                                                                                     </p>
                                                                                                     <button
                                                                                                         onClick={() =>
@@ -2609,8 +2534,7 @@ export default function Dashboard(props) {
                                                                                                         }
                                                                                                         className="bg-[#FF007F] text-black uppercase text-lg px-8 py-2 rounded-full border-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
                                                                                                     >
-                                                                                                        Add
-                                                                                                        Item
+                                                                                                        Add Item
                                                                                                     </button>
                                                                                                 </div>
                                                                                             </>
