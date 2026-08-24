@@ -14,7 +14,7 @@ import LinkTwitter from "../twitter/LinkTwitter";
 import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
 import { QRCodeSVG } from "qrcode.react";
-const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
+const EditProfile = lazyRetry(() => import("@/Pages/account/EditProfile"));
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
@@ -46,6 +46,7 @@ import {
     ShoppingBagIcon,
     LinkIcon,
 } from "@animateicons/react/lucide";
+import lazyRetry from "@/utils/lazyRetry";
 import {
     Shield,
     LogOut,

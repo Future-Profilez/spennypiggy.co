@@ -170,10 +170,10 @@ class Shop extends Model
         $formats = ['original', 'webp', 'avif'];
 
         $data = [
-            'original' => $baseUrl.'/-/format/jpeg/-/quality/85/',
+            'original' => $baseUrl.'/-/format/jpeg/-/quality/smart/',
             'formats' => [
-                'webp' => $baseUrl.'/-/format/webp/-/quality/85/',
-                'avif' => $baseUrl.'/-/format/avif/-/quality/85/',
+                'webp' => $baseUrl.'/-/format/webp/-/quality/smart/',
+                'avif' => $baseUrl.'/-/format/avif/-/quality/smart/',
             ],
             'responsive' => [],
         ];

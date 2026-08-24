@@ -167,7 +167,7 @@ export default function ForgotPassword(props) {
                             </p>
                         )}
 
-                        <div className="rounded-box border-[3px] border-black bg-white p-4 sm:p-6">
+                        <div className="rounded-box border-black bg-white p-4 sm:p-6">
                             {sentTo ? (
                                 /*
                                     A state, not a toast. It names the address the mail
@@ -220,14 +220,14 @@ export default function ForgotPassword(props) {
                                     <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                                         <Link
                                             href={route("login")}
-                                            className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#05EFB8] font-gulfs text-sm uppercase tracking-[0.14em] text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0"
+                                            className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-black bg-[#05EFB8] font-gulfs text-sm uppercase tracking-[0.14em] text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0"
                                         >
                                             Back to sign in
                                         </Link>
                                         <button
                                             type="button"
                                             onClick={sendAgain}
-                                            className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-[3px] border-black bg-white text-sm font-bold text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0"
+                                            className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-black bg-white text-sm font-bold text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0"
                                         >
                                             Use another address
                                         </button>
@@ -254,7 +254,7 @@ export default function ForgotPassword(props) {
 
                                     <LoaderButton
                                         disabled={loading}
-                                        className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-[3px] border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
+                                        className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
                                             loading
                                                 ? "cursor-not-allowed opacity-70 hover:translate-y-0"
                                                 : ""

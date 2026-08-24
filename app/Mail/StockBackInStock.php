@@ -32,7 +32,11 @@ class StockBackInStock extends Mailable
         public string $itemName,
         public string $creatorName,
         public ?string $creatorUsername = null,
-        public int $stock = 0,
+        /*
+         * 🚨 PROTECTED — see `AbandonedCheckoutReminder`. As a public property it
+         * overwrote `content()`'s `max(0, …)` clamp, making the clamp dead code.
+         */
+        protected int $stock = 0,
         public ?int $userId = null,
         public ?int $waitlistId = null,
     ) {}

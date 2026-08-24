@@ -2,37 +2,37 @@ import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
-const Wishlist = lazy(() => import("./Auth/Wishlist"));
-const Wishlistbox = lazy(() => import("@/wishlist/Wishlistbox"));
+const Wishlist = lazyRetry(() => import("./Auth/Wishlist"));
+const Wishlistbox = lazyRetry(() => import("@/wishlist/Wishlistbox"));
 import Userprofile from "@/wishlist/Userprofile";
 import ProfileRightRail from "@/Components/Profile/ProfileRightRail";
-const CoverIdentity = lazy(() => import("@/Components/Profile/CoverIdentity"));
+const CoverIdentity = lazyRetry(() => import("@/Components/Profile/CoverIdentity"));
 import EarningsMilestone from "@/Components/Profile/EarningsMilestone";
 import SupporterWall from "@/Components/Profile/SupporterWall";
 import CategoryTags from "@/Components/Profile/CategoryTags";
 import ReturningSupporter from "@/Components/Profile/ReturningSupporter";
-const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
-const Nocontent = lazy(() => import("@/includes/Nocontent"));
-const LoadingScreen = lazy(() => import("@/includes/LoadingScreen"));
-const PaymentDashboard = lazy(() => import("./stripe/PaymentDashboard"));
-const ChangeCurrency = lazy(() => import("@/Components/ChangeCurrency"));
-const Popup = lazy(() => import("@/Components/Popup"));
-const MembershipsLists = lazy(() => import("./membership/MembershipsLists"));
+const ShareProfile = lazyRetry(() => import("@/wishlist/ShareProfile"));
+const Nocontent = lazyRetry(() => import("@/includes/Nocontent"));
+const LoadingScreen = lazyRetry(() => import("@/includes/LoadingScreen"));
+const PaymentDashboard = lazyRetry(() => import("./stripe/PaymentDashboard"));
+const ChangeCurrency = lazyRetry(() => import("@/Components/ChangeCurrency"));
+const Popup = lazyRetry(() => import("@/Components/Popup"));
+const MembershipsLists = lazyRetry(() => import("./membership/MembershipsLists"));
 import { BiTask } from "react-icons/bi";
-const AddMembership = lazy(() => import("./membership/AddMembership"));
-const Gifter = lazy(() => import("./gifter/Gifter"));
-const AddBills = lazy(() => import("./bills/AddBills"));
-const EditCategories = lazy(() => import("@/wishlist/EditCategories"));
-const TipInner = lazy(() => import("./TipJar/TipInner"));
-const Billslist = lazy(() => import("./bills/Billslist"));
-const FeedList = lazy(() => import("./feed/FeedList"));
-const AddPost = lazy(() => import("./feed/AddPost"));
-const AddIntro = lazy(() => import("./intros/AddIntro"));
-const MyGoal = lazy(() => import("./TipJar/MyGoal"));
-const FeatureSuggestionModal = lazy(
+const AddMembership = lazyRetry(() => import("./membership/AddMembership"));
+const Gifter = lazyRetry(() => import("./gifter/Gifter"));
+const AddBills = lazyRetry(() => import("./bills/AddBills"));
+const EditCategories = lazyRetry(() => import("@/wishlist/EditCategories"));
+const TipInner = lazyRetry(() => import("./TipJar/TipInner"));
+const Billslist = lazyRetry(() => import("./bills/Billslist"));
+const FeedList = lazyRetry(() => import("./feed/FeedList"));
+const AddPost = lazyRetry(() => import("./feed/AddPost"));
+const AddIntro = lazyRetry(() => import("./intros/AddIntro"));
+const MyGoal = lazyRetry(() => import("./TipJar/MyGoal"));
+const FeatureSuggestionModal = lazyRetry(
     () => import("@/Components/FeatureSuggestionModal"),
 );
-const SocialLinks = lazy(() => import("@/includes/SocialLinks"));
+const SocialLinks = lazyRetry(() => import("@/includes/SocialLinks"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import useWidthCount from "@/Components/useWidthCount";
@@ -61,6 +61,7 @@ import {
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
 import BioLinkCard from "@/Components/bio/BioLinkCard";
+import CreatorPushCard from "@/Components/push/CreatorPushCard";
 import CreatorJourneyCard from "@/Components/CreatorJourneyCard";
 import DiscoveryStatsPanel from "@/Components/discovery/DiscoveryStatsPanel";
 import OpportunityPanel from "@/Components/earnings/OpportunityPanel";
@@ -76,44 +77,45 @@ import { FaRegHeart } from "react-icons/fa";
 import InstantTabSystem from "@/Components/InstantTabSystem";
 import AddMoreTile from "@/Components/AddMoreTile";
 
-const ProfileProductLists = lazy(
+const ProfileProductLists = lazyRetry(
     () => import("./shop/profile/ProfileProductLists"),
 );
-const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
-const AddItem = lazy(() => import("./shop/AddItem"));
+const ProfileTaskLists = lazyRetry(() => import("./Tasks/Profile/ProfileTaskLists"));
+const AddItem = lazyRetry(() => import("./shop/AddItem"));
 
-const GiftListing = lazy(() => import("./rye/GiftListing"));
-const OldSubscribe = lazy(() => import("./webpush/OldSubscribe"));
-const AddSocial = lazy(() => import("./Auth/Social"));
-const CreatorVerification = lazy(() => import("./Profile/CreatorVerification"));
-const SiteSubscription = lazy(() => import("./Profile/SiteSubscription"));
-const EnableCardCapabilities = lazy(
+const GiftListing = lazyRetry(() => import("./rye/GiftListing"));
+const OldSubscribe = lazyRetry(() => import("./webpush/OldSubscribe"));
+const AddSocial = lazyRetry(() => import("./Auth/Social"));
+const CreatorVerification = lazyRetry(() => import("./Profile/CreatorVerification"));
+const SiteSubscription = lazyRetry(() => import("./Profile/SiteSubscription"));
+const EnableCardCapabilities = lazyRetry(
     () => import("./stripe/EnableCardCapabilities"),
 );
-const ActionRequired = lazy(() => import("./stripe/ActionRequired"));
-const ErrorBoundary = lazy(() => import("@/Components/ErrorBoundary"));
-const SubscriptionNewsPopup = lazy(() => import("@/Components/SubscriptionNewsPopup"));
+const ActionRequired = lazyRetry(() => import("./stripe/ActionRequired"));
+const ErrorBoundary = lazyRetry(() => import("@/Components/ErrorBoundary"));
+const SubscriptionNewsPopup = lazyRetry(() => import("@/Components/SubscriptionNewsPopup"));
 // Small, always rendered on the creator's own About tab — not worth a lazy chunk.
-const PromoSlider = lazy(() => import("@/Components/Promo/PromoSlider"));
-const FounderProgressTracker = lazy(
+const PromoSlider = lazyRetry(() => import("@/Components/Promo/PromoSlider"));
+const FounderProgressTracker = lazyRetry(
     () => import("@/Components/FounderProgressTracker"),
 );
-const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
 import PendingChangesNotice from "@/Components/PendingChangesNotice";
+import lazyRetry from "@/utils/lazyRetry";
 
-const CreatorRiskBanner = lazy(
+const CreatorRiskBanner = lazyRetry(
     () => import("@/Components/Risk/CreatorRiskBanner"),
 );
-const CreatorActivityWidget = lazy(
+const CreatorActivityWidget = lazyRetry(
     () => import("@/Components/CreatorActivityWidget"),
 );
-const PiggyPotWidget = lazy(
+const PiggyPotWidget = lazyRetry(
     () => import("@/Components/PiggyPots/PiggyPotWidget"),
 );
-const PiggyPotSocialProof = lazy(
+const PiggyPotSocialProof = lazyRetry(
     () => import("@/Components/PiggyPots/PiggyPotSocialProof"),
 );
-const PiggyPotsGrid = lazy(
+const PiggyPotsGrid = lazyRetry(
     () => import("@/Components/PiggyPots/PiggyPotsGrid"),
 );
 
@@ -1351,6 +1353,25 @@ export default function Dashboard(props) {
                                                     username={user?.username}
                                                     className="mt-3"
                                                 />
+                                            )}
+
+                                            {/* 🚨 THE ONLY WAY TO SEND ONE. The push
+                                                service, its table, its rate limit, its
+                                                moderation rules and both routes all
+                                                shipped — and `resources/js` referenced
+                                                none of them, so no creator could reach
+                                                the feature and `creator_push_messages`
+                                                sat at 0 rows. Same fault the bio page
+                                                had before the card above it.
+
+                                                Beside "Your link in bio" on purpose:
+                                                one is how new supporters find you, the
+                                                other is how the ones you already have
+                                                come back. The card self-gates — it
+                                                fetches its own allowance and renders
+                                                nothing for a non-creator. */}
+                                            {IsloggedIn && (
+                                                <CreatorPushCard className="mt-3" />
                                             )}
 
                                             {/* Owner-only. The six module tabs below show one type

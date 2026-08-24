@@ -34,11 +34,11 @@ export default function PreviewCard({ role, name, username, categories = [] }) {
             </figcaption>
 
             <div
-                className={`rounded-box border-[3px] border-black bg-white p-4 ${accent.shadow}`}
+                className={`rounded-box border-black bg-white p-4 ${accent.shadow}`}
             >
                 <div className="flex items-center gap-3.5">
                     <div
-                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-[3px] border-black text-xl font-black text-white"
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-black text-xl font-black text-white"
                         style={{ backgroundColor: accent.hex }}
                     >
                         {initial || (

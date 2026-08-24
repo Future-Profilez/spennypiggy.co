@@ -191,6 +191,21 @@ this person has spent". It now reads `FinancialTransaction`.
   That sync branch (`SyncFinancialTransactions::syncOrphanCheckouts`) now prices through
   `calculateStripeDirectChargeFlow` like the main wish path.
 
+🚨 **THE FULL EXTENT OF THIS IS NOW MEASURED — `docs/guides/SCHEMA_DRIFT_AUDIT.md` (24 Aug 2026).**
+An empty MySQL database built with `migrate:fresh` has **139 tables against the live 164**:
+**26 tables no migration creates** (including `post_comments`, `post_likes`,
+`shop_varients`, `login_logs`, `payout_details`) and **56 columns no migration declares**
+across 15 tables. `shops`, `wish_items` and `memberships` were the three found by accident;
+this is the rest. ⚠️ **The mechanism is a MISSING COLUMN, not a NOT NULL violation** — zero
+of the 56 are required-without-a-default on live, so a fresh build fails with `Unknown
+column` or silently skips a `Schema::hasTable`-guarded feature. Nothing is wrong in
+production; what is wrong is every environment built from the repo, which is why whole
+areas here have no test coverage. Close it one guarded additive migration per table, types
+transcribed from `SHOW COLUMNS` — never guessed.
+⚠️ **Separately, the shared dev database is 5 migrations behind**, including the entire
+23 Aug marketing-consent feature, so `marketing_suppressions` does not exist there.
+`MarketingConsent::isSuppressed` fails OPEN, which is why nothing complained.
+
 ⚠️ **`shops` was created with six columns and grew ~17 more that no migration declared**
 (migration `2026_08_04_000000`, guarded, empty `down()`). Every deployed database has
 them, so nothing failed in production — but a database built from these migrations came
@@ -550,6 +565,352 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
   for that reason. ⚠️ The house display style renders them **uppercase** (`font-gulfs
   uppercase`), same as the landing-page headline — the words are verbatim, the casing is
   typography.
+- **A3 argues in DRAWN UI, never a screenshot (23 Aug 2026).** Sections 2, 4 and 6 carried
+  headings and word-pills only; they now carry wireframe phone screens (the four-tap cold
+  path vs the one warm screen), a `social chips → spennypiggy.co/yourname → outcome` route,
+  and a mock of the link-page editor. Same reasoning as A2's draw-Discover departure above:
+  a screenshot of a live page puts real creators, and whatever state the product was in that
+  morning, into a paid advert nobody can revoke. ⚠️ **The section-6 editor mock carries a
+  visible "Illustration of the link page editor" caption** — that section is gated on
+  `bio_direct_sales`, and a mock a visitor reads as a screenshot is a product claim, the same
+  hazard `DiscoveryStatsPanel`'s coming-soon badge exists to close. A drawn mock also cannot
+  drift silently: it never *looks* current, so nobody trusts it as a spec.
+- ⚠️ **Platform names are set in TYPE, not logos** — the brief's competitor/third-party-mark
+  ban covers a rendered wordmark or glyph as much as a sentence, and a marketing surface has
+  no licence to any of them. Naming Instagram/TikTok/X as plain text is nominative use.
+- ⚠️ **The drop-off is drawn with opacity on the DECORATIVE screens only** (`aria-hidden`);
+  the step labels beside them stay at full contrast. Fading the words to dramatise "each tap
+  loses supporters" would make the argument by making the argument unreadable, and would put
+  the fade on content a screen reader announces.
+
+## 🚨 Discover is a shop front, not a directory (24 Aug 2026, spennypiggy.co)
+
+Rebuilt around the supporter's buying questions — what can I afford, what do I
+get, has anyone bought before — because the page answered none of them above the
+click. `routes/auth.php` (the `discover` closure), `app/Services/DiscoveryService.php`,
+`Pages/discover/Discover.jsx` + `components/{TopBar,CreatorCard,ResultsGrid}.jsx`,
+`components/DiscoverHero.jsx`. Tests: `tests/Feature/DiscoverBrowseTest.php` (7).
+
+**Six faults this pass fixed, all of them live for months:**
+
+- 🚨 **`$type` DEFAULTED TO `'trending'`, so a bare `/discover` was never the
+  landing page.** Every request set `filters[type]`, which put the closure in its
+  search branch — the featured rails were built and thrown away, and the landing
+  was a bare grid of creators in id order. The default is now `null`;
+  `/discover/trending` still asks for that grid explicitly.
+- 🚨 **"Trending" meant `orderByDesc('id')`** (the code called itself a
+  placeholder), and every creator payload carried a hardcoded `'clicks_24h' => 0`,
+  so the flame badge could never render. Ranking is now `rankedCreatorIds()` /
+  `creatorScore()` over real signals: 24h clicks from `search_clicks` (weighted
+  hardest — freshest and hardest to fake), purchases, the items' own
+  `rising_score`, listing count only as a tiebreak.
+- 🚨 **Page 2 was page 1.** `getSearchBills/Memberships/Tasks/Shops` ran
+  `limit($limit)` with **no offset**. All four now page, and the grid ACCUMULATES
+  pages client-side keyed on a filter signature — "Load more" used to replace the
+  rows the visitor was reading. `ResultsGrid` never rendered a Load-more control
+  at all; `onLoadMore` was passed to a component that ignored it.
+- 🚨 **The heading counted the page, not the results** ("Showing 24 results" on
+  page 1 of 40, and again on page 2). `getSearchCounts()` returns real per-type
+  totals; `hasNext` is computed from them instead of from "this page came back
+  full", which lied in both directions.
+- 🚨 **`route('discover.suggestions')` DID NOT EXIST.** `TopBar` called it on
+  every keystroke and ziggy THROWS for a name it does not carry — while the
+  dropdown markup sat commented out below. The route is added (above the
+  `discover/{type?}` catch-all, `throttle:60,1`) and the dropdown is live; a
+  suggestion goes straight to the profile, tagged `search-recs`.
+- ⚠️ **The empty state's "Clear All Filters" ran `window.location.reload()`** —
+  reloading with the filters still applied.
+
+**New business rules:**
+
+- 🚨 **THE CARD'S PRICE PLATE IS FEE-INCLUSIVE FOR A LOGGED-OUT VISITOR.**
+  `price_from` on the wire is the LISTED price; `CreatorCard` grosses it up
+  through `PriceFormat().calculateTotalSupporterPays` exactly as
+  `wishlist/Wishlistbox.jsx` does, and prints "*Fees included". Rendering
+  `price_from` raw would advertise a cheaper number on Discover than the checkout
+  charges, on the one surface whose whole job is a first purchase.
+- **Cheapest-listing is decided in GBP** (`Helpers::priceFormat(..., 'GBP')`), so
+  a foreign-currency listing cannot win the "from" slot by being a bigger number
+  in its own currency. Same rule for `PRICE_BANDS` — a band is a GBP-equivalent
+  question, applied as an id set (`listingIdsInBand`) rather than a SQL BETWEEN
+  on mixed currencies, so the count and the grid cannot disagree.
+- **Browsing hides a creator with nothing listed; a NAMED search still finds
+  them** (and still finds fan accounts). A profile with nothing for sale is a
+  dead end while browsing; answering "no results" for an account someone typed by
+  name is the worse failure.
+- ⚠️ **`tasks` has neither `supporter_count` nor `rising_score`** (the four other
+  listing tables do) and keys its owner on `creator_id`. Both are probed via
+  `Schema::hasColumn` / `listingSources()`, never assumed — selecting them blind
+  is a 1054 that takes the whole page down.
+
+**New API surface:** `GET discover/suggestions` (name `discover.suggestions`).
+New page props: `counts`, `priceBands`, `unlockTypes`, `budgetWishes`,
+`boardCreators`. New filters accepted: `priceBand` (`under10`/`10to25`/`25to50`/
+`over50`), `unlock` (`instant`/`monthly`/`custom`), plus the existing `sortBy` —
+both validated against `DiscoveryService::PRICE_BANDS` / `UNLOCK_TYPES` and
+dropped if unknown. ⚠️ The page cache key is now a **whitelist** of those filters,
+not `md5($request->all())` — any stray query string used to mint its own entry.
+
+**Content rule — the labels are the SUPPORTER'S words, the ids are ours.**
+Nobody arrives wanting to buy "a Bill" or "a Task": Wish List → **Unlock now**,
+Bills → **Monthly content**, Memberships → **Membership tiers**, Tasks → **Made
+for you**, Shops → **Buy direct**, Creators → **People**. Ids still map to the
+platform `contentType`, so routing, search and the admin side are untouched. The
+hero states the transaction ("Buy straight from the creator · pay once, unlocks
+straight away, from £4.99") rather than a mood, and the ticker no longer ranks
+**earnings** — how much a creator took is our fact, not the visitor's, and a
+leaderboard of takings reads as a plea rather than a shop.
+
+**Design:** eight near-identical rails → **three** (Under £10 · Trending ·
+New and verified) over one paged board. Creator cards moved off dark `#16161C`
+onto the house white + `border-black` frame (the grid was mixing three ground
+colours), emoji headings dropped for data eyebrows, and the bare
+`hover:-translate-y-1` (banned without a shadow partner) replaced with a border
++ brightness change. `ResultsGrid`'s `SpotlightSection` was deleted — its three
+hardcoded cards linked to `?search=under 20` and `?search=expiring`, i.e. keyword
+searches for the literal words.
+
+**Not done, deliberately:** quick-view checkout from the grid (a real feature, not
+a polish item), and a save/follow control on the creator card — `SavedItem::TYPES`
+has no `creator` type, and the follow endpoint EMAILS the creator on every
+follow, which a browse-grid button would fire far too easily.
+
+### The page has to work before the visitor does (24 Aug 2026)
+
+Everything above waits for a search, a chip or a scroll. These three do not, and
+they are the reason a first-time visitor stays:
+
+- **Spotlight** (`components/SpotlightRotator.jsx`) — one creator at a time,
+  with a real listing at a real price, rotating every 6s. 🚨 **IT SITS IN ITS OWN
+  BAND UNDER THE BANNER, NEVER INSIDE IT** (client direction, 24 Aug 2026): it
+  was built into the hero's right-hand side and took the drifting face wall away
+  — **the wall is the banner's design and stays.** The band is the same card in
+  a wide layout, so nothing was lost by moving it. 🚨 **THREE CARDS, NOT ONE WIDE
+  BAND** (same direction): a single full-width strip on a 1440px screen is one
+  creator's name and a mile of empty dark — the row shows up to three (two on
+  `sm`, one on a phone) and the whole set shifts through the pool, so a wide
+  screen carries more of the catalogue rather than more emptiness.
+  🚨 `prefers-reduced-motion`
+  stops the rotation entirely rather than slowing it — a self-advancing carousel
+  is precisely what that setting asks us not to do.
+- **Live unlocks** (`components/LiveUnlocks.jsx` + `DiscoveryService::recentUnlocks()`,
+  `GET discover/live`, name `discover.live`) — what people actually bought here
+  in the last 30 days, replacing the hero's synthetic "trending now" ticker
+  (never both: two scrolling strips under one headline is noise, and the
+  synthetic one undercuts the real one).
+  🚨 **THE BUYER IS NEVER IN THE PAYLOAD** — not a name, not initials, not an
+  id, and no amount. The row is exactly `{title, username, unlock, at}`, pinned
+  by a test asserting the KEYS (a substring test would pass for the wrong
+  reason: a buyer id like "2" appears inside any timestamp). Reads `deliverables`
+  — the one table written once per purchase — never the seven payment tables.
+  ⚠️ Only public, unsuspended creators; the same item bought repeatedly collapses
+  to ONE line; and an empty feed renders **nothing** rather than being padded
+  with older activity, which reads as a dead site to the first person who checks
+  a timestamp.
+- **Content-first tiles** — the creator card's image is now up to three of the
+  creator's own listing thumbnails (`top_wish_images` = `perma_link`, the PUBLIC
+  card image — never `reward_url`/`content_file_url`, which are the paid content
+  and are signed per buyer). The cover photo is the fallback. A shop shows the
+  goods, not the shopfront.
+
+### Quick view, personal rows, and four more faults (24 Aug 2026)
+
+- **Quick view** — the price plate on a creator card opens the creator's whole
+  shelf in place (`components/CreatorQuickView.jsx`, `DiscoveryService::creatorPreview()`,
+  `GET discover/creator/{username}/preview`). 🚨 **IT SHOWS THE SHELF, IT DOES
+  NOT TAKE THE MONEY**: every row links to that item's EXISTING checkout
+  (`?item={uuid}` on the profile — the parameter the profile controller already
+  reads — or `/task/{uuid}`). Nothing on that path computes a charge, fee or
+  total. Prices are listed prices, grossed up in the modal by the same
+  PriceFormat helper as everywhere else.
+- 🚨 **`IsloggedIn` ON A LISTING CARD MEANS "THE CREATOR IS LOOKING AT THEIR OWN
+  LISTING", NOT "a user is signed in".** Truthy swaps the buyer's Unlock button
+  for the owner's Share/Edit one and shows the PRE-FEE price. Discover passes
+  `false` always — it is never the owner's view. The creator card follows the
+  same rule: its "From £X" plate is fee-inclusive for everyone.
+- **Save-for-later on Discover** — `SaveButton` + `/saved/toggle` already
+  existed and no browse surface used them. Item cards carry a heart, signed-in
+  only (the route is behind auth, and a heart that silently fails is worse than
+  none). ⚠️ Creator cards do not: `SavedItem::TYPES` has no `creator` type, and
+  the follow endpoint EMAILS the creator on every follow.
+- **Personal rows** — "Creators you follow" (`follows`), "You've supported
+  these" (`deliverables` for the signed-in user), and "Pick up where you left
+  off" (`components/RecentlyViewed.jsx`, **localStorage only — it never leaves
+  the device**, so a guest gets the same continuity and we store nothing).
+  🚨 **PERSONAL ROWS ARE BUILT OUTSIDE THE PAGE CACHE** — `$data` is cached per
+  filter set and served to everyone; a follow list in there would show one
+  supporter's follows to the next visitor. ⚠️ `publicCreatorCards()` re-checks
+  visibility: a follow survives the creator being suspended, the rail must not.
+- 🚨 **`getTopEarners` RANKED NOTHING.** It applied `limit($limit)` BEFORE any
+  ordering, never read a payment, and stamped `total_amount => 0` — so "Top
+  Earners This Week" was an arbitrary handful of accounts, on Discover and on
+  the **homepage**, which still calls it. It now ranks on the canonical ledger
+  (completed `income`, summed on the stored `gbp_amount`, never re-converted).
+  ⚠️ `total_amount` STAYS 0: the ORDER is public, the sum is not.
+- **Search relevance** — `searchRelevance()` scores exact handle > handle prefix
+  > name prefix > word-boundary name hit > substring > bio, and 🚨 **relevance
+  outranks every other sort when somebody typed something**. Explicit price/new
+  sorts still apply inside equal relevance.
+- **Interests are the EXISTING taxonomy.** `App\Support\Badges` +
+  `users.creator_category` already hold curated, slugged interests that creators
+  pick in their profile — Discover reads those (`interestFacets()`, `?interest=`)
+  rather than growing a second list. ⚠️ **NOT `user_categories`**, which is a
+  creator's own free-text grouping of their wishes. ⚠️ Filtering happens in PHP
+  via `Badges::sanitiseInterests()` because the column has held BOTH labels and
+  slugs; a `whereJsonContains` on the slug silently drops every pre-migration
+  creator. New page `GET discover/c/{slug}` (name `discover.interest`, above the
+  catch-all) forwards into the Discover closure rather than reimplementing it,
+  and every slug is in the static sitemap — the only indexable Discover URLs
+  beyond the root, since a filtered Discover is `noindex,follow`.
+  ⚠️ `SeoMeta` has no `setTitle`; for a title, `addTag`'s SECOND argument is the
+  string itself — passing a props array renders
+  `<title>Array to string conversion</title>`.
+- **Trending also counts listing views** (`item_view_stats`, weight 1 against a
+  click's 4). ⚠️ Profile visits cannot be used: `site_visit_stats` aggregates by
+  page TYPE, not by creator.
+- 🚨 **ONE ROW OF CHIPS, THEN A "FILTERS" BUTTON — ON DESKTOP TOO** (24 Aug 2026).
+  The bar reached THREE rows: 8 type chips + 4 price bands + 3 unlock types + 12
+  interests + a sort control, about **28 controls stacked above the first
+  result**, with the interest row running off the right edge mid-word and no
+  scroll affordance. A filter bar taller than the thing it filters is not a
+  filter bar. Price, interests and sort now live in the same `Sheet` at every
+  width, behind a button carrying the active count.
+  ⚠️ **The unlock chips were REMOVED FROM THE UI** (the `?unlock=` filter still
+  works on the wire): they restated the type chips in a second vocabulary — "Made
+  for you" appeared TWICE on one screen, and "Unlock now"/"Instant unlock" and
+  "Monthly content"/"Monthly" were the same choice offered twice. The type chips
+  are the more precise of the two.
+  ⚠️ **Applied filters are listed once, under the bar, each removable**, plus
+  "Clear all". Two active chips in two different rows told the visitor nothing
+  about the combination they had built.
+- **Infinite scroll, button kept.** The observer fires ONCE PER PAGE (`armedFor`
+  records the count it last loaded at), so a sentinel that stays on screen cannot
+  spend the whole result set in one scroll; the button stays because a sentinel
+  is invisible to a keyboard.
+- 🚨 **THE INTRO-VIDEO CARD OPENED AN EMPTY MODAL.** `<Popup text={…} />` was
+  self-closing — `text` is the TRIGGER, `children` is the body — so the play
+  button on the intros rail has never played anything. The video is now the
+  modal's children. ⚠️ The in-viewport silent preview described in an earlier
+  version of this note was REMOVED at the client's request the same day — see
+  "Dead ends, real collections" below.
+
+### ⚠️ The CSP nonce test failed for whoever had `npm run dev` running (24 Aug 2026)
+
+`CspInlineScriptTest` renders `view('app')` DIRECTLY, so no middleware runs and no
+`cspNonce` is shared. Blade blocks survive that (`nonce="{{ $cspNonce ?? '' }}"` still
+prints `nonce=""`), but **Laravel's Vite helper omits the attribute entirely when it has
+no nonce** — and in HOT (dev-server) mode `@viteReactRefresh` emits an INLINE
+`<script type="module">` preamble. So the suite failed on any machine with `public/hot`
+present and passed everywhere else, and the failure read exactly like a code regression.
+
+`AppServiceProvider::boot()` now calls `Vite::useCspNonce()` as a default, and
+`SecurityHeaders` overrides it per request with the same value it shares with Blade.
+Built assets are `src=` tags and were never affected — this is a dev-mode and
+test-determinism fix, not a production one.
+
+### Dead ends, real collections, and what the page reports (24 Aug 2026)
+
+- 🚨 **"NO MATCHES" IS NOT AN ANSWER, IT IS A DEAD END.** A visitor who has stacked an
+  interest, a price band and an unlock type onto a search cannot tell which one emptied
+  the page, and "try adjusting your search" asks them to guess. The empty state now lists
+  every active refinement with its own remove control, and its primary button drops the
+  **NARROWEST** one (the last thing that could have emptied it) rather than clearing
+  everything the visitor deliberately chose. "Start again" is the secondary.
+- **Collections render on the LANDING page**, not only on a failed search. ⚠️ Only
+  `hidden_gems` and `almost_funded`: `trending` and `new_creators` are the page's own
+  rails, and the same creators under two headings reads as a bug.
+- **Interest pages describe themselves** — `CollectionPage` JSON-LD plus an
+  `interestLabel` prop so the grid headlines "Artist creators" instead of the generic
+  board heading. 🚨 **The JSON-LD names the COLLECTION, never its creators.** An
+  `ItemList` of real people is a durable, machine-readable record of who was on the page
+  that day, and a creator who leaves cannot take it back. Pinned by test.
+- **Discover reports four events** (`discover_search`, `discover_filter`,
+  `discover_load_more`, plus the existing page view) through the same
+  `trackClientEvent` path as everything else. 🚨 **NO QUERY TEXT, NO CREATOR AND NO ITEM
+  NAME LEAVES THE PAGE** — a search term is something a person typed and can name
+  anybody. `discover_search` carries the term's LENGTH and the result count, which
+  answer "did searching work" and identify nobody. Same rule as `AnalyticsParams::scrub()`.
+  ⚠️ One event per settled search (the debounce means a props change is a completed
+  search), never one per keystroke.
+- **A11y:** every filter chip is a toggle and now carries `aria-pressed` (state was
+  carried by background colour alone, which a screen reader does not read), and the
+  result count is an `aria-live="polite"` status — filtering rewrites the grid with no
+  other signal that the page responded.
+- ⚠️ **INTRO VIDEOS DO NOT AUTOPLAY** (client direction, 24 Aug 2026). The in-viewport
+  muted preview on the intros rail was built and then removed at the client's request;
+  the rail is posters and a play button. The empty-modal fix stays — `<Popup text={…} />`
+  was self-closing, so the play button opened a modal with nothing in it. The video in
+  that modal does autoplay, because the visitor pressed play to open it.
+
+### Four more, mostly things that were built and never wired (24 Aug 2026)
+
+- 🚨 **THE CHIP ROW RENDERED TWICE.** Collapsing the bar to one row replaced the
+  refinement rows but left the original quick-filter block above them, so eight type
+  chips drew twice on every Discover page. Reported from a screenshot, not caught by any
+  scanner — `npm run check` has nothing to say about a duplicated block.
+- **Four featured rails stopped being BUILT.** `featuredBills` / `featuredMemberships` /
+  `featuredTasks` (and shops) were fetched on every landing request and shipped in the
+  payload after the eight-rails-to-three cut left nothing rendering them. The service
+  methods are untouched — bring a rail back by rendering it, never by re-adding a fetch
+  nothing reads.
+- ⚠️ **`creatorMeta` IS CACHED PER CREATOR, NOT PER SET.** It keyed on `md5(id list)`, so
+  every page, rail and filter combination minted its own entry holding the same creators —
+  a cache that grows with the number of QUESTIONS asked rather than with the number of
+  creators, and misses on page 2 of the same list.
+- **Search suggestions return ITEMS as well as people.** The wish half of
+  `getSuggestions()` was written and left commented out, so a shop front's search box could
+  only ever answer "which creator" while half the searches are for a THING. An item
+  suggestion goes straight to that item's own checkout (`?item={uuid}`), never back into a
+  search. ⚠️ **The owner filter is a SUBQUERY, not a join:** `listingQuery()`'s guards are
+  written unqualified (`deleted_at`, `is_suspended`, `publish_at`), so joining `users`
+  makes every one of them ambiguous — SQLSTATE 1052, a 500 on a public endpoint.
+
+### 🚨 The board sells THINGS, not people (24 Aug 2026, client direction)
+
+Discover was a directory of accounts: the board listed creators, two of the three
+rails listed creators, and the only content on the page was one wish rail. **A
+supporter does not buy a creator — they buy something a creator made.**
+
+- **`DiscoveryService::mixedFeed($filters, $perType)`** is one feed of listings across
+  all five modules. ⚠️ Each row is `['mode' => …, 'item' => …]` carrying the payload
+  **its own card already expects** (the existing `getSearch*` maps, untouched), so
+  nothing re-describes a listing and no card was rewritten. `ResultsGrid` reads the mode
+  off the ROW when `mode="mixed"`.
+- ⚠️ **Rows are ROUND-ROBINED across modules, not concatenated** — ordering by type
+  gives a board of six wishes and then six bills, a shop front whose first screen is one
+  department. **Price sorts still sort globally, in GBP**: "cheapest first" that is only
+  cheapest-within-type is a lie.
+- **Landing order is now:** Under £10 (mixed) → Just added (mixed) → Trending creators →
+  New and verified → **Everything for sale** (the mixed board) → Creators to follow.
+  The creator grid moved BELOW the goods and is what the "People" chip renders.
+- ⚠️ The Under-£10 rail was wishes only, so the cheapest way in advertised ONE module
+  while shop items and paid tasks under a tenner sat unlisted. It is the mixed feed now.
+- ⚠️ **TASKS SORT LAST, WHATEVER THE ROUND SAYS** (client direction, 24 Aug 2026). A task
+  card is a full-width ROW — it is a brief, not a product tile — so one landing mid-grid
+  splits the board in half and leaves the tiles above it ragged. At the foot it reads as
+  its own section.
+- 🚨 **EVERY CARD FILLS ITS CELL (`[&>*]:h-full` on the wrapper, plus `h-full flex
+  flex-col` on the bill card's own root).** The grid CELL was already full height and the
+  cards inside were not, so a mixed board of five different card components came out
+  ragged — each row ending at a different place, which reads as broken rather than as
+  varied. Task rows opt out (`[&>*]:h-auto`).
+- **The shop card's "Buy Now" is the house CTA now** — same shape as BillItem's
+  Subscribe (radius token, black frame, brightness press), only the colour differs.
+  ⚠️ It carried `rounded-[15px]` (a hardcoded radius matching no token) and a bare
+  `active:translate`, which is the banned lift with no shadow partner; its blue sibling
+  on the same card carried the same press and was fixed with it.
+
+**Two undeclared-schema faults this uncovered — both the documented class of gap:**
+
+- 🚨 **`getSearchShops` filtered on `shops.status` with NO `Schema::hasColumn` GUARD.**
+  That column exists on every deployed database and in **no migration in this repo**, so
+  shop discovery threw on any database built from migrations. The rest of the app guards
+  it for exactly this reason; this call site did not.
+- 🚨 **`shop_shipping_infos` HAD NO MIGRATION AT ALL** and is eager-loaded by
+  `Shop::shippingInfo()`, so every shop query on a fresh database threw "no such table" —
+  which is why the shop paths had no feature test: they could not run. Added as a
+  **guarded** create (`2026_08_24_000000`) mirroring the live schema, with a deliberate
+  no-op `down()`.
 
 ## 🚨 Discovery attribution — Phase 1 (20 Aug 2026, spennypiggy.co)
 
@@ -660,8 +1021,10 @@ Emerging · Popular · Discovery Pick) for the foot of every public profile.
   by test.
 - **`users.exclude_from_discovery`** (migration `2026_08_20_100000`) is the admin switch.
   ⚠️ **Cast only, deliberately NOT `$fillable`** — same rule as `bonus_scheme_eligible`;
-  write it with `forceFill()`. ⚠️ **The admin app still needs this column in its own `User`
-  casts and a toggle on the creator screen** — shared DB, migration in this app only.
+  write it with `forceFill()`. ✅ **Mirrored in the admin app** (cast declared there too,
+  written by the one validated endpoint `Admin\CreatorDiscoveryController` →
+  `admin.creator-discovery.toggle`, surfaced as `Components/Admin/DiscoveryVisibility.jsx`
+  on the creator's own page). Shared DB, migration in this app only — never add a second.
 - Two caches: the platform pool (`discovery_pool_v1`, 900s, capped at 750 creators) and the
   per-profile selection (`discovery_more_creators_v1_{id}_{hourBucket}`, 900s, pure PHP over
   the pool). Warm cache is **zero queries per profile view**. The rotation bucket is in the
@@ -960,9 +1323,27 @@ same as a key `content()` computes wins — and the computed version is discarde
   purchase that email produced is permanently recorded as creator-generated.
 - **Fix:** make the property `protected`. It still serializes for the queue, so nothing
   about dispatching changes.
-- ⚠️ **Check any mailable that transforms a constructor value in `content()`.**
-  `AbandonedCheckoutReminder` was checked and is fine — its tagged URL uses a key no public
-  property shares. The collision only bites when the names match.
+- ⚠️ **Check any mailable that transforms a constructor value in `content()`.** The
+  collision only bites when the names match.
+- 🚨 **SWEPT ALL MAILABLES, 24 Aug 2026 — TWO MORE WERE LIVE.** 19 carried a public property
+  matching a `content()` key; a plain `'x' => $this->x` passthrough is harmless (the merge is
+  a no-op), so only the COMPUTED ones are faults:
+  - **`AbandonedCheckoutReminder::$firstName`** — the earlier note here said this class was
+    fine, which was true of its tagged URL and **wrong about the greeting**.
+    `resolvedFirstName()` exists to fall back to `"there"` when no name is known, and a
+    public `null` overwrote it: the mail rendered *"You are one step away, "* — a dangling
+    comma with nothing after it, on a recovery e-mail sent to supporters.
+  - **`ContentUnderReview::$manageUrl`** — an empty string overwrote `content()`'s
+    `config('app.url')` fallback, so a mail sent without an explicit URL rendered
+    **`href=""`**: a link to nowhere, on the e-mail telling a creator their item is held.
+  - **`StockBackInStock::$stock`** — overwrote a `max(0, …)` clamp, making it dead code
+    (minor; the column is an int and normally positive).
+  All three are now `protected`, which still serialises for the queue. Tests:
+  `tests/Feature/MailableViewDataCollisionTest.php` (3) — two render assertions plus a
+  **general guard that scans every Mailable**, so the next one fails a test instead of
+  shipping. ⚠️ Verified the tests FAIL against the bug (properties flipped back to public)
+  before accepting them; asserted on RENDERED output, since the payload is exactly what
+  lies here.
 
 ## 🚨 The admin app's health endpoints did not exist
 
@@ -1194,11 +1575,22 @@ being deleted**.
   `uuid` key bare — callers re-derive from it, and forms round-trip it.
 - ⚠️ **STILL UNSIGNED, KNOWN GAP: a members-only post's MULTI-IMAGE `media[]` array.**
   `Post::$casts` sends it raw and `PostMediaCarousel.jsx` builds each URL client-side from
-  the bare uuid. Rewriting those server-side is the `piggy_pots.cover_media` trap —
-  `PostsController::update` does `$post->media = $this->dedupeMedia($request->media)`, so an
-  edit would persist an **expired signed URL** into the column for ever. The fix is a
-  separate `signed_url` key plus a `mediaSrc()` preference, done only after the edit form's
-  round-trip is confirmed to drop it.
+  the bare uuid.
+  - 🚨 **THE ROUND-TRIP IS REAL — CONFIRMED 23 Aug 2026, and it is now CLOSED at the write
+    path.** `AddPost.jsx` opens an edit with the post's own stored array (`mediaFromItem`)
+    and submits it back verbatim (`media: mediaList`), and `dedupeMedia` is the ONE write
+    path for both store and update — so a `signed_url` appended at render time WOULD have
+    been persisted, expiry and all, into the column for ever: the `piggy_pots.cover_media`
+    trap exactly. `PostsController::storableMediaEntry()` now whitelists the uploader's own
+    nine keys and drops everything else on the way in, so a read-time accessor may add
+    whatever it needs. Pinned by `tests/Feature/PostMediaRoundTripTest.php` (4).
+  - ⚠️ **The signing itself is deliberately NOT done yet**, and not for want of the
+    blocker: `MEDIA_SECURE_ENABLED` is still false and secure delivery is not enabled in
+    the Uploadcare dashboard, so a token today buys nothing — while the carousel's own
+    `mediaSrc()` appends transform ops AND an optional watermark chain AFTER the URL it is
+    given, which would land after the `?token=` and corrupt it. Signing the wrong things
+    is worse than signing none (the rule above). Do it when the flag is armed, ops-chain
+    order first.
 - ⚠️ **Signing is not authorisation.** `content_file_url` is in `$appends` on Bills,
   Membership and WishItem and is **not** in `$hidden` the way `reward_body` is — so a public
   listing card can still serialise it. A signed URL handed to a non-buyer is a valid
@@ -1300,8 +1692,18 @@ them is a class that repeats, so the rule matters more than the fix.
   `app.jsx`'s cooldown key, so the two cannot loop each other) when a chunk resolves
   without a default export — `undefined is not an object (evaluating 'y._result.default')`.
   There is no error to catch: the promise resolves. Applied to `includes/Footer.jsx`
-  first because it renders on every page. ⚠️ The other ~18 `lazy()` sites are unchanged
-  and still carry the fault.
+  first because it renders on every page. ✅ **Completed 23 Aug 2026: all 83 remaining call
+  sites across 16 files now use it** — `Welcome.jsx` (16), `Dashboard.jsx` (42),
+  `wishlist/Userprofile.jsx` (9) and thirteen others. **`React.lazy` should not appear in
+  `resources/js` again**; there is no case where the plain form is wanted, and a single
+  un-migrated site is a white screen for whoever has that page open across a deploy.
+  ⚠️ **Neither `npm run build` nor the four scanners can prove this migration is safe** —
+  esbuild never resolves free variables, so a file that gained a `lazyRetry(` call without
+  its import builds clean and throws `ReferenceError` on render (the documented trap that
+  shipped `InstallAppCard`). It was verified two ways instead: every file containing
+  `lazyRetry(` asserted to carry `^import lazyRetry`, and the three heaviest pages
+  (homepage, a creator profile, the basket) loaded **through the Vite DEV server**, which
+  serves the real source modules, with 0 console errors.
 - **`Inertia::render(...)->withHeaders(...)` throws** — `Inertia\Response` is
   `Responsable`, not a `Response`. Already fixed in `OptimizedProfileController`; listed
   here because the error message (`Method Inertia\Response::withHeaders does not exist`)
@@ -1402,15 +1804,23 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   | Founder | £2,500 · 30 days · 150 seats · **10% bonus, min £250** | `config/founder_bonus.php` — what `CheckFounderQualifications` qualifies AND pays on |
   | Fast Start | **5%** · 30-day window · paid 7 days after | `config/fast_start_bonus.php` |
   | Free until first sale | **£8.99/mo** | `SubscriptionPlan` |
-  | Refer & earn | **£50** per creator · **£1,000** threshold | `config/referral.php` + `PromoBannerService::REFERRAL_QUALIFYING_GMV` |
+  | Refer & earn | **£50** per creator · **£1,000** threshold | `config/referral.php` (`reward_amount` + `qualifying_gmv`) |
 
   ⚠️ **Fast Start's rate is OMITTED when `enable_tiered` is on** — there is no single rate
   then (3/5/7% by bracket) and the card drops the figure rather than quoting one bracket.
   🚨 **The referral reward is never shown without its threshold.** `ReferAndEarnController`
   only counts a referral once the referred creator passes £1,000 lifetime GMV, so "£50" on
   its own sets a creator up to share their link, watch someone sign up, and get nothing.
-  ⚠️ **`REFERRAL_QUALIFYING_GMV` mirrors a hardcoded `lifetime_gmv >= 1000` in that
-  controller** — not config-backed. Move both in the same commit.
+  ✅ **CLOSED (23 Aug 2026): `config('referral.qualifying_gmv')` is now the ONE
+  definition.** The number was written out by hand in FIVE places — the qualification
+  short-cut in `Helpers`, `CreatorReferral::progressPercentage()`'s denominator, both
+  counting queries in `ReferAndEarnController`, and the figure the promo deck prints to
+  every creator. Four of those are read by the person being paid and one is what actually
+  pays them, so a drift did not fail: it promised a creator money at a number the payout
+  query disagreed with. ⚠️ A zero threshold reports 100% rather than dividing by zero on
+  a page a creator loads. Pinned by `ReferralThresholdTest` (4) — whose real assertion
+  MOVES the config and checks the bar and the promo move with it, since a test against
+  today's 1,000 would pass just as happily with five hardcoded copies.
   🚨 **The founder card must state the BONUS, not only the threshold.** The first
   informative pass showed £2,500 and never said what the creator receives, so it read as a
   target with no prize. Pinned by four tests in `PromoDeckTest`.
@@ -1615,9 +2025,16 @@ MagicBell and never touches our column. So "Mark all as read" cleared MagicBell,
 - ⚠️ **`syncAppBadge()` only runs on load and on foreground** (`visibilitychange`), so
   anything that clears notifications must clear the badge itself rather than waiting for
   a sync that may be minutes away.
-- ⚠️ **Still open:** `get-notification` paginates at 30, so the badge can only count
-  unread inside the first page. It undercounts rather than overcounts, which is why it
-  was never noticed — but it needs an unread-count endpoint rather than a list.
+- ✅ **CLOSED (23 Aug 2026):** `get-notification` paginates at 30, so the badge could only
+  count unread inside the first page — it undercounted, which is why nobody reported it.
+  `ProfileController::getNotifications` now also returns **`unread_count`**, a COUNT over
+  every row, and `appBadge.js` reads it (falling back to the page filter only for an older
+  cached response). ⚠️ Deliberately **on the existing endpoint, not a new route**: a new
+  named route does not reach the frontend until `ziggy:generate` runs and the bundle is
+  rebuilt, and `route()` THROWS for a name the generated snapshot does not carry.
+  Tests: `tests/Feature/NotificationUnreadCountTest.php` (4). ⚠️ The fixture deliberately
+  sits ABOVE one page (41 rows) — a test with five notifications passes just as happily
+  against the bug it exists to catch.
 - ⚠️ Not live until the app is deployed; a phone still showing the old badge is the
   deployed build, not this code.
 
@@ -1835,15 +2252,54 @@ is `config/analytics.php`.
 - **`App\Support\AnalyticsParams::scrub()`** is now the single privacy filter, shared by the
   browser path and the Measurement Protocol path. Two copies of a privacy rule is one copy
   that gets a rule added and one that does not.
+- 🚨 **`config('analytics.enabled')` is a MASTER SWITCH, and it is OFF outside production.**
+  Local and dev traffic is not traffic: a developer clicking through a checkout twenty times is
+  not twenty checkouts, and **GA4 cannot delete an event it has recorded** — so this is a
+  one-way mistake and the default is closed. The deployed `development` environment is closed
+  too.
+  - When false, `app.blade.php` **does not load gtag.js at all** rather than loading it and
+    silencing it — a loaded tag is one stray call away from writing a developer's checkout into
+    the live property. `AnalyticsEvent` queues nothing and `MeasurementProtocol` sends nothing.
+  - ⚠️ **The job re-checks it too.** A job can be queued in one environment and run in another,
+    and the job is the last gate before a real HTTP call to Google.
+  - ⚠️ **`phpunit.xml` sets `ANALYTICS_ENABLED=true`**, or every analytics test would pass by
+    doing nothing — the same silent-pass failure the `runningInConsole` guard was removed to
+    avoid. Tests of the OFF behaviour set the config themselves
+    (`AnalyticsDisabledOutsideProductionTest`, 5).
+  - ⚠️ **It does NOT cover the team browsing the LIVE site** — those are real requests to a
+    production server. Filter those in GA4: Admin → Data streams → Configure tag settings →
+    Define internal traffic, then Admin → Data filters → activate "Internal Traffic".
+- 🚨 **Five faults found in a review pass of this same change (23 Aug 2026), all of them silent:**
+  1. **`AnalyticsParams` matched banned words as SUBSTRINGS**, so `ip` inside `descr*ip*tion`
+     and `card` inside `dis*card*_reason` dropped an innocent parameter with no error and no
+     log — a dimension permanently empty for a reason nobody could find. Now matched as whole
+     `_`-delimited SEGMENTS, which still catches `guest_email`, `customer_name`,
+     `payment_intent_id` and `client_ip`.
+  2. **Every ENTRY page view waited 600ms.** `whenTitleSettles` only resolves early when the
+     title CHANGES, and on the first page it never does — so the first view always sat out the
+     full timeout and a visitor who bounced inside it was never counted. Entry pages are where
+     bounces happen and where the ad landing pages live. The first view is now sent
+     immediately: its title came from the server in the document's own `<title>`.
+  3. **`purchase` fired on a £0 Deliverable.** A complimentary or administrative row is not a
+     sale; a zero drags reported AOV down and teaches Ads that some purchases are worth
+     nothing. The platform minimum is £4.99, so the observer now returns early on `<= 0`.
+  4. **`sign_up_step` carried no `page_group`**, because `Register.jsx` called `gtag` directly.
+     It now goes through `trackClientEvent()`, so every event in the system carries the
+     dimension the reports are split by.
+  5. **`SendMeasurementProtocolEvent` declared `$tries = 2` and then swallowed every error**, so
+     the retry could never happen. It still never rethrows (a GA4 outage must not fill
+     `failed_jobs`), but now calls `release($backoff)` while attempts remain — `release()` is a
+     no-op without a queue job, so sync dispatches and tests are unaffected.
 - Tests: `tests/Feature/AnalyticsServerSideEventsTest.php` (8),
   `tests/Feature/AnalyticsAdsConversionTest.php` (3, on the published map),
-  `tests/javascript/analytics.test.js` (28). Verified in a browser: `sign_up_step` fires
+  `tests/javascript/analytics.test.js` (31). Verified in a browser: `sign_up_step` fires
   `role` on arrival and `identity` on advance, and the Ads map is correctly absent while no
   label is set.
 
-- Tests: `tests/Feature/AnalyticsEventTest.php` (7), `tests/Feature/AnalyticsFunnelEventsTest.php`
-  (5, end-to-end through the redirect — a push with no delivery is the whole failure mode),
-  `tests/javascript/analytics.test.js` (24). Verified in a browser against the local app:
+- Tests: `tests/Feature/AnalyticsEventTest.php` (9), `tests/Feature/AnalyticsFunnelEventsTest.php`
+  (6, end-to-end through the redirect — a push with no delivery is the whole failure mode),
+  `tests/javascript/analytics.test.js` (31, shared with the sections below). Verified in a
+  browser against the local app:
   one `page_view` per navigation with the settled title and the right `page_group`, and
   `email_verified` arriving in `dataLayer` after the emailed link's redirect.
 
@@ -1914,6 +2370,20 @@ page where "Trending" means something different from every other page**.
   through `DiscoverySources::normalise()` so a surface cannot invent a key.
   Without this, every checkout sale would have reported as coming from search —
   and attribution has no backfill, so it would be wrong for ever.
+- 🚨 **THE COLLECTION CACHE IS VERSIONED PER COLLECTION, because its keys cannot
+  be enumerated.** A selection is cached per LIMIT, per VIEWER, per CONTEXT
+  creator and per rotation BUCKET, so "clear this collection" is a FAMILY of
+  keys. `forget()`'s first version deleted one hardcoded key built from
+  `DEFAULT_LIMIT` (12) — **a limit no surface asks for**: the checkout row uses
+  4, the homepage and Discover use 8. The admin screen's "Re-run" therefore
+  cleared a key nothing reads and **did nothing while appearing to work**. Found
+  by a browser pass, not by a test. `discovery_collection_gen_{key}` is read into
+  every cache key; bumping it invalidates every variant in one write. ⚠️ Cache
+  TAGS would do the same but the file and database drivers do not support them.
+  ⚠️ `forever`, never a TTL — an expired generation would resurrect every
+  pre-bump selection. ⚠️ The admin app bumps the SAME key, which only works
+  because both apps share one Redis; splitting the cache silently turns that
+  control back into a no-op.
 - **`firstNonEmpty([...])`** — a chain, not one collection. "Similar Creators"
   needs categories and only about half the creators have any (measured: 62
   creators, 30 accounts with one), so a single-collection row would have shown
@@ -2033,6 +2503,39 @@ explanation the login page never rendered.
   STATE (`THROTTLE` and `FREEZE` refuse guests), plus the value threshold.
   ⚠️ The threshold is NEVER named to a supporter (`RiskMessages` rule 1).
 
+### 🚨 `redirect()->back()` IS A DEAD END ON EVERY GET HANDLER (23 Aug 2026)
+
+`back()` reads the Referer, and half this app's links carry none — a bio card, a
+shared link, an e-mail, a bookmark, a return from Stripe-hosted checkout. So it
+drops the supporter on the **HOMEPAGE**, and before the flash-to-toast bridge the
+explanation was written and thrown away. From their side they tapped a real link
+and nothing happened: exactly how the bio page's "Unlock does nothing" was
+reported from production.
+
+A sweep of **every GET route** found seven handlers doing it. Four supporter-facing
+ones are fixed; `Auth\StripeController`'s other fifteen are all POST (a clean
+negative, not an oversight):
+
+| Handler | Now goes to |
+|---|---|
+| `ShopsController@successPayment` | `gifter.hub` — **the worst one**: the buyer is returning from Stripe having just paid |
+| `TaskController@download` | `gifter.hub` — the link arrives in an e-mail, so there is never a Referer |
+| `BillsController@buyBill` ×4 | the CREATOR's profile, via a shared private `awayFrom()` |
+| `MembershipController@buyLevel` ×4 | the CREATOR's profile, same helper |
+
+- 🚨 **Back to the CREATOR, not to the homepage.** The supporter came to buy from
+  this person, and one unavailable item says nothing about the rest. `awayFrom()`
+  falls back to `home` only when the item has no resolvable creator.
+- ⚠️ **`back()` INSIDE THE POST BRANCH IS CORRECT AND MUST STAY.** `buyBill` and
+  `buyLevel` answer both verbs from one method: below `isMethod('POST')` the
+  supporter is submitting our own checkout form, and `back()` is what returns them
+  to it **with what they typed still in it**. `NoDeadEndRedirectsTest` slices each
+  method at that line for exactly this reason — a scan of the whole method would
+  demand a "fix" that makes the form worse.
+- Tests: `tests/Feature/NoDeadEndRedirectsTest.php` (5). ⚠️ The source scan blanks
+  comments first: each of these methods now carries a note explaining why `back()`
+  was wrong, and the note contains the string being searched for.
+
 ## 🚨 The test suite does not call Stripe (22 Aug 2026)
 
 Measured on one full run: **over 2,000 live Stripe requests**, logged as "Failed
@@ -2057,6 +2560,25 @@ the "green regression" §F gates every release on meaningless**.
 - **Escape hatch `STRIPE_ALLOW_LIVE_CALLS_IN_TESTS=true`**, never in CI.
 - Same remedy this repository already applied to HaveIBeenPwned, for the same
   reason.
+
+🚨 **THE SUITE IS STILL NOT FULLY DETERMINISTIC — MEASURED 23–24 Aug 2026.** Three
+consecutive full runs on the SAME code gave **1 failed / 1590 passed**, then
+**4 failed / 1590 passed** (`/discover` answering 500), then **1608 passed / 0
+failed**. Two causes were found and fixed (the Stripe calls above; `SeoMeta`'s
+static tags, see the CSP section) and a residue remains — the 500s were not
+reproducible in isolation, in a targeted `Discovery|Seo|Promo|Csp` run (147
+passed), or in the next full run.
+
+- ⚠️ **`backupStaticProperties` is OFF** — nothing in `phpunit.xml` sets it, so a
+  class static carrying state between tests is PHPUnit's default behaviour here,
+  not an accident. `SeoMeta` was one; assume there are others.
+- ⚠️ **`CACHE_DRIVER=array`, `SESSION_DRIVER=array`, sqlite `:memory:`** — those
+  are per-test and are already ruled out as the carrier.
+- 🚨 **DO NOT READ ONE RED RUN AS A BROKEN BUILD, AND DO NOT READ ONE GREEN RUN AS
+  A CLEAN ONE.** Reproduce a failure before acting on it — and note that the
+  §F release gate assumes a green run MEANS something, which is exactly what
+  intermittency takes away. ⚠️ And `php artisan test` **exits 0 with failing
+  tests**, so the `Tests:` summary line is the only thing worth reading.
 
 ## ⚠️ The no-shadow scanner could not see a JS style object (22 Aug 2026)
 
@@ -2109,14 +2631,72 @@ nothing was actually blocked yet).
   service worker caches the RESPONSE, so a cached copy keeps the nonce it was served with.
   `resources/views/maintenance.blade.php`'s countdown was un-nonced for the same reason
   (both files sit outside the app shell) and now uses `$cspNonce`.
+- 🚨 **`SeoMeta` KEEPS ITS TAGS IN A STATIC, AND A PHPUNIT RUN IS ONE PROCESS** (23 Aug
+  2026). `addTag()` APPENDS for everything except the title, so every meta, link and
+  JSON-LD block one test sets is still there for every test after it. `CspInlineScriptTest`
+  renders `view('app')` directly — no HTTP request, therefore no shared `cspNonce` — so a
+  JSON-LD block left behind by an earlier test arrived **un-nonced** and failed the
+  assertion. **It passed in isolation and failed in the full run**: the result depended on
+  test ORDER, which is precisely what makes a green-regression gate meaningless (same
+  reasoning that took the Stripe HTTP client offline in `testing`). `Tests\TestCase::setUp`
+  now calls `SeoMeta::clear()`.
+  ⚠️ **Production was NOT affected and this needed no production change** — Vapor serves
+  HTTP through PHP-FPM, where each request is a fresh script execution and statics do not
+  survive between requests. **An Octane deployment WOULD leak them across requests in one
+  worker**, accumulating one visitor's JSON-LD onto the next visitor's page; if this app
+  ever moves to Octane, reset `SeoMeta` per request rather than relying on FPM.
 - 🚨 **`tests/Feature/CspInlineScriptTest.php` (6) is the enforcement.** `npm run check`'s
   scanners read `resources/js`, never Blade, and a report-only violation fails no build —
   so without a test this returns one screen at a time. It asserts, against **rendered**
   markup, that no served page carries an `on*=` handler and that every inline `<script>`
   has a nonce. ⚠️ Write comments carefully around these assertions: the first version
   failed because a comment in `offline.html` quoted the literal string the test forbids.
+  It now also scans **every blade's source** (comments stripped) rather than only the three
+  it can render, with **no allowlist** — an exemption list is where a rule like this rots.
+  Two more blades were found by that scan and nonced: `intercom-test.blade.php` (local-only,
+  but its four `onclick=` buttons are the pattern the next person copies — now a delegated
+  `data-action` listener) and `vendor/laravelpwa/meta.blade.php` (dead while `@laravelPWA`
+  stays commented out, which is exactly why it would have shipped un-nonced the day someone
+  re-enabled it).
+- 🚨 **THE ADMIN APP HAD THE SAME FAULT AND ITS REPORTS HID IN THIS PROJECT.** Both apps
+  send CSP reports to `spenny-piggy/javascript-react`, so `admin.spennypiggy.co/dashboard`
+  and `/login` rows sat inside a group full of website URLs and read as ours. **Group a CSP
+  issue by document URI before deciding which repo it belongs to.** Fixed there in the same
+  pass — see `../admin.spennypiggy.co/CLAUDE.md`.
 
-**Two Sentry entries deliberately not "fixed":**
+**Third-party noise that must NOT be allowlisted** (23 Aug 2026). Every one of these is a
+browser, an in-app webview or an extension injecting into our page, identified by the
+`browser.name` tag on the report:
+
+| Report | Actually |
+|---|---|
+| `script` from `connect.facebook.net` (`/en_US/pcm.js`) on `/cart` | **Instagram's in-app browser.** 🚨 Allowlisting it would let Meta run arbitrary script on our checkout pages. Leave blocked. |
+| `style` from `www.gstatic.com` (`.../translate_http/...el_main_css`) | **Google Translate**, injected by Chrome. Same third party as the `removeChild` React crash. |
+| `script` from `eval:` | **Android WebView** (an in-app browser) only. Our own bundle would fire it in every browser. |
+| `connect` from `data:` | **Opera GX** only, one event. |
+| `font` from `use.typekit.net` (12 files, one visitor, one page) | **Adobe Fonts, injected by an extension.** Zero occurrences of `typekit` in this repo, in the built bundle, or in the live page's HTML. |
+| `frame-src` from `toolytics.pa.clients6.google.com` on `/creators` | Google ad/tag tooling loaded by an extension (Tag Assistant and similar). Same test: it appears in no page source and no bundle. |
+
+🚨 **The test that settles every one of these: grep the repo, the BUILT BUNDLE and the
+LIVE PAGE'S HTML for the blocked host.** Three misses means the browser put it there, and
+widening the policy would authorise a third party we never chose on the pages that take
+money. The `browser.name` tag on the report usually names the culprit outright.
+
+⚠️ **These arrive by `report-uri`, straight from the browser to Sentry — `app.jsx`'s
+`beforeSend` and `ignoreErrors` never see them.** They can only be silenced in the Sentry
+project's inbound filters, not in this codebase. Do not "fix" them by widening the policy.
+
+**Sentry entries deliberately not "fixed":**
+- 🚨 **`Error invoking <method>: Java …` IS THE ANDROID WEBVIEW JS BRIDGE, NOT OUR CODE.**
+  An in-app browser (Facebook, Instagram, Twitter) injects `@JavascriptInterface` objects
+  into every page it opens, and a throw inside one of those native methods is surfaced by
+  the WebView as a page error attributed to us. **The METHOD NAME varies**, so filtering
+  `enableDidUserTypeOnKeyboardLogging` by name meant `postMessage` arrived later as a fresh
+  issue and paged us again (JAVASCRIPT-REACT-9K). `beforeSend` now matches the two stable
+  SUFFIXES instead — `Java object is gone` and
+  `Java exception was raised during method invocation`. ⚠️ Verified first that our own
+  `postMessage` calls are web-worker-only (`hooks/useWebWorker.js`), so a real fault of ours
+  could not produce that wording — never widen this to a bare method name.
 - `Unable to preload CSS for …/swiper-react-*.css` — the file was **verified present on
   CloudFront (HTTP 200)**, so these are transient network failures, and `app.jsx`'s
   `vite:preloadError` handler already reloads once for exactly this.
@@ -2126,6 +2706,308 @@ nothing was actually blocked yet).
   Nothing in this codebase can prevent it and the page recovers on the next render.
   **Ignoring only `insertBefore` meant half of one known issue was filtered and half was
   still paging us** — both the string list and the `beforeSend` regex now cover both.
+
+### 🚨 The creator e-mail warning moved to where the e-mail is typed (22 Aug 2026)
+
+A creator's address is published to every supporter they sell to — Spenny Piggy is **merchant
+of record**, so it rides the transaction record and every refund and dispute. That fact used to
+be **one grey subtitle line** on the sign-in step, and the acknowledgement was **five screens
+later** on the review step, at the point nobody re-reads anything. A creator who used their
+personal address found out from a stranger's reply, and an address cannot be un-sent.
+
+`Pages/Auth/register/CredentialsStep.jsx` now carries the warning where the decision is made:
+a black-framed yellow callout (`⚠️ … ⚠️`, gulfs caps) stating what the address is used FOR
+(receipts, refunds, disputes), the fix ("use an address you are happy to hand out — most
+creators set up one just for this"), and the tick. **Continue is disabled for a creator until
+it is ticked** (`credentialsComplete`).
+
+- 🚨 **ONE acknowledgement, not two.** It writes the same `creator_email_receipt_ack` the review
+  step's consent writes, so the box is simply already ticked there. `RegisteredUserController`
+  validates it as **`accepted`** and stamps `users.creator_email_receipt_acknowledged_at`
+  (`StripeController` stamps the same column at Connect onboarding for accounts predating it).
+  Never add a second column or a second consent for this.
+- ⚠️ **Fixed while here: `chooseRole()` cleared the posted value but not the consent STATE**, so
+  after a change of mind the review step redrew its box ticked while `data` said false — the
+  tick the reader sees and the tick the server validates disagreeing.
+- ⚠️ A Google creator never reaches this screen (no password to choose), so their
+  acknowledgement is still collected on the review step, unchanged.
+
+## 🚨 The leaderboard sells now, and it closes (24 Aug 2026, spennypiggy.co)
+
+`/leaderboard` → `LeaderBoardController::wishtenderWishers` → `Pages/leaderboard/Board.jsx`.
+Two product gaps and one whole-page design drift, fixed together.
+
+- 🚨 **THE BOARD REACHED NO CHECKOUT.** The highest-intent discovery surface on the
+  platform carried exactly one action per row — Follow. Every row that can now carries a
+  **buy route**: `row.content` is resolved server-side by
+  `LeaderBoardController::contentTargetFor()` to `wishes` → `piggy-pots` → `shop` →
+  `memberships`, using the **public visitor's** filters copied from `UserProfileService`,
+  so a button can never land on a tab that renders empty. A creator with nothing live gets
+  **no button**, never a dead end.
+  - ⚠️ **Wishes and Piggy Pots lead the order because they are the two surfaces that allow
+    GUEST checkout** — most of this page's readers are not signed in.
+  - ⚠️ Labels name the SURFACE (Wishlist · Piggy Pot · Shop · Membership). Gift/tip/donate
+    vocabulary is banned on every user-facing surface.
+  - 🚨 **`BOARD_CACHE_KEY` bumped `v2` → `v3`.** The cached row shape gained a key; without
+    the bump the board serves rows with no `content` for up to two hours and the button
+    silently never appears. (It bit locally anyway — a stale entry had to be flushed by
+    hand. The bump is what protects production.)
+  - The four `withExists` subqueries stop at the first matching row, so they are cheap
+    beside the seven aggregates already in `calc()`. ⚠️ **`shops.status` is guarded with
+    `Schema::hasColumn`** — it is absent from a database built purely from this repo's
+    migrations.
+- 🚨 **A BOARD THAT NEVER CLOSES IS A TABLE, NOT A RACE.** Every period but lifetime is
+  calendar bounded (`periodWindow` → `startOfWeek`…`endOfWeek`), so the close time is a
+  fact: `period_ends_at` ships on both the Inertia props and the board JSON, and
+  `Countdown.jsx` renders it in the hero. ⚠️ It renders **nothing** for All time —
+  inventing a deadline for a ranking that has none would be the page lying.
+- 🚨 **PAST WINNERS ARE RECOMPUTED FROM THE CLOSED WINDOW, NOT READ FROM
+  `leaderboard_snapshots`.** `leaderboard:snapshot` runs at **03:15**, so the last capture
+  of a week is taken on Sunday MORNING and would name a winner chosen with a day still to
+  play. `previousPeriodWindow()` + `calc($type, $window)` give the standing at the moment
+  the period actually ended, and a closed window never changes — cached 6h under
+  `leaderboard_past_winners_v1_{period}_{from}`. ⚠️ An empty result is **never cached**,
+  same rule as the board. 🚨 **Rank and supporter count only — no amounts, ever.**
+- **`calc()` takes an optional explicit `$window`.** That is the only change to the query;
+  every existing caller is unaffected.
+
+### The design drift, and four traps in fixing it
+
+The page was ink + a gold accent + **36 hairline `ring-black/[0.06]` frames** and almost no
+brand colour — a legitimate look, and not this brand's. It is now the house language:
+podium places are **solid brand blocks** (pink · mint · yellow) with black type and the
+2px frame, and every panel on the page carries `border-black`.
+
+- ⚠️ **Gold `#C9A227` is gone.** It was invented for this page and used nowhere else; the
+  Top 1% band is **brand yellow** now.
+- 🚨 **A CHIP MUST NOT BE THE COLOUR OF THE GROUND IT SITS ON.** `MovementChip`'s pink
+  "New" on the pink first-place card, and its mint "up" on the mint second-place card, were
+  separated from their own background by nothing but the frame. `onColor` drops the chip to
+  white with black type; Podium passes it.
+- 🚨 **`FollowButton` APPENDS ITS OWN `bg-*`/`text-*` TO WHATEVER `classes` YOU PASS**
+  (`bg-black text-white` / `bg-white text-black`). Passing `bg-white text-black` in produced
+  **white type on a white pill — an empty button**, because the winner between two utilities
+  setting one property is decided by STYLESHEET order, not source order. **Never pass a
+  colour utility to `classes`.** ⚠️ `npm run check`'s conflicting-class scanner cannot see
+  it: the pair is only formed at runtime by string concatenation.
+- ⚠️ **A row rule belongs to the LIST, not the row.** An inline `border-bottom` on every
+  row cannot be switched off for the last one — an inline style beats any `last:` variant —
+  and the result is a doubled line above the list's foot. The section carries `divide-y-2`.
+- ⚠️ **`{/* … */}` inside a parenthesised `return (` is an OBJECT LITERAL**, not a comment,
+  and it fails the whole Vite build. Hit again while annotating `VipSupporters.jsx`.
+- ⚠️ `VipSupporters`' 4px coloured left edge is set **inline** — `border-black` is a full
+  `border` shorthand here, so a `border-l-4` class beside it is discarded silently.
+
+### Two smaller decisions
+
+- **`discoveryLink()` takes a 4th argument, `page`**, appended as a **PATH SEGMENT**
+  (`/jane/wishes?sp_d=trending`). The profile route is `/{username}/{page?}`, so
+  `?page=wishes` renders About with a 200 and no error — the documented silent failure.
+  Additive; no existing caller changes.
+- 🚨 **On a PHONE, a row with a buy route hides Follow.** Rank + avatar + name + two
+  buttons do not fit at 390px (the name column is already down to 87px), so one has to
+  lose, and it is not the one that reaches a checkout. Follow is on the creator's own
+  profile, which is where the row already leads.
+
+### 🚩 Open, NOT fixed here — the board does not rank by what it says it ranks by
+
+`calc()` sorts on `combined_score`, which is `engagement_score` (supporters × 2, +20% for
+verified) **falling back to `total_amount` when a creator has no supporters**. So a creator
+with 0 supporters and £300 of revenue scores 300 and outranks a creator with 100 supporters,
+who scores 200. The page's own eyebrow says **"Ranked by supporters"** and the row payload
+sets `'amount' => 0, // Privacy: the public board ranks reach, never revenue` — both are
+untrue of the sort that actually runs. Changing the order of every creator on a public board
+is a business decision, not a tidy-up, so it was left alone and is recorded here. The likely
+fix is supporters DESC with `total_amount` as a hidden **tiebreak** that can never overtake.
+
+## 🚨 Leaderboard round two — the money it was publishing, and the news it was not (24 Aug 2026)
+
+### The board hid every amount and its own sidebar printed them
+
+`'amount' => 0, // Privacy: the public board ranks reach, never revenue` has been in the
+row payload the whole time. Three panels on the same page ignored it.
+
+- 🚨 **`LeaderboardStars` was headed "Top Supporters — fans who have shown the most support"
+  and rendered a MONEY FIGURE beside a named account.** Its endpoint
+  (`topGiftersAllTime`) does not return supporters at all: it builds each row from the
+  **CREATOR** behind one of the largest recent payments (`$value->wish->user`), with that
+  payment's `amount`. So the panel published a creator's earnings, under a heading naming
+  the wrong people, on a public page. **It is unmounted.** `TopSupporters` — real
+  supporters, ranked by purchase COUNT, no money — is in the sidebar in its place, and now
+  reads the shared bundle instead of firing its own request.
+- 🚨 **`CategoryLeaders` fell back to `total_amount`** (a creator's revenue) whenever
+  `engagement_score` was falsy. It shows `total_count` purchases, which the payload already
+  carried.
+- ⚠️ **`GrowthTrends` fell back to `current_amount`, which the controller hardcodes to 0** —
+  so it published a creator's earnings AND published them wrong, as "£0.00". Supporters
+  count now. Its two platform tiles also `||`-fell back to `monthly_revenue` / `avg_support`;
+  both gone, and `PriceFormat` is no longer imported anywhere on this page.
+- ⚠️ **Banned vocabulary and a lying label:** `VipSupporters` labelled
+  `creators_supported_count` **"Supporters"** — the opposite of what the number means (it is
+  how many creators that person backs); it reads "Creators backed". `CategoryLeaders`' empty
+  state drew a **gift box** — an icon carries the same meaning as the word on a
+  payment-adjacent surface.
+- ⚠️ **`RecentSupporters` carried `text-bls`** — not a class, compiled to nothing, invisible
+  for as long as it has existed. Grep for stray class names after any copy edit.
+- **Verified in a browser: the rendered page contains ZERO currency figures** and no
+  gift/tip/donate wording outside a test account's own username.
+
+### One bar, three readers
+
+`YouBar` was creator-only, so a fan and a logged-out visitor read the whole board and were
+told nothing about themselves. It now branches, in priority order: creator standing →
+**supporter standing** → **guest CTA**.
+
+- **`viewerSupporterStanding()`** resolves the signed-in fan's place from the FULL supporter
+  ranking. ⚠️ It reads a cache (`SUPPORTER_STANDINGS_KEY`) written by
+  `topSupportersByFrequency()` and **never recomputes** — that method scans five payment
+  tables, and doing it again on every board render costs more than the feature is worth. A
+  cold cache means no bar this once; the bundle request the page fires on load fills it.
+  🚨 **`BUNDLE_CACHE_KEY` bumped `v2` → `v3`** with it: the bundle caches that response, so
+  a v2 entry would keep being served while the standings key stayed empty and the bar
+  silently never appeared.
+- ⚠️ The supporter gap is stated in **purchases**, the creator gap in **supporters**. No
+  amount appears on this bar.
+
+### Three analytics panels became one panel with three tabs
+
+`AnalyticsTabs` mounts only the selected child and passes `hideHeading` — the tab already
+names it, and a tab reading "Categories" above a heading reading "🏆 Category Leaders
+Creators" says the same thing twice and disagrees about the wording. Sidebar headings moved
+onto the board's own eyebrow style (12px uppercase, no emoji) and off `text-xs`/`text-sm`
+onto the project's pixel scale.
+
+### Seven faults a review of the above found, all fixed (24 Aug 2026)
+
+- 🚨 **THE WINNERS PANEL CROWNED THREE PEOPLE WHO WON NOTHING.** `calc()` returns EVERY
+  eligible creator with windowed counts — **it never comes back empty** — so a period in
+  which nobody transacted still produced a full collection with every score at zero, and
+  the first three rows of arbitrary database order were published under *"Final standing
+  when the board closed"*. Verified live: it named the same three creators the monthly
+  board shows with 0 supporters and a "New" chip. `pastWinners()` now requires real
+  activity in that window (`total_supporters > 0 || total_amount > 0`) and renders no
+  panel when nobody qualifies. ⚠️ **An empty result IS cached here**, unlike the board:
+  "nobody transacted last week" is a legitimate, stable answer, and not caching it re-ran a
+  full board query on every page load.
+- 🚨 **`leaderboard:notify-movement` matched its comparison capture by EXACT date**, so a
+  single missed 03:15 run made it report "nobody climbed" and send nothing, with no error
+  anywhere — the identical fault `LeaderboardMovementService::previousRanks()` already
+  works around for the page's own arrows. It now takes the newest capture **at or before**
+  the cutoff, and `substr(…, 0, 10)`s both dates (MAX() returns the stored value verbatim
+  and a legacy row can carry a time component). Pinned by two tests.
+- 🚨 **`toggleOptOut()` did not evict the past-winners cache**, which names a creator on a
+  public page for six hours under keys that cannot be enumerated (one per period per date).
+  Its own docblock promises removal *"now, not when the cache expires"*.
+  **`PAST_WINNERS_GENERATION_KEY` is read into every key and bumped on opt-out** — stored
+  `forever`, never with a TTL, or an expired generation resurrects every pre-bump entry.
+  Same device as `discovery_collection_gen_*`.
+- ⚠️ **The measure bar scaled against the top SEARCH RESULT while searching** — `rows[0]` is
+  then whoever matched first, so every bar compared creators to an arbitrary one and
+  presented it as a scale. Suppressed on search, same reasoning the podium already is.
+- ⚠️ **`User::find()` inside the mover loop** — up to 500 round trips a run. One `whereIn`
+  keyed by id.
+- ⚠️ **`Countdown` ticked every second regardless of remaining time**, re-rendering 3,600
+  times an hour to change nothing above the one-hour mark. A self-rescheduling `setTimeout`
+  ticks at 1s under an hour and 20s above it. ⚠️ **20s, not 60s** — a 60s interval can land
+  just after a minute boundary and leave the figure a whole minute stale, which is visible
+  on a countdown.
+- **No PHP test covered any of the new server behaviour.** `tests/Feature/LeaderboardBoardExtrasTest.php`
+  (11) now covers the buy route (present, absent, and suppressed by a moderation hold), the
+  close time being null only for the lifetime board, the quiet-period winners case, the
+  opt-out cache bump, and the supporter standing resolving outside the top five.
+
+### It has to read as a RACE, not a list (24 Aug 2026, client direction)
+
+A rank gives the ORDER and says nothing about the DISTANCE. #4 and #47 rendered
+identically, so nothing on screen showed that one was within reach of the podium and the
+other was not — the page was a list of cards that happened to be numbered.
+
+- 🚨 **Every row carries a MEASURE** — a bar drawn against the leader's supporter count.
+  `resources/js/Pages/leaderboard/measure.js` is the one definition (`measureFor()`), kept
+  out of the component so it can be tested without mounting Inertia, ziggy and the
+  analytics helpers.
+  - ⚠️ **Reach, never revenue.** It measures SUPPORTERS — the figure the row already
+    prints — so it publishes no new fact. This must not become the thing that walks around
+    `'amount' => 0`.
+  - 🚨 **`MEASURE_FLOOR = 4`, not `> 0`.** With a leader on ONE supporter every bar is
+    either full or empty: no information, and a column of blank tracks that reads as a
+    loading skeleton. Verified on the dev board, where the whole top ten sits at 0 or 1 and
+    the correct outcome is **no bars at all**.
+  - ⚠️ **`MIN_VISIBLE_WIDTH = 3`** — 1 in 4000 is 0.025%, and "invisible" must not look the
+    same as "zero". A zero keeps its track (the track is the scale) so the list does not go
+    jagged by 8px a row.
+  - ⚠️ The scale is the leader of the **board on screen**, not of the loaded page — else
+    "Show more" would rescale the list on every fetch and the bars would mean different
+    things above and below the join.
+- 🚨 **THE BAR WILL VISIBLY DISAGREE WITH THE RANK ORDER, AND THAT IS THE RANKING BUG
+  SHOWING, NOT A BUG IN THE BAR.** The board sorts on `combined_score`, which falls back to
+  revenue for a creator with no supporters (see the open item above), so a row further down
+  can legally carry a longer bar. `measureFor` clamps at 100% rather than overflowing its
+  track, and a test pins that case with the reason. When someone reports "the bars are
+  wrong", the sort is what needs the fix.
+- **The top ten are heavier than the tail** — the rank numeral steps 22/20/18 (32/28/24 at
+  `sm`) across top-3, top-10 and the rest, and the tail's numeral is `black/70` where the
+  top ten is full black. A board where #4 and #47 are set identically is a table.
+- **The podium states the gap in words** — "12 ahead of second" / "3 behind first" / "Level
+  with second". A podium that only says first, second, third is a rosette, not a standing.
+  ⚠️ Set as a small caps label, **NOT `font-gulfs`** — as display type it outshouted the
+  creator's own name, which is Poppins on that card and is the card's subject. Suppressed
+  entirely when the figures are 0, or it reads "0 ahead of second".
+- Tests: `tests/javascript/leaderboardMeasure.test.js` (7).
+
+### The category panel — Supports leads, and an empty tab says so
+
+- **`CATEGORIES` is module scope and `Supports` is first**, and the panel's default is
+  `CATEGORIES[0].key` — never a hardcoded `'wishes'`. A hardcoded default is a second copy
+  of the key that stops matching the day the row is reordered, and the panel then opens on
+  a tab that renders nothing. (Client direction, 24 Aug 2026: Supports is the primary tab —
+  it is the one category every creator can appear in, so it is the only one that reads as a
+  leaderboard of the platform rather than of one product.)
+- 🚨 **EVERY TAB CARRIES ITS COUNT.** Without one, a category with nothing in it is
+  indistinguishable from a full one until you have clicked it and been shown an empty
+  panel — which is exactly how this was found. The count is a `length`, never an amount.
+  ⚠️ On the current dev database **all six categories return 0**: `categoryLeaders()` is
+  scoped to a rolling three-month window, so an empty panel there is data, not a fault.
+- ⚠️ **The empty state names the product and offers a route.** It read *"Be the first to
+  make it to the Supports leaderboard!"*, which tells a creator nothing about what would
+  put them on it and is not addressed to the visitor reading it. Each category carries a
+  `product` (Piggy Bank · Wishlist · Memberships · Recurring content · Shop) and the copy
+  uses it verbatim — **no `.toLowerCase()`**, these are product names.
+- Headings across all three analytics panels moved onto the board's eyebrow style; the page
+  now renders **no emoji at all** (the footer's Pride campaign is a different surface).
+- ⚠️ `RiGiftLine` and `RiGroupLine` are no longer imported in `CategoryLeaders` — the
+  commented-out `subscriptions` row says so beside itself.
+
+### `leaderboard:notify-movement` — the captures finally get read
+
+🚨 **`leaderboard:snapshot` has written a rank per creator per period per day since the
+movement arrows were built, and the arrows were the only thing that ever read it** — a
+creator had to open the page to learn they had climbed. Weekly, Monday **09:15** (after the
+03:15 capture it compares against, and clear of 09:00/09:30/09:45).
+
+- 🚨 **UPWARD MOVES ONLY.** A creator who slipped has not done anything wrong, and a push
+  saying so is a telling-off from the platform they sell on — the same reasoning that keeps
+  the board's "down" chip grey rather than red. Pinned by test.
+- 🚨 **Ships OFF** (`LEADERBOARD_MOVEMENT_NOTIFICATIONS`, default false). A flag-off run
+  reports and **claims nothing**, so switching it on later cannot silently swallow the first
+  week.
+- **Snapshots, never a live recompute** — so the command cannot disagree with the arrows the
+  page draws, and it does not run the seven-aggregate board query.
+- ⚠️ **The aliases are `cur`/`prv`.** `now` and `then` are SQL keywords and appear unquoted
+  inside the raw comparison; SQLite answers `near "then": syntax error` and the command dies.
+- ⚠️ **A lower rank number is a better position**, so the climb is `prv.rank - cur.rank`.
+  Backwards, it congratulates everyone who slipped.
+- ⚠️ **Queued per creator** (`NotificationDispatcher::queue`), never `send()` in a loop —
+  push is a synchronous HTTP call and production is a 60-second Lambda. **Needs
+  `queue:work`.** Claimed via `NotificationDispatcher::claim` BEFORE the queue push, so a
+  re-run on the same capture cannot double-send.
+- ⚠️ **A capped run says so.** `movement_max_per_run` (500) exists so a first run against a
+  full history cannot fan out to the platform at once; silent truncation reads as "that is
+  everyone".
+- Config `config/leaderboard.php`. Env: `LEADERBOARD_MOVEMENT_NOTIFICATIONS`,
+  `LEADERBOARD_MOVEMENT_MIN_PLACES` (3 — one place is noise, the board re-ranks daily),
+  `LEADERBOARD_MOVEMENT_PERIOD` (weekly), `LEADERBOARD_MOVEMENT_MAX_PER_RUN`.
+- Tests: `tests/Feature/LeaderboardMovementNotificationTest.php` (9).
 
 ## Detailed topic index — load the skill, do not inline this content
 

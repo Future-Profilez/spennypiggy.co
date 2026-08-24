@@ -121,4 +121,46 @@ class AnalyticsEventTest extends TestCase
 
         $this->assertSame([], AnalyticsEvent::pull());
     }
+
+    /**
+     * 🚨 The banned words are matched as whole SEGMENTS, not substrings.
+     *
+     * `ip` sits inside `descr`+`ip`+`tion` and `card` inside `discard`. A
+     * substring match drops those parameters silently — no error, no log, just
+     * a dimension that is permanently empty for a reason nobody can find.
+     */
+    public function test_an_innocent_key_that_merely_contains_a_banned_word_survives(): void
+    {
+        $this->fakeRequest();
+
+        AnalyticsEvent::push('purchase', [
+            'description' => 'a wish',
+            'discard_reason' => 'none',
+            'value' => 5.0,
+        ]);
+
+        $this->assertSame(
+            ['description' => 'a wish', 'discard_reason' => 'none', 'value' => 5.0],
+            AnalyticsEvent::pull()[0]['params']
+        );
+    }
+
+    /** …and the real thing is still caught, in every shape it actually arrives in. */
+    public function test_identifying_keys_are_still_caught_as_segments(): void
+    {
+        $this->fakeRequest();
+
+        AnalyticsEvent::push('purchase', [
+            'value' => 5.0,
+            'guest_email' => 'a@b.c',
+            'customer_name' => 'Real Person',
+            'payment_intent_id' => 'pi_1',
+            'client_ip' => '1.2.3.4',
+            'ip' => '1.2.3.4',
+            'stripe_token' => 'tok_1',
+            'user_id' => 7,
+        ]);
+
+        $this->assertSame(['value' => 5.0], AnalyticsEvent::pull()[0]['params']);
+    }
 }

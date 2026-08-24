@@ -503,7 +503,12 @@ if (app()->environment('local')) {
 // Artisan command, not an anonymous GET that mass-mutates the users table.
 
 // check referal code
-Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
+// ⚠️ Throttled: both of these answer "does this code exist?" to anyone, unauthenticated,
+// which is a code-guessing oracle. A person typing their own code needs a handful of
+// attempts; a script working through a keyspace needs thousands.
+Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])
+    ->middleware('throttle:20,1')
+    ->name('checkCouponCode');
 // ⚠️ Both answer "is this username/email already taken?" to anyone. The register
 // form calls them per keystroke (debounced), so they need a limit that a real
 // signup never reaches but a scraper does.
@@ -826,7 +831,17 @@ Route::get('/offline.html', function () {
 
     abort_unless(is_file($path), 404);
 
-    return response(file_get_contents($path), 200, [
+    // ⚠️ The page carries a real inline <script> and the CSP has no 'unsafe-inline',
+    // so the per-request nonce SecurityHeaders shares must be substituted in. Without
+    // it the block is refused and the offline screen cannot report the connection
+    // returning — on the one screen a user sees when everything else has failed.
+    $html = str_replace(
+        '__CSP_NONCE__',
+        e((string) view()->shared('cspNonce', '')),
+        file_get_contents($path)
+    );
+
+    return response($html, 200, [
         'Content-Type' => 'text/html; charset=UTF-8',
         'X-Robots-Tag' => 'noindex, nofollow',
     ]);
@@ -1260,24 +1275,40 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 |
 | Open (no auth) on local/testing so the page can be used while developing.
 |
-| Everywhere else it stays behind auth+admin: it returns the last ERROR/CRITICAL
-| lines of the application log (payment intent ids, buyer emails, stack traces),
-| platform financial integrity counts, and which secrets are configured — and its
-| Stripe test path creates a real Connect Express account on every run. Note the
-| deployed `development` environment is a publicly reachable host, so it is NOT
-| on the open list.
+| Everywhere else it is reachable ONLY by clicking through from the admin app.
+| It returns the last ERROR/CRITICAL lines of the application log (payment intent
+| ids, buyer emails, stack traces), platform financial-integrity row ids, disk and
+| migration state, and which secrets are configured — and its Stripe test path
+| creates a real Connect Express account on every deep run.
+|
+| It cannot be gated with this app's `admin` middleware, which tests
+| `users.role === '2'` and therefore answers 403 to literally everyone: the real
+| administrators are rows in the `admins` table, which this app has no auth guard
+| for. So the gate is a hand-off instead — admin.spennypiggy.co authenticates the
+| admin (`auth:admin` + `2fa`), signs a short-lived link with a shared secret, and
+| `unlock` below trades that link for a session flag. See
+| App\Http\Middleware\EnsureSystemDiagnosticsAccess.
+|
+| Note the deployed `development` environment is a publicly reachable host, so it
+| is NOT on the open list.
 */
+Route::get('admin/system-diagnostics/unlock', [SystemDiagnosticsController::class, 'unlock'])
+    ->middleware('throttle:10,1')
+    ->name('admin.system-diagnostics.unlock');
+
 Route::get('admin/system-diagnostics', [SystemDiagnosticsController::class, 'index'])
+    ->middleware('sysdiag')
     ->name('admin.system-diagnostics.index');
 
-// Throttled because the sweep is real work (~10s, 538 routes + 210 files parsed) and this is
-// now an unauthenticated endpoint — without a limit it is a free way to load the server.
+// Throttled because the sweep is real work (~10s, 538 routes + 210 files parsed) — a limit
+// belongs here even behind the hand-off gate, since one unlocked session can still hold the
+// button down.
 Route::post('admin/system-diagnostics/run', [SystemDiagnosticsController::class, 'run'])
-    ->middleware('throttle:10,1')
+    ->middleware(['sysdiag', 'throttle:10,1'])
     ->name('admin.system-diagnostics.run');
 
 Route::get('admin/system-diagnostics/history', [SystemDiagnosticsController::class, 'history'])
-    ->middleware('throttle:30,1')
+    ->middleware(['sysdiag', 'throttle:30,1'])
     ->name('admin.system-diagnostics.history');
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes

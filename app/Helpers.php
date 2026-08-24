@@ -334,7 +334,7 @@ class Helpers
             }
 
             // Stop once qualified
-            if ($referral->status === 'QUALIFIED' || $referral->lifetime_gmv >= 1000) {
+            if ($referral->status === 'QUALIFIED' || $referral->lifetime_gmv >= (float) config('referral.qualifying_gmv', 1000)) {
                 return;
             }
 

@@ -67,6 +67,13 @@ class AnalyticsEvent
     public static function push(string $name, array $params = []): void
     {
         try {
+            // 🚨 Off outside production. Without this, a developer's twenty test
+            // checkouts are twenty checkouts in the live property, and GA4
+            // cannot delete an event it has recorded.
+            if (! config('analytics.enabled')) {
+                return;
+            }
+
             $request = request();
 
             // ⚠️ The guard is "is there a session", NOT `runningInConsole()`.
@@ -138,44 +145,15 @@ class AnalyticsEvent
     /**
      * Strip anything that must not reach a third party.
      *
-     * 🚨 This is load-bearing privacy, not tidiness. Event parameters are sent
-     * to Google, so a key whose NAME suggests it identifies a person is
-     * dropped whole rather than pattern-matched — matching the value would
-     * pass anything the pattern had not been taught about yet.
-     *
-     * Objects and arrays are dropped too: GA4 only accepts scalars, and a
-     * nested payload is exactly how a whole model gets serialised into an
-     * analytics call by accident.
+     * 🚨 Delegated to `AnalyticsParams` because the Measurement Protocol sender
+     * has to apply the identical rule, and two copies of a privacy filter is
+     * one copy that gets a rule added and one that does not.
      *
      * @param  array<string, mixed>  $params
      * @return array<string, string|int|float|bool>
      */
     private static function scrub(array $params): array
     {
-        $banned = [
-            'email', 'name', 'username', 'phone', 'address', 'ip',
-            'password', 'secret', 'token', 'otp', 'card', 'iban',
-            'user_id', 'customer', 'account_id', 'payment_intent',
-        ];
-
-        $clean = [];
-
-        foreach ($params as $key => $value) {
-            if (! is_string($key) || ! is_scalar($value)) {
-                continue;
-            }
-
-            $lower = strtolower($key);
-
-            foreach ($banned as $word) {
-                if (str_contains($lower, $word)) {
-                    continue 2;
-                }
-            }
-
-            $clean[$key] = $value;
-        }
-
-        return $clean;
+        return AnalyticsParams::scrub($params);
     }
 }

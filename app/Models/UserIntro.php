@@ -113,9 +113,22 @@ class UserIntro extends Model
         } elseif (empty($this->poster)) {
             $uuid = Uploadcare::generateThumb($this->uuid, $this->duration);
 
-            if (! empty($uuid)) {
-                $this->poster = $uuid['result']['result'][0]['thumbnails_group_uuid'];
-                $this->poster_token = $uuid['result']['result'][0]['token'];
+            /*
+             * 🚨 GUARD THE SHAPE — THIS BRANCH HAS NO try/catch AROUND IT.
+             *
+             * `generateThumb` returns whatever Uploadcare answered. An error
+             * envelope (a rejected key, a rate limit, a file it will not
+             * convert) is a non-empty array with no `result` key, so
+             * `! empty($uuid)` passed and the very next line threw "Undefined
+             * array key" — a 500 on a PUBLIC PROFILE, because that is where the
+             * accessor is read. A missing poster must degrade to no poster, not
+             * take the creator's page down.
+             */
+            $thumb = $uuid['result']['result'][0] ?? null;
+
+            if (is_array($thumb) && ! empty($thumb['thumbnails_group_uuid'])) {
+                $this->poster = $thumb['thumbnails_group_uuid'];
+                $this->poster_token = $thumb['token'] ?? null;
 
                 $this->save();
                 // $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(config('services.uploadcare.secret'), 300));
@@ -126,10 +139,30 @@ class UserIntro extends Model
 
                 $url = config('services.uploadcare.cdn', 'https://ucarecdn.com/').$this->poster.'/nth/0/';
             } else {
+                if (! empty($uuid)) {
+                    Log::warning("Uploadcare returned no thumbnail for UserIntro {$this->id}", [
+                        'keys' => array_keys((array) $uuid),
+                    ]);
+                }
+
                 $url = false;
             }
         } else {
-            $url = false;
+            /*
+             * 🚨 POSTER KNOWN, NOTHING LEFT TO POLL — SERVE IT.
+             *
+             * This branch is reached when `poster` is set and `poster_token` is
+             * not, which is EXACTLY the state the successful conversion above
+             * leaves behind: it stores the poster and clears the token on
+             * purpose ("prevents future network calls for this video"). So every
+             * intro whose thumbnail finished converting returned `false` on the
+             * very next read — the poster was fetched, stored, and then never
+             * shown again. The token is only ever used to poll the conversion
+             * status API; the CDN URL does not need it.
+             */
+            $url = ! empty($this->poster)
+                ? config('services.uploadcare.cdn', 'https://ucarecdn.com/').$this->poster.'/nth/0/'
+                : false;
         }
 
         return $url;

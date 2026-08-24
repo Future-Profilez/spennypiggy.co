@@ -135,6 +135,53 @@ class ShopsController extends Controller
         );
     }
 
+    /**
+     * The reward file's MIME type, in the only shape anything can read.
+     *
+     * 🚨 THIS USED TO GUESS THE LITERAL STRING `'image'` whenever Uploadcare did
+     * not report a mime — for ANY file, an mp3 included — and that guess was in a
+     * shape no resolver accepts: `RewardService::kind()` and the JS `rewardKind()`
+     * both test `str_starts_with($mime, 'image/')`, so a bare `image` matched
+     * nothing, fell through to the extension test, and an Uploadcare UUID carries
+     * no extension either. Every one of those listings therefore rendered a generic
+     * download tile instead of the picture, with nothing wrong in any log.
+     *
+     * ⚠️ The client already sends the real mime (`AddItem` posts
+     * `reward.file.mime` as `reward_file_type`) and this method used to ignore it.
+     * Preference order: what Uploadcare told the server, then what the client
+     * reported, then the existing value on an edit, then NULL — never a guess.
+     * Null is safe: `kind()` falls back to the file extension, and
+     * `moderateRewardFile()` treats an unknown type as scannable rather than
+     * skipping it.
+     */
+    private static function rewardFileMime(mixed $file, Request $request, ?string $existing): ?string
+    {
+        /*
+         * ⚠️ `$file` IS THE UPLOADCARE UUID STRING, NOT AN ARRAY — `$file =
+         * $request->reward_file` a few lines above every call site, and `AddItem`
+         * posts `reward.file.uuid`. The original expression read
+         * `$file['contentInfo']['mime']['type']` on it, and `empty()` swallows an
+         * illegal string offset silently, so that branch was ALWAYS false and the
+         * `'image'` guess below it was the only outcome that ever ran. That is why
+         * the live rows read exactly `image` (6) or nothing (14), and never a real
+         * mime. The array form is still honoured in case a caller ever passes the
+         * full Uploadcare payload.
+         */
+        if (is_array($file) && ! empty($file['contentInfo']['mime']['type'])) {
+            return $file['contentInfo']['mime']['type'];
+        }
+
+        // What the client actually reported. The form has always sent this and the
+        // controller has never looked at it.
+        $fromClient = trim((string) $request->input('reward_file_type', ''));
+
+        if ($fromClient !== '' && str_contains($fromClient, '/')) {
+            return $fromClient;
+        }
+
+        return ! empty($request->reward_file) ? $existing : null;
+    }
+
     private function moderateRewardFile(Shop $shop): void
     {
         if (empty($shop->reward_file) || Str::startsWith($shop->reward_file, ['http://', 'https://'])) {
@@ -326,7 +373,7 @@ class ShopsController extends Controller
                 'image' => $request->image ?? null,
                 'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                 'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                'reward_file_type' => ! empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (! empty($request->reward_file) ? 'image' : null),
+                'reward_file_type' => self::rewardFileMime($file, $request, null),
                 'reward_file' => ! empty($file['uuid']) ? $file['uuid'] : (! empty($request->reward_file) ? $request->reward_file : null),
                 'ai_generated' => $request->ai_generated,
                 'ask_question' => $request->ask_question ?? null,
@@ -346,7 +393,7 @@ class ShopsController extends Controller
                 'image' => $request->image ?? null,
                 'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                 'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                'reward_file_type' => ! empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (! empty($request->reward_file) ? 'image' : null),
+                'reward_file_type' => self::rewardFileMime($file, $request, null),
                 'reward_file' => ! empty($file['uuid']) ? $file['uuid'] : (! empty($request->reward_file) ? $request->reward_file : null),
                 'ask_question' => $request->ask_question ?? null,
                 'slot_limitation' => $request->slot_limitation ?? null,
@@ -546,7 +593,7 @@ class ShopsController extends Controller
                     'image' => ! empty($request->image) ? $request->image : $shop->image,
                     'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                     'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                    'reward_file_type' => ! empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (! empty($request->reward_file) ? 'image' : $shop->reward_file_type),
+                    'reward_file_type' => self::rewardFileMime($file, $request, $shop->reward_file_type),
                     'reward_file' => ! empty($file['uuid']) ? $file['uuid'] : (! empty($request->reward_file) ? $request->reward_file : $shop->reward_file),
                     'ai_generated' => $request->ai_generated ?? $shop->ai_generated,
                     'ask_question' => $request->ask_question ?? null,
@@ -566,7 +613,7 @@ class ShopsController extends Controller
                     'image' => ! empty($request->image) ? $request->image : $shop->image,
                     'success_page_type' => ! empty($request->success_page_type) || $request->success_page_type != 0 ? $request->success_page_type : null,
                     'success_page_value' => ! empty($request->success_page_value) || $request->success_page_value != 0 ? $request->success_page_value : null,
-                    'reward_file_type' => ! empty($file['contentInfo']['mime']['type']) ? $file['contentInfo']['mime']['type'] : (! empty($request->reward_file) ? 'image' : $shop->reward_file_type),
+                    'reward_file_type' => self::rewardFileMime($file, $request, $shop->reward_file_type),
                     'reward_file' => ! empty($file['uuid']) ? $file['uuid'] : (! empty($request->reward_file) ? $request->reward_file : $shop->reward_file),
                     'ai_generated' => $request->ai_generated ?? $shop->ai_generated,
                     'ask_question' => $request->ask_question ?? null,
@@ -1405,7 +1452,23 @@ class ShopsController extends Controller
                 if (! $stripeid) {
                     Log::error("No ShopPayment found for UUID: $id");
 
-                    return redirect()->back()->with('error', 'Invalid payment ID.');
+                    /*
+                     * 🚨 THE BUYER ARRIVES HERE FROM STRIPE, SO THERE IS NO
+                     * "BACK".
+                     *
+                     * `redirect()->back()` reads the Referer, and a return from
+                     * a Stripe-hosted checkout carries no same-site one — so
+                     * this dropped somebody who had JUST PAID on the homepage,
+                     * with a flash message that (until 22 Aug 2026) no layout
+                     * rendered. From their side: they paid and the site
+                     * forgot. That is the worst dead end on the platform and
+                     * the one most likely to end at their bank.
+                     *
+                     * Their purchases page is the honest destination: whatever
+                     * went wrong with this id, what they bought is listed there.
+                     */
+                    return redirect()->route('gifter.hub')
+                        ->with('error', 'We could not match that payment reference. If money left your account, your purchase will appear here shortly — contact us if it does not.');
                 }
 
                 NotificationContext::for([

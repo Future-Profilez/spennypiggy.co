@@ -9,6 +9,7 @@ use App\Models\Shop;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WishItem;
+use App\Support\Badges;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -158,6 +159,25 @@ class SitemapController extends Controller
     {
         $content = Cache::remember('sitemap:static', self::CACHE_TTL, function () {
             $urls = [];
+            /*
+             * One entry per interest facet — `/discover/c/{slug}`. These are
+             * real pages with their own title and description, and they are the
+             * only Discover URLs beyond the root that are indexable at all (a
+             * filtered Discover is `noindex,follow`).
+             *
+             * ⚠️ Built from `Badges::interestSlugs()`, the taxonomy creators
+             * actually pick from, so adding a badge adds its page automatically
+             * and a removed badge stops being advertised.
+             */
+            foreach (Badges::interestSlugs() as $slug) {
+                $urls[] = [
+                    'loc' => url('/discover/c/'.$slug),
+                    'lastmod' => $this->deployedAt(),
+                    'priority' => '0.7',
+                    'changefreq' => 'weekly',
+                ];
+            }
+
             foreach (self::STATIC_PAGES as $page) {
                 $urls[] = [
                     'loc' => url($page['url']),

@@ -200,6 +200,24 @@ class SeoMeta
     }
 
     /**
+     * The per-request CSP nonce shared by App\Http\Middleware\SecurityHeaders.
+     *
+     * ⚠️ Returns '' rather than throwing when there is no view container — this
+     * class is reachable from console commands and from tests that never boot a
+     * request, and an SEO helper must never be the thing that breaks them.
+     */
+    private static function cspNonce(): string
+    {
+        try {
+            $nonce = view()->shared('cspNonce');
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        return is_string($nonce) ? $nonce : '';
+    }
+
+    /**
      * Render Seo Tags
      *
      * @return string
@@ -219,6 +237,30 @@ class SeoMeta
                 foreach ($sub as $item) {
                     $props = is_array($item) && isset($item['props']) ? $item['props'] : $item;
                     $content = is_array($item) && isset($item['content']) ? $item['content'] : null;
+
+                    /*
+                     * 🚨 EVERY <script> THIS CLASS EMITS NEEDS THE CSP NONCE.
+                     *
+                     * `script-src` governs JSON-LD exactly as it governs executable
+                     * script — the browser does not care that the type is
+                     * `application/ld+json` — so the BreadcrumbList block this class
+                     * writes was refused on every page carrying one
+                     * (`Blocked 'script' from 'inline:'`, effective-directive
+                     * `script-src-elem`). The policy deliberately carries no
+                     * 'unsafe-inline', because a nonce makes a browser ignore it.
+                     *
+                     * Stamped HERE rather than in addJsonLd() so it covers every
+                     * script tag anything ever adds, and so the nonce is read at
+                     * RENDER time — SecurityHeaders shares it per request, and a
+                     * value captured earlier could belong to a different one.
+                     */
+                    if ($tag === 'script' && is_array($props) && ! isset($props['nonce'])) {
+                        $nonce = static::cspNonce();
+
+                        if ($nonce !== '') {
+                            $props = ['nonce' => $nonce] + $props;
+                        }
+                    }
 
                     $attr = '';
                     $html .= "<$tag ";

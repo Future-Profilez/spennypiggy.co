@@ -100,12 +100,12 @@ export default function IntroVideos({ intros: initialIntros, onSeeMore, showAll 
             )}
 
             {loading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {Array(8).fill(0).map((_, i) => <IntroSkeleton key={`intro-sk-${i}`} />)}
                 </div>
             ) : hasContent ? (
                 <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {displayed.map((w, i) => <IntroCard key={w.id || i} w={w} />)}
                     </div>
                     {!showAll && intros.length > 8 && (
@@ -138,9 +138,10 @@ function IntroCard({ w }) {
     const [imgLoaded, setImgLoaded] = useState(false);
     const avatar = w?.user?.avatar_url || userphoto;
     const poster = (w?.poster_url && w.poster_url !== false) ? w.poster_url : avatar;
+    const video = w?.perma_link || null;
 
     return (
- <div className="group relative aspect-[3/4] overflow-hidden rounded-box border border-white/10 bg-[#16161C] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF007F]/50 ">
+        <div className="group relative aspect-[3/4] overflow-hidden rounded-box border border-white/10 bg-[#16161C] transition-colors duration-300 hover:border-[#FF007F]/50">
             <Popup space="0" size="md" classes="w-full h-full" text={
                 <div className="relative h-full w-full">
                     {!imgLoaded && <div className="absolute inset-0 z-10 animate-pulse bg-white/5" />}
@@ -167,7 +168,23 @@ function IntroCard({ w }) {
                         </div>
                     </div>
                 </div>
-            } />
+            }>
+                {/* 🚨 THIS WAS SELF-CLOSING. `<Popup text={…} />` renders the
+                    trigger and nothing else, so every intro card opened an EMPTY
+                    modal — the video has never played from this rail. */}
+                {video ? (
+                    <video
+                        src={video}
+                        poster={poster}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="max-h-[80vh] w-full rounded-box-sm bg-black object-contain"
+                    />
+                ) : (
+                    <p className="p-6 text-center text-black/60">This intro isn’t available.</p>
+                )}
+            </Popup>
 
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4">
                 {w?.user?.username ? (

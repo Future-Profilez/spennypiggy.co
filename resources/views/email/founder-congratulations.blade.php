@@ -188,6 +188,39 @@
                 </td>
             </tr>
 
+            {{--
+                Footnote.
+
+                🚨 THIS MAIL GOES OUT THROUGH EmailService::sendMarketingEmail, so
+                it is classified as marketing and MUST carry an unsubscribe link
+                (UK brief §4, 23 Aug 2026 — "every marketing email supports
+                unsubscribe"). It shipped without one.
+
+                `@if` guarded because generateManageToken/generateUnsubscribeToken
+                return null when the route is not registered — a missing footer
+                link must never throw while rendering and take the whole email
+                down with it.
+            --}}
+            <tr>
+                <td align="center"
+                    style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:#9A9A9A;
+                           line-height:20px;padding:0 0 8px 0;text-align:center;">
+                    You are receiving this because you qualified for the Spenny Piggy Founder programme.
+                    @if (! empty($unsubscribeUrl))
+                    <br>
+                    <a href="{{ $unsubscribeUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
+                        Unsubscribe from marketing emails
+                    </a>
+                    @endif
+                    @if (! empty($manageUrl))
+                    &nbsp;·&nbsp;
+                    <a href="{{ $manageUrl }}" target="_blank" style="color:#9A9A9A;text-decoration:underline;">
+                        Choose what you receive
+                    </a>
+                    @endif
+                </td>
+            </tr>
+
         </table>
     </td>
 </tr>

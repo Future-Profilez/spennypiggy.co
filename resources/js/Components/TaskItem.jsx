@@ -3,6 +3,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 import ScheduledBadge from "@/Components/ScheduledBadge";
+import SaveButton from "@/Components/SaveButton";
 
 export default function TaskItem({ task, IsloggedIn, profileUser }) {
     const { auth, platform_fee_percentage, transaction_fee_percentage } =
@@ -95,15 +96,28 @@ export default function TaskItem({ task, IsloggedIn, profileUser }) {
             }}
             className="cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F] focus-visible:ring-offset-2 flex h-full flex-col bg-[#fdfbf7] rounded-box p-5 transition-colors duration-200 hover:bg-black/[0.03] border-[2px] !border-black"
         >
-            <Link
-                href={url}
-                // The card already navigates; without this the inner link fires a
-                // second visit to the same URL.
-                onClick={(e) => e.stopPropagation()}
-                className="text-lg sm:text-xl text-black line-clamp-1 font-black capitalize tracking-wide"
-            >
-                {task.title}
-            </Link>
+            {/* ⚠️ A ROW, not an absolutely-placed heart. This card has no image and
+                no `relative` root, and the title is `line-clamp-1` — an overlay in the
+                corner would sit on top of the last word of a long title. Laying them
+                out side by side lets the title shrink instead. */}
+            <div className="flex items-start justify-between gap-3">
+                <Link
+                    href={url}
+                    // The card already navigates; without this the inner link fires a
+                    // second visit to the same URL.
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-lg sm:text-xl text-black line-clamp-1 font-black capitalize tracking-wide"
+                >
+                    {task.title}
+                </Link>
+                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                    <SaveButton
+                        productType="task"
+                        itemId={task?.id}
+                        creatorId={profileUser?.id || task?.creator_id}
+                    />
+                </div>
+            </div>
             <p className="text-sm text-gray-700 font-bold !mt-2 line-clamp-2">
                 {task.description}
             </p>

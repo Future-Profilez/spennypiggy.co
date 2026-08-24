@@ -1,6 +1,7 @@
-import { useState, lazy } from "react";
+import { useState } from "react";
 import TipInner from "./TipInner";
-const Popup = lazy(() => import("@/Components/Popup"));
+import lazyRetry from "@/utils/lazyRetry";
+const Popup = lazyRetry(() => import("@/Components/Popup"));
 export default function SendTip({auth, classes, card_capabilities}) {
     const [close, setClose] = useState();
     return (

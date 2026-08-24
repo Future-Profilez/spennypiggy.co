@@ -172,6 +172,15 @@ class Kernel extends ConsoleKernel
             ->dailyAt('03:15')
             ->withoutOverlapping(30);
 
+        // Tell a creator when they have CLIMBED. The captures above have held
+        // this fact since the movement arrows were built and nothing read it —
+        // a creator had to open the page to find out. Weekly, so it is news
+        // rather than noise, and after the capture it compares against.
+        // ⚠️ Ships off (`LEADERBOARD_MOVEMENT_NOTIFICATIONS`); needs queue:work.
+        $schedule->command('leaderboard:notify-movement')
+            ->weeklyOn(1, '09:15')
+            ->withoutOverlapping(30);
+
         // Founder Bonus System Jobs
         // Daily job to calculate first 30-day earnings for new creators
         $schedule->job(new CalculateFirstThirtyDayEarnings)

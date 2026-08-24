@@ -60,7 +60,7 @@ export default function HelpCategory({
                             Nothing filed here for this filter yet.
                         </p>
                     ) : (
-                        <ul className="mt-6 divide-y divide-black/10 overflow-hidden rounded-box border-[3px] border-black bg-white">
+                        <ul className="mt-6 divide-y divide-black/10 overflow-hidden rounded-box border-black bg-white">
                             {category.articles.map((a) => (
                                 <li key={a.slug}>
                                     <Link

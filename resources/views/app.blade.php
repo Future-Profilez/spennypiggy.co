@@ -299,8 +299,32 @@
         }
     </style>
     
-    {{-- Optimized Google Fonts loading --}}
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    {{-- Optimized Google Fonts loading.
+
+         🚨 NO `onload=` ATTRIBUTE HERE, EVER. An inline event handler is governed by
+         `script-src-attr`, which CANNOT carry a nonce — an attribute has nowhere to put
+         one. Under the CSP this file already ships, the classic
+         `rel=preload … onload="this.rel='stylesheet'"` swap is refused, so the
+         stylesheet is fetched and then never applied and the whole site falls back to
+         system fonts. It was the single largest CSP report on the platform (144 users,
+         405 violations) and the `<noscript>` below does NOT cover it — that only runs
+         with JavaScript disabled, and here JavaScript is enabled and merely blocked.
+
+         `media="print"` is the attribute-free equivalent: the browser fetches the
+         stylesheet without letting it block render, and the nonced script below swaps it
+         to `all` once it has loaded. ⚠️ The `l.sheet` branch is not optional — the
+         stylesheet can finish loading BEFORE this script runs, and a bare `load`
+         listener would then wait for an event that has already fired, leaving the site
+         permanently on `media="print"`. --}}
+    <link id="sp-google-fonts" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap">
+    <script nonce="{{ $cspNonce ?? '' }}">
+        (function () {
+            var l = document.getElementById('sp-google-fonts');
+            if (!l) return;
+            var swap = function () { l.media = 'all'; };
+            if (l.sheet) { swap(); } else { l.addEventListener('load', swap, { once: true }); }
+        })();
+    </script>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
 
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
@@ -562,6 +586,7 @@
          no bar at all, and it matched ONLY the pre-boot lightweight launcher — so the icon
          dropped 90px the moment the messenger finished booting. Do not reintroduce a
          per-page or per-layout Intercom offset here. --}}
+    @if (config('analytics.enabled'))
     {{-- Google tag (gtag.js) — GA4 analytics + Google Ads conversion/remarketing.
          ONE loader, TWO configs. That is Google's documented way to run both from a single
          tag; a second gtag.js <script> would re-register dataLayer and double-count, so do
@@ -583,9 +608,30 @@
         //
         // ⚠️ The Ads config keeps its page view — remarketing tags are not funnel
         // analytics and nothing in the app re-sends that one.
-        gtag('config', 'G-EQCXDEV7QV', { send_page_view: false });
-        gtag('config', 'AW-11395921981');
+        gtag('config', '{{ config('analytics.ga4.measurement_id') }}', { send_page_view: false });
+        gtag('config', '{{ config('analytics.ads.conversion_id') }}');
+        @if (! empty(config('analytics.ads.labels')))
+        // Which GA4 events map to a Google Ads conversion action, read by
+        // resources/js/lib/analytics.js. Keyed by event name, so adding a
+        // conversion is a label in config/analytics.php and no code — and an
+        // event missing from here can never be reported by accident.
+        //
+        // ⚠️ Only labels that are actually configured are published. A wrong
+        // label files a conversion against the wrong action, which is worse
+        // than filing none and is invisible once it starts.
+        window.__spAdsConversions = @json(
+            collect(config('analytics.ads.labels'))
+                ->map(fn ($label) => config('analytics.ads.conversion_id').'/'.$label)
+        );
+        @endif
     </script>
+    @else
+        {{-- 🚨 Analytics is OFF outside production — see config/analytics.php.
+             The tag is not loaded AT ALL rather than loaded and silenced: a
+             loaded gtag.js is one stray call away from writing a developer's
+             checkout into the live property, and GA4 cannot delete an event it
+             has recorded. --}}
+    @endif
 
     @inertiaHead
 </head>

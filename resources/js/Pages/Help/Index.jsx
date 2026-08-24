@@ -156,7 +156,7 @@ export default function HelpIndex({
                     </div>
 
                     {categories.length === 0 ? (
-                        <p className="mt-6 rounded-box border-[3px] border-black bg-white p-6 text-[15px] text-black/70">
+                        <p className="mt-6 rounded-box border-black bg-white p-6 text-[15px] text-black/70">
                             Nothing published here yet. Email us and we&apos;ll answer directly —{" "}
                             <a href={`mailto:${escalation?.email}`} className="font-semibold text-[#FF007F] underline">
                                 {escalation?.email}
@@ -190,7 +190,7 @@ export default function HelpIndex({
                                       makes the parent show through as a hairline between
                                       tiles. Never a border per tile.
                                     */}
-                                    <div className="mt-4 overflow-hidden rounded-box border-[3px] border-black bg-black">
+                                    <div className="mt-4 overflow-hidden rounded-box border-black bg-black">
                                         <div className="grid gap-px sm:grid-cols-2">
                                             {group.items.map((c, i) => (
                                                 <Link

@@ -44,18 +44,28 @@ export const DISCOVERY_PARAM = 'sp_d';
 
 /**
  * `discoveryLink('jane', 'trending')` → `/jane?sp_d=trending`
+ * `discoveryLink('jane', 'trending', null, 'wishes')` → `/jane/wishes?sp_d=trending`
+ *
+ * ⚠️ `page` is a PATH SEGMENT, because the profile route is
+ * `/{username}/{page?}`. `/jane?page=wishes` renders About, 200, with no error —
+ * the documented silent failure that sent every locked post's unlock CTA to the
+ * wrong screen.
  *
  * @param {string} username
  * @param {string} source     one of DISCOVERY_SOURCE
  * @param {string} [campaign] optional named collection or campaign
+ * @param {string} [page]     optional profile tab (wishes, shop, memberships…)
  */
-export default function discoveryLink(username, source, campaign) {
+export default function discoveryLink(username, source, campaign, page) {
     if (!username) return '/';
-    if (!source) return `/${username}`;
+
+    const path = page ? `/${username}/${page}` : `/${username}`;
+
+    if (!source) return path;
 
     const params = new URLSearchParams({ [DISCOVERY_PARAM]: source });
 
     if (campaign) params.set('sp_c', campaign);
 
-    return `/${username}?${params.toString()}`;
+    return `${path}?${params.toString()}`;
 }

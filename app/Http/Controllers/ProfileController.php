@@ -2392,8 +2392,25 @@ class ProfileController extends Controller
 
         $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
 
+        /*
+         * 🚨 THE UNREAD COUNT IS A SEPARATE QUERY, NOT A FILTER OF THIS PAGE.
+         *
+         * `paginate(30)` means the app-icon badge — the only consumer of this
+         * endpoint — could only ever count unread rows inside the FIRST page,
+         * so anybody with more than 30 notifications was shown a number lower
+         * than the truth and had no way to tell. It undercounts rather than
+         * overcounts, which is exactly why nobody reported it.
+         *
+         * Sent on the existing endpoint rather than as a new route: a new named
+         * route does not reach the frontend until `ziggy:generate` runs and the
+         * bundle is rebuilt, and `route()` THROWS for a name the generated
+         * snapshot does not carry.
+         */
+        $unreadCount = Notification::where('notifiable_id', $user->id)->where('is_read', 0)->count();
+
         return response()->json([
             'status' => true,
+            'unread_count' => $unreadCount,
             'notifications' => $notifications->items(),
             'last_page' => $notifications->lastPage() ?? null,
             'current_page' => $notifications->currentPage() ?? null,

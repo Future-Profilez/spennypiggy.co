@@ -608,7 +608,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
                     )}
 
                     <div
- className={`${animate} motion-reduce:animate-none rounded-box border-[3px] border-black bg-white p-4 sm:p-6`}
+ className={`${animate} motion-reduce:animate-none rounded-box border-black bg-white p-4 sm:p-6`}
                     >
                         <div>
                             <form onSubmit={checkTFA} className="space-y-4" noValidate>
@@ -724,7 +724,7 @@ export default function Login({ status, canResetPassword, googleEnabled = false,
 
                                 <LoaderButton
                                     disabled={loading || passkeyLoading}
-                                    className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-[3px] border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
+                                    className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
                                         loading || passkeyLoading
                                             ? "cursor-not-allowed opacity-70 hover:translate-y-0"
                                             : ""

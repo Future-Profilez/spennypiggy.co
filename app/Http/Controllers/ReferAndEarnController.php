@@ -98,9 +98,14 @@ class ReferAndEarnController extends Controller
         });
 
         /* =====================================================| Qualified Referrals (LIFETIME)===================================================== */
+        // One threshold, read from config — the promo card, the progress bar and
+        // these two queries all have to agree or a creator is shown a reward they
+        // are not going to be paid.
+        $qualifyingGmv = (float) config('referral.qualifying_gmv', 1000);
+
         $qualifiedCount = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', 1000)
+            ->where('lifetime_gmv', '>=', $qualifyingGmv)
             ->count();
 
         /* =====================================================| Earnings (LIFETIME)===================================================== */
@@ -115,7 +120,7 @@ class ReferAndEarnController extends Controller
         /* =====================================================| Available Balance===================================================== */
         $availableForPayouts = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', 1000)
+            ->where('lifetime_gmv', '>=', $qualifyingGmv)
             ->where('status', 'QUALIFIED')
             ->count();
 

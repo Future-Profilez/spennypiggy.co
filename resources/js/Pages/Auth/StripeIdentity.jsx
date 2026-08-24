@@ -61,7 +61,7 @@ export default function StripeIdentity({ auth }) {
                         </p>
                     </div>
 
-                    <div className="max-w-xl m-auto bg-white rounded-box border-[3px] border-black overflow-hidden">
+                    <div className="max-w-xl m-auto bg-white rounded-box border-black overflow-hidden">
                         <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
@@ -155,7 +155,7 @@ export default function StripeIdentity({ auth }) {
                             {isFlagged ? (
                                 <a
                                     href="mailto:support@spennypiggy.co?subject=Identity%20verification%20review"
-                                    className="mt-6 block text-center text-xl px-4 py-[10px] bg-black !text-white w-full rounded-box-sm hover:!bg-[#FF007F] font-bold"
+                                    className="mt-6 block text-center text-xl px-4 py-[10px] bg-black !text-white w-full rounded-box-sm hover:!bg-[#FF007F] hover:!text-black font-bold"
                                 >
                                     CONTACT SUPPORT
                                 </a>
@@ -165,7 +165,7 @@ export default function StripeIdentity({ auth }) {
                                         disabled={loading || isVerified}
                                         onClick={handleVerification}
                                         className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none border-l-4 border-transparent pr-6 bg-black !text-white w-full ${
-                                            loading ? "!animate-pulse !bg-green-400" : "hover:!bg-[#FF007F]"
+                                            loading ? "!animate-pulse !bg-green-400" : "hover:!bg-[#FF007F] hover:!text-black"
                                         }`}
                                         spinnerclass="fill-white"
                                     >

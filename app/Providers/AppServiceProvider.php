@@ -154,6 +154,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /*
+         * A CSP nonce for Vite, set at boot and OVERRIDDEN per request by
+         * `SecurityHeaders` (which shares the same value with Blade).
+         *
+         * ⚠️ Without a default, anything that renders a view OUTSIDE a request —
+         * a test calling `view('app')`, a mailable, an artisan render — gets no
+         * nonce, and Vite then omits the attribute entirely. In HOT (dev-server)
+         * mode `@viteReactRefresh` emits an INLINE `<script type="module">`, so
+         * `CspInlineScriptTest` failed on any machine running `npm run dev` and
+         * the failure read exactly like a code regression. Built assets are
+         * `src=` tags and were never affected.
+         */
+        Vite::useCspNonce();
+
+        /*
          |----------------------------------------------------------------------
          | Password policy — ONE definition, read by every call site
          |----------------------------------------------------------------------

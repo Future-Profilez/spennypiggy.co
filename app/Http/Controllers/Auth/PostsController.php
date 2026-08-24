@@ -71,6 +71,8 @@ class PostsController extends Controller
         $unique = [];
 
         foreach ($media as $item) {
+            $item = $this->storableMediaEntry($item);
+
             $id = is_array($item) ? ($item['uuid'] ?? $item['url'] ?? null) : null;
 
             // An entry with no identifier of its own cannot be compared, so it is
@@ -91,6 +93,46 @@ class PostsController extends Controller
         }
 
         return $unique ?: null;
+    }
+
+    /**
+     * 🚨 THE COLUMN STORES WHAT THE UPLOADER PRODUCED — NOTHING THE SERVER ADDED.
+     *
+     * The composer round-trips: `mediaFromItem()` in `AddPost.jsx` opens an edit
+     * with the post's OWN stored array and submits it back verbatim, so every key
+     * this method keeps is persisted again on the next edit, for ever. That is
+     * the `piggy_pots.cover_media` trap — a value the server derived at render
+     * time gets saved back as the source, and a derived value with an EXPIRY in
+     * it (a signed paid-content URL, a time-limited token) then rots into a
+     * permanently broken link that nothing can distinguish from a real one.
+     *
+     * So the write path whitelists. A read-time accessor may append whatever it
+     * needs to each entry — a signed URL for a members-only post, a watermark
+     * chain — and this drops it again on the way back in, which is what makes
+     * adding one safe. Keys are the uploader's own shape, verified against live
+     * rows.
+     *
+     * ⚠️ An entry that is not an array is returned untouched: it cannot be
+     * filtered meaningfully, and dropping a file the creator uploaded is far
+     * worse than storing a key we did not expect.
+     */
+    private function storableMediaEntry($item)
+    {
+        if (! is_array($item)) {
+            return $item;
+        }
+
+        return array_intersect_key($item, array_flip([
+            'uuid',
+            'url',
+            'name',
+            'size',
+            'mimeType',
+            'mimeSubtype',
+            'isImage',
+            'isVideo',
+            'isAudio',
+        ]));
     }
 
     private function postRules(): array

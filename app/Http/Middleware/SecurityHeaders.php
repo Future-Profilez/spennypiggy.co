@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Vite;
 
 /**
  * Security response headers for every `web` response.
@@ -39,6 +40,16 @@ class SecurityHeaders
     {
         $nonce = base64_encode(random_bytes(16));
         View::share('cspNonce', $nonce);
+
+        /*
+         * ⚠️ Laravel's Vite helper must be told the nonce too, or it mints its
+         * own. It matters in HOT (dev-server) mode, where `@viteReactRefresh`
+         * emits an INLINE `<script type="module">` preamble: without this, that
+         * block carries no nonce, `CspInlineScriptTest` fails on any machine
+         * running `npm run dev`, and the failure looks exactly like a code
+         * regression. Built assets are `src=` tags and were never affected.
+         */
+        Vite::useCspNonce($nonce);
 
         $response = $next($request);
 

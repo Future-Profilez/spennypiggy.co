@@ -37,7 +37,13 @@ class ContentUnderReview extends Mailable
         public string $feature = 'listing',
         public string $itemTitle = '',
         public string $reason = '',
-        public string $manageUrl = ''
+        /*
+         * 🚨 PROTECTED — see `AbandonedCheckoutReminder`. As a public property
+         * this empty string overwrote `content()`'s `config('app.url')` fallback,
+         * so a mail sent without an explicit URL rendered `href=""`: a link to
+         * nowhere, on the e-mail telling a creator their item is under review.
+         */
+        protected string $manageUrl = ''
     ) {}
 
     public function envelope(): Envelope

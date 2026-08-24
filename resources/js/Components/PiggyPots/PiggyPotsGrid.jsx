@@ -1,12 +1,13 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Gift } from "lucide-react";
 import AddMoreTile from "@/Components/AddMoreTile";
 import Nocontent from "@/includes/Nocontent";
 import ItemBadges from "@/Components/ItemBadges";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
+import lazyRetry from "@/utils/lazyRetry";
 
-const Popup = lazy(() => import("@/Components/Popup"));
-const PiggyPotWidget = lazy(
+const Popup = lazyRetry(() => import("@/Components/Popup"));
+const PiggyPotWidget = lazyRetry(
     () => import("@/Components/PiggyPots/PiggyPotWidget"),
 );
 

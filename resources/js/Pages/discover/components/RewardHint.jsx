@@ -1,4 +1,4 @@
-import { Gift } from 'lucide-react';
+import { PackageOpen } from 'lucide-react';
 
 /**
  * RewardHint — the "what you get after you pay" teaser shown under an item card
@@ -35,14 +35,20 @@ export default function RewardHint({ item, className = '' }) {
             className={`flex max-w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-box-sm border border-emerald-600/25 bg-emerald-50 px-2.5 py-1.5 ${className}`}
             title={label}
         >
-            <Gift size={13} strokeWidth={2.5} className="shrink-0 text-emerald-600" />
-            {/* ⚠️ The "You get:" prefix is HIDDEN on a narrow card, because there
+            {/* 🚨 NOT A GIFT BOX (21 Aug 2026). This pill sits on a purchasable
+                item, and on a payment-adjacent surface an icon carries the same
+                meaning as the word — gift/tip/donation framing is banned on every
+                user-facing surface, glyphs included. `PackageOpen` says "this is
+                what you receive" without saying "somebody gave you a present".
+
+                ⚠️ The "You get:" prefix is HIDDEN on a narrow card, because there
                 it consumes the width the ANSWER needs. Measured in a two-column
                 wish grid at 390px: the pill has ~127px of text room and
                 "You get: Exclusive content" wants ~150px, so it rendered as
                 "You get: Exclusiv…" — the label truncating the only part that
-                carries information. The gift icon already says "you get"; the
-                words are the part worth keeping. */}
+                carries information. The icon carries "you get"; the words are the
+                part worth keeping. */}
+            <PackageOpen size={13} strokeWidth={2.5} className="shrink-0 text-emerald-600" />
             <span className="truncate text-[10px] font-bold leading-tight text-emerald-700 sm:text-[12px]">
                 <span className="hidden text-emerald-600/80 sm:inline">You get:</span>{" "}
                 {label}

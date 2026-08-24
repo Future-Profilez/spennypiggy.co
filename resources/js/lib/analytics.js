@@ -57,6 +57,9 @@ function gtag(...args) {
     return true;
 }
 
+/** Whether the entry page view has gone out — see `trackPageView`. */
+let firstViewSent = false;
+
 /** The title at the moment the previous page_view went out. */
 let lastTitle = typeof document !== "undefined" ? document.title : "";
 
@@ -113,7 +116,7 @@ function whenTitleSettles(cb) {
  * the settled title nor `page_group`. Do not re-enable it.
  */
 export function trackPageView() {
-    whenTitleSettles(() => {
+    const send = () => {
         try {
             lastTitle = document.title;
 
@@ -126,7 +129,24 @@ export function trackPageView() {
         } catch {
             /* analytics must never break a navigation */
         }
-    });
+    };
+
+    // 🚨 The FIRST view is sent immediately, and must be.
+    //
+    // Its title came from the server in the document's own <title>, so there is
+    // nothing to wait for — and waiting is not free: `whenTitleSettles` only
+    // resolves early when the title CHANGES, which on the entry page it never
+    // does, so every first view would sit out the full 600ms timeout. A visitor
+    // who bounces inside that window would not be counted at all, and the entry
+    // page is exactly where bounces happen — and where ad landing pages live.
+    if (! firstViewSent) {
+        firstViewSent = true;
+        send();
+
+        return;
+    }
+
+    whenTitleSettles(send);
 }
 
 /**
@@ -146,6 +166,8 @@ export function sendQueued(props) {
                 ...(event.params || {}),
                 page_group: pageGroup(window.location.pathname),
             });
+
+            reportAdsConversion(event.name, event.params);
         }
 
         // The set is per page load and bounded by how many events one session
@@ -153,5 +175,64 @@ export function sendQueued(props) {
         if (sent.size > 200) sent.clear();
     } catch {
         /* analytics must never break a render */
+    }
+}
+
+/**
+ * Tell Google Ads that a conversion happened.
+ *
+ * 🚨 The Ads tag (`AW-…`) has been loading on every page while nothing ever
+ * sent it a conversion, so the campaigns behind the six /creators landing pages
+ * have been bidding with no idea which click produced anything. Confirmed in
+ * the account: every conversion action reads 0.00, and the website-sourced
+ * `Sign-up` action sat **Inactive** for want of a single conversion.
+ *
+ * ⚠️ Driven by a MAP keyed on the GA4 event name, published by `app.blade.php`
+ * from `config('analytics.ads.labels')`. An event with no label is not
+ * reported — a wrong label files the conversion against the wrong action, which
+ * is worse than filing none and is invisible once it starts happening.
+ *
+ * ⚠️ Separate from the GA4 event, not a replacement: GA4 and Ads are different
+ * products with different attribution windows, and importing GA4 conversions
+ * into Ads is a slower, lossier path than tagging directly. (The two
+ * GA4-imported actions already in the account are exactly that path, and they
+ * carry no label at all — which is why they cannot be used here.)
+ */
+function reportAdsConversion(eventName, params = {}) {
+    try {
+        const sendTo = window.__spAdsConversions?.[eventName];
+        if (!sendTo) return;
+
+        const payload = { send_to: sendTo };
+
+        // Only a revenue event carries money. Sending `value: 0` on a signup
+        // would teach smart bidding that a signup is worth nothing.
+        if (params.value !== undefined) {
+            payload.value = params.value;
+            payload.currency = params.currency || "GBP";
+        }
+
+        gtag("event", "conversion", payload);
+    } catch {
+        /* analytics must never break a confirmation screen */
+    }
+}
+
+/**
+ * A GA4 event fired straight from a component.
+ *
+ * For the handful of things that never reach the server at all — the
+ * registration wizard advancing in React state is the whole of it today. Adds
+ * `page_group` so these events can be split by the same dimension as every
+ * other one, and swallows everything: analytics must never break a form.
+ */
+export function trackClientEvent(name, params = {}) {
+    try {
+        gtag("event", name, {
+            ...params,
+            page_group: pageGroup(window.location.pathname),
+        });
+    } catch {
+        /* analytics must never break the page that fired it */
     }
 }

@@ -258,7 +258,31 @@ class CreatorPushTest extends TestCase
         $this->actingAs($this->creator())
             ->getJson(route('creator.push.status'))
             ->assertOk()
-            ->assertJsonStructure(['allowed', 'sent_today', 'sent_this_month', 'max_length']);
+            ->assertJsonStructure([
+                'allowed', 'reason', 'sent_today', 'sent_this_month',
+                'max_length', 'max_per_day', 'max_per_month',
+            ]);
+    }
+
+    /**
+     * 🚨 THE COMPOSER DRAWS ITS ALLOWANCE FROM THIS RESPONSE.
+     * `Components/push/CreatorPushCard` renders "N left today · N left this month"
+     * by subtracting `sent_today`/`sent_this_month` from `max_per_day`/`max_per_month`,
+     * and falls back to literal 1 and 4 when a key is missing. So dropping or renaming
+     * either limit does not break anything — it silently prints numbers that no longer
+     * match the limits the service actually enforces, and the creator is refused by a
+     * rule the screen told them they were within. Assert the VALUES, not just the keys.
+     */
+    public function test_the_status_endpoint_reports_the_real_limits(): void
+    {
+        $body = $this->actingAs($this->creator())
+            ->getJson(route('creator.push.status'))
+            ->assertOk()
+            ->json();
+
+        $this->assertSame(CreatorPushService::MAX_PER_DAY, $body['max_per_day']);
+        $this->assertSame(CreatorPushService::MAX_PER_MONTH, $body['max_per_month']);
+        $this->assertSame(CreatorPushService::MAX_LENGTH, $body['max_length']);
     }
 
     /**

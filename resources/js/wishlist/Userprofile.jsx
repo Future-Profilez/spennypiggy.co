@@ -1,4 +1,4 @@
-import { lazy, useState, useRef, Suspense, useEffect } from "react";
+import { useState, useRef, Suspense, useEffect } from "react";
 import userphoto from "../../assets/siteicon.png";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.png";
 import { usePage, router } from "@inertiajs/react";
@@ -18,16 +18,17 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
+import lazyRetry from "@/utils/lazyRetry";
 
-const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
-const ShareProfile = lazy(() => import("./ShareProfile"));
-const AddSocial = lazy(() => import("@/Pages/Auth/Social"));
-const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
-const FollowButton = lazy(() => import("@/Pages/Profile/FollowButton"));
-const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
-const Popup = lazy(() => import("@/Components/Popup"));
-const CoverIdentity = lazy(() => import("@/Components/Profile/CoverIdentity"));
-const ReportContentModal = lazy(
+const EditProfile = lazyRetry(() => import("@/Pages/account/EditProfile"));
+const ShareProfile = lazyRetry(() => import("./ShareProfile"));
+const AddSocial = lazyRetry(() => import("@/Pages/Auth/Social"));
+const SendTip = lazyRetry(() => import("@/Pages/TipJar/SendTip"));
+const FollowButton = lazyRetry(() => import("@/Pages/Profile/FollowButton"));
+const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
+const Popup = lazyRetry(() => import("@/Components/Popup"));
+const CoverIdentity = lazyRetry(() => import("@/Components/Profile/CoverIdentity"));
+const ReportContentModal = lazyRetry(
     () => import("@/Components/ReportContentModal"),
 );
 

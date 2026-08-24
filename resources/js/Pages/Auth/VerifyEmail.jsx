@@ -243,7 +243,7 @@ export default function VerifyEmail({
                         </p>
                     )}
 
-                    <div className="rounded-box border-[3px] border-black bg-white p-4 sm:p-6">
+                    <div className="rounded-box border-black bg-white p-4 sm:p-6">
                         {verified ? (
                             /*
                                 The poll found the address verified. Confirm it
@@ -304,7 +304,7 @@ export default function VerifyEmail({
                                             <button
                                                 type="submit"
                                                 disabled={processing}
-                                                className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-[3px] border-black bg-[#05EFB8] font-gulfs text-sm uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
+                                                className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-black bg-[#05EFB8] font-gulfs text-sm uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
                                             >
                                                 {processing
                                                     ? "Saving…"
@@ -313,7 +313,7 @@ export default function VerifyEmail({
                                             <button
                                                 type="button"
                                                 onClick={cancelEditing}
-                                                className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-[3px] border-black bg-white text-sm font-bold text-black transition-colors duration-200 hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
+                                                className="flex min-h-[52px] flex-1 items-center justify-center rounded-box-sm border-black bg-white text-sm font-bold text-black transition-colors duration-200 hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
                                             >
                                                 Cancel
                                             </button>
@@ -355,7 +355,7 @@ export default function VerifyEmail({
                                             type="button"
                                             onClick={resend}
                                             disabled={sending || cooldown > 0}
-                                            className="mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-[3px] border-black bg-[#FF007F] font-gulfs text-base uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
+                                            className="mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-black bg-[#FF007F] font-gulfs text-base uppercase tracking-[0.14em] text-black transition-[filter] duration-200 hover:brightness-110 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20"
                                         >
                                             {resendLabel}
                                         </button>

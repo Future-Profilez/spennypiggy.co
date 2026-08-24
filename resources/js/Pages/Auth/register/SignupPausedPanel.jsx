@@ -80,7 +80,7 @@ export default function SignupPausedPanel({ message, email: initialEmail = "", r
     };
 
     return (
-        <div className="rounded-box border-[3px] border-black bg-white p-6 md:p-8">
+        <div className="rounded-box border-black bg-white p-6 md:p-8">
             <p className="font-gulfs text-[22px] uppercase leading-[1.05] text-black md:text-[26px]">
                 Sign-ups are paused
             </p>

@@ -188,4 +188,34 @@ class AnalyticsFunnelEventsTest extends TestCase
             array_keys($params)
         ));
     }
+
+    /**
+     * ⚠️ `purchase` is a REVENUE event. A Deliverable can be written with no
+     * money attached (complimentary, administrative), and a £0 purchase drags
+     * the reported average order value down while teaching Google Ads that some
+     * purchases are worth nothing. The platform minimum is £4.99 — a zero here
+     * is never a sale.
+     */
+    public function test_a_zero_value_deliverable_is_not_a_purchase(): void
+    {
+        $creator = User::factory()->create(['role' => 1]);
+        $gifter = User::factory()->create(['role' => 0]);
+
+        $this->actingAs($gifter)->get(route('user.show', ['username' => $creator->username]));
+
+        Deliverable::create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => 'prod_free',
+            'item_id' => 2,
+            'creator_id' => $creator->id,
+            'gifter_id' => $gifter->id,
+            'product_type' => 'wish',
+            'deliverable_type' => 'digital',
+            'transaction_amount' => 0,
+            'payment_currency' => 'gbp',
+            'status' => 'pending',
+        ]);
+
+        $this->assertSame([], $this->eventsOn(route('user.show', ['username' => $creator->username])));
+    }
 }

@@ -6,6 +6,7 @@ import WaitlistButton from "@/Components/WaitlistButton";
 import { creatorIdOf } from "@/utils/pricing";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
 import discoveryLink from "@/lib/discoveryLink";
+import SaveButton from "@/Components/SaveButton";
 
 export default function ShopCard({
     item,
@@ -159,6 +160,15 @@ export default function ShopCard({
                                 MADE WITH AI
                             </div>
                         )}
+
+                        {/* ⚠️ BOTTOM-RIGHT, and z-20. Both top corners are taken —
+                            type badge left, "MADE WITH AI" right — and the sold-out
+                            wash is z-10 across the whole frame. A sold-out item is
+                            exactly when someone wants to save it, so the heart has
+                            to sit above that wash rather than under it. */}
+                        <div className="absolute bottom-1.5 right-1.5 z-20 sm:bottom-3 sm:right-3">
+                            <SaveButton productType="shop" itemId={item?.id} creatorId={item?.user_id} />
+                        </div>
                     </div>
                 </div>
 
@@ -254,7 +264,7 @@ export default function ShopCard({
                             className="w-full"
                         >
                             <AddItem
-                                classes="font-black cursor-pointer bg-blue-300 border-[3px] border-black px-2 py-3 min-h-[44px] sm:px-4 rounded-box-sm hover:bg-blue-400 active:translate-x-[2px] active:translate-y-[2px] focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all text-black text-[11px] sm:text-sm uppercase w-full text-center "
+                                classes="font-black cursor-pointer bg-blue-300 border-black px-2 py-3 min-h-[44px] sm:px-4 rounded-box-sm hover:brightness-110 active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-colors duration-200 text-black text-[11px] sm:text-sm uppercase w-full text-center "
                                 pre_title={item?.name}
                                 title="Edit Item"
                                 pre_description={item?.description}
@@ -280,7 +290,14 @@ export default function ShopCard({
                                 e.stopPropagation();
                                 router.visit(url);
                             }}
-                            className="font-black border-2 border-black px-2 py-2 md:py-3 sm:px-4 rounded-[15px] text-black text-[11px] sm:text-base uppercase bg-yellow-300 hover:bg-yellow-400 active:translate-x-[2px] active:translate-y-[2px] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black transition-all"
+                            /* Same shape as every other card CTA on the site (see
+                               BillItem's Subscribe): house radius token, black
+                               frame, brightness press. Only the colour differs —
+                               yellow is the shop's.
+                               ⚠️ It carried `rounded-[15px]` (a hardcoded radius,
+                               matching no token) and a bare `active:translate`,
+                               which is the banned lift with no shadow partner. */
+                            className="bg-yellow-300 border-black text-black font-black uppercase text-xs py-2 px-6 rounded-box-sm transition-colors duration-200 hover:brightness-110 active:brightness-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
                         >
                             Buy Now
                         </button>

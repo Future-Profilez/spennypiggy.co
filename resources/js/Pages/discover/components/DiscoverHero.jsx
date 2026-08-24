@@ -3,6 +3,11 @@ import { Link } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import userphoto from '../../../../assets/siteicon.png';
 import discoveryLink, { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
+import LiveUnlocks from './LiveUnlocks';
+// ⚠️ The price floor is read, never typed. It mirrors `Helpers::priceWithinLimits()`
+// and is enforced in every module's store/edit validation, so a literal here is a
+// figure in an advert that can silently disagree with what checkout accepts.
+import { PRICE_LIMITS, price } from '@/constants/creatorBonuses';
 
 /**
  * DiscoverHero — the signature of the Discover page.
@@ -11,17 +16,23 @@ import discoveryLink, { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
  * creator faces drifting in alternating columns beside the headline. Everything
  * is built from data the page already receives — no new backend, no new request.
  * The wall is desktop-only; a phone gets the headline, the CTA and the ticker.
+ *
+ * ⚠️ THE WALL IS THE BANNER'S DESIGN AND STAYS (client direction, 24 Aug 2026).
+ * The auto-rotating spotlight was tried here and moved OUT, to its own band
+ * directly under the banner — it still sells to a visitor who has done nothing
+ * but arrive, without taking the banner's artwork away.
  */
 export default function DiscoverHero({
     featuredCreators = [],
     newVerifiedCreators = [],
     topEarners = [],
     featuredWishes = [],
+    liveUnlocks = [],
     onExplore,
 }) {
     const reduce = useReducedMotion();
 
-    // One deduped pool of faces for the wall.
+    // Deduped creator pool — its size is the "N creators" figure in the eyebrow.
     const faces = useMemo(() => {
         const seen = new Set();
         const out = [];
@@ -61,17 +72,18 @@ export default function DiscoverHero({
      */
     const ticker = useMemo(() => {
         const out = [];
-        (topEarners || []).slice(0, 5).forEach((c) => {
+        // ⚠️ No "top earner" rows. How much a creator EARNED is our fact, not
+        // the visitor's — and a leaderboard of takings reads as a plea rather
+        // than a shop. What a supporter can act on is what is on sale.
+        (featuredCreators || []).slice(0, 10).forEach((c) => {
             if (!c?.username) return;
-            out.push({ k: `e-${c.id}`, mark: '◆', to: discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING),
-                text: <><b className="text-white">@{c.username}</b> top earner this week</> });
-        });
-        (featuredCreators || []).slice(0, 8).forEach((c) => {
-            if (!c?.username) return;
+            const count = Number(c.items_count) || 0;
             out.push({ k: `v-${c.id}`, mark: '↗', to: discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING),
-                text: c.clicks_24h
-                    ? <><b className="text-white">@{c.username}</b> · {c.clicks_24h} views today</>
-                    : <><b className="text-white">@{c.username}</b> trending now</> });
+                text: count
+                    ? <><b className="text-white">@{c.username}</b> · {count} to unlock</>
+                    : c.clicks_24h
+                        ? <><b className="text-white">@{c.username}</b> · {c.clicks_24h} views today</>
+                        : <><b className="text-white">@{c.username}</b> trending now</> });
         });
         (featuredWishes || []).slice(0, 5).forEach((w) => {
             const title = w?.wishname || w?.title || w?.name;
@@ -81,7 +93,7 @@ export default function DiscoverHero({
                 text: <><b className="text-white">@{uname}</b> · {String(title).slice(0, 28)}</> });
         });
         return out.sort((a, b) => (a.k.charCodeAt(0) + a.k.length) - (b.k.charCodeAt(0) + b.k.length));
-    }, [featuredCreators, topEarners, featuredWishes]);
+    }, [featuredCreators, featuredWishes]);
 
     const loop = ticker.length ? [...ticker, ...ticker] : [];
     const creatorCount = faces.length;
@@ -107,10 +119,21 @@ export default function DiscoverHero({
                             </span>
                         </div>
 
+                        {/* 🚨 THE HEADLINE STATES THE TRANSACTION, NOT A MOOD.
+                            "Find your next obsession" tells a first-time visitor
+                            nothing about what this site does, what it costs or
+                            what arrives afterwards — which is the whole question
+                            standing between them and a first purchase. */}
                         <h1 className="mt-6 font-anton uppercase leading-[0.92] tracking-tight text-white text-[34px] sm:text-[44px] md:text-[56px]">
-                            Find your next
-                            <span className="mt-1 block bg-gradient-to-r from-[#FF007F] via-[#FF4FA8] to-[#FF007F] bg-clip-text text-transparent">
-                                obsession
+                            Buy straight from
+                            {/* 🚨 `text-transparent` + `bg-clip-text` means the glyphs are
+                                painted by the BACKGROUND. Where that background does not
+                                render — Windows High Contrast / forced-colors, and print —
+                                the text is transparent on transparent, i.e. INVISIBLE, and
+                                this is half of the page's only `<h1>`. The homepage `<h1>`
+                                already carries these two fallbacks; this one did not. */}
+                            <span className="mt-1 block bg-gradient-to-r from-[#FF007F] via-[#FF4FA8] to-[#FF007F] bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText] print:bg-none print:text-black">
+                                the creator
                             </span>
                         </h1>
 
@@ -118,7 +141,7 @@ export default function DiscoverHero({
                         <div className="mt-6 flex max-w-md items-start gap-4">
                             <span className="mt-2.5 h-px w-10 shrink-0 bg-[#FF007F]" aria-hidden />
                             <p className="text-[15px] leading-relaxed text-white/60">
-                                Real creators, live right now. Unlock their content and back the people worth following.
+                                Pick something they made, pay once, and it unlocks straight away. From {price(PRICE_LIMITS.min)}.
                             </p>
                         </div>
 
@@ -127,17 +150,18 @@ export default function DiscoverHero({
                                 onClick={onExplore}
  className="group inline-flex min-h-[44px] items-center gap-2 rounded-box-sm bg-[#FF007F] px-6 text-sm font-bold text-black transition-all hover:brightness-110 "
                             >
-                                Explore creators
+                                See what's for sale
                                 <span className="transition-transform group-hover:translate-x-0.5">→</span>
                             </button>
                             {(creatorCount > 0 || wishCount > 0) && (
  <p className="text-xs font-medium uppercase tracking-[0.14em] text-white/60">
-                                    {creatorCount > 0 && `${creatorCount} trending`}
+                                    {creatorCount > 0 && `${creatorCount} creators`}
                                     {creatorCount > 0 && wishCount > 0 && ' · '}
-                                    {wishCount > 0 && `${wishCount} wishes live`}
+                                    {wishCount > 0 && `${wishCount} things to unlock`}
                                 </p>
                             )}
                         </div>
+
                     </div>
 
                     {/* ── Right: the live creator wall (desktop only) ── */}
@@ -157,8 +181,13 @@ export default function DiscoverHero({
                     )}
                 </div>
 
-                {/* ── Ticker ─────────────────────────────────────── */}
-                {loop.length > 0 && (
+                {/* ── Ticker ──────────────────────────────────────
+                    Real purchases when there are any; the trending lines only
+                    as a fallback. ⚠️ Never both — two scrolling strips under one
+                    headline is noise, and the synthetic one undercuts the real
+                    one by sitting next to it. */}
+                {liveUnlocks.length > 0 && <LiveUnlocks initial={liveUnlocks} />}
+                {liveUnlocks.length === 0 && loop.length > 0 && (
                     <div className="relative z-10 border-t border-white/[0.06] bg-[#0B0B0F]/80 backdrop-blur">
                         <div className="flex items-stretch">
  <div className="hidden shrink-0 items-center gap-1.5 px-5 text-[12px] font-semibold uppercase tracking-[0.2em] text-[#FF007F] sm:flex">

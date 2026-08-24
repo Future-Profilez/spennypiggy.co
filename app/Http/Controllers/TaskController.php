@@ -411,7 +411,16 @@ class TaskController extends Controller
         }
 
         if (empty($task->deliverable_content)) {
-            return redirect()->back()->with('error', 'No downloadable file is attached to this task.');
+            /*
+             * 🚨 THIS LINK ARRIVES IN AN E-MAIL, SO THERE IS NO "BACK".
+             *
+             * `redirect()->back()` reads the Referer; a click from a mail client
+             * sends none, so a buyer following "download your file" landed on
+             * the HOMEPAGE with a flash no layout rendered. They paid, tapped
+             * download, and nothing happened.
+             */
+            return redirect()->route('gifter.hub')
+                ->with('error', 'There is no file attached to that yet. The creator has been asked for it — it will appear here when they upload it.');
         }
 
         $userId = Auth::id();

@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
 import PriceFormat from "@/includes/PriceFormat";
+import lazyRetry from "@/utils/lazyRetry";
 import {
     Sparkles,
     PiggyBank,
@@ -15,7 +16,7 @@ import {
     Zap,
 } from "lucide-react";
 
-const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
+const ShareProfile = lazyRetry(() => import("@/wishlist/ShareProfile"));
 
 // 🚨 This used to hardcode `currency: "GBP"` while the figure it formats is in
 // the CREATOR's default_currency — a USD creator's $80 rendered as £80. Use the

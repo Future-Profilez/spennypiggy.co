@@ -116,6 +116,15 @@ class DeliverableObserver
         // so a webhook-first purchase is simply not counted rather than counted
         // into a session nobody renders — under-counting, never double-counting,
         // which is the right way round for a funnel denominator.
+        // ⚠️ A Deliverable can be written with no money attached — a
+        // complimentary or administratively-created row. `purchase` is a
+        // REVENUE event, and a £0 one drags the reported average order value
+        // down while teaching Google Ads that some purchases are worth nothing.
+        // The platform's own minimum is £4.99, so a zero here is never a sale.
+        if ((float) ($deliverable->transaction_amount ?? 0) <= 0) {
+            return;
+        }
+
         AnalyticsEvent::push('purchase', [
             'value' => (float) ($deliverable->transaction_amount ?? 0),
             'currency' => strtoupper($deliverable->payment_currency ?: 'GBP'),

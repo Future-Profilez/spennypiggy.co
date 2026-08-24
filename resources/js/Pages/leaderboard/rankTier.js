@@ -6,17 +6,24 @@
  * make the number legible at a glance — and give a creator something to climb
  * towards that isn't "first place or nothing".
  *
- * The colours are tints, not fills: at row scale a saturated block competes
- * with the creator's name, which is the thing the eye should land on first.
+ * The bands are brand FILLS with black type inside a 2px black frame, not
+ * tints. A tint reads as a hint; this page is a ranking, and the band a
+ * creator has reached is the one thing on their row worth shouting. Black on
+ * every brand fill is the house rule — never white (brandPink measures 5.56:1
+ * against black and 3.78:1 against white).
+ *
+ * ⚠️ `border-black` is a full `border` SHORTHAND in this project
+ * (`resources/css/index.css`), so it already carries its own 2px width. Never
+ * pair it with a width class — the width is discarded silently.
  */
 const BANDS = [
-    { max: 1, name: "Top 1%", className: "bg-[#C9A227]/12 text-[#8A6F1B] ring-1 ring-inset ring-[#C9A227]/30" },
-    { max: 10, name: "Top 10%", className: "bg-brandPink/[0.08] text-brandPink ring-1 ring-inset ring-brandPink/20" },
-    { max: 25, name: "Top 25%", className: "bg-black/[0.04] text-black/70 ring-1 ring-inset ring-black/10" },
-    { max: 50, name: "Top 50%", className: "bg-black/[0.03] text-black/60 ring-1 ring-inset ring-black/[0.07]" },
+    { max: 1, name: "Top 1%", className: "border-black bg-brandYellow text-black" },
+    { max: 10, name: "Top 10%", className: "border-black bg-brandPink text-black" },
+    { max: 25, name: "Top 25%", className: "border-black bg-mint text-black" },
+    { max: 50, name: "Top 50%", className: "border-black bg-white text-black" },
 ];
 
-const OUTSIDE = "bg-transparent text-black/60 ring-1 ring-inset ring-black/[0.07]";
+const OUTSIDE = "border-black bg-white text-black/70";
 
 export function rankTier(top) {
     const value = Number(top);

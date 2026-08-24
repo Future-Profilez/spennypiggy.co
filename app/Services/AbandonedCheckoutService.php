@@ -18,6 +18,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Services\Analytics\MeasurementProtocol;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -148,6 +149,11 @@ class AbandonedCheckoutService
                 $email = null;
             }
 
+            // Resolved once, so the recovery row and the analytics event below
+            // can never disagree about what this checkout was worth.
+            $minor = max(0, (int) ($amountMinor ?? (is_object($session) ? ($session->amount_total ?? 0) : 0)));
+            $iso = strtolower($currency ?: (is_object($session) ? ($session->currency ?? 'gbp') : 'gbp'));
+
             AbandonedCheckout::updateOrCreate(
                 ['session_id' => $sessionId],
                 [
@@ -158,11 +164,28 @@ class AbandonedCheckoutService
                     'creator_id' => $creator?->id,
                     'user_id' => $userId,
                     'guest_email' => $email,
-                    'amount_minor' => max(0, (int) ($amountMinor ?? (is_object($session) ? ($session->amount_total ?? 0) : 0))),
-                    'currency' => strtolower($currency ?: (is_object($session) ? ($session->currency ?? 'gbp') : 'gbp')),
+                    'amount_minor' => $minor,
+                    'currency' => $iso,
                     'fee_profile' => $feeProfile,
                 ]
             );
+            // GA4 `begin_checkout` — the stage the whole funnel was blind at.
+            //
+            // Every one of the nine checkout paths calls this method right after
+            // creating its Stripe session, which makes it the one place that
+            // sees a checkout START. `purchase` alone gave a funnel that read
+            // "visited → bought" with nothing in between, so the largest drop in
+            // the business — started paying, did not finish — was unmeasurable.
+            //
+            // 🚨 Sent server-side, not flashed for the browser: the next thing
+            // that happens is a redirect to Stripe, and the visitor who
+            // abandons never comes back to render anything.
+            MeasurementProtocol::send('begin_checkout', [
+                'currency' => strtoupper($iso),
+                'value' => round($minor / 100, 2),
+                'product_type' => $productType,
+                'guest' => $userId === null,
+            ]);
         } catch (\Throwable $e) {
             // A recovery row is worth strictly less than the checkout it is attached to.
             Log::warning('AbandonedCheckout: failed to record', [

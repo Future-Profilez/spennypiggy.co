@@ -330,7 +330,11 @@
     </div>
 
     @if ($endsAt)
-        <script>
+        {{-- ⚠️ Nonced, like every other inline block in this app: the CSP carries no
+             'unsafe-inline', so without it the countdown is refused and the wall shows a
+             timer that never moves. `$cspNonce` is shared by SecurityHeaders, which runs
+             on the `web` group this 503 is rendered inside. --}}
+        <script nonce="{{ $cspNonce ?? '' }}">
             (function () {
                 var target = new Date(@json($endsAt)).getTime();
                 if (isNaN(target)) return;

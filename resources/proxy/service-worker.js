@@ -115,7 +115,7 @@ const { CacheableResponsePlugin } = workbox.cacheableResponse;
 const { BackgroundSyncPlugin } = workbox.backgroundSync;
 
 // Precache and route - Workbox will inject the manifest
-precacheAndRoute([{"revision":"df17ab0ab54a974e5fc2a78831d9665c","url":"/offline.html"},{"revision":"0a5e7d4241c0a7b729c3322da8de70b5","url":"/android-chrome-192x192.png"},{"revision":"fe891b6ccadef5dcefc1090687a18096","url":"/android-chrome-512x512.png"},{"revision":"3663afcf56bb3bc3161d99b4378fd43b","url":"/apple-touch-icon.png"},{"revision":"22355ce90ca986539056366ff45f1855","url":"/favicon-32x32.png"}]);
+precacheAndRoute([{"revision":"c21fe8101d716a9a1201532ee363de79","url":"/offline.html"},{"revision":"0a5e7d4241c0a7b729c3322da8de70b5","url":"/android-chrome-192x192.png"},{"revision":"fe891b6ccadef5dcefc1090687a18096","url":"/android-chrome-512x512.png"},{"revision":"3663afcf56bb3bc3161d99b4378fd43b","url":"/apple-touch-icon.png"},{"revision":"22355ce90ca986539056366ff45f1855","url":"/favicon-32x32.png"}]);
 
 // Clean up old caches
 cleanupOutdatedCaches();

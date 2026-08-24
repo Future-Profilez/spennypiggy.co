@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureCsrfCookie;
 use App\Http\Middleware\EnsureIdentityVerifiedForListings;
 use App\Http\Middleware\EnsureRyeEnabled;
 use App\Http\Middleware\EnsureSiteAvailable;
+use App\Http\Middleware\EnsureSystemDiagnosticsAccess;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleCorsForAssets;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -168,6 +169,7 @@ class Kernel extends HttpKernel
         'identityBeforeListing' => EnsureIdentityVerifiedForListings::class,
         'mustCompletedCardVerification' => CheckGifterCardVerification::class,
         'rye.enabled' => EnsureRyeEnabled::class,
+        'sysdiag' => EnsureSystemDiagnosticsAccess::class,
         'membership' => RequireActiveMembership::class,
         'prevent-back-history' => PreventBackHistory::class,
         'check.block' => CheckUserBlock::class,
