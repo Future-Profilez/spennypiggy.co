@@ -14,8 +14,7 @@ import axios from "axios";
 
 export default function ShopDetailItem(props) {
     const { vat_percent, auth, user, shop, card_capabilities } = props;
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) ==
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == 
             (shop && shop.user && shop && shop.user.username),
     );
     // Prefer the server-built share link: it is canonical (no session_id or stray
@@ -55,7 +54,7 @@ export default function ShopDetailItem(props) {
             getShippingPrice("GB");
         }
     };
-
+    
     const [shippingPrice, setShippingPrice] = useState(() => {
         if (shop?.type === 'physical') {
             const shippingRates = shop.shop_shipping_info || [];
@@ -67,6 +66,7 @@ export default function ShopDetailItem(props) {
         }
         return 0;
     });
+    console.log("shippingPrice", shippingPrice);
     const [shippingUnknown, setShippingUnknown] = useState(false);
     const getShippingPrice = (c) => {
         if (!c) return;
@@ -422,7 +422,7 @@ export default function ShopDetailItem(props) {
                                     bottom nav bar when that bar is present (signed-in only). */}
                                 <div className={IsloggedIn
                                     ? "mt-6"
-                                    : "fixed inset-x-0 bottom-0 z-40 border-t-2 border-black bg-white px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] [body:has(.retro-bottom-bar)_&]:bottom-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset))] [body:has(.retro-bottom-bar)_&]:pb-3 md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:mt-6"}>
+                                    : "fixed inset-x-0 bottom-0 z-40 border-t-2 border-black px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] [body:has(.retro-bottom-bar)_&]:bottom-[calc(var(--sp-bottombar-h)+var(--sp-bottombar-inset))] [body:has(.retro-bottom-bar)_&]:pb-3 md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:mt-6"}>
                                     {/* The price scrolls out of view long before the bar does,
                                         so the bar carries it. Phone only — on desktop the price
                                         block above is always on screen beside the button. */}
@@ -495,7 +495,7 @@ export default function ShopDetailItem(props) {
                                                         open={open}
                                                         s={shop}
                                                         text={"Buy This Item"}
-                                                        classes="w-full md:w-auto btn-pink !text-[16px] !px-6 py-3"
+                                                        classes="w-full md:w-auto btn-pink !text-[16px] !px-6 py-3 text-white"
                                                     />
                                                 </>
                                             )}
