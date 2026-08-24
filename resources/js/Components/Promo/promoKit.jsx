@@ -26,12 +26,21 @@ import { Link } from "@inertiajs/react";
  */
 
 /**
- * ⚠️ Raised from 250/268/300 on 21 Aug 2026. The first informative pass had room for a
- * headline and a control and nothing else, so a creator could not tell from the card
- * what the offer actually WAS — every promo needed a sentence of mechanics, and there
- * was nowhere to put it. This is the smallest height every card fits its explainer in.
+ * 🚨 MEASURED, NOT CHOSEN — AND THE FLOOR IS MOBILE, NOT DESKTOP.
+ *
+ * Raised from 250/268/300 when every promo gained a sentence of mechanics (before that a
+ * creator could not tell from the card what the offer WAS). Then trimmed on desktop once
+ * the visuals filled the right-hand side and the left column was left with a dead band
+ * above its button.
+ *
+ * ⚠️ 268px was tried on mobile and **clipped the BUTTON off five cards** — Fast Start by
+ * 20px, plus Bio, Suggest, Receipt and Referral. `overflow-hidden` hides that silently,
+ * so it looks like a design choice rather than a defect. 292 is the smallest height at
+ * which every card at 320px still shows its control. Re-measure before changing it:
+ * render every card at 320/390/768/1200 and check no `<a>` or `<button>` crosses the
+ * card's bottom edge.
  */
-export const CARD_H = "h-[292px] sm:h-[310px] md:h-[344px]";
+export const CARD_H = "h-[292px] sm:h-[300px] md:h-[316px]";
 
 export const CARD_FRAME =
     `relative w-full ${CARD_H} overflow-hidden rounded-box border-black`;

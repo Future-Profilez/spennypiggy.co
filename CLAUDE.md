@@ -1059,11 +1059,30 @@ Lambda), so nothing shipped. Both apps now send `X-Content-Type-Options`, `X-Fra
   password is SET (existing 8-character accounts still sign in). The HIBP verifier is
   rebound to a **3s** timeout — the stock 30s outlives the Lambda, which would turn its
   fail-open into a 504 on registration.
-- 🚨 **`Auth::logoutOtherDevices()` DOES NOT YET REJECT OTHER SESSIONS.** It rotates the
-  password hash; the `auth.session` middleware is what actually turns other sessions away,
-  and it is deliberately NOT on the `web` group (enabling it wrongly can log out every
-  user). "Log out everywhere" therefore does not work today — a decision for a human, not
-  a bug to quietly fix.
+- ✅ **"LOG OUT EVERYWHERE" NOW WORKS — `AuthenticateSession` IS IN THE `web` GROUP
+  (24 Aug 2026, on the client's instruction).** `Auth::logoutOtherDevices()` only rotates
+  the password hash; this middleware is what compares the hash each session holds against
+  the user's current one and turns the stale ones away. Without it, changing a password
+  left every other session signed in — the opposite of what somebody resetting a password
+  after a compromise believes has happened.
+  - 🚨 **The risk that had kept it off is not real, and it was checked in the vendor code
+    rather than assumed:** when a session carries NO stored hash, `AuthenticateSession`
+    **stores** it (`storePasswordHashInSession`) instead of logging the user out. So
+    enabling it does not sign out everyone already signed in — the first request after
+    deploy adopts each existing session.
+  - ⚠️ **Position is load-bearing: directly after `StartSession`** (index 4 in the group),
+    before anything reads the authenticated user. It no-ops for a request with no session
+    or no user, so guest pages are untouched.
+  - ⚠️ **Real consequence:** any path that changes `users.password` now ends that user's
+    other sessions on their next request — that is the point — and a remember-me cookie
+    whose hash no longer matches is dropped with them.
+  - ⚠️ The `auth.session` route-middleware alias is now redundant for web routes; left
+    registered so an explicitly-aliased route keeps working.
+  - Tests: `tests/Feature/LogOutEverywhereTest.php` (4). They assert BEHAVIOUR (a stale
+    session is signed out, a hash-less one is adopted, a guest is untouched) — a test that
+    only checked the class appears in the array would pass with it in a position where it
+    cannot see the user. ⚠️ `logoutOtherDevices()` takes the CURRENT password: it
+    `Hash::check`s it and RE-hashes it, and the new hash is what no other session holds.
 - ⚠️ **`bill/checkout/{uuid}` and `membership/checkout/{uuid}` are each registered TWICE**
   in `routes/auth.php` — once inside the `auth` group and again near the bottom. Laravel
   keys on method+URI and the LAST registration wins, so the live route carries **no**
@@ -1794,6 +1813,22 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   and a meter, a receipt with a torn foot and a stamp, a solid badge at size, a split
   ground with two figures and an arrow, a three-row ranking, browser chrome with link
   rows, an app tile dropping into a dock, ruled paper with an empty field.
+- 🚨 **THE CARD HEIGHT IS MEASURED, AND THE FLOOR IS MOBILE.** `promoKit.CARD_H` is
+  **292 / 300 / 316**. It was trimmed from 292/310/344 once the right-hand visuals filled
+  the cards, and **268px was tried and rejected: it clipped the BUTTON off five cards at
+  320px** (Fast Start by 20px, plus Bio, Suggest, Receipt and Referral). `overflow-hidden`
+  hides that silently, so a clipped control looks like a design choice rather than a
+  defect. **Before changing the height, render every card at 320/390/768/1200 and assert
+  no `<a>` or `<button>` crosses the card's bottom edge** — eyeballing a screenshot misses
+  a 5px clip and a 20px one looks identical to deliberate cropping.
+  ⚠️ Two cards report a boundary crossing by design and must be ignored: `statement`'s
+  bled `PromoArt` and `install`'s phone. Both are `aria-hidden` decoration.
+  ⚠️ **Headless Chrome clamps its viewport to a 500px minimum on macOS**, so 320/390 must
+  be measured inside an `<iframe>` of that exact width — and the wrapper has to be served
+  from the SAME ORIGIN as the page it frames, or the result cannot be read back.
+- ⚠️ **A chip must not be the colour of the block behind it.** The referral card's copy
+  chip used `accent`, and that card's accent IS the pink of the panel it sits on, so the
+  chip read as a hole punched in the pill rather than as a control. It is black now.
 - 🚨 **A FIGURE ON A CARD COMES FROM `promo.facts`, NEVER FROM THE JSX.** An earlier pass
   typed **"£6.99"** into the receipt card while the real default is **£8.99**, so the one
   card whose entire subject is billing quoted a price the platform does not charge.
@@ -1824,7 +1859,18 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   🚨 **The founder card must state the BONUS, not only the threshold.** The first
   informative pass showed £2,500 and never said what the creator receives, so it read as a
   target with no prize. Pinned by four tests in `PromoDeckTest`.
-- 🚨 **`link_in_bio` resolves its destination AND its label per viewer**
+- 🚨 **THE VERIFY CARD WAITS FOR ADMIN APPROVAL** — `VerifiedBadge::awaitingIdentityCheck()`
+  is the rule, and it lives there rather than in the promo service because it is a badge
+  question. The original eligibility was `tierFor() === NONE`, which is **exactly
+  backwards**: `NONE` is what an unapproved or suspended account returns, so the card was
+  shown only to creators who cannot get the badge yet and hidden from every creator who
+  can. The identity check sits behind profile approval, so pitching it earlier asks for a
+  passport from someone whose profile photo has not been looked at.
+  ⚠️ Also hidden once `identity_status` is verified (that creator is only missing Connect,
+  and "one ID check and the tick is yours" describes a step they have taken) and after an
+  admin rejection (a human said no; re-running the same Stripe check cannot change it).
+  Pinned by four tests in `PromoDeckTest`.
+- - 🚨 **`link_in_bio` resolves its destination AND its label per viewer**
   (`hrefFor()` / `ctaFor()`): a signed-in creator goes to their own `bio.show` page
   ("See my page"), a visitor to `creators.link-in-bio` ("How it works"). Both used to go
   to the editor, which put a visitor at a login wall and a creator two clicks from their

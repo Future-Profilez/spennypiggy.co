@@ -106,6 +106,47 @@ class VerifiedBadge
     }
 
     /**
+     * Is this creator in the one state where "get verified" is a true thing to say?
+     *
+     * 🚨 THE PROFILE MUST BE ADMIN-APPROVED FIRST. The promo deck originally asked for
+     * `tierFor() === NONE`, which is exactly backwards: NONE is what an UNAPPROVED or
+     * suspended account returns, so the card was shown only to people who cannot get the
+     * badge yet and hidden from everyone who can. Approval is the gate the identity check
+     * sits behind — pitching it earlier asks for a passport from someone whose profile
+     * photo has not been looked at.
+     *
+     * ⚠️ Also false once Stripe has passed the check (`identity_status` verified). Such a
+     * creator is only missing Connect onboarding, and telling them "one ID check and the
+     * tick is yours" would be describing a step they have already taken.
+     *
+     * ⚠️ Also false after an ADMIN REJECTION. A human said no; sending them back to run
+     * the same Stripe check again would not change that, and implying it would is worse
+     * than showing nothing.
+     *
+     * @param  User|array<string, mixed>|null  $user
+     */
+    public static function awaitingIdentityCheck($user): bool
+    {
+        if (self::tierFor($user) === self::NONE) {
+            return false;
+        }
+
+        $get = static fn (string $key) => is_array($user)
+            ? ($user[$key] ?? null)
+            : $user->{$key} ?? null;
+
+        if ((int) $get('role') !== 1) {
+            return false;
+        }
+
+        if ((int) $get('identity_admin_status') === self::IDENTITY_ADMIN_REJECTED) {
+            return false;
+        }
+
+        return (int) $get('identity_status') !== self::IDENTITY_VERIFIED;
+    }
+
+    /**
      * Stripe has verified this creator AND their Connect onboarding is done.
      *
      * ⚠️ Deliberately NOT `User::isFullyVerified()` or

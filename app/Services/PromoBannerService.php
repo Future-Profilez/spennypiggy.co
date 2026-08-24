@@ -344,7 +344,11 @@ class PromoBannerService
                 && (bool) ($context['free_until_first_sale'] ?? false)
                 && ! (bool) ($context['has_ever_sold'] ?? false),
 
-            'verified_badge' => $isCreator && VerifiedBadge::tierFor($user) === VerifiedBadge::NONE,
+            // 🚨 Only once an admin has APPROVED the profile — see
+            // VerifiedBadge::awaitingIdentityCheck(). The old rule was
+            // `tierFor() === NONE`, which is the state of an unapproved account, so
+            // this card was shown to exactly the creators who cannot act on it.
+            'verified_badge' => $isCreator && VerifiedBadge::awaitingIdentityCheck($user),
 
             'link_in_bio' => $isCreator,
 

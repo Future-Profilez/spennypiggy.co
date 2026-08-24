@@ -19,6 +19,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItemSubscription;
 use App\Services\LeaderboardMovementService;
+use App\Services\Ledger\LedgerRules;
 use App\Services\VipScoreService;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
@@ -677,10 +678,28 @@ class LeaderBoardController extends Controller
                 'memberships as has_memberships' => fn ($query) => $query->where('approved', 1)->where('is_suspended', 0),
             ])
             ->withCount([
+                // ⚠️ FOLLOWERS, not buyers. Kept for display and as a tie-break;
+                // it is NOT what the board ranks on. "Supporters backing them"
+                // means people who actually bought — see `paying_supporters`.
                 'followers as total_supporters' => function ($query) use ($applyPeriod) {
                     $applyPeriod($query, 'follows.created_at');
                 },
                 'following as following_count',
+            ])
+            /*
+             * The ranking metric: how many DISTINCT people have bought from this
+             * creator, read from the ledger through `LedgerRules::countedScope()`
+             * so a refunded, disputed, failed or still-escrowed purchase does not
+             * make somebody a supporter. That is the same gate the payout engine
+             * and the earnings dashboard use, so the board cannot disagree with
+             * them about who counts.
+             */
+            ->addSelect(['paying_supporters' => FinancialTransaction::query()
+                ->selectRaw('COUNT(DISTINCT supporter_id)')
+                ->whereColumn('financial_transactions.user_id', 'users.id')
+                ->whereNotNull('supporter_id')
+                ->tap(fn ($query) => LedgerRules::countedScope($query))
+                ->tap(fn ($query) => $applyPeriod($query, 'financial_transactions.transaction_date')),
             ])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($applyPeriod) {
@@ -755,7 +774,25 @@ class LeaderBoardController extends Controller
                     $applyPeriod($query, 'shop_payments.created_at');
                 },
             ])
-            ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
+            /*
+             * 🚨 RANKED BY HOW MANY PEOPLE BACK A CREATOR, NEVER BY HOW MUCH THEY
+             * SPENT. Stripe content-first rule, and the same definition the rest
+             * of the platform already uses: `CollectionService`'s "Popular" counts
+             * DISTINCT supporters, and the Piggy Pot wall ranks on purchase count.
+             * A public board ordered by revenue publishes what each creator earns
+             * by implication, which is the thing this platform must not do.
+             *
+             * ⚠️ COUNT(DISTINCT supporter_id) — `supporter_id`, never `source_id`.
+             * `source` is a nullable morph to the payment row, so counting
+             * distinct source ids counts PAYMENTS and collides ids across the
+             * seven payment tables. One person buying ten times is one supporter.
+             */
+            ->orderByDesc('paying_supporters')
+            // ⚠️ Tie-break is followers, then id — deliberately NOT the money
+            // column. A money tie-break is a money sort wherever counts are equal,
+            // which on a young board is most of it.
+            ->orderByDesc('total_supporters')
+            ->orderBy('id')
             ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'default_currency']);
 
         $users->map(function ($user) {
@@ -787,25 +824,24 @@ class LeaderBoardController extends Controller
             // ✅ Ensure we return a consistent currency code (uppercase)
             $user->currency = strtoupper($user->default_currency ?? 'GBP');
 
-            // Calculate social engagement metrics
             $user->total_supporters = (int) ($user->total_supporters ?? 0);
-
-            // Calculate engagement score based on followers and content
-            $engagementScore = $user->total_supporters * 2; // 2 points per supporter
-
-            // Add bonus for verified creators
-            if ($user->profile_status_lock == 2) {
-                $engagementScore *= 1.2; // 20% bonus for verified creators
-            }
-
-            $user->engagement_score = $engagementScore;
-
-            // Combined score prioritizes engagement but includes monetary as fallback
-            $user->combined_score = $user->engagement_score > 0 ? $user->engagement_score : $user->total_amount;
+            $user->paying_supporters = (int) ($user->paying_supporters ?? 0);
         });
 
-        // Sort by combined score (engagement-first approach)
-        $users = $users->sortByDesc('combined_score');
+        /*
+         * 🚨 THE OLD SCORE RANKED MOST OF THE BOARD BY MONEY WITHOUT SAYING SO.
+         *
+         * It was `engagement_score > 0 ? engagement_score : total_amount`, where
+         * engagement_score was FOLLOWERS × 2 (×1.2 if verified). So a creator with
+         * a single follower was ranked by followers and a creator with none was
+         * ranked by revenue — two different ladders in one list, on a page whose
+         * own heading reads "Ranked by supporters". Any creator without followers
+         * was placed by how much money they had taken.
+         *
+         * The order is decided in SQL now (see `orderByDesc('paying_supporters')`
+         * above), so there is no second, disagreeing sort here. A creator with no
+         * paying supporters ranks last on count — never rescued by revenue.
+         */
 
         return $users;
     }

@@ -114,6 +114,38 @@ class Kernel extends HttpKernel
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
+
+            /*
+             * 🚨 THIS IS WHAT ACTUALLY SIGNS OTHER DEVICES OUT.
+             *
+             * `Auth::logoutOtherDevices()` only rotates the password hash; it is
+             * THIS middleware that compares the hash held in each session against
+             * the user's current one and turns the stale ones away. Without it,
+             * changing a password left every other session signed in — the
+             * opposite of what somebody resetting a password after a compromise
+             * believes has happened.
+             *
+             * ⚠️ Enabled 24 Aug 2026 after checking the vendor behaviour rather
+             * than assuming it: when a session carries NO stored hash,
+             * `AuthenticateSession` STORES it rather than logging the user out.
+             * So switching this on does not sign out everyone currently signed
+             * in — the first request after deploy adopts each existing session.
+             * That was the risk that kept it off, and it is not real.
+             *
+             * ⚠️ It must sit directly after `StartSession`, and it no-ops for a
+             * request with no session or no user, so guest pages are untouched.
+             *
+             * ⚠️ Real consequence: any path that changes `users.password` now
+             * ends that user's other sessions on their next request. That is the
+             * point. A remember-me cookie whose hash no longer matches is dropped
+             * with them.
+             *
+             * ⚠️ The `auth.session` ROUTE-middleware alias below is now redundant
+             * for web routes; it is left registered so an explicitly-aliased route
+             * keeps working.
+             */
+            AuthenticateSession::class,
+
             EnsureCsrfCookie::class,
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,

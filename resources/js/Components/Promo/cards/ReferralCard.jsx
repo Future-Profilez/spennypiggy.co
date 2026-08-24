@@ -41,8 +41,11 @@ export default function ReferralCard({ promo, onAction }) {
                         spennypiggy.co/r/yourname
                     </span>
                     <span
+                        /* ⚠️ BLACK, not the accent. This card's accent IS the pink of the
+                           block behind the pill, so an accent chip was pink-on-pink and
+                           read as a hole punched in the pill rather than as a control. */
                         className="shrink-0 rounded-box-xs px-2 py-1 font-CeraGR text-[8px] font-bold uppercase tracking-[0.12em] md:text-[9px]"
-                        style={{ border: "2px solid #000", backgroundColor: accent, color: "#000" }}
+                        style={{ border: "2px solid #000", backgroundColor: "#000000", color: "#FFFFFF" }}
                     >
                         Copy
                     </span>
