@@ -2,6 +2,10 @@
 
 import { Link, usePage, router } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import {
+    COOKIES_POLICY_URL,
+    PRIVACY_POLICY_URL,
+} from "../constants/legalLinks";
 import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback, useRef } from "react";
 import DeviceID from "./DeviceID";
@@ -831,19 +835,29 @@ export default function Header({ classMagicword }) {
                                     activeColor="hover:bg-[#A2E4B8]"
                                     isExternal={true}
                                 />
+                                {/*
+                                    🚨 Both are hosted on Termly, so both are
+                                    `isExternal` rather than a route. They pointed at
+                                    the Terms page — two menu items named after
+                                    policies that opened a third, different one. The
+                                    two entries below them (Acceptable Use, Terms) DO
+                                    live on the terms page and are correct as they are.
+                                */}
                                 <NavLinkWithIcon
-                                    href={route("terms-and-conditions")}
+                                    href={PRIVACY_POLICY_URL}
                                     onClick={toggleClass}
                                     icon={ShieldCheckIcon}
                                     label="Privacy Policy"
                                     activeColor="hover:bg-yellow-300"
+                                    isExternal={true}
                                 />
                                 <NavLinkWithIcon
-                                    href={route("terms-and-conditions")}
+                                    href={COOKIES_POLICY_URL}
                                     onClick={toggleClass}
                                     icon={InfoIcon}
                                     label="Cookies Policy"
                                     activeColor="hover:bg-[#FF007F]"
+                                    isExternal={true}
                                 />
                                 <NavLinkWithIcon
                                     href={route("terms-and-conditions")}

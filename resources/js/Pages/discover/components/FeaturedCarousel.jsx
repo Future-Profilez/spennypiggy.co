@@ -62,7 +62,7 @@ export default function FeaturedCarousel({ title, items, type = 'creator', icon,
                 </div>
                 <Link href={route('discover', { contentType: linkContentType })} className="shrink-0 inline-flex min-h-[44px] items-center text-xs md:text-sm font-semibold text-black/70 uppercase tracking-wider border border-black/15 bg-white px-4 rounded-box-sm hover:text-black hover:border-[#FF007F]/60 transition-all">See all</Link>
             </div>
-            <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : type === 'creator' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4'}`}>
+            <div className={`${isTaskLayout ? 'grid grid-cols-1 gap-4 pb-4' : type === 'creator' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 pb-4' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 pb-4'}`}>
                 {isLoading ? (
                     skeletonItems.map((_, index) => (
                         <div key={`skeleton-${index}`} className="h-[200px] bg-black/5 animate-pulse border border-black/10 rounded-box" />

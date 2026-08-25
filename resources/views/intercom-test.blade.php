@@ -57,10 +57,14 @@
 
     <div class="status">
         <h2>Actions</h2>
-        <button onclick="testBasicIntercom()">🔵 Test Basic Intercom</button>
-        <button onclick="testWithUser()">👤 Test With User Data</button>
-        <button onclick="showIntercom()">💬 Show Intercom</button>
-        <button onclick="clearLog()">🗑️ Clear Log</button>
+        {{-- ⚠️ `data-action`, not `onclick`. An inline event handler is governed by
+             `script-src-attr` and CANNOT carry a nonce — an attribute has nowhere to
+             put one — so it is refused outright. The listener is wired in the nonced
+             script below. --}}
+        <button type="button" data-action="testBasicIntercom">🔵 Test Basic Intercom</button>
+        <button type="button" data-action="testWithUser">👤 Test With User Data</button>
+        <button type="button" data-action="showIntercom">💬 Show Intercom</button>
+        <button type="button" data-action="clearLog">🗑️ Clear Log</button>
     </div>
 
     <div class="status">
@@ -68,7 +72,17 @@
         <div id="log" class="log"></div>
     </div>
 
-    <script>
+    {{-- ⚠️ Nonced like every other inline block. This view is local/testing only
+         (where the CSP is skipped), but a blade with no nonce is a pattern the next
+         person copies. --}}
+    <script nonce="{{ $cspNonce ?? '' }}">
+        document.addEventListener('click', function (event) {
+            var trigger = event.target.closest('[data-action]');
+            if (!trigger) return;
+            var fn = window[trigger.dataset.action];
+            if (typeof fn === 'function') fn();
+        });
+
         let logElement = document.getElementById('log');
         
         function updateTime() {

@@ -6,6 +6,7 @@ use App\Models\AbandonedCheckout;
 use App\Models\EmailPreferenceLog;
 use App\Models\User;
 use App\Services\AbandonedCheckoutService;
+use App\Support\MarketingConsent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -256,8 +257,26 @@ class EmailPreferenceController extends Controller
                 self::logPreferenceChange($user->id, $user->marketing_emails_enabled, $newValue, $source);
             }
 
-            $updates['marketing_emails_enabled'] = $newValue;
-            $updates['marketing_unsubscribed_at'] = $newValue ? null : now();
+            /*
+             * 🚨 CONSENT COLUMNS MOVE WITH THE SWITCH, VIA MarketingConsent.
+             * Flipping `marketing_emails_enabled` alone leaves a send permission
+             * with no evidence of when or where it was granted, which is the
+             * exact gap the 23 Aug UK brief exists to close. Turning it ON is a
+             * fresh consent — today, to today's wording — not a restoration of
+             * the old one; turning it OFF leaves the original provenance intact.
+             */
+            $updates += $newValue
+                ? MarketingConsent::attributesForGrant($source)
+                : MarketingConsent::attributesForWithdrawal();
+
+            // The address-level record (UK brief §6), so the opt-out outlives
+            // this row. Only ever lifted here because the PERSON submitted the
+            // change — never inferred from behaviour.
+            if ($newValue) {
+                MarketingConsent::unsuppress($user->email);
+            } else {
+                MarketingConsent::suppress($user->email, $source, $user->id);
+            }
         }
 
         foreach (self::CATEGORIES as $column) {
@@ -396,10 +415,17 @@ class EmailPreferenceController extends Controller
                 'thankyou_prompt'
             );
 
-            $user->update([
-                'marketing_emails_enabled' => $newValue,
-                'marketing_unsubscribed_at' => ! $newValue ? now() : null,
-            ]);
+            if ($newValue) {
+                MarketingConsent::unsuppress($user->email);
+            } else {
+                MarketingConsent::suppress($user->email, 'thankyou_prompt', $user->id);
+            }
+
+            $user->update(
+                $newValue
+                    ? MarketingConsent::attributesForGrant('thankyou_prompt')
+                    : MarketingConsent::attributesForWithdrawal()
+            );
         }
 
         return response()->json([
@@ -465,7 +491,8 @@ class EmailPreferenceController extends Controller
         $updates = [$category => false];
 
         if ($category === 'marketing_emails_enabled') {
-            $updates['marketing_unsubscribed_at'] = now();
+            $updates += MarketingConsent::attributesForWithdrawal();
+            MarketingConsent::suppress($user->email, $source, $user->id);
         }
 
         $user->update($updates);
@@ -649,10 +676,9 @@ class EmailPreferenceController extends Controller
             'checkout_opt_in'
         );
 
-        $user->update([
-            'marketing_emails_enabled' => true,
-            'marketing_unsubscribed_at' => null,
-        ]);
+        MarketingConsent::unsuppress($user->email);
+
+        $user->update(MarketingConsent::attributesForGrant('checkout_opt_in'));
     }
 
     public static function logPreferenceChange($userId, $oldValue, $newValue, $source)

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Support\AnalyticsEvent;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
@@ -43,6 +42,8 @@ use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\AbandonedCheckoutService;
+use App\Services\Analytics\MeasurementProtocol;
+use App\Services\Analytics\XConversionsApi;
 use App\Services\CheckoutMethodResolver;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorAvailabilityMessageService;
@@ -59,6 +60,7 @@ use App\Services\SubscriptionActivationService;
 use App\Services\SubscriptionCheckoutService;
 use App\Services\UserProfileService;
 use App\StripeControl;
+use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
@@ -1016,6 +1018,16 @@ class StripeController extends Controller
                 'collect' => 'eventually_due',
             ]);
 
+            // GA4 `stripe_connect_started` — the OTHER half of the Connect stage.
+            //
+            // 🚨 `stripe_connected` alone measures the creators who finished. The
+            // creators who open Stripe's form and never come back are the drop-off,
+            // and they were invisible: this redirects out of the app, so nothing
+            // flashed for the next render is ever rendered. Server-sent for the
+            // same reason `begin_checkout` is.
+            MeasurementProtocol::send('stripe_connect_started', ['flow' => 'resume']);
+            XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
+
             return Inertia::location($link->url);
         } catch (Exception $e) {
             Log::error('Stripe onboarding link failed', [
@@ -1333,6 +1345,16 @@ class StripeController extends Controller
                     'collect' => 'eventually_due',
                 ]);
 
+                // GA4 `stripe_connect_started` — the OTHER half of the Connect stage.
+                //
+                // 🚨 `stripe_connected` alone measures the creators who finished. The
+                // creators who open Stripe's form and never come back are the drop-off,
+                // and they were invisible: this redirects out of the app, so nothing
+                // flashed for the next render is ever rendered. Server-sent for the
+                // same reason `begin_checkout` is.
+                MeasurementProtocol::send('stripe_connect_started', ['flow' => 'recreate']);
+                XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
+
                 return Inertia::location($link->url);
             } catch (ApiErrorException $e) {
                 Log::warning('Stripe accountLink failed', [
@@ -1507,6 +1529,16 @@ class StripeController extends Controller
             // Capabilities were just changed on the account, so anything cached
             // about it now describes the state before that change.
             StripeAccountState::forget($user->account_id);
+
+            // GA4 `stripe_connect_started` — the OTHER half of the Connect stage.
+            //
+            // 🚨 `stripe_connected` alone measures the creators who finished. The
+            // creators who open Stripe's form and never come back are the drop-off,
+            // and they were invisible: this redirects out of the app, so nothing
+            // flashed for the next render is ever rendered. Server-sent for the
+            // same reason `begin_checkout` is.
+            MeasurementProtocol::send('stripe_connect_started', ['flow' => 'onboard']);
+            XConversionsApi::send('stripe_connect_started', [], 'connect-'.$user->id.'-'.now()->format('Ymd'));
 
             // 3. Redirect to Stripe’s URL
             return Inertia::location($accountLink->url);

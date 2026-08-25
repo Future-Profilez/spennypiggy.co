@@ -36,6 +36,7 @@ use App\Models\AppService;
 use App\Models\Deliverable;
 use App\Models\Shop;
 use App\Models\User;
+use App\Support\MarketingConsent;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -744,6 +745,21 @@ class EmailService
                 return;
             }
 
+            // 🚨 SECOND GATE, ON THE ADDRESS RATHER THAN THE ACCOUNT (UK brief §6).
+            // The check above asks whether THIS ROW may be mailed. This one asks
+            // whether the ADDRESS has ever opted out — which is a different
+            // question the moment somebody deletes their account and signs up
+            // again with the same inbox, or unsubscribed as a guest and later
+            // registered. Without it, an opt-out is only as durable as the row
+            // that happens to be carrying it.
+            if (MarketingConsent::isSuppressed($user->email)) {
+                Log::info('EmailService::sendMarketingEmail - Skipping marketing email (address suppressed)', [
+                    'user_id' => $user->id,
+                ]);
+
+                return;
+            }
+
             if (! self::categoriesAllow($user, $alsoRequire, 'sendMarketingEmail')) {
                 return;
             }
@@ -751,6 +767,8 @@ class EmailService
             if ($mailable instanceof \Illuminate\Mail\Mailable) {
                 $mailable->with(['user' => $user]);
             }
+
+            self::warnIfNoUnsubscribeLink($mailable);
 
             // Send the marketing email
             Mail::to($user->email)->send($mailable);
@@ -774,6 +792,67 @@ class EmailService
                 'error' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Shout when a marketing mailable has no unsubscribe link.
+     *
+     * 🚨 EVERY MARKETING EMAIL MUST OFFER AN UNSUBSCRIBE (UK brief §4, 23 Aug
+     * 2026). Nothing structural was enforcing that: `FounderCongratulations`
+     * shipped without one, and `NotificationDispatcher` takes a mailable FQCN
+     * straight from a payload and sends it down this path, so the next one
+     * would be just as silent.
+     *
+     * 🚨 IT WARNS, IT NEVER BLOCKS. Refusing to send would mean one missing
+     * footer stops a whole campaign — trading a compliance defect for an outage,
+     * on a path where the defect is recoverable and the outage is not. The log
+     * line is the thing a person acts on.
+     *
+     * ⚠️ Checked ONCE PER MAILABLE CLASS per process, not per recipient: whether
+     * a template carries a footer is structural, and rendering every message a
+     * second time would double the cost of every campaign.
+     *
+     * ⚠️ Never throws. A mailable that cannot be rendered here is about to fail
+     * in `Mail::send` anyway, with a far better error than this check could give.
+     */
+    private static function warnIfNoUnsubscribeLink(Mailable $mailable): void
+    {
+        static $checked = [];
+
+        $class = get_class($mailable);
+
+        if (isset($checked[$class])) {
+            return;
+        }
+
+        $checked[$class] = true;
+
+        // ⚠️ The parameter is the CONTRACT (Illuminate\Contracts\Mail\Mailable),
+        // which declares no render(). Only the concrete Illuminate\Mail\Mailable
+        // has one — same instanceof guard the `with()` call above uses.
+        if (! $mailable instanceof \Illuminate\Mail\Mailable) {
+            return;
+        }
+
+        try {
+            $body = $mailable->render();
+
+            // Matches both footer links the house templates offer — the
+            // one-click category unsubscribe and the preference centre.
+            if (str_contains($body, '/unsubscribe/') || str_contains($body, '/email-preferences/')) {
+                return;
+            }
+
+            Log::warning('EmailService::sendMarketingEmail - marketing mailable has no unsubscribe link', [
+                'mailable' => $class,
+                'note' => 'Every marketing email must offer an unsubscribe (UK direct-marketing brief, 23 Aug 2026). Add the footer, or send this via Mail::to() if it is genuinely transactional.',
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('EmailService::sendMarketingEmail - could not check mailable for an unsubscribe link', [
+                'mailable' => $class,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

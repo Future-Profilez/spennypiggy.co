@@ -55,6 +55,8 @@ export default function CredentialsStep({
     role,
     data,
     setData,
+    receiptAck = false,
+    onReceiptAck,
     onCountry,
     fieldStatus,
     fieldError,
@@ -88,7 +90,7 @@ export default function CredentialsStep({
                 viaGoogle
                     ? "Your country sets the currency you see prices in."
                     : isCreator
-                      ? "Your email also appears on supporter receipts."
+                      ? "Choose the address you want supporters to see."
                       : "We'll send your receipts here."
             }
             onSubmit={onSubmit}
@@ -229,6 +231,71 @@ export default function CredentialsStep({
                             selectClassName={fieldShell(fieldStatus("country"))}
                         />
                     </Field>
+                )}
+
+                {/* 🚨 THE CREATOR'S EMAIL IS PUBLISHED TO EVERY SUPPORTER THEY SELL
+                    TO, and this is the screen where they choose it. It used to be
+                    one grey line of subtitle above the form — a fact stated once,
+                    before the field, in the quietest type on the page — while the
+                    acknowledgement itself was five screens later on the review
+                    step, at the point where nobody re-reads anything.
+
+                    Spenny Piggy is merchant of record, so this address travels with
+                    the transaction record and with every refund and dispute a
+                    supporter raises. A creator who used their personal address
+                    finds that out from a stranger's reply, and the address cannot
+                    be un-sent. So the warning is stated where the decision is made,
+                    it says what it is FOR (receipts, refunds, disputes), it
+                    suggests the fix, and the tick is here rather than only at the
+                    end.
+
+                    ⚠️ It writes the SAME `creator_email_receipt_ack` the review
+                    step's consent writes — one value, ticked once, shown again
+                    there. Never add a second acknowledgement column for it: the
+                    server validates this one as `accepted` and stamps
+                    `creator_email_receipt_acknowledged_at`. */}
+                {isCreator && !viaGoogle && (
+                    <div className="rounded-box-sm border-2 border-black bg-[#FBF7CF] p-4">
+                        <p className="font-gulfs text-[15px] uppercase leading-[1.25] tracking-[0.02em] text-black">
+                            ⚠️ Your email appears on supporter receipts ⚠️
+                        </p>
+
+                        <p className="mt-2 text-[13.5px] leading-[1.6] text-black/80">
+                            Spenny Piggy is the merchant of record, so this address
+                            is on the transaction record every supporter keeps — and
+                            on every refund and dispute they raise. Supporters can
+                            see it and reply to it.
+                        </p>
+
+                        <p className="mt-2 text-[13.5px] font-semibold leading-[1.6] text-black">
+                            Use an address you are happy to hand out. Most creators
+                            set up one just for this.
+                        </p>
+
+                        <label
+                            htmlFor="credentials_receipt_ack"
+                            className="mt-3.5 flex cursor-pointer items-start gap-3 rounded-box-sm border-2 border-black/15 bg-white p-3 transition-colors hover:border-black/40"
+                        >
+                            <input
+                                id="credentials_receipt_ack"
+                                name="credentials_receipt_ack"
+                                type="checkbox"
+                                checked={receiptAck}
+                                onChange={(e) => onReceiptAck?.(e.target.checked)}
+                                className="mt-0.5 h-6 w-6 shrink-0 cursor-pointer rounded border-2 border-black/25"
+                                /* `input[type="checkbox"]` carries a global
+                                   `text-[#FF007F]` in resources/css/index.css, which
+                                   is the checked fill under @tailwindcss/forms — so a
+                                   supporter's violet form drew pink ticks. Inline
+                                   `color` is the only thing that reliably wins. */
+                                style={{ accentColor: accent.hex, color: accent.hex }}
+                            />
+                            <span className="text-[13.5px] font-semibold leading-relaxed text-black">
+                                I understand this email appears on supporter
+                                receipts, refunds and disputes.
+                            </span>
+                        </label>
+                    </div>
                 )}
 
                 <div>

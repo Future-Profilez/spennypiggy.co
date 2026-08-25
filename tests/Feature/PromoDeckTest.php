@@ -219,6 +219,71 @@ class PromoDeckTest extends TestCase
     }
 
     /**
+     * 🚨 THE VERIFY CARD WAITS FOR ADMIN APPROVAL.
+     *
+     * The identity check sits behind profile approval, so pitching it to an unapproved
+     * creator asks for a passport from someone whose profile photo has not been looked
+     * at yet. The original rule was `tierFor() === NONE` — the state of an UNAPPROVED
+     * account — so the card appeared for exactly the people who could not act on it and
+     * was hidden from everyone who could.
+     */
+    public function test_the_verify_card_is_hidden_until_the_profile_is_approved(): void
+    {
+        $pending = User::factory()->create([
+            'role' => 1,
+            'profile_status_lock' => 1,   // awaiting admin review
+            'identity_status' => 0,
+        ]);
+        $approved = User::factory()->create([
+            'role' => 1,
+            'profile_status_lock' => 2,   // admin approved
+            'identity_status' => 0,
+        ]);
+
+        $this->assertNotContains('verified_badge', $this->keys($this->deck($pending)));
+        $this->assertContains('verified_badge', $this->keys($this->deck($approved)));
+    }
+
+    public function test_the_verify_card_is_hidden_once_the_id_check_has_passed(): void
+    {
+        $verified = User::factory()->create([
+            'role' => 1,
+            'profile_status_lock' => 2,
+            'identity_status' => 1,
+        ]);
+
+        $this->assertNotContains('verified_badge', $this->keys($this->deck($verified)));
+    }
+
+    /**
+     * ⚠️ An admin rejection outranks Stripe. Sending that creator back to run the same
+     * check would not change the answer, and implying it would is worse than silence.
+     */
+    public function test_the_verify_card_is_hidden_after_an_admin_rejection(): void
+    {
+        $rejected = User::factory()->create([
+            'role' => 1,
+            'profile_status_lock' => 2,
+            'identity_status' => 0,
+            'identity_admin_status' => 2,
+        ]);
+
+        $this->assertNotContains('verified_badge', $this->keys($this->deck($rejected)));
+    }
+
+    public function test_a_suspended_creator_is_never_pitched_the_badge(): void
+    {
+        $suspended = User::factory()->create([
+            'role' => 1,
+            'profile_status_lock' => 2,
+            'identity_status' => 0,
+            'suspended_account' => 1,
+        ]);
+
+        $this->assertNotContains('verified_badge', $this->keys($this->deck($suspended)));
+    }
+
+    /**
      * 🚨 The deck is built inside HandleInertiaRequests::share(), so it runs on
      * every Inertia response. A failure here must cost the promos, never the page.
      */

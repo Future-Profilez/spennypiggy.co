@@ -159,3 +159,32 @@ export const PASSWORD_RULES = [
 
 export const passwordScore = (value = "") =>
     PASSWORD_RULES.filter((r) => r.test(value)).length;
+
+/**
+ * Whether the register form may be submitted.
+ *
+ * 🚨 EXTRACTED FROM Register.jsx SO IT CAN BE TESTED, AND THAT IS THE WHOLE
+ * POINT. The rule that decides this is a compliance rule, not a UX one: UK
+ * PECR requires marketing consent to be OPTIONAL, so `consents.marketing`
+ * must never appear below. Adding it is a three-word change that would pass
+ * every backend test in the suite — the only thing that can catch it is a test
+ * of this function, which is why it is no longer an inline expression.
+ *
+ * `marketing` is accepted in the argument object purely so a reader can see it
+ * being deliberately ignored.
+ */
+export const canSubmitRegistration = ({
+    consents = {},
+    role,
+    captchaRequired = false,
+    captchaVerified = false,
+}) => {
+    const roleConsent =
+        Number(role) === ROLE_CREATOR
+            ? consents.creatorEmail
+            : consents.ownDetails;
+
+    return Boolean(
+        consents.terms && roleConsent && (!captchaRequired || captchaVerified)
+    );
+};

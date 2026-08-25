@@ -30,7 +30,10 @@
 <meta name="msapplication-TileColor" content="{{ $config['background_color'] }}">
 <meta name="msapplication-TileImage" content="{{ data_get(end($config['icons']), 'src') }}">
 
-<script type="text/javascript">
+{{-- ⚠️ Nonced. `@laravelPWA` is currently COMMENTED OUT in app.blade.php, so this
+     is dead today — which is exactly why it would ship un-nonced the moment someone
+     re-enabled it. --}}
+<script nonce="{{ $cspNonce ?? '' }}" type="text/javascript">
     // Initialize the service worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/serviceworker.js', {

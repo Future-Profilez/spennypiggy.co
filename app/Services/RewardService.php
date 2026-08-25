@@ -328,6 +328,22 @@ class RewardService
             if ($mime === 'application/pdf') {
                 return 'pdf';
             }
+
+            /*
+             * 🚨 A BARE KIND, NOT A MIME TYPE. `ShopsController` stored the literal
+             * string `'image'` whenever Uploadcare did not report a mime, and the
+             * checks above all require the `prefix/` form — so it matched nothing,
+             * fell through to the extension test, and an Uploadcare UUID carries no
+             * extension either. The result was `'file'`: a generic download tile
+             * instead of the picture, on every one of those listings, with nothing
+             * to see in any log. The writer no longer guesses, but rows written
+             * before that fix are still in the database, and the same shape reaches
+             * here from `ProfileController` and `GifterHubController`, which pass
+             * the column straight through.
+             */
+            if (! str_contains($mime, '/') && array_key_exists($mime, config('rewards.kind_extensions', []))) {
+                return $mime;
+            }
         }
 
         $extension = strtolower(pathinfo(parse_url((string) $nameOrUrl, PHP_URL_PATH) ?: (string) $nameOrUrl, PATHINFO_EXTENSION));

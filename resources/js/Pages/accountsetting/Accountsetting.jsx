@@ -2,6 +2,10 @@ import { useEffect, useState, useRef } from "react";
 import { lazy } from "react";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import {
+    EXTERNAL_LINK_PROPS,
+    PRIVACY_POLICY_URL,
+} from "@/constants/legalLinks";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -14,7 +18,7 @@ import LinkTwitter from "../twitter/LinkTwitter";
 import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
 import { QRCodeSVG } from "qrcode.react";
-const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
+const EditProfile = lazyRetry(() => import("@/Pages/account/EditProfile"));
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
@@ -46,6 +50,7 @@ import {
     ShoppingBagIcon,
     LinkIcon,
 } from "@animateicons/react/lucide";
+import lazyRetry from "@/utils/lazyRetry";
 import {
     Shield,
     LogOut,
@@ -1052,8 +1057,17 @@ export default function Accountsetting(props) {
                                     className="!mb-0"
                                 />
                             </Link>
-                            <Link
-                                href={route("promotion-terms")}
+                            {/*
+                                🚨 An <a>, not an Inertia <Link>, and not a route().
+                                The Privacy Policy is hosted on Termly — there is no
+                                page for it on this site and no Ziggy route to reach
+                                for, which is why this used to point at
+                                `promotion-terms`: a link labelled "Privacy Policy"
+                                that opened the Promotions page.
+                            */}
+                            <a
+                                href={PRIVACY_POLICY_URL}
+                                {...EXTERNAL_LINK_PROPS}
                                 className="block w-full"
                             >
                                 <SettingItem
@@ -1062,7 +1076,7 @@ export default function Accountsetting(props) {
                                     subtitle="Read our privacy policy"
                                     className="!mb-0"
                                 />
-                            </Link>
+                            </a>
                         </div>
                     </div>
 

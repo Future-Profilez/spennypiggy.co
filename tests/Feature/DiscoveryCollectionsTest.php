@@ -196,6 +196,55 @@ class DiscoveryCollectionsTest extends TestCase
         }
     }
 
+    /**
+     * 🚨 "RE-RUN" MUST ACTUALLY RE-RUN, WHATEVER LIMIT THE SURFACE ASKED FOR.
+     *
+     * A selection is cached per limit, per viewer, per context creator and per
+     * rotation bucket, so clearing "this collection" is a FAMILY of keys. The
+     * first `forget()` deleted one hardcoded key built from `DEFAULT_LIMIT`
+     * (12) — a limit no surface actually uses: the checkout row asks for 4 and
+     * the homepage and Discover ask for 8. So the admin screen's Re-run button
+     * cleared a key nothing reads and did nothing, while appearing to work.
+     *
+     * A generation bump makes every existing entry unreachable in one write.
+     */
+    public function test_forget_invalidates_every_cached_variant_not_one_key(): void
+    {
+        $this->creator(['username' => 'gen_probe']);
+
+        $service = app(CollectionService::class);
+
+        // Two different limits, as two different surfaces would ask.
+        $service->get('new_creators', 8);
+        $service->get('new_creators', 4);
+
+        $before = (int) (Cache::get(CollectionService::generationKey('new_creators')) ?: 1);
+
+        $service->forget('new_creators');
+
+        $this->assertSame(
+            $before + 1,
+            (int) Cache::get(CollectionService::generationKey('new_creators')),
+            'Re-run did not bump the generation, so every cached variant survived it.'
+        );
+    }
+
+    /**
+     * ⚠️ Bumping one collection must not dump the others — an admin hiding a
+     * misbehaving row should not cost the whole platform its warm cache.
+     */
+    public function test_forgetting_one_collection_leaves_the_others_alone(): void
+    {
+        $service = app(CollectionService::class);
+
+        $service->forget('new_creators');
+
+        $this->assertNull(
+            Cache::get(CollectionService::generationKey('hidden_gems')),
+            'Forgetting one collection moved another collection’s generation.'
+        );
+    }
+
     /** The shared rule keeps the birth year out of scope, by omission. */
     public function test_the_card_columns_never_select_a_birth_date(): void
     {

@@ -87,6 +87,15 @@ export function rewardKind(mime, nameOrUrl) {
             if (type.startsWith(`${prefix}/`)) return prefix;
         }
         if (type === "application/pdf") return "pdf";
+
+        /*
+         * 🚨 A BARE KIND, NOT A MIME TYPE — kept in step with
+         * `RewardService::kind()`, which carries the full note. `ShopsController`
+         * used to store the literal `'image'` when Uploadcare reported no mime;
+         * the checks above need the `prefix/` form, so those listings resolved to
+         * "file" and rendered a download tile instead of the picture.
+         */
+        if (!type.includes("/") && Object.hasOwn(KIND_EXTENSIONS, type)) return type;
     }
 
     const path = String(nameOrUrl || "").split("?")[0].split("#")[0];

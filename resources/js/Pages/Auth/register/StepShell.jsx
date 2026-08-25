@@ -23,7 +23,7 @@ export const RHYTHM = {
 
 /** The white panel. One padding recipe, one radius, one shadow. */
 export const PANEL =
-    "rounded-box border-[3px] border-black bg-white p-4 sm:p-6";
+    "rounded-box border-black bg-white p-4 sm:p-6";
 
 export default function StepShell({
     role,

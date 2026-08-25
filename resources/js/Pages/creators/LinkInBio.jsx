@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, GripVertical } from 'lucide-react';
 import Guest from '@/Layouts/GuestLayout';
 import AdPage from './components/AdPage';
 import { ACCENT, Eyebrow, GRID, SectionHead, SectionHeadSplit } from './components/Ledger';
@@ -211,6 +211,8 @@ export default function LinkInBio({ discovery }) {
                                 the phone
                             </span>
                         </SectionHeadSplit>
+
+                        <ArrivalRoute className="mt-10" />
                     </section>
 
                     {/* ── 5 · Tips, coming soon ─────────────────────────── */}
@@ -264,6 +266,12 @@ export default function LinkInBio({ discovery }) {
                                 control the page
                             </span>
                         </SectionHeadSplit>
+
+                        <div className="mt-10 lg:grid lg:grid-cols-12 lg:gap-x-6">
+                            <div className="lg:col-span-6">
+                                <EditorMock />
+                            </div>
+                        </div>
                     </section>
 
                     {/* ── 7 · Your traffic — and we count it ────────────── */}
@@ -413,17 +421,30 @@ function StateChip({ state }) {
 }
 
 /**
- * One route to a purchase, drawn as its steps.
+ * One route to a purchase, drawn as the screens a supporter actually taps
+ * through — not as words describing them.
  *
- * ⚠️ The competing pattern is DESCRIBED, never named — the brief bans competitor
- * names on this page. "A normal bio link" is doing that work.
+ * 🚨 THE FADE IS THE ARGUMENT. The cold path's screens dim step by step, because
+ * the section's own lead says "every tap loses supporters" and a row of four
+ * identical boxes says the opposite: that all four steps cost the same. The
+ * ladder is on the SCREENS only, which are decorative and `aria-hidden`; the
+ * step labels stay at full strength, because dimming text to 0.4 on this ink
+ * ground fails contrast for the readers who need it most.
+ *
+ * ⚠️ The competing pattern is DRAWN and DESCRIBED, never named — the brief bans
+ * competitor names on this page. "A normal bio link" is doing that work, and the
+ * wireframes are generic on purpose: no logo, no recognisable chrome.
+ *
+ * ⚠️ `h-full` so the two boxes match height in the grid. The warm box holds one
+ * screen against four, and that empty space IS the point — but a short box beside
+ * a tall one reads as an unfinished card rather than as a shorter journey.
  */
 function TapPath({ path, tone }) {
     const warm = tone === 'warm';
 
     return (
         <div
-            className="rounded-box border-2 p-6 md:p-7"
+            className="flex h-full flex-col rounded-box border-2 p-6 md:p-7"
             style={{
                 borderColor: warm ? MINT : 'rgba(255,255,255,0.15)',
                 backgroundColor: warm
@@ -443,30 +464,330 @@ function TapPath({ path, tone }) {
                 </p>
             </div>
 
-            <ol className="mt-6 flex flex-wrap items-center gap-2">
+            <ol className="mt-7 flex flex-wrap items-start gap-1.5 md:gap-2.5">
                 {path.taps.map((tap, i) => (
-                    <li key={tap} className="flex items-center gap-2">
-                        <span
-                            className="inline-flex min-h-[40px] items-center rounded-box-sm border-2 px-4 text-sm text-white md:text-[15px]"
-                            style={{
-                                borderColor: warm
-                                    ? MINT
-                                    : 'rgba(255,255,255,0.18)',
-                            }}
-                        >
-                            {tap}
-                        </span>
+                    <li key={tap} className="flex items-start gap-1.5 md:gap-2.5">
+                        <div className="w-[50px] md:w-[62px]">
+                            <MiniScreen
+                                kind={screenKind(tap)}
+                                warm={warm}
+                                dim={warm ? 1 : 1 - i * 0.18}
+                            />
+                            <p className="mt-2 break-words text-center font-mono text-[10px] uppercase leading-[1.3] tracking-[0.04em] text-white/70 md:text-[11px]">
+                                {tap}
+                            </p>
+                        </div>
+
                         {i < path.taps.length - 1 ? (
                             <ArrowRight
-                                size={15}
+                                size={13}
                                 aria-hidden="true"
-                                className="text-white/35"
+                                className="mt-[30px] shrink-0 text-white/30 md:mt-[38px]"
                             />
                         ) : null}
                     </li>
                 ))}
             </ol>
         </div>
+    );
+}
+
+/**
+ * Which wireframe a step is drawn as, read off the step's own label.
+ *
+ * ⚠️ Keyed on the LABEL, not the index — the labels live in
+ * `constants/discovery.js` and the warm path has one step where the cold path
+ * has four, so an index would draw "Checkout" as a page of buttons.
+ */
+const SCREEN_KIND = {
+    'page of buttons': 'buttons',
+    profile: 'profile',
+    item: 'item',
+    checkout: 'checkout',
+};
+
+function screenKind(label) {
+    return SCREEN_KIND[String(label).toLowerCase()] ?? 'buttons';
+}
+
+/**
+ * One phone screen as a wireframe, small enough that four fit a phone-width
+ * card. Decorative — every bar is `aria-hidden`, the step name beside it is the
+ * accessible text.
+ */
+function MiniScreen({ kind, warm = false, dim = 1 }) {
+    const bar = warm ? 'bg-black/25' : 'bg-white/25';
+    const barStrong = warm ? 'bg-black/45' : 'bg-white/40';
+
+    return (
+        <div
+            aria-hidden="true"
+            className="rounded-box-xs border-2 p-1.5 md:p-2"
+            style={{
+                opacity: dim,
+                borderColor: warm ? '#000' : 'rgba(255,255,255,0.22)',
+                backgroundColor: warm ? BIO_GROUND : 'rgba(255,255,255,0.05)',
+            }}
+        >
+            <div className="flex h-[58px] flex-col md:h-[72px]">
+                {kind === 'buttons' && (
+                    <div className="flex flex-1 flex-col justify-center gap-1.5">
+                        {[1, 2, 3, 4].map((n) => (
+                            <span
+                                key={n}
+                                className={`h-1.5 w-full rounded-full ${bar}`}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {kind === 'profile' && (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-1.5">
+                        <span
+                            className={`h-4 w-4 rounded-full md:h-5 md:w-5 ${bar}`}
+                        />
+                        <span className={`h-1.5 w-4/5 rounded-full ${bar}`} />
+                        <span className={`h-1.5 w-1/2 rounded-full ${bar}`} />
+                    </div>
+                )}
+
+                {kind === 'item' && (
+                    <div className="flex flex-1 flex-col gap-1.5">
+                        <span className={`flex-1 rounded-[4px] ${bar}`} />
+                        <span className={`h-1.5 w-4/5 rounded-full ${bar}`} />
+                        <span className={`h-1.5 w-1/3 rounded-full ${barStrong}`} />
+                    </div>
+                )}
+
+                {kind === 'checkout' && (
+                    <div className="flex flex-1 flex-col gap-1.5">
+                        <span className={`h-1.5 w-3/4 rounded-full ${bar}`} />
+                        <span className={`h-1.5 w-1/2 rounded-full ${bar}`} />
+                        <span className="flex-1" />
+                        <span
+                            className="h-3 w-full rounded-[4px] md:h-3.5"
+                            style={{
+                                backgroundColor: warm
+                                    ? '#000'
+                                    : 'rgba(255,255,255,0.35)',
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Section 4's picture — where the traffic comes from, and what it does when it
+ * lands. Sources, one link, one flow.
+ *
+ * 🚨 NO WIREFRAME SCREENS HERE, DELIBERATELY. Section 2 already argues in
+ * screens two sections above; drawing this in screens too reads as the same
+ * picture twice, and the reader stops looking at either. This is a ROUTE set in
+ * type — chips, a URL plate, two outcomes — so it carries different material.
+ *
+ * ⚠️ PLATFORM NAMES ARE TYPE, NEVER LOGOS. The copy already names Instagram,
+ * TikTok and X (`BIO_AD_PHONE.body`); a mark would put a third party's brand on
+ * a paid advert we do not have permission to use.
+ *
+ * ⚠️ The URL is `yourname`, not a real handle — same reasoning as `PhoneMock`'s
+ * docblock: a real creator's name does not go into an advert.
+ */
+function ArrivalRoute({ className = '' }) {
+    return (
+        <div
+            className={`rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-8 ${className}`}
+        >
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-6">
+                <div className="lg:w-[180px]">
+                    <RouteStep>They're already here</RouteStep>
+                    <ul className="mt-3.5 flex flex-wrap gap-2">
+                        {['Instagram', 'TikTok', 'X'].map((app) => (
+                            <li
+                                key={app}
+                                className="rounded-box-sm border-2 border-white/20 px-3.5 py-2 text-sm text-white/85"
+                            >
+                                {app}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <RouteJoin />
+
+                <div className="min-w-0 flex-1">
+                    <RouteStep>One link in your bio</RouteStep>
+                    <div
+                        className="mt-3.5 flex flex-wrap items-baseline gap-x-0.5 rounded-box-sm border-2 px-4 py-3.5"
+                        style={{
+                            borderColor: MINT,
+                            backgroundColor: 'rgba(5,239,184,0.07)',
+                        }}
+                    >
+                        <span className="font-mono text-[13px] text-white/55">
+                            spennypiggy.co/
+                        </span>
+                        <span
+                            className="font-gulfs text-[15px] uppercase tracking-tight"
+                            style={{ color: MINT }}
+                        >
+                            yourname
+                        </span>
+                    </div>
+                </div>
+
+                <RouteJoin />
+
+                <div className="lg:w-[220px]">
+                    <RouteStep>One page, one flow</RouteStep>
+                    <ul className="mt-3.5 grid gap-2">
+                        {['Reads in one scroll', 'Pays without leaving'].map(
+                            (line) => (
+                                <li
+                                    key={line}
+                                    className="flex items-center gap-3 rounded-box-sm border-2 border-white/15 bg-white/[0.04] px-3.5 py-2.5 text-sm text-white"
+                                >
+                                    <span
+                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-black"
+                                        style={{ backgroundColor: MINT }}
+                                    >
+                                        <Check size={11} strokeWidth={4} />
+                                    </span>
+                                    <span>{line}</span>
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** The step name above each leg of the route. */
+function RouteStep({ children }) {
+    return (
+        <p className="font-gulfs text-[11px] uppercase tracking-[0.2em] text-white/50">
+            {children}
+        </p>
+    );
+}
+
+/**
+ * The joint between two legs. Turns a quarter-turn on small screens, where the
+ * route stacks — an arrow still pointing right down a vertical stack is the
+ * commonest way a diagram like this stops making sense on a phone.
+ */
+function RouteJoin() {
+    return (
+        <div
+            aria-hidden="true"
+            className="flex shrink-0 items-center justify-center lg:pt-7"
+        >
+            <ArrowRight
+                size={16}
+                className="rotate-90 text-white/30 lg:rotate-0"
+            />
+        </div>
+    );
+}
+
+/**
+ * Section 6's picture — the editor as the creator meets it: rows they can drag,
+ * and a switch that decides what a supporter sees.
+ *
+ * ⚠️ A WHITE BLOCK ON THE DARK FIELD, like `LedgerFrame` — the page's rule is
+ * that solid colour lives on blocks, never on a section. The editor is a piece
+ * of product chrome, so it is drawn in the product's own black-on-white, not as
+ * another translucent panel.
+ *
+ * ⚠️ CAPTIONED AS AN ILLUSTRATION, same as `PhoneMock`. Section 6 is gated by
+ * `bio_direct_sales` and may be showing COMING SOON right beside this; a mock
+ * that looks like a screenshot would contradict its own chip.
+ *
+ * ⚠️ The last row is OFF on purpose. A list of four identical switches teaches
+ * nothing — the one that is off is what says the switch does something.
+ */
+function EditorMock() {
+    const rows = [
+        { label: 'Sell Exclusive Content', on: true },
+        { label: 'Memberships', on: true },
+        { label: 'Content Goals', on: true },
+        { label: 'Shop', on: false },
+    ];
+
+    return (
+        <div>
+            <div className="overflow-hidden rounded-box border-2 border-black bg-white">
+                <div className="flex items-center justify-between gap-3 border-b-2 border-black px-5 py-3.5">
+                    <span className="font-gulfs text-[12px] uppercase tracking-[0.18em] text-black/70">
+                        Your link page
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-black/50">
+                        Drag to reorder
+                    </span>
+                </div>
+
+                <ul className="divide-y-2 divide-black">
+                    {rows.map((row) => (
+                        <li
+                            key={row.label}
+                            className="flex items-center gap-4 px-5 py-4"
+                        >
+                            <GripVertical
+                                size={16}
+                                aria-hidden="true"
+                                className="shrink-0 text-black/30"
+                            />
+                            <span
+                                className={`min-w-0 flex-1 font-gulfs text-[14px] uppercase leading-[1.2] tracking-tight ${
+                                    row.on ? 'text-black' : 'text-black/40'
+                                }`}
+                            >
+                                {row.label}
+                            </span>
+                            <Switch on={row.on} />
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="border-t-2 border-black bg-black px-5 py-3.5">
+                    <p className="font-mono text-[11px] leading-[1.5] text-white/70">
+                        Shop is switched off — supporters never see it.
+                    </p>
+                </div>
+            </div>
+
+            <p className="mt-3 font-gulfs text-[10px] uppercase tracking-[0.2em] text-white/40">
+                Illustration of the link page editor
+            </p>
+        </div>
+    );
+}
+
+/**
+ * The show/hide switch, drawn as the product draws a control: a black knob in a
+ * black frame, mint when on.
+ *
+ * ⚠️ Decorative — `aria-hidden`, and not a `<button>`. It is a picture of a
+ * control on a marketing page, so it must not take keyboard focus or announce
+ * itself as something a reader can operate here.
+ */
+function Switch({ on }) {
+    return (
+        <span
+            aria-hidden="true"
+            className="inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-black p-0.5"
+            style={{ backgroundColor: on ? MINT : 'rgba(0,0,0,0.08)' }}
+        >
+            <span
+                className={`h-4 w-4 rounded-full bg-black ${
+                    on ? 'translate-x-5' : ''
+                }`}
+            />
+        </span>
     );
 }
 

@@ -30,7 +30,7 @@ function PathCard({ accent, eyebrow, title, lines, footnote, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            className={`group flex w-full flex-col rounded-box border-[3px] border-black bg-white p-5 text-left transition-transform duration-200 sm:p-6 ${accent.shadow} hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:hover:translate-y-0`}
+            className={`group flex w-full flex-col rounded-box border-black bg-white p-5 text-left transition-transform duration-200 sm:p-6 ${accent.shadow} hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:hover:translate-y-0`}
         >
             <span
                 className="w-fit rounded-full px-3 py-1 text-[12px] font-bold uppercase tracking-[0.14em] text-white"
@@ -58,7 +58,7 @@ function PathCard({ accent, eyebrow, title, lines, footnote, onClick }) {
             <span className="mt-4 flex items-center justify-between gap-3 border-t-2 border-dashed border-black/10 pt-3">
                 <span className="text-xs text-black/60">{footnote}</span>
                 <span
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-black text-white transition-transform duration-200 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-black text-white transition-transform duration-200 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0"
                     style={{ backgroundColor: accent.hex }}
                 >
                     <Arrow />

@@ -320,10 +320,25 @@ class Post extends Model
         $formats = ['original', 'webp', 'avif'];
 
         $data = [
-            'original' => $baseUrl.'/-/format/jpeg/-/quality/85/',
+            /*
+             * ⚠️ `quality/smart`, NEVER `quality/85`. Uploadcare's quality
+             * operation takes a NAMED value (`normal`, `better`, `best`,
+             * `lighter`, `lightest`, `smart`); a number is not one, and the CDN
+             * answers **400**. Verified live: `-/quality/85/` → 400,
+             * `-/quality/lighter/` → 200. `MediaUrl::fitOps()` already had the
+             * right form.
+             *
+             * 🚨 NOTHING RENDERS THIS TODAY. The only reader is
+             * `OptimizeImages`, which computes the array, does not cache it (the
+             * `cache()->put` is commented out) and then calls `touch()` — so the
+             * command "optimises" an image by moving its `updated_at`. Fixing the
+             * operation stops the mistake being copied; it does not make this
+             * method useful. Decide whether to wire it up or delete it.
+             */
+            'original' => $baseUrl.'/-/format/jpeg/-/quality/smart/',
             'formats' => [
-                'webp' => $baseUrl.'/-/format/webp/-/quality/85/',
-                'avif' => $baseUrl.'/-/format/avif/-/quality/85/',
+                'webp' => $baseUrl.'/-/format/webp/-/quality/smart/',
+                'avif' => $baseUrl.'/-/format/avif/-/quality/smart/',
             ],
             'responsive' => [],
         ];

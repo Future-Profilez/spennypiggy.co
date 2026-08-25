@@ -111,6 +111,26 @@ class VisitTracker
     /** Cookie holding the FIRST source a visitor arrived from. */
     public const ATTRIBUTION_COOKIE = 'sp_src';
 
+    /**
+     * The X (Twitter) Ads click id, kept so a server-reported conversion can be
+     * attributed to the ad click that produced it.
+     *
+     * 🚨 First touch, never overwritten, and 30 days — X's own click-through
+     * attribution window. Overwriting on a later visit would credit the click
+     * the visitor happened to make LAST, and the last click before a checkout
+     * is almost never the advert that started it.
+     *
+     * ⚠️ This is X's identifier for their own click, not ours for the person:
+     * it is the one identifier X accepts that requires sending them no personal
+     * data at all. Hashed email and IP+user-agent are the alternatives, and
+     * both are personal data going to a third party — a decision for the client
+     * and their legal advice, not a default.
+     */
+    public const TWCLID_COOKIE = 'sp_twclid';
+
+    /** Days a `twclid` is remembered — X's click-through attribution window. */
+    public const TWCLID_DAYS = 30;
+
     /** Days the first-touch source is remembered. */
     public const ATTRIBUTION_DAYS = 30;
 

@@ -5,6 +5,12 @@ import lazyRetry from "../utils/lazyRetry";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { FaInstagram, FaTiktok, FaTwitter, FaYoutube } from "react-icons/fa";
 import { Mail, MapPin, Phone } from "lucide-react";
+import {
+    COOKIES_POLICY_URL,
+    DATA_REQUEST_URL,
+    DISCLAIMER_URL,
+    PRIVACY_POLICY_URL,
+} from "../constants/legalLinks";
 import spennypiggy from "../../assets/img/logo.png";
 import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
 
@@ -98,14 +104,14 @@ const PAYMENTS = [
  * one line. A fourth column made every link narrower for no one's benefit.
  */
 const PRIVACY = [
-    { name: 'Privacy policy', href: 'https://app.termly.io/policy-viewer/policy.html?policyUUID=88583b44-9385-430c-aa79-3c41dc8a167e', external: true },
-    { name: 'Cookies policy', href: 'https://app.termly.io/policy-viewer/policy.html?policyUUID=f11eb44f-4ddd-4d59-86d1-34c11e3fa80e', external: true },
+    { name: 'Privacy policy', href: PRIVACY_POLICY_URL, external: true },
+    { name: 'Cookies policy', href: COOKIES_POLICY_URL, external: true },
     // ⚠️ `termly-display-preferences` is Termly's own hook class — it is what
     // opens the consent panel. Renaming it silently kills the control.
     { name: 'Cookie preferences', href: '#', external: true, className: 'termly-display-preferences', noBlank: true },
-    { name: 'Request your data', href: 'https://app.termly.io/notify/88583b44-9385-430c-aa79-3c41dc8a167e', external: true },
+    { name: 'Request your data', href: DATA_REQUEST_URL, external: true },
     { name: 'Copyright & IP', route: 'copyright-policy' },
-    { name: 'Disclaimer', href: 'https://app.termly.io/policy-viewer/policy.html?policyUUID=364c168c-44ab-467e-a98a-a22629fc31f8', external: true },
+    { name: 'Disclaimer', href: DISCLAIMER_URL, external: true },
 ];
 
 const COLUMNS = [

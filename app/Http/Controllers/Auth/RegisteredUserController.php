@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Support\AnalyticsEvent;
 use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\EmailPreferenceController;
 use App\IpTracker;
 use App\Jobs\LinkUserToCrmCreator;
 use App\Jobs\WelcomeUser;
@@ -21,9 +21,11 @@ use App\Models\UserVerificationStatus;
 use App\Services\SignupLeadService;
 use App\Services\UserProfileService;
 use App\Services\VisitTracker;
+use App\Support\AnalyticsEvent;
 use App\Support\Badges;
 use App\Support\EmailDomainPolicy;
 use App\Support\GifterVerificationCharge;
+use App\Support\MarketingConsent;
 use App\Support\PresetCovers;
 use App\Support\RiskMessages;
 use Illuminate\Http\RedirectResponse;
@@ -102,6 +104,11 @@ class RegisteredUserController extends Controller
             // without them shows the email form alone rather than a control that cannot work.
             'googleEnabled' => filled(config('services.google.client_id'))
                 && filled(config('services.google.client_secret')),
+            // The exact wording the marketing checkbox must show. Served from
+            // config rather than hardcoded in the JSX so that the text a person
+            // agreed to and the version recorded against their consent
+            // (`marketing_consent_version`) can never drift apart.
+            'marketingConsentLabel' => MarketingConsent::currentLabel(),
         ]);
     }
 
@@ -246,6 +253,15 @@ class RegisteredUserController extends Controller
             'pride_badges.*' => [Rule::in(Badges::prideSlugs())],
             'promo' => ['nullable', 'string'], // referral code
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
+            /*
+             * 🚨 OPTIONAL, AND IT MUST STAY OPTIONAL (UK brief §1). Marketing
+             * consent may never be a condition of creating an account, so this
+             * is `nullable` and never `accepted` — unlike `creator_email_receipt_ack`
+             * below it, which genuinely is required. The front end must also
+             * keep it out of its submit gate; making it required in either place
+             * turns an opt-in into a forced consent, which is worth nothing.
+             */
+            'marketing_opt_in' => ['nullable', 'boolean'],
         ], $messages);
 
         // Turnstile is skipped on the Google path, and ONLY this one. Google's own sign-in is the
@@ -348,6 +364,22 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+        /*
+         * The `promo` field carries TWO different things depending on who is
+         * signing up: a creator's referral code (below), or a fan's promo code.
+         * The fan half was validated by the register form and then discarded —
+         * nothing on the server read it, so `users.promo_code_id` was written by
+         * nobody and the admin panel's "who used this code" list
+         * (`Admin\PromoCodeController::getPromoCodeUser`, which reads exactly that
+         * column) was permanently empty. Re-checked here rather than trusted from
+         * the form: the form's answer is minutes old and the last seat on a
+         * limited code may have gone since.
+         */
+        $promoCode = null;
+        if ($request->filled('promo') && (int) $request->role !== 1) {
+            $promoCode = PromoCode::redeemable($request->promo)['code'];
+        }
+
         $referralCode = null;
         $referrer = null;
         if ($request->filled('promo') && $request->role == 1) {
@@ -422,7 +454,36 @@ class RegisteredUserController extends Controller
             ),
             'utm_medium' => $request->input('utm_medium'),
             'utm_campaign' => $request->input('utm_campaign'),
+            /*
+             * Marketing consent, captured at signup with its proof (UK brief
+             * §§1-2). Spread from MarketingConsent so the five columns can
+             * never be written apart — a send permission with no timestamp,
+             * source or wording version behind it is not evidence of consent.
+             *
+             * ⚠️ Written EXPLICITLY rather than left to the column default. The
+             * default was flipped to false in the same change, but the default
+             * is defence in depth: SQLite ignores that migration and the test
+             * suite runs on SQLite, so the behaviour that matters is stated
+             * here where it is actually testable.
+             */
+            ...MarketingConsent::attributesForSignup(
+                $request->boolean('marketing_opt_in'),
+                $request->role == 1 ? 'creator_signup' : 'gifter_signup',
+            ),
         ]);
+
+        // The append-only half of the proof. The users row is overwritten every
+        // time somebody changes their mind; this log is what can still show the
+        // original opt-in after that. Only written when consent was actually
+        // given — an untouched checkbox is not an event.
+        if ($request->boolean('marketing_opt_in')) {
+            EmailPreferenceController::logPreferenceChange(
+                $user->id,
+                false,
+                true,
+                $request->role == 1 ? 'creator_signup' : 'gifter_signup',
+            );
+        }
 
         // Which paid-ads landing page earned this signup, on the same first-touch
         // rule as the source above.
@@ -456,6 +517,15 @@ class RegisteredUserController extends Controller
             'pride_badges' => $prideBadges !== []
                 ? json_encode($prideBadges)
                 : null,
+            // 🚨 THE REDEMPTION RECORD. Nothing wrote this column before 24 Aug
+            // 2026, so `limit` could not be counted against anything and the
+            // admin panel's "who used this code" list — which reads exactly this
+            // via `PromoCode::users()` — was empty for every code ever created.
+            // Resolved server-side from the code, never taken as an id from the
+            // request: this is not in `$fillable` precisely so a posted
+            // `promo_code_id` cannot attribute somebody to a code they never
+            // typed.
+            'promo_code_id' => $promoCode?->id,
         ]);
 
         // A waiting lead who has now got in must be CLOSED, or the notify sweep
@@ -622,12 +692,20 @@ class RegisteredUserController extends Controller
         // OBJECT — always truthy, empty or not — so every code ever typed came back
         // "available", including ones that do not exist. The key was `message` while
         // the register form reads `msg`, so the text never rendered either.
-        $promocode = PromoCode::whereCode($code)->first();
+        //
+        // ⚠️ It then only asked whether the ROW EXISTED. `limit`, `start_date` and
+        // `end_date` were all ignored, so a code that expired two years ago still
+        // answered "Code applied.". `PromoCode::redeemable()` is the one rule, and
+        // `store()` below calls the same method — if this screen and the signup
+        // disagreed, a fan would be told the code applied and then be registered
+        // without it.
+        $result = PromoCode::redeemable($code);
+        $message = $result['code'] ? 'Code applied.' : $result['reason'];
 
         return response()->json([
-            'status' => (bool) $promocode,
-            'msg' => $promocode ? 'Code applied.' : "That code isn't valid.",
-            'message' => $promocode ? 'Code applied.' : "That code isn't valid.",
+            'status' => (bool) $result['code'],
+            'msg' => $message,
+            'message' => $message,
         ]);
     }
 

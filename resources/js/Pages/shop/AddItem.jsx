@@ -1,6 +1,11 @@
 import { useAlerts } from "@/Components/Alerts";
+import ShippingProfileField from "@/Components/shop/ShippingProfileField";
 import { usePage } from "@inertiajs/react";
 import { route } from "ziggy-js";
+import {
+    EXTERNAL_LINK_PROPS,
+    PRIVACY_POLICY_URL,
+} from "@/constants/legalLinks";
 import axios from "axios";
 import { useMemo } from "react";
 import { useRef } from "react";
@@ -166,6 +171,12 @@ export default function AddItem(props) {
     const [shipping_info, setShipping_info] = useState(
         (item && item.shipping_information) || "",
     );
+    /* Null = this item carries its own rates (the per-item `ShopShippingInfo`
+       rows below). An id = reuse a saved profile, which is what
+       `ShopsController::shippingPrice()` prefers when it is set. */
+    const [shippingProfileId, setShippingProfileId] = useState(
+        (item && item.shipping_profile_id) || null,
+    );
 
     const handleLists = (val) => {
         const type = val === "physical" ? "physical" : "digital";
@@ -211,7 +222,13 @@ export default function AddItem(props) {
         }
         if (step === 2) {
             if (physical === "physical") {
-                if (domesticShipping === "" && wwsShipping === "") {
+                // A saved profile already carries the rates; demanding them again
+                // would make picking one strictly more work than not.
+                if (
+                    !shippingProfileId &&
+                    domesticShipping === "" &&
+                    wwsShipping === ""
+                ) {
                     errorAlert("Please add at least one shipping method");
                     return;
                 }
@@ -344,7 +361,16 @@ export default function AddItem(props) {
         const ships = [];
         if (domesticShipping !== "" && Number(domesticShipping) >= 0) {
             ships.push({
-                country: auth?.user?.country_code || "GB",
+                /* 🚨 `country`, NOT `country_code` — there is no such column on
+                   `users`, so this read `undefined` and every creator on the
+                   platform wrote their "domestic" rate into the GB zone. A US
+                   creator's US buyer then matched no zone and paid the WORLDWIDE
+                   rate, while a UK buyer paid that creator's domestic one. Live
+                   data carried the fingerprint: 25 GB rows against 10 GB
+                   creators, and 3 IN rows from 15 IN creators. `users.country`
+                   holds ISO-2 codes (US, IN, GB, AU…), which is what the
+                   checkout's `?country=` param matches on. */
+                country: auth?.user?.country || "GB",
                 price: domesticShipping,
             });
         }
@@ -389,7 +415,12 @@ export default function AddItem(props) {
             special_member_price: spPrice || "",
             quantity_allow: haveQty ? 1 : 0,
             shipping: JSON.stringify(ships),
-            shipping_profile_id: null,
+            /* 🚨 WAS A HARDCODED `null`. `shipping_profiles`, its zones, the three
+               routes and the checkout read path all existed and worked, and this one
+               literal meant the id could never leave the form — so the table stayed
+               empty and every physical item carried its own retyped copy of the same
+               two rates. */
+            shipping_profile_id: shippingProfileId,
             shipping_info: shipping_info,
             image: thumb,
             ai_generated: 0,
@@ -894,6 +925,28 @@ export default function AddItem(props) {
                                                 1. Shipping Configuration
                                             </h3>
 
+                                            {/* Above the rate boxes on purpose: picking
+                                                saved rates should replace typing them,
+                                                not read as an afterthought once they
+                                                have already been typed. */}
+                                            <ShippingProfileField
+                                                value={shippingProfileId}
+                                                onChange={setShippingProfileId}
+                                                domestic={domesticShipping}
+                                                worldwide={wwsShipping}
+                                                currency={defaultCurrency}
+                                                countryCode={
+                                                    auth?.user?.country || "GB"
+                                                }
+                                            />
+
+                                            {/* Hidden, not disabled, while a profile is
+                                                selected — two sets of rates on screen
+                                                invites the question of which one the
+                                                buyer is charged. The values stay in
+                                                state, so clearing the picker brings
+                                                them back untouched. */}
+                                            {!shippingProfileId && (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                                 <div className="space-y-1.5">
                                                     <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">
@@ -942,7 +995,12 @@ export default function AddItem(props) {
                                                     </div>
                                                 </div>
                                             </div>
+                                            )}
 
+                                            {/* ⚠️ ALWAYS SHOWN, profile or not. Delivery
+                                                time and restrictions are facts about THIS
+                                                parcel; a shipping profile only carries
+                                                prices. */}
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-black uppercase tracking-widest text-gray-600 ml-1">
                                                     Important Shipping Notes*
@@ -1139,12 +1197,13 @@ export default function AddItem(props) {
                                                     Terms
                                                 </a>{" "}
                                                 &{" "}
+                                                {/* Hosted on Termly — there is no
+                                                    route for it, which is why this
+                                                    pointed at the Terms page beside
+                                                    it. See constants/legalLinks. */}
                                                 <a
-                                                    href={route(
-                                                        "terms-and-conditions",
-                                                    )}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                    href={PRIVACY_POLICY_URL}
+                                                    {...EXTERNAL_LINK_PROPS}
                                                     className="text-[#FF007F] underline"
                                                 >
                                                     Privacy Policy

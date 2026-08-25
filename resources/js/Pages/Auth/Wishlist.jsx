@@ -461,7 +461,7 @@ border-4 border-black ">
                             {/* Step 1: Basic Info & Category */}
                             <div className={step === 1 ? "block" : "hidden"}>
                                     {item && item.is_suspended == 1 && (
- <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-box-sm">
+ <div className="mb-4 bg-red-50 border-2 border-red-500 p-4 rounded-box-sm">
                                             <div className="flex">
                                                 <div className="flex-shrink-0">
                                                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -641,7 +641,7 @@ border-4 border-black ">
                                                             htmlFor={
                                                                 "categories" + i
                                                             }
- className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-white peer-checked:border-[#FF007F] hover:bg-gray-50"
+ className="block cursor-pointer select-none rounded-box-sm border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-[#FF007F] peer-checked:text-black peer-checked:border-[#FF007F] hover:bg-gray-50"
                                                         >
                                                             {c.category}
                                                         </label>
@@ -860,7 +860,7 @@ border-4 border-black ">
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
- <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+ <div className="px-4 py-2 rounded-box border border-gray-200 bg-white text-black/70 text-sm font-medium peer-checked:border-[#FF007F] peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
                                                             {period}
                                                         </div>
                                                     </label>
@@ -889,7 +889,7 @@ border-4 border-black ">
                                     <button
                                         type="button"
                                         onClick={nextStep}
- className="border-[3px] border-black flex-1 py-3 px-4 bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:brightness-110 transition-colors"
+ className="border-black flex-1 py-3 px-4 bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:brightness-110 transition-colors"
                                     >
                                         Next
                                     </button>
@@ -897,8 +897,8 @@ border-4 border-black ">
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
- className="border-[3px] border-black !mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box hover:bg-pink-600 transition-colors"
-                                        spinnerclass="fill-white"
+ className="border-black !mt-0 flex-1 py-3 !border-0 px-4 !bg-[#FF007F] text-black font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-box transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                                        spinnerclass="fill-black"
                                     >
                                         {processing
                                             ? editpop

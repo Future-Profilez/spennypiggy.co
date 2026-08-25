@@ -1,4 +1,3 @@
-import { lazy } from "react";
 import BrandToaster from '@/Components/Toast/BrandToaster';
 import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
@@ -10,8 +9,9 @@ import IntercomProvider from '@/Components/IntercomProvider';
 import TermsUpdatePopup from '@/Components/TermsUpdatePopup';
 import OnboardingNudge from '@/Components/OnboardingNudge';
 import { Link, usePage } from '@inertiajs/react';
-const Footer = lazy(() => import('@/includes/Footer'));
-const Header = lazy(() => import('@/includes/Header'));
+import lazyRetry from "@/utils/lazyRetry";
+const Footer = lazyRetry(() => import('@/includes/Footer'));
+const Header = lazyRetry(() => import('@/includes/Header'));
 
 export default function Authenticated(props){ 
 

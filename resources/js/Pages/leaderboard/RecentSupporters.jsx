@@ -81,7 +81,7 @@ export default function RecentSupporters() {
         </div>
       </div>
       <div className="rank-stats ps-2">
-        <p className="text-sm text-black/60">
+        <p className="text-13 text-black/70">
           {formatRelativeTime(supporter.created_at)}
         </p>
       </div>
@@ -91,13 +91,13 @@ export default function RecentSupporters() {
   return (
     <>
     {loading ? (
-      <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+      <div className="bg-white rounded-box border-black p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     ) : error ? (
-      <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
+      <div className="bg-white rounded-box border-black p-4 mb-6 text-center">
         <div className="alert alert-danger" role="alert">
           {error}
           <button 
@@ -108,9 +108,11 @@ export default function RecentSupporters() {
           </button>
         </div>
       </div>
-    ) : data.length > 0 ? <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
-      <h2 className="text-bls text-19 font-semibold tracking-tight text-[#0B0B0C] ">Recent Supporters</h2>
-      <p className='text-black/60  mb-3'>Latest supporters who have shown their love.</p>
+    ) : data.length > 0 ? <div className="bg-white rounded-box border-black p-4 mb-6">
+      {/* ⚠️ `text-bls` was here — not a class, so it compiled to nothing and
+          nobody noticed. Grep for stray class names after any copy edit. */}
+      <h2 className="text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Recent supporters</h2>
+      <p className="mb-3 text-13 text-black/70">The most recent purchases across the platform</p>
       
       {/* <div className="time-hrs">
         <button className={period === 'last24hour' ? "active" : ''} onClick={() => setPeriod('last24hour')}>Last 24 hrs </button>

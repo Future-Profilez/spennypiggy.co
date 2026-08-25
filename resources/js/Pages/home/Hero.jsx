@@ -50,16 +50,11 @@ const UNLOCKS = [
   { name: "Leah K.",   item: "Behind the scenes", emoji: "🎞️" },
 ];
 
-// The four things a creator most needs to know before scrolling. The free-period
-// promise is a CONFIG SWITCH (`creator_subscription.free_until_first_sale`), not a
-// permanent fact — it drops out of the line rather than being retyped as a
-// constant, so the page cannot advertise it the day the policy is switched off.
-const TRUST_POINTS = [
-  ...(FREE_UNTIL_FIRST_SALE ? [SUBSCRIPTION_COPY.promise] : []),
-  "Strictly SFW",
-  "Paid every Friday",
-  "Every creator ID-verified",
-];
+// 🚨 The four trust bullets that used to sit here are GONE (23 Aug 2026, client
+// direction) — replaced by the Fast Start sticker below. The facts they carried
+// (SFW, Friday payouts, ID verification, free-until-first-sale) are all still on
+// the page further down; what the hero needed was ONE loud offer, not four quiet
+// reassurances competing with the CTA.
 
 function UnlockToast({ reduceMotion }) {
   const [i, setI] = useState(0);
@@ -416,19 +411,29 @@ export default function Hero({auth}) {
                       <span className="absolute -top-4 -right-3 bg-white text-[#C4006A] text-[12px] font-gulfs uppercase tracking-[0.18em] px-3 py-1 rounded-full">It's Free</span>
                     </div>
 
-                    {/* The promise, not a footnote. "No charge until your first
-                        sale" is the single strongest thing this page can say to a
-                        creator, and it spent its life set in 11px grey under the
-                        fold as an asterisk. It now sits alongside the other three
-                        facts a creator weighs before signing up. */}
-                    <ul className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 max-w-[560px] font-gulfs uppercase tracking-[0.1em] text-[12px] xl:text-[14px] text-white">
-                      {TRUST_POINTS.map((point) => (
-                        <li key={point} className="flex items-center gap-2">
-                          <span aria-hidden="true" className="inline-block w-1.5 h-1.5 rounded-full bg-[#05EFB8] flex-shrink-0"></span>
-                          {point}
-                        </li>
-                      ))}
-                    </ul>
+                    {/* FAST START STICKER — the loudest single offer on the page.
+                        Deliberately styled as a stuck-on label, not a card: brand
+                        yellow, black type (house rule), tilted, and anchored to the
+                        "Earn more" chapter where the bonus is explained in full.
+                        ⚠️ No shadow, no hover scale — attention comes from colour,
+                        rotation and the pulsing bolt, per the site-wide rules. */}
+                    <a
+                      href="#act-earn"
+                      className="group relative inline-flex items-center gap-3 md:gap-4 bg-[#E6EA7B] text-black border-black rounded-box-sm py-3 pl-4 pr-5 md:pl-5 md:pr-6 rotate-[-2deg] transition-[filter] duration-200 hover:brightness-110 active:brightness-95"
+                    >
+                      <span aria-hidden="true" className="relative flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full bg-black flex-shrink-0">
+                        <span className="absolute inset-0 rounded-full bg-black/40 animate-ping"></span>
+                        <span className="relative text-[18px] md:text-[20px] leading-none">⚡</span>
+                      </span>
+                      <span className="flex flex-col items-start text-left">
+                        <span className="font-gulfs uppercase tracking-[0.06em] text-[15px] md:text-[19px] leading-[1.1]">
+                          We pay you 5% extra
+                        </span>
+                        <span className="font-poppins text-[12px] md:text-[13px] leading-[1.35] text-black/70">
+                          On everything you earn in your first 30 days
+                        </span>
+                      </span>
+                    </a>
 
                     <TrustBox />
 

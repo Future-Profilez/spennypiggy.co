@@ -70,6 +70,15 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at',
         'marketing_emails_enabled',
         'marketing_unsubscribed_at',
+        // Proof of consent (UK brief, 23 Aug 2026). `marketing_emails_enabled`
+        // says whether we may send; these four say whether, when, where and
+        // against which wording the person actually agreed. Written together —
+        // see App\Support\MarketingConsent, which is the only place that
+        // should be composing them.
+        'marketing_email_consent',
+        'marketing_consent_timestamp',
+        'marketing_consent_source',
+        'marketing_consent_version',
         'push_notifications_enabled',
         'reactivation_emails_enabled',
         'abandoned_checkout_emails_enabled',
@@ -134,6 +143,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'creator_email_receipt_acknowledged_at' => 'datetime',
         'marketing_emails_enabled' => 'boolean',
         'marketing_unsubscribed_at' => 'datetime',
+        'marketing_email_consent' => 'boolean',
+        'marketing_consent_timestamp' => 'datetime',
         'push_notifications_enabled' => 'boolean',
         // ⚠️ Delivery, not consent — see App\Support\PushReachability. Deliberately NOT in
         // $fillable: it is a derived fact about a device, written by the heartbeat endpoint

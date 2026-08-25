@@ -650,22 +650,34 @@ class MembershipController extends Controller
         }
 
         $membership = Membership::with('user')->whereUuid($uuid)->first();
+        /*
+         * 🚨 A REAL DESTINATION, NOT `back()`.
+         *
+         * This URL is reached from a bio card, a shared link, an e-mail and a
+         * bookmark — none of which leave a same-site Referer, so `back()` sent
+         * the supporter to the HOMEPAGE with a flash that (until 22 Aug 2026) no
+         * layout rendered. They tapped a real link and nothing happened.
+         *
+         * Where the creator is known, send them to that creator: they came to
+         * buy from this person, and this ONE item being unavailable says nothing
+         * about the rest.
+         */
         if (! $membership) {
-            return redirect()->back()->with('error', 'Membership not found!');
+            return redirect()->route('home')->with('error', 'That membership is no longer available.');
         }
 
         if ($membership->is_suspended) {
-            return redirect()->back()->with('error', 'This membership is currently suspended and cannot accept payments.');
+            return $this->awayFrom($membership, 'That membership is not open at the moment.');
         }
 
         // The profile only *displays* approved tiers, but the checkout URL is public and
         // guessable — a tier awaiting review (or pulled by an admin) could still be sold.
         if (! $membership->approved) {
-            return redirect()->back()->with('error', 'This membership tier is not available right now. It is awaiting review.');
+            return $this->awayFrom($membership, 'That tier is not available right now — it is awaiting review.');
         }
 
         if (! $membership->user) {
-            return redirect()->back()->with('error', 'Creator account not found or deactivated.');
+            return redirect()->route('home')->with('error', 'That creator is not taking payments at the moment.');
         }
 
         // NEW: Check creator subscription eligibility first
@@ -676,8 +688,8 @@ class MembershipController extends Controller
             // Recorded and counted: one lost sale is a warning, six is a reason.
             BlockedPaymentAlert::record($membership->user, $membership->price);
 
-            return redirect()->back()->with(
-                'error',
+            return $this->awayFrom(
+                $membership,
                 app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             );
         }
@@ -688,8 +700,8 @@ class MembershipController extends Controller
         if (! $activityCheck['eligible']) {
             $membership->user->notify(new PaymentBlockedNotification($activityCheck, $membership->price));
 
-            return redirect()->back()->with(
-                'error',
+            return $this->awayFrom(
+                $membership,
                 app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
             );
         }
@@ -703,7 +715,7 @@ class MembershipController extends Controller
         // }
 
         if ($user != null && $membership->user_id === $user->id) {
-            return redirect()->back()->with('error', "You can't buy your own membership!");
+            return $this->awayFrom($membership, "You can't buy your own membership!");
         }
         // Client Requirement: Always charge in Creator's Currency
         $chargeCurrency = $membership->currency;
@@ -2161,5 +2173,21 @@ class MembershipController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Back to the CREATOR when we know who they are, home when we do not.
+     *
+     * ⚠️ `$item->user` can be null (a deleted account), and
+     * `route('user.show', ['username' => null])` builds a broken URL rather than
+     * throwing — a bad link nothing reports, which is worse than a crash.
+     */
+    private function awayFrom($item, string $message)
+    {
+        $username = $item->user->username ?? null;
+
+        return $username
+            ? redirect()->route('user.show', ['username' => $username])->with('error', $message)
+            : redirect()->route('home')->with('error', $message);
     }
 }

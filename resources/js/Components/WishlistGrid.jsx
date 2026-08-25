@@ -1,8 +1,9 @@
 import React, { Suspense } from 'react';
 import LoadingScreen from '@/includes/LoadingScreen';
+import lazyRetry from "@/utils/lazyRetry";
 
 // Import the individual Wishlistbox component
-const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
+const Wishlistbox = lazyRetry(() => import('@/wishlist/Wishlistbox'));
 
 /**
  * WishlistGrid - Properly maps over wishitems array and renders individual Wishlistbox components

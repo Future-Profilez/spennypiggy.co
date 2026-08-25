@@ -11,6 +11,7 @@ import LiveBar from '@/includes/LiveBar';
 import ScrollProgressBar from '@/Components/animations/ScrollProgressBar';
 import { ChapterNav, Reveal } from '@/Components/cinematic/Cinematic';
 import PageCanvas from '@/Components/cinematic/PageCanvas';
+import lazyRetry from "@/utils/lazyRetry";
 
 // ⚠️ `FUN_CARDS` was removed here (10 Aug 2026). It was dead — declared, never
 // rendered — but carried the store-item copy the page is being cleared of
@@ -27,24 +28,24 @@ import PageCanvas from '@/Components/cinematic/PageCanvas';
 // unbuilt store wishlist plus banned gifting vocabulary, one uncommented line
 // away from shipping. That is exactly the hazard this file's own header warns
 // about: dead copy is the copy that gets pasted back in.
-const LiveBarSection = lazy(() => import("./home/LiveBarSection"));
-const HappyCreators = lazy(() => import('./home/HappyCreators'));
-const FeatureSuggestionSection = lazy(() => import('./home/FeatureSuggestionSection'));
-const JoinUs = lazy(() => import('@/Components/JoinUs'));
-const FAQ = lazy(() => import("./home/FAQ"));
-const SitelinksSearchBox = lazy(() => import("@/global/SiteLink"));
-const PaymentSlider = lazy(() => import("./home/PaymentSlider"));
-const CustomPricingNote = lazy(() => import("./home/CustomPricingNote"));
-const EarnMoreAnnouncement = lazy(() => import("./home/EarnMoreAnnouncement"));
-const PaidTasksAnnouncement = lazy(() => import("./home/PaidTasksAnnouncement"));
-const PayByBankAnnouncement = lazy(() => import("./home/PayByBankAnnouncement"));
-const CreatorShowcase = lazy(() => import('./home/CreatorShowcase'));
-const SetupSteps = lazy(() => import('./home/SetupSteps'));
+const LiveBarSection = lazyRetry(() => import("./home/LiveBarSection"));
+const HappyCreators = lazyRetry(() => import('./home/HappyCreators'));
+const FeatureSuggestionSection = lazyRetry(() => import('./home/FeatureSuggestionSection'));
+const JoinUs = lazyRetry(() => import('@/Components/JoinUs'));
+const FAQ = lazyRetry(() => import("./home/FAQ"));
+const SitelinksSearchBox = lazyRetry(() => import("@/global/SiteLink"));
+const PaymentSlider = lazyRetry(() => import("./home/PaymentSlider"));
+const CustomPricingNote = lazyRetry(() => import("./home/CustomPricingNote"));
+const EarnMoreAnnouncement = lazyRetry(() => import("./home/EarnMoreAnnouncement"));
+const PaidTasksAnnouncement = lazyRetry(() => import("./home/PaidTasksAnnouncement"));
+const PayByBankAnnouncement = lazyRetry(() => import("./home/PayByBankAnnouncement"));
+const CreatorShowcase = lazyRetry(() => import('./home/CreatorShowcase'));
+const SetupSteps = lazyRetry(() => import('./home/SetupSteps'));
 /* `FeatureShowcase` is NOT imported here any more — see the chapter note below.
    The file stays in the repo; it is simply not part of this page. */
-const WaysToGetPaid = lazy(() => import('./home/WaysToGetPaid'));
-const AppShowcase = lazy(() => import('./home/AppShowcase'));
-const PricingSection = lazy(() => import('./home/PricingSection'));
+const WaysToGetPaid = lazyRetry(() => import('./home/WaysToGetPaid'));
+const AppShowcase = lazyRetry(() => import('./home/AppShowcase'));
+const PricingSection = lazyRetry(() => import('./home/PricingSection'));
 
 // Scroll-telling chapters for the fixed right-edge ChapterNav rail.
 //

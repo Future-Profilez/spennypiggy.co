@@ -9,6 +9,7 @@ import RemoveMembership from "@/Pages/membership/RemoveMembership";
 import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
+import SaveButton from "@/Components/SaveButton";
 
 const rewards_lists = [
     { title: "Green Circle Insta", value: "green_circle_insta" },
@@ -260,10 +261,19 @@ export default function MembershipItem({
                             / month
                         </span>
                     </div>
+                    {/* ⚠️ ON THE FEE LINE, not in the head. The head's right side
+                        already carries the tier avatar AND the owner dots menu at
+                        `right-3 top-3`; this row is inside `!isCreator`, so it is
+                        guaranteed visitor-only space. */}
                     {!isCreator && (
-                        <p className="mt-1 text-[12px] font-semibold text-black/60">
-                            Includes platform &amp; processing fees
-                        </p>
+                        <div className="mt-1 flex items-center justify-between gap-3">
+                            <p className="text-[12px] font-semibold text-black/60">
+                                Includes platform &amp; processing fees
+                            </p>
+                            <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                <SaveButton productType="membership" itemId={item?.id} creatorId={item?.user_id} />
+                            </div>
+                        </div>
                     )}
 
                     <div className="my-4 border-t-2 border-dashed border-black/15"></div>

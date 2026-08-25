@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, useForm, usePage, router } from "@inertiajs/react";
+import { trackClientEvent } from "@/lib/analytics";
 import axios from "axios";
 import GuestLayout from "@/Layouts/GuestLayout";
 import { useAlerts } from "@/Components/Alerts";
@@ -20,6 +21,7 @@ import {
     ROLE_CREATOR,
     ROLE_SUPPORTER,
     accentFor,
+    canSubmitRegistration,
     stepsFor,
     usernameError,
 } from "./register/constants";
@@ -36,6 +38,25 @@ import {
  * so asking for it here collected a worse copy of the same data at the most
  * expensive possible moment. Country stays, because it sets the currency.
  */
+/**
+ * One registration screen was reached.
+ *
+ * Sent from the client because none of this touches the server — the wizard
+ * advances in React state, so a visitor can abandon at step three having made
+ * exactly one request. The server cannot see any of it.
+ *
+ * ⚠️ Goes through `trackClientEvent` rather than calling `gtag` here, so it
+ * carries `page_group` like every other event. An event that is missing the
+ * dimension every report is split by is an event those reports quietly leave
+ * out.
+ */
+function trackStep(key, direction) {
+    trackClientEvent("sign_up_step", {
+        step: key,
+        direction: direction < 0 ? "back" : "forward",
+    });
+}
+
 export default function Register() {
     const {
         turnstileSiteKey,
@@ -43,6 +64,7 @@ export default function Register() {
         googleProfile = null,
         googleUtm = null,
         googleEnabled = false,
+        marketingConsentLabel = "",
     } = usePage().props;
 
     const effectiveSiteKey = googleProfile ? null : turnstileSiteKey;
@@ -71,6 +93,20 @@ export default function Register() {
     const setStepKey = useCallback((key, dir = 1) => {
         setDirection(dir);
         setStepKeyRaw(key);
+        // 🚨 Registration is one question per screen, and only the COMPLETED
+        // signup was ever reported. Which screen loses people — the role choice,
+        // the username, the password, the categories — was unmeasurable, and it
+        // is normally the largest single leak in the funnel. `direction` is
+        // carried so a back-step is not counted as progress.
+        trackStep(key, dir);
+    }, []);
+
+    // The first screen is never passed through `setStepKey`, so without this the
+    // step every visitor sees is the one step with no data.
+    useEffect(() => {
+        trackStep(startsAsCreator ? "identity" : "role", 1);
+        // Once per mount, deliberately: this is the entry, not a transition.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -93,6 +129,10 @@ export default function Register() {
         country_code: "",
         cf_turnstile_response: "",
         creator_email_receipt_ack: false,
+        // Marketing consent (UK brief §1). FALSE, and it must stay false here —
+        // a pre-ticked box is not consent, and this is the line a future
+        // "improve signup conversion" change would be tempted to flip.
+        marketing_opt_in: false,
         utm_source: "",
         utm_medium: "",
         utm_campaign: "",
@@ -333,6 +373,11 @@ export default function Register() {
             creator_email_receipt_ack: false,
         }));
 
+        /* ⚠️ The consent STATE has to be cleared with the posted value or the
+           review step redraws its box ticked while `data` says false — the tick
+           the server validates and the tick the reader sees would disagree. */
+        setConsents((prev) => ({ ...prev, creatorEmail: false }));
+
         if (nextRole !== ROLE_CREATOR) {
             setCategories([]);
             setPrideBadges([]);
@@ -369,7 +414,13 @@ export default function Register() {
             data.password.length > 7 &&
             !liveErrors.email &&
             !liveErrors.password &&
-            (isCreator || !!data.country)
+            (isCreator || !!data.country) &&
+            /* 🚨 A creator cannot leave this screen without acknowledging that the
+               address they just typed is published to their supporters. The server
+               already validates `creator_email_receipt_ack` as `accepted`, but that
+               refusal arrives at the END of the form — five screens after the only
+               moment the answer is easy to change. */
+            (!isCreator || !!data.creator_email_receipt_ack)
         );
     }, [data, liveErrors, isCreator, googleProfile]);
 
@@ -559,6 +610,8 @@ export default function Register() {
         terms: false,
         creatorEmail: false,
         ownDetails: false,
+        // Optional — deliberately absent from `canSubmit` below.
+        marketing: false,
     });
 
     const setConsent = (key, value) => {
@@ -566,12 +619,20 @@ export default function Register() {
         if (key === "creatorEmail") {
             setData("creator_email_receipt_ack", value);
         }
+        if (key === "marketing") {
+            setData("marketing_opt_in", value);
+        }
     };
 
-    const canSubmit =
-        consents.terms &&
-        (isCreator ? consents.creatorEmail : consents.ownDetails) &&
-        (!effectiveSiteKey || verified);
+    // 🚨 The rule lives in constants.js so it can be tested — `consents.marketing`
+    // must never gate submission (UK PECR: consent has to be optional), and
+    // that is a three-word change away at all times. See canSubmitRegistration.
+    const canSubmit = canSubmitRegistration({
+        consents,
+        role,
+        captchaRequired: !!effectiveSiteKey,
+        captchaVerified: verified,
+    });
 
     /* -------------------------------- submit ------------------------------ */
 
@@ -801,6 +862,8 @@ export default function Register() {
                                 fieldError={fieldError}
                                 onFieldBlur={markTouched}
                                 googleProfile={googleProfile}
+                                receiptAck={consents.creatorEmail}
+                                onReceiptAck={(v) => setConsent("creatorEmail", v)}
                                 onSubmit={() =>
                                     advance(
                                         googleProfile
@@ -844,6 +907,7 @@ export default function Register() {
                                 canSubmit={canSubmit}
                                 onSubmit={submit}
                                 plan={plan}
+                                marketingConsentLabel={marketingConsentLabel}
                             />
                         )}
                     </StepTransition>

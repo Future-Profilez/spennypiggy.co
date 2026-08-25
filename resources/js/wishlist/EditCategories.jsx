@@ -1,8 +1,9 @@
-import { useEffect, useState, lazy } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
-const Popup = lazy(() => import('@/Components/Popup'));
+const Popup = lazyRetry(() => import('@/Components/Popup'));
 import { RiEdit2Line } from "react-icons/ri";
+import lazyRetry from "@/utils/lazyRetry";
 
 export default function EditCategories({username, fetch_categories}) {
 

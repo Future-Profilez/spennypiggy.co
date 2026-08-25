@@ -60,7 +60,7 @@ export default function HelpArticle({
                 </header>
 
                 <main className="mx-auto w-full max-w-3xl px-4 py-8">
-                    <article className="rounded-box border-[3px] border-black bg-white p-5 sm:p-8">
+                    <article className="rounded-box border-black bg-white p-5 sm:p-8">
                         <p className="text-base font-semibold leading-[1.6] text-black">{article.summary}</p>
 
                         {/* Contents only earns its place on a long answer; on a

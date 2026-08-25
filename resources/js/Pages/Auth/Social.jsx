@@ -380,7 +380,12 @@ export default function AddSocial({
                     {/* Information Banner */}
                     <div
                         className={clsx(
-                            "mb-6 p-4 rounded-box-sm   border-l-4 flex items-start",
+                            // ⚠️ A full 2px frame, not a thick coloured rail down one side. A
+                            // side-tab on a callout is the banned device — depth here comes
+                            // from border weight and colour all the way round.
+                            // (Do not write the class name in this comment: the design
+                            // detector does not blank comments before matching.)
+                            "mb-6 p-4 rounded-box-sm border-2 flex items-start",
                             {
                                 "bg-yellow-50 border-yellow-500":
                                     !formValidation.hasValidFields,

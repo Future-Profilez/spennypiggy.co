@@ -9,7 +9,7 @@ import CustomProgressBar from "@/Components/CustomProgressBar";
 import Wishlist from "@/Pages/Auth/Wishlist";
 import PriceFormat from "@/includes/PriceFormat";
 import { creatorIdOf } from "@/utils/pricing";
-const AddCart = lazy(() => import("./AddCart"));
+const AddCart = lazyRetry(() => import("./AddCart"));
 import { Menu, Transition } from "@headlessui/react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
@@ -20,6 +20,7 @@ import discoveryLink from "@/lib/discoveryLink";
 import SaveButton from "@/Components/SaveButton";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
+import lazyRetry from "@/utils/lazyRetry";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
@@ -222,7 +223,7 @@ export default function Wishlistbox(props) {
                         <SaveButton
                             productType="wish"
                             itemId={itm.id}
-                            initialSaved={itm.is_saved}
+                            creatorId={itm?.user_id}
                         />
                     )}
 

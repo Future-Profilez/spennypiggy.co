@@ -19,6 +19,14 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!--
+            Analytics is OFF outside production (config/analytics.php), so the
+            test suite has to turn it ON or every analytics test would pass by
+            doing nothing — the exact failure the `runningInConsole` guard was
+            removed to avoid. Tests of the OFF behaviour set the config
+            themselves.
+        -->
+        <env name="ANALYTICS_ENABLED" value="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>

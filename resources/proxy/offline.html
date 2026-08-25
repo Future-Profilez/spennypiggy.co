@@ -148,13 +148,27 @@ h1{
     <p class="lede">Spenny Piggy needs a connection to load your account, your purchases and anything you are buying. Nothing you were doing has been lost — it just needs signal.</p>
     <div class="actions">
       <a href="/" class="btn btn-primary" id="retry">Try again</a>
-      <a href="javascript:history.back()" class="btn btn-secondary">Go back</a>
+      <!-- 🚨 NOT a `javascript:` URL in an href. That is script under the CSP
+           (`script-src`, no 'unsafe-inline'), so the button silently did nothing on
+           the one screen a user reaches when everything else has already failed.
+           The handler is attached in the nonced script below. -->
+      <button type="button" class="btn btn-secondary" id="goBack">Go back</button>
     </div>
     <p class="status" id="status"><span class="dot"></span><span id="statusText">Checking your connection…</span></p>
   </main>
 
-<script>
+<!-- ⚠️ `__CSP_NONCE__` is substituted by the `offline.page` route. This file is
+     plain HTML with no Blade, and the CSP carries no 'unsafe-inline', so without
+     the placeholder this whole block is refused and the page cannot tell the user
+     when their connection comes back. The service worker caches the RESPONSE, so
+     the cached copy keeps the nonce it was served with. -->
+<script nonce="__CSP_NONCE__">
 (function () {
+  var back = document.getElementById('goBack');
+  if (back) {
+    back.addEventListener('click', function () { history.back(); });
+  }
+
   var el = document.getElementById('status');
   var text = document.getElementById('statusText');
   var reloading = false;

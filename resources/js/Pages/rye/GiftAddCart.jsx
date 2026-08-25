@@ -1,14 +1,15 @@
-import { useState, lazy, useEffect } from "react";
+import { useState, useEffect } from "react";
 import giftimg from "../../../assets/img/giftimg.jpg";
 
 // Lazy-loaded components
-const Popup = lazy(() => import("@/Components/Popup"));
+const Popup = lazyRetry(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 import { RyeClient, ENVIRONMENT, Marketplace } from "@rye-api/rye-sdk";
 import axios from "axios";
+import lazyRetry from "@/utils/lazyRetry";
 
 export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();

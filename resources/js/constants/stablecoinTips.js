@@ -1,6 +1,18 @@
 /**
  * Stablecoin Tips — marketing copy and the switch that publishes it.
  *
+ * 🚨 THE PROVIDER NAMED BELOW IS DISPUTED BY OUR OWN DOCUMENTS — DO NOT BUILD
+ * AGAINST IT WITHOUT SETTLING IT FIRST. This file records **Coinflow** (spec of
+ * 6 Aug 2026, account approved). The client's Developer Master Plan of **19 Aug
+ * 2026** states the stablecoin rail is **Bridge**, and says it supersedes older
+ * references — which would include this one. Nothing here is user-facing, so
+ * nothing rendered is wrong today, and everything built for the B stream
+ * (`BioTipRail`, `BioTipService`, `BioTipController`) is deliberately
+ * provider-agnostic with a single unimplemented `send()` seam. The name is a
+ * client decision and is tracked as such; whoever settles it should correct this
+ * header and the payout notes below in the same commit, because the mechanics
+ * questions listed here were asked of Coinflow specifically.
+ *
  * ⚠️ THE FEATURE IS NOT BUILT. Provider is Coinflow (account approved); the
  * production build is gated on legal review and on Coinflow confirming their
  * payout mechanics. Nothing in the codebase implements it — there is no route,

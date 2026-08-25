@@ -19,6 +19,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItemSubscription;
 use App\Services\LeaderboardMovementService;
+use App\Services\Ledger\LedgerRules;
 use App\Services\VipScoreService;
 use App\Support\VerifiedBadge;
 use Carbon\Carbon;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
@@ -41,9 +43,26 @@ class LeaderBoardController extends Controller
      * creator on the leaderboard rendered the grey basic badge while their own
      * profile, which is not cached, showed pink.
      */
-    public const BOARD_CACHE_KEY = 'leaderboard_board_v2_';
+    public const BOARD_CACHE_KEY = 'leaderboard_board_v3_';
 
-    public const BUNDLE_CACHE_KEY = 'leaderboard_bundle_v2';
+    public const BUNDLE_CACHE_KEY = 'leaderboard_bundle_v3';
+
+    /**
+     * The full supporter ranking, written by `topSupportersByFrequency()`.
+     *
+     * ⚠️ Bumped to v3 alongside it: the bundle caches that method's response, so
+     * a v2 entry would keep being served while this key stayed empty and the
+     * supporter bar silently never appeared.
+     */
+    public const SUPPORTER_STANDINGS_KEY = 'leaderboard_supporter_standings_v1';
+
+    /**
+     * Bumped whenever a creator leaves the public board.
+     *
+     * ⚠️ Stored FOREVER, never with a TTL — an expired generation would
+     * resurrect every pre-bump selection at once.
+     */
+    public const PAST_WINNERS_GENERATION_KEY = 'leaderboard_past_winners_gen';
 
     /** Every leaderboard period the platform offers, in display order. */
     public const PERIODS = ['daily', 'weekly', 'monthly', 'quarterly', 'annual', 'all'];
@@ -82,6 +101,173 @@ class LeaderBoardController extends Controller
             'annual' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
             default => null,
         };
+    }
+
+    /**
+     * The window of the period that has just CLOSED, or null for lifetime.
+     *
+     * The past-winners panel is computed from this rather than from
+     * `leaderboard_snapshots`, and the difference matters: the snapshot command
+     * runs at 03:15, so the last capture of a week is taken on Sunday morning
+     * and misses the rest of Sunday. A closed window is a fixed pair of dates,
+     * so recomputing the board over it gives the standing at the moment the
+     * period actually ended — and, being closed, that answer never changes,
+     * which is why it can be cached for hours.
+     *
+     * @return array{0: Carbon, 1: Carbon}|null
+     */
+    public static function previousPeriodWindow(?string $type): ?array
+    {
+        $now = Carbon::now();
+
+        return match ($type) {
+            'daily' => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
+            'weekly' => [$now->copy()->subWeek()->startOfWeek(), $now->copy()->subWeek()->endOfWeek()],
+            'monthly' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
+            'quarterly' => [$now->copy()->subQuarter()->startOfQuarter(), $now->copy()->subQuarter()->endOfQuarter()],
+            'annual' => [$now->copy()->subYear()->startOfYear(), $now->copy()->subYear()->endOfYear()],
+            default => null,
+        };
+    }
+
+    /** What the closed period is called on screen. Null for the lifetime board. */
+    public static function previousPeriodLabel(?string $type): ?string
+    {
+        return match ($type) {
+            'daily' => 'Yesterday',
+            'weekly' => 'Last week',
+            'monthly' => 'Last month',
+            'quarterly' => 'Last quarter',
+            'annual' => 'Last year',
+            default => null,
+        };
+    }
+
+    /**
+     * The top three of the period that has just closed.
+     *
+     * A board with no finish line is not a race — every period here is calendar
+     * bounded (`startOfWeek`…`endOfWeek`), so a countdown and a winners list are
+     * both truthful, and together they are what gives a creator a reason to come
+     * back on the day it resets.
+     *
+     * ⚠️ An EMPTY result is never cached, same rule as the board itself: a DB
+     * hiccup would otherwise pin "nobody won" on the page for the full TTL.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function pastWinners(?string $type): array
+    {
+        $window = self::previousPeriodWindow($type);
+
+        if ($window === null) {
+            return [];
+        }
+
+        // ⚠️ The generation is IN the key, because a creator opting out has to
+        // disappear from a public list naming them NOW, not in six hours — and
+        // the keys cannot be enumerated (one per period per date). Bumping the
+        // generation invalidates every variant in one write. Same device as
+        // `discovery_collection_gen_*`.
+        $key = self::pastWinnersKey($type, $window[0]->toDateString());
+
+        $cached = Cache::get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        try {
+            $users = $this->calc($type, $window);
+        } catch (\Throwable $e) {
+            Log::error('Leaderboard past winners failed', ['period' => $type, 'error' => $e->getMessage()]);
+
+            return [];
+        }
+
+        $winners = [];
+        $rank = 1;
+
+        foreach ($users as $user) {
+            // 🚨 A WINNER MUST HAVE ACTUALLY DONE SOMETHING IN THAT WINDOW.
+            // `calc()` returns EVERY eligible creator with windowed counts — it
+            // never comes back empty — so a period in which nobody transacted
+            // still produced a full collection, every score zero, and the first
+            // three rows of arbitrary database order were crowned under
+            // "Final standing when the board closed". Verified live: the panel
+            // named three creators the same board shows with 0 supporters and a
+            // "New" chip.
+            if (((int) ($user->total_supporters ?? 0)) < 1 && ((float) ($user->total_amount ?? 0)) <= 0) {
+                continue;
+            }
+
+            $winners[] = [
+                'rank' => $rank++,
+                'id' => $user->id,
+                'name' => $user->name ?? '',
+                'username' => $user->username ?? '',
+                'avatar' => $user->avatar_url,
+                'supporters' => (int) ($user->total_supporters ?? 0),
+            ];
+
+            if ($rank > 3) {
+                break;
+            }
+        }
+
+        // An empty result IS cached here, unlike the board: "nobody transacted
+        // last week" is a legitimate, stable answer, and not caching it would
+        // re-run a full board query on every single page load.
+        Cache::put($key, $winners, 21600);
+
+        return $winners;
+    }
+
+    /** The cache key for one closed period, carrying the current generation. */
+    private static function pastWinnersKey(?string $type, string $from): string
+    {
+        $generation = (int) Cache::get(self::PAST_WINNERS_GENERATION_KEY, 1);
+
+        return 'leaderboard_past_winners_v1_'.$generation.'_'.$type.'_'.$from;
+    }
+
+    /**
+     * Which of the creator's own surfaces a reader should be sent to, or null.
+     *
+     * 🚨 The leaderboard is the highest-intent discovery surface on the platform
+     * and until now the only action on a row was Follow — the board introduced a
+     * supporter to a creator and then sent them nowhere they could buy anything.
+     *
+     * The filters are the PUBLIC visitor's filters, copied from
+     * `UserProfileService` (the profile tab each link lands on), so the button
+     * can never point at a tab that renders empty. A creator with nothing live
+     * gets no button rather than a dead end.
+     *
+     * ⚠️ Wishes and Piggy Pots lead because they are the two surfaces that allow
+     * guest checkout — most of this page's readers are not signed in.
+     * ⚠️ Labels name the SURFACE. Gift/tip/donate wording is banned on every
+     * user-facing surface (Stripe content-first rule).
+     *
+     * @return array{page: string, label: string, aria: string}|null
+     */
+    private function contentTargetFor($user): ?array
+    {
+        if (! empty($user->has_wishes)) {
+            return ['page' => 'wishes', 'label' => 'Wishlist', 'aria' => 'View the wishlist'];
+        }
+
+        if (! empty($user->has_pots)) {
+            return ['page' => 'piggy-pots', 'label' => 'Piggy Pot', 'aria' => 'View the Piggy Pots'];
+        }
+
+        if (! empty($user->has_shop)) {
+            return ['page' => 'shop', 'label' => 'Shop', 'aria' => 'View the shop'];
+        }
+
+        if (! empty($user->has_memberships)) {
+            return ['page' => 'memberships', 'label' => 'Membership', 'aria' => 'View the memberships'];
+        }
+
+        return null;
     }
 
     /**
@@ -127,6 +313,7 @@ class LeaderBoardController extends Controller
                 'currency' => $user->currency ?? 'GBP',
                 'supporters' => (int) ($user->total_supporters ?? 0),
                 'engagement' => $user->engagement_score ?? 0,
+                'content' => $this->contentTargetFor($user),
             ];
             $rank++;
         }
@@ -213,6 +400,12 @@ class LeaderBoardController extends Controller
                 + ['is_following' => isset($following[$row['id']])];
         }
 
+        // Every period but lifetime is calendar bounded, so it has a real close
+        // time and a real set of winners. A board that never resets is a table;
+        // the reset is what makes it a race.
+        $window = self::periodWindow($period);
+        $endsAt = $window ? $window[1]->toIso8601String() : null;
+
         if (request()->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -224,6 +417,10 @@ class LeaderBoardController extends Controller
                 'per_page' => $paginator->perPage(),
                 'period' => $period,
                 'you' => $this->viewerStanding($board, $previousRanks),
+                'period_ends_at' => $endsAt,
+                'past_winners' => $this->pastWinners($period),
+                'past_period_label' => self::previousPeriodLabel($period),
+                'you_supporter' => $this->viewerSupporterStanding(),
             ]);
         }
 
@@ -238,6 +435,10 @@ class LeaderBoardController extends Controller
             'climbers' => LeaderboardMovementService::climbers($board, $period),
             'movement_window_days' => LeaderboardMovementService::lookbackDays($period),
             'opted_out' => (bool) (Auth::user()->leaderboard_opt_out ?? false),
+            'period_ends_at' => $endsAt,
+            'past_winners' => $this->pastWinners($period),
+            'past_period_label' => self::previousPeriodLabel($period),
+            'you_supporter' => $this->viewerSupporterStanding(),
         ]);
     }
 
@@ -277,6 +478,66 @@ class LeaderBoardController extends Controller
                 'username' => $above['username'],
                 'name' => $above['name'],
                 'supporters_gap' => max(($above['supporters'] ?? 0) - ($me['supporters'] ?? 0), 0),
+            ] : null,
+        ];
+    }
+
+    /**
+     * The signed-in SUPPORTER's own place in the supporter ranking, or null.
+     *
+     * 🚨 The board told a creator exactly where they stood and told a fan
+     * nothing — the sidebar listed the top five supporters and a reader outside
+     * that five had no way to know they were on the list at all. Same argument
+     * as `viewerStanding()`: a rank you have to scroll to find is a rank the
+     * page never told you.
+     *
+     * ⚠️ Ranked on purchase COUNT and the gap is stated in purchases. No amount
+     * appears here, on a page that publishes none.
+     *
+     * ⚠️ Reads the cache written by `topSupportersByFrequency()` and NEVER
+     * recomputes it. That method scans five payment tables; doing it a second
+     * time on every board render is how a page ends up slower than the feature
+     * is worth. A cold cache simply means no bar this once — the bundle request
+     * the page fires on load fills it.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function viewerSupporterStanding(): ?array
+    {
+        $userId = Auth::id();
+
+        if (! $userId) {
+            return null;
+        }
+
+        $ranked = Cache::get(self::SUPPORTER_STANDINGS_KEY);
+
+        if (! is_array($ranked) || $ranked === []) {
+            return null;
+        }
+
+        $index = null;
+        foreach ($ranked as $i => $row) {
+            if ((int) ($row['id'] ?? 0) === (int) $userId) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if ($index === null) {
+            return null;
+        }
+
+        $me = $ranked[$index];
+        $above = $index > 0 ? $ranked[$index - 1] : null;
+
+        return [
+            'rank' => $index + 1,
+            'total' => count($ranked),
+            'purchases' => (int) ($me['gift_count'] ?? 0),
+            'next' => $above ? [
+                'username' => $above['username'] ?? '',
+                'purchases_gap' => max(((int) ($above['gift_count'] ?? 0)) - ((int) ($me['gift_count'] ?? 0)), 0),
             ] : null,
         ];
     }
@@ -349,6 +610,15 @@ class LeaderBoardController extends Controller
             Cache::forget(self::BOARD_CACHE_KEY.$period);
         }
 
+        // 🚨 The PAST-WINNERS panel names them on a public page too, and it is
+        // cached for six hours under keys that cannot be enumerated (one per
+        // period per date). Forgetting the board alone left an opted-out creator
+        // crowned for the rest of that window.
+        Cache::forever(
+            self::PAST_WINNERS_GENERATION_KEY,
+            ((int) Cache::get(self::PAST_WINNERS_GENERATION_KEY, 1)) + 1,
+        );
+
         return response()->json([
             'success' => true,
             'opted_out' => $optOut,
@@ -358,12 +628,20 @@ class LeaderBoardController extends Controller
         ]);
     }
 
-    public function calc($type)
+    public function calc($type, ?array $windowOverride = null)
     {
         // One window for the whole query. Every source below used to carry its
         // own copy of the same if/elseif date logic, so adding a period meant
         // editing seven places and getting all seven right.
-        $window = self::periodWindow($type);
+        //
+        // An explicit window is how the past-winners panel recomputes a period
+        // that has already closed — the same query, a fixed pair of dates.
+        $window = $windowOverride ?? self::periodWindow($type);
+
+        // ⚠️ `shops.status` is absent from a database built purely from this
+        // repo's migrations (see CLAUDE.md), so it is checked rather than
+        // assumed. Every deployed database has it.
+        $shopHasStatus = Schema::hasColumn('shops', 'status');
 
         $applyPeriod = function ($query, string $column) use ($window) {
             if ($window === null) {
@@ -381,11 +659,47 @@ class LeaderBoardController extends Controller
                 $query->where('leaderboard_opt_out', 0)
                     ->orWhereNull('leaderboard_opt_out');
             })
+            // Which of this creator's own surfaces has something live to buy, so
+            // a row can carry a route to a checkout rather than only a Follow.
+            // EXISTS stops at the first matching row, so these are cheap beside
+            // the seven aggregates below — and the board is cached either way.
+            // The filters are the PUBLIC visitor's, copied from
+            // `UserProfileService`, so a button can never land on an empty tab.
+            ->withExists([
+                'wishItems as has_wishes' => fn ($query) => $query->where('is_approved', 1)->where('is_suspended', 0),
+                'piggy_pots as has_pots' => fn ($query) => $query->where('status', 'active'),
+                'shop as has_shop' => function ($query) use ($shopHasStatus) {
+                    if ($shopHasStatus) {
+                        $query->where('status', 1);
+                    }
+
+                    $query->where('approved', 1)->where('is_suspended', 0);
+                },
+                'memberships as has_memberships' => fn ($query) => $query->where('approved', 1)->where('is_suspended', 0),
+            ])
             ->withCount([
+                // ⚠️ FOLLOWERS, not buyers. Kept for display and as a tie-break;
+                // it is NOT what the board ranks on. "Supporters backing them"
+                // means people who actually bought — see `paying_supporters`.
                 'followers as total_supporters' => function ($query) use ($applyPeriod) {
                     $applyPeriod($query, 'follows.created_at');
                 },
                 'following as following_count',
+            ])
+            /*
+             * The ranking metric: how many DISTINCT people have bought from this
+             * creator, read from the ledger through `LedgerRules::countedScope()`
+             * so a refunded, disputed, failed or still-escrowed purchase does not
+             * make somebody a supporter. That is the same gate the payout engine
+             * and the earnings dashboard use, so the board cannot disagree with
+             * them about who counts.
+             */
+            ->addSelect(['paying_supporters' => FinancialTransaction::query()
+                ->selectRaw('COUNT(DISTINCT supporter_id)')
+                ->whereColumn('financial_transactions.user_id', 'users.id')
+                ->whereNotNull('supporter_id')
+                ->tap(fn ($query) => LedgerRules::countedScope($query))
+                ->tap(fn ($query) => $applyPeriod($query, 'financial_transactions.transaction_date')),
             ])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($applyPeriod) {
@@ -460,7 +774,25 @@ class LeaderBoardController extends Controller
                     $applyPeriod($query, 'shop_payments.created_at');
                 },
             ])
-            ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
+            /*
+             * 🚨 RANKED BY HOW MANY PEOPLE BACK A CREATOR, NEVER BY HOW MUCH THEY
+             * SPENT. Stripe content-first rule, and the same definition the rest
+             * of the platform already uses: `CollectionService`'s "Popular" counts
+             * DISTINCT supporters, and the Piggy Pot wall ranks on purchase count.
+             * A public board ordered by revenue publishes what each creator earns
+             * by implication, which is the thing this platform must not do.
+             *
+             * ⚠️ COUNT(DISTINCT supporter_id) — `supporter_id`, never `source_id`.
+             * `source` is a nullable morph to the payment row, so counting
+             * distinct source ids counts PAYMENTS and collides ids across the
+             * seven payment tables. One person buying ten times is one supporter.
+             */
+            ->orderByDesc('paying_supporters')
+            // ⚠️ Tie-break is followers, then id — deliberately NOT the money
+            // column. A money tie-break is a money sort wherever counts are equal,
+            // which on a young board is most of it.
+            ->orderByDesc('total_supporters')
+            ->orderBy('id')
             ->get(['id', 'name', 'username', 'avatar', 'avatar_approved', 'avatar_cdn_modifier', 'cover', 'cover_approved', 'cover_cdn_modifier', 'profile_status_lock', 'identity_status', 'identity_admin_status', 'stripe_details_submitted', 'suspended_account', 'is_founder', 'role', 'default_currency']);
 
         $users->map(function ($user) {
@@ -492,25 +824,24 @@ class LeaderBoardController extends Controller
             // ✅ Ensure we return a consistent currency code (uppercase)
             $user->currency = strtoupper($user->default_currency ?? 'GBP');
 
-            // Calculate social engagement metrics
             $user->total_supporters = (int) ($user->total_supporters ?? 0);
-
-            // Calculate engagement score based on followers and content
-            $engagementScore = $user->total_supporters * 2; // 2 points per supporter
-
-            // Add bonus for verified creators
-            if ($user->profile_status_lock == 2) {
-                $engagementScore *= 1.2; // 20% bonus for verified creators
-            }
-
-            $user->engagement_score = $engagementScore;
-
-            // Combined score prioritizes engagement but includes monetary as fallback
-            $user->combined_score = $user->engagement_score > 0 ? $user->engagement_score : $user->total_amount;
+            $user->paying_supporters = (int) ($user->paying_supporters ?? 0);
         });
 
-        // Sort by combined score (engagement-first approach)
-        $users = $users->sortByDesc('combined_score');
+        /*
+         * 🚨 THE OLD SCORE RANKED MOST OF THE BOARD BY MONEY WITHOUT SAYING SO.
+         *
+         * It was `engagement_score > 0 ? engagement_score : total_amount`, where
+         * engagement_score was FOLLOWERS × 2 (×1.2 if verified). So a creator with
+         * a single follower was ranked by followers and a creator with none was
+         * ranked by revenue — two different ladders in one list, on a page whose
+         * own heading reads "Ranked by supporters". Any creator without followers
+         * was placed by how much money they had taken.
+         *
+         * The order is decided in SQL now (see `orderByDesc('paying_supporters')`
+         * above), so there is no second, disagreeing sort here. A creator with no
+         * paying supporters ranks last on count — never rescued by revenue.
+         */
 
         return $users;
     }
@@ -1513,15 +1844,19 @@ class LeaderBoardController extends Controller
                 }
             }
 
-            // Sort by gift count and take top 5
-            $topSupporters = collect($supporters)
+            // Sort by purchase count and take the top five. The FULL ranked list
+            // is cached beside it, because the viewer's own standing has to be
+            // resolved from all of it — a supporter at position 140 is a
+            // supporter this page would otherwise never mention.
+            $ranked = collect($supporters)
                 ->sortByDesc('gift_count')
-                ->values()
-                ->take(5);
+                ->values();
+
+            Cache::put(self::SUPPORTER_STANDINGS_KEY, $ranked->all(), 900);
 
             return response()->json([
                 'status' => true,
-                'data' => $topSupporters,
+                'data' => $ranked->take(5),
             ]);
         } catch (\Exception $e) {
             return response()->json([

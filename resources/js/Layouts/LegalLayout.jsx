@@ -1,22 +1,20 @@
 import { Link } from "@inertiajs/react";
-import { useState } from "react";
-import { 
-    FileText, 
-    ShieldCheck, 
-    Users, 
-    Handshake, 
-    CreditCard, 
-    Wallet, 
-    ClipboardList, 
+import { useEffect, useRef } from "react";
+import {
+    FileText,
+    ShieldCheck,
+    Users,
+    Handshake,
+    CreditCard,
+    Wallet,
+    ClipboardList,
     RotateCcw,
-    ArrowLeft,
-    ChevronRight,
-    Menu,
-    X
+    ArrowLeft
 } from "lucide-react";
 
 export default function LegalLayout({ children, activePage }) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const navRef = useRef(null);
+    const activeRef = useRef(null);
 
     const navItems = [
         { name: 'How Spenny Piggy Works', href: '/how-spenny-piggy-works', component: 'HowSpennyPiggyWorks', icon: Wallet },
@@ -34,41 +32,22 @@ export default function LegalLayout({ children, activePage }) {
         { name: 'Content & Payment Policy', href: '/content-payment-policy', component: 'ContentPaymentFramework', icon: ShieldCheck },
     ];
 
+    // keep the current document visible in the scrolling tab strip
+    useEffect(() => {
+        const nav = navRef.current;
+        const active = activeRef.current;
+        if (!nav || !active) return;
+        nav.scrollLeft = active.offsetLeft - (nav.clientWidth - active.clientWidth) / 2;
+    }, [activePage]);
+
     return (
-        <div className="min-h-dvh bg-[#FDFCFD] flex flex-col md:flex-row font-poppins">
-            {/* Mobile Header */}
-            <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="border-2 border-black w-8 h-8 bg-pink-600 rounded-box-xs flex items-center justify-center">
-                        <ShieldCheck className="text-white" size={16} />
-                    </div>
-                    <span className="font-bold text-gray-900 text-sm tracking-tight uppercase">Legal Center</span>
-                </div>
-                <button 
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-black/60 hover:text-[#FF007F] transition-colors"
-                >
-                    {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-                </button>
-            </div>
-
-            {/* Sidebar */}
-            <aside
-                data-lenis-prevent
-                className={`w-full md:w-72 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-100 md:sticky md:top-0 md:h-dvh md:overflow-y-auto transition-all duration-300
-                ${isMobileMenuOpen ? 'block' : 'hidden md:block'} `}>
-                <div className="p-6">
-                    <Link 
-                        href="/"  
-                        className="inline-flex items-center gap-2 text-sm font-medium text-black/60 hover:text-[#FF007F] transition-colors mb-8 group min-h-[44px]" >
-                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        Back to Home
-                    </Link>
-
-                    <div className="mb-8">
-                        <div className="hidden md:flex items-center gap-3 mb-8">
+        <div className="min-h-dvh bg-[#FDFCFD] font-poppins">
+            <div className="bg-white">
+                <div className="mx-auto w-full max-w-[110ch] px-5 py-5 sm:px-8">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
                             <div className="border-2 border-black w-10 h-10 bg-pink-600 rounded-box-sm flex items-center justify-center">
-                                <ShieldCheck className="text-white" size={20} />
+                                <ShieldCheck className="text-black" size={20} />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
@@ -80,30 +59,51 @@ export default function LegalLayout({ children, activePage }) {
                             </div>
                         </div>
 
-                        <nav className="space-y-1.5">
-                            {navItems.map((item) => {
-                                const Icon = item.icon;
-                                const isActive = activePage === item.component;
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`border-[3px] border-black flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-box transition-all duration-200 group ${ isActive ? 'bg-pink-600 text-white translate-x-1' : "text-black/60 hover:bg-pink-50 hover:text-[#FF007F]" }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Icon size={18} className={isActive ? "text-white" : "text-black/60 group-hover:text-[#FF007F]"} />
-                                            {item.name}
-                                        </div>
-                                        {isActive && <ChevronRight size={14} className="text-white/70" />}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
+                        <Link
+                            href="/"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-black/60 hover:text-[#FF007F] transition-colors group min-h-[44px]">
+                            <ArrowLeft size={16} className="transition-transform" />
+                            Back to Home
+                        </Link>
                     </div>
+
                 </div>
-                
-                <div className="mt-auto p-6 border-t border-gray-50 bg-gray-50/50">
+            </div>
+
+            {/* Main Content */}
+            <main className="bg-white md:bg-[#FDFCFD]">
+                <div className="min-h-[80dvh]">
+                    {children}
+                </div>
+            </main>
+
+            <div className="bg-gray-50/50">
+                <div className="mx-auto w-full max-w-[110ch] px-5 sm:px-8">
+                    <p className="pt-6 text-[12px] font-bold text-black/60 uppercase tracking-widest">
+                        All Documents
+                    </p>
+                    <nav
+                        ref={navRef}
+                        data-lenis-prevent
+                        className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-6 pt-3 sm:-mx-8 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activePage === item.component;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    ref={isActive ? activeRef : null}
+                                    className={`border-2 border-black shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-box-sm transition-colors duration-200 group ${isActive ? 'bg-pink-600 text-black' : "text-black/60 hover:bg-pink-50 hover:text-[#FF007F]"}`}
+                                >
+                                    <Icon size={16} className={isActive ? "text-black" : "text-black/60 group-hover:text-[#FF007F]"} />
+                                    <span className="whitespace-nowrap">{item.name}</span>
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                </div>
+                <div className="mx-auto w-full max-w-[110ch] px-5 py-6 sm:px-8 flex flex-wrap items-end justify-between gap-4">
                     <div className="space-y-1">
                         <p className="text-[12px] font-bold text-black/60 uppercase tracking-wider">
                             Last Updated
@@ -112,21 +112,11 @@ export default function LegalLayout({ children, activePage }) {
                             April 2026
                         </p>
                     </div>
-                    <p className="text-[12px] text-black/60 mt-4 font-medium">
-                        © {new Date().getFullYear()} Spenny Piggy. <br />All rights reserved.
+                    <p className="text-[12px] text-black/60 font-medium">
+                        © {new Date().getFullYear()} Spenny Piggy. All rights reserved.
                     </p>
                 </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 min-w-0 bg-white md:bg-[#FDFCFD]">
-                <div className="">
-                    <div className="min-h-[80dvh]">
-                        {children}
-                    </div>
-                </div>
-            </main>
+            </div>
         </div>
     );
 }
-

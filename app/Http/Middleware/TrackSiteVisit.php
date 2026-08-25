@@ -48,6 +48,36 @@ class TrackSiteVisit
                 );
             }
 
+            // The X (Twitter) Ads click id, if they arrived from an X advert.
+            //
+            // 🚨 First touch: written only when there is no cookie yet, so a
+            // later click cannot overwrite the one that actually started the
+            // journey. Length-capped and character-checked because it is
+            // attacker-supplied text on its way into a cookie and, later, into
+            // a request body sent to X.
+            $twclid = $request->query('twclid');
+
+            if (is_string($twclid)
+                && $twclid !== ''
+                && strlen($twclid) <= 128
+                && preg_match('/^[A-Za-z0-9_-]+$/', $twclid) === 1
+                && ! $request->cookies->has(VisitTracker::TWCLID_COOKIE)
+            ) {
+                Cookie::queue(
+                    Cookie::make(
+                        VisitTracker::TWCLID_COOKIE,
+                        $twclid,
+                        60 * 24 * VisitTracker::TWCLID_DAYS,
+                        null,
+                        null,
+                        $secure,
+                        true,
+                        false,
+                        'lax'
+                    )
+                );
+            }
+
             // The paid-ads landing page they arrived on, remembered on the same
             // first-touch rule as the source. Someone who clicks the Founder
             // Bonus advert, reads three other pages and signs up two days later

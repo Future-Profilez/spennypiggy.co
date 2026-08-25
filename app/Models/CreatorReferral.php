@@ -74,8 +74,21 @@ class CreatorReferral extends Model
         return $this->status === 'PAID';
     }
 
+    /**
+     * ⚠️ The DENOMINATOR IS THE QUALIFYING THRESHOLD, not a round number that
+     * happens to match it. This bar is what a creator watches to decide whether
+     * a referral is going to pay; a bar that fills at a different figure than
+     * the query in `ReferAndEarnController` counts at reads as full and pays
+     * nothing.
+     */
     public function progressPercentage(): float
     {
-        return min(100, ($this->lifetime_gmv / 1000) * 100);
+        $target = (float) config('referral.qualifying_gmv', 1000);
+
+        if ($target <= 0) {
+            return 100;
+        }
+
+        return min(100, ($this->lifetime_gmv / $target) * 100);
     }
 }

@@ -607,29 +607,41 @@ class BillsController extends Controller
         }
 
         $bill = Bills::with('user')->whereUuid($uuid)->first();
+        /*
+         * 🚨 A REAL DESTINATION, NOT `back()`.
+         *
+         * This URL is reached from a bio card, a shared link, an e-mail and a
+         * bookmark — none of which leave a same-site Referer, so `back()` sent
+         * the supporter to the HOMEPAGE with a flash that (until 22 Aug 2026) no
+         * layout rendered. They tapped a real link and nothing happened.
+         *
+         * Where the creator is known, send them to that creator: they came to
+         * buy from this person, and this ONE item being unavailable says nothing
+         * about the rest.
+         */
         if (! $bill) {
-            return redirect()->back()->with('error', 'Bill not found!');
+            return redirect()->route('home')->with('error', 'That item is no longer available.');
         }
 
         if ($bill->is_suspended) {
-            return redirect()->back()->with('error', 'This bill is currently suspended and cannot accept payments.');
+            return $this->awayFrom($bill, 'That item is not on sale at the moment.');
         }
 
         // The profile only *displays* approved items, but the checkout URL is public and
         // guessable — an item awaiting review (or pulled by an admin) could still be sold.
         if (! $bill->approved || ! $bill->status) {
-            return redirect()->back()->with('error', 'This item is not available right now. It is awaiting review.');
+            return $this->awayFrom($bill, 'That item is not available right now — it is awaiting review.');
         }
 
         if (! $bill->user) {
-            return redirect()->back()->with('error', 'Creator account not found or deactivated.');
+            return redirect()->route('home')->with('error', 'That creator is not taking payments at the moment.');
         }
 
         // Check if creator has card_payments capability
         if (! StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
             $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
 
-            return redirect()->back()->with('error', app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+            return $this->awayFrom($bill, app(CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         // NEW: Check creator subscription eligibility first
@@ -652,8 +664,8 @@ class BillsController extends Controller
             ]);
 
             // Return user-friendly error to fan
-            return redirect()->back()->with(
-                'error',
+            return $this->awayFrom(
+                $bill,
                 app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             );
         }
@@ -695,7 +707,7 @@ class BillsController extends Controller
 
         $user = Auth::user();
         if ($user && $bill->user_id === $user->id) {
-            return redirect()->back()->with('error', "You can't buy your own bill!");
+            return $this->awayFrom($bill, "You can't buy your own bill!");
         }
 
         if ($request->isMethod('POST')) {
@@ -2056,4 +2068,20 @@ class BillsController extends Controller
 
     //     return $symbols[strtoupper($currency)] ?? '£';
     // }
+
+    /**
+     * Back to the CREATOR when we know who they are, home when we do not.
+     *
+     * ⚠️ `$item->user` can be null (a deleted account), and
+     * `route('user.show', ['username' => null])` builds a broken URL rather than
+     * throwing — a bad link nothing reports, which is worse than a crash.
+     */
+    private function awayFrom($item, string $message)
+    {
+        $username = $item->user->username ?? null;
+
+        return $username
+            ? redirect()->route('user.show', ['username' => $username])->with('error', $message)
+            : redirect()->route('home')->with('error', $message);
+    }
 }

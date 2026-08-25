@@ -116,7 +116,7 @@ export default function ConfirmPassword(props) {
                     {/* `self-start` so the panel's top edge lines up with the top
                         of the headline. */}
                     <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start">
-                        <div className="rounded-box border-[3px] border-black bg-white p-4 sm:p-6">
+                        <div className="rounded-box border-black bg-white p-4 sm:p-6">
                             <form onSubmit={submit} noValidate>
                                 <Field
                                     id="password"
@@ -195,7 +195,7 @@ export default function ConfirmPassword(props) {
 
                                 <LoaderButton
                                     disabled={processing}
-                                    className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-[3px] border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
+                                    className={`!mt-5 flex min-h-[56px] w-full items-center justify-center rounded-box-sm border-black !bg-[#05EFB8] font-gulfs text-base uppercase tracking-[0.14em] !text-black transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-black/20 motion-reduce:hover:translate-y-0 ${
                                         processing
                                             ? "cursor-not-allowed opacity-70 hover:translate-y-0"
                                             : ""

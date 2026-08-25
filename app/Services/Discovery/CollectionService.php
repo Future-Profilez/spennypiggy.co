@@ -232,7 +232,7 @@ class CollectionService
             : 0;
 
         $cards = Cache::remember(
-            "discovery_collection_v1_{$key}_{$scope}_{$limit}_{$bucket}",
+            self::cacheKey($key, $scope, $limit, $bucket),
             self::TTL,
             fn () => $this->select($key, $limit, $viewer, $bucket, $context)
         );
@@ -349,11 +349,48 @@ class CollectionService
         return $last;
     }
 
+    /**
+     * 🚨 THE CACHE IS VERSIONED PER COLLECTION, BECAUSE THE KEYS CANNOT BE
+     * ENUMERATED.
+     *
+     * A selection is cached per LIMIT, per VIEWER, per CONTEXT creator and per
+     * rotation BUCKET — so "clear this collection" is not a key, it is a family
+     * of them, one per combination that has ever been asked for.
+     *
+     * The first version of `forget()` deleted a single hardcoded key using
+     * `DEFAULT_LIMIT` (12) — **a limit no surface actually asks for**: the
+     * checkout row uses 4 and the homepage and Discover use 8. So the admin
+     * screen's "Re-run" button cleared a key nothing reads and did NOTHING,
+     * while appearing to work. Found by a browser pass, not by a test.
+     *
+     * A generation counter fixes it portably: bumping it makes every existing
+     * key for that collection unreachable in one write, whatever combination
+     * produced it. Cache TAGS would also do this, but the file and database
+     * drivers do not support them and this must work wherever it is deployed.
+     */
+    public static function generationKey(string $key): string
+    {
+        return "discovery_collection_gen_{$key}";
+    }
+
+    private static function cacheKey(string $key, string $scope, int $limit, int $bucket): string
+    {
+        $gen = (int) (Cache::get(self::generationKey($key)) ?: 1);
+
+        return "discovery_collection_v1_{$key}_g{$gen}_{$scope}_{$limit}_{$bucket}";
+    }
+
     /** Phase 6's admin controls need this to mean something. */
     public function forget(?string $key = null): void
     {
         foreach ($key ? [$key] : array_keys(self::COLLECTIONS) as $k) {
-            Cache::forget("discovery_collection_v1_{$k}_all_".self::DEFAULT_LIMIT.'_0');
+            /*
+             * ⚠️ `forever`, not a TTL. A generation that expired would silently
+             * resurrect every pre-bump selection — the opposite of what somebody
+             * pressing "Re-run" asked for.
+             */
+            $gen = (int) (Cache::get(self::generationKey($k)) ?: 1);
+            Cache::forever(self::generationKey($k), $gen + 1);
 
             // The switch has its own short cache; an admin toggling a collection
             // must not then wait a minute to see it take effect on a re-run.

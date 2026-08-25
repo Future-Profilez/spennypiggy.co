@@ -1,12 +1,6 @@
-import { Link, router } from '@inertiajs/react';
-import React, { useState, useMemo } from 'react';
-import DeviceID from '@/includes/DeviceID';
-import { RiLayoutGridFill, RiUserHeartLine, RiGiftLine, RiCloseLine, RiFireLine, RiCheckDoubleLine, RiSearchLine, RiFileList3Line, RiVipCrownLine } from 'react-icons/ri';
-import Popup from '@/Components/Popup';
+import { useEffect, useMemo, useRef } from 'react';
 import Wishlistbox from '../../../wishlist/Wishlistbox';
-import Avatar from '../../../includes/Avatar';
 import CreatorCard from './CreatorCard';
-import { trackSearchClick } from "@/includes/Analytics";
 import Bill from '../../bills/Bill';
 import Membership from '../../membership/Membership';
 import ProfileProduct from '../../shop/ProfileProduct';
@@ -21,166 +15,177 @@ import { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
  *
  * ⚠️ Membership and Task cards render no creator-profile link (they go to
  * checkout and to /task/{uuid}), so there is nothing on them to tag.
+ *
+ * 🚨 THE COUNT IN THE HEADING IS THE REAL TOTAL, not the length of this page.
+ * The heading used to read "Showing 24 results" on page one of forty, and again
+ * on page two — a number a supporter cannot use to decide whether to keep
+ * looking.
  */
-
-export default function ResultsGrid({auth, global_currency, results, mode, activeFilters, removeFilter }) {
+export default function ResultsGrid({
+    auth,
+    global_currency,
+    results,
+    mode,
+    heading,
+    total = 0,
+    hasMore = false,
+    loading = false,
+    onLoadMore,
+    onClearFilters,
+}) {
     const renderedItems = useMemo(() => {
-        const items = [];
-        (results || []).forEach((item, index) => {
+        return (results || []).map((row, index) => {
+            /*
+             * 🚨 A MIXED ROW CARRIES ITS OWN MODE. The board is one feed of things
+             * to buy across five modules, so the grid reads the mode off the row
+             * rather than off the grid — every card keeps the exact payload it
+             * already expected, and nothing here re-describes a listing.
+             */
+            const isMixed = mode === 'mixed';
+            const itemMode = isMixed ? row.mode : mode;
+            const item = isMixed ? row.item : row;
+
             let card;
-            switch(mode) {
+            switch (itemMode) {
                 case 'creator':
-                    card = <CreatorCard  item={item} auth={auth} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
+                    card = <CreatorCard item={item} auth={auth} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'wish':
-                    card =  <Wishlistbox
-                                key={`wish-item-${item.id}`}
-                                classes=""
-                                imagesize="max-h-[150px]"
-                                currency={global_currency}
-                                IsloggedIn={false}
-                                auth={auth?.user}
-                                itemid={item?.id}
-                                // setuped={AuthUserStripeConnected ==1? true: false}
-                                itm={item}
-                                trackClick={true}
-                                discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
-                            />;
+                    card = (
+                        <Wishlistbox
+                            classes=""
+                            imagesize="max-h-[150px]"
+                            currency={global_currency}
+                            /* 🚨 `IsloggedIn` ON THESE CARDS MEANS "THE CREATOR IS
+                               LOOKING AT THEIR OWN LISTING", NOT "a user is signed
+                               in". Truthy swaps the buyer's Unlock button for the
+                               owner's Share/Edit one and shows the pre-fee price.
+                               Discover is never the owner's view — it is always
+                               false here. */
+                            IsloggedIn={false}
+                            auth={auth?.user}
+                            itemid={item?.id}
+                            itm={item}
+                            trackClick={true}
+                            discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
+                        />
+                    );
                     break;
                 case 'bill':
-                    card = <Bill classes=" " itm={item} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
+                    card = <Bill classes="" itm={item} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'membership':
-                    card = <Membership  item={item} />;
+                    card = <Membership item={item} />;
                     break;
                 case 'shop':
                     card = <ProfileProduct item={item} discoverySource={DISCOVERY_SOURCE.SEARCH_RECS} />;
                     break;
                 case 'task':
+                    // Same rule as the wish card above: false = the buyer's view.
                     card = <TaskItem task={item} IsloggedIn={false} profileUser={item.user} />;
                     break;
                 default:
-                    card = <Wishlistbox
-                            key={`wish-item-${item.id}`}
-                            classes=""
-                            imagesize="max-h-[150px]"
-                            currency={global_currency}
-                            IsloggedIn={false}
-                            auth={auth?.user}
-                            itemid={item?.id}
-                            // setuped={AuthUserStripeConnected ==1? true: false}
-                            itm={item}
-                            trackClick={true}
-                            discoverySource={DISCOVERY_SOURCE.SEARCH_RECS}
-                        />;
+                    card = null;
             }
 
-            items.push(
+            /* 🚨 NO SAVE BUTTON HERE ANY MORE. This grid used to overlay its own
+               heart on every card, which double-rendered the moment a card carried
+               one of its own — `wish` already did, via Wishlistbox, and every other
+               mode does now (`Bill` wraps BillItem, `Membership` wraps
+               MembershipItem, `ProfileProduct` wraps ShopCard, `task` is TaskItem
+               directly). The heart belongs to the card, so it appears wherever that
+               card is rendered — Discover, the carousel, and a creator's profile —
+               instead of only on the one grid that remembered to add it. */
+            return (
+                /* ⚠️ `[&>*]:h-full` — the CELL was already full height and the
+                   card inside it was not, so a mixed board of five different card
+                   components came out ragged: every row ended at a different
+                   place and the grid read as broken rather than as varied. */
                 <div
-                    key={item.id}
-                    className={`h-full ${mode === 'task' ? 'col-span-full' : ''}`}
+                    key={`${itemMode}-${item.id || index}`}
+                    className={`relative h-full [&>*]:h-full ${itemMode === 'task' ? 'col-span-full [&>*]:h-auto' : ''}`}
                 >
                     {card}
                 </div>
             );
-            
-            if (['creator', 'wish'].includes(mode) && (index + 1) % 12 === 0 && index !== results.length - 1) {
-                items.push(
-                    <div key={`spotlight-${index}`} className="col-span-full my-8">
-                        <SpotlightSection index={(index + 1) / 12} />
-                    </div>
-                );
-            }
         });
-        
-        if (items.length === 0) {
-             return (
-                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-box    border border-dashed border-gray-200">
-                     <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6">
-                        <RiSearchLine className="text-4xl text-[#FF007F]" />
-                     </div>
-                     <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
-                     <p className="text-black/60 max-w-md mb-8">
-                        We couldn't find any items matching your current filters. Try adjusting your search or filters.
-                     </p>
-                     <button 
-                        onClick={() => window.location.reload()} 
-                        className="px-6 py-3 bg-gray-900 text-white rounded-box   font-bold hover:bg-black transition-colors"
-                     >
-                        Clear All Filters
-                     </button>
-                 </div>
-             )
-        }
-        
-        return items;
-    }, [results, mode]);
+    }, [results, mode, auth, global_currency]);
+
+    const shown = results?.length || 0;
+
+    /*
+     * Infinite scroll, with the button kept.
+     *
+     * ⚠️ The observer fires ONCE PER PAGE: `armedFor` records the count it last
+     * loaded at, so a sentinel that stays on screen (a short page, a fast
+     * connection) cannot spend the whole result set in one scroll. The button
+     * stays visible because a sentinel is invisible to a keyboard.
+     */
+    const sentinel = useRef(null);
+    const armedFor = useRef(0);
+
+    useEffect(() => {
+        const el = sentinel.current;
+        if (!el || !hasMore || loading) return undefined;
+
+        const io = new IntersectionObserver((entries) => {
+            if (!entries[0]?.isIntersecting) return;
+            if (armedFor.current === shown) return;
+            armedFor.current = shown;
+            onLoadMore?.();
+        }, { rootMargin: '400px' });
+
+        io.observe(el);
+        return () => io.disconnect();
+    }, [hasMore, loading, shown, onLoadMore]);
+
+    if (!shown) {
+        return (
+            <div className="flex flex-col items-center justify-center rounded-box border border-dashed border-black/15 bg-white py-16 text-center">
+                <h3 className="font-anton text-xl uppercase text-black">Nothing here yet</h3>
+                <p className="mt-2 max-w-md text-black/60">Nothing matches these filters. Clear them to see everyone.</p>
+                {/* ⚠️ This button used to call window.location.reload(), which
+                    reloaded the page WITH the filters still applied — it looked
+                    like a clear and cleared nothing. */}
+                <button
+                    onClick={onClearFilters}
+                    className="mt-6 inline-flex min-h-[44px] items-center rounded-box-sm bg-[#FF007F] px-6 font-bold text-black transition-all hover:brightness-110 active:brightness-95"
+                >
+                    Clear filters
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="mt-0">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                <div className="flex flex-wrap gap-2 mt-2">
-                    {Object.entries(activeFilters).map(([key, value]) => {
-                            if (Array.isArray(value)) {
-                                return value.map(v => (
-                                    <Chip key={`${key}-${v}`} label={v} onRemove={() => removeFilter(key, v)} />
-                                ));
-                            }
-                            if (typeof value === 'boolean' && value) {
-                                return <Chip key={key} label="Verified Only" onRemove={() => removeFilter(key, false)} />;
-                            }
-                            if (key.includes('Price') && value) {
-                                return null; 
-                            }
-                            return null;
-                    })}
+            {heading && (
+                <div className="mb-5 flex items-end justify-between gap-4">
+                    <h2 className="font-anton text-xl uppercase tracking-wide text-black sm:text-2xl">{heading}</h2>
+                    {total > 0 && (
+                        <span className="shrink-0 text-[13px] font-semibold text-black/50">
+                            {shown} of {total}
+                        </span>
+                    )}
                 </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
+            {/* 5-up on a wide screen: at 1536px a 4-column grid leaves cards
+                the width of a poster with nothing beside them. */}
+            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {renderedItems}
             </div>
-        </div>
-    );
-}
 
-function Chip({ label, onRemove }) {
-    return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pink-50 text-pink-700 border border-pink-100">
-            {label}
-            <button onClick={onRemove} className="ml-2 hover:text-pink-900">
-                <RiCloseLine />
-            </button>
-        </span>
-    );
-}
- 
-function SpotlightSection({ index }) {
-    const spotlights = [
-        { title: "Ending Soon ⏳", subtitle: "Wishes expiring in 24h", color: "bg-orange-50 border-orange-100" },
-        { title: "Trending Now 🔥", subtitle: "Popular creators and wishes", color: "bg-pink-50 border-pink-100" },
-        { title: "Quick Wins ⚡", subtitle: "Wishes under £20", color: "bg-green-50 border-green-100" },
-    ];
-    const spot = spotlights[index % spotlights.length];
-
-    return (
-        <div className={`rounded-box    border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
-            <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-1">{spot.title}</h3>
-                <p className="text-black/80">{spot.subtitle}</p>
-            </div>
-            {spot.title === "Trending Now 🔥" ? (
-                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-box transition-all">
-                    View Collection
-                </Link>
-            ) : spot.title === "Quick Wins ⚡" ? (
-                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-box transition-all">
-                    View Collection
-                </Link>
-            ) : (
-                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-box transition-all">
-                    View Collection
-                </Link>
+            {hasMore && (
+                <div ref={sentinel} className="mt-8 flex justify-center">
+                    <button
+                        onClick={onLoadMore}
+                        disabled={loading}
+                        className="inline-flex min-h-[48px] items-center rounded-box-sm border-black bg-white px-8 font-bold text-black transition-all hover:brightness-110 active:brightness-95 disabled:opacity-50"
+                    >
+                        {loading ? 'Loading…' : 'Load more'}
+                    </button>
+                </div>
             )}
         </div>
     );

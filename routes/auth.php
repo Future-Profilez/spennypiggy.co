@@ -55,8 +55,10 @@ use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\SubscriptionActivationService;
+use App\Support\Badges;
 use App\Support\SubscriptionPayload;
 use App\Support\SubscriptionPlan;
 use Carbon\Carbon;
@@ -219,7 +221,10 @@ Route::withoutMiddleware([VerifyCsrfToken::class])
     });
 
 // Public routes (no middleware)
-Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral']);
+// ⚠️ Same oracle as `check-coupon-code`: unauthenticated, and it answers whether a
+// referral code exists. Throttled to match.
+Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral'])
+    ->middleware('throttle:20,1');
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
@@ -240,10 +245,130 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
  */
 Route::get('discover/birthdays', [BirthdayDiscoveryController::class, 'index'])->name('discover.birthdays');
 
+/*
+ * One page per interest — `/discover/c/artist`.
+ *
+ * 🚨 MUST STAY ABOVE the `discover/{type?}/{category?}` catch-all, which would
+ * otherwise read this as `type=c`.
+ *
+ * ⚠️ It reuses the Discover closure by forwarding an `interest` filter rather
+ * than growing a second listing page: a separate implementation is a second set
+ * of rules about who is visible, and those two will not stay in step.
+ */
+Route::get('discover/c/{slug}', function (string $slug, Illuminate\Http\Request $request) {
+    if (! in_array($slug, Badges::interestSlugs(), true)) {
+        abort(404);
+    }
+
+    $label = Badges::interests()[$slug]['label'] ?? $slug;
+    $title = $label.' creators to support';
+    $description = 'Buy content directly from '.$label.' creators on Spenny Piggy. Every purchase unlocks straight away.';
+
+    // ⚠️ SeoMeta has no setTitle/setDescription, and for a title `addTag`'s
+    // SECOND argument is the string itself — not a props array. Passing props
+    // there renders "<title>Array to string conversion</title>".
+    SeoMeta::addTag('title', $title);
+    SeoMeta::addTag('meta', ['name' => 'description', 'content' => $description]);
+    SeoMeta::setOgData('website', $title, $description);
+
+    /*
+     * CollectionPage JSON-LD. These are the only indexable Discover URLs beyond the
+     * root (a filtered Discover is noindex,follow), so they are the pages that have
+     * to describe themselves. ⚠️ Nothing here lists creators: an ItemList naming
+     * real people in structured data is a durable, machine-readable copy of who was
+     * on the page that day, and a creator who leaves cannot take it back.
+     */
+    SeoMeta::addJsonLd([
+        '@context' => 'https://schema.org',
+        '@type' => 'CollectionPage',
+        'name' => $title,
+        'description' => $description,
+        'url' => url('/discover/c/'.$slug),
+        'isPartOf' => ['@type' => 'WebSite', 'name' => 'Spenny Piggy', 'url' => url('/')],
+    ]);
+
+    $request->merge(['interestLabel' => $label]);
+
+    $request->merge(['interest' => $slug, 'contentType' => 'Creators']);
+
+    return app()->call(app('router')->getRoutes()->getByName('discover')->getAction('uses'), [
+        'request' => $request,
+        'type' => 'creators',
+        'category' => null,
+    ]);
+})->name('discover.interest');
+
+/*
+ * Quick view — what one creator sells, for the modal on their Discover card.
+ *
+ * 🚨 MUST STAY ABOVE the `discover/{type?}/{category?}` catch-all.
+ *
+ * ⚠️ Read-only. Every row links to the EXISTING checkout for that item; nothing
+ * on this path prices, charges or discounts anything.
+ */
+Route::get('discover/creator/{username}/preview', function (string $username, DiscoveryService $discoveryService) {
+    return response()->json($discoveryService->creatorPreview($username));
+})->middleware('throttle:60,1')->name('discover.creator.preview');
+
+/*
+ * The live unlock feed, polled by Discover's hero ticker.
+ *
+ * 🚨 MUST STAY ABOVE the `discover/{type?}/{category?}` catch-all, same trap as
+ * suggestions and birthdays.
+ *
+ * 🚨 The response carries the creator and what was bought — NEVER the buyer, in
+ * any form, and never an amount. Cached for a minute in the service, and
+ * throttled here because it is public and polled.
+ */
+Route::get('discover/live', function (DiscoveryService $discoveryService) {
+    return response()->json(['unlocks' => $discoveryService->recentUnlocks(12)]);
+})->middleware('throttle:60,1')->name('discover.live');
+
+/*
+ * Search suggestions for the Discover search box.
+ *
+ * 🚨 MUST STAY ABOVE the `discover/{type?}/{category?}` catch-all — declared
+ * after it, `discover/suggestions` is read as `type=suggestions` and answers
+ * with an HTML page the search box cannot parse. Same trap as birthdays above.
+ *
+ * ⚠️ This route did not exist. `TopBar.jsx` has always called
+ * `route('discover.suggestions')`, and ziggy THROWS for a name it does not
+ * carry — so every keystroke past the second raised an error and the dropdown
+ * (commented out in the same file) could never have shown anything anyway.
+ *
+ * Throttled because it is unauthenticated and runs a LIKE per keystroke.
+ */
+Route::get('discover/suggestions', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService) {
+    $term = trim((string) $request->query('q', ''));
+
+    return response()->json($discoveryService->getSuggestions($term));
+})->middleware('throttle:60,1')->name('discover.suggestions');
+
 // Discover route
-Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
+/*
+ * ⚠️ `$type` DEFAULTS TO NULL, NOT 'trending'. With 'trending' as the default
+ * every bare /discover request set filters[type], which put the page into its
+ * search branch — so the featured rails were built for a landing page that
+ * could never render them, and the landing was a bare grid of creators in
+ * trending order. /discover/trending still asks for that grid explicitly.
+ */
+Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
     $getData = function () use ($request, $discoveryService, $type) {
-        $filters = $request->only(['search', 'contentType', 'page', 'sortBy', 'type', 'minPrice', 'maxPrice', 'categories']);
+        $filters = $request->only(['search', 'contentType', 'page', 'sortBy', 'type', 'minPrice', 'maxPrice', 'categories', 'priceBand', 'unlock', 'interest']);
+
+        // Only the filters Discover actually offers reach the service — an
+        // unknown ?priceBand= is dropped rather than cached under its own key.
+        if (! empty($filters['priceBand']) && ! isset(DiscoveryService::PRICE_BANDS[$filters['priceBand']])) {
+            unset($filters['priceBand']);
+        }
+        if (! empty($filters['unlock']) && ! isset(DiscoveryService::UNLOCK_TYPES[$filters['unlock']])) {
+            unset($filters['unlock']);
+        }
+        // The interest facet is the EXISTING profile-badge taxonomy
+        // (App\Support\Badges), not a second list of categories.
+        if (! empty($filters['interest']) && ! in_array($filters['interest'], Badges::interestSlugs(), true)) {
+            unset($filters['interest']);
+        }
         // Normalize type and apply shortcut filters
         if ($type) {
             $normalizedType = strtolower($type);
@@ -286,9 +411,10 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         $newVerifiedCreators = [];
         $featuredWishes = [];
         $topEarnersData = [];
-        $featuredBills = [];
-        $featuredMemberships = [];
-        $featuredTasks = [];
+        $budgetItems = [];
+        $boardCreators = [];
+        $boardItems = [];
+        $newItems = [];
 
         if ($isSearch) {
             // Fetch all types unless specific contentType is set
@@ -329,22 +455,62 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             // Top earners this week
             $topEarnersData = $discoveryService->getTopEarners('weekly', $limit)['data'];
 
-            // Bills & Memberships
-            $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
+            /*
+             * ⚠️ NO featured bills / memberships / tasks / shops ARE BUILT HERE
+             * ANY MORE. The landing page carries three rails and a board; those
+             * four rows were cut when eight near-identical rails became three,
+             * and the queries went on running on every landing request, shipping
+             * four unread arrays in the payload. The chips and the board reach
+             * every one of those types.
+             *
+             * The service methods are untouched — bring a rail back by rendering
+             * it, not by re-adding a fetch nothing reads.
+             */
 
-            $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
+            /*
+             * The cheapest way in. A first-time supporter's question is not
+             * "who is trending" but "what can I afford", and every rail on this
+             * page used to answer the first one. Wishes only, so the row can
+             * reuse the wish card the rest of the site uses.
+             */
+            /*
+             * ⚠️ Was wishes only, so the cheapest way in advertised ONE module
+             * while shop items and paid tasks under a tenner sat unlisted. It is
+             * the mixed feed now, like the board.
+             */
+            $budgetItems = $discoveryService->mixedFeed(
+                ['priceBand' => 'under10', 'sortBy' => 'Price: Low to High'],
+                3
+            );
 
-            $featuredTasks = $discoveryService->getFeaturedTasks($limit);
+            /*
+             * The board: everyone, paged, under the three rails — so the landing
+             * page has somewhere to keep scrolling instead of ending after the
+             * rails. Same ranked source as the search grid, so a filter applied
+             * from the bar changes this list without changing which code ranks it.
+             */
+            $boardCreators = $discoveryService->getSearchCreators($filters, 24);
+
+            /*
+             * 🚨 THE BOARD LEADS WITH THINGS TO BUY, NOT WITH PEOPLE. A supporter
+             * does not buy a creator; they buy something a creator made, and both
+             * the board and two of three rails used to list accounts. Creators are
+             * one rail and the "People" chip now.
+             */
+            $boardItems = $discoveryService->mixedFeed($filters, 5);
+            $newItems = $discoveryService->mixedFeed(['sortBy' => 'New'], 2);
         }
 
         return [
+            'counts' => $discoveryService->getSearchCounts($filters),
+            'budgetItems' => $budgetItems,
+            'boardCreators' => $boardCreators,
+            'boardItems' => $boardItems,
+            'newItems' => $newItems,
             'featuredCreators' => $featuredCreators,
             'newVerifiedCreators' => $newVerifiedCreators,
             'featuredWishes' => $featuredWishes,
             'topEarnersData' => $topEarnersData,
-            'featuredBills' => $featuredBills,
-            'featuredMemberships' => $featuredMemberships,
-            'featuredTasks' => $featuredTasks,
             'filters' => $filters,
             'searchResults' => $searchResults,
         ];
@@ -381,7 +547,14 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     // Use cache for everyone, but shorter TTL for auth users if needed
     // However, discovery data is mostly global, so we can use a shared cache key
     // that depends on the request parameters.
-    $cacheKey = 'discover_v2_'.($type ?? 'root').'_'.($category ?? 'none').'_'.md5(json_encode($request->all()));
+    /*
+     * ⚠️ Keyed on the filters Discover offers, NOT on $request->all() — any
+     * stray query string (a campaign tag, a scroll position) used to mint its
+     * own cache entry, so the cache grew without ever being hit.
+     */
+    $cacheKey = 'discover_v3_'.($type ?? 'root').'_'.($category ?? 'none').'_'.md5(json_encode(
+        $request->only(['search', 'contentType', 'page', 'sortBy', 'type', 'minPrice', 'maxPrice', 'categories', 'priceBand', 'unlock', 'interest'])
+    ));
     $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
 
     $data = Cache::remember($cacheKey, $ttl, $getData);
@@ -390,14 +563,18 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         SeoMeta::setPaginationLinks($request->fullUrlWithQuery(['page' => $page - 1]), null);
     }
 
+    /*
+     * "Is there another page" is answered by the real totals now, not by "this
+     * page came back full" — a section holding exactly 24 rows used to advertise
+     * a page 2 that did not exist, and one holding 25 advertised nothing after
+     * the first page.
+     */
     $limit = 24;
     $hasNext = false;
-    if (! empty($data['searchResults']) && is_array($data['searchResults'])) {
-        foreach ($data['searchResults'] as $group) {
-            if (is_iterable($group) && count($group) >= $limit) {
-                $hasNext = true;
-                break;
-            }
+    foreach (($data['counts'] ?? []) as $total) {
+        if ((int) $total > $page * $limit) {
+            $hasNext = true;
+            break;
         }
     }
 
@@ -410,11 +587,81 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'newVerifiedCreators' => $data['newVerifiedCreators'],
         'featuredWishes' => $data['featuredWishes'],
         'topEarners' => $data['topEarnersData'],
-        'featuredBills' => $data['featuredBills'],
-        'featuredMemberships' => $data['featuredMemberships'],
-        'featuredTasks' => $data['featuredTasks'],
+        'budgetItems' => $data['budgetItems'],
+        /*
+         * Proof that does not need the visitor to do anything: what people have
+         * actually bought here in the last 30 days. Rendered from this snapshot
+         * on first paint, refreshed from `discover.live` afterwards. An empty
+         * list renders NOTHING — see recentUnlocks().
+         */
+        'liveUnlocks' => $discoveryService->recentUnlocks(12),
+
+        /*
+         * 🚨 PERSONAL ROWS ARE BUILT OUTSIDE THE PAGE CACHE. `$data` above is
+         * cached per filter set and served to every visitor; putting a "creators
+         * you follow" row in there would show one supporter's follows to the
+         * next person with the same filters.
+         *
+         * ⚠️ Both are empty for a guest, and the page renders no row rather than
+         * an empty one.
+         */
+        'followedCreators' => Auth::check() ? $discoveryService->followedCreators(Auth::id(), 10) : [],
+        'supportedCreators' => Auth::check() ? $discoveryService->supportedCreators(Auth::id(), 10) : [],
+        'boardCreators' => $data['boardCreators'],
+        'boardItems' => $data['boardItems'],
+        'newItems' => $data['newItems'],
+        /*
+         * Real totals per content type, so the grid heading can say how much
+         * there is rather than how much is on this page — and so "Load more"
+         * knows whether another page exists.
+         */
+        'counts' => $data['counts'],
+        'priceBands' => collect(DiscoveryService::PRICE_BANDS)->map(fn ($b, $k) => ['key' => $k, 'label' => $b['label']])->values(),
+        'unlockTypes' => collect(DiscoveryService::UNLOCK_TYPES)->map(fn ($label, $k) => ['key' => $k, 'label' => $label])->values(),
+        // What creators here actually are, most-worn first — read from the
+        // profile badges they already picked.
+        'interests' => $discoveryService->interestFacets(12),
+        // Set by the /discover/c/{slug} page so the grid can headline the interest
+        // rather than repeating the generic board heading.
+        'interestLabel' => $request->query('interestLabel') ?: $request->input('interestLabel'),
         'filters' => $data['filters'],
         'searchResults' => $data['searchResults'],
+
+        /*
+         * Discovery Phase 6 — "search recs" and "empty states" (Developer Master
+         * Plan, 19 Aug 2026, §C).
+         *
+         * 🚨 THE WORST DEAD END ON THE PLATFORM IS A SEARCH THAT FINDS NOTHING.
+         * That visitor is not browsing — they came looking for something
+         * specific and were told "No matches found. Try adjusting your search",
+         * which is an instruction to work harder with no idea what would work.
+         *
+         * ⚠️ Only sent when a search is actually running; the rest of this page
+         * already has its own sections and does not need more.
+         */
+        'collections' => ! empty($data['filters']['search'])
+            || ! empty($data['filters']['type'])
+            || ! empty($data['filters']['contentType'])
+                ? app(CollectionService::class)
+                    ->many(['trending', 'hidden_gems', 'new_creators'], 8, $request->user())
+                : [],
+
+        /*
+         * Landing collections. `CollectionService` has answered these since Phase 5
+         * and Discover only ever rendered them on an EMPTY SEARCH — the one moment
+         * the visitor is already frustrated. They belong on the page everybody sees.
+         *
+         * ⚠️ NOT `trending` or `new_creators`: those are the page's own rails, and
+         * the same creators under two headings reads as a bug. Hidden gems (least
+         * SHOWN, never least earning) and almost-funded pots are genuinely different
+         * selections.
+         */
+        'landingCollections' => empty($data['filters']['search'])
+            && empty($data['filters']['type'])
+            && empty($data['filters']['contentType'])
+                ? app(CollectionService::class)
+                    ->many(['hidden_gems', 'almost_funded'], 8, $request->user())
+                : [],
     ]);
 })->name('discover');
 
@@ -585,9 +832,16 @@ Route::middleware('auth')->group(function () {
             Route::post('reply-delete/{uuid}', [PostsController::class, 'deleteReply'])->name('reply-delete');
         });
         // Categories and basic functionality
-        Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
-        Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
-        Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+        /*
+         * ⚠️ The three category routes that stood here were DECLARED TWICE — the
+         * same URIs, controller methods and names are registered again further
+         * down this file, inside the account group. Laravel keys the route table
+         * on method+URI and the LAST registration wins, so this block never
+         * answered a request; it only made the source disagree with the app.
+         * Removing it is a no-op, verified against `route:list` before and after
+         * (same action, same name, same middleware). The live declarations are
+         * the ones beside `edit-profile`.
+         */
         Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
     });
 

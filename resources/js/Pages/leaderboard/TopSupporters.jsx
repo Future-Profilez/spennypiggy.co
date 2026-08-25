@@ -1,44 +1,27 @@
 import Avatar from '@/includes/Avatar'
 import userphoto from "../../../assets/siteicon.png";
-import { useState } from 'react';
-import  axios  from 'axios';
-import { useEffect } from 'react';
-import LoadingScreen from '@/includes/LoadingScreen';
-import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
 import { trackSearchClick } from "@/includes/Analytics";
+import useBundleSection from './useBundle';
 
+/**
+ * The people who buy the most, ranked by HOW OFTEN — never by how much.
+ *
+ * 🚨 This panel replaced `LeaderboardStars` in the sidebar on 24 Aug 2026. That
+ * one was headed "Top Supporters — fans who have shown the most support" while
+ * its endpoint (`topGiftersAllTime`) actually returns the CREATOR behind each
+ * of the largest recent payments, with the payment's AMOUNT — so a public page
+ * was publishing a money figure beside a named account, which is the one thing
+ * the board itself refuses to do (`'amount' => 0` in the row payload).
+ *
+ * ⚠️ It reads the shared bundle rather than firing its own request: the whole
+ * point of `LeaderBoardController::bundle()` is that opening this page costs one
+ * cached response, not seven heavy aggregates.
+ */
 export default function TopSupporters({grid = false}) {
 
-  const { formatMultiPrice } = PriceFormat();
-  const [ period, setPeriod] = useState('frequency');
-  const [ loading, setLoading] = useState(false);
-  const [ error, setError] = useState(null);
-  const [ data, setData] = useState([]);
-
-  const fetchSupporters = (period) => {
-    setLoading(true);
-    setError(null);
-    // route(), never a relative path — see RecentSupporters for what a rewritten
-    // page URL does to a relative request on this page.
-    axios.get(route('top-supporters-frequency'))
-      .then((response) => {
-        setData(response.data.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching supporters:", error);
-        setError("Failed to load top supporters. Please try again.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    if (!loading) {
-      fetchSupporters(period);
-    }
-  }, [period]);
+  const { data: section, loading, error } = useBundleSection('top_supporters');
+  const data = section?.data || [];
 
   const SupporterItem = ({ supporter, index }) => (
     <div className="rank py-3 border-b flex items-center justify-between">
@@ -63,7 +46,7 @@ export default function TopSupporters({grid = false}) {
             {supporter.gift_count} {supporter.gift_count === 1 ? 'support' : 'supports'}
           </p>
           {/* 
-          <p className="text-xs text-black/60" title={`Support types: ${supporter.support_types?.join(', ')}`}>
+          <p className="text-12 text-black/70" title={`Support types: ${supporter.support_types?.join(', ')}`}>
             {supporter.support_types?.length} {supporter.support_types?.length === 1 ? 'type' : 'types'}
           </p>
            */}
@@ -94,11 +77,11 @@ export default function TopSupporters({grid = false}) {
 
   return (
     <>
-    {data && data.length > 0 ? <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
-      <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C]" title="Ranked by number of support transactions">
-        🏆 Top Supporters
+    {data && data.length > 0 ? <div className="bg-white rounded-box border-black p-4 mb-6">
+      <h2 className="text-12 font-semibold uppercase tracking-[0.22em] text-black/70" title="Ranked by number of purchases, never by amount">
+        Top supporters
       </h2>
-      <p className='text-black/60 mb-3'>Most active supporters by support count</p>
+      <p className="mb-3 text-13 text-black/70">Ranked by how often they buy, never by how much</p>
     
       {data && data.length ? (
         <>

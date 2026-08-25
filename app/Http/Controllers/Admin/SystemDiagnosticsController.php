@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureSystemDiagnosticsAccess;
 use App\Models\Bills;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
@@ -27,6 +28,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -45,6 +47,66 @@ class SystemDiagnosticsController extends Controller
      * `noindex,nofollow` rather than the site-wide `noindex,follow` — there is nothing here
      * worth passing crawl on to.
      */
+    /**
+     * The hand-off from admin.spennypiggy.co.
+     *
+     * The admin app is the only surface in the estate that actually authenticates
+     * an administrator (`auth:admin` + `2fa`); this app cannot, because its `admin`
+     * middleware tests `users.role === '2'` and no user holds that role. So the
+     * admin app signs a timestamp with a secret both apps share and sends the
+     * browser here; a valid signature unlocks the session for a while.
+     *
+     * ⚠️ Everything below fails to a 404, never a 403 or a message. A refusal that
+     * distinguishes "wrong signature" from "expired" from "no such page" tells an
+     * unauthenticated caller which of the three they got, which is the whole of
+     * what they need to know.
+     *
+     * The redirect afterwards is what keeps the signature out of the address bar,
+     * the browser history and the referrer of every asset the page loads — the
+     * screen itself is reached on a clean URL, on the session cookie alone.
+     */
+    public function unlock(Request $request)
+    {
+        $secret = (string) config('system_diagnostics.link_secret');
+        $ts = (int) $request->query('t');
+        $signature = (string) $request->query('s');
+
+        // An unset secret shuts the door rather than opening it: a deployment
+        // that forgot the env var must fail closed, not fall back to accepting
+        // anything, which is exactly the state this route was built to end.
+        if ($secret === '' || $ts <= 0 || $signature === '') {
+            abort(404);
+        }
+
+        if (abs(time() - $ts) > max(30, (int) config('system_diagnostics.link_ttl', 120))) {
+            abort(404);
+        }
+
+        $actor = (string) $request->query('a', '');
+        $expected = hash_hmac('sha256', $ts.'|'.$actor, $secret);
+
+        // hash_equals, not `===` — a signature check that returns early on the
+        // first wrong byte is timing-comparable.
+        if (! hash_equals($expected, $signature)) {
+            abort(404);
+        }
+
+        $request->session()->put(
+            EnsureSystemDiagnosticsAccess::SESSION_KEY,
+            time() + max(60, (int) config('system_diagnostics.session_ttl', 1800))
+        );
+
+        // Who opened it, on the app that owns the screen. The admin app writes its
+        // own audit row; this one is here so the website's log alone answers "who
+        // was on the diagnostics page when that Stripe object appeared".
+        Log::info('System diagnostics unlocked via admin hand-off', [
+            'admin' => $actor !== '' ? $actor : 'unknown',
+            'ip' => filter_var($request->ip(), FILTER_VALIDATE_IP) ?: null,
+        ]);
+
+        return redirect()->route('admin.system-diagnostics.index');
+    }
+
     public function index()
     {
         SeoMeta::setRobots('noindex,nofollow,noarchive');

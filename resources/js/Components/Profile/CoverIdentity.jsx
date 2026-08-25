@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from "react";
+import { Suspense, useRef } from "react";
 import { usePage } from "@inertiajs/react";
 import { ShareIcon } from "@animateicons/react/lucide";
 import VerifiedBadge, { verifiedTier } from "@/Components/VerifiedBadge";
@@ -13,6 +13,7 @@ import {
     FaTumblr,
 } from "react-icons/fa6";
 import userphoto from "../../../assets/siteicon.png";
+import lazyRetry from "@/utils/lazyRetry";
 
 // Brand squares, rendered only for links the creator actually set.
 const SOCIALS = [
@@ -41,8 +42,8 @@ const SOCIALS = [
     },
 ];
 
-const ShareProfile = lazy(() => import("@/wishlist/ShareProfile"));
-const FounderBadge = lazy(() => import("@/Components/FounderBadge"));
+const ShareProfile = lazyRetry(() => import("@/wishlist/ShareProfile"));
+const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
 
 /**
  * Who this profile belongs to: avatar, name, verification and @handle.

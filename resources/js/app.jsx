@@ -48,10 +48,34 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
             "AxiosError: Network Error",
             "AbortError: Abort due to cancellation of share.",
             "NotFoundError: Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.",
+            // Same fault as the line above, the other half of it: React holds a
+            // reference to a node that Google Translate, Safari Reader or a browser
+            // extension has already re-parented or removed, so the reconciler asks the
+            // DOM to detach a child that is no longer there. Nothing in this codebase
+            // can prevent it and the page recovers on the next render — ignoring only
+            // `insertBefore` meant half of one known issue was filtered and half was
+            // still paging us (JAVASCRIPT-REACT-8Y).
+            "NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
             "TypeError: Load failed",
             "TypeError: null is not an object (evaluating 'i.cdnUrl')",
             "Error: Response not ok: 403",
+            // 🚨 THE ANDROID WEBVIEW JS BRIDGE, NOT OUR CODE. An in-app browser
+            // (Facebook, Instagram, Twitter…) injects `@JavascriptInterface` objects
+            // into every page it opens, and when one of those native methods throws,
+            // the WebView surfaces it as a page error attributed to US. The method
+            // name varies — `enableDidUserTypeOnKeyboardLogging` was filtered, and
+            // `postMessage` then arrived as a fresh issue (JAVASCRIPT-REACT-9K) and
+            // paged us again. ⚠️ The two SUFFIXES are the stable part, so the regex in
+            // `beforeSend` matches on those rather than on any method name; these two
+            // literals stay only because `ignoreErrors` does substring matching and
+            // costs nothing.
+            //
+            // ⚠️ Our own `postMessage` calls are web-worker-only
+            // (`hooks/useWebWorker.js`), so a real fault of ours could not produce
+            // this wording. Verified before filtering — do not widen this to plain
+            // "postMessage".
             "Error: Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone",
+            "Error: Error invoking postMessage: Java exception was raised during method invocation",
             "TypeError: Importing a module script failed.",
             "SyntaxError: The string did not match the expected pattern.",
         ],
@@ -64,7 +88,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
                 type === "AbortError" ||
                 type === "AxiosError" ||
                 (type === "TypeError" && /load failed|cdnUrl|Importing a module script failed/i.test(value)) ||
-                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|insertBefore.*not a child of this node|abort due to cancellation of share|enableDidUserTypeOnKeyboardLogging|Java object is gone|The string did not match the expected pattern/i.test(value)
+                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|(?:insertBefore|removeChild).*not a child of this node|abort due to cancellation of share|Java object is gone|Java exception was raised during method invocation|The string did not match the expected pattern/i.test(value)
             ) {
                 return null;
             }

@@ -41,8 +41,17 @@ export async function syncAppBadge() {
 
         const url = typeof window.route === "function" ? window.route("get-notification") : "/get-notification";
         const res = await http.get(url);
-        const items = (res && res.data && res.data.notifications) || [];
-        const unread = items.filter((n) => Number(n.is_read) === 0).length;
+        /*
+         * The server sends `unread_count` as a COUNT over every row, not a
+         * filter of the page it returns. Falling back to counting the page is
+         * kept for a cached/older response, but it can only see the first 30
+         * notifications and will read low.
+         */
+        const data = (res && res.data) || {};
+        const items = data.notifications || [];
+        const unread = Number.isFinite(Number(data.unread_count))
+            ? Number(data.unread_count)
+            : items.filter((n) => Number(n.is_read) === 0).length;
         setAppBadge(unread);
     } catch (_) {
         /* logged out / offline / unsupported — leave the badge as-is */

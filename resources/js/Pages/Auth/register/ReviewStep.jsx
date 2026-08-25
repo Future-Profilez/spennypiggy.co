@@ -52,6 +52,7 @@ export default function ReviewStep({
     canSubmit,
     onSubmit,
     plan,
+    marketingConsentLabel,
 }) {
     const accent = accentFor(role);
     const isCreator = Number(role) === ROLE_CREATOR;
@@ -81,7 +82,7 @@ export default function ReviewStep({
             lede={
                 isCreator && plan?.free_until_first_sale ? (
                     <div
-                        className="rounded-box border-[3px] border-black bg-[#E6EA7B] p-4"
+                        className="rounded-box border-black bg-[#E6EA7B] p-4"
                         style={{  }}
                     >
                         <p className="font-gulfs text-base uppercase leading-tight text-black">
@@ -163,6 +164,40 @@ export default function ReviewStep({
                         These are my own details, and I'll use this name and
                         email when I pay. One account per person — using someone
                         else's details will suspend it.
+                    </Consent>
+                )}
+
+                {/*
+                    Marketing consent — UK direct-marketing brief, 23 Aug 2026.
+
+                    🚨 THIS ONE IS OPTIONAL AND MUST NEVER REACH `canSubmit`.
+                    The two consents above gate the button; this one does not,
+                    and leaving it unticked has to create the account normally.
+                    A consent that is required to proceed is not consent, and
+                    bundling it with the terms checkbox is the specific thing
+                    §1 of the brief rules out — so it is a separate row with
+                    its own label, below the required pair.
+
+                    Unticked by default: `consents.marketing` initialises false
+                    in Register.jsx and nothing pre-ticks it.
+
+                    The wording comes from the server (config/marketing_consent.php)
+                    so the text shown here and the version stamped on the
+                    consent record cannot drift.
+                */}
+                {marketingConsentLabel && (
+                    <Consent
+                        id="marketing_opt_in"
+                        checked={consents.marketing}
+                        accentHex={accent.hex}
+                        onChange={(v) => setConsent("marketing", v)}
+                    >
+                        {marketingConsentLabel}
+                        <span className="mt-1 block text-[13px] opacity-60">
+                            Optional. You can change this any time in your
+                            settings, and every marketing email has an
+                            unsubscribe link.
+                        </span>
                     </Consent>
                 )}
             </div>

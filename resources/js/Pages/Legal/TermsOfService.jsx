@@ -8,7 +8,7 @@ export default function TermsOfService(props) {
         <Guest auth={auth?.user} user={user}>
             <Head title="Terms of Service" />
             <LegalLayout activePage="TermsOfService">
-                <div className="mx-auto w-full max-w-[72ch] px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
+                <div className="mx-auto w-full max-w-[92ch] px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
                     <h1 className="text-2xl md:text-4xl font-black text-[#FF007F] mb-10 uppercase tracking-tight">
                         Terms of Service
                     </h1>

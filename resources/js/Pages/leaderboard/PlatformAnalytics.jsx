@@ -1,7 +1,7 @@
 import useBundleSection from './useBundle';
 import { RiBarChart2Line, RiArrowUpLine, RiUser3Line, RiEarthLine, RiMedal2Line, RiFocus3Line } from 'react-icons/ri';
 
-export default function PlatformAnalytics() {
+export default function PlatformAnalytics({ hideHeading = false }) {
     // Shared with every other panel on the page — one request, not seven.
     const { data: section, loading, error, retry: fetchAnalytics } = useBundleSection('platform_analytics');
     const responseData = section?.data || {};
@@ -20,7 +20,7 @@ export default function PlatformAnalytics() {
     };
 
     const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'text-blue-600' }) => (
-        <div className="stat-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-6">
+        <div className="stat-card bg-white rounded-box border-black p-6">
             <div className="flex items-start justify-between mb-4 gap-2">
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-black/80 uppercase tracking-wide break-words">{title}</h3>
@@ -71,7 +71,7 @@ export default function PlatformAnalytics() {
     );
 
     const CountryCard = ({ country, rank }) => (
-        <div className="country-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
+        <div className="country-card bg-white rounded-box border-black p-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="rank-badge flex h-6 w-6 items-center justify-center rounded-full font-gulfs text-12 leading-none text-black/60 ">
@@ -93,7 +93,7 @@ export default function PlatformAnalytics() {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
+            <div className="bg-white rounded-box border-black p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -103,7 +103,7 @@ export default function PlatformAnalytics() {
 
     if (error) {
         return (
-            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
+            <div className="bg-white rounded-box border-black p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -118,8 +118,10 @@ export default function PlatformAnalytics() {
     }
 
     return (
-        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
-            <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📊 Platform Analytics</h2>
+        <div className="bg-white rounded-box border-black p-4 mb-6">
+            {!hideHeading && (
+                <h2 className="mb-4 text-left text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Platform analytics</h2>
+            )}
             <p className="text-black/60 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}
@@ -153,7 +155,7 @@ export default function PlatformAnalytics() {
             <div className="mb-8">
                 <div className="flex items-center mb-4">
                     <RiEarthLine size={24} className="text-green-600" />
-                    <h3 className="text-lg font-semibold ml-2">Top Countries by Supporter Activity</h3>
+                    <h3 className="ml-2 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Top countries by supporter activity</h3>
                 </div>
                 <div className="space-y-3">
                     {data.countries?.map((country, index) => (
@@ -171,11 +173,11 @@ export default function PlatformAnalytics() {
                 <div>
                     <div className="flex items-center mb-4">
                         <RiMedal2Line size={24} className="text-yellow-600" />
-                        <h3 className="text-lg font-semibold ml-2">Recent Platform Achievements</h3>
+                        <h3 className="ml-2 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Recent platform achievements</h3>
                     </div>
                     <div className="space-y-3">
                         {data.achievements.map((achievement, index) => (
-                            <div key={index} className="achievement-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
+                            <div key={index} className="achievement-card bg-white rounded-box border-black p-4">
                                 <div className="flex items-start space-x-3">
                                     <div className="text-2xl">{achievement.icon}</div>
                                     <div>

@@ -1,11 +1,9 @@
 import useBundleSection from './useBundle';
 import { RiArrowUpLine, RiArrowDownLine, RiPulseLine } from 'react-icons/ri';
-import PriceFormat from '@/includes/PriceFormat';
 import Avatar from '@/includes/Avatar';
 import discoveryLink, { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
 
-export default function GrowthTrends() {
-    const { formatMultiPrice } = PriceFormat();
+export default function GrowthTrends({ hideHeading = false }) {
     // Shared with every other panel on the page — one request, not seven.
     const { data: section, loading, error, retry: fetchGrowthData } = useBundleSection('growth_trends');
     const responseData = section?.data || {};
@@ -31,7 +29,7 @@ export default function GrowthTrends() {
     };
 
     const TrendCard = ({ title, value, change, icon: Icon, type = 'positive' }) => (
-        <div className="trend-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4">
+        <div className="trend-card bg-white rounded-box border-black p-4">
             <div className="flex items-center justify-between mb-2">
                 <Icon size={24} className={`${type === 'positive' ? 'text-green-500' : 'text-red-500'}`} />
                 <span className={`text-sm font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
@@ -44,7 +42,7 @@ export default function GrowthTrends() {
     );
 
     const CreatorCard = ({ creator, rank, badge }) => (
-        <div className="creator-growth-card bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-3">
+        <div className="creator-growth-card bg-white rounded-box border-black p-4 mb-3">
             <div className="flex items-center justify-between">
                 <div className="flex min-w-0 items-center space-x-2">
                     {/* `Avatar` already renders the name and the handle. The card
@@ -72,19 +70,15 @@ export default function GrowthTrends() {
                         </span>
                     )}
                 </div>
+                {/* 🚨 Supporters, never money. The old fallback printed
+                    `current_amount`, which the controller hardcodes to 0 — so on a
+                    public page it rendered a creator's earnings as "£0.00". Wrong
+                    number AND a number that may not be published. */}
                 <div className="shrink-0 text-right">
-                    {/* Show engagement metrics if available, otherwise show monetary */}
-                    {creator.supporters ? (
-                        <>
-                            <p className="font-bold text-lg">👥 {creator.supporters}</p>
-                            <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
-                        </>
-                    ) : (
-                        <>
-                            <p className="font-bold text-lg tabular-nums">{formatMultiPrice(creator.current_amount, creator.currency)}</p>
-                            <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
-                        </>
-                    )}
+                    <p className="font-bold text-lg tabular-nums">
+                        {creator.supporters ?? 0} {creator.supporters === 1 ? 'supporter' : 'supporters'}
+                    </p>
+                    <p className="text-sm text-green-600">+{creator.growth_percentage}% growth</p>
                 </div>
             </div>
         </div>
@@ -92,7 +86,7 @@ export default function GrowthTrends() {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
+            <div className="bg-white rounded-box border-black p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -102,7 +96,7 @@ export default function GrowthTrends() {
 
     if (error) {
         return (
-            <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6 text-center">
+            <div className="bg-white rounded-box border-black p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -117,8 +111,10 @@ export default function GrowthTrends() {
     }
 
     return (
-        <div className="bg-white rounded-box ring-1 ring-inset ring-black/[0.06] p-4 mb-6">
-            <h2 className="text-19 font-semibold tracking-tight text-[#0B0B0C] text-left mb-4">📈 Growth & Momentum</h2>
+        <div className="bg-white rounded-box border-black p-4 mb-6">
+            {!hideHeading && (
+                <h2 className="mb-4 text-left text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Growth &amp; momentum</h2>
+            )}
             <p className="text-black/60 mb-6">Creators with the fastest growth and momentum</p>
 
             {/* Platform Stats */}
@@ -131,7 +127,7 @@ export default function GrowthTrends() {
                 />
                 <TrendCard 
                     title="Community Engagement"
-                    value={data.platform_stats.total_interactions || formatMultiPrice(data.platform_stats.monthly_revenue, 'USD')}
+                    value={data.platform_stats.total_interactions ?? 0}
                     change={data.platform_stats.engagement_growth || data.platform_stats.revenue_growth}
                     icon={RiArrowUpLine}
                 />
@@ -143,7 +139,7 @@ export default function GrowthTrends() {
                 />
                 <TrendCard 
                     title="Avg. Community Score"
-                    value={data.platform_stats.avg_community_score || formatMultiPrice(data.platform_stats.avg_support, 'USD')}
+                    value={data.platform_stats.avg_community_score ?? 0}
                     change={data.platform_stats.community_growth || data.platform_stats.avg_growth}
                     icon={RiArrowUpLine}
                 />
@@ -151,7 +147,7 @@ export default function GrowthTrends() {
 
             {/* Fastest Growing Creators */}
             <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">🚀 Fastest Growing This Month</h3>
+                <h3 className="mb-3 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Fastest growing this month</h3>
                 {data.fastest_growing.map((creator, index) => (
                     <CreatorCard 
                         key={creator.id} 
@@ -164,7 +160,7 @@ export default function GrowthTrends() {
 
             {/* Momentum Leaders */}
             <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">⚡ Weekly Momentum Leaders</h3>
+                <h3 className="mb-3 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Weekly momentum leaders</h3>
                 {data.momentum_leaders.map((creator, index) => (
                     <CreatorCard 
                         key={creator.id} 
@@ -177,7 +173,7 @@ export default function GrowthTrends() {
             {/* Comeback Creators */}
             {data.comeback_creators.length > 0 && (
                 <div>
-                    <h3 className="text-lg font-semibold mb-3">🔄 Comeback Creators</h3>
+                    <h3 className="mb-3 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">Comeback creators</h3>
                     <p className="text-sm text-black/80 mb-3">Creators making a strong return</p>
                     {data.comeback_creators.map((creator, index) => (
                         <CreatorCard 

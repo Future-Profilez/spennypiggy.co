@@ -8,13 +8,13 @@ import RankRow from "./RankRow";
 import Podium from "./Podium";
 import YouBar from "./YouBar";
 import BoardSkeleton from "./BoardSkeleton";
+import Countdown from "./Countdown";
+import PastWinners from "./PastWinners";
 import MovementChip from "./MovementChip";
-import LeaderboardStars from "./LeaderboardStars";
+import TopSupporters from "./TopSupporters";
 import RecentSupporters from "./RecentSupporters";
-import CategoryLeaders from "./CategoryLeaders";
 import VipSupporters from "./VipSupporters";
-import GrowthTrends from "./GrowthTrends";
-import PlatformAnalytics from "./PlatformAnalytics";
+import AnalyticsTabs from "./AnalyticsTabs";
 import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
 /*
  * 🚨 The board is Spenny Piggy CHOOSING which creators a supporter sees, so
@@ -60,6 +60,10 @@ export default function Board(props) {
         climbers = [],
         movement_window_days: windowDays,
         opted_out: initialOptedOut = false,
+        period_ends_at: initialEndsAt = null,
+        past_winners: initialWinners = [],
+        past_period_label: initialWinnersLabel = null,
+        you_supporter: initialYouSupporter = null,
     } = props;
 
     const [period, setPeriod] = useState(initialPeriod);
@@ -73,6 +77,13 @@ export default function Board(props) {
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState(null);
     const [optedOut, setOptedOut] = useState(initialOptedOut);
+    // The close time and the last winners belong to the PERIOD, so they travel
+    // with the board's own JSON rather than being read once from the page props
+    // — switching tab is a fetch, not a navigation.
+    const [endsAt, setEndsAt] = useState(initialEndsAt);
+    const [winners, setWinners] = useState(initialWinners);
+    const [winnersLabel, setWinnersLabel] = useState(initialWinnersLabel);
+    const [youSupporter, setYouSupporter] = useState(initialYouSupporter);
 
     const availablePeriods = useMemo(
         () =>
@@ -96,6 +107,12 @@ export default function Board(props) {
                     setLastPage(payload.last_page || 1);
                     setMatched(payload.total ?? 0);
                     if (!append && payload.you !== undefined) setYou(payload.you);
+                    if (!append) {
+                        setEndsAt(payload.period_ends_at ?? null);
+                        setWinners(payload.past_winners ?? []);
+                        setWinnersLabel(payload.past_period_label ?? null);
+                        if (payload.you_supporter !== undefined) setYouSupporter(payload.you_supporter);
+                    }
                 })
                 .catch(() => {
                     setError(
@@ -197,6 +214,17 @@ export default function Board(props) {
     const rest = rows.slice(3);
     const searching = search.trim().length > 0;
 
+    // Every row's measure is drawn against the LEADER of the board currently on
+    // screen, not against the page it happens to be on — otherwise "Show more"
+    // would rescale the whole list every time it loaded another twenty and the
+    // bars would mean something different above and below the join.
+    //
+    // 🚨 SUPPRESSED WHILE SEARCHING. `rows[0]` is then whoever matched first, so
+    // every bar would compare creators against an arbitrary one and present that
+    // as a scale. Same reasoning the podium is already hidden on search results:
+    // a podium of whoever happens to match a query is a podium of nothing.
+    const leaderSupporters = searching ? 0 : Number(rows[0]?.supporters) || 0;
+
     return (
         <Authenticated auth={auth && auth.user}>
             <Head title="Leaderboard" />
@@ -206,42 +234,45 @@ export default function Board(props) {
                     <div className="flex flex-wrap items-start -mx-4">
                         <div className="w-full px-4 xl:w-2/3">
                             {/* An ink hero gives the page a top edge and lets the
-                                board below stay light and quiet. The gold rule is
-                                the same accent the podium's first place uses, so
-                                the page reads as one system. */}
-                            <header className="relative mb-6 overflow-hidden rounded-box bg-[#0B0B0C] px-5 py-8 text-white sm:px-9 sm:py-11">
+                                board below stay light and quiet. The rule across
+                                the top is brand PINK — the podium's first place
+                                is pink too, so the page reads as one system.
+                                It used to be a gold gradient, a colour this brand
+                                does not own and the page's only use of it. */}
+                            <header className="relative mb-6 overflow-hidden rounded-box border-black bg-[#0B0B0C] px-5 py-8 text-white sm:px-9 sm:py-11">
                                 <span
                                     aria-hidden="true"
-                                    className="absolute inset-x-0 top-0 h-px"
-                                    style={{ background: "linear-gradient(90deg, transparent, #C9A227, transparent)" }}
+                                    className="absolute inset-x-0 top-0 h-1 bg-brandPink"
                                 />
                                 <span
                                     aria-hidden="true"
                                     className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full"
-                                    style={{ background: "radial-gradient(circle, rgba(255,0,127,0.18), transparent 70%)" }}
+                                    style={{ background: "radial-gradient(circle, rgba(255,0,127,0.22), transparent 70%)" }}
                                 />
 
-                                <p className="text-12 font-semibold uppercase tracking-[0.3em] text-white/60">
+                                <p className="text-12 font-semibold uppercase tracking-[0.3em] text-brandPink">
                                     Ranked by supporters
                                 </p>
                                 <h1 className="mt-2 text-38 font-semibold leading-[0.92] tracking-[-0.035em] sm:text-60">
                                     Leaderboard
                                 </h1>
-                                <p className="mt-3 max-w-md text-13 leading-relaxed text-white/60">
+                                <p className="mt-3 max-w-md text-14 leading-[1.55] text-white/75">
                                     Every creator on the platform, re-ranked daily by the supporters backing them.
                                 </p>
+
+                                <Countdown endsAt={endsAt} periodLabel={PERIOD_LABELS[period] ?? period} />
 
                                 {/* Three facts a creator wants before they scroll:
                                     how big the board is, which slice they're
                                     looking at, and how fresh the arrows are. */}
-                                <dl className="mt-7 grid grid-cols-3 gap-3 border-t border-white/10 pt-5 sm:gap-6">
+                                <dl className="mt-7 grid grid-cols-3 gap-3 pt-5 sm:gap-6" style={{ borderTop: "2px solid rgba(255,255,255,0.2)" }}>
                                     {[
                                         { term: "Creators", value: total },
                                         { term: "Showing", value: PERIOD_LABELS[period] ?? period },
                                         { term: "Movement", value: `${windowDays}d` },
                                     ].map(({ term, value }) => (
                                         <div key={term} className="min-w-0">
-                                            <dt className="truncate text-12 font-semibold uppercase tracking-[0.22em] text-white/60">
+                                            <dt className="truncate text-12 font-semibold uppercase tracking-[0.22em] text-white/70">
                                                 {term}
                                             </dt>
                                             <dd className="mt-1 truncate font-gulfs text-18 leading-none sm:text-22">
@@ -264,10 +295,10 @@ export default function Board(props) {
                                         role="tab"
                                         aria-selected={period === p}
                                         onClick={() => switchPeriod(p)}
-                                        className={`min-h-[44px] whitespace-nowrap rounded-full px-4 text-12 font-semibold uppercase tracking-[0.12em] transition-colors ${
+                                        className={`min-h-[44px] whitespace-nowrap rounded-full border-black px-4 text-12 font-semibold uppercase tracking-[0.12em] transition-colors ${
                                             period === p
-                                                ? "bg-[#0B0B0C] text-white"
-                                                : "text-black/60 ring-1 ring-inset ring-black/[0.08] hover:text-[#0B0B0C] hover:ring-black/20"
+                                                ? "bg-brandPink text-black"
+                                                : "bg-white text-black/70 hover:bg-black/[0.06] hover:text-black"
                                         }`}
                                     >
                                         {PERIOD_LABELS[p] ?? p}
@@ -280,10 +311,14 @@ export default function Board(props) {
                                 <Podium rows={hero} windowDays={windowDays} />
                             )}
 
+                            {/* The other side of the countdown. A deadline with
+                                no visible consequence is not a deadline. */}
+                            {!searching && <PastWinners winners={winners} label={winnersLabel} />}
+
                             {/* Movement is the news, so it sits above the board. */}
                             {climbers.length > 0 && !searching && (
                                 <section className="mb-8">
-                                    <h2 className="mb-3 flex items-center gap-2 text-12 font-semibold uppercase tracking-[0.22em] text-black/60">
+                                    <h2 className="mb-3 flex items-center gap-2 text-12 font-semibold uppercase tracking-[0.22em] text-black/70">
                                         <TrendingUpIcon size={13} strokeWidth={2.5} aria-hidden="true" />
                                         Climbing fastest
                                     </h2>
@@ -292,10 +327,10 @@ export default function Board(props) {
                                             <li key={c.id}>
                                                 <a
                                                     href={discoveryLink(c.username, DISCOVERY_SOURCE.TRENDING)}
-                                                    className="flex min-h-[44px] items-center gap-2.5 rounded-full py-1.5 pl-3 pr-2.5 text-13 ring-1 ring-inset ring-black/[0.08] transition-colors hover:ring-black/25"
+                                                    className="flex min-h-[44px] items-center gap-2.5 rounded-full border-black bg-white py-1.5 pl-3 pr-2.5 text-13 transition-colors hover:bg-black/[0.06]"
                                                 >
- <span className="font-gulfs text-15 text-black/60">{c.rank}</span>
-                                                    <span className="max-w-[12ch] truncate font-medium text-[#0B0B0C]">
+                                                    <span className="font-gulfs text-15 text-black/70">{c.rank}</span>
+                                                    <span className="max-w-[12ch] truncate font-medium text-black">
                                                         @{c.username}
                                                     </span>
                                                     <MovementChip direction="up" delta={c.delta} windowDays={windowDays} />
@@ -309,7 +344,7 @@ export default function Board(props) {
                             <div className="relative mb-4">
                                 <SearchIcon
                                     size={16}
- className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/60"
+                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/70"
                                     aria-hidden="true"
                                 />
                                 <input
@@ -318,13 +353,13 @@ export default function Board(props) {
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search every creator on the board"
                                     aria-label="Search creators"
- className="min-h-[48px] w-full rounded-full border-0 bg-black/[0.03] pl-11 pr-11 text-14 text-[#0B0B0C] placeholder:text-black/60 ring-1 ring-inset ring-black/[0.07]  focus:bg-white focus:ring-2 focus:ring-[#0B0B0C]"
+                                    className="min-h-[48px] w-full rounded-full border-black bg-white pl-11 pr-11 text-14 text-black placeholder:text-black/60 focus:ring-2 focus:ring-brandPink"
                                 />
                                 {searching && (
                                     <button
                                         onClick={() => setSearch("")}
                                         aria-label="Clear search"
- className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-black/60 transition-colors hover:text-[#0B0B0C]"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-black/70 transition-opacity hover:opacity-70"
                                     >
                                         <XIcon size={16} strokeWidth={2.5} />
                                     </button>
@@ -334,24 +369,28 @@ export default function Board(props) {
                             {error && (
                                 <div
                                     role="alert"
-                                    className="mb-4 flex items-center justify-between gap-3 rounded-box-sm bg-black/[0.03] p-3 text-14 ring-1 ring-inset ring-black/[0.08]"
+                                    className="mb-4 flex items-center justify-between gap-3 rounded-box-sm border-black bg-brandYellow p-3 text-14"
                                 >
-                                    <span className="text-[#0B0B0C]">{error}</span>
+                                    <span className="text-black">{error}</span>
                                     <button
                                         onClick={() => fetchBoard(period, search, page)}
- className="min-h-[44px] shrink-0 rounded-full bg-[#0B0B0C] px-4 text-12 font-semibold uppercase tracking-[0.12em] text-white transition-opacity hover:opacity-85"
+                                        className="min-h-[44px] shrink-0 rounded-full border-black bg-white px-4 text-12 font-semibold uppercase tracking-[0.12em] text-black transition-colors hover:bg-black/[0.06]"
                                     >
                                         Retry
                                     </button>
                                 </div>
                             )}
 
-                            <section className="mb-10 overflow-hidden rounded-box bg-white ring-1 ring-inset ring-black/[0.08]">
-                                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-black/[0.06] px-4 py-4">
- <h2 className="text-12 font-semibold uppercase tracking-[0.22em] text-black/60">
+                            {/* ⚠️ The rules between rows are drawn HERE, with
+                                `divide-y-2`, not by each row: an inline border on
+                                every row cannot be switched off for the last one,
+                                and the result is a doubled line above the foot. */}
+                            <section className="mb-10 divide-y-2 divide-black/10 overflow-hidden rounded-box border-black bg-white">
+                                <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-4">
+                                    <h2 className="text-12 font-semibold uppercase tracking-[0.22em] text-black/70">
                                         {searching ? "Search results" : "Full ranking"}
                                     </h2>
- <p className="text-12 text-black/60">
+                                    <p className="text-12 text-black/70">
                                         {searching
                                             ? `${matched} ${matched === 1 ? "creator" : "creators"} matching “${search}”`
                                             : `Every creator, ranked ${rest.length > 0 ? "from #4 down" : ""}`}
@@ -362,10 +401,10 @@ export default function Board(props) {
                                     <BoardSkeleton />
                                 ) : rows.length === 0 || (!searching && rest.length === 0) ? (
                                     <div className="px-6 py-16 text-center">
-                                        <p className="text-17 font-semibold tracking-tight text-[#0B0B0C]">
+                                        <p className="text-17 font-semibold tracking-tight text-black">
                                             {searching ? "No creators found" : "That's everyone so far"}
                                         </p>
-                                        <p className="mx-auto mt-1.5 max-w-sm text-13 text-black/60">
+                                        <p className="mx-auto mt-1.5 max-w-sm text-13 text-black/70">
                                             {searching
                                                 ? "Try a different name or handle."
                                                 : rows.length > 0
@@ -385,6 +424,7 @@ export default function Board(props) {
                                                       row={row}
                                                       windowDays={windowDays}
                                                       isYou={row.id === auth?.user?.id}
+                                                      leaderSupporters={leaderSupporters}
                                                   />
                                               ))
                                             : null}
@@ -395,17 +435,18 @@ export default function Board(props) {
                                                 row={row}
                                                 windowDays={windowDays}
                                                 isYou={row.id === auth?.user?.id}
+                                                leaderSupporters={leaderSupporters}
                                             />
                                         ))}
                                     </>
                                 )}
 
                                 {page < lastPage && !loading && (
-                                    <div className="border-t border-black/[0.06] p-3">
+                                    <div className="p-3">
                                         <button
                                             onClick={loadMore}
                                             disabled={loadingMore}
-                                            className="min-h-[44px] w-full rounded-full text-12 font-semibold uppercase tracking-[0.14em] text-black/60 transition-colors hover:bg-black/[0.03] hover:text-[#0B0B0C] disabled:opacity-50"
+                                            className="min-h-[44px] w-full rounded-full border-black bg-white text-12 font-semibold uppercase tracking-[0.14em] text-black transition-colors hover:bg-black/[0.06] disabled:opacity-50"
                                         >
                                             {loadingMore ? "Loading…" : "Show more creators"}
                                         </button>
@@ -414,12 +455,12 @@ export default function Board(props) {
                             </section>
 
                             {auth?.user && (
-                                <div className="mb-10 flex items-center justify-between gap-4 rounded-box p-5 ring-1 ring-inset ring-black/[0.08]">
+                                <div className="mb-10 flex items-center justify-between gap-4 rounded-box border-black bg-white p-5">
                                     <div>
-                                        <p className="text-14 font-semibold tracking-tight text-[#0B0B0C]">
+                                        <p className="text-14 font-semibold tracking-tight text-black">
                                             Show me on the leaderboard
                                         </p>
-                                        <p className="mt-0.5 text-12 text-black/60">
+                                        <p className="mt-0.5 text-13 text-black/70">
                                             Turn this off and your profile is removed from every public board.
                                         </p>
                                     </div>
@@ -427,15 +468,15 @@ export default function Board(props) {
                                         role="switch"
                                         aria-checked={!optedOut}
                                         onClick={toggleOptOut}
-                                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] ${
-                                            optedOut ? "bg-black/12" : "bg-[#0B0B0C]"
+                                        className={`relative h-7 w-12 shrink-0 rounded-full border-black transition-colors after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] ${
+                                            optedOut ? "bg-white" : "bg-brandPink"
                                         }`}
                                     >
                                         <span className="sr-only">
                                             {optedOut ? "Show me on the leaderboard" : "Hide me from the leaderboard"}
                                         </span>
                                         <span
-                                            className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-white transition-all ${
+                                            className={`absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-black transition-all ${
                                                 optedOut ? "left-1" : "left-[26px]"
                                             }`}
                                         />
@@ -443,23 +484,39 @@ export default function Board(props) {
                                 </div>
                             )}
 
-                            <CategoryLeaders />
-                            <GrowthTrends />
-                            <PlatformAnalytics />
+                            {/* Three panels of charts under a board most readers came
+                                to scan is two screens nobody asked for. One panel,
+                                three tabs, one mounted at a time. */}
+                            <AnalyticsTabs />
                         </div>
 
                         <div className="w-full px-4 xl:w-1/3 xl:self-start">
                             <div className="z-10 xl:sticky xl:top-24">
                                 <RecentSupporters />
                                 <VipSupporters />
-                                <LeaderboardStars />
+                                {/* 🚨 `LeaderboardStars` used to sit here. It was headed
+                                    "Top Supporters" while its endpoint returns the CREATOR
+                                    behind each of the largest recent payments, with the
+                                    payment's AMOUNT — a money figure beside a named account
+                                    on a public page, which is exactly what this board
+                                    refuses to publish. `TopSupporters` is the same idea told
+                                    truthfully: real supporters, ranked by purchase COUNT. */}
+                                <TopSupporters />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <YouBar you={you} windowDays={windowDays} onShare={handleShare} />
+            {/* One bar, three readers: a creator's rank, a supporter's rank, or —
+                for a logged-out visitor — the page's only reason to sign up. */}
+            <YouBar
+                you={you}
+                supporter={youSupporter}
+                isGuest={!auth?.user}
+                windowDays={windowDays}
+                onShare={handleShare}
+            />
         </Authenticated>
     );
 }

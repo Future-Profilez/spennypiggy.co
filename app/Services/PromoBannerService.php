@@ -158,12 +158,17 @@ class PromoBannerService
     /**
      * The lifetime sales a referred creator must reach before the referrer is paid.
      *
-     * ⚠️ Mirrors the `lifetime_gmv >= 1000` filter in `ReferAndEarnController::index()`,
-     * which is not config-backed. If that number moves, move this one in the same commit
-     * — a promo promising £50 at a threshold the payout query disagrees with is worse
-     * than a promo that says nothing.
+     * ✅ Config-backed since 23 Aug 2026 — `config('referral.qualifying_gmv')` is the ONE
+     * definition, shared with the qualification short-cut in `Helpers`, the progress bar
+     * on the referral page and both counting queries in `ReferAndEarnController`. It used
+     * to be a private const mirroring a hardcoded `1000` in that controller: a promo
+     * promising £50 at a threshold the payout query disagreed with is worse than a promo
+     * that says nothing.
      */
-    private const REFERRAL_QUALIFYING_GMV = 1000;
+    private function referralQualifyingGmv(): float
+    {
+        return (float) config('referral.qualifying_gmv', 1000);
+    }
 
     private function percent(float $rate): string
     {
@@ -231,15 +236,16 @@ class PromoBannerService
             ]),
 
             /*
-             * £50 a head, and the £1,000 the referred creator has to sell before it
-             * counts — `ReferAndEarnController` filters on `lifetime_gmv >= 1000`.
+             * The reward, and the lifetime GMV the referred creator has to sell
+             * before it counts — both read from `config/referral.php`, which is
+             * what the qualifying queries filter on.
              * 🚨 Quoting the reward without the threshold is the half of this offer
              * that gets a creator annoyed: they share the link, someone signs up, and
              * nothing arrives.
              */
             'refer_and_earn' => [
                 'reward' => $this->money((float) config('referral.reward_amount', 50)),
-                'threshold' => $this->money(self::REFERRAL_QUALIFYING_GMV),
+                'threshold' => $this->money($this->referralQualifyingGmv()),
             ],
 
             'free_until_first_sale' => [
@@ -338,7 +344,11 @@ class PromoBannerService
                 && (bool) ($context['free_until_first_sale'] ?? false)
                 && ! (bool) ($context['has_ever_sold'] ?? false),
 
-            'verified_badge' => $isCreator && VerifiedBadge::tierFor($user) === VerifiedBadge::NONE,
+            // 🚨 Only once an admin has APPROVED the profile — see
+            // VerifiedBadge::awaitingIdentityCheck(). The old rule was
+            // `tierFor() === NONE`, which is the state of an unapproved account, so
+            // this card was shown to exactly the creators who cannot act on it.
+            'verified_badge' => $isCreator && VerifiedBadge::awaitingIdentityCheck($user),
 
             'link_in_bio' => $isCreator,
 

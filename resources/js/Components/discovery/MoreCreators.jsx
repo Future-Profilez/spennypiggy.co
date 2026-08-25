@@ -43,8 +43,14 @@ import discoveryLink, { DISCOVERY_SOURCE } from "@/lib/discoveryLink";
  */
 const SLOTS = {
     similar: { label: "Similar creator", className: "bg-[#05EFB8] text-black" },
-    emerging: { label: "Just getting started", className: "bg-[#E6EA7B] text-black" },
-    popular: { label: "Popular right now", className: "bg-[#FF007F] text-black" },
+    emerging: {
+        label: "Just getting started",
+        className: "bg-[#E6EA7B] text-black",
+    },
+    popular: {
+        label: "Popular right now",
+        className: "bg-[#FF007F] text-black",
+    },
     pick: { label: "Discovery pick", className: "bg-black text-white" },
 };
 
@@ -139,9 +145,7 @@ function CreatorCard({ creator }) {
                     /* ⚠️ `leading-N` is PIXELS in this project — `leading-5` on
                        13px text renders the lines on top of each other. Ratios
                        only. */
-                    <p
-                        className="mt-2 line-clamp-2 font-poppins text-[13px] leading-[1.5] text-black/70"
-                    >
+                    <p className="mt-2 line-clamp-2 font-poppins text-[13px] leading-[1.5] text-black/70">
                         {creator.line}
                     </p>
                 ) : null}
@@ -228,33 +232,33 @@ function BrowseAllTile() {
  * to remove.
  */
 /*
- * ⚠️ A CARD MUST NEVER STRETCH TO FILL A GAP. Two tiles across a 1400px panel
- * are 700px each: a 112px cover band over a 700px card, a 56px avatar lost in
- * the corner, and one short line of type crossing half a screen — the tile stops
- * looking like the same component the four-up row uses. Capping the GRID (not
- * the tile) keeps every card inside its normal size range at every count, and
- * leaves the row left-aligned under the heading instead of floating centred.
+ * 🚨 A FIXED FIVE-COLUMN TRACK, NOT ONE SIZED TO THE NUMBER OF CARDS
+ * (client direction, 24 Aug 2026).
+ *
+ * These are the same breakpoints the discover grids use
+ * (`Pages/discover/components/ResultsGrid.jsx`), so a card here is the same
+ * width as a card there. That is the point of the change: the row previously
+ * set its columns from how many cards it happened to have, so three
+ * recommendations became three wide thirds and the tile stopped matching the
+ * component it is meant to be.
+ *
+ * ⚠️ THE ROW IS OFTEN NOT FULL, AND THAT IS ACCEPTED. There are only four slots
+ * (see CreatorRecommendationService::SLOTS) and any of them can come back empty
+ * on a small pool, so the last one or two columns are frequently blank. The
+ * trade was made deliberately: a correctly-sized card with space beside it,
+ * rather than an oversized card that fills the width.
+ *
+ * This replaces an earlier pair of maps that capped the grid width per count.
+ * Do not reinstate them — they are what made the tiles grow.
  */
-const GRID_MAX_WIDTH = {
-    1: "max-w-[360px]",
-    2: "max-w-[760px]",
-    3: "max-w-[1140px]",
-    4: "",
-};
-
-const GRID_FOR_TILES = {
-    1: "grid-cols-1",
-    2: "grid-cols-1 sm:grid-cols-2",
-    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-};
+const GRID_COLUMNS =
+    "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
 export default function MoreCreators({ creators }) {
     if (!Array.isArray(creators) || creators.length === 0) return null;
 
     // One card alone cannot make a row; two or more already read as a set.
     const needsFiller = creators.length === 1;
-    const tileCount = Math.min(creators.length + (needsFiller ? 1 : 0), 4);
 
     return (
         <section
@@ -263,17 +267,18 @@ export default function MoreCreators({ creators }) {
         >
             {/* 🚨 NO OUTER PANEL. This was a full-width white card with a black
                 frame, holding white cards with black frames — a box inside a box
-                in the same colour. And because a tile must never stretch to fill
-                a gap (see the note on GRID_MAX_WIDTH), one or two cards left a
-                THIRD OF THAT BOX EMPTY, which reads as "the rest failed to
-                load" rather than as "we found one good match".
+                in the same colour, and a short row left a visible third of that
+                box empty, which reads as "the rest failed to load" rather than
+                as "we found one good match".
 
-                The cards already carry their own frames, so the container was
-                drawing a second one and then having to be filled. Removing it
-                fixes the void at its cause instead of padding the row: the
-                heading and the cards now sit straight on the page, and a row of
-                one is simply a row of one. A hairline above seats the section —
-                the house order is border weight, then colour, then space. */}
+                That matters more now, not less: the grid above is a fixed
+                five-column track, so the row is routinely short by a column or
+                two. With no panel drawn around it, unused columns are just page
+                — there is no box for them to look like a hole in. The cards
+                already carry their own frames, so the container was drawing a
+                second one and then having to be filled. A hairline above seats
+                the section — the house order is border weight, then colour,
+                then space. Do not put the panel back. */}
             <div>
                 <div className="mb-5 md:mb-6">
                     <h2
@@ -288,22 +293,17 @@ export default function MoreCreators({ creators }) {
                 </div>
 
                 {/*
-                    🚨 THE ROW IS ALWAYS FULL, AND EVERY TILE IS THE SAME WIDTH.
-                    Columns are set from what is actually being rendered, so
-                    three creators are three equal thirds rather than three
-                    quarters and a hole — and a single creator is joined by
-                    `BrowseAllTile` and shares the row with it.
-
-                    ⚠️ The class strings are LITERAL and looked up from a map.
-                    Tailwind scans source text, so a template-built
-                    `lg:grid-cols-${n}` is never compiled and the row silently
-                    falls back to one column.
+                    ⚠️ The class string is LITERAL. Tailwind scans source text, so
+                    a template-built `xl:grid-cols-${n}` is never compiled and the
+                    row silently falls back to one column — which is why the
+                    columns are a single constant rather than assembled at render.
                 */}
-                <div
-                    className={`grid gap-4 ${GRID_FOR_TILES[tileCount]} ${GRID_MAX_WIDTH[tileCount]}`}
-                >
+                <div className={`grid gap-4 ${GRID_COLUMNS}`}>
                     {creators.map((c) => (
-                        <CreatorCard key={`${c.slot}-${c.username}`} creator={c} />
+                        <CreatorCard
+                            key={`${c.slot}-${c.username}`}
+                            creator={c}
+                        />
                     ))}
 
                     {needsFiller ? <BrowseAllTile /> : null}

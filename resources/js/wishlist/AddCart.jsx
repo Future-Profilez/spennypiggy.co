@@ -1,15 +1,16 @@
-import { useState, lazy, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import CustomProgressBar from "../Components/CustomProgressBar";
 import { creatorIdOf } from "@/utils/pricing";
-const Popup = lazy(() => import("@/Components/Popup"));
+const Popup = lazyRetry(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import { trackSearchClick } from "@/includes/Analytics";
 import RewardSummary from "@/Components/Reward/RewardSummary";
 import { riskMessageBody } from '@/constants/riskMessages';
+import lazyRetry from "@/utils/lazyRetry";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;

@@ -1,5 +1,5 @@
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { useState, lazy, useCallback, useMemo, Suspense } from "react";
+import { useState, useCallback, useMemo, Suspense } from "react";
 import { Head, usePage } from "@inertiajs/react";
 import DeviceID from "@/includes/DeviceID";
 import { useEffect, useRef } from "react";
@@ -7,8 +7,9 @@ import Axios from "axios";
 import CartListing from "../rye/CartListing";
 import WhiteLoading from "@/includes/LoadingScreen";
 import PriceFormat from "@/includes/PriceFormat";
-const UserCarts = lazy(() => import("../cart/UserCarts"));
+const UserCarts = lazyRetry(() => import("../cart/UserCarts"));
 import { GiCardboardBox } from "react-icons/gi";
+import lazyRetry from "@/utils/lazyRetry";
 
 export default function Cart(props) {
     const deviceid = useMemo(() => DeviceID(), []);

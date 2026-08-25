@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Http\Controllers\EmailPreferenceController;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -49,6 +50,19 @@ class FounderCongratulations extends Mailable
             with: [
                 'creator' => $this->creator,
                 'first30DayEarnings' => $this->first30DayEarnings,
+                /*
+                 * 🚨 This mail is sent via EmailService::sendMarketingEmail, so
+                 * it is marketing and has to offer an unsubscribe (UK brief §4).
+                 * It shipped without one.
+                 *
+                 * ⚠️ Both helpers return NULL when their route is not
+                 * registered, deliberately — they are called from inside
+                 * content() and `URL::temporarySignedRoute()` THROWS on an
+                 * unknown name, which would take the whole email down rather
+                 * than drop a link. The template guards on both.
+                 */
+                'unsubscribeUrl' => EmailPreferenceController::generateUnsubscribeToken($this->creator),
+                'manageUrl' => EmailPreferenceController::generateManageToken($this->creator),
             ],
         );
     }

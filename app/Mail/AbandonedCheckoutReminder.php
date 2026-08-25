@@ -44,7 +44,15 @@ class AbandonedCheckoutReminder extends Mailable
         public ?string $amountLabel = null,
         public ?int $userId = null,
         public int $reminderNumber = 1,
-        public ?string $firstName = null,
+        /*
+         * 🚨 PROTECTED, NOT PUBLIC — `Mailable::buildViewData()` reflects over
+         * PUBLIC properties and merges them OVER the `Content(with: …)` array.
+         * As a public property this null overwrote `resolvedFirstName()`, whose
+         * whole job is to fall back to "there" when no name is known — so the
+         * e-mail rendered "You are one step away, " with nothing after the comma.
+         * Still serialises for the queue.
+         */
+        protected ?string $firstName = null,
         public ?int $abandonedCheckoutId = null,
     ) {}
 

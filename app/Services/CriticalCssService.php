@@ -34,11 +34,30 @@ class CriticalCssService
     {
         $assetPath = asset($stylesheetPath);
 
+        /*
+         * 🚨 NO `onload=` ATTRIBUTE. An inline event handler is governed by
+         * `script-src-attr`, which cannot carry a nonce, so the CSP this app ships
+         * refuses it — the stylesheet loads and is then never applied. Same fault
+         * that put 405 violations on the font preload in `app.blade.php`; fixed
+         * here too because `@deferCss` is registered and would reintroduce it the
+         * first time somebody used it.
+         *
+         * `media="print"` is the attribute-free equivalent, swapped by the site's
+         * own script. ⚠️ The `.sheet` check is not optional — the stylesheet can
+         * finish loading before the swap runs, and a bare `load` listener would
+         * then wait for an event that has already fired.
+         */
+        $nonce = view()->shared('cspNonce', '');
+        $id = 'sp-deferred-css-'.substr(md5($assetPath), 0, 8);
+
         return sprintf(
-            '<link rel="preload" href="%s" as="style" onload="this.onload=null;this.rel=\'stylesheet\'" media="print">
-            <noscript><link rel="stylesheet" href="%s"></noscript>',
+            '<link id="%1$s" rel="stylesheet" media="print" href="%2$s">
+            <script%3$s>(function(){var l=document.getElementById(%4$s);if(!l)return;var s=function(){l.media="all";};if(l.sheet){s();}else{l.addEventListener("load",s,{once:true});}})();</script>
+            <noscript><link rel="stylesheet" href="%2$s"></noscript>',
+            $id,
             $assetPath,
-            $assetPath
+            is_string($nonce) && $nonce !== '' ? ' nonce="'.htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8').'"' : '',
+            json_encode($id)
         );
     }
 

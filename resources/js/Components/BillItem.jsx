@@ -6,7 +6,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
-const AddBills = lazy(() => import("@/Pages/bills/AddBills"));
+const AddBills = lazyRetry(() => import("@/Pages/bills/AddBills"));
 import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "@/Pages/bills/RemoveBill";
 import { useAlerts } from "@/Components/Alerts";
@@ -14,6 +14,8 @@ import RewardHint from "@/Pages/discover/components/RewardHint";
 import ScheduledBadge from "@/Components/ScheduledBadge";
 import ItemStatusBadge from "@/Components/ItemStatusBadge";
 import discoveryLink from "@/lib/discoveryLink";
+import SaveButton from "@/Components/SaveButton";
+import lazyRetry from "@/utils/lazyRetry";
 
 function BillItem(props) {
     useAlerts();
@@ -161,7 +163,7 @@ function BillItem(props) {
             style={IsloggedIn ? style : stylenone}
             className={`relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} transition-colors duration-200 hover:bg-black/[0.03]`}
         >
-            <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full">
+            <div className="bg-white relative !rounded-box !border-[3px] border-black overflow-hidden w-full h-full flex flex-col">
                 {/* 🚨 Same two faults the wish card had, and the same fix.
                     The approval notice carried `approvalmessge membership`,
                     which `home.css:531` pins `position:absolute; top:0; left:0`
@@ -202,6 +204,17 @@ function BillItem(props) {
 
                         <div className="absolute bottom-[10px] left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-[9px] font-black px-2 py-0.5 rounded-box-sm capitalize border-2 border-black whitespace-nowrap z-10 sm:bottom-[14px] sm:px-3 sm:py-1 sm:text-[12px]">
                             {periodDisplay} Subscribable
+                        </div>
+
+                        {/* ⚠️ TOP-LEFT. The dots menu is pinned `top-6 right-6` on the
+                            wrapper above, and the period pill owns bottom-centre, so
+                            this is the free corner. `stopPropagation` matters: the
+                            image is a click target that opens the bill. */}
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute left-2 top-2 z-20"
+                        >
+                            <SaveButton productType="bill" itemId={itm?.id} creatorId={itm?.user_id} />
                         </div>
                     </div>
 
