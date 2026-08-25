@@ -654,7 +654,7 @@ export default function TipInner({classes, idd}) {
               not the same affordance. `flex-col-reverse` puts the primary action nearest
               the thumb on a phone while keeping the conventional Cancel-then-confirm
               reading order on a wider screen. */}
-          <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          <div className="flex flex-col-reverse gap-3">
             <button
               type="button"
               onClick={() => setShowConfirm(false)}
