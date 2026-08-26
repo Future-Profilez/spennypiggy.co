@@ -84,6 +84,32 @@ final class MediaUrl
      * apply in sequence, so the creator's own crop happens first and this caps
      * the result. Verified against the live CDN (chained previews answer 200).
      */
+    /**
+     * 🚨 A SQUARE, FACE-AWARE CROP — for avatars, which are drawn in a circle.
+     *
+     * `fitOps()` FITS an image inside the box and preserves its aspect ratio, so
+     * a portrait photo stays a portrait. Dropped into a 56px circle with
+     * `object-cover`, the browser then crops the middle of it — which on a
+     * standing photo is a torso, not a face. Measured on the Birthdays cards:
+     * three creators, none with a crop of their own, all showing a body.
+     *
+     * `scale_crop` crops to fill instead, and `smart` puts Uploadcare's own
+     * face/subject detection in charge of WHERE. Verified against the CDN before
+     * use (HTTP 200) — this project has shipped an invalid operation before
+     * (`-/quality/85/`, which the CDN answers 400 to).
+     *
+     * ⚠️ Unlike `preview`, this CAN upscale a smaller source. For a 400px avatar
+     * that is ~640KB decoded, which is nothing beside the multi-megabyte phone
+     * photos the width caps exist for — and a slightly soft avatar beats a
+     * beheaded one.
+     */
+    public static function squareOps(int $width): string
+    {
+        $width = max(1, min(4000, $width));
+
+        return "-/scale_crop/{$width}x{$width}/smart/-/format/jpeg/-/quality/smart/";
+    }
+
     public static function fitOps(int $width): string
     {
         $width = max(1, min(4000, $width));

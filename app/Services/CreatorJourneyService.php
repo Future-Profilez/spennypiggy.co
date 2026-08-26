@@ -45,9 +45,15 @@ class CreatorJourneyService
         'profile' => [
             'title' => 'Finish your profile',
             'body' => 'Add a photo and a short bio so supporters know whose page they are on.',
-            'cta' => 'Edit profile',
+            'cta' => 'Add photo and bio',
+            // 🚨 `?edit=profile` OPENS THE FORM. Without it this lands on Account
+            // Settings and stops there — the photo/bio form is a collapsed row
+            // partway down a page of two dozen, and the creator has to know which
+            // one it is. Measured 25 Aug 2026: of the 33 creators who signed up in
+            // the prior 90 days, 2 added a photo and 0 wrote a bio.
+            // Read by `accountsetting/Accountsetting.jsx` → EditProfile `autoOpen`.
             'route' => 'account',
-            'params' => [],
+            'params' => ['edit' => 'profile'],
         ],
         'subscription' => [
             'title' => 'Add your card',

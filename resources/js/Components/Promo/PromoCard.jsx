@@ -1,4 +1,5 @@
 import BioLinkCard from "./cards/BioLinkCard";
+import BirthdayCard from "./cards/BirthdayCard";
 import FastStartCard from "./cards/FastStartCard";
 import FounderCard from "./cards/FounderCard";
 import InstallAppCard from "./cards/InstallAppCard";
@@ -30,6 +31,7 @@ import VerifiedCard from "./cards/VerifiedCard";
  * from config.
  */
 const CARDS = {
+    birthday: BirthdayCard,
     founder: FounderCard,
     faststart: FastStartCard,
     receipt: ReceiptCard,

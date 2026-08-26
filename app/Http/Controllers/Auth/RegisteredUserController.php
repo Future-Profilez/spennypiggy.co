@@ -16,6 +16,7 @@ use App\Models\PlatformRiskState;
 use App\Models\PromoCode;
 use App\Models\ReferralCode;
 use App\Models\SignupLead;
+use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserVerificationStatus;
 use App\Services\SignupLeadService;
@@ -28,6 +29,7 @@ use App\Support\GifterVerificationCharge;
 use App\Support\MarketingConsent;
 use App\Support\PresetCovers;
 use App\Support\RiskMessages;
+use App\Support\SocialHandle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -251,6 +253,38 @@ class RegisteredUserController extends Controller
             'creator_category.*' => [Rule::in(Badges::interestSlugs())],
             'pride_badges' => ['nullable', 'array', 'max:'.Badges::MAX_PRIDE],
             'pride_badges.*' => [Rule::in(Badges::prideSlugs())],
+            /*
+             * 🚨 REQUIRED FOR A CREATOR (client decision, 25 Aug 2026), OPTIONAL FOR
+             * NOBODY ELSE.
+             *
+             * This is not new friction, it is friction moved earlier: a creator ALREADY
+             * cannot go live without an approved handle — `Profile/CreatorVerification.jsx`
+             * locks "Submit for review" until socials, photo and bio are approved — so an
+             * account with no social account was never able to sell anything. Asking here
+             * means the social onboarding step is answered before they reach the
+             * dashboard, and the Creator Studio form is prefilled from this row rather
+             * than asking for the same handle twice.
+             *
+             * ⚠️ `Rule::requiredIf`, not `required_if:role,1` — `role` arrives as the
+             * string '1' from the form and as an int from tests, and the string form of
+             * the rule compares loosely enough that it is worth not depending on.
+             *
+             * ⚠️ A GIFTER is never asked: their form offers neither field, so these stay
+             * optional for role 0 and a value there is ignored rather than refused.
+             *
+             * ⚠️ The handle itself is checked below rather than by a regex here: the rule
+             * depends on WHICH platform was chosen, and the refusal has to say what to do
+             * about it. `App\Support\SocialHandle` owns both.
+             */
+            'social_platform' => [
+                Rule::requiredIf(fn () => (int) $request->role === 1),
+                Rule::in(SocialHandle::platforms()),
+            ],
+            'social_handle' => [
+                Rule::requiredIf(fn () => (int) $request->role === 1),
+                'string',
+                'max:255',
+            ],
             'promo' => ['nullable', 'string'], // referral code
             'crm_invite_token' => ['nullable', 'string', 'max:255'],
             /*
@@ -263,6 +297,25 @@ class RegisteredUserController extends Controller
              */
             'marketing_opt_in' => ['nullable', 'boolean'],
         ], $messages);
+
+        /* =========================CREATOR SOCIAL HANDLE========================== */
+        // ⚠️ Refused HERE, before the account exists, so the creator can correct a typo
+        // while the form is still in front of them. A handle rejected after the insert
+        // would have to be silently dropped — which is how `users.country` came to be
+        // NULL for every creator on the platform.
+        //
+        // A gifter posting these fields is IGNORED rather than refused: nothing on their
+        // form offers them, so a value there is noise, not a mistake to explain.
+        if ($request->role == 1 && filled($request->input('social_handle'))) {
+            $socialError = SocialHandle::errorFor(
+                $request->input('social_platform'),
+                $request->input('social_handle'),
+            );
+
+            if ($socialError !== null) {
+                throw ValidationException::withMessages(['social_handle' => $socialError]);
+            }
+        }
 
         // Turnstile is skipped on the Google path, and ONLY this one. Google's own sign-in is the
         // bot gate there, and the form never rendered a widget for the person to solve — every
@@ -548,6 +601,60 @@ class RegisteredUserController extends Controller
 
         $user->save();
 
+        /* =========================CREATOR SOCIAL HANDLE========================== */
+        /*
+         * 🚨 THIS IS THE SOCIAL ONBOARDING STEP, DONE AT SIGNUP — NOT A SEPARATE
+         * CONTACT FIELD.
+         *
+         * `Profile/CreatorVerification.jsx` carries a real step ("Add a social handle")
+         * and locks "Submit for review" until the handles, photo and bio are APPROVED.
+         * Writing this row the way `SocialLinksController` writes it means the creator
+         * gives their handle ONCE: the step is already ticked, the row is already in the
+         * admin review queue, and there is nothing to go back and re-enter.
+         *
+         * It also closes the reachability gap it was originally built for — the platform
+         * holds a creator's e-mail and nothing else, so a creator who stalls has no other
+         * contact route. Measured 25 Aug 2026: 3 of the 33 creators who signed up in the
+         * previous 90 days had a handle on file.
+         *
+         * ⚠️ `source = 'signup'` is PROVENANCE ONLY and changes no behaviour. It tells a
+         * reviewer the handle was typed on the registration form — one platform, entered
+         * in seconds — which is worth knowing when judging it. It does NOT exclude the row
+         * from anything.
+         *
+         * ⚠️ Nothing here may throw. The account already exists and the person is one line
+         * from being logged in; failing a signup over this would turn an optional field
+         * into the thing that broke registration. Same house pattern as VisitTracker and
+         * AttributionService.
+         */
+        $socialHandleStored = false;
+
+        if ((int) $user->role === 1) {
+            try {
+                $platform = $request->input('social_platform');
+                $handle = SocialHandle::normalise($platform, $request->input('social_handle'));
+
+                if ($handle !== null) {
+                    SocialLinks::create([
+                        'uuid' => (string) Str::uuid(),
+                        'user_id' => $user->id,
+                        'source' => 'signup',
+                        // 0 = awaiting review, exactly as a Creator Studio submission
+                        // lands. It is not published until an admin approves it.
+                        'status' => 0,
+                        $platform => $handle,
+                    ]);
+
+                    $socialHandleStored = true;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Signup social handle not stored', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         Auth::login($user);
 
         if (app()->environment('production') || config('app.url') === 'https://spennypiggy.co') {
@@ -568,12 +675,27 @@ class RegisteredUserController extends Controller
 
         /* =========================VERIFICATION / ADDRESS========================== */
         if ($request->role == 1) {
-            UserVerificationStatus::create([
+            $verification = [
                 'user_id' => $user->id,
                 'role' => 1,
                 'bio_status' => 1,
                 'address_status' => 0,
-            ]);
+            ];
+
+            // ⚠️ Set to the same 0 (awaiting review) that `SocialLinksController`
+            // writes, so a signup handle and a Creator Studio submission leave the
+            // account in an identical state.
+            //
+            // ⚠️ Still CONDITIONAL even though the field is required. The write is
+            // wrapped in a catch that must never fail a signup, so "the row was
+            // written" and "the form was filled in" are not the same fact — and a
+            // `social_status` claiming a submission that was not stored would show the
+            // creator a step ticked with nothing behind it.
+            if ($socialHandleStored) {
+                $verification['social_status'] = 0;
+            }
+
+            UserVerificationStatus::create($verification);
         }
 
         if ($request->role == 0) {

@@ -1188,175 +1188,7 @@ class MembershipController extends Controller
 
             $mem->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
-                $mem->stripe_id = $session->subscription;
-                $current = Carbon::now();
-                if ($mem->recurring_type == 'monthly') {
-                    $current->addMonth();
-                }
-                $mem->upcoming_payment = $current;
-                $mem->save();
-
-                // Update GMV for creator
-                Helpers::addGmv($mem->membership->user_id, (float) $mem->amount, $mem->membership->user->default_currency);
-
-                // Creator's "you got paid" email goes out for EVERY paid
-                // membership — a one-time monthly buyer pays real money too.
-                // The old else-only dispatch meant onetime+monthly purchases
-                // produced no earnings notification for the creator at all.
-                $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
-
-                $total_amount = $mem->membership->price + $mem->vat_tax_amount;
-
-                // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency, 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
-                $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
-
-                MembershipMail::dispatch($mem, $creatorNetAmount);
-
-                if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
-                    // Non-renewing: stop the Stripe subscription at period end.
-                    SubscriptionCancelAtEnd::dispatch($mem);
-                }
-
-                // this job is for creator
-                //  MembershipMail::dispatch($mem, $amountWithCurr);
-
-                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
-                $totalPaidAmount = $mem->total_paid && $mem->total_paid > 0 ? $mem->total_paid : (float) ($session->amount_total / $multiplier);
-                $amountWithcurrency = ($symbol->symbol ?? '£').number_format($totalPaidAmount, 2);
-
-                Log::info('MembershipController: Starting membership email handling', [
-                    'membership_payment_id' => $mem->id,
-                    'membership_id' => $mem->membership->id,
-                    'membership_level' => $mem->membership->level,
-                    'recurring_for' => $mem->recurring_for,
-                    'guest_email' => $mem->guest_email,
-                ]);
-
-                // ✅ FIXED: Create deliverable entry for membership payment (exactly like bills)
-                $this->createMembershipDeliverable($mem, $session);
-
-                // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
-                // This should be sent regardless of CheckoutMailToUser success/failure
-                $amountWithcurrencies = $symbol->symbol.$mem->total_paid;
-                MembershipMailToUser::dispatch($mem, $amountWithcurrencies);
-                Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
-                    'membership_payment_id' => $mem->id,
-                    'gifter_email' => $mem->guest_email,
-                    'amount_with_currency' => $amountWithcurrency,
-                    'membership_level' => $mem->membership->level,
-                ]);
-
-                /**************************MEMBERSHIP**PWA**START****************************************************/
-                // below is membership pwa for fans
-                $CreatorName = ucfirst($mem->membership->user->name) ?? 'A Creator';
-                $title = '🏆 Membership Activated!';
-                $content = "You've subscribed to $CreatorName ’s membership for {$amountWithcurrency}. Enjoy the perks!.";
-                $email = $mem->guest_email ?? $mem->user->email;
-
-                Helpers::sendNotification($title, $content, $email);
-
-                // below is membership pwa for creator
-                $FanName = ucfirst($mem->user->name ?? $mem->guest_name) ?? 'A Fan';
-                $title = '💎 New Member Joined!';
-                $content = "$FanName just subscribed to your membership!.";
-                $email = $mem->membership->user->email;
-
-                Helpers::sendNotification($title, $content, $email);
-                /****************************MEMBERSHIP**PWA**ENDS****************************************************/
-
-                if ($mem->anonymous == 1) {
-                    $username = 'Anonymous user';
-                } else {
-                    $username = $mem->guest_name ?? 'Anonymous user';
-                }
-
-                $message = $username.' just subscribed to your '.$mem->membership->name.' membership';
-                NotificationSave::dispatch($message, $mem->membership->user, $mem->user, 'Membership');
-
-                $userPayment = new UserPayment;
-                $userPayment->from_user_id = $mem->user_id ?? null;
-                $userPayment->to_user_id = $mem->membership->user_id;
-                $userPayment->product_type = 'membership';
-                $userPayment->amount = $mem->amount;
-
-                // Ensure total_paid is updated in MembershipPayment if missing
-                if (! $mem->total_paid || $mem->total_paid <= 0) {
-                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
-                    $mem->total_paid = (float) ($session->amount_total / $multiplier);
-                    $mem->save();
-                }
-
-                $userPayment->total_paid = $mem->total_paid;
-                $userPayment->currency = $mem->currency;
-                $userPayment->payment_method = 'stripe';
-                $userPayment->payment_details = json_encode($session, true);
-                $userPayment->paid_at = Carbon::now();
-                $userPayment->status = $session->payment_status;
-                $userPayment->save();
-
-                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
-                try {
-                    $creator = $mem->membership->user;
-                    $amount = (float) $mem->amount;
-                    $vat = (float) ($mem->vat_tax_amount ?? 0);
-                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
-                        $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
-                    }
-                    // Use actual fee breakdown from the gross-up formula
-                    $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'), 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
-                    $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
-                    $stripeFee = $memBreakdown['stripe_fee'];
-                    $gross = $mem->total_paid && $mem->total_paid > 0
-                        ? (float) $mem->total_paid
-                        : $memBreakdown['total_supporter_pays'];
-                    $creatorAmount = $amount;
-
-                    // Reserve is taken from the creator's NET amount (never the gross).
-                    $reservePercent = (int) app(ReservePolicy::class)->getEffectiveReservePercent(
-                        $creator,
-                        CreatorMetric::where('creator_id', $creator->uuid)->first(),
-                        now()
-                    );
-                    $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
-
-                    FinancialTransaction::updateOrCreate(
-                        [
-                            'source_type' => MembershipPayment::class,
-                            'source_id' => $mem->id,
-                        ],
-                        [
-                            'user_id' => $creator->id,
-                            'supporter_id' => $mem->user_id,
-                            'type' => 'income',
-                            'gross_amount' => $gross,
-                            'platform_fee' => $platformFee,
-                            'stripe_fee' => $stripeFee,
-                            'vat_amount' => $vat,
-                            'net_amount' => $creatorAmount,
-                            'reserve_amount' => $reserveAmount,
-                            'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
-                            'currency' => strtoupper($mem->currency ?? 'GBP'),
-                            'status' => 'completed',
-                            'description' => 'Membership: '.($mem->membership->level ?? 'Subscription'),
-                            'transaction_date' => $mem->created_at,
-                        ]
-                    );
-                } catch (\Throwable $e) {
-                    Log::error('Failed to sync MembershipPayment to FinancialTransaction in handlePayment: '.$e->getMessage(), ['membership_payment_id' => $mem->id]);
-                }
-
-                // if ($mem->wish_item->user->auto_tweet == 1) {
-                //     // MakeAutoTweets::dispatch($user);
-                //     SubscribeAutoTweet::dispatch($mem);
-                //     MembershipAutoTweet::dispatch($mem);
-                // }
-
-                // Clear user caches
-                $this->userProfileService->clearUserCaches($mem->membership->user->username, $mem->membership->user->id);
-                if ($mem->user) {
-                    $this->userProfileService->clearUserCaches($mem->user->username, $mem->user->id);
-                }
+                $this->fulfilPaidCheckout($mem, $session);
 
                 $totalAmount = 0;
                 if ($mem->user->role == 0) {
@@ -1388,15 +1220,200 @@ class MembershipController extends Controller
                 ->where('status', 'processing')
                 ->update(['status' => 'initiated']);
 
-            Log::error('Stripe Error: '.$e->getMessage());
+            Log::error('MembershipController: handlePayment failed', [
+                'membership_payment_id' => $mem->id,
+                'error' => $e->getMessage(),
+            ]);
 
             return to_route('user.show', ['username' => $mem->membership->user->username])->with('error', $e->getMessage());
         }
-        // return response()->json([
-        //     'success'   =>  true,
-        //     'session'   =>  $session,
-        //     'status'    =>  $status
-        // ]);
+    }
+
+    /**
+     * Everything a PAID first membership checkout produces — mails, pushes,
+     * deliverable, bell notification, UserPayment, ledger row. Extracted from
+     * handlePayment so the webhook's delayed fallback
+     * (App\Jobs\FulfilSubscriptionCheckout) can fulfil a buyer who never
+     * returned to the success URL; before that, a closed tab left a paid
+     * Stripe subscription with stripe_id NULL, no deliverable, no emails —
+     * and every future renewal invisible, while Stripe kept charging.
+     *
+     * ⚠️ Caller must have CLAIMED the row first (status initiated →
+     * processing) and confirmed $session->payment_status === 'paid'.
+     * No redirects and no session flash in here — it runs in queue workers.
+     */
+    public function fulfilPaidCheckout(MembershipPayment $mem, $session): void
+    {
+        $mem->status = $session->payment_status;
+        $mem->stripe_id = $session->subscription;
+        $current = Carbon::now();
+        if ($mem->recurring_type == 'monthly') {
+            $current->addMonth();
+        }
+        $mem->upcoming_payment = $current;
+        $mem->save();
+
+        // Update GMV for creator
+        Helpers::addGmv($mem->membership->user_id, (float) $mem->amount, $mem->membership->user->default_currency);
+
+        // Creator's "you got paid" email goes out for EVERY paid
+        // membership — a one-time monthly buyer pays real money too.
+        // The old else-only dispatch meant onetime+monthly purchases
+        // produced no earnings notification for the creator at all.
+        $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
+
+        $total_amount = $mem->membership->price + $mem->vat_tax_amount;
+
+        // Calculate creator net amount
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency, 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
+        $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
+
+        MembershipMail::dispatch($mem, $creatorNetAmount);
+
+        if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
+            // Non-renewing: stop the Stripe subscription at period end.
+            SubscriptionCancelAtEnd::dispatch($mem);
+        }
+
+        // this job is for creator
+        //  MembershipMail::dispatch($mem, $amountWithCurr);
+
+        $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+        $totalPaidAmount = $mem->total_paid && $mem->total_paid > 0 ? $mem->total_paid : (float) ($session->amount_total / $multiplier);
+        $amountWithcurrency = ($symbol->symbol ?? '£').number_format($totalPaidAmount, 2);
+
+        Log::info('MembershipController: Starting membership email handling', [
+            'membership_payment_id' => $mem->id,
+            'membership_id' => $mem->membership->id,
+            'membership_level' => $mem->membership->level,
+            'recurring_for' => $mem->recurring_for,
+            'guest_email' => $mem->guest_email,
+        ]);
+
+        // ✅ FIXED: Create deliverable entry for membership payment (exactly like bills)
+        $this->createMembershipDeliverable($mem, $session);
+
+        // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
+        // This should be sent regardless of CheckoutMailToUser success/failure
+        $amountWithcurrencies = $symbol->symbol.$mem->total_paid;
+        MembershipMailToUser::dispatch($mem, $amountWithcurrencies);
+        Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
+            'membership_payment_id' => $mem->id,
+            'gifter_email' => $mem->guest_email,
+            'amount_with_currency' => $amountWithcurrency,
+            'membership_level' => $mem->membership->level,
+        ]);
+
+        /**************************MEMBERSHIP**PWA**START****************************************************/
+        // below is membership pwa for fans
+        $CreatorName = ucfirst($mem->membership->user->name) ?? 'A Creator';
+        $title = '🏆 Membership Activated!';
+        $content = "You've subscribed to $CreatorName ’s membership for {$amountWithcurrency}. Enjoy the perks!.";
+        $email = $mem->guest_email ?? $mem->user->email;
+
+        Helpers::sendNotification($title, $content, $email);
+
+        // below is membership pwa for creator
+        $FanName = ucfirst($mem->user->name ?? $mem->guest_name) ?? 'A Fan';
+        $title = '💎 New Member Joined!';
+        $content = "$FanName just subscribed to your membership!.";
+        $email = $mem->membership->user->email;
+
+        Helpers::sendNotification($title, $content, $email);
+        /****************************MEMBERSHIP**PWA**ENDS****************************************************/
+
+        if ($mem->anonymous == 1) {
+            $username = 'Anonymous user';
+        } else {
+            $username = $mem->guest_name ?? 'Anonymous user';
+        }
+
+        $message = $username.' just subscribed to your '.$mem->membership->name.' membership';
+        NotificationSave::dispatch($message, $mem->membership->user, $mem->user, 'Membership');
+
+        $userPayment = new UserPayment;
+        $userPayment->from_user_id = $mem->user_id ?? null;
+        $userPayment->to_user_id = $mem->membership->user_id;
+        $userPayment->product_type = 'membership';
+        $userPayment->amount = $mem->amount;
+
+        // Ensure total_paid is updated in MembershipPayment if missing
+        if (! $mem->total_paid || $mem->total_paid <= 0) {
+            $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+            $mem->total_paid = (float) ($session->amount_total / $multiplier);
+            $mem->save();
+        }
+
+        $userPayment->total_paid = $mem->total_paid;
+        $userPayment->currency = $mem->currency;
+        $userPayment->payment_method = 'stripe';
+        $userPayment->payment_details = json_encode($session, true);
+        $userPayment->paid_at = Carbon::now();
+        $userPayment->status = $session->payment_status;
+        $userPayment->save();
+
+        // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+        try {
+            $creator = $mem->membership->user;
+            $amount = (float) $mem->amount;
+            $vat = (float) ($mem->vat_tax_amount ?? 0);
+            if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+            }
+            // Use actual fee breakdown from the gross-up formula
+            $memBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($mem->currency ?? 'GBP'), 0, $mem->fee_profile ?? 'card', null, Helpers::storedFeeRates($mem));
+            $platformFee = $memBreakdown['platform_fee'] + $memBreakdown['compliance_fee'] + $memBreakdown['admin_fee'];
+            $stripeFee = $memBreakdown['stripe_fee'];
+            $gross = $mem->total_paid && $mem->total_paid > 0
+                ? (float) $mem->total_paid
+                : $memBreakdown['total_supporter_pays'];
+            $creatorAmount = $amount;
+
+            // Reserve is taken from the creator's NET amount (never the gross).
+            $reservePercent = (int) app(ReservePolicy::class)->getEffectiveReservePercent(
+                $creator,
+                CreatorMetric::where('creator_id', $creator->uuid)->first(),
+                now()
+            );
+            $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
+
+            FinancialTransaction::updateOrCreate(
+                [
+                    'source_type' => MembershipPayment::class,
+                    'source_id' => $mem->id,
+                ],
+                [
+                    'user_id' => $creator->id,
+                    'supporter_id' => $mem->user_id,
+                    'type' => 'income',
+                    'gross_amount' => $gross,
+                    'platform_fee' => $platformFee,
+                    'stripe_fee' => $stripeFee,
+                    'vat_amount' => $vat,
+                    'net_amount' => $creatorAmount,
+                    'reserve_amount' => $reserveAmount,
+                    'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
+                    'currency' => strtoupper($mem->currency ?? 'GBP'),
+                    'status' => 'completed',
+                    'description' => 'Membership: '.($mem->membership->level ?? 'Subscription'),
+                    'transaction_date' => $mem->created_at,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to sync MembershipPayment to FinancialTransaction in handlePayment: '.$e->getMessage(), ['membership_payment_id' => $mem->id]);
+        }
+
+        // if ($mem->wish_item->user->auto_tweet == 1) {
+        //     // MakeAutoTweets::dispatch($user);
+        //     SubscribeAutoTweet::dispatch($mem);
+        //     MembershipAutoTweet::dispatch($mem);
+        // }
+
+        // Clear user caches
+        $this->userProfileService->clearUserCaches($mem->membership->user->username, $mem->membership->user->id);
+        if ($mem->user) {
+            $this->userProfileService->clearUserCaches($mem->user->username, $mem->user->id);
+        }
     }
 
     // Page method - returns Inertia view
@@ -1795,7 +1812,7 @@ class MembershipController extends Controller
                 'gifter_id' => $membershipPayment->user_id,
                 'payment_intent_id' => $paymentIntentId,
                 'session_id' => $session->id,
-                'deliverable_type' => 'access', // Membership provides access, not a file
+                'deliverable_type' => $membership->content_file ? 'digital_file' : 'access',
                 'product_type' => 'membership',
                 'transaction_amount' => $membershipPayment->amount,
                 'customer_email' => $membershipPayment->guest_email,
@@ -1803,7 +1820,12 @@ class MembershipController extends Controller
                 'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
                 'anonymous' => $membershipPayment->anonymous ?? false,
                 'message' => $membershipPayment->message,
-                'deliverable_url' => null, // Memberships don't have downloadable content
+                // 🚨 Was hardcoded null on the belief that "memberships don't
+                // have downloadable content" — a tier cannot be published
+                // without an on-platform content benefit, and it lives in
+                // `memberships.content_file`. Bare URL by rule; the access
+                // route signs it per click.
+                'deliverable_url' => $membership->bareContentFileUrl(),
                 'metadata' => json_encode([
                     'product_type' => 'membership',
                     'membership_id' => $membership->id,
@@ -1901,7 +1923,9 @@ class MembershipController extends Controller
                 'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
                 'anonymous' => $membershipPayment->anonymous ?? false,
                 'message' => $membershipPayment->message,
-                'deliverable_url' => null, // Members-only access, no direct content URL
+                // The renewal delivers that cycle's content, same as the first
+                // payment — see the note on the first-payment deliverable above.
+                'deliverable_url' => $membership->bareContentFileUrl(),
                 'metadata' => json_encode([
                     'certificate' => 'true', // Enable certificate for renewed membership
                     'product_type' => 'membership',

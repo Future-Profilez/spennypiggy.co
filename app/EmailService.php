@@ -25,8 +25,6 @@ use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
 use App\Mail\SupportPaymentToUser;
-use App\Mail\ThankYouMailAdmin;
-use App\Mail\ThankyouUser;
 use App\Mail\TipJarMail;
 use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
@@ -40,7 +38,6 @@ use App\Support\MarketingConsent;
 use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Throwable;
 
@@ -360,78 +357,6 @@ class EmailService
         }
     }
 
-    public static function thankyouUser($payment)
-    {
-        try {
-            Log::info('EmailService::thankyouUser - Starting to send thank you email', [
-                'payment_id' => $payment->id ?? 'null',
-                'user_id' => $payment->payment->user->id ?? 'null',
-            ]);
-
-            $emailData = [
-                'to' => $payment->payment->user->email,
-                'name' => $payment->payment->user->name,
-                'username' => $payment->payment->user->username,
-                'phone' => $payment->payment->user->phone,
-                'email' => $payment->payment->user->email,
-                'uuid' => $payment->payment->user->uuid,
-            ];
-
-            Log::info('EmailService::thankyouUser - Email data prepared', [
-                'to' => $emailData['to'],
-                'name' => $emailData['name'],
-            ]);
-
-            Mail::to($emailData['to'])->send(new ThankyouUser($payment));
-
-            Log::info('EmailService::thankyouUser - Email sent successfully', [
-                'to' => $emailData['to'],
-                'payment_id' => $payment->id ?? 'null',
-            ]);
-
-            // Create deliverable record for email tracking
-            try {
-                Deliverable::create([
-                    'uuid' => Str::uuid(),
-                    'product_id' => $payment->payment->stripe_product_id ?? 'thank_you_email',
-                    'price_id' => $payment->payment->stripe_price_id ?? null,
-                    'creator_id' => $payment->payment->owner->id ?? null,
-                    'gifter_id' => $payment->payment->user->id ?? null,
-                    'payment_intent_id' => $payment->payment->stripe_payment_intent_id ?? null,
-                    'session_id' => $payment->payment->stripe_session_id ?? null,
-                    'deliverable_type' => 'email',
-                    'product_type' => 'thank_you',
-                    'transaction_amount' => ($payment->payment->amount ?? 0) / 100,
-                    'deliverable_url' => null,
-                    'metadata' => json_encode([
-                        'email_type' => 'thank_you',
-                        'payment_id' => $payment->payment->id ?? null,
-                    ]),
-                    'status' => 'delivered',
-                    'delivered_at' => now(),
-                ]);
-
-                Log::info('EmailService::thankyouUser - Deliverable record created');
-            } catch (\Exception $e) {
-                Log::error('EmailService::thankyouUser - Failed to create deliverable record', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        } catch (TransportException $e) {
-            Log::error('EmailService::thankyouUser - Transport Exception', [
-                'error' => $e->getMessage(),
-                'to' => $emailData['to'] ?? 'null',
-            ]);
-            AppService::setStatus('email', 0, $e->getMessage());
-        } catch (\Exception $e) {
-            Log::error('EmailService::thankyouUser - General Exception', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-            ]);
-        }
-    }
-
     public static function sendRenewMail($array, $type, $module)
     {
         try {
@@ -643,20 +568,6 @@ class EmailService
                 Mail::to('prem@futureprofilez.com')->send(new SendAdminIntroMail($intro));
             } elseif ($appUrl == 'https://spennypiggy.co') {
                 Mail::to('jack@spennypiggy.co')->send(new SendAdminIntroMail($intro));
-            }
-        } catch (TransportException $e) {
-            AppService::setStatus('email', 0, $e->getMessage());
-        }
-    }
-
-    public static function sendThankyouAdmin($pay)
-    {
-        try {
-            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
-            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                Mail::to('prem@futureprofilez.com')->send(new ThankYouMailAdmin($pay));
-            } elseif ($appUrl == 'https://spennypiggy.co') {
-                Mail::to('jack@spennypiggy.co')->send(new ThankYouMailAdmin($pay));
             }
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());

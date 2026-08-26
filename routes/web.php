@@ -1362,6 +1362,12 @@ Route::prefix('help')->name('help.')->group(function () {
         ->middleware('throttle:30,1')
         ->name('feedback');
 
+    // JSON, one article by exact slug, for contextual help panels. Declared
+    // above /help/{category} or "inline" is matched as a category slug.
+    Route::get('/inline/{slug}', [HelpController::class, 'inline'])
+        ->middleware('throttle:60,1')
+        ->name('inline');
+
     Route::get('/{category}', [HelpController::class, 'category'])->name('category');
     Route::get('/{category}/{article}', [HelpController::class, 'article'])->name('article');
 });

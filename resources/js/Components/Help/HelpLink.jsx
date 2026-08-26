@@ -29,6 +29,11 @@ export default function HelpLink({
     label = "What's this?",
     categorySlug = null,
     className = "",
+    // ⚠️ The PANEL is always light — it renders article prose and a light sheet
+    // is the readable surface for that on either ground. Only the TRIGGER
+    // changes, because half this app's headers are a dark or pink band and a
+    // `text-black/60` trigger on one is invisible rather than quiet.
+    tone = "light",
 }) {
     const [open, setOpen] = useState(false);
     const [state, setState] = useState({ loading: false, article: null, failed: false });
@@ -50,14 +55,15 @@ export default function HelpLink({
             // Literal path, never route(): ziggy.js is a generated snapshot and a
             // name it does not carry throws, which would land in this catch and
             // disable contextual help on local and dev with no clue why.
-            .get("/help/search", {
-                params: { q: slug.replace(/-/g, " "), with_body: 1, limit: 3 },
-                signal: controller.signal,
-            })
+            //
+            // 🚨 Exact slug, not /help/search. Search matched on the slug turned
+            // back into words, so a near-miss opened the WRONG answer, an
+            // audience mismatch opened none, and every failure wrote a fake row
+            // into the help-gap backlog the team reads.
+            .get(`/help/inline/${encodeURIComponent(slug)}`, { signal: controller.signal })
             .then((res) => {
-                const results = res?.data?.results ?? [];
-                const exact = results.find((r) => r.slug === slug) ?? null;
-                setState({ loading: false, article: exact, failed: !exact });
+                const article = res?.data?.article ?? null;
+                setState({ loading: false, article, failed: !article });
             })
             .catch((err) => {
                 if (axios.isCancel?.(err) || err?.name === "CanceledError") return;
@@ -91,7 +97,11 @@ export default function HelpLink({
                 }}
                 aria-expanded={open}
                 // 44px target — this sits inline next to dense figures.
-                className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-black/60 underline decoration-dotted underline-offset-4 hover:text-black"
+                className={`inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold underline decoration-dotted underline-offset-4 ${
+                    tone === "dark"
+                        ? "text-white/70 hover:text-white"
+                        : "text-black/60 hover:text-black"
+                }`}
             >
                 <HelpCircle className="h-4 w-4" aria-hidden="true" />
                 {label}

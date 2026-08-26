@@ -9,6 +9,176 @@ and everything spanning both apps. This file does not repeat any of it.
 
 Guidance for the admin back office lives in `../admin.spennypiggy.co/CLAUDE.md` — do not copy it here.
 
+## 🚨 Purchase-flow parity fixes — content → gifter → ledger → mail (25 Aug 2026)
+
+A full audit of "creator uploads content → gifter pays → gifter receives it → Stripe/ledger
+records it → mail delivers" found and fixed these. The rules below are now load-bearing:
+
+- 🚨 **`SyncCreatorLedger::schedule()` accepts `int|string|null` and resolves a UUID to
+  `users.id` itself.** `payments.creator_id` holds the creator's **UUID**, and the old
+  `?int` signature raised a `TypeError` at argument coercion — OUTSIDE the method's own
+  try and past the caller's `catch (\Exception)` (a `TypeError` is an `Error`) — which
+  failed EVERY `checkout.session.completed` event before its module fan-out ran: no
+  deliverables, no webhook emails, Stripe stuck in a retry loop. Never narrow that
+  signature back. Pinned by three tests in `SyncCreatorLedgerTest`.
+- 🚨 **Wish CART and Bill/Membership FIRST payments now have webhook fallback fulfilment —
+  as DELAYED jobs, never inline.** `App\Jobs\FulfilCartCheckout` and
+  `App\Jobs\FulfilSubscriptionCheckout` are dispatched from
+  `handleCheckoutSessionCompleted` with a 10-minute delay and claim with the SAME atomic
+  conditional UPDATE the redirect handlers use, so the two paths can never double-fulfil.
+  Before this, a buyer who closed the tab left a PAID session with nothing behind it —
+  and for bills/memberships, `stripe_id` stayed NULL so every renewal was invisible while
+  Stripe kept charging. ⚠️ The subscription job reuses
+  `BillsController::fulfilPaidCheckout()` / `MembershipController::fulfilPaidCheckout()`
+  (extracted from `handlePayment`, no redirects/session-flash inside) — one fulfilment
+  code path, never a webhook copy. Both need `queue:work`.
+- 🚨 **`CheckoutMailToUser` completes the redirect's BARE deliverable row instead of
+  skipping it.** `successCheckout` pre-creates a url-less `wish_one_off` row; the dedup
+  used to see it and return, leaving the receipt's content block empty, the hub purchase
+  stuck "incoming" forever and no certificate — on every normal card cart purchase. The
+  bare row is now upgraded in place (`product_type` → `'wish'`). Also:
+  `getProductTypeFromWish()` returns `'wish'` unconditionally — it used to substring-match
+  "membership" in the wish's own title and route the buyer's content into the membership
+  pipeline (`Membership::find($wish_id)` → failed deliverable).
+- 🚨 **A buyer's `notification_send=0` silences ONLY their own receipt.** It used to gate
+  all of `CheckoutMailToUser::handle()`, deleting the payment's Deliverables and the
+  CREATOR's sale email along with the buyer's mail. Deliverables are always created; the
+  creator is always mailed.
+- 🚨 **`DeliveriesController::access` no longer force-writes `status='delivered'`.** The
+  route is public, so opening the receipt email flipped an UNPOSTED physical parcel
+  (`deliverable_type='shipping'`) and a high-value order under admin review to
+  `delivered` — the column the payout fulfilment gate reads. Only a `pending` digital
+  hand-off is delivered by access.
+- **`deliverable_url` stays BARE** — new helpers `Shop::bareRewardFileUrl()` /
+  `WishItem::bareContentFileUrl()` are what deliverable writers persist; the signed
+  accessors (`reward_file_url` / `content_file_url`) are for entitled render surfaces
+  only. A stored signed URL 403s forever once secure delivery is armed, because
+  `SecureMedia::sign()` refuses to re-sign a URL already carrying a token.
+- **Tip webhook parity:** `processSupportPayment` now writes the `UserPayment` row and
+  the bell `NotificationSave` (webhook-settled tips were absent from the buyer's payment
+  history and the creator's bell); the redirect gates the same writes on
+  `$deliverable->wasRecentlyCreated`, so they are exactly-once across the race. Piggy
+  Pot's redirect FT sync now uses `Helpers::copyFeeRateColumns($pay)` identically to the
+  webhook — it used to null `compliance_fee`/`admin_fee` over an already-correct row.
+- **`handleAsyncPaymentFailed` reverses the ledger:** it calls
+  `syncFinancialTransactionsByPaymentIntent($pi, 'failed')`, and that method's
+  failed/blocked cascade now skips source rows already at `'paid'` (a failure event never
+  demotes settled money; refunds/disputes still do).
+- **Schema drift closed:** `stripe_payment_items.thank_you_approved` / `thank_you_at` /
+  `twitter_response` had no migration (guarded additive
+  `2026_08_25_100000`, types transcribed from live `SHOW COLUMNS`).
+- **Membership fixes:** `UserProfileService::getOptimizedMemberships()` selects the reward
+  columns for the OWNER (cache key bumped `_v2`) — without them the edit form demanded a
+  content re-upload on every save. Membership renewal content is delivered by
+  `RenewMail`'s reward block (`reward_item_type='membership'`) — do NOT add a membership
+  clone of `BillContentDeliveryMail`; it would double-send.
+- `DeliverableNotification` reads `gifter_id` (the `buyer_id` it read does not exist on
+  `deliverables`, so every row was written with `user_id = NULL`).
+- Tests: `tests/Feature/PurchaseFlowGapFixesTest.php` (9).
+
+## 🚨 The buyer could pay and not REACH it — hub pass (25 Aug 2026)
+
+Second pass over the same flow. The first fixed *recording*; this fixes
+*reachability* — the paid thing existing and the buyer having no route to it.
+
+- 🚨 **`/{username}?page=x` IS NOT THE PROFILE'S PAGE PARAMETER, AND THE 21 Aug
+  2026 SWEEP ONLY FIXED THE JSX SITES.** Four server call sites still built the
+  query-string form, so they answered 200 and rendered **About**:
+  `GifterHubController::openLink` (EVERY card on the Purchase Hub),
+  `ProfileController`'s Support-History feed, `CreatorActivityService`'s two
+  onboarding nudges, and `StockWaitlistService`'s restock email — the mail whose
+  entire job is to sell one item. All now emit `/{username}/{page}`.
+  - ⚠️ **`tips` IS NOT A PAGE.** `getPageSpecificData()` has no case for it and
+    Piggy Bank renders on About. `GifterHubController::PROFILE_PAGES` is the
+    whitelist and anything outside it falls back to `about`, so an unroutable
+    segment can never render a blank tab.
+  - ⚠️ `/account?page=autotweet` is a DIFFERENT, single-segment route where the
+    query IS read. Do not "fix" that one.
+- 🚨 **`unlockedItem()` SENT NO REWARD FIELDS, SO "What you unlocked" COULD NEVER
+  RENDER.** `PurchasesHub.jsx` has always had the markup and keys on
+  `hasReward = reward_url || reward_text` — the payload simply omitted them for
+  every one-time purchase, so a shop item, a piggy pot and a tip all showed a
+  bare card. They now carry `reward_text` / `reward_url` / `reward_type`.
+- 🚨 **`RewardService::for()` IS THE ONE REWARD RESOLVER — do not hand-roll a
+  second.** `resolveDeliverableReward()` had a branch per product type and three
+  were wrong: `shop_item` read a `reward_file_url` while ignoring the unified
+  `reward_file`; the tip path read `tipGoal->reward_url`, **an accessor that does
+  not exist on TipGoal**, so it was silently null on every tip receipt; and
+  bills, memberships and pots had no branch at all. One `rewardFields()` helper
+  now feeds receipts, unlocked cards and subscriptions. ⚠️ The frontend's
+  vocabulary is `file|link|text`, the contract's is `file|link|message` —
+  translate in the controller, never teach the component a second set of names.
+- 🚨 **A MEMBER'S CONTENT EXISTED IN EXACTLY ONE PLACE: THE CONFIRMATION EMAIL.**
+  `deliverable_url` was hardcoded `null` at four sites on the belief that
+  "memberships don't have downloadable content" — a tier cannot be published
+  without an on-platform content benefit and it lives in
+  `memberships.content_file`. Fixed in `MembershipController` (first payment +
+  renewal), `StripeWebhookController::createMembershipRenewalDeliverable` and
+  `ProcessWishItemDeliverable::processMembershipDeliverable`. The hub's
+  subscription row carries the reward keys, and the media library gained
+  membership + bill branches.
+  - ⚠️ **ACTIVE SUBSCRIPTIONS ONLY.** A tier's `content_file` is one mutable
+    column the creator swaps each cycle, so today's file is not the one a lapsed
+    member paid for — serving it is an over-grant, not a courtesy. Pinned by test.
+  - `subscriptionRow`'s old `content_file` key was a **dead prop** (zero JSX
+    references) and memberships passed NULL into it anyway.
+  - New `Membership::bareContentFileUrl()` / `Bills::bareContentFileUrl()` /
+    `WishItem::bareRewardUrl()`, matching `Shop::bareRewardFileUrl()` — bare for
+    persisting, the signed accessor for rendering. Never mix them up.
+- 🚨 **`processMediaBundle` BUILT A ZIP ON LOCAL DISK AND STORED ITS PATH AS THE
+  DELIVERABLE URL.** Three faults at once: `deliverables/bundles/x.zip` is not a
+  route; on Vapor the Lambda filesystem is ephemeral and `public/` is stripped,
+  so the file was gone before anyone clicked; and it was assembled from
+  `$item->image_url` / `$item->video_url`, **neither of which is a column on
+  WishItem**, so it only ever contained `metadata.json`. Every legacy
+  reward-only wish delivered a link to nowhere, with nothing in any log. It now
+  points at the item's own CDN media (`content_file` → legacy `reward` → null,
+  never overwriting a url a previous run resolved). `createMediaBundle()`,
+  `addFileToZip()` and the `ZipArchive`/`Storage` imports are deleted.
+- ⚠️ **`deliverables.failure_reason` DOES NOT EXIST** — not in the live table, no
+  migration, not `$fillable`. The job's catch block wrote it, mass assignment
+  dropped it silently, and a failed deliverable recorded a status and no reason.
+  (Had it been fillable it would have thrown a SQL error *inside the catch* and
+  buried the original exception.) The reason goes in `metadata` now.
+- 🚨 **`proof_content` HAS NEVER CARRIED `media_url` OR `message`.**
+  `TaskController::uploadProof` writes `file|name|mime_type|notes`;
+  `ProfileController` read the other two at four sites, so a delivered
+  custom-task proof rendered as nothing in the support-story feed. Both legacy
+  names are kept as a fallback.
+- 🚨 **THE SUPPORTER WAS TOLD NOTHING WHEN THEY ACCEPTED OR REJECTED A DELIVERY.**
+  Accepting releases escrow — the one irreversible money step in that flow — and
+  only the creator was mailed. `TaskProofAcceptedSupporterMail` and
+  `TaskProofRejectedSupporterMail` shipped with views and **zero dispatch sites**;
+  both are now wired. The hub's incoming card also links to `/task/order/{uuid}`,
+  the only page that renders the proof — before this it asked the supporter to
+  approve work they could not see.
+- ⚠️ **Purchase mail no longer runs inline in a locked transaction.**
+  `ShopBuyedUser::dispatchSync` sat INSIDE `DB::transaction` while a
+  `lockForUpdate` was held on `shop_payments`, so every concurrent write to that
+  row waited on the mail server — on a Lambda with a 60-second total budget. Now
+  `dispatch(...)->afterCommit()` in both the webhook and `ShopsController`. The
+  four task mails in the webhook moved from `Mail::send()` to `Mail::queue()`.
+- **Schema drift, two more:** `stripe_payment_items.thank_you_approved` /
+  `thank_you_at` / `twitter_response` (`2026_08_25_100000`), and
+  `memberships.currency` / `status` (`2026_08_25_110000`). 🚨 The memberships one
+  also **relaxes `memberships.name` to nullable where it exists** — the drift runs
+  BOTH ways: `2024_01_02_000000_create_memberships_table` declares `name` NOT NULL
+  and the live table has no such column (the label is `level`), so a
+  fresh-from-migrations database failed every membership insert on a constraint
+  that cannot exist in production. Relaxed, never dropped, and guarded so it is a
+  no-op on every deployed database.
+- ⚠️ **Deliberately NOT changed: the hub's receipts filter.** `buildReceipts`
+  requires `certificate_url`, which shop and pot deliverables never get. Loosening
+  it looks right and is wrong — `PurchasesHub.jsx:322-331` merges receipts +
+  unlocked + incoming + subscriptions into ONE list, so those purchases (already
+  present as `unlocked`) would render **twice**.
+- ⚠️ **Known and left alone: `deliverables.metadata` is `array`-cast but every
+  writer passes a `json_encode()`d string**, so the value is double-encoded and
+  reads back as a string — which is exactly why the `json_decode($…->metadata)`
+  calls all over the codebase work. Writers and readers are self-consistent;
+  changing either side alone breaks every deliverable path.
+- Tests: `tests/Feature/PurchaseHubReachabilityTest.php` (8).
+
 ## Email Preferences System (spennypiggy.co)
 
 ### Overview
@@ -503,6 +673,25 @@ Developer Master Plan", 19 Aug 2026 (`../docs/client/19 Aug/`).
   a visitor sees — so a Suspense placeholder would flash inside the LCP window. It also
   adds the `act-discover` stop to that file's `CHAPTERS` rail; every id there must exist in
   the markup.
+- 🚨 **THE TWO AD PAGES HAD NO SHARE CARD AT ALL UNTIL 24 Aug 2026.** `/creators/discovery`
+  and `/creators/link-in-bio` rendered **zero** `og:` / `twitter:` tags — verified against the
+  rendered HTML, while the homepage carried a full set. They are the pages the paid ads point
+  at, so every link Jack posted unfurled as a bare URL. Nothing errored: `StaticPageSeoMiddleware`
+  emits tags only on an **exact** path match in its `$seoData` map, the two newest pages were
+  never added, and its `$landingPages` fallback branch is dead (`= []`).
+  - Copy is the client's own A2/A3 wording and stays inside the same bans the pages carry —
+    no competitor or payment-provider names, no creator earnings, and never a settlement speed
+    on the Link in Bio card.
+  - ⚠️ **The share image is built with `asset()`, not `url()`.** On Vapor `public/` is uploaded
+    to S3/CloudFront and stripped from the Lambda, so an APP_URL path to a static file is not
+    guaranteed to resolve there — and an og:image that 404s loses this silently, because nothing
+    in the app ever fetches it. A page may override with its own `image` key.
+  - Both pages are indexable in production: neither is in `$noIndexExact`, and the `creator/`
+    no-index prefix does not match `creators/`.
+  - Tests: `tests/Feature/AdPageSocialCardTest.php` (5), asserted against RENDERED HTML.
+    ⚠️ The class needs `RefreshDatabase` — both pages read the currencies table, and without it
+    three of these tests **passed against a 500 error page**, which still carried the middleware's
+    meta tags. Verified the suite fails with the map entries removed.
 - **UTM attribution needed no work** — `app.jsx` captures `utm_source/medium/campaign` on
   any page into localStorage, `users` already carries the columns, and
   `users.signup_landing_page` records the ad page. New `/creators/*` pages inherit it, but
@@ -912,6 +1101,67 @@ supporter does not buy a creator — they buy something a creator made.**
   **guarded** create (`2026_08_24_000000`) mirroring the live schema, with a deliberate
   no-op `down()`.
 
+### 🚨 The mixed board speaks ONE card language (24 Aug 2026)
+
+`Pages/discover/components/BoardCard.jsx` + `DiscoveryService::boardCard()`.
+
+**Five card designs side by side is not variety, it is a broken grid.** The wish,
+shop, bill, membership and task cards were each drawn for their own page —
+different heights, different headers (a membership carries an orange tier band),
+different CTA shapes, and the task card is a full-width ROW — and the mixed board
+drew all five in one row. Reported as "consistency nahi lag rahi", and it was
+right: nothing about those cards was designed to sit next to the others.
+
+- **The modules KEEP their own cards on their own pages, and on a chip-filtered
+  view** (Bills, Memberships…), where every card on screen is the same kind of
+  thing and a rich, specific card is the right answer. Only `mode="mixed"`
+  renders `BoardCard`.
+- ⚠️ **THE ONLY THINGS THAT VARY ARE A CHIP AND A VERB.** Geometry, type scale and
+  spacing are identical for every module — that is what makes a row of five
+  different products read as one shelf. The title is `line-clamp-2` with a
+  `min-h`, because a one-line title beside a two-line one is what left the old
+  rows ending at different heights.
+- 🚨 **The colour ENCODES the shape of the purchase, it does not decorate:**
+  brand yellow = unlocks now · mint = recurring · violet = made for you. Black
+  type on all three (the house accents already measured for black). The CTA verb
+  is the module's own and matches its checkout: Unlock · Buy · Subscribe · Join ·
+  Request.
+- ⚠️ **A listing with no picture says what it IS, on its own colour** — no stock
+  photography, no invented imagery, no grey placeholder box.
+- 🚨 **A MEMBERSHIP'S TIER IS ITS IDENTITY**, so a pictureless membership shows the
+  LEVEL (Bronze, Gold…) in that tier's own colour, not the generic label — which
+  is already on the chip below and said nothing either time it was printed.
+  ⚠️ The tier colours moved out of `Components/MembershipItem.jsx` into
+  **`resources/js/constants/membershipTiers.js`**, read by both: a second copy
+  would have drifted the first time a tier was renamed or recoloured, leaving one
+  membership drawn in two colours on two screens. Every pairing there is measured
+  (bronze/platinum/lifetime carry white type, the light tiers black) — never swap
+  a background without its ink.
+- 🚨 Price is fee-inclusive through `PriceFormat`, same rule as everywhere; the
+  image is the PUBLIC card thumbnail only, never a reward or content file; and a
+  row the normaliser cannot describe (no public creator, no title) is **dropped**
+  rather than drawn with holes in it.
+- Tests: the shape is pinned key-by-key in `DiscoverBrowseTest` (27 total).
+
+### The shelf — Discover's one section header (24 Aug 2026)
+
+`components/SectionShelf.jsx`. **Every section on the page drew its own header** —
+FeaturedCarousel one arrangement, the two inline sections another, ResultsGrid a
+third — same ingredients, three geometries, which is why the page still read as
+assembled from parts after the cards were unified. One component now: eyebrow →
+anton title (+ optional action) → subtitle → **the shelf rule**, a 2px black rule
+with the count sitting on it as a yellow tag.
+
+- 🚨 **The tag is the signature and it ENCODES something true** — this is a shelf,
+  the tag says how much is on it (`12` on a rail, `12 of 57` on the board). Same
+  price-tag vocabulary the cards already speak. It is not decoration; do not add
+  a second ornamental device beside it.
+- ⚠️ **The rule is a `bg-black` div and the sticky bar's edge is an INLINE
+  `borderBottom`** — `border-black` is a full 2px shorthand in this project and
+  `border-[#000]` does not compile (both documented above). The sticky TopBar
+  carries the same 2px edge: it is the page's own shelf edge, and without it
+  content scrolled under a translucent blur and the seam read as mush.
+
 ## 🚨 Discovery attribution — Phase 1 (20 Aug 2026, spennypiggy.co)
 
 Every profile visit and every purchase is recorded as **creator-generated** (their own
@@ -1000,10 +1250,17 @@ worth" — is this table, summed. Reference: Developer Master Plan, 19 Aug 2026,
       inserts a payment row (no `*Payment::create` anywhere in it) and its copies do not carry
       `fee_profile` either; `$fillable` does not affect reads. Migration in this app only.
     - Tests: `tests/Feature/DiscoveryPaymentSourceTest.php` (7).
-- **Tagged so far:** homepage showcase (`trending`, `new-creators`) and Discover's
-  `CreatorCard` (`search-recs`). ⚠️ **Discover's item grid, featured carousels and the
-  automated supporter emails are NOT yet tagged** — `DiscoverySources::LIVE_KEYS` lists what
-  is wired, and the brief's "tag every SP surface that exists today" is not finished.
+- ✅ **TAGGING IS EFFECTIVELY COMPLETE — re-measured 24 Aug 2026.** An earlier version of
+  this note said Discover's item grid, the featured carousels and the automated supporter
+  e-mails were untagged; that is **stale**. `discoveryLink` is now used across **23 files**
+  including `ResultsGrid`, `FeaturedCarousel`, `SpotlightRotator`, `RecentlyViewed`, the
+  leaderboard rows and the collection rows, and the promotional mailables
+  (`AbandonedCheckoutReminder`, `BirthdayReminder`, `BirthdaysThisWeek`,
+  `ReactivationReminder`) all build their links through `DiscoverySources::profileUrl()`.
+  ⚠️ **`CheckoutToUser` and `SupportPaymentToUser` are deliberately NOT tagged** — a receipt
+  linking back to the creator the supporter has just paid is that creator's own traffic, and
+  tagging it SP-generated would make the platform take credit for a sale it did not
+  introduce. The safe direction here is always to under-claim.
 - Tests: `tests/Feature/DiscoveryAttributionTest.php` (12), including the two cases the
   brief asks to be shown end to end. ⚠️ One test asserts the JS key list matches the PHP
   one — a key the helper offers but the server refuses is dropped silently, which looks
@@ -1135,6 +1392,24 @@ Monday "Birthdays This Week" campaign) and `/discover/birthdays`.
   name + username, `exclude_from_discovery` off) plus opt-in and ≥1 live item. The
   duplication is deliberate — Phase 3's service is owned elsewhere — so a data-provider
   test asserts BOTH services agree on every clause. Change one, change the other.
+- 🚨 **NOBODY COULD FIND ANY OF THIS UNTIL 24 Aug 2026, ON EITHER SIDE.** The feature was
+  complete and inert: **no link anywhere pointed at `/discover/birthdays`** (the Monday
+  e-mail's CTA was the only route in, and that e-mail ships behind a flag), and **nothing
+  told a creator the opt-in existed** — the switch sits inside Creator Studio on the account
+  page, so it was found only by wandering through settings. No opt-ins means no collection
+  and no campaign, however correct the code is. Two entry points now exist:
+  - **Creator side:** a promo-deck card (`birthday_discovery` in `config/promos.php`,
+    `Components/Promo/cards/BirthdayCard.jsx`), shown ONLY to a creator who has not opted
+    in. ⚠️ Eligibility checks the switch **and** `birthday_month`, because
+    `ProfileController` refuses the opt-in when no date is on file — so the switch alone can
+    read true with nothing behind it, and that creator would never appear in the collection
+    while being told there was nothing left to do. Tests: `BirthdayNudgeTest` (4).
+  - **Supporter side:** a tile on `/discover`, rendered only when `birthdaysReady`. ⚠️ That
+    gate matters: the collection page greys itself below `collection_min_creators`, and a
+    link into a greyed page is the same dead end the e-mail CTA is protected from. The
+    check is wrapped — Discover must never fail over a link to another page. Tests:
+    `BirthdayDiscoverEntryTest` (4), including the POSITIVE case, without which all the
+    others would still pass with the flag hardcoded off.
 - **Sending ships OFF.** `DISCOVERY_BIRTHDAY_REMINDERS` / `DISCOVERY_BIRTHDAYS_THIS_WEEK`,
   both default false; a flag-off run reports and claims nothing (so the first real send is
   never suppressed). The collection page is **not** flag-gated — it answers to the DATA
@@ -1813,7 +2088,64 @@ fourth was a JSX edit, which is why there was nothing stopping a fifth.
   and a meter, a receipt with a torn foot and a stamp, a solid badge at size, a split
   ground with two figures and an arrow, a three-row ranking, browser chrome with link
   rows, an app tile dropping into a dock, ruled paper with an empty field.
-- 🚨 **THE CARD HEIGHT IS MEASURED, AND THE FLOOR IS MOBILE.** `promoKit.CARD_H` is
+- 🚨 **A RATE IS NOT A MESSAGE — WORK THE SUM.** "5% on top" answers nothing on its own
+  (on top of what, worth how much?), and the row it sat above read "YOUR PAYOUT / Sales +
+  Fast Start bonus / +5%" — a label with no quantity in it. Both bonus cards now show the
+  same three-line receipt: **earn → bonus → paid**. Founder uses the real threshold
+  (£2,500 → +£250 → £2,750); Fast Start has no threshold, so
+  `PromoBannerService::fastStartFacts()` works ONE example from an illustrative £1,000 and
+  **derives the bonus and total from the live rate**, and the block is labelled
+  **EXAMPLE**. ⚠️ Under tiered pricing the rate and the whole example are omitted — never
+  fill the gap with one bracket's number.
+- ⚠️ **When a row will not fit, wrap it — do not shave the words.** Founder's button plus
+  its figure was 22px too wide at 320px, and two rounds of shortening the label only moved
+  the number around: the BUTTON is the wide element and its words come from config. Both
+  bonus rows are `flex-wrap` with a `gap-y`, so the figure sits beside the button where it
+  fits and drops under it where it does not — deterministic at every width instead of
+  tuned to one.
+- 🚨 **ANCHOR A SCRIPTED EDIT ON THE ELEMENT, NOT ON A STRING THAT REPEATS.** A replace of
+  `label="You end up with"` hit the **first** occurrence — the desktop receipt's total line
+  — instead of the mobile `Fact` it was aimed at, so the two swapped wording and the assert
+  still passed, because the string did exist. Include the surrounding tag or attribute in
+  the match, and re-grep after the write.
+- - ✅ **VERIFIED CLEAN AT 18 WIDTHS** (25 Aug 2026): 320 · 360 · 390 · 414 · 480 · 540 ·
+  600 · **639 · 640** · 700 · **767 · 768** · 820 · 900 · 1024 · 1180 · 1280 · 1440. No
+  control clipped, no element past a card edge, no horizontal scroll, no text squeezed
+  narrower than its own content.
+  🚨 **INCLUDE THE BREAKPOINT BOUNDARIES IN PAIRS** — 639/640 and 767/768. Sampling
+  320/390/768/1200 (as the first sweep did) steps straight over the band where `sm:` turns
+  two-column layouts on, which is exactly where they break.
+  ⚠️ **Measure all widths in ONE browser run** by putting an `<iframe>` per width on a
+  single page, each reporting back over `postMessage`; media queries inside an iframe key
+  off the iframe's width. Eighteen separate headless runs take minutes and headless Chrome
+  clamps its own viewport to 500px on macOS anyway.
+  ⚠️ **The detector must skip `[aria-hidden="true"]` and its descendants**, or every
+  deliberate bleed reads as a defect. That cuts both ways: mark decorative WRAPPERS too —
+  the install card's phone wrapper was unmarked (only its inner `LockScreen` carried the
+  flag), so its intended bleed was indistinguishable from a clipped button at every width
+  ≥768.
+- - 🚨 **A BREAKPOINT ASKS THE VIEWPORT; THE CONSTRAINT IS USUALLY THE CONTAINER.** This has
+  now bitten three times in this area and the shape is always the same: a `sm:`/`md:` rule
+  reads "there is room" while the element sits in a narrow column, so a fixed-width mock or
+  an n-up grid is squeezed. **`PiggyPotWidget`'s amount presets** were `grid-cols-2
+  sm:grid-cols-4`, and that widget puts its buy panel in a `minmax(0,1fr)` track beside a
+  20rem image — so on a tablet the viewport said "wide" while the column was ~300px, the
+  four tiles measured ~72px each, the labels overflowed and a 20px radius on a 72×48 box
+  rendered as an **ellipse**. Fixed with `grid-cols-[repeat(auto-fit,minmax(92px,1fr))]`,
+  which asks the container: measured at **2-up/127px in a 300px column and 4-up/100px in a
+  460px one**. Prefer `auto-fit` over a breakpoint for any n-up row inside a column whose
+  width you do not control; where a fixed-width mock is unavoidable, gate it to `sm:` and
+  up and ship a different, in-flow element below that (see the promo install and
+  leaderboard cards).
+- ⚠️ **The promo deck's own tablet band was verified** at 640 / 700 / 768 / 834 / 1024 —
+  all ten cards clean. ⚠️ The first sweep only measured 320/390/768/1200 and **skipped
+  640–767 entirely**, which is precisely where `sm:` turns two-column layouts on. Include
+  it.
+- ⚠️ **A disabled control must not be a washed-out version of the accent.** The pot
+  widget's inactive CTA was `bg-pink-200 text-pink-900` — Tailwind's pink, not the brand's
+  — and beside a live `#FF007F` button it read as a broken accent rather than as something
+  not yet available. It is the house light surface plus the `/60` ink step now.
+- - 🚨 **THE CARD HEIGHT IS MEASURED, AND THE FLOOR IS MOBILE.** `promoKit.CARD_H` is
   **292 / 300 / 316**. It was trimmed from 292/310/344 once the right-hand visuals filled
   the cards, and **268px was tried and rejected: it clipped the BUTTON off five cards at
   320px** (Fast Start by 20px, plus Bio, Suggest, Receipt and Referral). `overflow-hidden`
@@ -2722,6 +3054,9 @@ browser, an in-app webview or an extension injecting into our page, identified b
 | `connect` from `data:` | **Opera GX** only, one event. |
 | `font` from `use.typekit.net` (12 files, one visitor, one page) | **Adobe Fonts, injected by an extension.** Zero occurrences of `typekit` in this repo, in the built bundle, or in the live page's HTML. |
 | `frame-src` from `toolytics.pa.clients6.google.com` on `/creators` | Google ad/tag tooling loaded by an extension (Tag Assistant and similar). Same test: it appears in no page source and no bundle. |
+| `connect` from `translate.googleapis.com` | **Google Translate** again — same third party as the `www.gstatic.com` row and the `removeChild` crash. |
+| `font` from `frontend-cdn.perplexity.ai` | Perplexity's Comet browser / extension applying its own webfonts. |
+| `connect` from `gjtrack.ucweb.com` and `plugin.ucads.ucweb.com` | **UC Browser's own tracking and ad endpoints**, called by the browser itself on every page it opens. |
 
 🚨 **The test that settles every one of these: grep the repo, the BUILT BUNDLE and the
 LIVE PAGE'S HTML for the blocked host.** Three misses means the browser put it there, and
@@ -2733,6 +3068,19 @@ money. The `browser.name` tag on the report usually names the culprit outright.
 project's inbound filters, not in this codebase. Do not "fix" them by widening the policy.
 
 **Sentry entries deliberately not "fixed":**
+- 🚨 **A CHUNK CAN RESOLVE TO A MODULE WITH NO `default`, AND THE PROMISE SUCCEEDS.**
+  There is no error to catch, `vite:preloadError` never fires (nothing failed to fetch),
+  and the symptom is a blank screen whose message is a minified variable name —
+  `undefined is not an object (evaluating 's.default')` (JAVASCRIPT-REACT-9W). Cause is a
+  service worker handing back a stale entry across a deploy. `utils/lazyRetry.js` covers
+  every `React.lazy` site, but the **Inertia PAGE component is resolved in `app.jsx`'s
+  `resolve()`**, which it does not wrap — so that path was still unguarded and produced its
+  own issue group. It now checks `module.default` and reloads through the same helper.
+  🚨 **`reloadOnce()` is exported from `utils/lazyRetry.js` and is the ONE definition** —
+  `app.jsx` imports it rather than keeping a copy. Three separate stale-chunk recoveries run
+  in this app (the preload handler, the page resolver, `lazyRetry`) and each one's own
+  cooldown timer looks perfectly safe in isolation; two of them can reload each other in a
+  loop. One key, one timer.
 - 🚨 **`Error invoking <method>: Java …` IS THE ANDROID WEBVIEW JS BRIDGE, NOT OUR CODE.**
   An in-app browser (Facebook, Instagram, Twitter) injects `@JavascriptInterface` objects
   into every page it opens, and a throw inside one of those native methods is surfaced by
@@ -2743,6 +3091,17 @@ project's inbound filters, not in this codebase. Do not "fix" them by widening t
   `Java exception was raised during method invocation`. ⚠️ Verified first that our own
   `postMessage` calls are web-worker-only (`hooks/useWebWorker.js`), so a real fault of ours
   could not produce that wording — never widen this to a bare method name.
+  **`window.webkit.messageHandlers` is the iOS half of the same family** (WKWebView's native
+  bridge, torn down as the in-app browser navigates away while its injected script still
+  reaches for it) and is filtered alongside it — `window.webkit` appears nowhere in
+  `resources/js`. Both sightings were on a `/{username}/bio` page, which is exactly what an
+  Instagram bio link opens.
+- ⚠️ **A `NamespaceNotFoundException` for an artisan namespace is a TYPED COMMAND, not a
+  broken schedule** — `gifters` and `payout` both appeared. Check before triaging: `payout:*`
+  commands all exist (`payout:run-weekly`, `:enforce-manual`, `:reconcile`, …) and the error
+  is what `php artisan payout` alone produces; `gifters:` has **zero** occurrences anywhere in
+  the codebase. A real fault here would be a `$schedule->command()` naming something that does
+  not exist, so grep `app/Console/Kernel.php` before dismissing one.
 - `Unable to preload CSS for …/swiper-react-*.css` — the file was **verified present on
   CloudFront (HTTP 200)**, so these are transient network failures, and `app.jsx`'s
   `vite:preloadError` handler already reloads once for exactly this.
@@ -2923,6 +3282,38 @@ Creators" says the same thing twice and disagrees about the wording. Sidebar hea
 onto the board's own eyebrow style (12px uppercase, no emoji) and off `text-xs`/`text-sm`
 onto the project's pixel scale.
 
+### 🚨 The page printed FOLLOWERS while the board ranked on BUYERS (24 Aug 2026)
+
+The ranking fix landed separately (`orderByDesc('paying_supporters')` — distinct buyers
+through `LedgerRules::countedScope()`, tie-break followers then id). The row payload was
+not moved with it, and still shipped `total_supporters` — a **follower** count, kept only
+as the tie-break — under the key `supporters`.
+
+- 🚨 **Two different quantities on one row.** #1 could legitimately show fewer "supporters"
+  than #5, and *every* derived figure was computed off the column the sort does not use:
+  the measure bar, the podium gap line, and `viewerStanding()`'s **"N more supporters to
+  pass @x"** — which told a creator to go and get followers when followers do not move the
+  board. The eyebrow says "Ranked by supporters"; the row now prints what that word means
+  here. **`BOARD_CACHE_KEY` bumped `v3` → `v4`** — the key kept its name and changed its
+  meaning, which a stale entry cannot express.
+- **The past-winners gate follows the same definition**, and its money half went with the
+  revenue fallback the board no longer has: a winner is somebody at least one person
+  bought from.
+- ⚠️ **`MEASURE_FLOOR` is 3, not 4.** It was set while `supporters` meant followers, which
+  are plentiful; paying supporters are not — the live leader sits at **3**, so a floor of 4
+  hid the measure on exactly the boards it exists for. Three is where the scale first says
+  something (100 / 67 / 33 / 0 rather than full-or-empty).
+- 🚨 **The measure is also suppressed when NO ROW IN THE LIST has a value.** The list starts
+  at **#4** — the top three are on the podium — so on a young board every visible row can
+  sit at 0 while the leader clears the floor, drawing exactly the column of blank tracks
+  the floor exists to prevent. Verified live: 17 rows, all 0%. A scale is drawn only where
+  something is on it.
+- **Verified live after the change:** #1 `2 AHEAD OF SECOND` (3 vs 1), #2 `2 BEHIND FIRST`,
+  #3 `LEVEL WITH SECOND` — where before the fix all three read "Level with…", because every
+  one of them showed the same single follower.
+- Test: `test_the_row_prints_the_figure_the_board_actually_ranks_on` — a creator with three
+  followers and no sales reports `supporters: 0`.
+
 ### Seven faults a review of the above found, all fixed (24 Aug 2026)
 
 - 🚨 **THE WINNERS PANEL CROWNED THREE PEOPLE WHO WON NOTHING.** `calc()` returns EVERY
@@ -3098,6 +3489,254 @@ Config lives beside GA4's in `config/analytics.php` under `x`.
   reported.
 - Tests: `tests/Feature/AnalyticsXAdsTest.php` (10), plus the pixel fan-out cases in
   `tests/javascript/analytics.test.js` (36 total).
+
+## Contextual help — the answer sits ON the confusing screen (25 Aug 2026, spennypiggy.co)
+
+`Components/Help/HelpLink.jsx` shipped fully built, with a docblock explaining
+exactly where to drop it, and was **imported by nothing**. The Help Centre had
+articles for every expensive question (`why-is-some-of-my-money-held`,
+`when-do-i-get-paid`, `what-fees-are-deducted`, `why-is-the-total-more-than-the-price`,
+`why-is-my-listing-under-review`, `price-limits`, `words-you-cannot-use`,
+`why-were-my-subscriptions-paused`, `i-cannot-find-my-purchase`,
+`refunds-and-cancellations`, `what-am-i-actually-buying`) and every one of them
+required leaving the screen, finding the Help Centre and guessing the right
+words — which is the point where a person opens a ticket instead.
+
+- **New route `GET /help/inline/{slug}` (`help.inline`, `throttle:60,1`), declared
+  ABOVE `/help/{category}`** or "inline" is matched as a category slug.
+  `HelpController::inline` answers ONE article by exact slug as JSON and follows
+  `HelpArticleSlugHistory`, so a retitled article keeps answering a slug already
+  written into a component prop.
+- 🚨 **It exists BECAUSE `/help/search` was the wrong tool for a caller that
+  already knows what it wants.** HelpLink used to search on the slug turned back
+  into words: a near miss opened the WRONG answer, an audience mismatch opened
+  none, and every failed lookup wrote a synthetic row into `help_search_misses` —
+  the backlog the team reads to find real documentation gaps.
+- ⚠️ **Audience is deliberately NOT filtered here.** The component decided the
+  answer belongs on that screen; filtering by viewer audience blanks contextual
+  help on exactly the guest surfaces (checkout, a public listing) that need it.
+- ⚠️ **A miss is a JSON 404, never an exception page** — the panel degrades to a
+  plain link. A help affordance must not throw a failure onto the screen it is
+  explaining.
+- **`tone="dark"`** switches only the TRIGGER (the panel stays light — it renders
+  article prose). Half this app's headers are a dark or pink band, where a
+  `text-black/60` trigger is invisible rather than quiet.
+- ⚠️ **Placed as a SIBLING of summary tiles, never inside one.** The reserve tiles
+  on `Creator/Financial/Dashboard.jsx` are `<button>`s and a button inside a
+  button is invalid DOM — the same constraint as the Piggy Pot save heart.
+- Live placements: reserve modal + payout schedule + payable-now breakdown
+  (`Creator/Financial/Dashboard.jsx`), `CreatorActivityWidget`, every checkout via
+  `Checkout/SummaryReceipt.jsx` (receipt total + `OrderContextCard`),
+  `Creator/Catalogue/Index.jsx`, `gifter/PurchasesHub.jsx`.
+- Tests: `spennypiggy.co/tests/Feature/HelpInlineEndpointTest.php` (7).
+
+## Dead UI removed, and the one that was a security hole (25 Aug 2026, spennypiggy.co)
+
+A component nothing imports is not harmless — it reads as a shipped feature in
+review, and it is what a later reader copies. Deleted after confirming every
+remaining mention is a COMMENT, not an import:
+
+- **`Components/ReferralBanner.jsx`, `Components/OfferAnnouncement.jsx`,
+  `Components/FeatureSuggestionBanner.jsx`** — superseded by the promo slider
+  (21 Aug 2026). `config/promos.php`, `Promo/PromoSlider.jsx` and `Dashboard.jsx`
+  still NAME all three in prose explaining why the slider exists; that history is
+  correct and stays. ⚠️ **`FeatureSuggestionModal` is NOT dead** — `Footer.jsx`,
+  `Dashboard.jsx` and `home/FeatureSuggestionSection.jsx` all mount it. Only the
+  banner went.
+- 🚨 **`POST /say-thankyou/{payment_id}` (`WishitemController::sayThanks`) — dead
+  AND an IDOR write.** No frontend has called it since thank-you posts became
+  automatic (`CreateThankYouPostJob`), and it looked up
+  `StripePaymentItems::where('id', $payment_id)` **with no ownership check**, so
+  any signed-in account could write a message plus media onto anybody's payment
+  row and trigger an admin e-mail. Route, method and its two orphaned jobs
+  (`SendThankYouMailAdmin`, `ThankyouMailToUser` — the latter dispatched from
+  nowhere even before this) are gone.
+  - ⚠️ **The READ side stays.** `ProfileController` still renders a `thankyou`
+    event from `thankyou_message`/`message_url`, so legacy rows keep displaying.
+    The columns are untouched. What is gone is the only way to write a NEW one.
+  - **The whole mail chain behind it went too**, once every reference was proved
+    to be a closed loop: `EmailService::thankyouUser()`,
+    `EmailService::sendThankyouAdmin()`, `Mail\ThankyouUser`,
+    `Mail\ThankYouMailAdmin`, `views/email/thankyou-user.blade.php` and
+    `views/email/new-thanks-message.blade.php` — each referenced ONLY by the
+    others. ⚠️ `routes/debug-emails.php` **globs** `views/email/*.blade.php`
+    rather than naming templates, so removing a blade drops it from the preview
+    list and breaks nothing. The now-unused `Illuminate\Support\Str` import went
+    with them (pint).
+  - ⚠️ **No `Deliverable` reader was affected.** `thankyouUser()` wrote rows with
+    `product_type = 'thank_you'` and **nothing in the codebase queries that
+    value** — it was write-only, and unreachable write-only at that.
+
+⚠️ **`payment_methods_accepted` stays SERVER-SIDE ONLY, on purpose (25 Aug 2026,
+client decision).** The column, its whitelist and `CheckoutMethodResolver`'s
+enforcement are live and every listing sits on `'both'` — card and bank both
+accepted. Creators are deliberately NOT given a per-item choice for now, so
+`Components/PaymentMethodsAcceptedField.jsx` stays unmounted and no form sends the
+field. 🚨 **If that is ever revisited, "Bank only" MUST be gated on
+`/payments/bank-status`**: `CheckoutMethodResolver` refuses the card path when the
+listing says bank and the tier says bank is available, then refuses the bank path
+when the connected account has no active bank capability — so an unbacked choice
+produces a listing nobody can pay for, with nothing wrong in any log.
+
+## 🚨 The first onboarding step sent creators to the wrong screen (25 Aug 2026, spennypiggy.co)
+
+`CreatorJourneyService::STEPS['profile']` says *"Add a photo and a short bio"* and pointed at
+`route('account')` with no parameters. That is **Account Settings** — the photo/bio form
+(`Pages/account/EditProfile.jsx`) is mounted there lazily inside a `Popup` whose trigger row
+was labelled **"My Profile — Manage your earnings and payouts"**. A creator told to add a
+photo arrived on a page of two dozen settings rows and read one about money.
+
+🚨 **Measured on live data, 25 Aug 2026: of the 33 creators who signed up in the previous
+90 days, 2 uploaded a photo and 0 wrote a bio — and 28 of them logged back in.** They were
+returning and failing to find the form. Nothing errored, and the step is `profile`, which is
+step 1 of 7 — so the admin activity feed's *"X reached profile in onboarding"* is not a stall
+partway through, it is "signed up and did nothing", which is what made it read as apathy.
+
+- **The CTA is `['edit' => 'profile']` now**, and `accountsetting/Accountsetting.jsx` reads
+  `usePage().url` for it and passes `autoOpen` into `EditProfile`, which opens its own `Popup`
+  once on mount. ⚠️ **Once, on mount only** — the query param stays in the URL, so re-opening
+  whenever the prop is truthy fights the creator every time they close the sheet.
+  ⚠️ Read from Inertia's `url`, never `window.location`: this component renders server-side too.
+- ⚠️ **Both halves are pinned by `CreatorJourneyTest`** — one test on the server param, one
+  asserting the JSX still reads it. They are in different languages and neither the build nor
+  any scanner can see that they agree; renaming one side leaves a CTA that navigates and does
+  nothing, which is indistinguishable from the bug it fixes.
+- **The row's subtitle is "Photo, bio and display name".** A label describing a different
+  feature is the same failure as a broken link and nothing can detect it.
+- **Bio moved directly under Display Name** in the merged Profile tab (was sixth, under
+  Username, Email, Gender and a Date-of-Birth block carrying its own opt-in panel). Photos
+  already sit above the fields, so the two things step 1 asks for are now the first two things
+  in the form.
+- 🚨 **The avatar upload screen no longer opens with a threat of a ban.** It read *"Your
+  Profile picture must match the person in the ID verification which is the next step, if it
+  doesn't your account will be blocked and the user banned."* — at step one of seven, on the
+  single action the whole journey waits on. The rule is real and still stated; it now reads as
+  help and says what to do. **Do not restore the warning phrasing.**
+- ⚠️ Two documented traps were hit writing this and are worth re-reading before editing that
+  file: `{/* … */}` inside a parenthesised `&&`/ternary branch is an **object literal** and
+  fails the whole Vite build (the comment belongs above the branch), and `border-[#000]` does
+  not compile — use `border-black` alone, which is already a full 2px `border` shorthand here.
+- Also removed: a bare `console.log("user", user)` at the top of `EditProfile`.
+
+⚠️ **This is one of four causes of the same number.** The onboarding email drip's audience
+filter was inverted and is fixed in the admin app (see
+`../admin.spennypiggy.co/CLAUDE.md`). Still open: `users.country` is NULL for every creator
+who signed up in the last 90 days — the register form asks only **supporters** for a country
+(`Register.jsx`: `isCreator || !!data.country`) while `RegisteredUserController` writes
+`$request->country_code`, so the creator half is never collected. It feeds shipping zones,
+and is the other half of the GB-default postage fault already documented above.
+
+## Signup answers the creator's social step (25 Aug 2026, spennypiggy.co)
+
+`Profile/CreatorVerification.jsx` has always carried a real step — **"Add a social handle"** —
+and locks the creator's own **"Submit for review"** until their handles, photo and bio are
+approved. That step was only answerable from Creator Studio, so a creator gave their handle
+once they had already gone looking for the screen. It is now on the signup form, written
+exactly as `SocialLinksController` writes it, so the step is answered before they ever reach
+the dashboard.
+
+It also closes a reachability gap: the platform holds a creator's e-mail **and nothing else**,
+so a creator who stalls during onboarding has no other contact route. Measured 25 Aug 2026: of
+the 33 creators who signed up in the previous 90 days, **3 had a handle on file**.
+
+- 🚨 **IT IS A NORMAL SUBMISSION — `status = 0`, reviewed like any other**, and
+  `user_verification_statuses.social_status` is set to the same 0 the Creator Studio path
+  writes. The creator gives the handle once and is never asked again.
+  ⚠️ **An earlier version of this made it "contact data" hidden from the review queue. That was
+  reversed on the client's instruction and must not come back**: a handle nobody reviews can
+  never be approved, and an unapproved handle leaves that creator's own "Submit for review"
+  locked for ever — the opposite of finishing a step early.
+- ⚠️ **`social_links.source` (migration `2026_08_25_120000`, guarded) IS PROVENANCE ONLY and
+  gates nothing.** `signup` means the handle was typed on the registration form — one platform,
+  entered in seconds, before the creator had seen the product — which is worth knowing when
+  JUDGING it, since it is likelier to be a typo or a pasted URL. Shown on the admin handles
+  screen as a "From signup" badge. `SocialLinksController` clears it on a later edit, because
+  provenance follows the latest submission.
+- 🚨 **REQUIRED FOR A CREATOR, OPTIONAL FOR NOBODY ELSE** (client decision, 25 Aug 2026).
+  Enforced server-side by `Rule::requiredIf` — **not** the string `required_if:role,1`, since
+  `role` arrives as `'1'` from the form and as an int from tests — and by
+  `creatorProfileStepComplete()` on the step's own button. **A gifter is never asked**; their
+  form offers neither field, so a value there is ignored rather than refused.
+  - ⚠️ **This is friction MOVED, not friction ADDED.** A creator already could not go live
+    without an approved handle, so an account with no social account could never sell anything.
+  - 🚨 **THE GATE BELONGS TO THE STEP, NOT TO `canSubmitRegistration()`.** That is the CONSENT
+    check; bundling a product requirement into it is how an optional consent quietly becomes
+    conditional. Pinned by `tests/javascript/signupSocialHandle.test.jsx`.
+  - ⚠️ **`social_status` is still written CONDITIONALLY**, even though the field is required —
+    the row write is wrapped in a catch that must never fail a signup, so "the form was filled
+    in" and "the row was stored" are different facts, and a `social_status` claiming a
+    submission that was not stored shows the creator a step ticked with nothing behind it.
+- **The Creator Studio step opens PREFILLED.** `AuthenticatedSessionController` sends the
+  profile page `slinks` from `$user->social_links()->first()` and `Pages/Auth/Social.jsx` seeds
+  its form from exactly that — so writing the row at signup is the whole of the auto-fill, with
+  no second code path. The creator is never asked for the same handle twice.
+- 🚨 **THE FORM COPY MUST NOT PROMISE PRIVACY.** The handle goes for review and then onto the
+  public profile. An earlier draft said *"it is not shown on your profile"*, which was true of
+  the contact-only design this replaced and is a lie about the shipped behaviour; a JS test now
+  asserts that sentence cannot return.
+- 🚨 **`App\Support\SocialHandle` IS THE ONE READING OF "what account is this?".** The column
+  already holds three incompatible things, because nothing ever normalised it — measured across
+  the three accepted platforms: **20 full URLs · 17 @handles · 21 bare handles**. A duplicate is
+  invisible and a stored value cannot be turned back into a profile link. Every NEW handle goes
+  through `normalise()` (bare, lower-cased); **existing rows are deliberately not backfilled**.
+  - ⚠️ **A link to the WRONG platform is refused, never filed under the chosen one** — storing
+    it produces a handle that points nowhere and nothing would report it.
+  - 🚨 **A POST URL IS NOT A PROFILE.** `instagram.com/p/Cxyz` passes the handle pattern
+    happily, so the stored "handle" would be the literal word `p`. `RESERVED` blocks the
+    non-profile first segments per platform.
+  - ⚠️ The platform list is `SocialLinks::ACCEPTED_PLATFORMS` (three since 11 Aug 2026), never
+    restated. `resources/js/Pages/Auth/register/constants.js` mirrors it by hand and a test
+    asserts the two agree as SETS — the form leads with Instagram (most-used) while the server
+    list is in the model's order, and only *which* platforms are offered must match.
+  - ⚠️ **The key is the DATABASE COLUMN, not the brand: X's column is still `twitter`.**
+- ⚠️ **Refused BEFORE the account exists**, so the creator can fix a typo with the form still in
+  front of them — and `Register.jsx`'s error-owner map gained a `profile` entry, or a refusal
+  left them on the review screen with a toast and no field to correct. A **gifter** posting the
+  fields is ignored rather than refused; nothing on their form offers them.
+- ⚠️ **The write cannot throw.** It runs after the user row exists and one line before
+  `Auth::login()`; failing a signup over it would turn an optional field into the thing that
+  broke registration. Catch `\Throwable`, log, carry on — same house pattern as `VisitTracker`.
+- ⚠️ **Pre-existing and NOT fixed here:** `CreatorVerification.jsx`'s `hasAnySocialMedia` is
+  `Object.values(slinks).some(v => v !== null && v !== "")` — every column on the row, `id`,
+  `status` and now `source` included — so ANY `social_links` row reads as "has a handle",
+  including one with every platform blank.
+- **Admin app:** `source` mirrored into its `SocialLinks::$fillable` (shared DB, migration in
+  this app only) and surfaced as the badge. See `../admin.spennypiggy.co/CLAUDE.md` for the two
+  faults that screen was carrying.
+🚨 **MAKING IT REQUIRED EXPOSED TWO PRE-EXISTING FAULTS IN `LinkUserToCrmCreator`, and both
+took down the whole REQUEST rather than the job.** It is dispatched inline under the sync
+queue, so a throw meant the account was created and the rest of `store()` never ran — the
+Google session was not cleared, the funnel event was never sent. Both were invisible until
+25 Aug 2026 for the same reason: a brand-new signup had no `social_links` row, so
+`createSocialMatchSuggestion()` returned early and neither line was ever reached with a
+handle. **Production was never affected by either.**
+
+- 🚨 **`TRIM(BOTH '@' FROM …)` IS MySQL-ONLY** and throws `near "'@'": syntax error` on
+  SQLite, i.e. on the entire test suite. Replaced with a portable
+  `LOWER(TRIM(COALESCE(col,''))) IN (?, ?)` comparing the handle with and without a leading
+  `@` — `normalizeHandle()` has already stripped it from the search value, so the only thing
+  the database must allow for is a STORED value that still carries one. Same rows for any
+  realistic handle; bindings unchanged, so nothing about injection safety moved.
+- 🚨 **`crm_creators.twitter/instagram/youtube/twitch` EXIST ON EVERY DEPLOYED DATABASE AND IN
+  NO MIGRATION IN THIS REPO** (the documented drift — `docs/guides/SCHEMA_DRIFT_AUDIT.md`), so
+  a `migrate:fresh` database answers `no such column`. Each is now guarded with
+  `Schema::hasColumn`, **not migrated**: `crm_creators` is the admin app's table and the
+  migration that declares it belongs there, not in a repo that only reads it. Same rule the
+  `shops.status` call sites already follow.
+  ⚠️ Every clause in that `where(...)` group is optional, so a database missing all of them
+  would leave an EMPTY group — which matches every unclaimed prospect and would suggest the
+  first one to whoever signed up. The caller's early return covers it; do not loosen the guard
+  without re-reading that.
+
+⚠️ **Eight existing payloads across five suites had to gain the two fields** —
+`EmailDomainPolicyTest` ×3, `AnalyticsFunnelEventsTest` ×2, `GoogleSignInTest`,
+`MarketingConsentTest`, `EmailVerificationFlowTest`. They post `role = 1`, and a creator
+signup is now refused without a handle; that is the correct blast radius of the rule, not a
+workaround. **Grep `post('/register'` before touching this rule again** — the first sweep
+found five of the eight and reported the suite green, which it was not.
+
+- Tests: `tests/Feature/SignupSocialHandleTest.php` (14),
+  `tests/javascript/signupSocialHandle.test.jsx` (10).
 
 ## Detailed topic index — load the skill, do not inline this content
 

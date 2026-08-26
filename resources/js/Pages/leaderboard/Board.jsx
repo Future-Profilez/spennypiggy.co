@@ -223,7 +223,14 @@ export default function Board(props) {
     // every bar would compare creators against an arbitrary one and present that
     // as a scale. Same reasoning the podium is already hidden on search results:
     // a podium of whoever happens to match a query is a podium of nothing.
-    const leaderSupporters = searching ? 0 : Number(rows[0]?.supporters) || 0;
+    //
+    // 🚨 And suppressed when NO ROW IN THE LIST has a value. The list starts at
+    // #4 — the top three are on the podium — so on a young board every visible
+    // row can sit at 0 while the leader clears the floor, which draws exactly
+    // the column of blank tracks the floor exists to prevent. Verified live: 17
+    // rows, all 0%. A scale is drawn only where something is on it.
+    const listHasMeasure = rest.some((r) => (Number(r.supporters) || 0) > 0);
+    const leaderSupporters = searching || !listHasMeasure ? 0 : Number(rows[0]?.supporters) || 0;
 
     return (
         <Authenticated auth={auth && auth.user}>

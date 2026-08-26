@@ -1,5 +1,6 @@
 import st from "../../../css/uploader.module.css";
 import { router, usePage } from "@inertiajs/react";
+import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
 import { useAlerts } from "@/Components/Alerts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import GlobalUploader from "@/uploadcare/Uploader";
@@ -44,12 +45,15 @@ const BillsImages = [
 
 export default function AddBills(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const { global_currency, auth } = usePage().props;
+    const { global_currency, auth, rates } = usePage().props;
     const subscriberOnlyPostsCount = auth?.subscriber_only_posts_count || 0;
     const { item, isEdit, editpop, text, classes, fetchBills, hidetrigger, openPop } =
         props;
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth?.user?.default_currency || "USD";
+    // The server rule is GBP-EQUIVALENT, so the bounds shown here have to be the
+    // creator's currency, not the raw GBP figures. See `lib/priceLimits.js`.
+    const priceBounds = priceLimits(defaultCurrency, rates, MAX_PRICE_GBP.bill);
 
     const [open, setOpen] = useState(false);
 
@@ -309,13 +313,14 @@ export default function AddBills(props) {
             key: "price",
             title: "Price & billing",
             hint: "Supporters see one total price; every fee is already inside it.",
-            validate: () => {
-                const price = Number(data.price);
-                if (!price) return "Set a price.";
-                if (price < 4.99) return `Minimum is ${defaultCurrency} 4.99 per period.`;
-                if (price > 100) return `Maximum is ${defaultCurrency} 100 per period.`;
-                return null;
-            },
+            validate: () =>
+                priceLimitError(
+                    data.price,
+                    defaultCurrency,
+                    rates,
+                    MAX_PRICE_GBP.bill,
+                    { per: "per period" },
+                ),
             render: () => (
                 <div className="space-y-6">
                     <div>
@@ -326,16 +331,17 @@ export default function AddBills(props) {
                             id="bill-price"
                             type="number"
                             inputMode="decimal"
-                            min="4.99"
-                            max="100"
-                            step="0.01"
+                            min={priceBounds.min}
+                            max={priceBounds.max}
+                            step={priceBounds.step}
                             className={FIELD}
                             placeholder="Eg. 50"
                             value={data.price}
                             onChange={(event) => setData("price", event.target.value)}
                         />
                         <p className="mt-2 text-left text-xs font-medium text-neutral-500">
-                            Between {defaultCurrency} 4.99 and {defaultCurrency} 100 per period.
+                            Between {formatPrice(priceBounds.min, defaultCurrency)} and{" "}
+                            {formatPrice(priceBounds.max, defaultCurrency)} per period.
                         </p>
                         {fieldError("price") && (
                             <p className="mt-2 text-left text-xs font-bold text-[#FF007F]">

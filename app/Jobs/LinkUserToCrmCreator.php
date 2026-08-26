@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Schema;
 
 class LinkUserToCrmCreator implements ShouldQueue
 {
@@ -107,12 +108,30 @@ class LinkUserToCrmCreator implements ShouldQueue
             return;
         }
 
-        $candidates = [
+        /*
+         * 🚨 THESE COLUMNS EXIST ON EVERY DEPLOYED DATABASE AND IN NO MIGRATION IN THIS
+         * REPO — the documented schema drift (see CLAUDE.md → SCHEMA_DRIFT_AUDIT). A
+         * database built by `migrate:fresh` has a `crm_creators` table without them, and
+         * an unguarded `whereRaw` against one is `no such column`, which takes down the
+         * whole REQUEST: this job runs inline under the sync queue, so a throw here means
+         * the account is created and the rest of `store()` never runs.
+         *
+         * It stayed invisible until 25 Aug 2026 because a brand-new signup had no
+         * `social_links` row, so `createSocialMatchSuggestion()` returned above; the
+         * moment registration started capturing a handle, every creator signup reached
+         * this. Production is unaffected — the columns are there.
+         *
+         * ⚠️ Guarded rather than migrated deliberately: `crm_creators` is the ADMIN app's
+         * table and the migration that declares it belongs there, not in a repo that only
+         * reads it. Same rule the `shops.status` call sites already follow.
+         */
+        $candidates = array_filter([
             'twitter' => $social->twitter,
             'instagram' => $social->instagram,
             'youtube' => $social->youtube,
             'twitch' => $social->twitch,
-        ];
+        ], fn ($value, $column) => $value !== null
+            && Schema::hasColumn((new CrmCreator)->getTable(), $column), ARRAY_FILTER_USE_BOTH);
 
         // Minimum handle length — a 1-2 char handle would (with substring matching) collide with countless
         // prospects. Combined with exact equality below, this stops a user spoofing a prospect's handle.
@@ -145,13 +164,43 @@ class LinkUserToCrmCreator implements ShouldQueue
 
         $query->where(function ($q) use ($normalized, $usernameMatch) {
             foreach ($normalized as $col => $value) {
-                // Exact, normalized equality (strip surrounding @ and whitespace). Substring (LIKE %x%)
-                // matching previously let any user claim a prospect by setting a partial-overlapping handle.
-                $q->orWhereRaw("LOWER(TRIM(BOTH '@' FROM TRIM(COALESCE(".$col.",'')))) = ?", [$value]);
+                /*
+                 * Exact, normalized equality. Substring (LIKE %x%) matching previously let
+                 * any user claim a prospect by setting a partial-overlapping handle.
+                 *
+                 * 🚨 `TRIM(BOTH '@' FROM …)` IS MySQL-ONLY AND THROWS ON SQLITE
+                 * ("near \"'@'\": syntax error"), so this raw expression took the whole
+                 * REQUEST down — the job is dispatched inline under the sync queue, and a
+                 * 500 there means the account is created and the rest of `store()` never
+                 * runs (the Google session is not cleared, the funnel event is not sent).
+                 *
+                 * It stayed invisible until 25 Aug 2026 because a brand-new signup had no
+                 * `social_links` row, so this branch never had a handle to match on; the
+                 * moment registration started capturing one, every creator signup hit it.
+                 * Production is MySQL and was never affected — the test suite was.
+                 *
+                 * `$value` is already `@`-stripped and lower-cased by `normalizeHandle()`,
+                 * so the only thing the database has to allow for is a STORED value that
+                 * still carries a leading `@`. Comparing against both spellings is exact,
+                 * portable, and matches the same rows the old expression did for any
+                 * realistic handle. ⚠️ It deliberately does NOT strip repeated or trailing
+                 * `@` — neither is a real handle, and accepting them was never the point.
+                 */
+                $q->orWhereRaw(
+                    'LOWER(TRIM(COALESCE('.$col.", ''))) IN (?, ?)",
+                    [$value, '@'.$value]
+                );
             }
             if ($usernameMatch !== null) {
                 $q->orWhereRaw("LOWER(COALESCE(username,'')) = ?", [$usernameMatch]);
             }
+
+            // ⚠️ Every clause is optional, so a database missing all of them would
+            // produce an empty `where(...)` group — which matches EVERY unclaimed
+            // prospect and would suggest the first one to whoever signed up. The
+            // caller's `count($normalized) === 0 && $usernameMatch === null` return
+            // covers it; this comment is here so the guard above is never loosened
+            // without noticing what an empty group means.
         });
 
         $match = $query->first();

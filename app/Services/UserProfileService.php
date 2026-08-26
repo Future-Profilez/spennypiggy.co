@@ -270,7 +270,7 @@ class UserProfileService
      */
     private function getOptimizedMemberships(int $userId, bool $isOwner, ?int $limit = null): array
     {
-        $query = Membership::select([
+        $columns = [
             'id',
             'user_id',
             'uuid',
@@ -287,7 +287,27 @@ class UserProfileService
             'is_suspended',
             'suspend_reason',
             'publish_at',
-        ])->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
+        ];
+
+        // ⚠️ Same rule as getOptimizedBills: the owner edits a tier straight
+        // from their own card and the edit form round-trips the whole reward
+        // object — with these absent, RewardEditor built `file: null` for a
+        // file reward and validateReward refused EVERY save ("Upload the file
+        // supporters will receive") until the creator re-uploaded content they
+        // had already uploaded. `reward_body` is the paid deliverable of a
+        // message/link reward, so it is OWNER ONLY.
+        if ($isOwner) {
+            $columns = array_merge($columns, [
+                'reward_body',
+                'content_file',
+                'content_file_name',
+                'content_file_type',
+                'content_file_size',
+            ]);
+        }
+
+        $query = Membership::select($columns)
+            ->with('user:id,name,username,suspended_account,vat_amount_percentage'.MediaUrl::ownerColumn())
             ->where('user_id', $userId);
 
         if (! $isOwner) {
@@ -297,7 +317,10 @@ class UserProfileService
             $query->withoutGlobalScope('published');
         }
 
-        $cacheKey = 'user_memberships_optimized_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
+        // v2: the owner payload gained the reward columns above — a cached v1
+        // owner entry would re-trigger the "re-upload your file" refusal for
+        // the rest of its TTL.
+        $cacheKey = 'user_memberships_optimized_v2_'.$userId.'_'.($limit ?? 'all').'_'.($isOwner ? 'owner' : 'public').'_'.$this->getProfileCacheVersion($userId);
 
         return Cache::remember($cacheKey, 600, function () use ($query, $limit) {
             $query = $query->latest();

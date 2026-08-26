@@ -74,12 +74,28 @@ class DeliveriesController extends Controller
     {
         $deliverable = Deliverable::where('uuid', $uuid)->firstOrFail();
 
-        // Update tracking metrics
-        $deliverable->update([
+        // Update tracking metrics. Opening the link only DELIVERS a digital
+        // hand-off: a physical shop order (deliverable_type 'shipping') is
+        // delivered when the creator marks it shipped/delivered, and a
+        // high-value order under admin review is deliberately held 'pending' —
+        // this route is public, so before this guard, a buyer opening the
+        // receipt email flipped an unposted parcel to 'delivered', the same
+        // column the payout fulfilment gate and the admin review read.
+        $tracking = [
             'accessed_at' => now(),
             'access_count' => $deliverable->access_count + 1,
-            'status' => 'delivered', // Ensure it's marked as delivered if it was pending
-        ]);
+        ];
+
+        if (
+            $deliverable->status === 'pending'
+            && $deliverable->deliverable_type !== 'shipping'
+            && ! $deliverable->needs_admin_review
+        ) {
+            $tracking['status'] = 'delivered';
+            $tracking['delivered_at'] = $deliverable->delivered_at ?? now();
+        }
+
+        $deliverable->update($tracking);
 
         Log::info('Deliverable accessed', [
             'uuid' => $uuid,

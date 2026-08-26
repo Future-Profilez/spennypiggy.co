@@ -36,6 +36,10 @@ import OnboardingOverlay from "./Components/Onboarding/OnboardingOverlay.jsx";
 import NavigationProgress from "./Components/NavigationProgress.jsx";
 import { initGlobalHaptics } from "./utils/hapticsGlobal";
 import { initAppBadge } from "./utils/appBadge";
+// ⚠️ ONE definition of the stale-chunk reload, shared with every `lazyRetry`
+// call site. A second copy here would be a second cooldown timer, and two of
+// those can reload each other in a loop.
+import { reloadOnce } from "./utils/lazyRetry";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
@@ -76,6 +80,14 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
             // "postMessage".
             "Error: Error invoking enableDidUserTypeOnKeyboardLogging: Java object is gone",
             "Error: Error invoking postMessage: Java exception was raised during method invocation",
+            // The iOS half of the same family: `window.webkit.messageHandlers` is
+            // WKWebView's native bridge, and an in-app browser (Instagram, Facebook)
+            // tears it down when it navigates away while its own injected script is
+            // still reaching for it. ⚠️ Verified before filtering: `window.webkit`
+            // appears NOWHERE in `resources/js` — a real fault of ours could not
+            // produce this. Both instances so far were on a `/{username}/bio` page,
+            // which is exactly what an Instagram bio link opens.
+            "TypeError: undefined is not an object (evaluating 'window.webkit.messageHandlers')",
             "TypeError: Importing a module script failed.",
             "SyntaxError: The string did not match the expected pattern.",
         ],
@@ -88,7 +100,7 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
                 type === "AbortError" ||
                 type === "AxiosError" ||
                 (type === "TypeError" && /load failed|cdnUrl|Importing a module script failed/i.test(value)) ||
-                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|(?:insertBefore|removeChild).*not a child of this node|abort due to cancellation of share|Java object is gone|Java exception was raised during method invocation|The string did not match the expected pattern/i.test(value)
+                /permission denied|request is not allowed by the user agent|play\(\) failed because the user didn't interact|load failed|network error|response not ok:\s*403|(?:insertBefore|removeChild).*not a child of this node|abort due to cancellation of share|Java object is gone|Java exception was raised during method invocation|window\.webkit\.messageHandlers|The string did not match the expected pattern/i.test(value)
             ) {
                 return null;
             }
@@ -264,8 +276,6 @@ class GlobalErrorBoundary extends React.Component {
 // (purged CDN, bad deploy) would reload the page forever. A cooldown cannot loop:
 // a second failure inside the window is left alone, and a failure long afterwards
 // is a new stale-deploy event that deserves its own reload.
-const PRELOAD_RELOAD_KEY = 'spenny_preload_reloaded_at';
-const PRELOAD_RELOAD_COOLDOWN_MS = 60_000;
 
 // preventDefault() is called ONLY on the path that actually reloads. Vite's helper
 // is `dispatchEvent(e); if (!e.defaultPrevented) throw err` — so preventing the
@@ -273,37 +283,8 @@ const PRELOAD_RELOAD_COOLDOWN_MS = 60_000;
 // leave the user on a wedged page with no ErrorBoundary and no Sentry event, which
 // is worse than the crash it replaced.
 window.addEventListener('vite:preloadError', (event) => {
-    try {
-        const last = Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY)) || 0;
-
-        if (Date.now() - last < PRELOAD_RELOAD_COOLDOWN_MS) {
-            return;
-        }
-
-        sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(Date.now()));
-    } catch (e) {
-        // Private mode / storage disabled — no cooldown available, so let the error
-        // through rather than risk a reload we cannot rate-limit.
-        return;
-    }
-
-    event.preventDefault();
-
-    // ⚠️ Drop the cached document before reloading. A reload is a navigation, so
-    // it goes through the service worker — and while the HTML route was
-    // StaleWhileRevalidate that meant being handed back the very document whose
-    // chunks had just failed to load. The reload changed nothing, the cooldown
-    // above then suppressed every further attempt, and the user sat on a blank
-    // screen. The route is NetworkFirst now (`public/sw.js`), but this also
-    // clears a stale entry already sitting in a user's cache from before that
-    // change, and it keeps the recovery correct if the network is slow enough to
-    // hit NetworkFirst's timeout and fall back to cache.
-    const reload = () => window.location.reload();
-
-    if (typeof caches !== 'undefined' && caches.delete) {
-        caches.delete('pages-v1').then(reload, reload);
-    } else {
-        reload();
+    if (reloadOnce()) {
+        event.preventDefault();
     }
 });
 
@@ -336,31 +317,54 @@ createInertiaApp({
             } catch (e) {
             }
 
-            try {
-                const last =
-                    Number(sessionStorage.getItem(PRELOAD_RELOAD_KEY)) || 0;
-
-                if (Date.now() - last >= PRELOAD_RELOAD_COOLDOWN_MS) {
-                    sessionStorage.setItem(
-                        PRELOAD_RELOAD_KEY,
-                        String(Date.now())
-                    );
-                    window.location.reload();
-
-                    // Never settle — the page is going away.
-                    return new Promise(() => {});
-                }
-            } catch (e) {
+            if (reloadOnce()) {
+                // Never settle — the page is going away.
+                return new Promise(() => {});
             }
 
             throw err;
         }
 
+        /*
+         * 🚨 A PAGE CHUNK CAN RESOLVE TO A MODULE WITH NO `default`, AND THERE IS NO
+         * ERROR TO CATCH — the promise SUCCEEDS. Inertia then reads `.default` off
+         * it and dies with `undefined is not an object (evaluating 's.default')`
+         * (JAVASCRIPT-REACT-9W), which is a blank screen with a minified variable
+         * name for a message.
+         *
+         * `vite:preloadError` does not fire (nothing failed to fetch) and
+         * `utils/lazyRetry.js` does not cover this path — that wraps `React.lazy`,
+         * and the Inertia PAGE component is resolved here instead. Same cause as
+         * `lazyRetry`'s: a service worker handing back a stale entry across a
+         * deploy. Same recovery, and deliberately the SAME cooldown key, because
+         * two independent reload timers can reload each other in a loop.
+         */
         return resolvePageComponent(
             `./Pages/${name}.jsx`,
             // Use eager: false for better code splitting
             import.meta.glob("./Pages/**/*.jsx", { eager: false })
-        );
+        ).then((module) => {
+            if (module && module.default) {
+                return module;
+            }
+
+            try {
+                Sentry.captureException(
+                    new Error(`Page chunk resolved with no default export: ${name}`)
+                );
+            } catch (e) {
+            }
+
+            if (reloadOnce()) {
+                // Never settle — the page is going away. Settling would let Inertia
+                // render the broken module during the reload.
+                return new Promise(() => {});
+            }
+
+            throw new Error(
+                `Page chunk resolved with no default export: ${name}`
+            );
+        });
     },
     setup({ el, App, props }) {
         // The first render never fires router `success`, so a milestone that lands on a full

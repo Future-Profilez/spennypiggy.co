@@ -190,6 +190,42 @@ class WishItem extends Model
         return SecureMedia::sign($url);
     }
 
+    /**
+     * The UNSIGNED CDN URL of the LEGACY `reward` image — the paid deliverable
+     * of a wish created before `content_file` existed. Same bare-URL rule as
+     * bareContentFileUrl(); mirrors getRewardUrlAttribute() operation-for-
+     * operation so the signed and unsigned forms cannot point at different
+     * bytes.
+     */
+    public function bareRewardUrl(): ?string
+    {
+        if (empty($this->reward)) {
+            return null;
+        }
+
+        return 'https://ucarecdn.com/'.$this->reward.'/-/format/jpeg/';
+    }
+
+    /**
+     * The UNSIGNED CDN URL of the paid content — for persisting into
+     * `deliverables.deliverable_url`, which stays bare by rule: signing
+     * happens per click in DeliveriesController. Persisting the signed
+     * accessor writes a token that expires, and SecureMedia::sign()
+     * deliberately refuses to re-sign a URL already carrying one.
+     */
+    public function bareContentFileUrl(): ?string
+    {
+        if (empty($this->content_file)) {
+            return null;
+        }
+
+        if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
+            return $this->content_file;
+        }
+
+        return 'https://ucarecdn.com/'.$this->content_file.'/';
+    }
+
     public function categories()
     {
         return $this->hasMany(WishCategory::class, 'wish_item_id');

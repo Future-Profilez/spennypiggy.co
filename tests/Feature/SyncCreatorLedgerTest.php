@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SyncCreatorLedger;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -81,6 +82,45 @@ class SyncCreatorLedgerTest extends TestCase
         SyncCreatorLedger::schedule(0);
 
         Bus::assertNotDispatched(SyncCreatorLedger::class);
+    }
+
+    /**
+     * 🚨 The webhook passes payments.creator_id, which is the creator's UUID —
+     * not users.id. The old ?int signature raised a TypeError at argument
+     * coercion, OUTSIDE schedule()'s own try and past the caller's
+     * catch (\Exception), so every checkout.session.completed event failed
+     * before its module fan-out (deliverable, ledger, emails) ever ran.
+     */
+    public function test_a_creator_uuid_resolves_to_the_users_id(): void
+    {
+        Bus::fake();
+
+        $creator = User::factory()->create();
+
+        SyncCreatorLedger::schedule($creator->uuid);
+
+        Bus::assertDispatched(SyncCreatorLedger::class, fn ($job) => $job->creatorId === $creator->id);
+    }
+
+    /** An unknown UUID is a data fault, never a crash and never a sync for nobody. */
+    public function test_an_unknown_uuid_schedules_nothing_and_does_not_throw(): void
+    {
+        Bus::fake();
+
+        SyncCreatorLedger::schedule('cus_notAnAccountId');
+        SyncCreatorLedger::schedule('11111111-2222-3333-4444-555555555555');
+
+        Bus::assertNotDispatched(SyncCreatorLedger::class);
+    }
+
+    /** Stripe metadata carries the numeric users.id as a string. */
+    public function test_a_numeric_string_id_is_accepted(): void
+    {
+        Bus::fake();
+
+        SyncCreatorLedger::schedule('42');
+
+        Bus::assertDispatched(SyncCreatorLedger::class, fn ($job) => $job->creatorId === 42);
     }
 
     /** Scheduling sits on the payment path and must never be able to break it. */

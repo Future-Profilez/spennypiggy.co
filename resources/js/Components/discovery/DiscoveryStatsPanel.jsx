@@ -1,3 +1,5 @@
+import { Fragment } from 'react';
+
 import {
     DISCOVERY_ANALYTICS_PENDING_LABEL,
     DISCOVERY_PROOF_LINES,
@@ -80,6 +82,31 @@ export default function DiscoveryStatsPanel({
      * `.map` on it would take the landing page down.
      */
     const sources = Array.isArray(stats?.by_source) ? stats.by_source : [];
+
+    /*
+     * 🚨 SORTED BY PEOPLE HERE, NOT ON THE SERVER — and deliberately.
+     * `DiscoveryReportService` returns the sources ordered by EARNINGS, which is
+     * the right default for a money question. But this section's heading is
+     * "Where they came from", and the panel's first and largest figure is people
+     * — so the busiest source was landing THIRD in the list, under two that sent
+     * fewer than half as many. A bar chart whose lengths jump around is also
+     * simply harder to read than one that steps down.
+     *
+     * ⚠️ A DISPLAY decision, so it lives here. The service is used by other
+     * callers and its order is not this component's to change. `[...sources]`
+     * because `sort` mutates, and mutating a prop is how one surface silently
+     * re-orders another's data.
+     */
+    const ranked = [...sources].sort(
+        (a, b) => Number(b?.introduced ?? 0) - Number(a?.introduced ?? 0),
+    );
+
+    // The longest bar sets the scale, so the busiest source always fills the row
+    // and every other length is read against it.
+    const busiest = ranked.reduce(
+        (max, row) => Math.max(max, Number(row?.introduced ?? 0)),
+        0,
+    );
     const heroScale = scale === 'hero';
     const skin = isLight
         ? {
@@ -87,6 +114,10 @@ export default function DiscoveryStatsPanel({
               breakdownEdge: 'border-black/10',
               breakdownInk: 'text-black',
               badge: 'rounded-box-xs border-black bg-[#E6EA7B] px-3 py-1.5 text-black',
+              ruleEdge: 'border-black/10',
+              track: 'bg-black/[0.07]',
+              fill: 'bg-[#A2E4B8]',
+              columnHead: 'text-black/45',
               dot: 'bg-black',
               title: 'text-black/60',
               figure: 'text-black',
@@ -106,6 +137,10 @@ export default function DiscoveryStatsPanel({
                   ? ''
                   : 'rounded-box border-2 border-white/15 bg-white/[0.04] p-6 md:p-9',
               badge: 'rounded-box-xs border-2 border-[#E6EA7B]/60 px-3 py-1.5 text-[#E6EA7B]',
+              ruleEdge: 'border-white/10',
+              track: 'bg-white/10',
+              fill: 'bg-[#E6EA7B]',
+              columnHead: 'text-white/45',
               dot: 'bg-[#E6EA7B]',
               title: 'text-white/60',
               figure: 'text-white',
@@ -126,10 +161,13 @@ export default function DiscoveryStatsPanel({
     // zero, so this never fires on a marketing surface.
     const isEmpty = live && introduced === 0 && newSupporters === 0 && earnings === 0;
 
+    const money = `${currencySymbol}${formatMoney(earnings)}`;
+
     const figures = [
         { value: formatCount(introduced), line: lines[0] },
         { value: formatCount(newSupporters), line: lines[1] },
-        { value: `${currencySymbol}${formatMoney(earnings)}`, line: lines[2] },
+        { value: money, line: lines[2] },
+
     ];
 
     /*
@@ -171,32 +209,108 @@ export default function DiscoveryStatsPanel({
                 </p>
             )}
 
-            <div
-                className={`grid ${isHero ? 'gap-10 md:grid-cols-3 md:gap-8' : 'gap-8 md:grid-cols-3 md:gap-6'}`}
-            >
-                {figures.map((figure) => (
-                    <div key={figure.line}>
-                        <div
-                            className={`font-gulfs leading-[0.82] tracking-tight ${skin.figure} ${
-                                isHero
-                                    ? 'text-[68px] sm:text-[88px] md:text-[104px]'
-                                    : 'text-5xl leading-[0.9] md:text-[56px]'
-                            }`}
-                        >
-                            {figure.value}
+            {/* 🚨 ONE GRID FOR ALL THREE ROWS — THAT IS WHAT MAKES THEM LINE UP.
+                These are three readings of ONE journey (people → supporters →
+                money), stacked in that order with a hairline between them.
+
+                ⚠️ The three rows share a SINGLE grid rather than being three
+                flex rows, and that is the whole alignment fix. `43`, `7` and
+                `£197.48` are wildly different widths, so as independent rows each
+                label began at its own x — three ragged starts down the panel. In
+                one grid the `auto` column sizes itself to the widest figure and
+                every label starts on the same line, with the figures sharing a
+                left edge. It also needs no fixed width, so a creator earning
+                £12,345.67 widens the column instead of overflowing it.
+
+                ⚠️ It also removed a bug rather than treating it: three equal
+                columns gave each figure a third of the panel, and `£197.48`
+                needed 175px in a 161px column — the pounds were being clipped off
+                a creator's earnings at the one width the dashboard renders at.
+
+                ⚠️ Hero scale keeps the three-across showpiece: on the ad page
+                these are 104px and carry the section on their own. */}
+            {isHero ? (
+                <div className="grid gap-10 md:grid-cols-3 md:gap-8">
+                    {figures.map((figure) => (
+                        <div key={figure.line}>
+                            <div
+                                className={`font-gulfs text-[68px] leading-[0.82] tracking-tight sm:text-[88px] md:text-[104px] ${skin.figure}`}
+                            >
+                                {figure.value}
+                            </div>
+                            <p
+                                className={`mt-4 max-w-[26ch] font-mono text-[12px] uppercase leading-[1.6] tracking-[0.06em] md:text-[13px] ${skin.line}`}
+                            >
+                                {figure.line}
+                            </p>
                         </div>
-                        <p
-                            className={
-                                isHero
-                                    ? `mt-4 max-w-[26ch] font-mono text-[12px] uppercase leading-[1.6] tracking-[0.06em] md:text-[13px] ${skin.line}`
-                                    : `mt-3 max-w-[30ch] text-sm leading-[1.5] md:text-base ${skin.line}`
-                            }
-                        >
-                            {figure.line}
-                        </p>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                /* ⚠️ STACKED ON A PHONE, TWO COLUMNS FROM `sm`. Measured at 390px:
+                   the two-column form left the label just 136px beside a 142px
+                   figure, so every line wrapped three or four times in a narrow
+                   gutter. A figure and its sentence want the full width of a
+                   phone, one under the other. From `sm` the grid returns and the
+                   labels align on one axis again.
+
+                   WHY THIS IS A PLAIN BLOCK COMMENT: inside a ternary's
+                   parenthesised branch, the BRACED JSX comment form is an object
+                   literal rather than a comment and fails the whole build. It is
+                   documented in CLAUDE.md and was done here anyway.
+
+                   And the fix for it broke the build a second time, because the
+                   replacement comment QUOTED the closing token it was warning
+                   about, which ended the comment early and turned the rest into
+                   code. Do not write that token inside a comment. */
+                <div className="grid grid-cols-1 items-baseline gap-x-5 sm:grid-cols-[auto_1fr] sm:gap-x-7">
+                    {figures.map((figure, index) => {
+                        const first = index === 0;
+                        const last = index === figures.length - 1;
+                        // Stacked, the figure keeps the top padding and the label
+                        // the bottom one, so the pair reads as a single block
+                        // rather than two rows with a gap down the middle.
+                        const figurePad = first ? '' : 'pt-5';
+                        const labelPad = `${last ? '' : 'pb-5'} pt-1 sm:pt-0 ${first ? '' : 'sm:pt-5'}`;
+
+                        return (
+                            <Fragment key={figure.line}>
+                                {/* 🚨 THE RULE IS ITS OWN FULL-WIDTH CELL, NOT A
+                                    BORDER ON EACH SIDE. Bordering the two cells
+                                    separately drew TWO half-rules at DIFFERENT
+                                    heights: the figure box and the label box are
+                                    different heights, and `items-baseline` then
+                                    offsets them vertically, so each border-top
+                                    landed at its own y. On screen that read as a
+                                    staggered, broken line down the panel.
+
+                                    ⚠️ A horizontal-alignment check cannot catch
+                                    this — the label x values were identical while
+                                    the rules were visibly out of step. It was
+                                    found by looking at the panel, which is the
+                                    only thing that could have found it. */}
+                                {index > 0 && (
+                                    <div
+                                        aria-hidden="true"
+                                        className={`col-span-full border-t-2 ${skin.ruleEdge}`}
+                                    />
+                                )}
+
+                                <div
+                                    className={`font-gulfs text-[34px] leading-[0.95] tracking-tight sm:text-[40px] md:text-[44px] ${skin.figure} ${figurePad}`}
+                                >
+                                    {figure.value}
+                                </div>
+                                <p
+                                    className={`min-w-0 text-sm leading-[1.45] md:text-base ${skin.line} ${labelPad}`}
+                                >
+                                    {figure.line}
+                                </p>
+                            </Fragment>
+                        );
+                    })}
+                </div>
+            )}
 
             {isEmpty && (
                 <p
@@ -228,31 +342,83 @@ export default function DiscoveryStatsPanel({
                         Where they came from
                     </p>
 
-                    <ul className="mt-3 flex flex-col gap-2.5">
-                        {sources.map((row) => (
-                            <li
-                                key={row.source}
-                                className="flex items-baseline justify-between gap-3"
-                            >
-                                <span className="min-w-0">
-                                    <span className={`block truncate text-sm ${skin.breakdownInk}`}>
-                                        {row.label}
-                                    </span>
-                                    {row.class === 'creator' && (
-                                        <span className={`block text-[11px] ${skin.empty}`}>
-                                            Your own audience
-                                        </span>
-                                    )}
-                                </span>
+                    {/* ⚠️ Two column headings, because `5 · £60` asked the reader
+                        to decode which unit was which. People and money are
+                        different measurements and now sit in their own columns. */}
+                    <div
+                        className={`mt-4 grid grid-cols-[1fr_auto_auto] gap-x-4 font-mono text-[10px] uppercase tracking-[0.1em] ${skin.columnHead}`}
+                    >
+                        <span />
+                        <span className="text-right">People</span>
+                        <span className="text-right">Earned</span>
+                    </div>
 
-                                <span
-                                    className={`shrink-0 whitespace-nowrap text-sm tabular-nums ${skin.breakdownInk}`}
+                    <ul className="mt-2 flex flex-col gap-3">
+                        {ranked.map((row) => (
+                            <li key={row.source}>
+                                <div className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4">
+                                    <span className="min-w-0">
+                                        <span
+                                            className={`block truncate text-sm ${skin.breakdownInk}`}
+                                        >
+                                            {row.label}
+                                        </span>
+                                        {row.class === 'creator' && (
+                                            <span className={`block text-[11px] ${skin.empty}`}>
+                                                Your own audience
+                                            </span>
+                                        )}
+                                    </span>
+
+                                    <span
+                                        className={`shrink-0 whitespace-nowrap font-mono text-sm tabular-nums ${skin.breakdownInk}`}
+                                    >
+                                        {formatCount(row.introduced)}
+                                    </span>
+
+                                    <span
+                                        className={`shrink-0 whitespace-nowrap font-mono text-sm tabular-nums ${
+                                            row.earnings > 0 ? skin.breakdownInk : skin.empty
+                                        }`}
+                                    >
+                                        {row.earnings > 0
+                                            ? `${currencySymbol}${formatMoney(row.earnings)}`
+                                            : '—'}
+                                    </span>
+                                </div>
+
+                                {/* 🚨 THE BAR IS THE POINT OF THIS SECTION. Six
+                                    numbers in a column tell a creator nothing at a
+                                    glance; a length tells them instantly which
+                                    surface is doing the work. It measures PEOPLE,
+                                    matching this section's own heading and the
+                                    panel's first and largest figure.
+
+                                    ⚠️ Width is an inline style: Tailwind's JIT
+                                    emits nothing for a class built from a runtime
+                                    value, so `w-[${pct}%]` would render as no
+                                    width at all. `aria-hidden` because the two
+                                    figures beside it already say this out loud. */}
+                                <div
+                                    aria-hidden="true"
+                                    className={`mt-1.5 h-[6px] w-full overflow-hidden rounded-box-xs ${skin.track}`}
                                 >
-                                    {formatCount(row.introduced)}
-                                    {row.earnings > 0
-                                        ? ` · ${currencySymbol}${formatMoney(row.earnings)}`
-                                        : ''}
-                                </span>
+                                    <div
+                                        className={`h-full rounded-box-xs ${skin.fill}`}
+                                        style={{
+                                            width: `${
+                                                busiest > 0
+                                                    ? Math.max(
+                                                          4,
+                                                          Math.round(
+                                                              (row.introduced / busiest) * 100,
+                                                          ),
+                                                      )
+                                                    : 0
+                                            }%`,
+                                        }}
+                                    />
+                                </div>
                             </li>
                         ))}
                     </ul>

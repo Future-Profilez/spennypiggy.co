@@ -125,7 +125,15 @@ export default function TopBar({
     const hasRefinement = refinementCount > 0;
 
     return (
-        <div className="sticky top-[63px] sm:top-[68px] md:top-[80px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all">
+        <div
+            className="sticky top-[63px] sm:top-[68px] md:top-[80px] z-10 bg-[#A2E4B8]/90 backdrop-blur-md pt-2 transition-all"
+            /* The bar is the page's own shelf edge: without a bottom rule the
+               content scrolled under a translucent blur and the seam read as
+               mush. Inline, because `border-black` is a FULL 2px shorthand here
+               and there is no safe one-side class (border-[#000] does not
+               compile in this project — documented). */
+            style={{ borderBottom: "2px solid #000" }}
+        >
             <div className="container max-w-7xl mx-auto px-4 pb-0 md:pb-3 pt-3">
                 <div className="relative mb-2 md:mb-3">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

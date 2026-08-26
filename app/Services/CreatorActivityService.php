@@ -229,8 +229,12 @@ class CreatorActivityService
          * which exist as routes, so every "fix this" link in the empty state 404'd.
          */
         $catalogue = [
-            'posts' => ['📝', 'Add a Post', 'Share an update, photo or note with your members', $profile.'?page=about', '2 minutes'],
-            'wishes' => ['🎁', 'Create a Wish Item', 'List a one-off piece of content fans can unlock', $profile.'?page=wishes', '5 minutes'],
+            // ⚠️ The profile's page is a PATH SEGMENT — `/{username}/{page?}`.
+            // `?page=wishes` renders About with a 200 and no error, so these
+            // two "fix this" links landed on the creator's own bio instead of
+            // the tab holding the thing they were being asked to create.
+            'posts' => ['📝', 'Add a Post', 'Share an update, photo or note with your members', $profile.'/about', '2 minutes'],
+            'wishes' => ['🎁', 'Create a Wish Item', 'List a one-off piece of content fans can unlock', $profile.'/wishes', '5 minutes'],
             'memberships' => ['💎', 'Set Up a Membership', 'Recurring content bundles for your members', '/membership-dashboard', '10 minutes'],
             'shops' => ['🛍️', 'Add a Shop Item', 'Sell a product or digital download directly', '/shop', '7 minutes'],
             'bills' => ['🧾', 'Add a Subscription', 'A recurring content subscription your fans can join', '/billing-dashboard', '5 minutes'],

@@ -94,6 +94,9 @@ class GoogleSignInTest extends TestCase
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',
+            // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
+            'social_platform' => 'instagram',
+            'social_handle' => 'creatorhandle',
         ], $overrides);
     }
 

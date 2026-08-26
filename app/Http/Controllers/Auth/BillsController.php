@@ -1047,150 +1047,8 @@ class BillsController extends Controller
             $bill_pay->status = $session->payment_status;
 
             if ($session->payment_status === 'paid') {
-                $bill_pay->stripe_id = $session->subscription;
+                $this->fulfilPaidCheckout($bill_pay, $session);
 
-                $current = Carbon::now();
-                switch ($bill_pay->recurring_type) {
-                    case 'monthly':
-                        $current->addMonth();
-                        break;
-                    case 'weekly':
-                        $current->addWeek();
-                        break;
-                    case 'yearly':
-                        $current->addYear();
-                        break;
-                }
-                $bill_pay->upcoming_payment = $current;
-
-                $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
-
-                $vatAmount = $bill_pay->vat_tax_amount ?? 0;
-                $amountWithVat = ($symbol->symbol ?? '£').number_format($bill_pay->amount + $vatAmount, 2);
-
-                $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
-                $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
-                $amountWithCurr = ($symbol->symbol ?? '£').number_format($totalPaidAmount, 2);
-
-                /**************************BILL**PWA**START****************************************************/
-                // below is BILL pwa for fans
-                $CreatorName = ucfirst($bill_pay->bill->user->name) ?? 'A Creator';
-                $title = '🧾 Bill Paid!';
-                $content = "You’ve successfully paid your bill to $CreatorName for {$amountWithCurr}.";
-                $email = $bill_pay->guest_email;
-
-                Helpers::sendNotification($title, $content, $email);
-
-                // below is BILL pwa for creator
-                $FanName = ucfirst($bill_pay->user->name ?? $bill_pay->guest_name) ?? 'A Fan';
-                $title = '💰 Bill Payment Received!';
-                $content = "$FanName has paid their bill. Check your earnings!.";
-                $email = $bill_pay->bill->user->email;
-
-                Helpers::sendNotification($title, $content, $email);
-                /**************************BILL**PWA**ENDS****************************************************/
-
-                // Create deliverable entry for bill payment (like wish subscriptions)
-                $this->createBillDeliverable($bill_pay, $session);
-
-                // Calculate creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency, 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
-                $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
-
-                // Dispatch mail jobs
-                BillPayMail::dispatch($bill_pay, $creatorNetAmount);
-                BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
-
-                // Dispatch content delivery email if bill has content file
-                // if (! empty($bill_pay->bill->content_file)) {
-                //     BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
-                //     Log::info('BillsController: Content delivery email dispatched for bill payment', [
-                //         'bill_payment_id' => $bill_pay->id,
-                //         'bill_id' => $bill_pay->bill->id,
-                //         'has_content_file' => ! empty($bill_pay->bill->content_file),
-                //     ]);
-                // }
-
-                // Notification setup
-                $username = $bill_pay->anonymous ? 'Anonymous user' : ($bill_pay->guest_name ?? 'Anonymous user');
-                $message = "$username just subscribed to your bill {$bill_pay->bill->name}";
-                NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user ?? null, 'Bill');
-
-                $bill_pay->save();
-
-                $userPayment = new UserPayment;
-                $userPayment->from_user_id = $bill_pay->user_id ?? null;
-                $userPayment->to_user_id = $bill_pay->bill->user_id;
-                $userPayment->product_type = 'bill';
-                $userPayment->amount = $bill_pay->amount;
-
-                // Ensure total_paid is updated in BillPayment if missing
-                if (! $bill_pay->total_paid || $bill_pay->total_paid <= 0) {
-                    $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
-                    $bill_pay->total_paid = (float) ($session->amount_total / $multiplier);
-                    $bill_pay->save();
-                }
-
-                $userPayment->total_paid = $bill_pay->total_paid;
-                $userPayment->currency = $bill_pay->currency;
-                $userPayment->payment_method = 'stripe';
-                $userPayment->payment_details = json_encode($session, true);
-                $userPayment->paid_at = Carbon::now();
-                $userPayment->status = $session->payment_status;
-                $userPayment->save();
-
-                // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
-                try {
-                    $creator = $bill_pay->bill->user;
-                    $amount = (float) $bill_pay->amount;
-                    $vat = (float) ($bill_pay->vat_tax_amount ?? 0);
-                    if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
-                        $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
-                    }
-                    // Use actual fee breakdown from the gross-up formula
-                    $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'), 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
-                    $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
-                    $stripeFee = $billBreakdown['stripe_fee'];
-                    $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
-                        ? (float) $bill_pay->total_paid
-                        : $billBreakdown['total_supporter_pays'];
-                    $creatorAmount = $amount;
-
-                    // Reserve is taken from the creator's NET amount (never the gross).
-                    // Without this the bill earning was unreserved until the nightly
-                    // sync ran, and a payout in that window paid the full net.
-                    $reservePercent = (int) app(ReservePolicy::class)->getEffectiveReservePercent(
-                        $creator,
-                        CreatorMetric::where('creator_id', $creator->uuid)->first(),
-                        now()
-                    );
-                    $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
-
-                    FinancialTransaction::updateOrCreate(
-                        [
-                            'source_type' => BillPayment::class,
-                            'source_id' => $bill_pay->id,
-                        ],
-                        [
-                            'user_id' => $creator->id,
-                            'supporter_id' => $bill_pay->user_id,
-                            'type' => 'income',
-                            'gross_amount' => $gross,
-                            'platform_fee' => $platformFee,
-                            'stripe_fee' => $stripeFee,
-                            'vat_amount' => $vat,
-                            'net_amount' => $creatorAmount,
-                            'reserve_amount' => $reserveAmount,
-                            'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
-                            'currency' => strtoupper($bill_pay->currency ?? 'GBP'),
-                            'status' => 'completed',
-                            'description' => 'Recurring content: '.($bill_pay->bill->name ?? 'Subscription'),
-                            'transaction_date' => $bill_pay->created_at,
-                        ]
-                    );
-                } catch (\Throwable $e) {
-                    Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: '.$e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
-                }
                 $totalAmount = 0;
                 if ($bill_pay->user->role == 0) {
                     $totalAmount = $bill_pay->total_paid;
@@ -1225,6 +1083,168 @@ class BillsController extends Controller
             ]);
 
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Everything a PAID first bill checkout produces — pushes, deliverable,
+     * mails, bell notification, UserPayment, ledger row. Extracted from
+     * handlePayment so the webhook's delayed fallback
+     * (App\Jobs\FulfilSubscriptionCheckout) can fulfil a buyer who never
+     * returned to the success URL; before that, a closed tab left a paid
+     * Stripe subscription with stripe_id NULL, no deliverable, no emails —
+     * and every future renewal invisible, while Stripe kept charging.
+     *
+     * ⚠️ Caller must have CLAIMED the row first (status initiated →
+     * processing) and confirmed $session->payment_status === 'paid'.
+     * No redirects and no session flash in here — it runs in queue workers.
+     */
+    public function fulfilPaidCheckout(BillPayment $bill_pay, $session): void
+    {
+        $bill_pay->status = $session->payment_status;
+        $bill_pay->stripe_id = $session->subscription;
+
+        $current = Carbon::now();
+        switch ($bill_pay->recurring_type) {
+            case 'monthly':
+                $current->addMonth();
+                break;
+            case 'weekly':
+                $current->addWeek();
+                break;
+            case 'yearly':
+                $current->addYear();
+                break;
+        }
+        $bill_pay->upcoming_payment = $current;
+
+        $symbol = Currency::where('iso', strtoupper($bill_pay->currency))->first();
+
+        $vatAmount = $bill_pay->vat_tax_amount ?? 0;
+        $amountWithVat = ($symbol->symbol ?? '£').number_format($bill_pay->amount + $vatAmount, 2);
+
+        $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+        $totalPaidAmount = $bill_pay->total_paid && $bill_pay->total_paid > 0 ? $bill_pay->total_paid : (float) ($session->amount_total / $multiplier);
+        $amountWithCurr = ($symbol->symbol ?? '£').number_format($totalPaidAmount, 2);
+
+        /**************************BILL**PWA**START****************************************************/
+        // below is BILL pwa for fans
+        $CreatorName = ucfirst($bill_pay->bill->user->name) ?? 'A Creator';
+        $title = '🧾 Bill Paid!';
+        $content = "You’ve successfully paid your bill to $CreatorName for {$amountWithCurr}.";
+        $email = $bill_pay->guest_email;
+
+        Helpers::sendNotification($title, $content, $email);
+
+        // below is BILL pwa for creator
+        $FanName = ucfirst($bill_pay->user->name ?? $bill_pay->guest_name) ?? 'A Fan';
+        $title = '💰 Bill Payment Received!';
+        $content = "$FanName has paid their bill. Check your earnings!.";
+        $email = $bill_pay->bill->user->email;
+
+        Helpers::sendNotification($title, $content, $email);
+        /**************************BILL**PWA**ENDS****************************************************/
+
+        // Create deliverable entry for bill payment (like wish subscriptions)
+        $this->createBillDeliverable($bill_pay, $session);
+
+        // Calculate creator net amount
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency, 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
+        $creatorNetAmount = ($symbol->symbol ?? '£').number_format($breakdown['net_to_creator'], 2);
+
+        // Dispatch mail jobs
+        BillPayMail::dispatch($bill_pay, $creatorNetAmount);
+        BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
+
+        // Dispatch content delivery email if bill has content file
+        // if (! empty($bill_pay->bill->content_file)) {
+        //     BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
+        //     Log::info('BillsController: Content delivery email dispatched for bill payment', [
+        //         'bill_payment_id' => $bill_pay->id,
+        //         'bill_id' => $bill_pay->bill->id,
+        //         'has_content_file' => ! empty($bill_pay->bill->content_file),
+        //     ]);
+        // }
+
+        // Notification setup
+        $username = $bill_pay->anonymous ? 'Anonymous user' : ($bill_pay->guest_name ?? 'Anonymous user');
+        $message = "$username just subscribed to your bill {$bill_pay->bill->name}";
+        NotificationSave::dispatch($message, $bill_pay->bill->user, $bill_pay->user ?? null, 'Bill');
+
+        $bill_pay->save();
+
+        $userPayment = new UserPayment;
+        $userPayment->from_user_id = $bill_pay->user_id ?? null;
+        $userPayment->to_user_id = $bill_pay->bill->user_id;
+        $userPayment->product_type = 'bill';
+        $userPayment->amount = $bill_pay->amount;
+
+        // Ensure total_paid is updated in BillPayment if missing
+        if (! $bill_pay->total_paid || $bill_pay->total_paid <= 0) {
+            $multiplier = Helpers::isZeroDecimalCurrency($session->currency) ? 1 : 100;
+            $bill_pay->total_paid = (float) ($session->amount_total / $multiplier);
+            $bill_pay->save();
+        }
+
+        $userPayment->total_paid = $bill_pay->total_paid;
+        $userPayment->currency = $bill_pay->currency;
+        $userPayment->payment_method = 'stripe';
+        $userPayment->payment_details = json_encode($session, true);
+        $userPayment->paid_at = Carbon::now();
+        $userPayment->status = $session->payment_status;
+        $userPayment->save();
+
+        // Immediately sync to FinancialTransaction so earnings dashboard and support history shows up-to-date
+        try {
+            $creator = $bill_pay->bill->user;
+            $amount = (float) $bill_pay->amount;
+            $vat = (float) ($bill_pay->vat_tax_amount ?? 0);
+            if ($vat <= 0 && $creator && $creator->vat_amount_percentage > 0) {
+                $vat = round(($amount * (float) $creator->vat_amount_percentage) / 100, 2, PHP_ROUND_HALF_UP);
+            }
+            // Use actual fee breakdown from the gross-up formula
+            $billBreakdown = Helpers::calculateStripeDirectChargeFlow($amount + $vat, strtoupper($bill_pay->currency ?? 'GBP'), 0, $bill_pay->fee_profile ?? 'card', null, Helpers::storedFeeRates($bill_pay));
+            $platformFee = $billBreakdown['platform_fee'] + $billBreakdown['compliance_fee'] + $billBreakdown['admin_fee'];
+            $stripeFee = $billBreakdown['stripe_fee'];
+            $gross = $bill_pay->total_paid && $bill_pay->total_paid > 0
+                ? (float) $bill_pay->total_paid
+                : $billBreakdown['total_supporter_pays'];
+            $creatorAmount = $amount;
+
+            // Reserve is taken from the creator's NET amount (never the gross).
+            // Without this the bill earning was unreserved until the nightly
+            // sync ran, and a payout in that window paid the full net.
+            $reservePercent = (int) app(ReservePolicy::class)->getEffectiveReservePercent(
+                $creator,
+                CreatorMetric::where('creator_id', $creator->uuid)->first(),
+                now()
+            );
+            $reserveAmount = $reservePercent > 0 ? round($creatorAmount * $reservePercent / 100, 2, PHP_ROUND_HALF_UP) : 0;
+
+            FinancialTransaction::updateOrCreate(
+                [
+                    'source_type' => BillPayment::class,
+                    'source_id' => $bill_pay->id,
+                ],
+                [
+                    'user_id' => $creator->id,
+                    'supporter_id' => $bill_pay->user_id,
+                    'type' => 'income',
+                    'gross_amount' => $gross,
+                    'platform_fee' => $platformFee,
+                    'stripe_fee' => $stripeFee,
+                    'vat_amount' => $vat,
+                    'net_amount' => $creatorAmount,
+                    'reserve_amount' => $reserveAmount,
+                    'reserve_status' => $reserveAmount > 0 ? 'held' : 'none',
+                    'currency' => strtoupper($bill_pay->currency ?? 'GBP'),
+                    'status' => 'completed',
+                    'description' => 'Recurring content: '.($bill_pay->bill->name ?? 'Subscription'),
+                    'transaction_date' => $bill_pay->created_at,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to sync BillPayment to FinancialTransaction in handlePayment: '.$e->getMessage(), ['bill_payment_id' => $bill_pay->id]);
         }
     }
 

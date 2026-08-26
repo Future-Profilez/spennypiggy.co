@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { router, usePage } from "@inertiajs/react";
+import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
@@ -18,11 +19,14 @@ const FIELD =
 const FIELD_LABEL = "mb-2 block text-left text-[12px] font-black uppercase tracking-[0.14em]";
 
 export default function EditMembership({ item }) {
-    const { auth, global_currency } = usePage().props;
+    const { auth, global_currency, rates } = usePage().props;
     const memberOnlyPostsCount = auth?.member_only_posts_count || 0;
     const { errorAlert } = useAlerts();
     const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth?.user?.default_currency || "USD";
+    // The server rule is GBP-EQUIVALENT, so the bounds shown here have to be the
+    // creator's currency, not the raw GBP figures. See `lib/priceLimits.js`.
+    const priceBounds = priceLimits(defaultCurrency, rates, MAX_PRICE_GBP.membership);
 
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -128,13 +132,14 @@ export default function EditMembership({ item }) {
             key: "price",
             title: "Price & thumbnail",
             hint: "Supporters see one total price; every fee is already inside it.",
-            validate: () => {
-                const price = Number(data.month_price);
-                if (!price) return "Set a price.";
-                if (price < 4.99) return `Minimum is ${defaultCurrency} 4.99.`;
-                if (price > 100) return `Maximum is ${defaultCurrency} 100 per month.`;
-                return null;
-            },
+            validate: () =>
+                priceLimitError(
+                    data.month_price,
+                    defaultCurrency,
+                    rates,
+                    MAX_PRICE_GBP.membership,
+                    { per: isLifetime ? "" : "per month" },
+                ),
             render: () => (
                 <div className="space-y-6">
                     <div>
@@ -145,13 +150,19 @@ export default function EditMembership({ item }) {
                             id="membership-edit-price"
                             type="number"
                             inputMode="decimal"
-                            min="4.99"
-                            max="100"
-                            step="0.01"
+                            min={priceBounds.min}
+                            max={priceBounds.max}
+                            step={priceBounds.step}
                             className={FIELD}
                             value={data.month_price}
                             onChange={(event) => setData("month_price", event.target.value)}
                         />
+
+                        <p className="mt-2 text-left text-xs font-medium text-neutral-500">
+                            Between {formatPrice(priceBounds.min, defaultCurrency)} and{" "}
+                            {formatPrice(priceBounds.max, defaultCurrency)}
+                            {isLifetime ? "" : " per month"}.
+                        </p>
 
                         {data.month_price > 0 && (
                             <div className="mt-4 rounded-box-sm border-[3px] border-black bg-[#BAE6FD] p-4 ">

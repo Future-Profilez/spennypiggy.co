@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -59,14 +60,22 @@ class SyncCreatorLedger implements ShouldQueue
      *
      * Never throws — a purchase must not fail because its ledger refresh could
      * not be scheduled. The 30-minute cron is still the backstop.
+     *
+     * Accepts either a numeric users.id OR a users.uuid string, because the
+     * webhook's Payment rows store the creator's UUID in creator_id
+     * (Payment::creator() joins on users.uuid). The signature was ?int once,
+     * and the UUID raised a TypeError at argument coercion — OUTSIDE this
+     * method's own try, past the caller's catch (\Exception) — which failed
+     * every checkout.session.completed event before its module fan-out ran.
      */
-    public static function schedule(?int $creatorId): void
+    public static function schedule(int|string|null $creatorId): void
     {
-        if (! $creatorId) {
-            return;
-        }
-
         try {
+            $creatorId = self::resolveUserId($creatorId);
+
+            if (! $creatorId) {
+                return;
+            }
             if (! Cache::add(self::lockKey($creatorId), 1, self::DEBOUNCE_SECONDS + 60)) {
                 return;
             }
@@ -101,5 +110,24 @@ class SyncCreatorLedger implements ShouldQueue
     private static function lockKey(int $creatorId): string
     {
         return "creator_ledger_sync:{$creatorId}";
+    }
+
+    /**
+     * Normalise whatever the caller has to a numeric users.id — a UUID string
+     * (payments.creator_id), a numeric string (Stripe metadata), or an int.
+     * finance:sync-transactions matches --user_id against users.id only, so a
+     * UUID passed through would sync zero rows even if it didn't throw.
+     */
+    private static function resolveUserId(int|string|null $creatorId): ?int
+    {
+        if ($creatorId === null || $creatorId === '') {
+            return null;
+        }
+
+        if (is_int($creatorId) || ctype_digit((string) $creatorId)) {
+            return (int) $creatorId ?: null;
+        }
+
+        return User::where('uuid', $creatorId)->value('id');
     }
 }

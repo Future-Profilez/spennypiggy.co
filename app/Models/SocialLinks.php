@@ -34,6 +34,10 @@ class SocialLinks extends Model
         'uuid',
         'user_id',
         'whoyouinto',
+        // Where the handle came from — 'signup' (contact data, kept out of the admin
+        // review queue) or NULL (submitted from Creator Studio, i.e. offered for the
+        // public profile). See the 2026_08_25_120000 migration.
+        'source',
         'twitter',
         'instagram',
         'tiktok',

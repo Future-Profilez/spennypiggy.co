@@ -382,6 +382,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const primaryBtn =
  "inline-block bg-[#FF007F] text-white border-2 border-black rounded-box-sm px-4 py-2.5 text-sm font-bold active:translate-x-0.5 active:translate-y-0.5 transition-all";
 
+    /*
+     * ⚠️ Kept for the SUBMIT step only. It used to sit on every asset, which
+     * told a creator their photo, bio and handles were each queued for their own
+     * approval — they are not: they are checked together, once, when the profile
+     * is submitted. The page now just asks them to add things and ticks them off.
+     */
     const REVIEW_NOTE = "Usually reviewed within a few hours.";
 
     // The whole journey as one registry: status, what we check, the editor that
@@ -408,7 +414,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     : "todo",
             approvedState: isSocialApproved ? 1 : 0,
             reason: slinks?.reason,
-            reviewNote: REVIEW_NOTE,
             action: (
                 <Social
                     buttontext={isSocialRejected ? "Update handles" : "Add socials"}
@@ -437,7 +442,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         ? (profileStatusLock == 1 ? "pending" : "done")
                         : "todo",
             approvedState: avatarStatus == 1 ? 1 : 0,
-            reviewNote: REVIEW_NOTE,
             action: (
                 <EditProfile
                     text={avatarStatus == 2 ? "Upload a new photo" : "Upload photo"}
@@ -469,7 +473,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         : "todo",
             approvedState: bioStatus == 1 ? 1 : 0,
             reason: creatorUser?.edit_bio_reason || user?.edit_bio_reason,
-            reviewNote: REVIEW_NOTE,
             action: (
                 <EditProfile
                     text={bioStatus == 2 ? "Rewrite bio" : "Write bio"}
@@ -655,6 +658,40 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     {isRefreshing ? "Refreshing…" : "Refresh"}
                 </button>
             </div>
+
+            {/*
+                🚨 A REJECTED PROFILE SAYS SO AT THE TOP, WITH THE REASON.
+                The reason used to live only inside the submit step, which sits
+                below several completed ones — so a creator whose profile had
+                been turned down saw a page full of green ticks and had to scroll
+                to find out nothing was live. It is the whole reason they are
+                here, so it goes first.
+            */}
+            {profileRejectReason && profileStatusLock != 2 ? (
+                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFE5EF] p-4">
+                    <p className="text-[13px] font-bold uppercase tracking-wide text-[#FF007F]">
+                        Your profile was not approved
+                    </p>
+                    <p className="mt-1 text-sm text-black">{profileRejectReason}</p>
+                    <p className="mt-2 text-sm text-black/70">
+                        Fix the point above, then submit again — you do not have to
+                        redo anything else.
+                    </p>
+                </div>
+            ) : null}
+
+            {/* Submitted and waiting: say so plainly, so nobody submits twice. */}
+            {isSubmittedForReview ? (
+                <div className="mb-4 rounded-box-sm border-2 border-black bg-[#FFF6D6] p-4">
+                    <p className="text-[13px] font-bold uppercase tracking-wide text-black">
+                        Your profile is being verified
+                    </p>
+                    <p className="mt-1 text-sm text-black/80">
+                        Our team is checking it now. You will get an email as soon
+                        as it is decided — there is nothing else to do.
+                    </p>
+                </div>
+            ) : null}
 
             <p className="text-black/60 mb-4 text-sm">
                 {onboardingComplete

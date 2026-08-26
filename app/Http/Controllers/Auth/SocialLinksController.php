@@ -92,9 +92,27 @@ class SocialLinksController extends Controller
                 $data[$platform] = $request->{$platform};
             }
 
-            // ✅ Moderation reset
-            $data['status'] = 0;
+            /*
+             * ✅ Moderation reset — for a CREATOR.
+             *
+             * 🚨 A gifter's handles are approved as they are saved (19 Aug 2026,
+             * client direction). Only a creator's profile is reviewed; a gifter
+             * reaches an admin for one thing, the £500 address check. Queueing
+             * their handles filled the socials screen with rows nobody was going
+             * to decide — measured on the day of the change, 13 of them.
+             *
+             * ⚠️ An admin asking a gifter to change something still sets this
+             * back to 0, and that path is untouched — which is why a pending
+             * gifter row now always means "an admin asked for this".
+             */
+            $data['status'] = (int) (Auth::user()->role ?? 1) === 0 ? 1 : 0;
             $data['reason'] = null;
+
+            // ⚠️ Provenance follows the latest submission: a handle first given at
+            // signup and then edited here IS a Creator Studio submission now, and a
+            // reviewer reading "From signup" on it would be told something untrue.
+            // See the 2026_08_25_120000 migration — the column gates nothing.
+            $data['source'] = null;
 
             // ⚠️ `uuid` used to be regenerated here on every save, because it is
             // fillable and was passed in the VALUES array rather than the match array.
@@ -114,7 +132,7 @@ class SocialLinksController extends Controller
                 ProfileChangeRequest::open(
                     $user,
                     ProfileChangeRequest::ASSET_SOCIALS,
-                    Arr::except($data, ['status', 'reason', 'updated_at']),
+                    Arr::except($data, ['status', 'reason', 'updated_at', 'source']),
                     $existing ? Arr::only($existing->getAttributes(), ProfileChangeRequest::SOCIAL_FIELDS) : [],
                 );
             } else {

@@ -16,8 +16,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use ZipArchive;
 
 class ProcessWishItemDeliverable implements ShouldQueue
 {
@@ -152,10 +150,22 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Mark as failed
+            // Mark as failed.
+            // ⚠️ This used to write `failure_reason`, a column that exists in
+            // NO migration, is absent from the live table and is not in
+            // `$fillable` — so mass assignment dropped it silently and a failed
+            // deliverable recorded status and nothing else. (Had it been
+            // fillable it would have thrown a SQL error inside this catch and
+            // buried the original exception.) The reason goes in `metadata`,
+            // which exists.
+            $existing = json_decode($this->deliverable->metadata ?? '[]', true) ?: [];
+
             $this->deliverable->update([
                 'status' => 'failed',
-                'failure_reason' => $e->getMessage(),
+                'metadata' => json_encode(array_merge($existing, [
+                    'failure_reason' => $e->getMessage(),
+                    'failed_at' => now()->toISOString(),
+                ])),
             ]);
 
             throw $e;
@@ -216,12 +226,30 @@ class ProcessWishItemDeliverable implements ShouldQueue
     }
 
     /**
-     * Process media bundle deliverable
+     * The fallback branch for a wish with no `content_file` — in practice a
+     * legacy listing whose paid deliverable is the `reward` image.
+     *
+     * 🚨 THIS USED TO BUILD A ZIP ON LOCAL DISK AND STORE ITS PATH AS THE
+     * DELIVERABLE URL. Three things were wrong with that, and together they
+     * meant every one of these purchases delivered a dead link:
+     *   - `deliverables/bundles/x.zip` is not a route, so
+     *     `DeliveriesController::access` redirected to a path that does not
+     *     resolve;
+     *   - on Vapor the Lambda's filesystem is ephemeral and `public/` is
+     *     stripped, so the file was gone before anyone clicked anyway;
+     *   - the ZIP was assembled from `$item->image_url` / `$item->video_url`,
+     *     neither of which is a column on WishItem — so it only ever contained
+     *     `metadata.json`.
+     * Nothing errored. The buyer simply got a link to nowhere.
+     *
+     * The item's own CDN media IS the deliverable, so point at it directly.
      */
     private function processMediaBundle($item): void
     {
-        // Create media bundle (ZIP file with wish item content)
-        $bundlePath = $this->createMediaBundle($item);
+        // Bare by rule — the column stays unsigned and the access route signs
+        // per click. content_file first: a wish that has one is not legacy.
+        $contentUrl = (method_exists($item, 'bareContentFileUrl') ? $item->bareContentFileUrl() : null)
+            ?: (method_exists($item, 'bareRewardUrl') ? $item->bareRewardUrl() : null);
 
         // Generate and upload certificate to Uploadcare if requested
         $certificateUrl = null;
@@ -232,24 +260,29 @@ class ProcessWishItemDeliverable implements ShouldQueue
             $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $item);
         }
 
-        // Update deliverable with file paths
+        if (! $contentUrl) {
+            Log::info('ProcessMediaBundle: item carries no downloadable media; recording the receipt only', [
+                'deliverable_id' => $this->deliverable->id,
+                'item_id' => $item->id ?? null,
+            ]);
+        }
+
         $this->deliverable->update([
-            'deliverable_url' => $bundlePath,
+            // ⚠️ Never overwrite a url a previous run resolved with null.
+            'deliverable_url' => $contentUrl ?: $this->deliverable->deliverable_url,
             // Preserve existing certificate_url if this run didn't generate one
             'certificate_url' => $certificateUrl ?: $this->deliverable->certificate_url,
             'status' => 'delivered',
             'delivered_at' => now(),
             'metadata' => json_encode(array_merge($metadata, [
-                'bundle_created_at' => now()->toISOString(),
-                'bundle_size' => Storage::size($bundlePath),
+                'delivered_at' => now()->toISOString(),
+                'has_content' => (bool) $contentUrl,
                 'certificate_generated' => ! empty($certificateUrl) || ! empty($this->deliverable->certificate_url),
             ])),
         ]);
 
-        // Always update Stripe payment intent metadata for media bundles
         $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url, [
-            'bundle_created_at' => now()->toISOString(),
-            'bundle_size' => (string) Storage::size($bundlePath),
+            'delivered_at' => now()->toISOString(),
             'certificate_generated' => (! empty($certificateUrl) || ! empty($this->deliverable->certificate_url)) ? 'true' : 'false',
             'content_type' => 'media_bundle',
         ]);
@@ -264,8 +297,11 @@ class ProcessWishItemDeliverable implements ShouldQueue
             throw new \Exception("No content file found for item {$item->id}");
         }
 
-        // Get the content file URL from Uploadcare
-        $contentUrl = $item->content_file_url;
+        // Get the content file URL from Uploadcare — BARE, never the signed
+        // accessor: this value is persisted into deliverables.deliverable_url,
+        // which stays unsigned (DeliveriesController signs per click), and
+        // SecureMedia::sign() refuses to re-sign a URL already carrying a token.
+        $contentUrl = $item->bareContentFileUrl();
 
         // Generate and upload certificate to Uploadcare if requested
         $certificateUrl = null;
@@ -315,77 +351,6 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'certificate_generated' => (! empty($certificateUrl) || ! empty($this->deliverable->certificate_url)) ? 'true' : 'false',
             'content_type' => 'content_file',
         ]);
-    }
-
-    /**
-     * Create media bundle ZIP file
-     */
-    private function createMediaBundle($item): string
-    {
-        $zip = new ZipArchive;
-        $bundleName = "item_{$item->id}_{$this->deliverable->uuid}.zip";
-        $bundlePath = "deliverables/bundles/{$bundleName}";
-        $fullPath = Storage::path($bundlePath);
-
-        // Ensure directory exists
-        Storage::makeDirectory('deliverables/bundles');
-
-        if ($zip->open($fullPath, ZipArchive::CREATE) !== true) {
-            throw new \Exception("Cannot create ZIP file: {$fullPath}");
-        }
-
-        // Add item images/videos to bundle
-        if (isset($item->image_url) && $item->image_url) {
-            $this->addFileToZip($zip, $item->image_url, 'main_image.jpg');
-        }
-
-        if (isset($item->video_url) && $item->video_url) {
-            $this->addFileToZip($zip, $item->video_url, 'main_video.mp4');
-        }
-
-        // Add metadata file
-        $itemName = $item->wishname ?? $item->name ?? 'Item';
-        $itemDescription = $item->description ?? 'No description';
-        $creatorName = $item->user->name ?? 'Unknown';
-
-        $metadataContent = json_encode([
-            'item' => [
-                'id' => $item->id,
-                'name' => $itemName,
-                'description' => $itemDescription,
-                'creator' => $creatorName,
-                'created_at' => $item->created_at->toISOString(),
-            ],
-            'deliverable' => [
-                'uuid' => $this->deliverable->uuid,
-                'created_at' => $this->deliverable->created_at->toISOString(),
-                'gifter_id' => $this->deliverable->gifter_id,
-            ],
-        ], JSON_PRETTY_PRINT);
-
-        $zip->addFromString('metadata.json', $metadataContent);
-        $zip->close();
-
-        return $bundlePath;
-    }
-
-    /**
-     * Add file to ZIP from URL
-     */
-    private function addFileToZip(ZipArchive $zip, string $url, string $filename): void
-    {
-        try {
-            $content = file_get_contents($url);
-            if ($content !== false) {
-                $zip->addFromString($filename, $content);
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to add file to ZIP', [
-                'url' => $url,
-                'filename' => $filename,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**
@@ -453,11 +418,15 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Get metadata
         $metadata = json_decode($this->deliverable->metadata, true) ?? [];
 
-        // Update deliverable with membership-specific data
-        // NOTE: We don't set deliverable_url for memberships because they don't have downloadable content
-        // This prevents "View Exclusive Content" from showing in the UI
+        // 🚨 THIS USED TO HARDCODE NULL — "memberships don't have downloadable
+        // content" was never true. A tier cannot even be published without an
+        // on-platform content benefit (MembershipController::hasOnPlatformContent),
+        // `memberships.content_file` is where it lives, and the bill branch below
+        // has always resolved the equivalent. The result was that a member's
+        // content existed in exactly ONE place on the platform: the confirmation
+        // email. Bare URL by rule — DeliveriesController signs per click.
         $this->deliverable->update([
-            'deliverable_url' => null, // No content URL for memberships (only certificate)
+            'deliverable_url' => $membership->bareContentFileUrl(),
             'certificate_url' => $certificateUrl, // Certificate download link from Uploadcare
             'status' => 'delivered',
             'delivered_at' => now(),
@@ -504,8 +473,11 @@ class ProcessWishItemDeliverable implements ShouldQueue
         $certificateService = app(CertificateService::class);
         $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $bill);
 
-        // Create access URL (could be a direct link to bill content or creator page)
-        $accessUrl = $bill->content_file ? "https://ucarecdn.com/{$bill->content_file}/" : (env('APP_URL').'/'.$bill->user->username);
+        // Direct link to the bill's content, or the creator's page when the
+        // subscription's benefit is access rather than a file.
+        // ⚠️ `config()`, not `env()` — env() returns null once the config cache
+        // is built, which is every deployed environment.
+        $accessUrl = $bill->bareContentFileUrl() ?: rtrim((string) config('app.url'), '/').'/'.$bill->user->username;
 
         // Get metadata
         $metadata = json_decode($this->deliverable->metadata, true) ?? [];

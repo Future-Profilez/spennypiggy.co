@@ -43,7 +43,7 @@ class LeaderBoardController extends Controller
      * creator on the leaderboard rendered the grey basic badge while their own
      * profile, which is not cached, showed pink.
      */
-    public const BOARD_CACHE_KEY = 'leaderboard_board_v3_';
+    public const BOARD_CACHE_KEY = 'leaderboard_board_v4_';
 
     public const BUNDLE_CACHE_KEY = 'leaderboard_bundle_v3';
 
@@ -196,7 +196,10 @@ class LeaderBoardController extends Controller
             // "Final standing when the board closed". Verified live: the panel
             // named three creators the same board shows with 0 supporters and a
             // "New" chip.
-            if (((int) ($user->total_supporters ?? 0)) < 1 && ((float) ($user->total_amount ?? 0)) <= 0) {
+            // ⚠️ Paying supporters, matching the sort. The money half of this
+            // gate went with the revenue fallback the board no longer has — a
+            // winner is somebody at least one person bought from.
+            if (((int) ($user->paying_supporters ?? 0)) < 1) {
                 continue;
             }
 
@@ -206,7 +209,7 @@ class LeaderBoardController extends Controller
                 'name' => $user->name ?? '',
                 'username' => $user->username ?? '',
                 'avatar' => $user->avatar_url,
-                'supporters' => (int) ($user->total_supporters ?? 0),
+                'supporters' => (int) ($user->paying_supporters ?? 0),
             ];
 
             if ($rank > 3) {
@@ -311,7 +314,16 @@ class LeaderBoardController extends Controller
                 'top' => round(($rank / $total) * 100, 2),
                 'amount' => 0, // Privacy: the public board ranks reach, never revenue.
                 'currency' => $user->currency ?? 'GBP',
-                'supporters' => (int) ($user->total_supporters ?? 0),
+                // 🚨 PAYING SUPPORTERS, not followers. The board ranks on
+                // `paying_supporters` (COUNT DISTINCT buyer, through
+                // `LedgerRules::countedScope()`) and printed `total_supporters`
+                // (a FOLLOWER count, kept only as the tie-break) — two different
+                // quantities on one row, so #1 could legitimately show fewer
+                // "supporters" than #5, and every measure bar, podium gap and
+                // "N more supporters to pass @x" was computed off the column the
+                // sort does not use. The eyebrow says "Ranked by supporters";
+                // this is what that word means here.
+                'supporters' => (int) ($user->paying_supporters ?? 0),
                 'engagement' => $user->engagement_score ?? 0,
                 'content' => $this->contentTargetFor($user),
             ];

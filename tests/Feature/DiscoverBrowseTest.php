@@ -562,4 +562,46 @@ class DiscoverBrowseTest extends TestCase
 
         $this->assertSame('shop', $rows->first()['mode']);
     }
+
+    /**
+     * 🚨 FIVE CARD DESIGNS IN ONE GRID IS NOISE, NOT VARIETY. Every row on the
+     * mixed board is described the same way, whatever module it came from — the
+     * board renders one card from this shape.
+     */
+    public function test_every_board_row_carries_the_same_card_shape(): void
+    {
+        $creator = $this->creator(['username' => 'shapeowner']);
+        $this->wish($creator, 12);
+        Shop::factory()->create([
+            'user_id' => $creator->id,
+            'name' => 'Poster print',
+            'price' => 15,
+            'currency' => 'GBP',
+            'approved' => 1,
+        ]);
+
+        $rows = app(DiscoveryService::class)->mixedFeed([], 5);
+        $this->assertNotEmpty($rows);
+
+        foreach ($rows as $row) {
+            $card = $row['card'];
+            foreach (['id', 'mode', 'label', 'unlock', 'cta', 'title', 'price', 'currency', 'username', 'href'] as $key) {
+                $this->assertArrayHasKey($key, $card, "board card is missing {$key}");
+            }
+            // ⚠️ The verb is the module's, the SHAPE is not.
+            $this->assertContains($card['unlock'], ['instant', 'monthly', 'custom']);
+            $this->assertNotEmpty($card['href']);
+        }
+    }
+
+    /** A row the normaliser cannot describe is dropped, never drawn with holes. */
+    public function test_a_row_with_no_public_creator_is_dropped_from_the_board(): void
+    {
+        $hidden = $this->creator(['username' => 'hiddenboard', 'profile_status_lock' => 0]);
+        $this->wish($hidden, 12);
+
+        $rows = app(DiscoveryService::class)->mixedFeed([], 5);
+
+        $this->assertNotContains('hiddenboard', $rows->pluck('card.username')->all());
+    }
 }

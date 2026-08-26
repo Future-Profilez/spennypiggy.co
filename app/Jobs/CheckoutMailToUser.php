@@ -339,29 +339,18 @@ class CheckoutMailToUser implements ShouldQueue
     }
 
     /**
-     * Determine product type based on wish item properties
+     * Every item this job handles IS a wish — the payment items are loaded
+     * through StripePaymentItems->wish and item_id is the wish id.
+     *
+     * 🚨 This used to guess 'membership' from a SUBSTRING of the wish's own
+     * title/description ("VIP membership perks" → 'membership'), and
+     * ProcessWishItemDeliverable then ran Membership::find($wish_id) — an
+     * unrelated creator's tier if the id collided, an exception and a FAILED
+     * deliverable if not. A creator's choice of words must never re-route
+     * their buyer's content into another product's pipeline.
      */
     private function getProductTypeFromWish($wish)
     {
-        if (! $wish) {
-            return 'wish';
-        }
-
-        // Check if wish name or description indicates membership
-        $wishName = strtolower($wish->wishname ?? '');
-        $description = strtolower($wish->description ?? '');
-
-        if (strpos($wishName, 'membership') !== false || strpos($description, 'membership') !== false) {
-            return 'membership';
-        }
-
-        // Check if Stripe product ID indicates membership
-        $productId = strtolower($wish->stripe_product_id ?? '');
-        if (strpos($productId, 'membership') !== false || strpos($productId, 'member') !== false) {
-            return 'membership';
-        }
-
-        // Default to wish
         return 'wish';
     }
 
@@ -593,18 +582,74 @@ class CheckoutMailToUser implements ShouldQueue
                 }
             }
 
-            // Dedup: the Stripe webhook (processWishItemDeliverable) often lands before
-            // the browser returns to the success URL and already created this row. Keyed
-            // on session_id + item_id because a cart session can carry several wish items.
-            if (Deliverable::where('session_id', $this->payment->session_id)
+            // Dedup: keyed on session_id + item_id because a cart session can
+            // carry several wish items. TWO different rows can already exist:
+            //
+            // - the webhook's (processWishItemDeliverable) — complete, with a
+            //   url and its own certificate dispatch. Return it as-is so the
+            //   receipt email still lists the content.
+            // - the redirect handler's (successCheckout) — a BARE tracking row
+            //   (product_type 'wish_one_off', no deliverable_url, status
+            //   'pending'). This used to be skipped here, which left the buyer
+            //   a receipt with an empty content block, a hub purchase stuck
+            //   "incoming" forever, and no certificate — the redirect row
+            //   pre-empted the full one on EVERY normal card cart purchase.
+            //   Complete it instead.
+            $existing = Deliverable::where('session_id', $this->payment->session_id)
                 ->where('item_id', $wish->id)
-                ->exists()) {
-                Log::info('CheckoutMailToUser: Deliverable already exists for this session+item, skipping', [
-                    'session_id' => $this->payment->session_id,
+                ->first();
+
+            if ($existing) {
+                $isBare = empty($existing->deliverable_url) && $existing->status !== 'delivered';
+
+                if (! $isBare) {
+                    Log::info('CheckoutMailToUser: Complete deliverable already exists for this session+item', [
+                        'session_id' => $this->payment->session_id,
+                        'wish_id' => $wish->id,
+                    ]);
+
+                    return $existing;
+                }
+
+                $existingMetadata = json_decode($existing->metadata ?? '[]', true) ?: [];
+                $existing->update([
+                    'product_type' => 'wish', // 'wish_one_off' matches nothing downstream (hub titles/rewards switch on 'wish')
+                    'deliverable_type' => $deliverableType,
+                    'deliverable_url' => $deliverableUrl,
+                    'payment_intent_id' => $existing->payment_intent_id ?: $paymentIntentId,
+                    'customer_email' => $existing->customer_email ?: $customerEmail,
+                    'customer_name' => $existing->customer_name ?: $customerName,
+                    'status' => $status,
+                    'delivered_at' => $deliveredAt,
+                    'metadata' => json_encode(array_merge($existingMetadata, [
+                        'certificate' => 'true',
+                        'wish_id' => $wish->id,
+                        'stripe_product_id' => $wish->stripe_product_id,
+                        'wish_name' => $wish->wishname,
+                        'quantity' => $paymentItem->quantity,
+                        'content_file_name' => $contentFileName,
+                        'content_file_type' => $contentFileType,
+                        'has_content' => ! empty($deliverableUrl),
+                        'payment_item_id' => $paymentItem->id,
+                        'individual_delivery' => true,
+                    ])),
+                ]);
+
+                Log::info('CheckoutMailToUser: Completed the redirect handler\'s bare deliverable row', [
+                    'deliverable_id' => $existing->id,
                     'wish_id' => $wish->id,
                 ]);
 
-                return;
+                try {
+                    ProcessWishItemDeliverable::dispatch($existing)->onConnection('sqs_certificates');
+                } catch (\Exception $e) {
+                    Log::error('CheckoutMailToUser: Failed to dispatch certificate job for completed row', [
+                        'deliverable_id' => $existing->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return $existing;
             }
 
             $deliverable = Deliverable::create([
@@ -901,15 +946,19 @@ class CheckoutMailToUser implements ShouldQueue
             ]);
         }
 
-        // Send email if user notifications are enabled OR if no user (guest checkout) but has guest_email
-        $shouldSendEmail = false;
+        // The buyer's receipt is the only thing their notification_send switch
+        // controls. It used to gate this whole method, so a buyer with
+        // notifications off cost the payment its Deliverable rows and cost the
+        // CREATOR their sale email — one person's mail preference silently
+        // deleting another person's record of being paid.
+        $shouldSendBuyerEmail = false;
 
         if (isset($this->payment->user) && $this->payment->user->notification_send == 1) {
             Log::info('CheckoutMailToUser: Sending email - user notifications enabled');
-            $shouldSendEmail = true;
+            $shouldSendBuyerEmail = true;
         } elseif (empty($this->payment->user) && ! empty($this->payment->guest_email)) {
             Log::info('CheckoutMailToUser: Sending email - guest checkout with email');
-            $shouldSendEmail = true;
+            $shouldSendBuyerEmail = true;
         } elseif (empty($this->payment->user)) {
             Log::warning('CheckoutMailToUser: Guest checkout but no guest email provided', [
                 'payment_id' => $this->payment->id,
@@ -917,33 +966,31 @@ class CheckoutMailToUser implements ShouldQueue
             ]);
         }
 
-        if ($shouldSendEmail) {
-            Log::info('CheckoutMailToUser: Sending consolidated email with all wish items', [
-                'payment_id' => $this->payment->id,
-                'currency' => $this->curr,
-            ]);
+        // Deliverables are the record of the purchase and are created for every
+        // payment, whatever anyone's email preferences say.
+        $deliverables = $this->createConsolidatedDeliverables();
 
-            // Create individual deliverables first (for tracking)
-            $deliverables = $this->createConsolidatedDeliverables();
-
+        if ($shouldSendBuyerEmail) {
             // Send single consolidated email with all wish items to USER (Gifter)
             $this->sendConsolidatedEmail($deliverables);
-
-            // Send email to CREATOR (Owner)
-            $this->sendCreatorEmail($deliverables);
-
-            Log::info('CheckoutMailToUser: Consolidated email sent', [
-                'payment_id' => $this->payment->id,
-                'deliverables_count' => count($deliverables),
-            ]);
         } else {
-            Log::info('CheckoutMailToUser: Email not sent', [
+            Log::info('CheckoutMailToUser: Buyer email not sent (preference/no address)', [
                 'payment_id' => $this->payment->id,
                 'has_user' => isset($this->payment->user) ? 'yes' : 'no',
                 'user_notification_send' => $this->payment->user->notification_send ?? 'null',
                 'guest_email' => $this->payment->guest_email ?? 'null',
             ]);
         }
+
+        // Send email to CREATOR (Owner) — their sale notice never depends on the
+        // buyer's settings.
+        $this->sendCreatorEmail($deliverables);
+
+        Log::info('CheckoutMailToUser: processed', [
+            'payment_id' => $this->payment->id,
+            'deliverables_count' => count($deliverables),
+            'buyer_email_sent' => $shouldSendBuyerEmail,
+        ]);
     }
 
     /**

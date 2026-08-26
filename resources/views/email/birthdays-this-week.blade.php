@@ -17,15 +17,21 @@
     <td align="center" style="padding:32px 28px 8px 28px;">
         <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-            {{-- Emoji badge --}}
+            {{-- ⚠️ A WEEK CHIP, NOT A FLOATING EMOJI — same change as the reminder.
+                 A 34px emoji alone in a 68px circle was the largest element above the
+                 fold and said nothing; the week these birthdays fall in is the fact
+                 the reader needs. Day and month only, never a year. --}}
             <tr>
-                <td align="center" style="padding:0 0 18px 0;">
+                <td align="center" style="padding:0 0 16px 0;">
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
                             <td align="center" valign="middle" bgcolor="#FFE6F2"
-                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
-                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
-                                🎂
+                                style="background-color:#FFE6F2;border:2px solid #1A1A1A;border-radius:999px;
+                                       -webkit-border-radius:999px;padding:8px 16px;
+                                       font-family:'Outfit',Arial,sans-serif;font-size:13px;font-weight:800;
+                                       color:#1A1A1A;letter-spacing:0.06em;text-transform:uppercase;
+                                       line-height:18px;white-space:nowrap;">
+                                🎂@if (!empty($weekLabel)) &nbsp;{{ $weekLabel }}@endif
                             </td>
                         </tr>
                     </table>
@@ -65,15 +71,15 @@
                     </div>
 
                     <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
-                           style="background-color:#FAF7F9;border-radius:14px;">
+                           style="background-color:#FFFFFF;border:2px solid #1A1A1A;border-radius:14px;">
                         @foreach ($creators as $creator)
                         <tr>
-                            <td style="padding:14px;{{ $loop->last ? '' : 'border-bottom:1px solid #F0E7ED;' }}">
+                            <td style="padding:14px;{{ $loop->last ? '' : 'border-bottom:1px solid #DDD8DB;' }}">
                                 <table cellspacing="0" cellpadding="0" border="0" role="presentation" width="100%">
                                     <tr>
                                         <td width="52" valign="top" style="width:52px;">
-                                            <img src="{{ $creator['avatar_url'] }}" width="48" height="48" alt=""
-                                                 style="width:48px;height:48px;border-radius:50%;
+                                            <img src="{{ $creator['avatar_url'] }}" width="52" height="52" alt=""
+                                                 style="width:52px;height:52px;border-radius:50%;
                                                         -webkit-border-radius:50%;display:block;border:0;
                                                         object-fit:cover;background-color:#FFE6F2;">
                                         </td>
@@ -95,11 +101,22 @@
                                             </div>
                                             @endif
 
-                                            {{-- 🚨 Day and month. Never a year. --}}
+                                            {{-- 🚨 Day and month. Never a year.
+                                                 ⚠️ A CHIP, NOT A LOOSE PINK LINE. In a stack of
+                                                 near-identical cards the date is the one thing that
+                                                 separates them, and as body text it read as a caption
+                                                 nobody scans. Black on the pale pink ground, because
+                                                 pink type on a pink tint is under AA. --}}
                                             @if (!empty($creator['birthday_label']))
-                                            <div style="font-family:'Outfit',Arial,sans-serif;font-size:12px;
-                                                        font-weight:700;color:#FF007F;line-height:18px;padding-top:6px;">
-                                                {{ $creator['birthday_label'] }}
+                                            <div style="padding-top:8px;">
+                                                <span style="display:inline-block;background-color:#FFE6F2;
+                                                             border:2px solid #1A1A1A;border-radius:999px;
+                                                             -webkit-border-radius:999px;padding:3px 10px;
+                                                             font-family:'Outfit',Arial,sans-serif;font-size:11px;
+                                                             font-weight:800;color:#1A1A1A;letter-spacing:0.05em;
+                                                             text-transform:uppercase;line-height:16px;">
+                                                    {{ $creator['birthday_label'] }}
+                                                </span>
                                             </div>
                                             @endif
 
@@ -129,11 +146,11 @@
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
                             <td align="center" bgcolor="#FF007F"
-                                style="background-color:#FF007F;border-radius:999px;
+                                style="background-color:#FF007F;border:2px solid #1A1A1A;border-radius:999px;
                                        -webkit-border-radius:999px;">
                                 <a href="{{ $collectionUrl }}" target="_blank"
                                    style="display:inline-block;padding:14px 34px;font-family:'Outfit',Arial,sans-serif;
-                                          font-weight:800;font-size:15px;color:#FFFFFF;text-decoration:none;
+                                          font-weight:800;font-size:15px;color:#1A1A1A;text-decoration:none;
                                           border-radius:999px;-webkit-border-radius:999px;">
                                     Discover more birthdays
                                 </a>

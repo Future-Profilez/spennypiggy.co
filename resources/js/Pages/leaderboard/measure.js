@@ -14,12 +14,17 @@
 /**
  * The smallest leader figure worth drawing a scale against.
  *
- * ⚠️ Not `> 0`. With a leader on one supporter every bar is either full or
+ * ⚠️ Not `> 0`. With a leader on ONE supporter every bar is either full or
  * empty, which carries no information and renders the list as a column of blank
- * tracks that read like a loading skeleton — verified on the dev board, where
- * the whole top ten sits at 0 or 1.
+ * tracks that read like a loading skeleton.
+ *
+ * ⚠️ THREE, not four. This was set to 4 while `supporters` still meant FOLLOWERS,
+ * which are plentiful; the board now ranks on PAYING supporters, which are not —
+ * the live leader sits at 3, so a floor of 4 hid the measure on exactly the
+ * boards it exists for. Three is where the scale first says something: 100 / 67 /
+ * 33 / 0 rather than full-or-empty.
  */
-export const MEASURE_FLOOR = 4;
+export const MEASURE_FLOOR = 3;
 
 /**
  * A non-zero value never renders as nothing: a 1-in-4000 bar is invisible, and

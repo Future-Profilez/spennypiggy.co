@@ -1,4 +1,5 @@
 import { useState } from "react";
+import HelpLink from "@/Components/Help/HelpLink";
 
 /**
  * Creator avatar with a real fallback. imageSrc() turns a bare Uploadcare uuid
@@ -192,6 +193,17 @@ export default function SummaryReceipt({
                     </p>
                 )}
 
+                {/* "Why is the total more than the price?" is the last question a
+                    buyer has before they abandon. Answering it here costs one tap
+                    and never leaves the checkout. */}
+                <div className="flex justify-end">
+                    <HelpLink
+                        slug="why-is-the-total-more-than-the-price"
+                        categorySlug="payments-and-checkout"
+                        label="What's in this total?"
+                    />
+                </div>
+
                 {nextStep && (
  <p className="flex items-start gap-1.5 text-[12px] font-bold text-black/70 mt-3 leading-snug">
                         <span aria-hidden="true">→</span>
@@ -343,6 +355,16 @@ export function OrderContextCard({
                     </ul>
                 </div>
             )}
+
+            {/* A supporter buying content from a creator they just found asks this
+                before they ask anything about money. */}
+            <div className="mt-3 border-t-2 border-dashed border-black/15 pt-2">
+                <HelpLink
+                    slug="what-am-i-actually-buying"
+                    categorySlug="getting-started-supporters"
+                    label="What am I buying?"
+                />
+            </div>
         </div>
     );
 }

@@ -152,7 +152,10 @@ export default function InstallAppCard({ promo, onAction }) {
         <article className={CARD_FRAME} style={{ backgroundColor: g.bg }}>
             {/* Bled off the bottom edge so it reads as a device standing on the card,
                 not a picture pasted into it. */}
-            <div className="pointer-events-none absolute top-7 right-5 hidden w-[150px] sm:block md:right-8 md:w-[176px]">
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-7 right-5 hidden w-[150px] sm:block md:right-8 md:w-[176px]"
+            >
                 <LockScreen accent={accent} />
             </div>
 

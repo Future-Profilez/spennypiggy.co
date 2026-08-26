@@ -156,7 +156,10 @@ export default function TipInner({classes, idd}) {
         return false;
     }
     // ⚠️ The threshold is never printed — see constants/riskMessages.js.
-    if(auth && !auth.user && usdToGbp(data.amount) > GUEST_VALUE_THRESHOLD_GBP){
+    // ⚠️ `data.currency` must be passed. Without it `usdToGbp` falls back to the
+    // VIEWER's display currency (`global_currency`), which is not the currency
+    // the tip is charged in — the guest gate was then converted at the wrong rate.
+    if(auth && !auth.user && usdToGbp(data.amount, data.currency) > GUEST_VALUE_THRESHOLD_GBP){
         errorAlert(riskMessageBody("GUEST_ACCOUNT_REQUIRED_VALUE"));
         redirectToLoginWithMessage("GUEST_ACCOUNT_REQUIRED_VALUE");
         return false;

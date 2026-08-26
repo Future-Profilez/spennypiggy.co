@@ -8,6 +8,7 @@ import LedgerHistoryTable from '@/Components/Financial/LedgerHistoryTable';
 import StatementDownloadCard from './StatementDownloadCard';
 import EnableBankPaymentsCard from '@/Components/EnableBankPaymentsCard';
 import RefreshRecordsButton from '@/Components/RefreshRecordsButton';
+import HelpLink from '@/Components/Help/HelpLink';
 import { WalletIcon, TrendingUpIcon, TrendingDownIcon, DownloadIcon, PlusIcon, TriangleAlertIcon, CircleCheckIcon, UsersIcon, ChevronRightIcon, ChartPieIcon, ShieldCheckIcon } from '@animateicons/react/lucide';
 import { Calculator, FileText, Building2, HelpCircle, Pencil, Clock, Landmark, Receipt, BadgeCheck } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -337,6 +338,22 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                 </div>
                             </div>
                             <div className="text-[13px] text-black/60 font-medium mt-2">{reserve_reason || 'Reserves currently held on your earnings.'}</div>
+                            {/* The most-asked money question, answered here rather than in
+                                a ticket. Sibling of the summary tiles, never inside one —
+                                those tiles are <button>s and a button inside a button is
+                                invalid DOM. */}
+                            <div className="flex flex-wrap items-center gap-x-4">
+                                <HelpLink
+                                    slug="why-is-some-of-my-money-held"
+                                    categorySlug="money-and-payouts"
+                                    label="Why is this held?"
+                                />
+                                <HelpLink
+                                    slug="is-the-reserve-permanent"
+                                    categorySlug="money-and-payouts"
+                                    label="Do I get it back?"
+                                />
+                            </div>
                         </div>
                         <button
                             type="button"
@@ -908,6 +925,13 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 Excludes reserves, orders awaiting delivery, disputes and refunds.
                                             </div>
                                         )}
+                                        {/* "Why is this less than my sales" — asked in both
+                                            the breakdown and the no-breakdown state. */}
+                                        <HelpLink
+                                            slug="what-fees-are-deducted"
+                                            categorySlug="money-and-payouts"
+                                            label="What was deducted?"
+                                        />
                                         {summary.carry_over_amount > 0 ? (
                                             <div className="text-[13px] text-black/60 font-medium mt-3">Includes {formatCurrency(summary.carry_over_amount, displayCurrency)} carried over from the previous tax year.</div>
                                         ) : null}
@@ -921,6 +945,11 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_y
                                                 Earning window: {cycleWindowLabel || 'the last 7 days'}
                                                 {payout_cycle?.timezone ? ` · ${payout_cycle.timezone}` : ''}
                                             </div>
+                                            <HelpLink
+                                                slug="when-do-i-get-paid"
+                                                categorySlug="money-and-payouts"
+                                                label="When do I get paid?"
+                                            />
                                         </div>
 
                                         <button

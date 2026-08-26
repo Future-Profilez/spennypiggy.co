@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { trackClientEvent } from '@/lib/analytics';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import TopBar from './components/TopBar';
@@ -13,6 +13,7 @@ import TopSupporters from '../leaderboard/TopSupporters';
 import DiscoverHero from './components/DiscoverHero';
 import SpotlightRotator from './components/SpotlightRotator';
 import RecentlyViewed from './components/RecentlyViewed';
+import SectionShelf from './components/SectionShelf';
 import HowItWorks from './components/HowItWorks';
 import CollectionRow from '@/Components/discovery/CollectionRow';
 
@@ -67,6 +68,7 @@ export default function Discover(props) {
         followedCreators = [],
         supportedCreators = [],
         collections = [],
+        birthdays = null,
     } = props;
 
     const [searchQuery, setSearchQuery] = useState(initialFilters?.search || '');
@@ -407,18 +409,12 @@ export default function Discover(props) {
                                     and no rail on this page used to answer it. */}
                                 {budgetItems.length > 0 && (
                                     <section className="mb-10">
-                                        <div className="mb-5">
-                                            <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.18em] text-[#FF007F]">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" />
-                                                Cheapest way in
-                                            </span>
-                                            <h2 className="mt-1 font-anton text-xl uppercase tracking-wide text-black sm:text-2xl md:text-3xl">
-                                                Under £10 to unlock
-                                            </h2>
-                                            <p className="mt-1.5 max-w-xl text-[13px] font-medium leading-snug text-black/60">
-                                                Buy once and it unlocks straight away.
-                                            </p>
-                                        </div>
+                                        <SectionShelf
+                                            kicker="Cheapest way in"
+                                            title="Under £10 to unlock"
+                                            subtitle="Buy once and it unlocks straight away."
+                                            count={budgetItems.length}
+                                        />
                                         <ResultsGrid
                                             global_currency={global_currency}
                                             auth={auth}
@@ -438,20 +434,12 @@ export default function Discover(props) {
                                     and a grid of accounts. */}
                                 {newItems.length > 0 && (
                                     <section className="mb-10">
-                                        <div className="mb-5 flex items-end justify-between gap-4">
-                                            <div>
-                                                <span className="inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.18em] text-[#FF007F]">
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF007F]" />
-                                                    Just added
-                                                </span>
-                                                <h2 className="mt-1 font-anton text-xl uppercase tracking-wide text-black sm:text-2xl md:text-3xl">
-                                                    New things to unlock
-                                                </h2>
-                                                <p className="mt-1.5 max-w-xl text-[13px] font-medium leading-snug text-black/60">
-                                                    Fresh from every creator — content, monthly streams, and work made to order.
-                                                </p>
-                                            </div>
-                                        </div>
+                                        <SectionShelf
+                                            kicker="Just added"
+                                            title="New things to unlock"
+                                            subtitle="Fresh from every creator — content, monthly streams, and work made to order."
+                                            count={Math.min(newItems.length, 10)}
+                                        />
                                         <ResultsGrid
                                             global_currency={global_currency}
                                             auth={auth}
@@ -495,6 +483,96 @@ export default function Discover(props) {
                                 {landingCollections.map((collection) => (
                                     <CollectionRow key={collection.key} collection={collection} className="mb-10" />
                                 ))}
+
+                                {/* 🚨 THE ONLY ROUTE INTO BIRTHDAYS THIS WEEK. The
+                                    collection page has worked since Phase 4 and nothing
+                                    linked to it — the CTA in the Monday e-mail was the
+                                    only way in, and that e-mail ships behind a flag.
+
+                                    ⚠️ Rendered only when the collection is READY. The
+                                    page greys itself below its minimum, and a link into
+                                    a greyed page is the same dead end the e-mail CTA is
+                                    protected from.
+
+                                    ⚠️ IT SHOWS THE FACES, NOT A PARTY GRAPHIC. The first
+                                    version was a mint bar with a headline, which read as
+                                    a notice rather than an occasion. Bunting, confetti or
+                                    a cake would have been decoration that says nothing and
+                                    dates badly; the creators actually celebrating are both
+                                    the festive element and the reason to tap. Names are
+                                    deliberately not shown — faces and a count are enough,
+                                    and the page itself introduces them.
+
+                                    ⚠️ Day and month live on the collection page, never a
+                                    year, and this row carries no date at all. */}
+                                {birthdays?.ready && (
+                                    <Link
+                                        href="/discover/birthdays"
+                                        className="group mb-10 block overflow-hidden rounded-box border-2 border-black bg-white transition-[filter] duration-200 hover:brightness-95 motion-reduce:transition-none"
+                                    >
+                                        {/* Bunting, drawn as one repeating gradient rather
+                                            than a row of nodes: it is a texture on an edge,
+                                            not content, so it costs one element and is
+                                            hidden from assistive tech. On white it is the
+                                            only colour in the banner, which is what makes
+                                            the occasion read without decoration. */}
+                                        <span
+                                            aria-hidden="true"
+                                            className="block h-3.5 w-full border-b-2 border-black"
+                                            style={{
+                                                background:
+                                                    'repeating-linear-gradient(90deg, #FF007F 0 16px, #E6EA7B 16px 32px, #A2E4B8 32px 48px)',
+                                            }}
+                                        />
+
+                                        <span className="flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 md:px-8 md:py-7">
+                                            <span className="min-w-0">
+                                                <span className="block font-poppins text-[11px] font-semibold uppercase tracking-[0.14em] text-black/50">
+                                                    This week on Spenny Piggy
+                                                </span>
+
+                                                <span className="mt-2 block font-gulfs text-[22px] uppercase leading-[1.1] tracking-tight text-black md:text-[26px]">
+                                                    Birthdays this week
+                                                </span>
+
+                                                <span className="mt-2 block max-w-[46ch] font-poppins text-[14px] leading-[1.5] text-black/70">
+                                                    {birthdays.count === 1
+                                                        ? 'One creator is celebrating. See what they have published.'
+                                                        : `${birthdays.count} creators are celebrating. See what they have published.`}
+                                                </span>
+                                            </span>
+
+                                            <span className="flex shrink-0 items-center gap-4">
+                                                {/* Overlapping faces. `flex-row-reverse` with a
+                                                    negative margin puts the FIRST avatar on top
+                                                    without a z-index per item. */}
+                                                {birthdays.avatars?.length > 0 && (
+                                                    <span className="flex flex-row-reverse">
+                                                        {[...birthdays.avatars]
+                                                            .reverse()
+                                                            .map((src, i) => (
+                                                                <img
+                                                                    key={src + i}
+                                                                    src={src}
+                                                                    alt=""
+                                                                    loading="lazy"
+                                                                    decoding="async"
+                                                                    className="-ml-4 h-12 w-12 rounded-full border-2 border-black bg-white object-cover first:ml-0 md:h-14 md:w-14"
+                                                                />
+                                                            ))}
+                                                    </span>
+                                                )}
+
+                                                {/* Black on pink — white on #FF007F is 3.78:1
+                                                    and fails AA at this size. */}
+                                                <span className="inline-flex shrink-0 items-center gap-2 rounded-box-sm border-2 border-black bg-[#FF007F] px-4 py-3 font-poppins text-[13px] font-semibold uppercase tracking-[0.08em] text-black">
+                                                    See them
+                                                    <span aria-hidden="true">→</span>
+                                                </span>
+                                            </span>
+                                        </span>
+                                    </Link>
+                                )}
 
                                 {!auth?.user && <HowItWorks />}
                                 <TopSupporters grid={true} />

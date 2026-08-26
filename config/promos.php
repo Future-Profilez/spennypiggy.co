@@ -152,6 +152,30 @@ return [
             'route' => 'leaderboard',
         ],
 
+        /*
+         * 🚨 THE FEATURE WAS UNREACHABLE WITHOUT THIS. Birthday Discovery is built
+         * end to end, but the opt-in lives inside Creator Studio on the account
+         * page and nothing pointed at it — so a creator had to wander into their
+         * own settings to discover a feature exists. No opt-in means no place in
+         * the collection and no place in the Monday e-mail, which means the whole
+         * feature has nothing to show.
+         *
+         * ⚠️ Eligibility is "creator who has NOT opted in" — see
+         * PromoBannerService::isEligible(). It disappears the moment they act.
+         */
+        'birthday_discovery' => [
+            'priority' => 7,
+            'layout' => 'birthday',
+            'audience' => 'creator',
+            'ground' => 'cream',
+            'accent' => 'yellow',
+            'eyebrow' => 'One field',
+            'headline' => 'Add your birthday',
+            'body' => 'Your supporters get reminded before the day.',
+            'cta' => 'Add it now',
+            'route' => 'account',
+        ],
+
         'link_in_bio' => [
             'priority' => 5,
             'layout' => 'bio',

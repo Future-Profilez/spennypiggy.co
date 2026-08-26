@@ -72,6 +72,20 @@ export const GROUNDS = {
     violet: { bg: "#8C52FF", ink: "#000", body: "#000", wash: "rgba(0,0,0,0.16)", chipBg: "#000", btnBg: "#000", btnInk: "#FFF", segment: "#8C52FF" },
     black: { bg: "#000000", ink: "#FFF", body: "rgba(255,255,255,0.80)", wash: "rgba(255,255,255,0.16)", chipBg: null, btnBg: "#FFF", btnInk: "#000", segment: "#000000" },
     "white-pink": { bg: "#FFFFFF", ink: "#000", body: "rgba(0,0,0,0.70)", wash: "rgba(0,0,0,0.12)", chipBg: "#000", btnBg: "#000", btnInk: "#FFF", segment: "#FF007F" },
+    // The app's own warm cream (the bio page and Dashboard ground), added when the
+    // birthday promo asked for it by name. ⚠️ `groundOf()` falls back to PINK for an
+    // unknown key, so a config naming a ground that does not exist here does not fail —
+    // it silently renders the wrong card.
+    cream: {
+        bg: "#FFF6EC",
+        ink: "#000000",
+        body: "rgba(0,0,0,0.70)",
+        wash: "rgba(0,0,0,0.12)",
+        chipBg: "#000000",
+        btnBg: "#000000",
+        btnInk: "#FFFFFF",
+        segment: "#FFF6EC",
+    },
     "white-mint": { bg: "#FFFFFF", ink: "#000", body: "rgba(0,0,0,0.70)", wash: "rgba(0,0,0,0.12)", chipBg: "#000", btnBg: "#000", btnInk: "#FFF", segment: "#05EFB8" },
 };
 

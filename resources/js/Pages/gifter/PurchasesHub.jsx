@@ -1,3 +1,4 @@
+import HelpLink from "@/Components/Help/HelpLink";
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { usePage } from "@inertiajs/react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -986,6 +987,23 @@ function Hero({ embedded, media, summary, money, reduce, status, overdue, onOver
                     )}
 
                     {status && <SupporterStatus status={status} reduce={reduce} />}
+
+                    {/* The two things a supporter comes to this page confused
+                        about. Dark tone — this hero is a near-black band. */}
+                    <div className="mt-4 flex flex-wrap items-center gap-x-5">
+                        <HelpLink
+                            slug="i-cannot-find-my-purchase"
+                            categorySlug="my-purchases"
+                            label="Can't find a purchase?"
+                            tone="dark"
+                        />
+                        <HelpLink
+                            slug="refunds-and-cancellations"
+                            categorySlug="my-purchases"
+                            label="Refunds & cancelling"
+                            tone="dark"
+                        />
+                    </div>
                 </div>
 
                 {/* Decorative — desktop only */}
@@ -1679,6 +1697,11 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
     const rewardLabel = item.reward_type === 'file' ? 'Download your reward'
         : item.reward_type === 'link' ? 'Access exclusive content' : 'View your reward';
 
+    // A recurring product delivers this cycle's content, not a one-off unlock —
+    // the server sends the same three reward keys for both, so only the wording
+    // distinguishes them.
+    const rewardHeading = kind === 'subscription' ? 'Your member content' : 'What you unlocked';
+
     // ---- Status badge ----
     const statusBadge = (() => {
         if (kind === 'receipt') return <StatusPill tone="#10B981" label="Completed" />;
@@ -1739,7 +1762,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                 )}
             </div>
 
-            {/* ── Reward section (receipts + unlocked) ── */}
+            {/* ── Reward section (receipts + unlocked + active subscriptions) ── */}
             {hasReward && (
                 <div className="border-t mx-4 mb-4 pt-3.5" style={{ borderColor: `${ACCENT}22` }}>
                     <div className="flex items-center gap-1.5 mb-2.5">
@@ -1747,7 +1770,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                             style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})` }}>
                             <Gift size={11} strokeWidth={2.5} className="text-white" />
                         </span>
- <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>What you unlocked</span>
+ <span className="text-[12px] font-bold uppercase tracking-wide" style={{ color: ACCENT }}>{rewardHeading}</span>
                     </div>
                     {item.reward_text && (
  <p className="text-xs text-zinc-700 leading-relaxed bg-white/70 rounded-box-sm px-3 py-2.5 border border-white/80 mb-2.5">{item.reward_text}</p>
@@ -1783,6 +1806,16 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                         </div>
                     )}
                     <div className="flex gap-2 flex-wrap">
+                        {/* ⚠️ Review BEFORE accept. Accepting releases escrow,
+                            and /task/order/{uuid} is the only page that renders
+                            the creator's proof — without this link the hub asked
+                            the supporter to approve work they could not see. */}
+                        {item.task_uuid && (
+                            <a href={`/task/order/${item.task_uuid}`}
+ className="flex-1 flex items-center justify-center gap-1.5 min-h-[38px] rounded-box-sm border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
+                                <ArrowUpRight size={12} strokeWidth={2.4} /> View delivery
+                            </a>
+                        )}
                         {item.can_accept && (
                             <button onClick={() => onAccept(item)} disabled={busy === item.id}
  className="flex-1 min-h-[38px] rounded-box-sm text-xs font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
@@ -1790,7 +1823,7 @@ function TransactionRow({ item, money, isNew, onAccept, onReport, busy, onCancel
                                 {busy === item.id ? 'Accepting…' : 'Accept delivery'}
                             </button>
                         )}
-                        {item.open_link && (
+                        {!item.task_uuid && item.open_link && (
                             <a href={item.open_link}
  className="flex-1 flex items-center justify-center gap-1.5 min-h-[38px] rounded-box-sm border border-zinc-200/70 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition-all">
                                 <ArrowUpRight size={12} strokeWidth={2.4} /> View creator

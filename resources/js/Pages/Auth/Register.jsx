@@ -125,6 +125,14 @@ export default function Register() {
         creator_category: [],
         pride_badges: [],
         promo: "",
+        // 🚨 OPTIONAL, and deliberately NOT part of `canSubmitRegistration`. A creator
+        // does not owe us a social account to open one, and this field exists because
+        // creators go quiet after signing up — requiring it would cost us exactly the
+        // people it is meant to keep reachable. Instagram is the default because it is
+        // the most-used of the three on the live platform, not because it is preferred.
+        // ⚠️ The value is the DATABASE COLUMN: X's column is still `twitter`.
+        social_platform: "instagram",
+        social_handle: "",
         country: "",
         country_code: "",
         cf_turnstile_response: "",
@@ -681,6 +689,18 @@ export default function Register() {
                         step: "credentials",
                         fields: ["email", "password", "country"],
                     },
+                    // ⚠️ The creator screen owns these. Without the entry, a refused
+                    // social handle left the person on the review screen with a toast
+                    // and no field to correct — the dead end this map exists to close.
+                    {
+                        step: "profile",
+                        fields: [
+                            "social_handle",
+                            "social_platform",
+                            "creator_category",
+                            "pride_badges",
+                        ],
+                    },
                 ].find((s) => s.fields.some((f) => err[f]));
 
                 if (owner) {
@@ -891,6 +911,15 @@ export default function Register() {
                                 onReferralCheck={checkReferral}
                                 referralMessage={referralMessage}
                                 referralType={referralType}
+                                socialPlatform={data.social_platform}
+                                socialHandle={data.social_handle}
+                                onSocialPlatformChange={(key) =>
+                                    setData("social_platform", key)
+                                }
+                                onSocialHandleChange={(value) =>
+                                    setData("social_handle", value)
+                                }
+                                socialError={errors.social_handle}
                                 onSubmit={() => setStepKey("confirm")}
                             />
                         )}

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import ListingRow from "@/Components/Catalogue/ListingRow";
+import HelpLink from "@/Components/Help/HelpLink";
 
 /**
  * "My Listings" — everything a creator sells, in one place.
@@ -228,6 +229,27 @@ export default function CatalogueIndex() {
                                     </>
                                 )}
                             </p>
+
+                            {/* The three questions a held or rejected listing
+                                produces, answered on the page that shows the
+                                held listing rather than in a ticket. */}
+                            <div className="mt-1 flex flex-wrap items-center gap-x-4">
+                                <HelpLink
+                                    slug="why-is-my-listing-under-review"
+                                    categorySlug="selling"
+                                    label="Why is a listing in review?"
+                                />
+                                <HelpLink
+                                    slug="price-limits"
+                                    categorySlug="selling"
+                                    label="Price limits"
+                                />
+                                <HelpLink
+                                    slug="words-you-cannot-use"
+                                    categorySlug="content-rules"
+                                    label="Words you can't use"
+                                />
+                            </div>
                         </div>
 
                         {/*

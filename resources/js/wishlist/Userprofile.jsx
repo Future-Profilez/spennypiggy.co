@@ -186,17 +186,11 @@ export default function Userprofile({
     return (
         <div className="userprofilesec relative">
             <div className="userPr relative -mx-5 sm:mx-0">
-                {/* Identity card — the profile's left rail. The page-level cover sits directly
- above it at every breakpoint, and the avatar rises out of this card onto it,
- so no`overflow-hidden` here (it would clip the avatar). */}
                 <div className="relative z-10 rounded-none sm:rounded-box bg-white bg-gradient-to-b from-white via-white to-[#A2E4B8]/25 sm:bg-white sm:bg-none p-5 pb-7 sm:p-6 border-0 sm:border-2 sm:border-black">
                     <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-3 text-center md:max-w-none">
-                        {/* Avatar + name */}
                         <div
                             className={`flex flex-col items-center gap-3 ${showBio ? "" : "md:hidden"}`}
                         >
-                            {/* Avatar + name live on the cover on desktop; on phones the same
- component renders here at the top of the card instead. */}
                             <div className="-mt-[68px] sm:-mt-[76px] w-full md:hidden">
                                 <Suspense fallback={null}>
                                     <CoverIdentity

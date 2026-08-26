@@ -188,3 +188,58 @@ export const canSubmitRegistration = ({
         consents.terms && roleConsent && (!captchaRequired || captchaVerified)
     );
 };
+
+/**
+ * The three platforms a creator may give a handle for at signup.
+ *
+ * 🚨 MIRRORS `SocialLinks::ACCEPTED_PLATFORMS` (PHP), narrowed from thirteen to
+ * three on 11 Aug 2026 by client decision. A key here that the server refuses is
+ * dropped silently — the same class of fault as a `route()` name missing from the
+ * generated ziggy snapshot — so the two lists are asserted equal by a test.
+ *
+ * ⚠️ `key` is the DATABASE COLUMN, not the brand. X's column is still `twitter`;
+ * renaming it here writes the handle nowhere.
+ */
+export const SOCIAL_PLATFORMS = [
+    { key: "instagram", label: "Instagram", placeholder: "yourname" },
+    { key: "twitter", label: "X", placeholder: "yourname" },
+    { key: "tiktok", label: "TikTok", placeholder: "yourname" },
+];
+
+/**
+ * Can the creator leave the profile step?
+ *
+ * 🚨 THE SOCIAL HANDLE IS REQUIRED FOR A CREATOR (client decision, 25 Aug 2026).
+ * It is not new friction, it is friction moved earlier: a creator already cannot go
+ * live without an approved handle — `Profile/CreatorVerification.jsx` locks "Submit
+ * for review" until socials, photo and bio are approved — so answering it here means
+ * the social onboarding step is done before they reach the dashboard, and Creator
+ * Studio prefills from that row instead of asking twice.
+ *
+ * ⚠️ THIS GATES THE STEP, NOT THE FINAL SUBMIT. `canSubmitRegistration` is the
+ * CONSENT gate and must stay free of it — bundling a product requirement into the
+ * consent check is how an optional consent quietly becomes conditional. The server's
+ * `Rule::requiredIf` is the real enforcement; this is what makes the button honest.
+ *
+ * Named and exported for the same reason `canSubmitRegistration` is: as an inline
+ * expression it cannot be tested, and it is one edit away from being wrong.
+ */
+export const creatorProfileStepComplete = ({
+    categories = [],
+    socialHandle = "",
+}) => categories.length > 0 && String(socialHandle).trim() !== "";
+
+/**
+ * What the step's button should say — the missing thing, in the order the screen
+ * asks for it. A disabled button with no explanation is the pattern this whole
+ * signup rebuild exists to remove.
+ */
+export const creatorProfileStepAction = ({
+    categories = [],
+    socialHandle = "",
+}) => {
+    if (categories.length < 1) return "Pick at least one badge";
+    if (String(socialHandle).trim() === "") return "Add a social account";
+
+    return "Continue";
+};

@@ -7,7 +7,9 @@ use App\Jobs\CheckMediaModeration;
 use App\Jobs\ProcessWishItemDeliverable;
 use App\Mail\TaskDisputeEscalatedMail;
 use App\Mail\TaskProofAcceptedMail;
+use App\Mail\TaskProofAcceptedSupporterMail;
 use App\Mail\TaskProofRejectedMail;
+use App\Mail\TaskProofRejectedSupporterMail;
 use App\Mail\TaskProofSubmittedMail;
 use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskPurchasedSupporterMail;
@@ -1285,6 +1287,25 @@ class TaskController extends Controller
             } catch (\Exception $e) {
             }
 
+            // 🚨 The supporter got NOTHING here. Accepting is the moment escrow
+            // is released and the order closes — the one step in this flow with
+            // an irreversible money consequence for the person clicking — and
+            // the only party told about it was the creator.
+            // `TaskProofAcceptedSupporterMail` and its view have existed the
+            // whole time with zero dispatch sites.
+            try {
+                if ($supporter && $supporter->notification_send == 1) {
+                    Mail::to($supporter->email)->send(new TaskProofAcceptedSupporterMail($purchase, $task, $creator));
+                    Helpers::sendNotification(
+                        'Delivery accepted ✅',
+                        'You accepted the delivery for: '.$task->title,
+                        $supporter->email
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to notify supporter about acceptance: '.$e->getMessage());
+            }
+
             // Delayed transfer for PAID_TASK - Direct Charge handling
             if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK') {
                 $purchase->status = 'paid_out';
@@ -1393,6 +1414,24 @@ class TaskController extends Controller
                     Helpers::sendNotification('Proof Rejected ❌', "Proof rejected for '{$task->title}'. Please review.", $creator->email);
                 } catch (\Exception $e) {
                     Log::error('Failed to notify creator about rejection: '.$e->getMessage());
+                }
+
+                // The supporter needs to know what happens NEXT — their money
+                // is still held, the creator has been asked to redo the work,
+                // and a second rejection escalates to admin. Without this the
+                // rejection screen was the end of the conversation.
+                // `TaskProofRejectedSupporterMail` shipped with zero callers.
+                try {
+                    if ($supporter->notification_send == 1) {
+                        Mail::to($supporter->email)->send(new TaskProofRejectedSupporterMail($purchase, $task));
+                    }
+                    Helpers::sendNotification(
+                        'Delivery sent back',
+                        "We asked {$creator->name} to redo: {$task->title}",
+                        $supporter->email
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify supporter about rejection: '.$e->getMessage());
                 }
             }
         }

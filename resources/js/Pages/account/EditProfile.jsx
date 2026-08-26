@@ -32,10 +32,8 @@ export default function EditProfile({
     classes,
     updateProfileSteps,
     global_currency,
+    autoOpen = false,
 }) {
-
-
-    console.log("user", user);
 
     // SSR Guard for usePage().props
     const pageProps = usePage().props;
@@ -72,6 +70,24 @@ export default function EditProfile({
     const isSSR = typeof window === "undefined";
 
     const [close, setClose] = useState();
+
+    /**
+     * 🚨 THE ONLY WAY INTO THIS FORM USED TO BE A BUTTON THE CREATOR HAD TO FIND.
+     *
+     * The journey card's first step says "Add a photo and a short bio" and sent them to
+     * `route('account')` — a settings page where this sheet hides behind one row among
+     * dozens. Live data, 25 Aug 2026: of 33 creators who signed up in the prior 90 days,
+     * 2 uploaded a photo and 0 wrote a bio. `autoOpen` lets a caller land them INSIDE the
+     * form instead of beside it.
+     *
+     * ⚠️ Runs once, on mount only. Re-opening whenever the prop is truthy would fight the
+     * creator every time they closed the sheet, because the query param that set it is
+     * still in the URL.
+     */
+    useEffect(() => {
+        if (autoOpen) setClose(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
     const [coverImage, setCoverImage] = useState();
@@ -637,12 +653,27 @@ export default function EditProfile({
                                 Exit
                             </button>
                         </div>
+                        {/* 🚨 THIS USED TO OPEN WITH A THREAT OF A BAN — at step one of
+                            seven, on the single action the whole journey is waiting on
+                            ("your account will be blocked and the user banned"). It was the
+                            first thing a creator read when they went to add a photo, and 2
+                            of 33 recent signups added one. The rule it describes is real
+                            and still stated; what changed is that it now reads as help
+                            rather than as a warning shot, and it says what to DO. Keep it
+                            that way.
+
+                            ⚠️ The comment sits ABOVE the branch, not inside it: `{…}` in a
+                            parenthesised ternary/&& branch is an OBJECT LITERAL, not a
+                            comment, and fails the whole Vite build.
+                            ⚠️ `border-black` carries no width class — it is a full 2px
+                            `border` shorthand in this project, and `border-[#000]` does not
+                            compile at all. */}
                         {user?.role == 1 && (
-                            <p className=" text-yellow-600">
-                                Your Profile picture must match the person in
-                                the ID verification which is the next step, if
-                                it doesn’t your account will be blocked and the
-                                user banned.
+                            <p className="rounded-box-sm border-black bg-white p-3 font-poppins text-sm leading-[1.55] text-black/70">
+                                Pick a clear photo of your face — it is the first thing
+                                supporters see. When you verify your ID later on, it should
+                                be recognisably the same person, so choose one you are happy
+                                to keep.
                             </p>
                         )}
                         <UpdateAvatar
@@ -744,6 +775,50 @@ export default function EditProfile({
                                             }
  className="w-full border-gray-300 border px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500"
                                             placeholder="Your Name"
+                                        />
+                                    </li>
+                                    <li className="mb-4">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Bio
+                                            </label>
+                                            {user?.bio &&
+                                                user?.bio_approved === 0 && (
+                                                    <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
+                                                        Pending Approval
+                                                    </span>
+                                                )}
+                                            {user?.bio &&
+                                                user?.bio_approved === 1 && (
+                                                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
+                                                        Approved
+                                                    </span>
+                                                )}
+                                            {user?.bio &&
+                                                user?.bio_approved === 2 && (
+                                                    <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
+                                                        Rejected
+                                                    </span>
+                                                )}
+                                        </div>
+                                        {user?.bio_approved === 2 &&
+                                            user?.edit_bio_reason && (
+ <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
+                                                    <span className="font-bold">
+                                                        Rejection Reason:
+                                                    </span>{" "}
+                                                    {user.edit_bio_reason}
+                                                </div>
+                                            )}
+                                        <textarea
+                                            onBlur={IsProfileChannged}
+                                            defaultValue={user?.bio || ""}
+                                            onChange={(e) =>
+                                                setData("bio", e.target.value)
+                                            }
+                                            name="bio"
+ className="w-full border-gray-300 border p-4 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 min-h-[120px]"
+                                            placeholder="Tell us about yourself..."
                                         />
                                     </li>
                                     <li className="mb-4">
@@ -917,50 +992,6 @@ export default function EditProfile({
                                                 {errors.birthday_discovery_opt_in}
                                             </span>
                                         )}
-                                    </li>
-                                    <li className="mb-4">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                Bio
-                                            </label>
-                                            {user?.bio &&
-                                                user?.bio_approved === 0 && (
-                                                    <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
-                                                        Pending Approval
-                                                    </span>
-                                                )}
-                                            {user?.bio &&
-                                                user?.bio_approved === 1 && (
-                                                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
-                                                        Approved
-                                                    </span>
-                                                )}
-                                            {user?.bio &&
-                                                user?.bio_approved === 2 && (
-                                                    <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full border border-red-200">
-                                                        Rejected
-                                                    </span>
-                                                )}
-                                        </div>
-                                        {user?.bio_approved === 2 &&
-                                            user?.edit_bio_reason && (
- <div className="mb-2 text-sm text-red-600 bg-red-50 p-3 rounded-box-sm border border-red-200">
-                                                    <span className="font-bold">
-                                                        Rejection Reason:
-                                                    </span>{" "}
-                                                    {user.edit_bio_reason}
-                                                </div>
-                                            )}
-                                        <textarea
-                                            onBlur={IsProfileChannged}
-                                            defaultValue={user?.bio || ""}
-                                            onChange={(e) =>
-                                                setData("bio", e.target.value)
-                                            }
-                                            name="bio"
- className="w-full border-gray-300 border p-4 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 min-h-[120px]"
-                                            placeholder="Tell us about yourself..."
-                                        />
                                     </li>
                                     <li className="mb-4">
  <div className="p-3 bg-gray-50 rounded-box-sm border border-gray-200">

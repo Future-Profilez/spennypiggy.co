@@ -24,7 +24,21 @@ import { lazy } from "react";
 const RELOAD_KEY = "spenny_preload_reloaded_at";
 const RELOAD_COOLDOWN_MS = 60_000;
 
-function reloadOnce() {
+/**
+ * Reload once to pick up a fresh asset manifest, at most once per cooldown.
+ *
+ * 🚨 THIS IS THE ONE DEFINITION, AND THE COOLDOWN KEY IS SHARED BY EVERY
+ * STALE-CHUNK RECOVERY ON PURPOSE — this module, `app.jsx`'s `vite:preloadError`
+ * handler, and `app.jsx`'s Inertia page resolver. Three independent reload timers
+ * can reload each other in a loop, and each one on its own looks perfectly safe.
+ * `app.jsx` imports this rather than keeping its own copy for exactly that reason.
+ *
+ * ⚠️ Returns FALSE when storage is unavailable (private mode, storage disabled) so
+ * the caller lets the error through instead of reloading with no rate limit.
+ *
+ * @returns {boolean} true when a reload has been started
+ */
+export function reloadOnce() {
     try {
         const last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
 

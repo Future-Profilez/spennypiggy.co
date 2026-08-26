@@ -4410,21 +4410,28 @@ class StripeController extends Controller
                     $username = $tip_pay->guest_name ?? 'Anonymous user';
                 }
 
-                $userPayment = new UserPayment;
-                $userPayment->from_user_id = $tip_pay->user_id ?? null;
-                $userPayment->to_user_id = $tip_pay->creator_id ?? null;
-                $userPayment->product_type = 'support payment';
-                $userPayment->amount = $tip_pay->amount;
-                $userPayment->total_paid = $tip_pay->total_paid;
-                $userPayment->currency = $tip_pay->currency;
-                $userPayment->payment_method = 'stripe';
-                $userPayment->payment_details = json_encode($session, true);
-                $userPayment->paid_at = Carbon::now();
-                $userPayment->status = $session->payment_status ?? 'paid';
-                $userPayment->save();
+                // Same exactly-once rule as the goal increment above: only the
+                // path that CREATED the deliverable writes the UserPayment row
+                // and the bell notification. The webhook (processSupportPayment)
+                // writes both when it wins the race; unguarded, a concurrent
+                // webhook + redirect double-wrote the buyer's payment history.
+                if ($deliverable->wasRecentlyCreated) {
+                    $userPayment = new UserPayment;
+                    $userPayment->from_user_id = $tip_pay->user_id ?? null;
+                    $userPayment->to_user_id = $tip_pay->creator_id ?? null;
+                    $userPayment->product_type = 'support payment';
+                    $userPayment->amount = $tip_pay->amount;
+                    $userPayment->total_paid = $tip_pay->total_paid;
+                    $userPayment->currency = $tip_pay->currency;
+                    $userPayment->payment_method = 'stripe';
+                    $userPayment->payment_details = json_encode($session, true);
+                    $userPayment->paid_at = Carbon::now();
+                    $userPayment->status = $session->payment_status ?? 'paid';
+                    $userPayment->save();
 
-                $message = $username.' just granted some coins to your piggy bank';
-                NotificationSave::dispatch($message, $tip_pay->creator, $tip_pay->user, 'Piggy Bank');
+                    $message = $username.' just granted some coins to your piggy bank';
+                    NotificationSave::dispatch($message, $tip_pay->creator, $tip_pay->user, 'Piggy Bank');
+                }
 
                 $this->userProfileService->clearUserCaches($tip_pay->creator->username, $tip_pay->creator->id);
                 if ($tip_pay->user) {
