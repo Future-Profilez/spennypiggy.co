@@ -919,11 +919,7 @@ export default function EditProfile({
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Date of Birth (for milestone & birthday rewards)
                                         </label>
-                                        <input
-                                            type="date"
- className="w-full border border-gray-300 px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white"
-                                            value={data.date_of_birth}
-                                            onChange={(e) => setData("date_of_birth", e.target.value)}
+                                        <input type="date" className="w-full border border-gray-300 px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white" value={data.date_of_birth} onChange={(e) => setData("date_of_birth", e.target.value)}
                                         />
                                         {errors.date_of_birth && (
                                             <span className="text-xs text-red-500 mt-1 block">{errors.date_of_birth}</span>
