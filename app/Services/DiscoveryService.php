@@ -2139,7 +2139,94 @@ class DiscoveryService
             });
         }
 
-        return collect($rows)->map(fn ($r) => ['mode' => $r['mode'], 'item' => $r['item']])->values();
+        return collect($rows)
+            ->map(fn ($r) => [
+                'mode' => $r['mode'],
+                'item' => $r['item'],
+                // The uniform shape the mixed board renders. A row the normaliser
+                // cannot describe (no creator, no title) is dropped rather than
+                // drawn as a card with holes in it.
+                'card' => $this->boardCard($r['mode'], $r['item']),
+            ])
+            ->filter(fn ($r) => $r['card'] !== null)
+            ->values();
+    }
+
+    /**
+     * One listing, described the SAME WAY whatever module it came from.
+     *
+     * 🚨 FIVE CARD DESIGNS IN ONE GRID IS NOT VARIETY, IT IS NOISE. The wish,
+     * shop, bill, membership and task cards were each designed for their own
+     * page — different heights, different headers, different CTAs — and a mixed
+     * board drew all five side by side, which read as a broken grid rather than
+     * as a shop. The board renders ONE card from this shape; the modules keep
+     * their own cards on their own pages, where a rich, specific card is right.
+     *
+     * ⚠️ `price` is the LISTED price. The card grosses it up with PriceFormat,
+     * exactly like every other buyer-facing price.
+     */
+    private function boardCard(string $mode, $item): ?array
+    {
+        $row = is_array($item) ? $item : (array) $item;
+
+        $creator = $row['user'] ?? null;
+        $username = $creator['username'] ?? ($row['username'] ?? null);
+        if (! $username) {
+            return null;
+        }
+
+        // The verb says what happens when you pay — one word, per module, and it
+        // is the same word the checkout uses.
+        $shape = [
+            'wish' => ['label' => 'Instant unlock', 'unlock' => 'instant', 'cta' => 'Unlock'],
+            'shop' => ['label' => 'Buy direct', 'unlock' => 'instant', 'cta' => 'Buy'],
+            'bill' => ['label' => 'Monthly content', 'unlock' => 'monthly', 'cta' => 'Subscribe'],
+            'membership' => ['label' => 'Membership tier', 'unlock' => 'monthly', 'cta' => 'Join'],
+            'task' => ['label' => 'Made for you', 'unlock' => 'custom', 'cta' => 'Request'],
+        ][$mode] ?? null;
+
+        if (! $shape) {
+            return null;
+        }
+
+        $title = $row['title'] ?? $row['wishname'] ?? $row['name'] ?? $row['level'] ?? null;
+        if (! $title) {
+            return null;
+        }
+
+        $hrefs = [
+            'wish' => '/'.$username.'/wishes?item='.($row['uuid'] ?? ''),
+            'shop' => '/'.$username.'/shop?item='.($row['uuid'] ?? ''),
+            'bill' => '/'.$username.'/bills?item='.($row['uuid'] ?? ''),
+            'membership' => '/'.$username.'/memberships?item='.($row['uuid'] ?? ''),
+            'task' => '/task/'.($row['uuid'] ?? ''),
+        ];
+
+        return [
+            'id' => $mode.'-'.($row['id'] ?? $row['uuid'] ?? ''),
+            'item_id' => $row['id'] ?? null,
+            'mode' => $mode,
+            'label' => $shape['label'],
+            'unlock' => $shape['unlock'],
+            'cta' => $shape['cta'],
+            'title' => (string) $title,
+            // ⚠️ The PUBLIC card image only — never a reward or content file.
+            'image' => $this->publicThumbUrl($row['image_url'] ?? $row['thumbnail'] ?? $row['image'] ?? $row['media_url'] ?? null),
+            'price' => isset($row['price']) ? (float) $row['price'] : null,
+            'currency' => strtoupper($row['currency'] ?? 'GBP'),
+            'period' => $row['period'] ?? ($shape['unlock'] === 'monthly' ? 'month' : null),
+            // "What you get", in the creator's own words where they wrote one.
+            'benefit' => $row['reward_title'] ?? null,
+            // A membership's TIER is its identity — the board card draws the
+            // level in the tier's own colour rather than repeating the generic
+            // "Membership tier" label twice on one card.
+            'level' => $row['level'] ?? null,
+            'username' => $username,
+            'avatar' => $creator['avatar_url'] ?? null,
+            'vat_amount_percentage' => $creator['vat_amount_percentage'] ?? 0,
+            'creator_id' => $creator['id'] ?? ($row['user_id'] ?? null),
+            'href' => $hrefs[$mode],
+        ];
     }
 
     /**

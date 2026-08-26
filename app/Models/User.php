@@ -371,11 +371,22 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         // The creator's own crop runs first; the cap runs on its result. An
         // uncapped avatar is an original phone photo decoded at full size on
         // every card that renders one — see MediaUrl::AVATAR_WIDTH.
-        $modifier = $this->avatar_cdn_modifier
-            ? "{$this->avatar_cdn_modifier}-/preview/"
-            : '';
+        if ($this->avatar_cdn_modifier) {
+            return "https://ucarecdn.com/{$this->avatar}/{$this->avatar_cdn_modifier}-/preview/"
+                .MediaUrl::fitOps(MediaUrl::AVATAR_WIDTH);
+        }
 
-        return "https://ucarecdn.com/{$this->avatar}/{$modifier}".MediaUrl::fitOps(MediaUrl::AVATAR_WIDTH);
+        /*
+         * 🚨 NO CROP OF THEIR OWN → CROP IT SQUARE OURSELVES.
+         *
+         * Every surface draws an avatar in a CIRCLE, but `fitOps` preserves the
+         * aspect ratio — so a portrait photo arrived portrait and the browser
+         * cropped the middle of it, which on a standing photo is a torso. The
+         * creator's own crop is optional and most have never set one (all three
+         * creators on the Birthdays cards had `avatar_cdn_modifier` NULL), so
+         * "no crop" is the common case, not the rare one.
+         */
+        return "https://ucarecdn.com/{$this->avatar}/".MediaUrl::squareOps(MediaUrl::AVATAR_WIDTH);
     }
 
     public function getSocialUrlAttribute()

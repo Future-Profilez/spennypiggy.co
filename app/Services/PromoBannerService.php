@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CreatorBioLink;
 use App\Models\FastStartBonusPayout;
 use App\Models\User;
 use App\Support\SubscriptionPlan;
@@ -170,6 +171,41 @@ class PromoBannerService
         return (float) config('referral.qualifying_gmv', 1000);
     }
 
+    /**
+     * Fast Start's figures, including the one worked example the card shows.
+     *
+     * ⚠️ The example base is a round illustrative number, and the card labels it as one.
+     * It is NOT a threshold, a target or a minimum — Fast Start has none. Everything
+     * derived from it uses the live rate, so the example can never quote a percentage the
+     * payout job does not pay.
+     *
+     * ⚠️ Under TIERED pricing the rate and the whole example are omitted: there are three
+     * rates by bracket and no single one to work a sum from. The card reads the absence
+     * and falls back to describing the mechanic in words.
+     *
+     * @return array<string, string|null>
+     */
+    private function fastStartFacts(): array
+    {
+        $tiered = (bool) config('fast_start_bonus.bonus.enable_tiered', false);
+        $rate = (float) config('fast_start_bonus.bonus.flat_rate', 0.05);
+
+        $facts = [
+            'rate' => $tiered ? null : $this->percent($rate),
+            'window' => (int) config('fast_start_bonus.bonus.window_days', 30).' days',
+            'paid_after' => (int) config('fast_start_bonus.bonus.settlement_buffer_days', 7).' days',
+        ];
+
+        if (! $tiered) {
+            $base = 1000.0;
+            $facts['example_earned'] = '£'.number_format($base, 0);
+            $facts['example_bonus'] = '£'.number_format($base * $rate, 0);
+            $facts['example_total'] = '£'.number_format($base + ($base * $rate), 0);
+        }
+
+        return $facts;
+    }
+
     private function percent(float $rate): string
     {
         return rtrim(rtrim(number_format($rate * 100, 1, '.', ''), '0'), '.').'%';
@@ -227,13 +263,15 @@ class PromoBannerService
              * to quote then (3% / 5% / 7% by bracket), and picking one would be wrong
              * for most creators. The card reads the absence and drops the figure.
              */
-            'fast_start' => array_filter([
-                'rate' => config('fast_start_bonus.bonus.enable_tiered', false)
-                    ? null
-                    : $this->percent((float) config('fast_start_bonus.bonus.flat_rate', 0.05)),
-                'window' => (int) config('fast_start_bonus.bonus.window_days', 30).' days',
-                'paid_after' => (int) config('fast_start_bonus.bonus.settlement_buffer_days', 7).' days',
-            ]),
+            /*
+             * 🚨 THE WORKED EXAMPLE IS DERIVED FROM THE REAL RATE, NEVER TYPED.
+             * "5% on top" answers nothing on its own — on top of what? — so the card
+             * shows one worked sum instead. The base is illustrative and the card labels
+             * it EXAMPLE; the bonus and the total are computed from the rate
+             * `ProcessFastStartBonusPayouts` actually pays, so changing
+             * `FAST_START_BONUS_RATE` moves every figure on the card with it.
+             */
+            'fast_start' => array_filter($this->fastStartFacts()),
 
             /*
              * The reward, and the lifetime GMV the referred creator has to sell
@@ -350,7 +388,29 @@ class PromoBannerService
             // this card was shown to exactly the creators who cannot act on it.
             'verified_badge' => $isCreator && VerifiedBadge::awaitingIdentityCheck($user),
 
-            'link_in_bio' => $isCreator,
+            /*
+             * 🚨 ONLY WHILE THERE IS SOMETHING TO DO. The card asks a creator to
+             * add their birthday and opt in; once they have, it describes a state
+             * they have left — the same fault the `verified_badge` rule was fixed
+             * for. `birthday_month` is checked as well as the switch because
+             * ProfileController refuses the opt-in when no date is on file, so the
+             * switch alone can read true with nothing behind it.
+             */
+            'birthday_discovery' => $isCreator
+                && ! ((bool) $user->birthday_discovery_opt_in && $user->birthday_month !== null),
+
+            /*
+             * 🚨 ONLY WHILE THERE IS SOMETHING TO BUILD. The card's headline and copy are
+             * a pitch — "paste one address in your bio" — so a creator who has already
+             * built their page is being sold something they own. Same rule the
+             * `verified_badge` and `birthday_discovery` cards were both corrected for: a
+             * card describing a state the viewer has left is the deck telling them
+             * something untrue about their own account.
+             *
+             * ⚠️ The CTA adapting per viewer (`See my page` vs `How it works`) is NOT a
+             * substitute for this — it changes the button while the headline still sells.
+             */
+            'link_in_bio' => $isCreator && ! $this->hasBioLinks($user),
 
             'refer_and_earn' => $isCreator,
 
@@ -382,6 +442,11 @@ class PromoBannerService
         $days = (int) config('founder_bonus.qualification.qualification_period_days', 30);
 
         return Carbon::parse($user->stripe_connected_at)->addDays($days)->isFuture();
+    }
+
+    private function hasBioLinks(User $user): bool
+    {
+        return CreatorBioLink::query()->where('user_id', $user->id)->exists();
     }
 
     private function hasFastStartBonus(User $user): bool

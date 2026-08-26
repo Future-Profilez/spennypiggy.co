@@ -72,6 +72,9 @@ class MarketingConsentTest extends TestCase
             'marketing_opt_in' => true,
             'role' => 1,
             'creator_email_receipt_ack' => true,
+            // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
+            'social_platform' => 'instagram',
+            'social_handle' => 'creatorhandle',
         ]));
 
         $user = User::where('email', 'test.person@gmail.com')->first();

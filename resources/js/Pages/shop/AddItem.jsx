@@ -1,6 +1,7 @@
 import { useAlerts } from "@/Components/Alerts";
 import ShippingProfileField from "@/Components/shop/ShippingProfileField";
 import { usePage } from "@inertiajs/react";
+import { MAX_PRICE_GBP, priceLimitError } from "@/lib/priceLimits";
 import { route } from "ziggy-js";
 import {
     EXTERNAL_LINK_PROPS,
@@ -36,7 +37,7 @@ const slug = (text) => {
 };
 
 export default function AddItem(props) {
-    const { auth, user } = usePage().props;
+    const { auth, user, rates } = usePage().props;
     const defaultCurrency =
         user?.default_currency || auth?.user?.default_currency || "GBP";
 
@@ -210,13 +211,16 @@ export default function AddItem(props) {
                 return;
             }
             // The £4.99–£10,000 rule was only enforced server-side, after 3 steps.
-            const priceNum = parseFloat(shopItem.price);
-            if (isNaN(priceNum) || priceNum < 4.99) {
-                errorAlert(`Price must be at least ${defaultCurrency} 4.99`);
-                return;
-            }
-            if (priceNum > 10000) {
-                errorAlert(`Price cannot exceed ${defaultCurrency} 10,000`);
+            // It is GBP-EQUIVALENT, so the bounds are converted into the creator's
+            // own currency — see `lib/priceLimits.js`.
+            const priceError = priceLimitError(
+                shopItem.price,
+                defaultCurrency,
+                rates,
+                MAX_PRICE_GBP.shop,
+            );
+            if (priceError) {
+                errorAlert(priceError);
                 return;
             }
         }

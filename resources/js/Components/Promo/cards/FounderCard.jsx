@@ -76,15 +76,15 @@ export default function FounderCard({ promo, onAction }) {
                     a dead band between the copy and the button. These two figures are the
                     block's headline numbers and they fit beside the CTA at 320px, so the
                     card makes the same argument at every width — with less of it. */}
-                <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-3">
                     <Cta promo={promo} g={g} onAction={onAction} />
                     {/* ⚠️ ONE figure, not two. Both fitted at 390 and the second was cut
                         off the edge at 320 — and a clipped number is worse than an absent
                         one. The bonus RATE is the half that answers "what do I get". */}
                     <Fact
                         g={g}
-                        label="Bonus"
-                        value={f.bonus_rate ?? "10%"}
+                        label="You get"
+                        value={f.bonus_total ?? "£2,750"}
                         className="shrink-0 sm:hidden"
                     />
                 </div>

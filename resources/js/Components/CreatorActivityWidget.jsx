@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "@inertiajs/react";
 import { PostMeter } from "@/Components/Creator/ActivityStatusBanner";
+import HelpLink from "@/Components/Help/HelpLink";
 
 /**
  * The creator's two payment rules, on one card, saying which is which.
@@ -129,6 +130,13 @@ const CreatorActivityWidget = (props) => {
                 <Link href="/creator/activity" className={BTN_QUIET}>
                     {needsAction ? "What counts?" : "View details"}
                 </Link>
+                {/* Two rules that can disagree is exactly where a creator stops
+                    reading and opens a ticket. The answer opens in place. */}
+                <HelpLink
+                    slug="why-were-my-subscriptions-paused"
+                    categorySlug="money-and-payouts"
+                    label="Why can payments pause?"
+                />
             </div>
 
             {/* ⚠️ A SECOND, separate rule — not a restatement of the one above.

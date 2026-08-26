@@ -4,6 +4,7 @@ import "swiper/css/navigation";
 import { useEffect, useRef, useState } from "react";
 import LoaderButton from "@/Components/LoaderButton";
 import { router, useForm, usePage } from "@inertiajs/react";
+import { MAX_PRICE_GBP, priceLimitError } from "@/lib/priceLimits";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
@@ -37,7 +38,7 @@ const imageLinks = [
 ];
 
 export default function Wishlist(props) {
-    const { global_currency, auth, wish_categories, all_user_categories } = usePage().props;
+    const { global_currency, auth, wish_categories, all_user_categories, rates } = usePage().props;
     const {
         currency,
         item,
@@ -172,8 +173,17 @@ export default function Wishlist(props) {
                     errorAlert("Please enter a wish name.");
                     return;
                 }
-                if (!data.price) {
-                    errorAlert("Please enter a price.");
+                // The £4.99–£500 rule is GBP-EQUIVALENT and was enforced only
+                // server-side, after all three steps. Bounds are converted into
+                // the creator's own currency — see `lib/priceLimits.js`.
+                const priceError = priceLimitError(
+                    data.price,
+                    defaultCurrency,
+                    rates,
+                    MAX_PRICE_GBP.wish,
+                );
+                if (priceError) {
+                    errorAlert(priceError);
                     return;
                 }
                 if (!data.category && !editpop && checkboxes.length === 0) {

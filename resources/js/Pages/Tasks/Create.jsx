@@ -18,6 +18,7 @@ import RewardEditor, {
     rewardToPayload,
     validateReward,
 } from "@/Components/Reward/RewardEditor";
+import { MAX_PRICE_GBP, formatPrice, priceLimitError, priceLimits } from "@/lib/priceLimits";
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency, rates } = usePage().props;
@@ -109,6 +110,11 @@ export default function Create({ auth, currencySymbol }) {
         };
     });
 
+    // The £4.99–£10,000 rule is GBP-EQUIVALENT, so the bounds shown and enforced
+    // here are the creator's own currency — see `lib/priceLimits.js`. Without
+    // this the only check was server-side, after the whole form.
+    const priceBounds = priceLimits(defaultCurrency, rates, MAX_PRICE_GBP.task);
+
     const submit = (e) => {
         e.preventDefault();
         if (processing) return;
@@ -116,6 +122,16 @@ export default function Create({ auth, currencySymbol }) {
             const rewardProblem = validateReward(data.reward);
             if (rewardProblem) {
                 alert(rewardProblem);
+                return;
+            }
+            const priceProblem = priceLimitError(
+                data.price,
+                defaultCurrency,
+                rates,
+                MAX_PRICE_GBP.task,
+            );
+            if (priceProblem) {
+                alert(priceProblem);
                 return;
             }
             setShowSummary(true);
@@ -377,8 +393,10 @@ export default function Create({ auth, currencySymbol }) {
 
                                                 <input
                                                     type="number"
-                                                    placeholder="Minimum £4.99"
-                                                    step="0.01"
+                                                    placeholder={`Minimum ${formatPrice(priceBounds.min, defaultCurrency)}`}
+                                                    min={priceBounds.min}
+                                                    max={priceBounds.max}
+                                                    step={priceBounds.step}
                                                     /* Changed: pl-10 to pl-8 */
                                                     className="relative z-0 w-full border-2 border-black rounded-box-sm p-[18px] pl-13 text-normal font-black focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                     value={data.price}

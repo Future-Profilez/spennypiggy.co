@@ -6,6 +6,8 @@ import Membership from '../../membership/Membership';
 import ProfileProduct from '../../shop/ProfileProduct';
 import TaskItem from '@/Components/TaskItem';
 import { DISCOVERY_SOURCE } from '@/lib/discoveryLink';
+import BoardCard from './BoardCard';
+import SectionShelf from './SectionShelf';
 
 /**
  * 🚨 Every card in this grid is a Discovery result, so every creator link in it
@@ -44,6 +46,18 @@ export default function ResultsGrid({
             const isMixed = mode === 'mixed';
             const itemMode = isMixed ? row.mode : mode;
             const item = isMixed ? row.item : row;
+
+            /* 🚨 The mixed board speaks ONE language — see BoardCard. A
+               chip-filtered view (Bills, Memberships…) still gets that module's
+               own rich card, which is right when every card on screen is the
+               same kind of thing. */
+            if (isMixed) {
+                return (
+                    <div key={row.card.id} className="h-full">
+                        <BoardCard card={row.card} auth={auth} />
+                    </div>
+                );
+            }
 
             let card;
             switch (itemMode) {
@@ -160,14 +174,12 @@ export default function ResultsGrid({
     return (
         <div className="mt-0">
             {heading && (
-                <div className="mb-5 flex items-end justify-between gap-4">
-                    <h2 className="font-anton text-xl uppercase tracking-wide text-black sm:text-2xl">{heading}</h2>
-                    {total > 0 && (
-                        <span className="shrink-0 text-[13px] font-semibold text-black/50">
-                            {shown} of {total}
-                        </span>
-                    )}
-                </div>
+                <SectionShelf
+                    title={heading}
+                    /* The tag reads "12 of 57" — how much of the shelf you have
+                       seen, which is also what decides whether Load more shows. */
+                    count={total > 0 ? `${shown} of ${total}` : shown}
+                />
             )}
 
             {/* 5-up on a wide screen: at 1536px a 4-column grid leaves cards

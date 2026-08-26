@@ -68,7 +68,7 @@ class DeliverableNotification extends Model
     {
         return self::create([
             'deliverable_id' => $deliverable->id,
-            'user_id' => $deliverable->buyer_id,
+            'user_id' => $deliverable->gifter_id,
             'notification_type' => 'purchase_confirmation',
             'channel' => 'email',
             'subject' => 'Purchase Confirmation - '.$deliverable->product_type_display,
@@ -89,7 +89,7 @@ class DeliverableNotification extends Model
 
         return self::create([
             'deliverable_id' => $deliverable->id,
-            'user_id' => $deliverable->buyer_id,
+            'user_id' => $deliverable->gifter_id,
             'notification_type' => 'deliverable_pending',
             'channel' => 'email',
             'subject' => 'Your Order is Being Prepared',
@@ -108,7 +108,7 @@ class DeliverableNotification extends Model
     {
         return self::create([
             'deliverable_id' => $deliverable->id,
-            'user_id' => $deliverable->buyer_id,
+            'user_id' => $deliverable->gifter_id,
             'notification_type' => 'deliverable_delivered',
             'channel' => 'email',
             'subject' => 'Your Order Has Been Delivered!',
@@ -136,7 +136,7 @@ class DeliverableNotification extends Model
             'message' => "You have a pending deliverable that needs to be uploaded within {$timeRemaining}. Please upload it to avoid penalties.",
             'metadata' => [
                 'sla_deadline' => $deliverable->sla_deadline,
-                'buyer_name' => $deliverable->buyer->name ?? 'Buyer',
+                'buyer_name' => $deliverable->gifter->name ?? 'Buyer',
             ],
         ]);
     }

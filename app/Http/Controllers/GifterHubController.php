@@ -22,8 +22,10 @@ use App\Models\TipGoalsPayment;
 use App\Models\WishItem;
 use App\Services\Ledger\LedgerRules;
 use App\Services\NotificationDeliveryService;
+use App\Services\RewardService;
 use App\Services\VipScoreService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -45,6 +47,14 @@ use Inertia\Inertia;
 class GifterHubController extends Controller
 {
     private const MEDIA_PER_PAGE = 30;
+
+    /**
+     * The page segments `AuthenticatedSessionController::getPageSpecificData()`
+     * actually answers to. A segment outside this list renders the profile with
+     * no data for it, so `openLink()` falls back to About rather than sending a
+     * buyer somewhere blank.
+     */
+    private const PROFILE_PAGES = ['about', 'wishes', 'shop', 'tasks', 'piggy-pots', 'memberships', 'bills', 'feed'];
 
     public function index(Request $request)
     {
@@ -240,9 +250,11 @@ class GifterHubController extends Controller
             if (! $t->creator) {
                 continue;
             }
-            // Tips unlock the tipGoal's exclusive content (reward_url on the goal)
-            $rewardUrl = $t->tipGoal?->reward_url ?: null;
-            $rewardText = $t->tipGoal?->reward_body ?: $t->tipGoal?->reward_description ?: null;
+            // Tips unlock the tipGoal's exclusive content.
+            // ⚠️ This read `$t->tipGoal?->reward_url` — TipGoal has NO such
+            // accessor, so Eloquent answered null and every tip receipt showed
+            // no reward at all. Same resolver as everything else now.
+            [$rewardText, $rewardUrl, $rewardType] = $this->rewardFields($t->tipGoal);
 
             $out[] = [
                 'id' => "tip:{$t->id}",
@@ -255,7 +267,7 @@ class GifterHubController extends Controller
                 'certificate_url' => $t->certificate_url,
                 'reward_text' => $rewardText,
                 'reward_url' => $rewardUrl,
-                'reward_type' => $rewardUrl ? 'link' : ($rewardText ? 'text' : null),
+                'reward_type' => $rewardType,
             ];
         }
 
@@ -268,41 +280,58 @@ class GifterHubController extends Controller
      * Resolve what a completed deliverable actually unlocked for the buyer.
      *
      * Returns [$rewardText, $rewardUrl, $rewardType].
-     * - Wish: reward_body (message/text) or reward_url (external link)
-     * - Shop: reward_file_url (digital download)
-     * - Task: deliverable_content (file/link uploaded by creator)
+     *
+     * ⚠️ This used to hand-roll one branch per product type and got three of
+     * them wrong: the `shop_item` branch read `reward_file_url` on a Shop whose
+     * unified `reward_file` it ignored, the tip path read `tipGoal->reward_url`
+     * — an accessor that does not exist on TipGoal, so it was silently null on
+     * every tip receipt — and bills, memberships and piggy pots had no branch
+     * at all. `RewardService::for()` already answers this for all seven
+     * modules, legacy columns included, and signs the media URL. One resolver.
      */
     private function resolveDeliverableReward(Deliverable $d): array
     {
-        switch ($d->product_type) {
-            case 'wish':
-                $wish = $d->wishItem;
-                if (! $wish) {
-                    return [null, null, null];
-                }
-                $url = $wish->reward_url ?: null;
-                $text = $wish->reward_body ?: $wish->reward_description ?: null;
-                $type = $url ? 'link' : ($text ? 'text' : null);
+        $item = match ($d->product_type) {
+            'wish' => $d->wishItem,
+            'shop_item' => $d->shop,
+            'task' => $d->task,
+            'bill' => $d->bill,
+            'membership' => $d->membership,
+            default => null,
+        };
 
-                return [$text, $url, $type];
+        return $this->rewardFields($item);
+    }
 
-            case 'shop_item':
-                $shop = $d->shop;
-                $url = $shop?->reward_file_url ?: null;
-
-                return [null, $url, $url ? 'file' : null];
-
-            case 'task':
-                $task = $d->task;
-                $url = $task?->deliverable_content ?: null;
-                // If it looks like a URL/link rather than a file UUID, treat as link
-                $isFile = $url && $this->looksLikeFile($url);
-
-                return [null, $url, $url ? ($isFile ? 'file' : 'link') : null];
-
-            default:
-                return [null, null, null];
+    /**
+     * The three reward keys `PurchasesHub.jsx` renders, from any sellable item.
+     *
+     * ⚠️ The frontend's vocabulary is `file | link | text`; the reward contract
+     * says `file | link | message`. Translate here rather than teaching the
+     * component a second set of names.
+     */
+    private function rewardFields(?Model $item): array
+    {
+        if (! $item) {
+            return [null, null, null];
         }
+
+        $reward = RewardService::for($item);
+
+        $url = $reward['media']['url'] ?? $reward['link'] ?? null;
+        $text = $reward['text'] ?: null;
+
+        if (! $url && ! $text) {
+            return [null, null, null];
+        }
+
+        $type = match (true) {
+            ! empty($reward['media']['url']) => 'file',
+            ! empty($reward['link']) => 'link',
+            default => 'text',
+        };
+
+        return [$text, $url, $type];
     }
 
     /* ----------------------------------------------------------------- */
@@ -389,7 +418,9 @@ class GifterHubController extends Controller
         return [
             'wish' => 'wishes', 'shop' => 'shop', 'task' => 'tasks',
             'piggypot' => 'piggy-pots', 'membership' => 'memberships',
-            'bill' => 'bills', 'tip' => 'tips',
+            'bill' => 'bills',
+            // Piggy Bank has no tab of its own; it is rendered on About.
+            'tip' => 'about',
         ][$cat] ?? 'wishes';
     }
 
@@ -680,6 +711,47 @@ class GifterHubController extends Controller
             );
         }
 
+        // Recurring content — memberships and bills. 🚨 These had NO branch at
+        // all, so the one module whose whole promise is "content every month"
+        // contributed nothing to the buyer's media library.
+        //
+        // ⚠️ ACTIVE subscriptions only, and the LATEST row per item: a tier's
+        // `content_file` is one mutable column the creator swaps each cycle, so
+        // twelve monthly payments are not twelve files — they are one file, and
+        // a lapsed member is not entitled to today's version of it.
+        foreach ([
+            ['membership', 'memberships', fn ($r) => $r->membership, fn ($r) => $r->membership_id],
+            ['bill', 'bills', fn ($r) => $r->bill, fn ($r) => $r->bills_id],
+        ] as [$sourceKey, $page, $item, $groupKey]) {
+            $latest = [];
+            foreach ($sources[$sourceKey] as $row) {
+                $key = $groupKey($row);
+                if ($key && (! isset($latest[$key]) || $row->created_at > $latest[$key]->created_at)) {
+                    $latest[$key] = $row;
+                }
+            }
+
+            foreach ($latest as $row) {
+                $subject = $item($row);
+                $owner = $subject?->user;
+                if (! $subject || ! $owner || ! $this->isRecurringActive($row)) {
+                    continue;
+                }
+                // The SIGNED accessor, matching the wish and shop branches
+                // above — this is a render surface for an entitled buyer, not a
+                // column being persisted, so the bare helpers do not apply.
+                $url = $subject->content_file_url;
+                if (! $url) {
+                    continue;
+                }
+                $items[] = $this->mediaItem(
+                    "{$sourceKey}:{$row->id}", $sourceKey,
+                    $subject->level ?? $subject->name, $url, $subject->content_file_type ?? null,
+                    $owner, $row->created_at, $page
+                );
+            }
+        }
+
         usort($items, fn ($a, $b) => strcmp($b['purchased_at'], $a['purchased_at']));
 
         return $items;
@@ -731,7 +803,7 @@ class GifterHubController extends Controller
         foreach ($byMembership as $row) {
             $m = $row->membership;
             $subs[] = $this->subscriptionRow(
-                'membership', $row, $m->level ?: 'Membership', $m->user, 'memberships', null
+                'membership', $row, $m->level ?: 'Membership', $m->user, 'memberships', $m
             );
         }
 
@@ -749,7 +821,7 @@ class GifterHubController extends Controller
         foreach ($byBill as $row) {
             $bill = $row->bill;
             $subs[] = $this->subscriptionRow(
-                'bill', $row, $bill->name ?: 'Subscription', $bill->user, 'bills', $bill->content_file_url ?: null
+                'bill', $row, $bill->name ?: 'Subscription', $bill->user, 'bills', $bill
             );
         }
 
@@ -772,11 +844,27 @@ class GifterHubController extends Controller
      * the period ends, so the row must stay visible and say WHEN it ends. Hiding it (or
      * showing a renewal date it will never charge on) reads as "my access is already
      * gone" and generates a support ticket for a working feature.
+     *
+     * 🚨 `$item` is the Bill or Membership itself, and it is what makes the paid
+     * content REACHABLE. This row used to emit a `content_file` key that no
+     * component read — a dead prop — and memberships passed NULL into it
+     * anyway, so a member's content existed in exactly one place on the whole
+     * platform: the confirmation email. It now carries the same three reward
+     * keys every other hub card uses, which `PurchasesHub.jsx` already renders.
+     *
+     * ⚠️ Only while the subscription is ACTIVE. A tier's `content_file` is a
+     * single mutable column the creator swaps each cycle, so the file it points
+     * at today is not the one a lapsed member paid for — handing it to them is
+     * an over-grant, not a courtesy.
      */
-    private function subscriptionRow(string $type, $row, string $title, $owner, string $page, ?string $contentFile): array
+    private function subscriptionRow(string $type, $row, string $title, $owner, string $page, ?Model $item = null): array
     {
         $isActive = $this->isRecurringActive($row);
         $isCanceling = $isActive && (bool) ($row->cancel_at_period_end ?? false);
+
+        [$rewardText, $rewardUrl, $rewardType] = $isActive
+            ? $this->rewardFields($item)
+            : [null, null, null];
 
         return [
             'id' => "{$type}:{$row->id}",
@@ -799,7 +887,9 @@ class GifterHubController extends Controller
             'last_charge_at' => $this->ts($row->created_at),
             'status' => $row->status,
             'started_at' => $this->ts($row->created_at),
-            'content_file' => $contentFile,
+            'reward_text' => $rewardText,
+            'reward_url' => $rewardUrl,
+            'reward_type' => $rewardType,
             'open_link' => $this->openLink($owner, $page),
         ];
     }
@@ -904,28 +994,28 @@ class GifterHubController extends Controller
             if (! $row->wish || ! $owner || ! $this->paidOk($row->payment?->payment_status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("wish:{$row->id}", 'wish', $row->wish->wishname, $owner, $row->created_at, 'wishes', $row->session_id);
+            $out[] = $this->unlockedItem("wish:{$row->id}", 'wish', $row->wish->wishname, $owner, $row->created_at, 'wishes', $row->session_id, $this->rewardFields($row->wish));
         }
         foreach ($sources['shop'] as $row) {
             $owner = $row->shop?->user;
             if (! $row->shop || ! $owner || ! $this->paidOk($row->payment_status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("shop:{$row->id}", 'shop', $row->shop->name, $owner, $row->created_at, 'shop', $row->session_id);
+            $out[] = $this->unlockedItem("shop:{$row->id}", 'shop', $row->shop->name, $owner, $row->created_at, 'shop', $row->session_id, $this->rewardFields($row->shop));
         }
         foreach ($sources['task'] as $row) {
             $owner = $row->task?->creator;
             if (! $row->task || ! $owner || ! $this->paidOk($row->status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("task:{$row->id}", 'task', $row->task->title, $owner, $row->created_at, 'tasks', $row->stripe_session_id);
+            $out[] = $this->unlockedItem("task:{$row->id}", 'task', $row->task->title, $owner, $row->created_at, 'tasks', $row->stripe_session_id, $this->taskRewardFields($row));
         }
         foreach ($sources['piggypot'] as $row) {
             $owner = $row->piggyPot?->user;
             if (! $row->piggyPot || ! $owner || ! $this->paidOk($row->status)) {
                 continue;
             }
-            $out[] = $this->unlockedItem("piggypot:{$row->id}", 'piggypot', $row->piggyPot->title, $owner, $row->created_at, 'piggy-pots', $row->session_id);
+            $out[] = $this->unlockedItem("piggypot:{$row->id}", 'piggypot', $row->piggyPot->title, $owner, $row->created_at, 'piggy-pots', $row->session_id, $this->rewardFields($row->piggyPot));
         }
         foreach ($sources['tip'] as $row) {
             $owner = $row->creator;
@@ -933,7 +1023,7 @@ class GifterHubController extends Controller
                 continue;
             }
             $title = $row->tipGoal?->name ?: 'Exclusive content';
-            $out[] = $this->unlockedItem("tip:{$row->id}", 'tip', $title, $owner, $row->created_at, 'tips', $row->session_id);
+            $out[] = $this->unlockedItem("tip:{$row->id}", 'tip', $title, $owner, $row->created_at, 'about', $row->session_id, $this->rewardFields($row->tipGoal));
         }
 
         usort($out, fn ($a, $b) => strcmp($b['unlocked_at'], $a['unlocked_at']));
@@ -943,9 +1033,37 @@ class GifterHubController extends Controller
         return $out;
     }
 
-    private function unlockedItem($id, $sourceType, $title, $owner, $createdAt, $page, $sessionId = null): array
+    /**
+     * A paid task's deliverable is the CREATOR'S PROOF for a custom task and
+     * the task's own pre-uploaded content for an instant one — never the task
+     * brief. `RewardService` can only answer the second, so the proof is
+     * resolved here from the purchase row.
+     */
+    private function taskRewardFields($purchase): array
+    {
+        $task = $purchase->task;
+
+        if ($task && $task->type !== 'instant') {
+            $proof = is_array($purchase->proof_content) ? $purchase->proof_content : [];
+            $media = RewardService::media($proof['file'] ?? null, $proof['mime_type'] ?? null, $proof['name'] ?? null);
+            $note = trim((string) ($proof['notes'] ?? '')) ?: null;
+
+            if ($media || $note) {
+                return [$note, $media['url'] ?? null, $media ? 'file' : 'text'];
+            }
+
+            // Nothing delivered yet — the hub's "incoming" card owns that state.
+            return [null, null, null];
+        }
+
+        return $this->rewardFields($task);
+    }
+
+    private function unlockedItem($id, $sourceType, $title, $owner, $createdAt, $page, $sessionId = null, array $reward = [null, null, null]): array
     {
         // One-time content purchases grant lifetime access to the buyer's library.
+        [$rewardText, $rewardUrl, $rewardType] = $reward;
+
         return [
             'id' => $id,
             'source_type' => $sourceType,
@@ -955,6 +1073,14 @@ class GifterHubController extends Controller
             'is_active' => true,
             'expires_at' => null,
             'open_link' => $this->openLink($owner, $page),
+            // 🚨 These three were absent, so `hasReward` in PurchasesHub.jsx was
+            // ALWAYS false for an unlocked card and the "What you unlocked"
+            // block — the one thing a buyer opens this page for — could never
+            // render for a shop item, a piggy pot or a tip. The markup was
+            // there the whole time; the payload was not.
+            'reward_text' => $rewardText,
+            'reward_url' => $rewardUrl,
+            'reward_type' => $rewardType,
             // Carried only far enough to key the delivery-status lookup below —
             // never sent to the frontend (see attachDeliveryStatus).
             '_session_id' => $sessionId,
@@ -1252,11 +1378,27 @@ class GifterHubController extends Controller
         ];
     }
 
+    /**
+     * 🚨 THE PROFILE'S PAGE IS A PATH SEGMENT, NOT A QUERY PARAMETER. The route
+     * is `/{username}/{page?}`, so `/jane?page=shop` renders About — 200, no
+     * error, and the buyer lands on a bio instead of the thing they bought.
+     * Every card on this hub carried that form. The 21 Aug 2026 sweep fixed the
+     * JSX call sites and missed the server ones.
+     *
+     * ⚠️ `tips` is NOT a page — `getPageSpecificData()` has no case for it, and
+     * Piggy Bank is rendered on About. Anything unroutable maps there.
+     */
     private function openLink($owner, string $page): ?string
     {
         $username = $owner->username ?? null;
 
-        return $username ? "/{$username}?page={$page}" : null;
+        if (! $username) {
+            return null;
+        }
+
+        $page = in_array($page, self::PROFILE_PAGES, true) ? $page : 'about';
+
+        return "/{$username}/{$page}";
     }
 
     private function ucPrefix(?string $v): ?string

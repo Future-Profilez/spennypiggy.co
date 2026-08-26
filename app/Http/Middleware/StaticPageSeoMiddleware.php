@@ -16,7 +16,16 @@ class StaticPageSeoMiddleware
             $path = '/';
         }
         $url = url($request->path());
-        $image = url('/og-image.png');
+        /*
+         * ⚠️ `asset()`, NOT `url()`. On Vapor the `public/` directory is uploaded
+         * to S3/CloudFront and STRIPPED from the Lambda, so an APP_URL-based path
+         * to a static file is not guaranteed to resolve there — and an og:image
+         * that 404s is the whole value of this row lost silently, since nothing
+         * in the app ever fetches it. `asset()` honours ASSET_URL, which points
+         * at the CDN the file is actually on; locally, with ASSET_URL unset, it
+         * resolves identically to the old value.
+         */
+        $image = asset('og-image.png');
 
         // ⚠️ A non-production host is never indexable, whatever the path rules
         // below say. dev.spennypiggy.co served the same pages as production and
@@ -185,6 +194,32 @@ class StaticPageSeoMiddleware
                 'title' => 'Chargeback & Dispute Protection for Creators — Spenny Piggy',
                 'description' => 'Spenny Piggy provides real human support and dedicated dispute management. We fight chargebacks on your behalf to protect your income and keep your business safe.',
             ],
+            /*
+             * 🚨 THE TWO DISCOVERY-ERA AD PAGES. They had NO og: or twitter:
+             * tags at all until 24 Aug 2026 — verified against the rendered HTML,
+             * while the homepage carried a full set. These are the pages the paid
+             * ads point at and the ones Jack posts by hand, so a link to them
+             * unfurled as a bare URL: no title, no description, no image. Nothing
+             * errored; there was simply no entry here, and only an EXACT match in
+             * this map produces tags (`$landingPages` below is empty, so its
+             * branch never runs).
+             *
+             * ⚠️ Copy is the client's own, from the Master Plan's A2/A3 sections.
+             * It must stay inside the same bans the pages themselves carry: no
+             * competitor names, no payment-provider names, no creator earnings,
+             * and — on the Link in Bio page — never "instant" / "immediate" /
+             * "seconds", because no settlement speed has been confirmed. It also
+             * claims no capability that is still COMING SOON: the page's own
+             * labels do that job and this description must not overtake them.
+             */
+            'creators/discovery' => [
+                'title' => 'Get Discovered. Stay Visible. Bring Supporters Back. — Spenny Piggy',
+                'description' => "Most platforms stop at the link. Bring your audience to Spenny Piggy and we'll help you grow it — supporters already on the platform looking for someone new to support, and a clear view of what that exposure is worth.",
+            ],
+            'creators/link-in-bio' => [
+                'title' => 'One Link. Sell Straight From Your Bio. — Spenny Piggy',
+                'description' => 'Put your Spenny Piggy link in your social bio and supporters can buy on the spot — exclusive content, memberships, paid tasks and shop items, on the first page they land on. Your link should not just list. It should sell.',
+            ],
             'creators/founder-bonus' => [
                 'title' => 'Spenny Piggy Founder Bonus — Earn Extra Rewards 👑',
                 'description' => 'Join the Spenny Piggy Founder Bonus program. Hit your monthly targets and earn extra cash bonuses as a reward for growing your community on our platform.',
@@ -248,7 +283,10 @@ class StaticPageSeoMiddleware
             // Open Graph
             SeoMeta::addTag('meta', ['property' => 'og:title', 'content' => $match['title']]);
             SeoMeta::addTag('meta', ['property' => 'og:description', 'content' => $match['description']]);
-            SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
+            // A page may name its own share image; most use the site default.
+            $pageImage = isset($match['image']) ? asset(ltrim($match['image'], '/')) : $image;
+
+            SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $pageImage]);
             SeoMeta::addTag('meta', ['property' => 'og:url', 'content' => $url]);
             SeoMeta::addTag('meta', ['property' => 'og:type', 'content' => 'website']);
             SeoMeta::addTag('meta', ['property' => 'og:site_name', 'content' => 'Spenny Piggy']);
@@ -257,7 +295,7 @@ class StaticPageSeoMiddleware
             SeoMeta::addTag('meta', ['name' => 'twitter:card', 'content' => 'summary_large_image']);
             SeoMeta::addTag('meta', ['name' => 'twitter:title', 'content' => $match['title']]);
             SeoMeta::addTag('meta', ['name' => 'twitter:description', 'content' => $match['description']]);
-            SeoMeta::addTag('meta', ['name' => 'twitter:image', 'content' => $image]);
+            SeoMeta::addTag('meta', ['name' => 'twitter:image', 'content' => $pageImage]);
             SeoMeta::addTag('meta', ['name' => 'twitter:site', 'content' => '@spennypiggy']);
 
             // Canonical

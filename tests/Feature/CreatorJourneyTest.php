@@ -293,6 +293,42 @@ class CreatorJourneyTest extends TestCase
         $this->assertNotNull($after->journey_completed_at, 'completion must not be erased');
     }
 
+    /**
+     * 🚨 THE CTA HAS TO OPEN THE FORM, NOT THE PAGE THE FORM IS BURIED IN.
+     *
+     * "Finish your profile" used to send the creator to `route('account')` and stop —
+     * Account Settings, where the photo/bio form is a collapsed row partway down a page
+     * of two dozen, behind a label that said "Manage your earnings and payouts".
+     * Measured on live data, 25 Aug 2026: of the 33 creators who signed up in the
+     * previous 90 days, 2 uploaded a photo and 0 wrote a bio.
+     */
+    public function test_the_profile_step_deep_links_into_the_editor(): void
+    {
+        $creator = $this->creator(['avatar_approved' => 0, 'bio_approved' => 0]);
+
+        $next = app(CreatorJourneyService::class)->nextStep($creator);
+
+        $this->assertSame('profile', $next['key']);
+        $this->assertSame('account', $next['route']);
+        $this->assertSame(['edit' => 'profile'], $next['params']);
+    }
+
+    /**
+     * ⚠️ The param is worth nothing on its own — the PAGE has to read it.
+     *
+     * Both halves live in different languages and neither build nor scanner can see
+     * that they agree, so this asserts the JSX still reads the key the server sends.
+     * Without it, renaming one side leaves a CTA that navigates and does nothing —
+     * which is indistinguishable from the bug this whole change exists to fix.
+     */
+    public function test_the_account_page_still_reads_the_deep_link(): void
+    {
+        $page = file_get_contents(resource_path('js/Pages/accountsetting/Accountsetting.jsx'));
+
+        $this->assertStringContainsString('edit=profile', $page);
+        $this->assertStringContainsString('autoOpen={openProfileEditor}', $page);
+    }
+
     public function test_the_sync_command_reports_and_respects_dry_run(): void
     {
         $this->creatorAt('stripe');

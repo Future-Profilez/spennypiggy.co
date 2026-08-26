@@ -8,6 +8,14 @@ describe('leaderboard measure', () => {
         expect(measureFor(0, MEASURE_FLOOR - 1)).toEqual({ show: false, width: 0 });
     });
 
+    it('says something the moment the scale has more than two steps', () => {
+        // The floor tracks PAYING supporters, which are scarce — at three the
+        // scale reads 100 / 67 / 33 / 0 instead of full-or-empty.
+        expect(measureFor(3, 3).width).toBe(100);
+        expect(Math.round(measureFor(2, 3).width)).toBe(67);
+        expect(Math.round(measureFor(1, 3).width)).toBe(33);
+    });
+
     it('draws the scale once the leader clears the floor', () => {
         expect(measureFor(MEASURE_FLOOR, MEASURE_FLOOR)).toEqual({ show: true, width: 100 });
     });

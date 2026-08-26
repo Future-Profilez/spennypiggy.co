@@ -18,9 +18,11 @@ import { fieldClass } from "@/Components/Checkout/FormKit";
 import confetti from "canvas-confetti";
 import { riskMessageBody } from '@/constants/riskMessages';
 import StepUpModal from '@/Components/Risk/StepUpModal';
+import { MAX_PRICE_GBP, fromGbp, priceLimits } from "@/lib/priceLimits";
 
-const MIN_AMOUNT = 4.99;
-const MAX_AMOUNT = 500;
+// £4.99–£500 in GBP. The pot is priced in its OWN currency, so both bounds are
+// converted before they are shown or enforced — see `lib/priceLimits.js`.
+const PRESET_AMOUNTS_GBP = [25, 50, 75];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,7 +47,7 @@ export default function PiggyPotWidget({
     const [stepUpUi, setStepUpUi] = useState(null);
     const [stepUpContext, setStepUpContext] = useState(null);
 
-    const { auth, turnstileSiteKey } = usePage().props;
+    const { auth, turnstileSiteKey, rates } = usePage().props;
     const { errorAlert } = useAlerts();
     const turnstileRef = useRef(null);
     const [verified, setVerified] = useState(false);
@@ -108,11 +110,18 @@ export default function PiggyPotWidget({
         isHeld ||
         ["archived", "completed", "expired"].includes(featuredPot?.status);
 
+    const { min: MIN_AMOUNT, max: MAX_AMOUNT, step: amountStep } = priceLimits(
+        potCurrency,
+        rates,
+        MAX_PRICE_GBP.piggyPot,
+    );
     const maxAllowed = Math.min(
         MAX_AMOUNT,
         remainingAmount > 0 ? remainingAmount : MAX_AMOUNT,
     );
-    const presetAmounts = [25, 50, 75];
+    const presetAmounts = PRESET_AMOUNTS_GBP.map((gbp) =>
+        fromGbp(gbp, potCurrency, rates, "down"),
+    );
 
     const featuredCreatorId =
         featuredPot?.creator_id ||
@@ -354,7 +363,11 @@ export default function PiggyPotWidget({
     // translate with no partner is the banned scale-effect by another name.
     const primaryOn =
  "bg-[#FF007F] text-black transition-[filter,transform] duration-200 hover:brightness-110 active:brightness-95 active:translate-y-[2px] ";
-    const primaryOff = "bg-pink-200 text-pink-900 cursor-not-allowed";
+    // ⚠️ ON-PALETTE. `bg-pink-200 text-pink-900` is Tailwind's pink, not the brand's, and a
+    // washed-out pink button beside the live `#FF007F` one reads as a broken accent rather
+    // than as an unavailable control. The house light surface plus the `/60` step of the
+    // ink ramp says "not yet" without inventing a colour.
+    const primaryOff = "bg-[#f8f6f2] text-black/60 cursor-not-allowed";
 
     const fieldBase = fieldClass;
     const labelBase =
@@ -450,8 +463,11 @@ export default function PiggyPotWidget({
 
                         {/* Progress — a coin meter: 20 segments, filled left to right */}
                         <div className="mt-3 rounded-box-sm border-[3px] border-black bg-[#f8f6f2] px-4 py-3">
-                            <div className="flex items-baseline justify-between gap-3">
-                                <p className="font-anton text-xl text-black leading-none">
+                            {/* ⚠️ `flex-wrap` + `min-w-0`: without them the raised/target line could not
+                                    shrink, so in a narrow column it broke after the word "of" and
+                                    left it orphaned on a line of its own. */}
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                <p className="min-w-0 font-anton text-xl text-black leading-none">
                                     <span
                                         className={
                                             isComplete
@@ -461,7 +477,7 @@ export default function PiggyPotWidget({
                                     >
                                         {fmt(raisedAmount)}
                                     </span>
- <span className="text-black/60 text-sm font-bold">
+ <span className="whitespace-nowrap text-black/60 text-sm font-bold">
                                         {" "}
                                         of {fmt(targetAmount)}
                                     </span>
@@ -513,10 +529,17 @@ export default function PiggyPotWidget({
 
                         {step === 1 && !noticeBelow && (
                                 <div className="animate-fade-in">
-                                    {/* ⚠️ 2-up on a phone. Four tiles across a 350px card left each
-                                        cell ~70px, so "£100.00" clipped inside its own
-                                        border while the page reported no overflow. */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3 mb-4">
+                                    {/* 🚨 AUTO-FIT, NOT A BREAKPOINT. `sm:grid-cols-4` asked the
+                                        VIEWPORT how much room there was, but the constraint is
+                                        this COLUMN — the widget puts the buy panel in a
+                                        `minmax(0,1fr)` track beside a 20rem image, so on a tablet
+                                        the viewport says "wide" while the column is ~300px. Four
+                                        tiles then measured ~72px each: the labels overflowed and
+                                        a 20px radius on a 72×48 box rendered as an ellipse.
+                                        `auto-fit` asks the container instead, so this is 4-up
+                                        where there is room and 2-up where there is not, at every
+                                        screen size and inside any future layout. */}
+                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(92px,1fr))] gap-2 md:gap-3 mb-4">
                                         {presetAmounts.map((val) => {
                                             const disabled = val > maxAllowed;
                                             return (
@@ -530,7 +553,7 @@ export default function PiggyPotWidget({
                                                     aria-pressed={
                                                         selectegTag === val
                                                     }
- className={`min-w-0 min-h-[48px] py-2 rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-[2px]" : "bg-white hover:bg-black/[0.04] active:translate-y-[2px]"}`}
+ className={`min-w-0 min-h-[48px] px-2 py-2 whitespace-nowrap rounded-box-sm border-[3px] border-black font-black text-sm transition-all ${disabled ? "bg-gray-200 text-black/60 cursor-not-allowed" : selectegTag === val ? "bg-[#A2E4B8] active:translate-y-[2px]" : "bg-white hover:bg-black/[0.04] active:translate-y-[2px]"}`}
                                                 >
                                                     {fmt(val)}
                                                 </button>
@@ -546,7 +569,7 @@ export default function PiggyPotWidget({
                                             aria-pressed={
                                                 selectegTag === "custom"
                                             }
- className={`px-2 min-h-[48px] rounded-box-sm border-[3px] border-black font-black text-sm transition-colors duration-200 active:translate-y-[2px] ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-black/[0.04]"}`}
+ className={`px-2 min-h-[48px] whitespace-nowrap rounded-box-sm border-[3px] border-black font-black text-sm transition-colors duration-200 active:translate-y-[2px] ${selectegTag === "custom" ? "bg-[#A2E4B8]" : "bg-white hover:bg-black/[0.04]"}`}
                                         >
                                             CUSTOM
                                         </button>
@@ -569,7 +592,7 @@ export default function PiggyPotWidget({
                                                 inputMode="decimal"
                                                 min={MIN_AMOUNT}
                                                 max={maxAllowed}
-                                                step="0.01"
+                                                step={amountStep}
                                                 aria-describedby="pp-amount-help"
                                                 placeholder={`${MIN_AMOUNT}`}
                                             />

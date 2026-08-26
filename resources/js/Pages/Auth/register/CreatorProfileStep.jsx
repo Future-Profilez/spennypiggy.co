@@ -10,6 +10,9 @@ import {
     MAX_PRIDE,
     accentFor,
     ROLE_CREATOR,
+    SOCIAL_PLATFORMS,
+    creatorProfileStepAction,
+    creatorProfileStepComplete,
 } from "./constants";
 
 /**
@@ -38,10 +41,14 @@ export default function CreatorProfileStep({
     onReferralCheck,
     referralMessage,
     referralType,
+    socialPlatform,
+    socialHandle,
+    onSocialPlatformChange,
+    onSocialHandleChange,
+    socialError,
     onSubmit,
 }) {
     const accent = accentFor(ROLE_CREATOR);
-    const chosen = categories.length;
     const [showReferral, setShowReferral] = useState(
         referralLocked || !!referral,
     );
@@ -52,8 +59,10 @@ export default function CreatorProfileStep({
             title="Add your badges"
             subtitle={`Pick up to ${MAX_CATEGORIES} — it's how supporters find you.`}
             onSubmit={onSubmit}
-            action={chosen < 1 ? "Pick at least one badge" : "Continue"}
-            actionDisabled={chosen < 1}
+            action={creatorProfileStepAction({ categories, socialHandle })}
+            actionDisabled={
+                !creatorProfileStepComplete({ categories, socialHandle })
+            }
         >
             {/* Grouped, but the group name rides on the same line as its
                 chips rather than taking a row of its own — five extra rows
@@ -81,6 +90,79 @@ export default function CreatorProfileStep({
                     max={MAX_PRIDE}
                     accentHex={accent.hex}
                 />
+            </div>
+
+            {/* 🚨 REQUIRED (client decision, 25 Aug 2026) — the step's button is
+                gated on it by `creatorProfileStepComplete`, and the server enforces
+                it with `Rule::requiredIf`.
+
+                It is not new friction, it is friction moved earlier: a creator
+                already cannot go live without an APPROVED handle
+                (`Profile/CreatorVerification.jsx` locks "Submit for review" until
+                socials, photo and bio are approved), so this only asks for it before
+                they reach the dashboard instead of after.
+
+                ⚠️ THE GATE BELONGS TO THIS STEP, NOT TO `canSubmitRegistration` —
+                that is the CONSENT check, and bundling a product requirement into it
+                is how an optional consent quietly becomes conditional.
+
+                🚨 THE COPY MUST NOT PROMISE PRIVACY. The handle goes for review and
+                then appears on the creator's profile like any other. An earlier draft
+                said "it is not shown on your profile", which was true of the
+                contact-only design this replaced and is a lie about the shipped
+                one. */}
+            <div className={RHYTHM.panelDivide}>
+                <p className="text-sm font-semibold text-black">
+                    Add a social account
+                </p>
+                <p className="mt-1 text-xs leading-[1.55] text-black/60">
+                    This gets your social step done now, so you will not be asked
+                    again. We check it before it shows on your profile, and we never
+                    post anything.
+                </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {SOCIAL_PLATFORMS.map((platform) => {
+                        const active = socialPlatform === platform.key;
+
+                        return (
+                            <button
+                                key={platform.key}
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() =>
+                                    onSocialPlatformChange(platform.key)
+                                }
+                                className={`rounded-box-sm border-black px-4 py-2 text-sm font-bold transition-colors duration-200 ${
+                                    active
+                                        ? "bg-black text-white"
+                                        : "bg-white text-black hover:bg-black/[0.04]"
+                                }`}
+                            >
+                                {platform.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-3">
+                    <Field
+                        id="social_handle"
+                        label="Username"
+                        prefix="@"
+                        value={socialHandle}
+                        placeholder={
+                            SOCIAL_PLATFORMS.find(
+                                (p) => p.key === socialPlatform,
+                            )?.placeholder ?? "yourname"
+                        }
+                        autoCapitalize="none"
+                        spellCheck="false"
+                        error={socialError}
+                        status={socialError ? "error" : "idle"}
+                        onChange={(e) => onSocialHandleChange(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* Referral is a minority case, so it costs a tap rather than a

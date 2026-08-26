@@ -1,20 +1,47 @@
-import { CARD_FRAME, PAD, Chip, Cta, Fact, display, groundOf, accentOf } from "../promoKit";
+import { CARD_FRAME, Chip, Cta, Fact, display, groundOf, accentOf } from "../promoKit";
 
 /**
- * Fast Start — THE RATE, THE WINDOW, AND WHEN IT LANDS.
+ * Fast Start — WHAT "5% ON TOP" IS ON TOP OF.
  *
- * ⚠️ The rate is `promo.facts.rate` and is ABSENT when tiered mode is on: there is no
- * single rate to quote then (3% / 5% / 7% by bracket) and picking one would be wrong
- * for most creators. The card drops the figure rather than guessing — the same fault
- * that had the receipt card quoting a subscription price nobody pays.
+ * 🚨 THE HEADLINE ALONE ANSWERS NOTHING, so the card works one sum. "5% on top" leaves a
+ * creator to ask "on top of what, and worth how much?" — the row this replaced read
+ * "YOUR PAYOUT / Sales + Fast Start bonus / +5%", which is a label with no quantity in
+ * it. The receipt shows earn → bonus → paid, which is the same shape the Founder card
+ * uses; two bonus cards making the same kind of promise should prove it the same way.
  *
- * ⚠️ The tilt is STATIC. Rotation on hover or press is banned; a composition drawn on
- * an angle is not the same thing.
+ * ⚠️ Every figure comes from `promo.facts`, derived in
+ * `PromoBannerService::fastStartFacts()` from the rate `ProcessFastStartBonusPayouts`
+ * actually pays. The base is illustrative and the block is LABELLED "Example" — Fast
+ * Start has no minimum and no target, and a figure here must never read as a threshold.
+ *
+ * ⚠️ Under TIERED pricing there is no single rate (3/5/7% by bracket), so `facts.rate`
+ * and the whole example are absent and the card falls back to describing the mechanic in
+ * words. Never pick one bracket's number to fill the gap.
+ *
+ * ⚠️ The tilt is STATIC. Rotation on hover or press is banned; a composition drawn on an
+ * angle is not the same thing.
  */
 export default function FastStartCard({ promo, onAction }) {
     const g = groundOf(promo.ground);
     const accent = accentOf(promo.accent);
     const f = promo.facts ?? {};
+
+    const Line = ({ label, value, strong }) => (
+        <div className="flex items-baseline justify-between gap-3">
+            <span
+                className={`whitespace-nowrap font-CeraGR text-[9px] uppercase tracking-[0.1em] md:text-[10px] ${strong ? "font-bold" : ""}`}
+                style={{ color: strong ? "#000" : "rgba(0,0,0,0.7)" }}
+            >
+                {label}
+            </span>
+            <span
+                className={`whitespace-nowrap ${strong ? "font-gulfs text-[17px] md:text-[20px]" : "font-CeraGR text-[12px] font-bold md:text-[13px]"}`}
+                style={{ color: "#000" }}
+            >
+                {value}
+            </span>
+        </div>
+    );
 
     return (
         <article className={CARD_FRAME} style={{ backgroundColor: g.bg }}>
@@ -24,55 +51,60 @@ export default function FastStartCard({ promo, onAction }) {
                 style={{ backgroundImage: `repeating-linear-gradient(-52deg, ${g.wash} 0 14px, transparent 14px 34px)` }}
             />
 
-            <div className={`relative flex h-full flex-col ${PAD}`}>
+            {/* The sum, on paper. ⚠️ `sm:` and up at a fixed width — a pixel-width block
+                inside a column narrower than it expects is what broke the install card at
+                320px. On a phone the rate ships as a single figure beside the button. */}
+            {f.example_total && (
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-4 top-1/2 hidden w-[196px] -translate-y-1/2 rounded-box-sm px-3 py-3 sm:block md:right-7 md:w-[232px] md:px-4"
+                    style={{ border: "2px solid #000", backgroundColor: "#FFFFFF" }}
+                >
+                    <p className="mb-2 font-CeraGR text-[8px] uppercase tracking-[0.18em] text-black/55 md:text-[9px]">
+                        Example
+                    </p>
+                    <Line label="You earn" value={f.example_earned} />
+                    <div className="mt-2">
+                        <Line label={`Fast Start ${f.rate}`} value={`+ ${f.example_bonus}`} />
+                    </div>
+                    <div className="my-2" style={{ borderTop: "2px solid #000" }} />
+                    <Line label="You are paid" value={f.example_total} strong />
+                </div>
+            )}
+
+            <div className="relative flex h-full w-full flex-col px-5 py-5 sm:w-[54%] sm:px-6 sm:py-6 md:px-8 md:py-7">
                 <Chip g={g} accent={accent}>{promo.eyebrow}</Chip>
 
                 <div className="mt-3">
-                    <span className="inline-block -rotate-2 rounded-box-sm border-black px-3 py-1.5 md:px-4 md:py-2" style={{ backgroundColor: accent }}>
-                        <span className={display("text-[26px] sm:text-[32px] md:text-[42px]")} style={{ color: "#000" }}>
+                    <span
+                        className="inline-block -rotate-2 rounded-box-sm border-black px-3 py-1.5 md:px-4 md:py-2"
+                        style={{ backgroundColor: accent }}
+                    >
+                        <span className={display("text-[24px] sm:text-[28px] md:text-[36px]")} style={{ color: "#000" }}>
                             {f.rate ? `${f.rate} on top` : "Start fast"}
                         </span>
                     </span>
                 </div>
 
-                <p className="mt-3 max-w-[42ch] text-[13px] md:text-[15px] leading-[1.4] font-semibold" style={{ color: g.body }}>
+                <p className="mt-3 max-w-[34ch] text-[13px] md:text-[15px] leading-[1.4] font-semibold" style={{ color: g.body }}>
                     {f.rate
-                        ? `We add ${f.rate} of everything you earn in your first ${f.window ?? "30 days"} — nothing to apply for, it lands with your payout.`
-                        : `We top up everything you earn in your first ${f.window ?? "30 days"} — nothing to apply for, it lands with your payout.`}
+                        ? `We add ${f.rate} of everything you earn in your first ${f.window ?? "30 days"}. It lands with your payout — nothing to apply for.`
+                        : `We top up everything you earn in your first ${f.window ?? "30 days"}. It lands with your payout — nothing to apply for.`}
                 </p>
 
-                {/* A payout line, not a statement: it names the rate and WHERE the money
-                    shows up, and carries no amount — the top-up is per creator and any
-                    figure here would be invented. */}
-                <div
-                    aria-hidden="true"
-                    className="mt-3 flex items-center justify-between gap-3 rounded-box-sm px-3 py-2"
-                    style={{ border: "2px solid #000", backgroundColor: "#FFFFFF" }}
-                >
-                    <span className="min-w-0">
-                        <span className="block font-CeraGR text-[9px] uppercase tracking-[0.14em] text-black/60 md:text-[10px]">
-                            Your payout
-                        </span>
-                        <span className="block truncate font-CeraGR text-[11px] font-bold text-black md:text-[12px]">
-                            Sales + Fast Start bonus
-                        </span>
-                    </span>
-                    {f.rate && (
-                        <span
-                            className="shrink-0 rounded-box-xs px-2 py-1 font-gulfs text-[13px] md:text-[15px]"
-                            style={{ border: "2px solid #000", backgroundColor: accent, color: "#000" }}
-                        >
-                            +{f.rate}
-                        </span>
-                    )}
-                </div>
-
-                <div className="mt-auto flex items-center justify-between gap-3 pt-3">
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pt-3">
                     <Cta promo={promo} g={g} onAction={onAction} />
-                    <div className="hidden sm:flex items-center gap-5">
-                        <Fact g={g} label="Window" value={f.window ?? "30 days"} />
-                        <Fact g={g} label="Paid after" value={f.paid_after ?? "7 days"} />
-                    </div>
+                    {/* ⚠️ ONE figure on a phone, where the receipt does not fit. A clipped
+                        number is worse than an absent one — the same call the Founder card
+                        makes at this width. */}
+                    {f.example_total && (
+                        <Fact
+                            g={g}
+                            label={`Earn ${f.example_earned}`}
+                            value={`Get ${f.example_total}`}
+                            className="shrink-0 sm:hidden"
+                        />
+                    )}
                 </div>
             </div>
         </article>

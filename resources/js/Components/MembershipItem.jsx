@@ -10,6 +10,7 @@ import { useAlerts } from "@/Components/Alerts";
 import RewardHint from "@/Pages/discover/components/RewardHint";
 import { feeRatesFor, creatorIdOf, STRIPE_FEE_RATE, STRIPE_FIXED_FEE } from "@/utils/pricing";
 import SaveButton from "@/Components/SaveButton";
+import { tierTheme } from "@/constants/membershipTiers";
 
 const rewards_lists = [
     { title: "Green Circle Insta", value: "green_circle_insta" },
@@ -100,40 +101,10 @@ export default function MembershipItem({
         return Math.ceil(totalSupporterPays);
     };
 
-    // The tier's colour is its identity, so it owns the whole card head rather than
-    // a stray pill. Platinum reads as the top rung (near-black) — as flat tints
-    // it and silver were within a hair of each other and told tiers apart badly.
-    const tierThemes = {
-        gold: { bg: "bg-[#FFD700]", text: "text-black", ink: "text-black/60" },
-        silver: {
-            bg: "bg-[#D8DCE3]",
-            text: "text-black",
-            ink: "text-black/60",
-        },
-        bronze: {
-            bg: "bg-[#F97316]",
-            text: "text-white",
-            ink: "text-white/75",
-        },
-        platinum: {
-            bg: "bg-[#12131A]",
-            text: "text-white",
-            ink: "text-white/60",
-        },
-        lifetime: {
-            bg: "bg-[#22C55E]",
-            text: "text-white",
-            ink: "text-white/75",
-        },
-        default: {
-            bg: "bg-[#A2E4B8]",
-            text: "text-black",
-            ink: "text-black/60",
-        },
-    };
-
     const isCreator = auth?.user?.id === item?.user_id;
-    const theme = tierThemes[item?.level?.toLowerCase()] || tierThemes.default;
+    // Themes live in constants/membershipTiers.js — one definition, because
+    // Discover's board card needs the same tier colours.
+    const theme = tierTheme(item?.level);
     const shouldShowAllBenefits = showAllBenefits || isExpanded;
     const visibleRewards = shouldShowAllBenefits
         ? rewards

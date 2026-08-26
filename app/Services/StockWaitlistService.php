@@ -351,7 +351,10 @@ class StockWaitlistService
                 [
                     'title' => 'Back in stock',
                     'body' => "{$shop->name} from {$creatorName} is available again.",
-                    'url' => url('/'.($creator?->username ?? '').'?page=shop'),
+                    // A PATH SEGMENT, not a query parameter — `?page=shop` on
+                    // `/{username}/{page?}` renders About, so the restock email
+                    // that exists to sell one item landed on a bio instead.
+                    'url' => url('/'.($creator?->username ?? '').'/shop'),
                     'module' => 'shop',
                     'target_id' => $shop->id,
                     'mailable' => StockBackInStock::class,

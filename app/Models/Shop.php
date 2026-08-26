@@ -214,6 +214,27 @@ class Shop extends Model
     }
 
     /**
+     * The UNSIGNED CDN URL of the paid file — for persisting into
+     * `deliverables.deliverable_url`, which stays bare by rule: signing
+     * happens per click in DeliveriesController. Persisting the signed
+     * accessor writes a token that expires, and SecureMedia::sign()
+     * deliberately refuses to re-sign a URL already carrying one — so a
+     * stored signed URL 403s for ever once secure delivery is armed.
+     */
+    public function bareRewardFileUrl(): ?string
+    {
+        if (empty($this->reward_file)) {
+            return null;
+        }
+
+        if (Str::startsWith($this->reward_file, ['http://', 'https://'])) {
+            return $this->reward_file;
+        }
+
+        return 'https://ucarecdn.com/'.$this->reward_file.'/';
+    }
+
+    /**
      * Reveal the paid deliverable on this model instance. Only call once the
      * viewer is known to be entitled (owner, or a paid ShopPayment).
      */

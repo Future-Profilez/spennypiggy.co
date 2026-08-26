@@ -558,18 +558,14 @@ class PiggyPotPaymentController extends Controller
                             'gross_amount' => $gross,
                             'fee_profile' => $pay->fee_profile ?? 'card',
                             'platform_fee' => $platformFee,
-                            // Carry the rate columns from the stored payment row so a
-                            // later change to the creator's deal cannot re-price this entry.
-                            ...Helpers::feeRateColumns(Helpers::calculateStripeDirectChargeFlow(
-                                (float) $pay->amount,
-                                strtoupper($pay->currency ?? 'GBP'),
-                                0,
-                                $pay->fee_profile ?? 'card',
-                                null,
-                                Helpers::storedFeeRates($pay)
-                            )),
-                            'compliance_fee' => null,
-                            'admin_fee' => null,
+                            // Carried from the contribution, never re-resolved — and
+                            // written IDENTICALLY to the webhook's FT sync
+                            // (processPiggyPotPayment), because both paths updateOrCreate
+                            // the same row and whichever lands second wins. This used to
+                            // recompute the rates AND explicitly null compliance_fee /
+                            // admin_fee, so a redirect arriving after the webhook wiped
+                            // fee columns off an already-correct ledger row.
+                            ...Helpers::copyFeeRateColumns($pay),
                             'stripe_fee' => $stripeFee,
                             'vat_amount' => $vatAmt,
                             'net_amount' => (float) $pay->amount,

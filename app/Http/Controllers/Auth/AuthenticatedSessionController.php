@@ -379,6 +379,41 @@ class AuthenticatedSessionController extends Controller
                 ];
             }
 
+            /*
+             * 🚨 THE CREATOR'S OWN CONTACT AND ACCOUNT COLUMNS ARE HIDDEN FROM THE
+             * PUBLIC PROFILE PAYLOAD.
+             *
+             * `/{username}` is a PUBLIC page and `$user` is the whole model, so
+             * every one of these columns was serialised into `data-page` for any
+             * visitor with View Source and no account. `App\Models\User` declares
+             * no `$hidden`, so nothing upstream was stopping it.
+             *
+             * ⚠️ `makeHidden()` on this payload rather than `$hidden` on the model:
+             * the same columns are legitimately read elsewhere (the creator's own
+             * account screens, the admin app, e-mail sending), and a model-wide
+             * change to hide them would be a far larger blast radius than the leak
+             * it closes.
+             *
+             * ⚠️ The e-mail is the one worth spelling out. It is not secret — this
+             * platform is merchant of record and it rides receipts to every buyer,
+             * which is why registration makes creators acknowledge that. Publishing
+             * it in the page payload of a public profile is a different thing: it is
+             * a scrapeable list of every creator's inbox, handed over without a
+             * purchase or an account.
+             *
+             * ⚠️ Verified before hiding: nothing in the profile's own components
+             * reads the page-level `user.email`. The Twitter conversion tag reads
+             * `auth.user.email`, which is the VIEWER's own address and untouched.
+             */
+            $user->makeHidden([
+                'email',
+                'date_of_birth',
+                'ip_address',
+                'identity_admin_notes',
+                'kyc_error',
+                'identity_verification_error',
+            ]);
+
             return [
                 '__page' => 'Dashboard',
                 'username' => $username,
@@ -566,7 +601,37 @@ class AuthenticatedSessionController extends Controller
 
         $version = $this->profileService->getProfileCacheToken($userId);
         $categoryKey = request()->query('category') ?? 'all';
-        $cacheKey = "profile_page_data_{$userId}_{$categoryKey}_{$page}_v{$version}";
+
+        /*
+         * 🚨 THE VIEWER IS PART OF THE KEY, AND LEAVING IT OUT LEAKED PAID CONTENT.
+         *
+         * Everything inside the closure is viewer-dependent, because it reads the
+         * authenticated user itself rather than being handed one:
+         * `executePostsQuery()` takes `Auth::id()` and computes `is_lock` from THAT
+         * person's subscriptions, memberships, bills and tips, calling
+         * `stripLockedMedia()` only for a viewer it decides is not entitled; and the
+         * `Auth::id() === $userId` arguments on the tasks, pots and about branches
+         * below are evaluated inside the closure too, so the owner's view of
+         * unapproved, suspended and moderation-held listings — with their internal
+         * rejection reasons — is baked into whatever is stored.
+         *
+         * `$isOwner` was setting the TTL and nothing else, so the array a paying
+         * member generated was served to every anonymous visitor for the next ten
+         * minutes with `is_lock = 0` and the paid photos' CDN uuids intact, and the
+         * creator's own view leaked their held listings for thirty seconds. On Vapor
+         * the cache is the SHARED Redis, so this crosses containers — it is not one
+         * warm Lambda.
+         *
+         * ⚠️ Guests share one entry deliberately: they all see the same page, and a
+         * key per anonymous visitor would be an unbounded write for no benefit. A
+         * signed-in viewer gets their own, because entitlement is exactly what
+         * differs, and working that out is the query being cached in the first place.
+         */
+        $viewer = $isOwner
+            ? 'owner'
+            : (Auth::check() ? 'auth'.Auth::id() : 'guest');
+
+        $cacheKey = "profile_page_data_{$userId}_{$categoryKey}_{$page}_{$viewer}_v{$version}";
         $ttl = $isOwner ? 30 : 600;
 
         return Cache::remember($cacheKey, $ttl, function () use ($userId, $page) {

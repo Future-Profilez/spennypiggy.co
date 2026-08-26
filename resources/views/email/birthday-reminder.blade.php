@@ -19,15 +19,21 @@
     <td align="center" style="padding:32px 28px 8px 28px;">
         <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation" style="max-width:440px;width:100%;">
 
-            {{-- Emoji badge --}}
+            {{-- 🚨 A DATE CHIP, NOT A FLOATING EMOJI. This was a 34px emoji alone in
+                 a 68px pink circle: the largest thing above the fold, carrying no
+                 information. The date is the entire reason this e-mail exists, so it
+                 is what the chip says. ⚠️ Day and month only — never a year. --}}
             <tr>
-                <td align="center" style="padding:0 0 18px 0;">
+                <td align="center" style="padding:0 0 16px 0;">
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
                             <td align="center" valign="middle" bgcolor="#FFE6F2"
-                                style="width:68px;height:68px;background-color:#FFE6F2;border-radius:50%;
-                                       -webkit-border-radius:50%;text-align:center;font-size:34px;line-height:68px;">
-                                {{ $emoji }}
+                                style="background-color:#FFE6F2;border:2px solid #1A1A1A;border-radius:999px;
+                                       -webkit-border-radius:999px;padding:8px 16px;
+                                       font-family:'Outfit',Arial,sans-serif;font-size:13px;font-weight:800;
+                                       color:#1A1A1A;letter-spacing:0.06em;text-transform:uppercase;
+                                       line-height:18px;white-space:nowrap;">
+                                {{ $emoji }}@if (!empty($creator['birthday_label'])) &nbsp;{{ $creator['birthday_label'] }}@endif
                             </td>
                         </tr>
                     </table>
@@ -57,7 +63,7 @@
             <tr>
                 <td style="padding:0 0 8px 0;">
                     <table width="100%" cellspacing="0" cellpadding="0" border="0" role="presentation"
-                           style="background-color:#FAF7F9;border-radius:14px;">
+                           style="background-color:#FFFFFF;border:2px solid #1A1A1A;border-radius:14px;">
                         <tr>
                             <td style="padding:16px;">
                                 <table cellspacing="0" cellpadding="0" border="0" role="presentation" width="100%">
@@ -69,8 +75,8 @@
                                                         object-fit:cover;background-color:#FFE6F2;">
                                         </td>
                                         <td valign="middle" style="padding-left:14px;">
-                                            <div style="font-family:'Outfit',Arial,sans-serif;font-weight:700;
-                                                        font-size:17px;color:#1A1A1A;line-height:22px;">
+                                            <div style="font-family:'Outfit',Arial,sans-serif;font-weight:800;
+                                                        font-size:19px;color:#1A1A1A;line-height:24px;">
                                                 {{ $creator['name'] }}
                                             </div>
                                             {{-- &#64; not &commat;: the named entity is HTML5-only
@@ -90,23 +96,12 @@
                                 </div>
                                 @endif
 
-                                {{-- 🚨 Day and month. Never a year. --}}
-                                @if (!empty($creator['birthday_label']))
-                                <div style="font-family:'Outfit',Arial,sans-serif;font-size:13px;font-weight:700;
-                                            color:#FF007F;line-height:20px;padding-top:10px;">
-                                    Birthday &middot; {{ $creator['birthday_label'] }}
-                                </div>
-                                @endif
-
-                                @if (!empty($creator['url']))
-                                <div style="padding-top:14px;">
-                                    <a href="{{ $creator['url'] }}" target="_blank"
-                                       style="font-family:'Outfit',Arial,sans-serif;font-size:14px;
-                                              font-weight:700;color:#FF007F;text-decoration:none;">
-                                        View profile &rsaquo;
-                                    </a>
-                                </div>
-                                @endif
+                                {{-- ⚠️ THE DATE AND THE SECOND LINK BOTH LIVED HERE AND BOTH ARE GONE.
+                                     The date is now the chip at the top, and this card's
+                                     "View profile ›" pointed at exactly the same URL as the
+                                     button below it — one action, offered twice, forty pixels
+                                     apart. A reader choosing between two identical links is a
+                                     reader deciding nothing. --}}
                             </td>
                         </tr>
                     </table>
@@ -121,11 +116,11 @@
                     <table cellspacing="0" cellpadding="0" border="0" role="presentation" align="center">
                         <tr>
                             <td align="center" bgcolor="#FF007F"
-                                style="background-color:#FF007F;border-radius:999px;
+                                style="background-color:#FF007F;border:2px solid #1A1A1A;border-radius:999px;
                                        -webkit-border-radius:999px;">
                                 <a href="{{ $creator['url'] }}" target="_blank"
                                    style="display:inline-block;padding:14px 34px;font-family:'Outfit',Arial,sans-serif;
-                                          font-weight:800;font-size:15px;color:#FFFFFF;text-decoration:none;
+                                          font-weight:800;font-size:15px;color:#1A1A1A;text-decoration:none;
                                           border-radius:999px;-webkit-border-radius:999px;">
                                     See their profile
                                 </a>

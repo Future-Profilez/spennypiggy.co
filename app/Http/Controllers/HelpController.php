@@ -154,6 +154,60 @@ class HelpController extends Controller
      * making the reader leave the page to read the answer defeats the purpose.
      * It is capped hard because it ships whole articles.
      */
+    /**
+     * ONE article by its exact slug, as JSON, for contextual help rendered beside
+     * the thing that confuses people (`Components/Help/HelpLink.jsx`).
+     *
+     * 🚨 NOT `/help/search`. A caller that already knows which article it wants
+     * was previously going through search with the slug turned back into words,
+     * which had three faults: a near-miss returned the WRONG article, an
+     * audience mismatch returned nothing at all (a creator-audience answer is
+     * invisible to a signed-out reader looking at a checkout), and every failed
+     * lookup wrote a synthetic row into `help_search_misses` — the backlog the
+     * team reads to find real gaps.
+     *
+     * ⚠️ Answers 404 as JSON, never an exception page. The caller degrades to a
+     * plain link to the Help Centre; a help affordance must not be able to throw
+     * a failure onto the screen it is explaining.
+     *
+     * ⚠️ Audience is deliberately NOT filtered. The caller decided this answer
+     * belongs on this screen; hiding it because the reader is signed out would
+     * silently blank the help on exactly the surfaces guests use.
+     */
+    public function inline(string $slug): JsonResponse
+    {
+        $model = HelpArticle::query()
+            ->visible()
+            ->with('category')
+            ->where('slug', $slug)
+            ->first();
+
+        // A retitled article keeps answering the slug already written into a
+        // component prop — the same reason the public article route follows
+        // slug history.
+        if (! $model) {
+            $history = HelpArticleSlugHistory::query()->where('slug', $slug)->first();
+
+            if ($history) {
+                $model = HelpArticle::query()->visible()->with('category')->find($history->help_article_id);
+            }
+        }
+
+        if (! $model || ! $model->featureIsLive()) {
+            return response()->json(['status' => false], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'article' => [
+                'slug' => $model->slug,
+                'title' => $model->title,
+                'category_slug' => $model->category?->slug,
+                'body_html' => HelpMarkdown::render($model->body)['html'],
+            ],
+        ]);
+    }
+
     public function search(Request $request): JsonResponse
     {
         $data = $request->validate([

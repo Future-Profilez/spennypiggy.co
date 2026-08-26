@@ -174,11 +174,40 @@ class HandleInertiaRequests extends Middleware
             // but for "Quick Wins", this lean object covers 95% of use cases.
         }
 
-        // Cache the followed user lookup if username is present
+        /*
+         * 🚨 SELECT TWO COLUMNS — THIS USED TO SHARE THE WHOLE USER ROW WITH EVERY
+         * VISITOR TO EVERY PROFILE.
+         *
+         * `User::where('username', …)->first()` returns the entire model, it was
+         * cached for ten minutes under a per-username key, and it was handed to
+         * Inertia as `auth.opposite_user` — which means it was serialised into the
+         * `data-page` attribute of the HTML on every `/{username}` route, readable
+         * by anyone with View Source and no account at all.
+         *
+         * `App\Models\User` declares no `$hidden`, so that payload carried ~125
+         * columns per creator. Confirmed on a live profile: `date_of_birth`,
+         * `email`, `ip_address`, `stripe_user_id`, `stripe_connected_at`,
+         * `identity_status`, `identity_admin_status`, `identity_admin_notes`,
+         * `suspended_account` and the marketing-consent columns.
+         *
+         * ⚠️ It also defeated Birthday Discovery's central rule one hop later: the
+         * collection card is careful to publish only "26 August", and the profile it
+         * links to published `1998-07-13`.
+         *
+         * ⚠️ The FRONTEND USES EXACTLY ONE FIELD of it — `opponantUser?.id`, in
+         * `wishlist/Userprofile.jsx`, as the follow button's target — and nothing on
+         * the server reads it at all. So the fix is not `$hidden` (which would only
+         * hide these columns here while leaving every other serialisation of a User
+         * unchanged); it is to stop selecting them. Username is already in the URL.
+         *
+         * ⚠️ The cache key is versioned. The old key holds full rows written before
+         * this change, and they would keep being served for their remaining TTL.
+         */
         $followedUser = null;
         if ($request->username) {
-            $followedUser = Cache::remember('user_basic_'.$request->username, 600, function () use ($request) {
-                return User::where('username', $request->username)->first();
+            $followedUser = Cache::remember('user_basic_v2_'.$request->username, 600, function () use ($request) {
+                return User::where('username', $request->username)
+                    ->first(['id', 'username']);
             });
         }
 

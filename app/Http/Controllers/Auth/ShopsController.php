@@ -1635,7 +1635,10 @@ class ShopsController extends Controller
                             'deliverable_type' => $stripeid->shop->type == 'physical' ? 'shipping' : 'digital_file',
                             'product_type' => 'shop_item',
                             'transaction_amount' => $stripeid->amount,
-                            'deliverable_url' => $stripeid->shop->reward_file_url,
+                            // Bare, never the signed accessor — the column
+                            // stays unsigned and DeliveriesController signs
+                            // per click (see Shop::bareRewardFileUrl).
+                            'deliverable_url' => $stripeid->shop->bareRewardFileUrl(),
                             'customer_email' => $stripeid->email ?? ($stripeid->user->email ?? null),
                             'customer_name' => $stripeid->name ?? ($stripeid->user->name ?? null),
                             'payment_status' => 'paid',
@@ -1677,7 +1680,12 @@ class ShopsController extends Controller
                     'payment_status' => $stripeid->payment_status,
                     'currency' => $stripeid->currency,
                 ]);
-                ShopBuyedUser::dispatchSync($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+                // Queued and post-commit — see the note on the webhook's copy
+                // (StripeWebhookController::processShopItemPayment). This path
+                // also runs inside a DB transaction holding a lockForUpdate on
+                // the shop_payments row, so an inline SMTP call held that lock
+                // for the length of the mail server's response.
+                ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol)->afterCommit();
 
                 /**************************SHOP**PWA**START****************************************************/
                 // below is SHOP pwa for fans

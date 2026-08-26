@@ -80,6 +80,19 @@ export default function Accountsetting(props) {
         monthly_charges,
     } = usePage().props;
 
+    /**
+     * 🚨 `?edit=profile` LANDS THE CREATOR INSIDE THE PROFILE FORM, NOT BESIDE IT.
+     *
+     * The journey card's first step reads "Add a photo and a short bio" and used to send
+     * them to this page with nothing else — where the form is one collapsed row among
+     * dozens, under a heading about earnings. Live data, 25 Aug 2026: 33 creators signed
+     * up in the prior 90 days, 2 added a photo and 0 wrote a bio.
+     *
+     * ⚠️ Read from Inertia's `url`, not `window.location` — this component renders on the
+     * server too, where `window` does not exist.
+     */
+    const openProfileEditor = usePage().url.includes("edit=profile");
+
     const contactSupport = () => {
         if (window.Intercom) {
             window.Intercom('show');
@@ -411,13 +424,22 @@ export default function Accountsetting(props) {
                         <div className="mb-10 animate-fade-in-up">
                             <SectionTitle title="Creator Studio" />
 
+                            {/* 🚨 THE SUBTITLE SAID "Manage your earnings and payouts",
+                                WHICH IS NOT WHAT IS BEHIND IT. This row opens the photo,
+                                bio and display-name form — the exact work the journey
+                                card's first step asks for — so a creator sent here to add
+                                a photo read a row about money and did not open it. A
+                                label that describes a different feature is the same
+                                failure as a broken link, and neither the build nor any
+                                scanner can see it. */}
                             <EditProfile
                                 user={auth?.user}
+                                autoOpen={openProfileEditor}
                                 text={
                                     <SettingItem
                                         icon={UsersIcon}
                                         title="My Profile"
-                                        subtitle="Manage your earnings and payouts"
+                                        subtitle="Photo, bio and display name"
                                         value={auth?.user?.name}
                                     />
                                 }

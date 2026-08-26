@@ -11,6 +11,8 @@ use App\Jobs\Dispute\SendDisputeClosedMailJob;
 use App\Jobs\Dispute\SendDisputeCreatedMailJob;
 use App\Jobs\Dispute\SendDisputeUpdatedMailJob;
 use App\Jobs\FraudWarning\SendFraudWarningMailJob;
+use App\Jobs\FulfilCartCheckout;
+use App\Jobs\FulfilSubscriptionCheckout;
 use App\Jobs\MembershipMail;
 use App\Jobs\MonthlySubscribedJob;
 use App\Jobs\NotificationSave;
@@ -1227,6 +1229,38 @@ class StripeWebhookController extends Controller
                 $this->processSupportPayment($session, $metadata);
             }
 
+            // Cart / basket wish checkout. Fulfilment normally happens on the
+            // redirect (successCheckout), which needs the buyer's browser —
+            // their PHP session and their UserCart rows. This branch did not
+            // exist, so a buyer who closed the tab left a PAID session with no
+            // items, no deliverable, no receipt and no ledger row, forever.
+            // The fallback is DELAYED so it never races the redirect: it only
+            // acts if the redirect still has not claimed the payment by then.
+            if (isset($metadata->type) && $metadata->type === 'cart'
+                && ($session->payment_status ?? 'paid') === 'paid') {
+                FulfilCartCheckout::dispatch($session->id)->delay(now()->addMinutes(10));
+            }
+
+            // Bills & Memberships (subscription-mode checkouts) carry no
+            // routable `type` in their session metadata, so route on the
+            // payment row's own session id. Only the redirect ever wrote
+            // stripe_id — a buyer who closed the tab left a paid subscription
+            // at 'initiated' with no deliverable, no ledger row, no emails,
+            // and every renewal invisible. Delayed so it never races the
+            // redirect; the job claims with the redirect's own atomic guard.
+            try {
+                $hasInitiatedSubscription = BillPayment::where('session_id', $session->id)->where('status', 'initiated')->exists()
+                    || MembershipPayment::where('session_id', $session->id)->where('status', 'initiated')->exists();
+
+                if ($hasInitiatedSubscription) {
+                    FulfilSubscriptionCheckout::dispatch($session->id)->delay(now()->addMinutes(10));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Could not queue subscription-checkout fallback: '.$e->getMessage(), [
+                    'session_id' => $session->id,
+                ]);
+            }
+
             return response()->json(['status' => 'success']);
         } catch (\Exception $e) {
             Log::error('Error processing checkout session completed', [
@@ -1632,6 +1666,37 @@ class StripeWebhookController extends Controller
             TipPaymentMailToUser::dispatch($tip, $tip->currency ?? 'USD');
         } catch (\Throwable $e) {
             Log::error('Failed to dispatch TipPaymentMailToUser from webhook: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        // Mirror the redirect handler's UserPayment + in-app notification —
+        // a tip settling webhook-first (bank rails, or a closed tab) was
+        // absent from the buyer's payment history and from the creator's
+        // bell. Exactly-once across the race: only the path that CREATED the
+        // deliverable writes them (this whole block sits behind the
+        // wasRecentlyCreated return above, and the redirect gates the same
+        // way), so the two paths can never double-write.
+        try {
+            $userPayment = new UserPayment;
+            $userPayment->from_user_id = $tip->user_id ?? null;
+            $userPayment->to_user_id = $tip->creator_id ?? null;
+            $userPayment->product_type = 'support payment';
+            $userPayment->amount = $tip->amount;
+            $userPayment->total_paid = $tip->total_paid;
+            $userPayment->currency = $tip->currency;
+            $userPayment->payment_method = 'stripe';
+            $userPayment->payment_details = json_encode($session, true);
+            $userPayment->paid_at = now();
+            $userPayment->status = $session->payment_status ?? 'paid';
+            $userPayment->save();
+        } catch (\Throwable $e) {
+            Log::error('Tip webhook UserPayment write failed: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
+        }
+
+        try {
+            $username = ($tip->anonymous == 1) ? 'Anonymous user' : ($tip->guest_name ?? ($tip->user->name ?? 'Anonymous user'));
+            NotificationSave::dispatch($username.' just granted some coins to your piggy bank', $tip->creator, $tip->user, 'Piggy Bank');
+        } catch (\Throwable $e) {
+            Log::error('Tip webhook NotificationSave failed: '.$e->getMessage(), ['tip_pay_id' => $tip->id]);
         }
 
         try {
@@ -2083,10 +2148,14 @@ class StripeWebhookController extends Controller
                 Log::warning('Task GMV recalc failed: '.$e->getMessage(), ['purchase_id' => $purchase->id]);
             }
 
+            // ⚠️ `queue()`, not `send()`. Both of these ran INLINE inside the
+            // webhook — two synchronous SMTP round trips on a request Vapor
+            // gives 60 seconds in total, on the one path that must answer
+            // Stripe promptly or the event is retried and the work repeats.
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
                 if ($creator->notification_send == 1) {
-                    Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                    Mail::to($creator->email)->queue(new TaskPurchasedMail($purchase, $task, $supporter));
                 }
 
                 Helpers::sendNotification(
@@ -2097,7 +2166,7 @@ class StripeWebhookController extends Controller
             }
 
             if ($supporter && $supporter->notification_send == 1) {
-                Mail::to($supporter->email)->send(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
+                Mail::to($supporter->email)->queue(new TaskPurchasedSupporterMail($purchase, $task, $supporter));
             }
 
             // Buyer push — mirrors the redirect (createTaskPurchaseSync) path; whichever
@@ -3707,7 +3776,10 @@ class StripeWebhookController extends Controller
                 'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
                 'anonymous' => $membershipPayment->anonymous ?? false,
                 'message' => $membershipPayment->message,
-                'deliverable_url' => null,
+                // The renewal delivers that cycle's content. This was null on
+                // the belief that a membership has nothing to download; the
+                // tier's `content_file` is exactly that. Bare URL by rule.
+                'deliverable_url' => $membership->bareContentFileUrl(),
                 'metadata' => json_encode([
                     'certificate' => 'true',
                     'product_type' => 'membership',
@@ -4275,6 +4347,14 @@ class StripeWebhookController extends Controller
         Payment::where('stripe_session_id', $session->id)
             ->whereIn('status', ['initiated', 'processing', 'review_hold'])
             ->update(['status' => 'failed']);
+
+        // With instant_fulfilment on, the redirect wrote a COMPLETED ledger row
+        // for bank money that had not settled. This event is the bank saying it
+        // never will — without this sync the creator keeps a completed,
+        // payout-eligible FinancialTransaction for money that never arrived.
+        if (! empty($session->payment_intent)) {
+            $this->syncFinancialTransactionsByPaymentIntent($session->payment_intent, 'failed');
+        }
     }
 
     /**
@@ -4554,14 +4634,14 @@ class StripeWebhookController extends Controller
                 if ($supporter) {
                     Helpers::sendNotification('Task Refunded 💸', "The task '{$task->title}' has been refunded.", $supporter->email);
                     if ($supporter->notification_send == 1) {
-                        Mail::to($supporter->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => 'The task was refunded.']));
+                        Mail::to($supporter->email)->queue(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => 'The task was refunded.']));
                     }
                 }
 
                 if ($creator) {
                     Helpers::sendNotification('Task Refunded 💸', "The task '{$task->title}' has been refunded to the supporter.", $creator->email);
                     if ($creator->notification_send == 1) {
-                        Mail::to($creator->email)->send(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => 'The task was refunded to the supporter.']));
+                        Mail::to($creator->email)->queue(new TaskRefunded(['title' => $task->title, 'amount' => $purchase->amount, 'currency' => $task->currency, 'message' => 'The task was refunded to the supporter.']));
                     }
                 }
             } catch (\Exception $e) {
@@ -5383,7 +5463,10 @@ class StripeWebhookController extends Controller
                             'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
                             'product_type' => 'shop_item',
                             'transaction_amount' => $shopPayment->amount,
-                            'deliverable_url' => $shopPayment->shop->reward_file_url,
+                            // Bare, never the signed accessor — the column
+                            // stays unsigned and DeliveriesController signs
+                            // per click (see Shop::bareRewardFileUrl).
+                            'deliverable_url' => $shopPayment->shop->bareRewardFileUrl(),
                             'customer_email' => $shopPayment->email ?? ($shopPayment->user->email ?? null),
                             'customer_name' => $shopPayment->name ?? ($shopPayment->user->name ?? null),
                             'payment_status' => 'paid',
@@ -5412,7 +5495,15 @@ class StripeWebhookController extends Controller
                     Log::error('StripeWebhookController: Failed to create deliverable record for shop', ['error' => $e->getMessage()]);
                 }
 
-                ShopBuyedUser::dispatchSync($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
+                // 🚨 QUEUED, AND AFTER THE TRANSACTION COMMITS. This was
+                // `dispatchSync` — an SMTP round trip executed INSIDE the
+                // `DB::transaction` opened at the top of this method, while a
+                // `lockForUpdate` was held on the `shop_payments` row. Every
+                // concurrent write to that row waited on the mail server, and
+                // on Vapor the whole webhook has a 60-second budget. The
+                // creator's own receipt (`ShopBuyed`, above) has always been
+                // queued; only the buyer's was inline.
+                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol)->afterCommit();
 
                 // 9. Send PWA notifications
                 try {
@@ -6353,7 +6444,14 @@ class StripeWebhookController extends Controller
                 }
 
                 if ($sourceStatus !== null) {
-                    $modelClass::whereIn('id', $ids)->update([$statusCol => $sourceStatus]);
+                    // A failure event must never demote a source row that already
+                    // settled ('paid') — refunds and disputes DO overwrite paid,
+                    // a failed/blocked attempt does not.
+                    $sourceQuery = $modelClass::whereIn('id', $ids);
+                    if (in_array($sourceStatus, ['failed', 'blocked'], true)) {
+                        $sourceQuery->where($statusCol, '!=', 'paid');
+                    }
+                    $sourceQuery->update([$statusCol => $sourceStatus]);
                 }
                 FinancialTransaction::where('source_type', $modelClass)
                     ->whereIn('source_id', $ids)

@@ -6,7 +6,6 @@ use App\Helpers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\CheckMediaModeration;
 use App\Jobs\SendBioSocialUpdateEmail;
-use App\Jobs\SendIntroMailAdmin;
 use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\Currency;
@@ -385,9 +384,19 @@ class ProfileController extends Controller
                             ['bio' => $user->bio],
                         );
                     } else {
-                        if ($user->bio_approved == 2 || $user->bio_approved == 1) {
-                            $user->bio_approved = 0;
-                        }
+                        /*
+                         * 🚨 A GIFTER'S ASSETS ARE APPROVED AS THEY ARE SAVED
+                         * (19 Aug 2026, client direction). Only a creator's
+                         * profile is reviewed; a gifter reaches an admin for one
+                         * thing only, the £500 address check. Queueing their bio
+                         * put work in front of a reviewer that nobody had asked
+                         * for and that nothing downstream depended on.
+                         *
+                         * ⚠️ It can still go back to 0 — an admin asking them to
+                         * change something is exactly how a gifter row becomes
+                         * pending again, and that path is untouched.
+                         */
+                        $user->bio_approved = (int) $user->role === 0 ? 1 : 0;
 
                         $user->bio = $request->bio;
                     }
@@ -438,7 +447,9 @@ class ProfileController extends Controller
                         );
                     } else {
                         $user->avatar = $avatar['uuid'] ?? null;
-                        $user->avatar_approved = 0;
+                        // A gifter's photo is approved as it is saved — see the bio
+                        // branch above for why.
+                        $user->avatar_approved = (int) $user->role === 0 ? 1 : 0;
                         $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
                     }
 
@@ -449,24 +460,15 @@ class ProfileController extends Controller
                 }
 
                 if ($coverChanged) {
-                    $coverUuid = $cover['uuid'] ?? null;
-
-                    // A curated cover is pre-approved, so it goes live immediately and
-                    // opens no review — it has already been vetted, and holding it would
-                    // queue work nobody needs to do.
-                    if (! PresetCovers::isPreApproved($coverUuid)
-                        && ProfileAssetVisibility::isLive($user, ProfileChangeRequest::ASSET_COVER)) {
-                        $pendingCoverChange = ProfileChangeRequest::open(
-                            $user,
-                            ProfileChangeRequest::ASSET_COVER,
-                            ['uuid' => $coverUuid, 'cdn_modifier' => $cover['cdnUrlModifiers'] ?? null],
-                            ['uuid' => $user->cover, 'cdn_modifier' => $user->cover_cdn_modifier],
-                        );
-                    } else {
-                        $user->cover = $coverUuid;
-                        $user->cover_approved = PresetCovers::isPreApproved($user->cover) ? 1 : 0;
-                        $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
-                    }
+                    /*
+                     * 🚨 A COVER IS NOT REVIEWED (19 Aug 2026, client direction).
+                     * It is a banner, not a claim about who somebody is, and
+                     * holding it queued work nobody was ever going to do. It is
+                     * published as saved — no change request, no flag to clear.
+                     */
+                    $user->cover = $cover['uuid'] ?? null;
+                    $user->cover_approved = 1;
+                    $user->cover_cdn_modifier = $cover['cdnUrlModifiers'] ?? null;
                 }
 
                 if ($request->hasFile('social_image')) {
@@ -590,11 +592,33 @@ class ProfileController extends Controller
     {
         try {
             $user = User::where('id', Auth::id())->first();
-            if ($user->role == 1) {
-                $user->profile_status_lock = 1;
-                $user->profile_reject_reason = null;
-                $user->save();
+
+            if ($user->role != 1) {
+                return back()->with('error', 'Only creators submit a profile for review.');
             }
+
+            /*
+             * 🚨 CHECKED HERE, NOT ONLY IN THE BROWSER (19 Aug 2026).
+             *
+             * The journey card disables its button until these four are done,
+             * but this route is a bare GET with no validation — so anybody could
+             * put an empty profile into the review queue by opening the URL, and
+             * an admin would then be mailed to approve a creator with nothing to
+             * approve. The four are the client's own list: photo, bio, a social
+             * handle and a card.
+             */
+            $missing = $this->missingForReview($user);
+
+            if ($missing) {
+                return back()->with(
+                    'error',
+                    'Add '.$this->readableList($missing).' before submitting for review.'
+                );
+            }
+
+            $user->profile_status_lock = 1;
+            $user->profile_reject_reason = null;
+            $user->save();
 
             return back()->with('success', 'Your Verification Request Submit Successfully.');
         } catch (\Exception $e) {
@@ -602,6 +626,58 @@ class ProfileController extends Controller
 
             return back()->with('error', 'Failed to update profile lock status. Please try again later.');
         }
+    }
+
+    /**
+     * What a creator still has to add before anyone reviews them.
+     *
+     * ⚠️ Cover and intro are deliberately absent — neither is reviewed, so
+     * neither can block a submission.
+     *
+     * @return array<int, string>
+     */
+    private function missingForReview(User $user): array
+    {
+        $missing = [];
+
+        if (blank($user->avatar)) {
+            $missing[] = 'a profile photo';
+        }
+
+        if (blank($user->bio)) {
+            $missing[] = 'a bio';
+        }
+
+        $links = $user->socialLinks;
+
+        $hasHandle = $links && collect($links->getAttributes())
+            ->only(['instagram', 'twitter', 'youtube', 'twitch', 'tiktok', 'facebook', 'reddit', 'other'])
+            ->filter(fn ($value) => filled($value))
+            ->isNotEmpty();
+
+        if (! $hasHandle) {
+            $missing[] = 'a social handle';
+        }
+
+        // "Card added" is the active subscription — the same thing the journey
+        // card checks, so the button and this cannot disagree.
+        if (! in_array((int) $user->subscription_status, [1, 2], true)) {
+            $missing[] = 'a payment card';
+        }
+
+        return $missing;
+    }
+
+    /** "a bio and a payment card" — a list a person can read. */
+    private function readableList(array $items): string
+    {
+        if (count($items) === 1) {
+            return $items[0];
+        }
+
+        $last = array_pop($items);
+
+        return implode(', ', $items).' and '.$last;
     }
 
     /**
@@ -927,6 +1003,16 @@ class ProfileController extends Controller
             $intro->uuid = $uuid;
             $intro->height = 720; // Default height for videos
             $intro->width = 1280; // Default width for videos
+            /*
+             * 🚨 A RE-UPLOAD GOES BACK TO PENDING.
+             *
+             * The row is overwritten in place, and `approved` used to be left
+             * alone — so a creator could swap an approved video for anything and
+             * the new one inherited the old one's approval, live and unreviewed.
+             * Measured 17 Aug 2026: 10 of 12 approved intros had been changed
+             * after approval.
+             */
+            $intro->approved = 0;
             $intro->save();
         }
 
@@ -935,7 +1021,16 @@ class ProfileController extends Controller
         // Trigger poster generation/accessor side effects
         $intro->poster_url;
 
-        SendIntroMailAdmin::dispatch($intro);
+        /*
+         * 🚨 NO ADMIN MAIL, AND NO REVIEW (19 Aug 2026, client direction).
+         *
+         * Every upload used to mail an admin "New intro video to approve" with
+         * no gate whatever — including creators with no bio, no handles and no
+         * card, who would never be approved to sell anything. The client's own
+         * words: "we shouldn't be getting these to approve until ID checks have
+         * been made. They will cost a lot to host." An intro is now published as
+         * it is saved and is not an approval queue at all.
+         */
 
         $user = Auth::user();
         $this->userProfileService->clearUserCaches($user->username, $user->id);
@@ -1282,18 +1377,24 @@ class ProfileController extends Controller
                     'title' => $tpur->task->title,
                     'uuid' => $tpur->task->uuid,
                     'status' => $tpur->status,
+                    // 🚨 `proof_content` is written by TaskController::uploadProof
+                    // with the keys `file` / `name` / `mime_type` / `notes` — it
+                    // has NEVER carried `media_url` or `message`, so both reads
+                    // here resolved to null and a delivered custom-task proof
+                    // rendered as nothing in the support-story feed. The legacy
+                    // names are kept as a fallback in case any old row used them.
                     'reward_file' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
                         ? route('task.download', $tpur->task->uuid)
-                        : ($tpur->proof_content['media_url'] ?? null),
+                        : ($tpur->proof_content['file'] ?? $tpur->proof_content['media_url'] ?? null),
                     'reward_note' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
                         ? $tpur->task->deliverable_note
-                        : ($tpur->proof_content['message'] ?? null),
+                        : ($tpur->proof_content['notes'] ?? $tpur->proof_content['message'] ?? null),
                 ] : [
                     'title' => 'Task',
                     'uuid' => $tpur->uuid,
                     'status' => $tpur->status,
-                    'reward_file' => $tpur->proof_content['media_url'] ?? null,
-                    'reward_note' => $tpur->proof_content['message'] ?? null,
+                    'reward_file' => $tpur->proof_content['file'] ?? $tpur->proof_content['media_url'] ?? null,
+                    'reward_note' => $tpur->proof_content['notes'] ?? $tpur->proof_content['message'] ?? null,
                 ],
                 'message' => $tpur->gifter_message ?? null,
                 'status' => $tpur->status,
@@ -2173,11 +2274,17 @@ class ProfileController extends Controller
             } elseif ($base === 'TipGoalsPayment' && $src) {
                 $tip = $src->tipGoal;
                 $itemTitle = $tip?->name;
-                $openPage = 'tips';
+                // Piggy Bank has no tab of its own; it is rendered on About.
+                $openPage = 'about';
                 $reward['description'] = $tip?->description;
             }
 
-            $openLink = ($creatorUsername && $openPage) ? '/'.$creatorUsername.'?page='.$openPage : null;
+            // 🚨 A PATH SEGMENT, NOT A QUERY PARAMETER. The route is
+            // `/{username}/{page?}`, so `/jane?page=shop` renders About with a
+            // 200 and no error — every row in this feed pointed at a bio
+            // instead of the purchase it describes. The 21 Aug 2026 sweep fixed
+            // the JSX call sites and missed the server ones.
+            $openLink = ($creatorUsername && $openPage) ? '/'.$creatorUsername.'/'.$openPage : null;
 
             // Content-access reward: members-only / subscriber / supporter-only posts.
             $accessSpec = match ($type) {

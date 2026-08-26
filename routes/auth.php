@@ -55,6 +55,7 @@ use App\Models\MonthlyCharge;
 use App\Models\User;
 use App\Models\WishItem;
 use App\SeoMeta;
+use App\Services\Discovery\BirthdayDiscoveryService;
 use App\Services\Discovery\CollectionService;
 use App\Services\DiscoveryService;
 use App\Services\SubscriptionActivationService;
@@ -662,6 +663,50 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
                 ? app(CollectionService::class)
                     ->many(['hidden_gems', 'almost_funded'], 8, $request->user())
                 : [],
+
+        /*
+         * 🚨 THE ONE WAY INTO BIRTHDAYS THIS WEEK. The collection page has existed
+         * since Phase 4 and NOTHING linked to it — the only route in was the CTA in
+         * the Monday e-mail, which ships behind a flag, so a page that works was
+         * reachable only by typing the URL.
+         *
+         * ⚠️ Sent as a boolean, and only when the collection is READY. The page
+         * greys itself below its minimum, and a link from Discover into a greyed
+         * page is the same dead end the e-mail's CTA is protected from.
+         */
+        /*
+         * ⚠️ THE TILE CARRIES THE PEOPLE, NOT JUST A BOOLEAN. A row that knows only
+         * "ready / not ready" can say nothing but its own headline; showing WHOSE
+         * birthday it is makes the tile the thing it advertises. Faces are also the
+         * only honest way to make this read as an occasion — the alternative is
+         * decoration, which says nothing and dates badly.
+         *
+         * ⚠️ Avatars come from `featuredForWeek()`'s own whitelisted cards, the same
+         * approved images the collection page shows; `DiscoveryEligibility` requires
+         * `avatar_approved`, so an unapproved photo cannot reach here. Names are NOT
+         * sent — the tile needs faces and a count, and a name is one more piece of a
+         * person's data on a page that has no use for it.
+         */
+        'birthdays' => (function () {
+            try {
+                $service = app(BirthdayDiscoveryService::class);
+                $week = BirthdayDiscoveryService::weekStart(now());
+                $featured = $service->featuredForWeek($week);
+
+                if (count($featured) < $service->collectionMinCreators()) {
+                    return ['ready' => false, 'count' => 0, 'avatars' => []];
+                }
+
+                return [
+                    'ready' => true,
+                    'count' => count($featured),
+                    'avatars' => collect($featured)->pluck('avatar_url')->filter()->take(4)->values()->all(),
+                ];
+            } catch (Throwable $e) {
+                // Discover must never fail over a link to another page.
+                return ['ready' => false, 'count' => 0, 'avatars' => []];
+            }
+        })(),
     ]);
 })->name('discover');
 
@@ -1171,8 +1216,6 @@ Route::middleware('auth')->group(function () {
                 'message' => 'Please complete your Stripe identity verification.',
             ]);
         })->name('stripe.identity.verification');
-
-        Route::post('/say-thankyou/{payment_id}', [WishitemController::class, 'sayThanks'])->name('say-thankyou');
 
         Route::post('/update/move-wish', [WishitemController::class, 'moveWishes'])->name('move-wish');
 

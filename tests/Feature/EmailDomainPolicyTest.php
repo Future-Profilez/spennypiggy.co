@@ -162,6 +162,9 @@ class EmailDomainPolicyTest extends TestCase
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',
+            // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
+            'social_platform' => 'instagram',
+            'social_handle' => 'creatorhandle',
         ])->assertSessionHasErrors('email');
 
         $this->assertNull(User::where('email', 'throwaway@mailinator.com')->first());
@@ -185,6 +188,9 @@ class EmailDomainPolicyTest extends TestCase
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',
+            // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
+            'social_platform' => 'instagram',
+            'social_handle' => 'creatorhandle',
         ]);
 
         $this->assertNotNull(User::where('email', 'real@outlook.test')->first());
@@ -203,6 +209,9 @@ class EmailDomainPolicyTest extends TestCase
             'role' => 1,
             'creator_email_receipt_ack' => true,
             'gender' => 'they',
+            // ⚠️ Required for a creator since 25 Aug 2026 — see SignupSocialHandleTest.
+            'social_platform' => 'instagram',
+            'social_handle' => 'creatorhandle',
         ])->assertSessionHasErrors('email');
 
         $this->assertNull(User::where('email', 'j.ane+2@gmail.com')->first());

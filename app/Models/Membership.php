@@ -113,6 +113,23 @@ class Membership extends Model
         return SecureMedia::sign($url);
     }
 
+    /**
+     * The UNSIGNED CDN URL of the tier's paid content — for persisting into
+     * `deliverables.deliverable_url`, which stays bare by rule: signing happens
+     * per click in DeliveriesController. Mirrors Shop::bareRewardFileUrl() and
+     * WishItem::bareContentFileUrl().
+     */
+    public function bareContentFileUrl(): ?string
+    {
+        if (empty($this->content_file)) {
+            return null;
+        }
+
+        return strpos($this->content_file, 'https://ucarecdn.com/') === 0
+            ? $this->content_file
+            : 'https://ucarecdn.com/'.$this->content_file.'/';
+    }
+
     public static function boot()
     {
         parent::boot();
