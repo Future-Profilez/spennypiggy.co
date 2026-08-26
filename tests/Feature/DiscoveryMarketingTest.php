@@ -51,6 +51,18 @@ class DiscoveryMarketingTest extends TestCase
         'bio_direct_sales' => 'bio.buy route + BioSellableItems::checkoutUrl + bio.items.* editor',
         'hidden_gems' => 'CollectionService::hiddenGems + homepage CreatorShowcase (Phase 6)',
         'almost_funded' => 'CollectionService::almostFunded + homepage CreatorShowcase (Phase 6)',
+
+        // Verified 26 Aug 2026. Each traced to the code that RENDERS it, never to a
+        // service method that merely exists — a collection nothing draws is not a
+        // live capability, which is the standard hidden_gems was flipped under.
+        'similar_creators' => 'CreatorRecommendationService::SLOT_SIMILAR → MoreCreators.jsx chip on every profile; similar_creators collection on payment success',
+        'more_creators' => 'AuthenticatedSessionController more_creators prop → Dashboard.jsx <MoreCreators> on every public profile',
+        'new_creator_collections' => 'Discover "New and verified" rail + new_creators collection on search and payment success',
+        'trending' => 'Discover "Trending creators" rail (rankedCreatorIds) + trending collection on search',
+        'reengagement' => 'reactivation:notify daily 10:15 + ReactivationReminder links via DiscoverySources::profileUrl(personalised)',
+        'new_wish_reminders' => 'CreatorContentObserver (WishItem in MAP) → CreatorEventNotifier::notifyFollowers, moderation-gated',
+        // All seven of this key's labels checked — a key cannot be half true.
+        'birthday' => 'BirthdayDiscoveryService::STAGES [7,1,0] + birthday:remind 09:30 + birthday:weekly 09:45 (both flags now default true) + no role filter on the weekly audience + max_featured 10 + /discover/birthdays',
     ];
 
     /** @test */
@@ -86,10 +98,19 @@ class DiscoveryMarketingTest extends TestCase
     /** @test */
     public function the_four_scheduled_flips_are_still_pending(): void
     {
-        // These flip on their own dates: analytics with Phase 2, more_creators
-        // Mon 31 Aug, birthday with Phase 4, tips when Bridge access lands. If
-        // one has genuinely shipped, move it here AND to VERIFIED_LIVE.
-        foreach (['more_creators', 'birthday', 'tips'] as $key) {
+        // These flip on their own dates: analytics with Phase 2, tips when Bridge
+        // access lands. If one has genuinely shipped, move it here AND to
+        // VERIFIED_LIVE.
+        //
+        // ⚠️ `more_creators` LEFT THIS LIST ON 26 Aug 2026. It was scheduled for
+        // Mon 31 Aug and the code shipped on 20 Aug — the schedule was never the
+        // gate, "is it live in the product" is. Evidence is in VERIFIED_LIVE.
+        //
+        // ⚠️ `birthday` LEFT IT THE SAME DAY. It was held back for one reason —
+        // the two sending flags defaulted false, so both commands ran daily and
+        // sent nothing. Both now default true (client decision), so the reason is
+        // gone. All seven of its labels were checked before flipping.
+        foreach (['tips'] as $key) {
             $this->assertSame('coming_soon', config("discovery.labels.{$key}"),
                 "'{$key}' is marked live. Confirm the feature actually shipped before flipping it."
             );

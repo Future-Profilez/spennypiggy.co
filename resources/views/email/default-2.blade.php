@@ -212,17 +212,88 @@
 
                          ⚠️ `#C4006A`, not `#FF007F`: brand pink on this footer tint
                          measures 3.45:1 and fails AA at 12px. --}}
-                    @if(isset($user) && $user instanceof \App\Models\User)
+                    {{-- 🚨 A MAIL THAT BRINGS ITS OWN LINKS GETS THEM USED — IT DOES NOT
+                         GET A SECOND, WRONGER PAIR UNDERNEATH.
+
+                         This block used to render unconditionally, so the birthday e-mails
+                         shipped FOUR footer links: their own correct pair, and this one.
+                         Both of this pair were wrong for them:
+
+                         · The Unsubscribe called `generateUnsubscribeToken($user)` with NO
+                           category, which defaults to `marketing_emails_enabled` and also
+                           SUPPRESSES the address for all marketing. On a category-class mail
+                           like the birthday reminder — which does not ride marketing consent
+                           — clicking it silenced every promotion the person had agreed to
+                           and did not stop the birthday reminders at all. The link that
+                           looks like the unsubscribe was the one that did not work.
+
+                         · "Manage preferences" was a bare `url('/email-preferences')`, which
+                           sits behind `auth`. A suspended creator cannot sign in, so that is
+                           the login dead end the SIGNED no-login centre exists to avoid.
+
+                         ⚠️ The fallback below is unchanged, so every mail that does not
+                         supply its own links behaves exactly as before. --}}
+                    @php
+                        /*
+                         * 🚨 THE OPT-OUT IS THE MAIL'S OWN WHEN IT HAS ONE; THE PREFERENCE
+                         * LINK IS ALWAYS THE SIGNED ONE.
+                         *
+                         * This block used to render both links unconditionally, so every mail
+                         * that draws its own footer — ten of them — shipped FOUR links leading
+                         * to two destinations, and this pair were the wrong two:
+                         *
+                         * · The Unsubscribe called `generateUnsubscribeToken($user)` with NO
+                         *   category, which defaults to `marketing_emails_enabled` AND
+                         *   suppresses the address for all marketing. On a category-class mail
+                         *   like the birthday reminder, the link labelled "Unsubscribe" — the
+                         *   one a reader is likeliest to press — silenced every promotion the
+                         *   person had agreed to and did not stop the birthday mail at all.
+                         *
+                         * · "Manage preferences" was a bare `url('/email-preferences')`, which
+                         *   sits behind `auth`. A suspended creator cannot sign in, so for
+                         *   exactly the person most likely to be using it that was the login
+                         *   dead end the SIGNED no-login centre exists to avoid.
+                         *
+                         * So: a mail carrying its own opt-out keeps it alone (it is the
+                         * narrower switch and it is already drawn, in that mail's own words).
+                         * The preference link survives for the eight mails that draw an
+                         * opt-out and no centre link — but as the signed token, never the
+                         * walled path.
+                         */
+                        $hasUser = isset($user) && $user instanceof \App\Models\User;
+
+                        $footerUnsubscribeUrl = ! empty($unsubscribeUrl)
+                            ? null
+                            : ($hasUser
+                                ? \App\Http\Controllers\EmailPreferenceController::generateUnsubscribeToken($user)
+                                : null);
+
+                        // `generateManageToken()` returns NULL when the route is not
+                        // registered — never let that become a dead `href=""`.
+                        $footerPreferencesUrl = ! empty($preferencesUrl)
+                            ? null
+                            : ($hasUser
+                                ? \App\Http\Controllers\EmailPreferenceController::generateManageToken($user)
+                                : null);
+                    @endphp
+
+                    @if($footerPreferencesUrl || $footerUnsubscribeUrl)
                     <tr>
                         <td class="footer-text"
                             style="padding: 0 0 8px 0; font-family: 'Outfit', Arial, sans-serif;
                                    font-size: 12px; line-height: 18px; color: #8B4E76; text-align: center;">
-                            <a href="{{ url('/email-preferences') }}" class="footer-link-strong"
+                            @if($footerPreferencesUrl)
+                            <a href="{{ $footerPreferencesUrl }}" class="footer-link-strong"
                                style="color: #C4006A; text-decoration: none; font-weight: 700;">Manage preferences</a>
+                            @endif
+                            @if($footerPreferencesUrl && $footerUnsubscribeUrl)
                             <span style="color: #8B4E76;">&nbsp;·&nbsp;</span>
-                            <a href="{{ \App\Http\Controllers\EmailPreferenceController::generateUnsubscribeToken($user) }}"
+                            @endif
+                            @if($footerUnsubscribeUrl)
+                            <a href="{{ $footerUnsubscribeUrl }}"
                                class="footer-link-subtle"
                                style="color: #8B4E76; text-decoration: underline;">Unsubscribe</a>
+                            @endif
                         </td>
                     </tr>
                     @endif

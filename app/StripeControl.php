@@ -5,6 +5,7 @@ namespace App;
 use App\Support\StripeRequirementLabels;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Stripe\Account;
 use Stripe\Account\LoginLink;
@@ -16,6 +17,7 @@ use Stripe\Customer;
 use Stripe\Exception\ApiConnectionException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\OAuth\InvalidRequestException;
+use Stripe\Exception\PermissionException;
 use Stripe\Exception\RateLimitException;
 use Stripe\PaymentIntent;
 use Stripe\Payout;
@@ -1996,10 +1998,70 @@ class StripeControl
 
             return true;
         } catch (Exception $e) {
-            Log::error('Failed to ensure manual payout schedule: '.$e->getMessage());
+            /*
+             * An account Stripe will not let this key touch is a PERMANENT fact about
+             * that row, not a failure of this run: the creator disconnected, the
+             * account was rejected or deleted, or it belongs to another platform.
+             *
+             * `payout:enforce-manual` sweeps EVERY account with an `account_id` every
+             * ten minutes - 144 runs a day - so logging this at error level meant one
+             * dead account produced 144 identical alerts a day, for as long as the row
+             * existed. That is how a real fault gets buried: the alert that matters is
+             * indistinguishable from the 143 before it. Warning + a 24h cooldown keyed
+             * on the account keeps it visible once a day and actionable.
+             *
+             * `Cache::add` is atomic - a `has()` + `put()` pair lets two concurrent
+             * runs both pass the check and both log.
+             */
+            if (self::isAccountUnreachable($e)) {
+                if (Cache::add('stripe:manual-payout:unreachable:'.$connectedAccountId, true, now()->addDay())) {
+                    // Still ERROR, not warning: this creator can never be paid out until
+                    // somebody looks at the account, so it has to reach whoever reads the
+                    // alerts. The cooldown makes it once a day instead of 144 times -
+                    // it does not make it silent.
+                    Log::error('Connected account is unreachable - manual payout schedule not enforced', [
+                        'account_id' => $connectedAccountId,
+                        'currency' => $currency,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return false;
+            }
+
+            // Anything else - a network blip, a rate limit, a Stripe outage - is a real
+            // failure of THIS run and keeps its error level. The account id was only ever
+            // available inside the message string before, which is not something an alert
+            // can group or filter on.
+            Log::error('Failed to ensure manual payout schedule', [
+                'account_id' => $connectedAccountId,
+                'currency' => $currency,
+                'error' => $e->getMessage(),
+            ]);
 
             return false;
         }
+    }
+
+    /**
+     * Is this Stripe error telling us the account will never be reachable with this key?
+     *
+     * Matched on the Stripe error CODE where there is one - `account_invalid` is the
+     * documented code for "no such account, or access revoked". The string check is a
+     * fallback for the permission error, which carries no code.
+     */
+    private static function isAccountUnreachable(\Throwable $e): bool
+    {
+        if ($e instanceof PermissionException) {
+            return true;
+        }
+
+        if ($e instanceof \Stripe\Exception\InvalidRequestException) {
+            return in_array($e->getStripeCode(), ['account_invalid', 'resource_missing'], true);
+        }
+
+        return str_contains($e->getMessage(), 'does not have access to account')
+            || str_contains($e->getMessage(), 'Application access may have been revoked');
     }
 
     /**

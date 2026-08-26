@@ -63,7 +63,7 @@ const CHAPTERS = [
     { id: 'act-join', label: 'Join' },
 ];
 
-export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel, discovery, collections = [] }) {
+export default function Home({ auth, user, founderBonus, growthBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel, discovery, collections = [] }) {
 
     useEffect(() => {
         // PWA Mode: If logged in, redirect directly to profile page
@@ -247,7 +247,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
                 `/creators/link-in-bio` ad page. Only the homepage placement is gone. */}
             <div id="act-earn">
                 <Suspense fallback={<div aria-hidden="true" className="min-h-[80dvh]" />}>
-                    <EarnMoreAnnouncement founderBonus={founderBonus} />
+                    <EarnMoreAnnouncement founderBonus={founderBonus} growthBonus={growthBonus} />
                     <PaidTasksAnnouncement />
                 </Suspense>
             </div>

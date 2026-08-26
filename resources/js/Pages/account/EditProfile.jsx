@@ -53,6 +53,23 @@ export default function EditProfile({
         social_handle: user?.social_handle ?? auth?.user?.social_handle,
     };
 
+    /*
+     * The server rule is `before:today`, and the input carried no bound at all - so
+     * a future date could be typed or picked, and the save was then refused by the
+     * server on a field the form had accepted. `max` is YESTERDAY, not today,
+     * because `before:today` is strict: an input capped at today would still offer
+     * one value the server rejects.
+     */
+    const maxDateOfBirth = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        // Local components, never toISOString(): that converts to UTC and shifts the
+        // bound back a day for every viewer east of Greenwich.
+        const pad = (n) => String(n).padStart(2, "0");
+
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    })();
+
     const formatDate = (value) => {
         if (!value) {
             return "";
@@ -538,22 +555,20 @@ export default function EditProfile({
                 setLoading(false);
             },
             onError: (_err) => {
-                console.table("profile update error", _err);
-                if (_err.username) {
+                const named = ["username", "email", "bio", "name"];
+                named.forEach((key) => {
+                    if (_err[key]) {
+                        errorAlert(_err[key]);
+                    }
+                });
+                // Every other validated field (avatar/cover uuid + cdn modifier,
+                // creator_category, pride_badges, gender, country, date_of_birth)
+                // used to fail with no message at all: the request came back with
+                // errors, the spinner stopped, and nothing on screen said why.
+                if (!named.some((key) => _err[key])) {
+                    const first = Object.values(_err).find(Boolean);
                     errorAlert(
-                        _err.username || "Something went wrong in username.",
-                    );
-                }
-                if (_err.email) {
-                    errorAlert(_err.email || "Something went wrong in email.");
-                }
-                if (_err.bio) {
-                    errorAlert(_err.bio || "Something went wrong in bio.");
-                }
-                if (_err.name) {
-                    errorAlert(
-                        _err.name ||
-                            "Something went wrong in your display name.",
+                        first || "Something went wrong while saving your profile.",
                     );
                 }
                 setLoading(false);
@@ -919,7 +934,7 @@ export default function EditProfile({
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Date of Birth (for milestone & birthday rewards)
                                         </label>
-                                        <input type="date" className="w-full border border-gray-300 px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white" value={data.date_of_birth} onChange={(e) => setData("date_of_birth", e.target.value)}
+                                        <input type="date" max={maxDateOfBirth} className="w-full border border-gray-300 px-4 py-3 rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500 bg-white" value={data.date_of_birth} onChange={(e) => setData("date_of_birth", e.target.value)}
                                         />
                                         {errors.date_of_birth && (
                                             <span className="text-xs text-red-500 mt-1 block">{errors.date_of_birth}</span>

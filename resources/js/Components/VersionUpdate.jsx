@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { safeGet, safeSet } from "../lib/safeStorage"
 export default function VersionUpdate(){
    const [isUpdateAvailable, setisUpdateAvailable] = useState(false);
    const newVersion = '1.0.2';
@@ -8,13 +9,15 @@ export default function VersionUpdate(){
             names.forEach(name => {
                caches.delete(name);
             });
-            localStorage.setItem('version', newVersion);
+            safeSet('version', newVersion);
          });
          window.location.reload(true);
       }
    }
    useEffect(()=> {
-      const v = typeof window !== 'undefined' ? localStorage.getItem('version') : null;
+      // `typeof window` never guarded this: reading the property itself throws
+      // when the browser refuses site data.
+      const v = safeGet('version');
       if(v === undefined || v == '' || v != newVersion){
          setisUpdateAvailable(true);
       } else {

@@ -62,6 +62,11 @@ class StaticPageController extends Controller
         return Inertia::render('Legal/FastStartBonusTerms');
     }
 
+    public function growthBonusTerms()
+    {
+        return Inertia::render('Legal/GrowthBonusTerms');
+    }
+
     public function contentPaymentFramework()
     {
         return Inertia::render('Legal/ContentPaymentFramework');

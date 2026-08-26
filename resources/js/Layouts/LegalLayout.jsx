@@ -29,6 +29,7 @@ export default function LegalLayout({ children, activePage }) {
         { name: 'Return Policy', href: '/return-policy', component: 'ReturnPolicy', icon: RotateCcw },
         { name: 'US Addendum', href: '/us-addendum', component: 'UsAddendum', icon: ShieldCheck },
         { name: 'Fast Payout Terms', href: '/fast-start-bonus-terms', component: 'FastStartBonusTerms', icon: FileText },
+        { name: 'Growth Bonus Terms', href: '/growth-bonus-terms', component: 'GrowthBonusTerms', icon: FileText },
         { name: 'Content & Payment Policy', href: '/content-payment-policy', component: 'ContentPaymentFramework', icon: ShieldCheck },
     ];
 

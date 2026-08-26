@@ -99,6 +99,9 @@ const PromoSlider = lazyRetry(() => import("@/Components/Promo/PromoSlider"));
 const FounderProgressTracker = lazyRetry(
     () => import("@/Components/FounderProgressTracker"),
 );
+const GrowthBonusTracker = lazyRetry(
+    () => import("@/Components/GrowthBonusTracker"),
+);
 const FounderBadge = lazyRetry(() => import("@/Components/FounderBadge"));
 import PendingChangesNotice from "@/Components/PendingChangesNotice";
 import lazyRetry from "@/utils/lazyRetry";
@@ -171,6 +174,7 @@ export default function Dashboard(props) {
         // page is also the public profile. Null is "not your dashboard", never
         // "no data yet": a creator with no sales gets a real payload of zeros.
         opportunity_panel: opportunityPanel = null,
+        growth_bonus_panel: growthBonusPanel = null,
         more_creators: moreCreators = [],
     } = props;
 
@@ -1465,6 +1469,26 @@ export default function Dashboard(props) {
                                                                                     </Suspense>
                                                                                 )}
 
+                                                                                {/* The creator's OWN Growth Bonus figures, so it wins over the
+                                                                                    deck's generic card exactly as the founder tracker does —
+                                                                                    `growth_bonus` is excluded below while this renders. The
+                                                                                    payload is null for a visitor, for a creator not in the
+                                                                                    programme and while the scheme is dark, so there is no
+                                                                                    second gate to keep in step here. */}
+                                                                                {growthBonusPanel && (
+                                                                                    <Suspense
+                                                                                        fallback={
+                                                                                            null
+                                                                                        }
+                                                                                    >
+                                                                                        <GrowthBonusTracker
+                                                                                            data={
+                                                                                                growthBonusPanel
+                                                                                            }
+                                                                                        />
+                                                                                    </Suspense>
+                                                                                )}
+
                                                                                 {/* 🚨 THE ONE PROMO SURFACE. Five always-on banners used to
                                                                                     stack here — OfferAnnouncement, ReferralBanner and
                                                                                     FeatureSuggestionBanner among them — which is what made
@@ -1476,13 +1500,18 @@ export default function Dashboard(props) {
                                                                                     this one. */}
                                                                                 <Suspense fallback={null}>
                                                                                     <PromoSlider
-                                                                                        exclude={
-                                                                                            showFounderTracker
+                                                                                        exclude={[
+                                                                                            ...(showFounderTracker
                                                                                                 ? [
                                                                                                       "founder_bonus",
                                                                                                   ]
-                                                                                                : []
-                                                                                        }
+                                                                                                : []),
+                                                                                            ...(growthBonusPanel
+                                                                                                ? [
+                                                                                                      "growth_bonus",
+                                                                                                  ]
+                                                                                                : []),
+                                                                                        ]}
                                                                                         onSuggestFeature={() =>
                                                                                             setShowSuggestionModal(
                                                                                                 true,

@@ -199,6 +199,13 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:00')
             ->withoutOverlapping(30);
 
+        // Creator Growth Bonus daily pass — enrol, activate, milestone, reverse.
+        // No-ops while `growth_bonus.enabled` is false. 09:20, not :00 (see the
+        // cli-timeout note below) and clear of the founder job above.
+        $schedule->command('growth-bonus:evaluate')
+            ->dailyAt('09:20')
+            ->withoutOverlapping(30);
+
         // Daily job to process founder payouts (only picks bonuses whose
         // estimated_payout_date has arrived, so cadence is safe)
         //

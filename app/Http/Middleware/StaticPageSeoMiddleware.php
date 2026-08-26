@@ -273,7 +273,40 @@ class StaticPageSeoMiddleware
             ];
         }
 
-        if ($match) {
+        /*
+         * 🚨 A SERVER-RENDERED PAGE WRITES ITS OWN SOCIAL TAGS, SO THIS ONE MUST NOT.
+         *
+         * Until SSR shipped, an Inertia page's `<Head>` never reached the raw
+         * HTML — it was applied client-side, long after any crawler or link
+         * unfurler had read the document — so this map was the ONLY source of
+         * og:/twitter: tags and there was nothing to collide with. On an
+         * SSR'd route `@inertiaHead` now emits the page's set as well, and the
+         * two disagree: /creators carried og:title "Monetise Your Content…"
+         * from here and "Sell your content and keep 100%…" from the component.
+         * Which one Google and each unfurler pick is not defined anywhere.
+         *
+         * The page wins, because that is where the copy sits next to the words
+         * it describes. This middleware keeps everything the page does NOT
+         * emit — robots, and the breadcrumb JSON-LD.
+         *
+         * ⚠️ `willRender()` is deliberately the gate rather than "is this route
+         * in the ssr group": with no SSR bundle on the machine (a fresh
+         * checkout, CI) Inertia attempts no render, the page's `<Head>` never
+         * reaches the HTML, and these tags must still be emitted or the ad
+         * landing pages unfurl bare — the exact fault fixed on 24 Aug 2026.
+         *
+         * ⚠️ KNOWN NARROW GAP: bundle present but the render host unreachable.
+         * The gateway falls back to client-side rendering and the raw HTML then
+         * carries neither set. It costs a social card, never a broken page, and
+         * closing it would mean emitting both and stripping one back out of the
+         * response body. Watch for the gateway's "falling back to CSR" warning.
+         */
+        $pageOwnsSocialTags = $match
+            && $request->route()
+            && in_array('ssr', $request->route()->gatherMiddleware(), true)
+            && EnableSsr::willRender($request);
+
+        if ($match && ! $pageOwnsSocialTags) {
             SeoMeta::addTag('title', $match['title']);
             SeoMeta::addTag('meta', ['name' => 'description', 'content' => $match['description']]);
 
@@ -300,7 +333,12 @@ class StaticPageSeoMiddleware
 
             // Canonical
             SeoMeta::setCanonical($url);
+        }
 
+        // Outside the block above on purpose: an SSR'd page writes its own
+        // social tags but NO breadcrumb JSON-LD, so skipping this with them
+        // would silently drop the breadcrumb trail from every /creators page.
+        if ($match) {
             $segments = array_values(array_filter(explode('/', $path)));
             $breadcrumbs = [
                 ['name' => 'Home', 'url' => url('/')],

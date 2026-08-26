@@ -1,3 +1,4 @@
+import { safeSet } from "./lib/safeStorage";
 import React, { Children } from "./react-polyfill.js";
 import { route } from 'ziggy-js';
 import "./bootstrap";
@@ -517,7 +518,9 @@ if (typeof window !== 'undefined') {
     
     ['utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
         if (searchParams.has(param)) {
-            localStorage.setItem(param, searchParams.get(param));
+            // safeSet, not localStorage directly: this runs at module top level, so a
+            // browser refusing site data would throw here and the SPA would never boot.
+            safeSet(param, searchParams.get(param));
             utmUpdated = true;
         }
     });

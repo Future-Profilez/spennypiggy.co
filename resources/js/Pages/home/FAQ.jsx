@@ -1,8 +1,8 @@
-import { Disclosure, Transition } from '@headlessui/react';
-import { ChevronUpIcon } from '@heroicons/react/20/solid';
+import { useState } from 'react';
+import { Link } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import FadeIn from '@/Components/animations/FadeIn';
-import StaggerItem from '@/Components/animations/StaggerItem';
-import { PRICE_FORMATTED, FREE_UNTIL_FIRST_SALE, SUBSCRIPTION_COPY } from '@/constants/creatorSubscription';
+import { PRICE_FORMATTED, FREE_UNTIL_FIRST_SALE } from '@/constants/creatorSubscription';
 import { STABLECOIN_TIPS_ANNOUNCED, STABLECOIN_TIPS_LIVE } from '@/constants/stablecoinTips';
 
 /**
@@ -20,6 +20,17 @@ import { STABLECOIN_TIPS_ANNOUNCED, STABLECOIN_TIPS_LIVE } from '@/constants/sta
  * They deliberately do NOT claim it settles faster than the weekly payout run —
  * the agreed specification says Coinflow payouts should follow the normal Friday
  * rhythm where practical, and whether that is even supported is unconfirmed.
+ *
+ * LAYOUT (rebuilt): a question RAIL with one ANSWER SLAB, not eight identical
+ * accordion cards. Eight bordered cards gave every question the same weight and
+ * ~2,600px of scroll; the rail shows the whole set at once, so a reader can see
+ * that their question is here before deciding to read anything. The slab is the
+ * only light-filled block in the section — that is the section's one bold move,
+ * so everything around it stays hairline-quiet (house rule: depth is a LINE).
+ *
+ * ⚠️ ONE `active` INDEX DRIVES BOTH LAYOUTS. Below `lg` the same buttons render
+ * as an accordion with the slab inline; at `lg` the slab moves to a sticky right
+ * column. Two renderings, one state — they cannot disagree about what is open.
  */
 export default function FAQ() {
   const costAnswer = FREE_UNTIL_FIRST_SALE
@@ -73,8 +84,31 @@ export default function FAQ() {
     }
   ];
 
+  const [active, setActive] = useState(0);
+  const reduce = useReducedMotion();
+
+  /**
+   * The one light-filled block in the section. `showTitle` is false in the
+   * accordion, where the question is already sitting directly above it —
+   * printing it twice reads as a rendering fault, not as emphasis.
+   */
+  const Answer = ({ faq, showTitle }) => (
+    <div className='rounded-box bg-[#E6EA7B] px-5 py-6 md:px-8 md:py-9'>
+      <p className='font-gulfs text-[11px] uppercase tracking-[0.28em] text-black/55'>
+        Answer
+      </p>
+      {showTitle && (
+        <h3 className='mt-3 font-gulfs text-xl md:text-2xl uppercase leading-[1.15] text-black'>
+          {faq.title}
+        </h3>
+      )}
+      <p className={`${showTitle ? 'mt-4' : 'mt-3'} text-base md:text-lg leading-[1.6] text-black/80`}>
+        {faq.description}
+      </p>
+    </div>
+  );
+
   return (
-    <>
     <div
       id={`faq`}
       className='bg-transparent py-12 md:py-28 relative'
@@ -84,67 +118,85 @@ export default function FAQ() {
       the next, which is what made scrolling read as a row of coloured
       stops instead of one continuous field. */}
 
-      <div className='containerbox relative  ' >
-          <FadeIn y={30} duration={0.6}>
-          <h2 className='fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
-            Frequently Asked <span className="text-gradient-wishlist">Questions</span>
-          </h2>
-          </FadeIn>
-          <div className='max-w-4xl mx-auto' >
-              <div className='flex flex-col gap-4 md:gap-6' >
-                  {faqs && faqs.map((f, i)=>{
-                    return (
-                      <StaggerItem key={i} index={i} stagger={0.1}>
-                      <Disclosure defaultOpen={i === 0}>
-                        {({ open }) => (
-                          /* `bg-gray-900` is a banned cool gray (#111827 carries a
-                             blue cast against the page's true black); the card ink
-                             is #0d0a16, as everywhere else on this page.
-                             ⚠️ A `{/* … *\/}` JSX comment is ILLEGAL here — as the
-                             first item inside a parenthesised arrow return it parses
-                             as a block, not a comment, and takes the whole module
-                             down with "Unexpected token, expected ','". */
-                          <div className={`bg-[#0d0a16] border-2 border-[#FF007F] rounded-box-sm md:rounded-box overflow-hidden`}>
-                            {/* 🚨 `focus:outline-none` with NO replacement ring. This
-                                accordion is the only keyboard-operable control on the
-                                homepage, so a keyboard user had no visible position
-                                anywhere on the page. WCAG 2.4.7. `text-yellow-400` is
-                                also off-palette — the allocated yellow is #E6EA7B. */}
-                            <Disclosure.Button className={`flex w-full justify-between px-4 py-4 md:px-6 md:py-6 text-left text-md md:text-xl font-gulfs uppercase tracking-wide focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF007F] ${open ? 'text-[#E6EA7B]' : 'text-white'}`}>
-                              <span className="pr-4">{f.title}</span>
-                              {/* `shrink-0` — without it a long question squeezes the
-                                  chevron out of round, which is the whole affordance. */}
-                              <ChevronUpIcon
-                                className={`${
-                                  open ? 'rotate-180 transform' : ''
-                                } h-6 w-6 shrink-0 text-[#FF007F] transition-transform duration-200`}
-                              />
-                            </Disclosure.Button>
-                            <Transition
-                                enter="transition duration-100 ease-out"
-                                enterFrom="transform scale-95 opacity-0"
-                                enterTo="transform scale-100 opacity-100"
-                                leave="transition duration-75 ease-out"
-                                leaveFrom="transform scale-100 opacity-100"
-                                leaveTo="transform scale-95 opacity-0"
-                            >
-                              {/* Padding must match the button's, or the question sits
-                                  at 16px and its answer at 24px on a phone — the
-                                  question and answer stop reading as one column. */}
-                              <Disclosure.Panel className="px-4 pb-4 md:px-6 md:pb-6 text-base md:text-lg text-gray-300 leading-relaxed">
-                                {f.description}
-                              </Disclosure.Panel>
-                            </Transition>
-                          </div>
-                        )}
-                      </Disclosure>
-                      </StaggerItem>
-                    )
-                  })}
-              </div>
+      <div className='containerbox relative'>
+        <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_1.05fr] gap-10 lg:gap-16'>
+
+          {/* ── Rail ─────────────────────────────────────────────── */}
+          <div>
+            <FadeIn y={30} duration={0.6}>
+              <h2 className='fading text-3xl md:text-4xl lg:text-5xl font-gulfs text-white uppercase leading-tight'>
+                Frequently Asked <span className='text-gradient-wishlist'>Questions</span>
+              </h2>
+              <p className='mt-4 text-base md:text-lg leading-[1.6] text-gray-400'>
+                Pick a question. The answer opens beside it.
+              </p>
+            </FadeIn>
+
+            <div className='mt-8 md:mt-10 border-t border-white/12'>
+              {faqs.map((f, i) => {
+                const open = active === i;
+                return (
+                  <div key={i} className='border-b border-white/12'>
+                    <button
+                      type='button'
+                      aria-expanded={open}
+                      onClick={() => setActive(i)}
+                      className={`group flex w-full items-start gap-4 rounded-box-sm px-3 py-4 md:px-4 md:py-5 text-left font-gulfs text-base md:text-lg uppercase tracking-wide transition-colors duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-[#FF007F] ${
+                        open
+                          ? 'bg-white/[0.06] text-white'
+                          : 'text-white/55 hover:bg-white/[0.03] hover:text-white/80'
+                      }`}
+                    >
+                      {/* The marker IS the state — a filled pink square on the
+                          live question, an outline on the rest. No chevron: at
+                          lg the panel is not below the button, so a chevron
+                          would point at nothing. */}
+                      <span
+                        className={`mt-[6px] h-3 w-3 shrink-0 border-2 transition-colors duration-200 ${
+                          open ? 'border-[#FF007F] bg-[#FF007F]' : 'border-white/30 bg-transparent'
+                        }`}
+                      />
+                      <span className='min-w-0'>{f.title}</span>
+                    </button>
+
+                    {/* Accordion body — below lg only. */}
+                    {open && (
+                      <div className='lg:hidden px-1 pb-5'>
+                        <Answer faq={f} showTitle={false} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className='mt-8 text-base leading-[1.6] text-gray-400'>
+              Not answered here?{' '}
+              <Link
+                href='/help'
+                className='font-gulfs uppercase text-[#E6EA7B] underline underline-offset-4 transition-opacity duration-200 hover:opacity-70 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FF007F]'
+              >
+                Search the Help Centre
+              </Link>
+            </p>
           </div>
+
+          {/* ── Slab (lg and up) ─────────────────────────────────── */}
+          <div className='hidden lg:block'>
+            <div className='lg:sticky lg:top-28'>
+              <motion.div
+                key={active}
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Answer faq={faqs[active]} showTitle={true} />
+              </motion.div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
-    </>
   );
 };

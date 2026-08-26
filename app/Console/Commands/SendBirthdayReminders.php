@@ -91,7 +91,6 @@ class SendBirthdayReminders extends Command
         }
 
         $today = now()->startOfDay();
-        $year = (int) $today->year;
 
         $totalCreators = 0;
         $totalSent = 0;
@@ -119,14 +118,25 @@ class SendBirthdayReminders extends Command
                 }
 
                 /*
-                 * One row per supporter, per creator, per stage, per YEAR.
+                 * One row per supporter, per creator, per stage, per BIRTHDAY DATE.
                  *
-                 * The year is in the key so the same reminder can legitimately
-                 * fire again in twelve months, and the stage is in it so the
-                 * 7-day and 1-day notes are separate sends rather than one
-                 * suppressing the other.
+                 * The stage is in the key so the 7-day and 1-day notes are separate
+                 * sends rather than one suppressing the other.
+                 *
+                 * 🚨 THE DATE, NOT THE YEAR. `birthday_day`/`birthday_month` are
+                 * DERIVED from `date_of_birth`, so a creator correcting a date they
+                 * mistyped at signup is an ordinary flow — and with the year in the
+                 * key their corrected birthday was already claimed by the reminders
+                 * their WRONG one had fired. Every supporter of that creator then got
+                 * nothing for the rest of the year, on the one date that was right,
+                 * with nothing wrong in any log.
+                 *
+                 * ⚠️ A creator has one birthday a year, so for an UNCHANGED date this
+                 * is the same key the year gave — the dedup is not loosened. What it
+                 * adds is that a MOVED date is a different send, which it is: the old
+                 * e-mail named a day that turned out to be wrong.
                  */
-                $dedupKey = $creatorId.'|'.$stage.'|'.$year;
+                $dedupKey = $creatorId.'|'.$stage.'|'.$target->format('Y-m-d');
 
                 foreach ($supporterIds as $supporterId) {
                     $supporter = User::find($supporterId);
@@ -187,6 +197,20 @@ class SendBirthdayReminders extends Command
 
                         $totalSent++;
                     } catch (\Throwable $e) {
+                        /*
+                         * 🚨 GIVE THE CLAIM BACK. It was taken a few lines above as a
+                         * promise that this e-mail went out; leaving it after a failure
+                         * records a delivery that never happened and makes an operator
+                         * re-running the command the same day send nothing while
+                         * reporting success — which is precisely what somebody does
+                         * after seeing a mail outage in these logs.
+                         */
+                        NotificationDispatcher::releaseClaim(
+                            $supporter->id,
+                            EngagementNotification::TYPE_BIRTHDAY_REMINDER,
+                            $dedupKey
+                        );
+
                         // One bad address must not take down the sweep for every
                         // other supporter of every other creator.
                         Log::warning('birthday:remind — send failed', [

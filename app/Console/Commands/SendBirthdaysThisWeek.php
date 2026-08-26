@@ -209,6 +209,20 @@ class SendBirthdaysThisWeek extends Command
 
                         $sent++;
                     } catch (\Throwable $e) {
+                        /*
+                         * 🚨 GIVE THE CLAIM BACK — this command's whole recovery story
+                         * depends on it. The class docblock promises that a later run in
+                         * the same week CONTINUES the send, skipping the claimed and
+                         * picking up who is left; a claim burnt by a failed send is
+                         * indistinguishable from a delivered one, so Tuesday's run walks
+                         * straight past exactly the people Monday's run failed to reach.
+                         */
+                        NotificationDispatcher::releaseClaim(
+                            $user->id,
+                            EngagementNotification::TYPE_BIRTHDAYS_THIS_WEEK,
+                            $dedupKey
+                        );
+
                         Log::warning('birthday:weekly — send failed', [
                             'user_id' => $user->id,
                             'week' => $dedupKey,

@@ -250,9 +250,17 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     }, [initialAuth, initialUser, initialSlinks]);
 
     const creatorUser = auth?.user || user;
-    const hasAnySocialMedia =
-        slinks &&
-        Object.values(slinks).some((value) => value !== null && value !== "");
+    /*
+     * 🚨 THE SERVER ANSWERS THIS, THE PAGE DOES NOT RE-DERIVE IT.
+     *
+     * This walked EVERY column on the row — `id`, `user_id`, `status`, `source`,
+     * the timestamps — so a `social_links` row with all fourteen platforms blank
+     * answered true. The step rendered ticked, "Submit for review" unlocked, and
+     * the server refused with a message naming a field this screen said was done.
+     * `has_any_handle` is appended by the `SocialLinks` model, so the button and
+     * the gate behind it cannot disagree.
+     */
+    const hasAnySocialMedia = Boolean(slinks?.has_any_handle);
     const hasSubscription =
         creatorUser?.subscription_status === 1 ||
         creatorUser?.subscription_status === 2;

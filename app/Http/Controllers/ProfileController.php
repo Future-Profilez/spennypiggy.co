@@ -70,6 +70,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Intervention\Image\Facades\Image;
@@ -578,8 +579,33 @@ class ProfileController extends Controller
                 // }
 
             }
+        } catch (ValidationException $e) {
+            // ValidationException IMPLEMENTS Throwable, so the catch below used to
+            // swallow it: every field error on this form - a taken username, a
+            // duplicate email, a bio over 255, an avatar modifier the regex refuses
+            // - came back as the generic "Something went wrong while updating your
+            // profile." with NO field errors attached, so the creator was told the
+            // site had broken and never which field to fix. Rethrow it: Laravel's
+            // handler turns it into the redirect-with-errors the form expects.
+            throw $e;
         } catch (\Throwable $e) {
-            Log::error('Profile update error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+            // report(), NOT Log::error() alone. LOG_CHANNEL=stack resolves to the
+            // `single` channel, i.e. storage/logs/laravel.log, and on Vapor that is
+            // the read-only Lambda filesystem: the line is written nowhere that
+            // `vapor tail` can show it. A caught exception on this path was therefore
+            // invisible in BOTH the logs and Sentry, which is why a live profile-save
+            // failure could not be diagnosed at all. report() goes through the
+            // exception handler, so it reaches Sentry with the stack trace and the
+            // support reference.
+            report($e);
+
+            Log::error('Profile update error', [
+                'user_id' => Auth::id(),
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
 
             return back()->with('error', 'Something went wrong while updating your profile.');
         }
@@ -648,14 +674,22 @@ class ProfileController extends Controller
             $missing[] = 'a bio';
         }
 
-        $links = $user->socialLinks;
-
-        $hasHandle = $links && collect($links->getAttributes())
-            ->only(['instagram', 'twitter', 'youtube', 'twitch', 'tiktok', 'facebook', 'reddit', 'other'])
-            ->filter(fn ($value) => filled($value))
-            ->isNotEmpty();
-
-        if (! $hasHandle) {
+        /*
+         * 🚨 `$user->socialLinks` IS NOT A RELATION — the method is `social_links()`.
+         *
+         * Laravel resolves an unknown property to NULL rather than erroring, so
+         * this read `null`, `$hasHandle` was false for everyone, and EVERY
+         * creator was told "Add a social handle before submitting for review"
+         * with their handle on screen behind the message. Nothing appeared in
+         * any log.
+         *
+         * ⚠️ The list of columns is NOT written out here either. It was an
+         * eight-item subset of the fourteen the table has, so a creator whose
+         * only handle was on a retired platform read as empty even once the
+         * relation was right. `hasAnyHandle()` is the one definition and already
+         * answers exactly this question.
+         */
+        if (! ProfileAssetVisibility::hasAnyHandle($user->social_links)) {
             $missing[] = 'a social handle';
         }
 

@@ -73,7 +73,12 @@ createServer((page) => {
           globalThis.Ziggy = ziggy;
           // console.log(`[SSR] Injected Ziggy from props. URL: ${ziggy.url}, Routes: ${Object.keys(ziggy.routes).length}`);
       } else {
-          console.warn('[SSR] Ziggy prop missing! Using default.');
+          // The bundled snapshot, not nothing. Components that import `route`
+          // straight from ziggy-js read globalThis.Ziggy, so leaving this unset
+          // makes route() throw and blanks the whole render — HTTP 200 with an
+          // empty body, which Laravel then silently falls back to CSR on.
+          globalThis.Ziggy = Ziggy;
+          console.warn('[SSR] Ziggy prop missing! Using bundled snapshot.');
       }
       return React.createElement(
         Provider,

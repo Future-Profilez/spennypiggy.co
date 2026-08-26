@@ -9,6 +9,7 @@ use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class PwaNotification extends Controller
@@ -127,7 +128,16 @@ class PwaNotification extends Controller
             $status = 'unfollowed';
         }
 
-        // Get the updated follow count
+        // The counts are cached for 5 minutes on the User model accessors, and
+        // nothing here used to invalidate them — so the button flipped to
+        // "Following" (local React state) while the profile kept rendering the
+        // stale "0 Followers" until the key happened to expire. Forget BOTH
+        // sides: the target's follower count and the actor's following count.
+        Cache::forget('user_followers_count_'.$followed_id);
+        Cache::forget('user_following_count_'.Auth::id());
+        Cache::forget('profile_cache_token_v1_'.$followed_id);
+        Cache::forget('user_profile_basic_'.$followedUser->username);
+
         return redirect()->back()->with('success', "You have $status $userName.");
         // return response()->json([
         //     'status' => true,

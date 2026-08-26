@@ -64,6 +64,7 @@ use App\Support\AnalyticsEvent;
 use App\Support\BlockedPaymentAlert;
 use App\Support\NotificationContext;
 use App\Support\PayoutDestinationAudit;
+use App\Support\StripeCurrencySync;
 use App\Support\SubscriptionPlan;
 use App\Traits\RiskEnforcement;
 use Carbon\Carbon;
@@ -972,6 +973,16 @@ class StripeController extends Controller
                     }
 
                     $user->refresh();
+
+                    // 🚨 STRIPE DECIDES THE CURRENCY, NOT US. The `default_currency`
+                    // we send is derived from the country the creator picked, and
+                    // Stripe overrides it from the account's own country without
+                    // erroring — so the value to store is the one on the Account it
+                    // just returned, never the one we asked for.
+                    if ($winner === $account->id) {
+                        StripeCurrencySync::apply($user, $account, 'initConnect:create');
+                    }
+
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                 }
             } catch (Exception $e) {
@@ -1582,9 +1593,15 @@ class StripeController extends Controller
             $account = StripeControl::getAccount($user->account_id);
             if (empty($user->stripe_details_submitted)) {
                 $user->stripe_details_submitted = $account->details_submitted ?? null;
-                $user->default_currency = $account->default_currency;
                 $user->save();
             }
+
+            // 🚨 DELIBERATELY OUTSIDE THE GUARD ABOVE. The currency sync used to
+            // live inside it, so it ran only on a creator's FIRST return — and
+            // `account.updated` sets `stripe_details_submitted = 1` too, which
+            // closed the guard before the creator ever got back here and left the
+            // column on its 'GBP' database default. See StripeCurrencySync.
+            StripeCurrencySync::apply($user, $account, 'connectReturn');
             // ⚠️ Bust the cached account state, or the dashboard keeps telling a
             // creator who has JUST finished onboarding that action is required —
             // for the full five-minute TTL. These two lines used to be commented
@@ -1753,6 +1770,11 @@ class StripeController extends Controller
                         'account_id' => $account->id,
                         'country' => $country,
                     ]);
+
+                    // Read the currency BACK off the account Stripe returned — see
+                    // the note on the other create path above.
+                    StripeCurrencySync::apply($user, $account, 'initConnect:create:fallback');
+
                     $this->userProfileService->clearUserCaches($user->username, $user->id);
                 } catch (\Throwable $e) {
 

@@ -3,6 +3,7 @@ import BirthdayCard from "./cards/BirthdayCard";
 import FastStartCard from "./cards/FastStartCard";
 import FounderCard from "./cards/FounderCard";
 import InstallAppCard from "./cards/InstallAppCard";
+import LadderCard from "./cards/LadderCard";
 import LeaderboardCard from "./cards/LeaderboardCard";
 import ReceiptCard from "./cards/ReceiptCard";
 import ReferralCard from "./cards/ReferralCard";
@@ -34,6 +35,7 @@ const CARDS = {
     birthday: BirthdayCard,
     founder: FounderCard,
     faststart: FastStartCard,
+    ladder: LadderCard,
     receipt: ReceiptCard,
     badge: VerifiedCard,
     split: ReferralCard,

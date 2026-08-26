@@ -8,7 +8,19 @@
 return [
 
     // @see https://docs.sentry.io/concepts/key-terms/dsn-explainer/
-    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
+    /*
+     * A developer machine must not file issues in the PRODUCTION Sentry project.
+     * Local `schedule:work` sweeps run against local data with local keys, and every
+     * failure they produce is a fact about that laptop - it is indistinguishable in
+     * the issue stream from a real production fault, and it arrives far more often.
+     *
+     * Set SENTRY_SEND_FROM_LOCAL=true to opt a local machine back in when you are
+     * deliberately testing the Sentry wiring itself.
+     */
+    'dsn' => in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)
+        && ! env('SENTRY_SEND_FROM_LOCAL', false)
+            ? null
+            : env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
     // @see https://spotlightjs.com/
     // 'spotlight' => env('SENTRY_SPOTLIGHT', false),

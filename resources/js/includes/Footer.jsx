@@ -90,6 +90,10 @@ const PAYMENTS = [
     { name: 'Content & payments', route: 'content-payment-policy' },
     { name: 'Paid tasks', route: 'paid-tasks-terms' },
     { name: 'Fast payout', route: 'fast-start-bonus-terms' },
+    // ⚠️ Beside Fast payout, not under Agreements: the Growth Bonus is money
+    // moving, which is what this column is. Named for the programme the creator
+    // sees on their dashboard, so the two are recognisably the same thing.
+    { name: 'Growth bonus', route: 'growth-bonus-terms' },
     { name: 'Return policy', route: 'return-policy' },
     { name: 'Promotion terms', route: 'promotion-terms' },
 ];

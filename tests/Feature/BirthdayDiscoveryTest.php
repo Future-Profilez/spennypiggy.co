@@ -337,9 +337,16 @@ class BirthdayDiscoveryTest extends TestCase
     /**
      * The contrast that makes the rule legible: the per-creator REMINDER is
      * deliberately one per creator, and its key carries the creator, the stage
-     * and the year.
+     * and the BIRTHDAY DATE.
+     *
+     * 🚨 The date, not the year (26 Aug 2026). `birthday_day`/`birthday_month` are
+     * derived from `date_of_birth`, so a creator correcting a mistyped date found
+     * the corrected one already claimed by the wrong one's reminders — and every
+     * supporter of that creator heard nothing for the rest of the year. A creator
+     * has one birthday a year, so an unchanged date keys identically and the dedup
+     * asserted at the foot of this test is unchanged.
      */
-    public function test_a_reminder_is_per_creator_and_deduped_per_creator_stage_and_year(): void
+    public function test_a_reminder_is_per_creator_and_deduped_per_creator_stage_and_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-12 09:30:00'));
         config(['discovery.birthday.birthday_reminders' => true]);
@@ -367,8 +374,8 @@ class BirthdayDiscoveryTest extends TestCase
             ->all();
 
         $this->assertSame([
-            $creatorA->id.'|0|2026',
-            $creatorB->id.'|0|2026',
+            $creatorA->id.'|0|2026-03-12',
+            $creatorB->id.'|0|2026-03-12',
         ], $keys);
 
         // Re-run: claimed, so nothing more.
@@ -528,20 +535,55 @@ class BirthdayDiscoveryTest extends TestCase
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Sending ships switched OFF
+    // Sending is ON by default; the env var is the kill switch
     // ══════════════════════════════════════════════════════════════════════
 
-    public function test_both_sending_flags_default_to_false(): void
+    /**
+     * 🚨 REVERSED 26 Aug 2026 (client decision). Both flags shipped defaulting
+     * FALSE and this test pinned that; they now default TRUE, so the feature is on
+     * in every environment that does not explicitly turn it off and there is no env
+     * var to remember.
+     *
+     * ⚠️ `phpunit.xml` sets neither, so the suite runs against the real default —
+     * which is why the two kill-switch tests below now set the config THEMSELVES
+     * rather than leaning on it. A test that proves "sends nothing when off" by
+     * relying on the default proves nothing the day the default moves.
+     */
+    public function test_both_sending_flags_default_to_true(): void
     {
-        $this->assertFalse((bool) config('discovery.birthday.birthday_reminders'));
-        $this->assertFalse((bool) config('discovery.birthday.birthdays_this_week'));
-        $this->assertFalse(BirthdayDiscoveryService::remindersEnabled());
-        $this->assertFalse(BirthdayDiscoveryService::weeklyCampaignEnabled());
+        $this->assertTrue((bool) config('discovery.birthday.birthday_reminders'));
+        $this->assertTrue((bool) config('discovery.birthday.birthdays_this_week'));
+        $this->assertTrue(BirthdayDiscoveryService::remindersEnabled());
+        $this->assertTrue(BirthdayDiscoveryService::weeklyCampaignEnabled());
     }
 
+    /**
+     * 🚨 THE KILL SWITCH ONLY EXISTS IF THE CONFIG READS `env()`.
+     *
+     * The two tests below set the config at RUNTIME, so they prove the commands
+     * honour it — and prove nothing about whether the env var ever reaches it.
+     * Verified: replacing `env('DISCOVERY_BIRTHDAY_REMINDERS', true)` with a bare
+     * `true` leaves both of them passing while the switch is gone. Now that ON is
+     * the default, that env read is the ONLY way to stop a live fan-out without a
+     * deploy, so it is pinned against the config source itself.
+     */
+    public function test_both_flags_are_still_overridable_by_env(): void
+    {
+        $source = file_get_contents(config_path('discovery.php'));
+
+        $this->assertStringContainsString("env('DISCOVERY_BIRTHDAY_REMINDERS'", $source);
+        $this->assertStringContainsString("env('DISCOVERY_BIRTHDAYS_THIS_WEEK'", $source);
+    }
+
+    /**
+     * The kill switch. `DISCOVERY_BIRTHDAY_REMINDERS=false` is now the only way to
+     * stop this without a deploy, so it matters more than it did when off was the
+     * default — and it is set explicitly here for exactly that reason.
+     */
     public function test_the_reminder_command_sends_nothing_while_the_flag_is_off(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-12 09:30:00'));
+        config(['discovery.birthday.birthday_reminders' => false]);
         Mail::fake();
 
         $creator = $this->birthdayCreator();
@@ -555,9 +597,11 @@ class BirthdayDiscoveryTest extends TestCase
         $this->assertSame(0, EngagementNotification::where('type', EngagementNotification::TYPE_BIRTHDAY_REMINDER)->count());
     }
 
+    /** The same kill switch on the larger fan-out. Set explicitly, not defaulted. */
     public function test_the_weekly_command_sends_nothing_while_the_flag_is_off(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-09 09:45:00'));
+        config(['discovery.birthday.birthdays_this_week' => false]);
         Mail::fake();
 
         collect(range(0, 2))->each(fn ($i) => $this->birthdayCreator(3, 10 + $i));
