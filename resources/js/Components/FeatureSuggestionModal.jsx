@@ -80,7 +80,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
 
                 {/* Bulb tile straddles the seam — the piece that makes this modal ours. */}
                 <div className="px-6 md:px-8">
-                    <div className="-mt-8 mb-7 w-16 h-16 border-black bg-[#E6EA7B] rounded-box-sm flex items-center justify-center">
+                    <div className="mt-8 mb-7 w-16 h-16 border-black bg-[#E6EA7B] rounded-box-sm flex items-center justify-center">
                         <FaLightbulb className="text-black text-2xl" />
                     </div>
                 </div>
@@ -96,7 +96,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                 value={data.name}
                                 className={`${FIELD} h-14 px-5`}
                                 onChange={(e) => setData('name', e.target.value)}
-                                placeholder="Naveen"
+                                placeholder="Your name"
                             />
                             <InputError message={errors.name} className="mt-2" />
                         </div>
