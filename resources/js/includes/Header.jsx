@@ -49,7 +49,14 @@ import {
  * `onMouseEnter`. There is no hover on a phone, so in the PWA the library was
  * pure cost — the rendering fault with none of the effect.
  */
-import { Calendar, Shield as ShieldIcon, PiggyBank, UserX, Menu as MenuIcon, X as XIcon } from "lucide-react";
+import {
+    Calendar,
+    Shield as ShieldIcon,
+    PiggyBank,
+    UserX,
+    Menu as MenuIcon,
+    X as XIcon,
+} from "lucide-react";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 import { FaFileInvoice } from "react-icons/fa";
 
@@ -70,20 +77,36 @@ export default function Header({ classMagicword }) {
 
     const getNavLinkClass = (path) => {
         let pathName = path;
+
         if (typeof path === "string" && path.startsWith("http")) {
             try {
                 pathName = new URL(path).pathname;
-            } catch (e) {}
+            } catch (e) {
+                pathName = path;
+            }
         }
-        const isActive =
-            url === pathName ||
-            (typeof pathName === "string" &&
-                pathName !== "/" &&
-                url.startsWith(pathName));
-        return `relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] pr-6 border-l-4 transition-all duration-200 ${
+
+        // Remove query string / hash for accurate route comparison
+        const currentPath = url?.split("?")[0]?.split("#")[0] || "/";
+        const normalizedPath =
+            typeof pathName === "string"
+                ? pathName.split("?")[0].split("#")[0]
+                : "";
+
+        // EXACT route match
+        const isActive = normalizedPath === currentPath;
+
+        return `relative flex flex-row items-center h-11
+        focus:outline-none
+        hover:opacity-[0.8]
+        pr-6
+        border-l-4
+        transition-all
+        duration-200
+        ${
             isActive
                 ? "border-black bg-black/[0.06] text-black"
-                : "border-transparent hover:border-black text-black/90 hover:text-black"
+                : "border-transparent text-black/90 hover:border-black hover:text-black"
         }`;
     };
 
@@ -240,7 +263,7 @@ export default function Header({ classMagicword }) {
  other control in the menu sat on the 20/30 tokens. The lift
  stays: it is paired with a hard offset shadow, which is the
  house press idiom rather than a hover-scale. */
- className={`${getNavLinkClass(href)} rounded-box-sm border-[3px] border-transparent hover:border-black ${activeColor} transition-colors duration-200 px-2 py-3 mx-2 group`}
+                    className={`${getNavLinkClass(href)} rounded-box-sm border-[3px] border-transparent hover:border-black ${activeColor} transition-colors duration-200 px-2 py-3 mx-2 group`}
                     {...(isExternal
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
@@ -300,7 +323,7 @@ export default function Header({ classMagicword }) {
                 when its steps expand. */}
             <div
                 className="headermain fixed left-0 w-full z-[100] py-[14px] bg-[#FF007F]"
-                style={{ top: 'var(--sp-topbanner-h, 0px)' }}
+                style={{ top: "var(--sp-topbanner-h, 0px)" }}
             >
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center gap-3">
@@ -310,26 +333,29 @@ export default function Header({ classMagicword }) {
                                 className="menu-toggle cursor-pointer cartLink relative hidden md:block"
                                 onClick={toggleClass}
                             >
- <MenuIcon size={48} color="#000000" />
+                                <MenuIcon size={48} color="#000000" />
                             </div>
 
- <div className="spennylogo md:ps-4 max-w-[150px] md:max-w-[180px]">
-                            {/* The logo is a link home, so it is a tap target and
+                            <div className="spennylogo md:ps-4 max-w-[150px] md:max-w-[180px]">
+                                {/* The logo is a link home, so it is a tap target and
                                 the PWA floor applies — it measured 34px tall. The
                                 image is unchanged; only the hit area grows. */}
- {/* `!block inline-flex` set `display` twice — the
+                                {/* `!block inline-flex` set `display` twice — the
  `!important` block won, so `items-center` never
  applied. One display, and a real tap target. */}
- <Link href={route("home")} className="inline-flex min-h-[44px] items-center">
-                                <img
-                                    alt="Spenny Piggy - Exclusive Content, Memberships & Creator Support"
-                                    height={60}
-                                    width={210}
-                                    src={spennypiggy}
-                                    loading="eager"
-                                />
-                            </Link>
-                        </div>
+                                <Link
+                                    href={route("home")}
+                                    className="inline-flex min-h-[44px] items-center"
+                                >
+                                    <img
+                                        alt="Spenny Piggy - Exclusive Content, Memberships & Creator Support"
+                                        height={60}
+                                        width={210}
+                                        src={spennypiggy}
+                                        loading="eager"
+                                    />
+                                </Link>
+                            </div>
                         </div>
 
                         <span className="flex-1" aria-hidden="true"></span>
@@ -342,8 +368,16 @@ export default function Header({ classMagicword }) {
                             lists all three. */}
                         <nav className="hidden lg:flex items-center gap-7 shrink-0">
                             {[
-                                { label: "Discover", href: route("discover"), active: url.startsWith("/discover") },
-                                { label: "Leaderboard", href: "/leaderboard", active: url.startsWith("/leaderboard") },
+                                {
+                                    label: "Discover",
+                                    href: route("discover"),
+                                    active: url.startsWith("/discover"),
+                                },
+                                {
+                                    label: "Leaderboard",
+                                    href: "/leaderboard",
+                                    active: url.startsWith("/leaderboard"),
+                                },
                                 // 🚨 Link in Bio takes the third nav slot, not the Oink
                                 // Store. The store is kill-switched behind `rye.enabled`
                                 // and its page answers with a coming-soon screen, so the
@@ -351,7 +385,13 @@ export default function Header({ classMagicword }) {
                                 // something nobody can buy from. Link in Bio has a
                                 // dedicated ad page and is the push. The store keeps a
                                 // footer row with a Coming soon badge.
-                                { label: "Link in Bio", href: "/creators/link-in-bio", active: url.startsWith("/creators/link-in-bio") },
+                                {
+                                    label: "Link in Bio",
+                                    href: "/creators/link-in-bio",
+                                    active: url.startsWith(
+                                        "/creators/link-in-bio",
+                                    ),
+                                },
                             ].map((item) => (
                                 <Link
                                     key={item.label}
@@ -386,7 +426,7 @@ export default function Header({ classMagicword }) {
                                 ""
                             )}
 
- {/* ⚠️ Desktop only (client direction, 12 Aug 2026).
+                            {/* ⚠️ Desktop only (client direction, 12 Aug 2026).
  On a phone the bar carries the logo, currency,
  cart, Sign Up and the hamburger already, and
  Discover is the first row inside the menu — so
@@ -395,15 +435,15 @@ export default function Header({ classMagicword }) {
                             <Link
                                 title="Discover"
                                 href={route("discover")}
- className="ms-2 hidden md:ms-3 md:block discover-icon"
+                                className="ms-2 hidden md:ms-3 md:block discover-icon"
                             >
                                 {/* ⚠️ Ghost, not a solid fill. These were three
                                     saturated pink circles, which is three accents —
                                     and three accents is no accent. Sign Up is the
                                     only filled control on the bar, because it is the
                                     one thing the page is trying to cause. */}
- <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
- <SearchIcon color="#000000" />
+                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
+                                    <SearchIcon color="#000000" />
                                 </div>
                             </Link>
 
@@ -417,8 +457,8 @@ export default function Header({ classMagicword }) {
                                         : ""
                                 }`}
                             >
- <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
- <ShoppingCartIcon color="#000000" />
+                                <div className="rounded-full w-11 h-11 md:w-12 md:h-12 flex items-center justify-center bg-white hover:bg-white/85 transition-colors">
+                                    <ShoppingCartIcon color="#000000" />
                                 </div>
                                 {count > 0 ? (
                                     <span className="site-counter block">
@@ -435,7 +475,7 @@ export default function Header({ classMagicword }) {
                                 <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
- className="bg-white hover:bg-gray-200 uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black  transition-colors"
+                                        className="bg-white hover:bg-gray-200 uppercase text-lg font-gulfs rounded-full px-5 py-2 text-black  transition-colors"
                                     >
                                         Login
                                     </Link>
@@ -472,7 +512,7 @@ export default function Header({ classMagicword }) {
                 className="h-[65px] sm:h-[66px] md:h-[80px] lg:h-[80px] xl:h-[80px]"
                 style={{
                     marginTop:
-                        'calc(env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px))',
+                        "calc(env(safe-area-inset-top, 0px) + var(--sp-topbanner-h, 0px))",
                 }}
             ></div>
 
@@ -520,7 +560,9 @@ export default function Header({ classMagicword }) {
                            button on top of the clock and the battery. The header pads
                            for the same inset; this panel is a separate fixed layer and
                            has to do it for itself. */
-                        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+                        style={{
+                            top: "calc(1rem + env(safe-area-inset-top, 0px))",
+                        }}
                         className="absolute h-[45px] min-w-[45px] right-4 md:right-4 bg-white border-[3px] border-black rounded-box-sm p-1 transition-colors duration-200 hover:bg-black/[0.04] z-20"
                     >
                         <XIcon color="#000" size={32} />
@@ -537,7 +579,10 @@ export default function Header({ classMagicword }) {
                             status bar on a notched phone. */}
                         <div
                             className="pb-[110px] px-2"
-                            style={{ paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' }}
+                            style={{
+                                paddingTop:
+                                    "calc(60px + env(safe-area-inset-top, 0px))",
+                            }}
                         >
                             {auth?.user && (
                                 <Link
@@ -729,7 +774,7 @@ export default function Header({ classMagicword }) {
                                     )}
                                     {auth?.user?.username ? (
                                         <NavLinkWithIcon
-                                            href="/history"
+                                            href={route("support.history.page")}
                                             onClick={toggleClass}
                                             icon={HandCoinsIcon}
                                             label="Support History"
