@@ -1228,11 +1228,11 @@ export default function EditProfile({
                                                         name="min_surprise_amount"
                                                         defaultValue={user?.min_surprise_amount || ''}
                                                         onChange={(e) => setData('min_surprise_amount', e.target.value)}
- className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
+                                                        className="w-full border-gray-300 border pl-10 pr-4 py-[10px] rounded-box-sm focus:outline-none focus:border-[#FF007F] focus:ring-1 focus:ring-pink-500" 
                                                         placeholder="0.00"
                                                     />
                                                 </div>
- <p className="text-xs text-black/60 mt-1">
+                                                    <p className="text-xs text-black/60 mt-1">
                                                     Minimum amount supporters must spend on a treat.
                                                 </p>
                                             </li> */}
@@ -1244,16 +1244,16 @@ export default function EditProfile({
                                     </li>
 
                                     <li className="mb-4">
- <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
                                             <div>
                                                 <h4 className="font-medium text-gray-800">
- Earnings on profile
+                                                Earnings on profile
                                                 </h4>
- <p className="text-xs text-black/60 mt-1">
- Show your total earned to
- visitors. Off, they still
- see your milestone progress
- — just not the amount.
+                                                <p className="text-xs text-black/60 mt-1">
+                                                Show your total earned to
+                                                visitors. Off, they still
+                                                see your milestone progress
+                                                — just not the amount.
                                                 </p>
                                             </div>
                                             <Switch
@@ -1263,7 +1263,7 @@ export default function EditProfile({
                                                     piggyBankEnabled
                                                         ? "bg-pink-600"
                                                         : "bg-gray-300"
-                                                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+                                                } relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
                                             >
                                                 <span
                                                     className={`${
@@ -1277,12 +1277,12 @@ export default function EditProfile({
                                     </li>
 
                                     <li className="mb-4">
- <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-box-sm border border-gray-200">
                                             <div>
                                                 <h4 className="font-medium text-gray-800">
                                                     Email Notifications
                                                 </h4>
- <p className="text-xs text-black/60 mt-1">
+                                                <p className="text-xs text-black/60 mt-1">
                                                     Receive updates about your
                                                     account via email
                                                 </p>
@@ -1313,25 +1313,25 @@ export default function EditProfile({
                                 <button
                                     type="button"
                                     onClick={() => setClose(false)}
- className="w-full rounded-box-sm bg-gray-200 border-[3px]
+                                    className="w-full rounded-box-sm bg-gray-200 border-[3px]
                                     border-black font-black uppercase tracking-widest block p-[10px]
                                     hover:bg-gray-300 transition-colors
  
                                     hover:translate-x-[-2px] hover:translate-y-[-2px]
- !text-sm"
+                                    !text-sm"
                                 >
                                     Cancel
                                 </button>
                                 <LoaderButton
                                     type="submit"
                                     disabled={processing}
- className="w-full rounded-box-sm bg-yellow-300 
+                                    className="w-full rounded-box-sm bg-yellow-300 
                                     border-[3px] border-black font-black
                                     uppercase font-poppins tracking-widest block p-[10px] hover:bg-yellow-400
                                     transition-colors font-bold !mt-0 !text-sm
  
                                     hover:translate-x-[-2px] hover:translate-y-[-2px]
- !text-black "
+                                    !text-black "
                                     spinnerclass="fill-black"
                                 >
                                     {loading || processing
